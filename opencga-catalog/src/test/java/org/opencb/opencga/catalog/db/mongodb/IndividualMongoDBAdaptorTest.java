@@ -103,7 +103,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .FEMALE, "", new Individual.Population(), 1, Collections.emptyList(), null), studyId, null).first();
         catalogIndividualDBAdaptor.insert(
                 new Individual(0, "ind_5", father, mother, null, Individual.Sex.MALE, Individual.KaryotypicSex.XY,
-                "", new Individual.Population(), null, null, null, true, 1, Collections.emptyList(), null).setFamily("Family2"),
+                "", new Individual.Population(), null, null, null, null, true, 1, Collections.emptyList(), null).setFamily("Family2"),
                 studyId, null);
         catalogIndividualDBAdaptor.insert(new Individual(0, "ind_6", -1, -1, "Family3", Individual.Sex.FEMALE, "",
                 new Individual.Population(), 1, Collections.emptyList(), null), studyId, null);
@@ -279,7 +279,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Individual mother = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first();
         catalogIndividualDBAdaptor.insert(new Individual(0, "in2", null, mother, null, Individual.Sex.UNKNOWN, null, "", null, null,
-                null, "", true, 1, Collections.emptyList() , null), studyId, null).first().getId();
+                null, "", null, true, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.delete(mother.getId(), new QueryOptions());
@@ -291,9 +291,8 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(new Sample(0, "Sample", "", new Individual().setId(individualId), "", 1),
-                studyId,
-                null);
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(new Sample(0, "Sample", "", null, "", 1),
+                studyId, new Individual().setId(individualId), null);
 
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.delete(individualId, new QueryOptions());

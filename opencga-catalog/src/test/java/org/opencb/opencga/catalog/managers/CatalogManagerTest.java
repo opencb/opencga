@@ -1638,18 +1638,20 @@ public class CatalogManagerTest extends GenericTest {
                         .MALE, "", "", "", "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN,
                 new QueryOptions(), sessionIdUser).first().getId();
         long sampleId1 = catalogManager.getSampleManager()
-                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, new Individual().setId(individualId), null, new QueryOptions(),
-                        sessionIdUser).first().getId();
+                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, new Individual().setName(String.valueOf(individualId)), null,
+                        new QueryOptions(), sessionIdUser).first().getId();
         Sample sample = catalogManager.getSampleManager().get(sampleId1, QueryOptions.empty(), sessionIdUser).first();
 
-        assertEquals(individualId, sample.getIndividual().getId());
+        assertEquals(String.valueOf(individualId), String.valueOf(((Map<String, Object>) sample.getAttributes().get("individual"))
+                .get("id")));
 
         // Create sample linking to individual based on the individual name
         long sampleId2 = catalogManager.getSampleManager()
-                .create("user@1000G:phase1", "SAMPLE_2", "", "", null, false, new Individual().setName("Individual1"), null, new QueryOptions(),
-                        sessionIdUser).first().getId();
+                .create("user@1000G:phase1", "SAMPLE_2", "", "", null, false, new Individual().setName("Individual1"), null,
+                        new QueryOptions(), sessionIdUser).first().getId();
         sample = catalogManager.getSampleManager().get(sampleId2, QueryOptions.empty(), sessionIdUser).first();
-        assertEquals(individualId, sample.getIndividual().getId());
+        assertEquals(String.valueOf(individualId), String.valueOf(((Map<String, Object>) sample.getAttributes().get("individual"))
+                .get("id")));
     }
 
     @Test

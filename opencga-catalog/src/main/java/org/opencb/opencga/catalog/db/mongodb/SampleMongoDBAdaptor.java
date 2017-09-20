@@ -37,10 +37,10 @@ import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -57,6 +57,8 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  */
 public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements SampleDBAdaptor {
 
+    private static final String PRIVATE_INDIVIDUAL = "_individual";
+    private static final String PRIVATE_INDIVIDUAL_ID = PRIVATE_INDIVIDUAL + ".id";
     private final MongoDBCollection sampleCollection;
     private SampleConverter sampleConverter;
 
@@ -83,7 +85,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
      */
 
     @Override
-    public QueryResult<Sample> insert(Sample sample, long studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Sample> insert(Sample sample, long studyId, Individual individual, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
@@ -103,6 +105,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         sample.setId(sampleId);
         Document sampleObject = sampleConverter.convertToStorageType(sample);
         sampleObject.put(PRIVATE_STUDY_ID, studyId);
+        sampleObject.put(PRIVATE_INDIVIDUAL, sampleConverter.convertIndividual(individual));
         sampleObject.put(PRIVATE_ID, sampleId);
         sampleCollection.insert(sampleObject, null);
 
@@ -140,6 +143,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
         String[] acceptedLongParams = {QueryParams.INDIVIDUAL_ID.key()};
         filterLongParams(parameters, sampleParams, acceptedLongParams);
+        if (sampleParams.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
+            sampleParams.put(PRIVATE_INDIVIDUAL + ".id", sampleParams.get(QueryParams.INDIVIDUAL_ID.key()));
+            sampleParams.remove(QueryParams.INDIVIDUAL_ID.key());
+        }
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParams, acceptedMapParams);
@@ -633,8 +640,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
         if (qOptions.get("lazy") != null && !qOptions.getBoolean("lazy")) {
             Bson match = Aggregates.match(bson);
-            Bson lookup = Aggregates.lookup("individual", QueryParams.INDIVIDUAL_ID.key(), IndividualDBAdaptor.QueryParams.ID.key(),
-                    "individual");
+            Bson lookup = Aggregates.lookup("individual", PRIVATE_INDIVIDUAL_ID, IndividualDBAdaptor.QueryParams.ID.key(),
+                    PRIVATE_INDIVIDUAL);
             return sampleCollection.nativeQuery().aggregate(Arrays.asList(match, lookup), qOptions).iterator();
         } else {
             return  sampleCollection.nativeQuery().find(bson, qOptions).iterator();
@@ -744,9 +751,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case ANNOTATION_SET_NAME:
                         addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
+                    case INDIVIDUAL_ID:
+                        addAutoOrQuery(PRIVATE_INDIVIDUAL_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case SOURCE:
-                    case INDIVIDUAL_ID:
                     case DESCRIPTION:
                     case STATUS_NAME:
                     case STATUS_MSG:

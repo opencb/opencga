@@ -90,11 +90,11 @@ public class Individual extends Annotable {
 
     public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
-                      List<OntologyTerm> ontologyTermList) {
+                      String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
+                      List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList) {
         this(id, name, father, mother, multiples, -1, -1, null, sex, karyotypicSex, ethnicity, null, population, dateOfBirth,
-                release, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, ontologyTermList, new ArrayList<>(),
-                parentalConsanguinity, annotationSets, Collections.emptyMap());
+                release, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, ontologyTermList, samples, parentalConsanguinity,
+                annotationSets, Collections.emptyMap());
         if (population == null) {
             new Population();
         }

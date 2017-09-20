@@ -24,10 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Multiples;
-import org.opencb.opencga.core.models.OntologyTerm;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -528,6 +525,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.KaryotypicSex karyotypicSex;
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
+        public List<SampleWSServer.CreateSamplePOST> samples;
         public List<CommonModels.AnnotationSetParams> annotationSets;
         public List<OntologyTerm> ontologyTerms;
         public Map<String, Object> attributes;
@@ -543,8 +541,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 }
             }
 
+            List<Sample> sampleList = null;
+            if (samples != null) {
+                for (SampleWSServer.CreateSamplePOST sample : samples) {
+                    sampleList.add(sample.toSample(studyStr, studyManager, sessionId));
+                }
+            }
             return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
-                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
+                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
         }
     }

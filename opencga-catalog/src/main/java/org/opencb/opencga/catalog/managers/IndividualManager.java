@@ -324,6 +324,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
+        List<Sample> samples = individual.getSamples();
+
         ParamUtils.checkAlias(individual.getName(), "name", configuration.getCatalog().getOffset());
         individual.setFamily(ParamUtils.defaultObject(individual.getFamily(), ""));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
@@ -349,6 +351,41 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
+        // Check samples
+        if (samples != null && samples.size() > 0) {
+            List<String> errorMessages = new ArrayList<>();
+            for (Sample sample : samples) {
+                try {
+                    MyResourceId resource = catalogManager.getSampleManager().getId(sample.getName(), String.valueOf(studyId), sessionId);
+                    ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), queryResult.first().getId());
+                    try {
+                        // We update the sample metadata to relate it to the individual
+                        sampleDBAdaptor.update(resource.getResourceId(), params);
+                    } catch (CatalogDBException e1) {
+                        logger.error("Internal error when attempting to associate the individual to the sample. {}" + sample.getName(),
+                                e1.getMessage(), e1);
+                        errorMessages.add("Internal error when attempting to associate the individual to the sample " + sample.getName()
+                                + ". " + e1.getMessage());
+                    }
+                } catch (CatalogException e) {
+                    // It seems the sample does not exist so we will attempt to create it
+                    try {
+                        Individual ind = new Individual().setName(String.valueOf(queryResult.first().getId()));
+                        catalogManager.getSampleManager().create(String.valueOf(studyId), sample, ind, QueryOptions.empty(), sessionId);
+                    } catch (CatalogException e1) {
+                        logger.error("The sample " + sample.getName() + " could not be created. Please, check the parameters. {}",
+                                e1.getMessage(), e1);
+                        errorMessages.add("The sample " + sample.getName() + " could not be created. Please, check the parameters. "
+                            + e1.getMessage());
+                    }
+                }
+            }
+
+            if (errorMessages.size() > 0) {
+                queryResult.setErrorMsg(StringUtils.join(errorMessages, "\n"));
+            }
+        }
 
         return queryResult;
     }

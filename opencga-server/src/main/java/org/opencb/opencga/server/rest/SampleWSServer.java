@@ -552,7 +552,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String individual;
     }
 
-    private static class CreateSamplePOST extends SamplePOST {
+    public static class CreateSamplePOST extends SamplePOST {
         public IndividualWSServer.IndividualPOST individual;
 
         public Sample toSample(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
