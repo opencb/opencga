@@ -38,9 +38,9 @@
     <properties>
         <opencga.version>1.2.0</opencga.version>
         <java.version>1.8</java.version>
-        <java-common-libs.version>3.5.0</java-common-libs.version>
+        <java-common-libs.version>3.5.1</java-common-libs.version>
         <biodata.version>1.2.1</biodata.version>
-        <cellbase.version>4.5.0-rc.3</cellbase.version>
+        <cellbase.version>4.5.0</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta3</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
