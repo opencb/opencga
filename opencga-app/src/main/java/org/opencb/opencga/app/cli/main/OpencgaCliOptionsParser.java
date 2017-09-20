@@ -246,24 +246,6 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationDeleteCommandOptions);
 
-//        toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
-//        jCommander.addCommand("tools", toolCommandOptions);
-//        JCommander toolSubCommands = jCommander.getCommands().get("tools");
-//        toolSubCommands.addCommand("help", toolCommandOptions.helpCommandOptions);
-//        toolSubCommands.addCommand("info", toolCommandOptions.infoCommandOptions);
-//        toolSubCommands.addCommand("search", toolCommandOptions.searchCommandOptions);
-//        toolSubCommands.addCommand("update", toolCommandOptions.updateCommandOptions);
-//        toolSubCommands.addCommand("delete", toolCommandOptions.deleteCommandOptions);
-
-//        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, jCommander);
-//        jCommander.addCommand("panels", panelCommandOptions);
-//        JCommander panelSubCommands = jCommander.getCommands().get("panels");
-//        panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
-//        panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
-//        panelSubCommands.addCommand("acl", panelCommandOptions.aclsCommandOptions);
-//        panelSubCommands.addCommand("acl-update", panelCommandOptions.aclsUpdateCommandOptions);
-
-
         alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
@@ -380,7 +362,7 @@ public class OpencgaCliOptionsParser {
     * ...
     * */
 
-    public void generateBashAutoComplete(String fileName) throws IOException {
+    public void generateBashAutoComplete(String fileName, String bashFunctionName) throws IOException {
 
         Map<String, JCommander> jCommands = jCommander.getCommands();
         StringBuilder mainCommands = new StringBuilder();
@@ -413,7 +395,7 @@ public class OpencgaCliOptionsParser {
         // Now we write bash script commands and blend these strings into those as appropriate
 
         StringBuilder autoComplete = new StringBuilder();
-        autoComplete.append("_opencga() \n { \n local cur prev opts \n COMPREPLY=() \n cur=" +
+        autoComplete.append("_" + bashFunctionName + "() \n { \n local cur prev opts \n COMPREPLY=() \n cur=" +
                 "$" + "{COMP_WORDS[COMP_CWORD]} \n prev=" + "$" +
                 "{COMP_WORDS[COMP_CWORD-1]} \n");
 
@@ -443,7 +425,7 @@ public class OpencgaCliOptionsParser {
                         append(command).append("_").append(subCommand.replace("-", "_")).append("_options}").
                         append("\"").append(" ;; \n");
             }
-            autoComplete.append("\t\t" + "*) ;; esac ;; \n");
+            autoComplete.append("\t\t *) ;; esac ;; \n");
             ++subCommandIndex;
         }
         autoComplete.append("*) ;;  esac \n COMPREPLY=( $( compgen -W " + "\"" + "$" + "options" + "\"" + " -- ${cur}) )" +
