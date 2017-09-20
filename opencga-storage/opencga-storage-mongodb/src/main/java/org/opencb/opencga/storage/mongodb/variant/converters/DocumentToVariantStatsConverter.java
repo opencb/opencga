@@ -23,7 +23,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.slf4j.Logger;
@@ -263,12 +262,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
             if (studyConfigurationManager == null) {
                 studyIds.put(studyId, Integer.toString(studyId));
             } else {
-                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
-                if (queryResult.getResult().isEmpty()) {
-                    studyIds.put(studyId, Integer.toString(studyId));
-                } else {
-                    studyIds.put(studyId, queryResult.first().getStudyName());
-                }
+                studyConfigurationManager.getStudies(null).forEach((name, id) -> studyIds.put(id, name));
             }
         }
         return studyIds.get(studyId);

@@ -38,9 +38,9 @@
     <properties>
         <opencga.version>1.2.0-rc</opencga.version>
         <java.version>1.8</java.version>
-        <java-common-libs.version>3.5.0</java-common-libs.version>
-        <biodata.version>1.2.0</biodata.version>
-        <cellbase.version>4.5.0-rc.3</cellbase.version>
+        <java-common-libs.version>3.5.1</java-common-libs.version>
+        <biodata.version>1.2.1</biodata.version>
+        <cellbase.version>4.5.0</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta3</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
@@ -514,7 +514,6 @@
                 <OPENCGA.STORAGE.CACHE.HOST>localhost:6379</OPENCGA.STORAGE.CACHE.HOST>
                 <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
                 <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
-                <OPENCGA.STORAGE.SEARCH.HOST>http://bioinfodev.hpc.cam.ac.uk/solr/</OPENCGA.STORAGE.SEARCH.HOST>
 
                 <!-- Storage Variants general -->
                 <OPENCGA.STORAGE.VARIANT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.VARIANT.DB.HOSTS>

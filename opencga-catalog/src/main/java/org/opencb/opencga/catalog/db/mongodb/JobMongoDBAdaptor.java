@@ -39,10 +39,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -107,21 +104,21 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         queryAux.append(QueryParams.OUT_DIR_ID.key(), fileIds);
         ObjectMap params = new ObjectMap(QueryParams.OUT_DIR_ID.key(), -1);
         Document update = new Document("$set", params);
-        QueryResult<UpdateResult> update1 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        QueryResult<UpdateResult> update1 = jobCollection.update(parseQuery(queryAux, false), update, multi);
         logger.debug("{} out of {} documents changed to have outDirId = -1", update1.first().getMatchedCount(),
                 update1.first().getModifiedCount());
 
         queryAux = new Query(query);
         queryAux.append(QueryParams.INPUT_ID.key(), fileIds);
         update = new Document("$pull", new Document(QueryParams.INPUT.key(), new Document("id", new Document("$in", fileIds))));
-        QueryResult<UpdateResult> update2 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        QueryResult<UpdateResult> update2 = jobCollection.update(parseQuery(queryAux, false), update, multi);
         logger.debug("{} out of {} documents changed to pull input file ids", update2.first().getMatchedCount(),
                 update2.first().getModifiedCount());
 
         queryAux = new Query(query);
         queryAux.append(QueryParams.OUTPUT_ID.key(), fileIds);
         update = new Document("$pull", new Document(QueryParams.OUTPUT.key(), new Document("id", new Document("$in", fileIds))));
-        QueryResult<UpdateResult> update3 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        QueryResult<UpdateResult> update3 = jobCollection.update(parseQuery(queryAux, false), update, multi);
         logger.debug("{} out of {} documents changed to pull input file ids", update3.first().getMatchedCount(),
                 update3.first().getModifiedCount());
 
@@ -367,7 +364,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<Job> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), true);
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
 
         if (myParams.isEmpty()) {
@@ -412,12 +409,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 QueryParams.OUT_DIR_ID.key(), };
         filterLongParams(parameters, jobParameters, acceptedLongParams);
 
-        String[] acceptedIntegerListParams = {QueryParams.OUTPUT.key()};
-        filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
+        if (parameters.containsKey(QueryParams.INPUT.key())) {
+            List<File> fileList = parameters.getAsList(QueryParams.INPUT.key(), File.class);
+            jobParameters.put(QueryParams.INPUT.key(), jobConverter.convertFilesToDocument(fileList));
+        }
         if (parameters.containsKey(QueryParams.OUTPUT.key())) {
-            for (Integer fileId : parameters.getAsIntegerList(QueryParams.OUTPUT.key())) {
-                dbAdaptorFactory.getCatalogFileDBAdaptor().checkId(fileId);
-            }
+            List<File> fileList = parameters.getAsList(QueryParams.OUTPUT.key(), File.class);
+            jobParameters.put(QueryParams.OUTPUT.key(), jobConverter.convertFilesToDocument(fileList));
         }
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
@@ -491,11 +489,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public QueryResult<Job> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Job> documentList = new ArrayList<>();
-        DBIterator<Job> dbIterator = iterator(query, options, user);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Job> queryResult;
+        try (DBIterator<Job> dbIterator = iterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Job> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -509,11 +509,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public QueryResult<Job> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Job> documentList = new ArrayList<>();
-        DBIterator<Job> dbIterator = iterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Job> queryResult;
+        try (DBIterator<Job> dbIterator = iterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Job> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -527,11 +529,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DBIterator<Document> dbIterator = nativeIterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Document> queryResult;
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Document> queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery("Native get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -636,11 +640,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
-        DBIterator<Job> catalogDBIterator = iterator(query, options);
-        while (catalogDBIterator.hasNext()) {
-            action.accept(catalogDBIterator.next());
+        try (DBIterator<Job> catalogDBIterator = iterator(query, options)) {
+            while (catalogDBIterator.hasNext()) {
+                action.accept(catalogDBIterator.next());
+            }
         }
-        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
@@ -653,6 +657,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
         }
+
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

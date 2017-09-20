@@ -23,11 +23,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
@@ -53,9 +49,8 @@ public class CatalogStudyConfigurationFactory {
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
             FileDBAdaptor.QueryParams.SAMPLE_IDS.key()));
-//            FileDBAdaptor.QueryParams.ATTRIBUTES.key() + ".variantSource.metadata.variantFileHeader"));
     public static final Query ALL_FILES_QUERY = new Query()
-            .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT));
+            .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.VARIANT));
 
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FileDBAdaptor.QueryParams.ID.key(),
@@ -121,10 +116,10 @@ public class CatalogStudyConfigurationFactory {
         String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
         if (projectAlias.contains("@")) {
             // Already contains user in projectAlias
-            studyConfiguration.setStudyName(projectAlias + ":" + study.getAlias());
+            studyConfiguration.setStudyName(projectAlias + ':' + study.getAlias());
         } else {
             String userId = catalogManager.getUserIdByProjectId(projectId);
-            studyConfiguration.setStudyName(userId + "@" + projectAlias + ":" + study.getAlias());
+            studyConfiguration.setStudyName(userId + '@' + projectAlias + ':' + study.getAlias());
         }
 
         fillNullMaps(studyConfiguration);
@@ -162,16 +157,18 @@ public class CatalogStudyConfigurationFactory {
 //        }
 
         logger.debug("Get Files");
-        QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY, ALL_FILES_QUERY_OPTIONS, sessionId);
-        for (File file : files.getResult()) {
+        try (DBIterator<File> iterator = catalogManager.getFileManager()
+                .iterator(studyId, ALL_FILES_QUERY, ALL_FILES_QUERY_OPTIONS, sessionId)) {
+            while (iterator.hasNext()) {
+                File file = iterator.next();
 
-            int fileId = (int) file.getId();
-            studyConfiguration.getFileIds().forcePut(file.getName(), fileId);
-            List<Integer> sampleIds = new ArrayList<>(file.getSamples().size());
-            for (Sample sample : file.getSamples()) {
-                sampleIds.add(toIntExact(sample.getId()));
-            }
-            studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(sampleIds));
+                int fileId = (int) file.getId();
+                studyConfiguration.getFileIds().forcePut(file.getName(), fileId);
+                List<Integer> sampleIds = new ArrayList<>(file.getSamples().size());
+                for (Sample sample : file.getSamples()) {
+                    sampleIds.add(toIntExact(sample.getId()));
+                }
+                studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(sampleIds));
 
 
 //            if (studyConfiguration.getIndexedFiles().contains(fileId) && file.getAttributes().containsKey("variantSource")) {
@@ -189,42 +186,48 @@ public class CatalogStudyConfigurationFactory {
 //                    }
 //                }
 //            }
+            }
         }
 
         logger.debug("Get Samples");
-        QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, new Query(), SAMPLES_QUERY_OPTIONS, sessionId);
-
-        for (Sample sample : samples.getResult()) {
-            studyConfiguration.getSampleIds().forcePut(sample.getName(), (int) sample.getId());
+        try (DBIterator<Sample> iterator = catalogManager.getSampleManager()
+                .iterator(studyId, new Query(), SAMPLES_QUERY_OPTIONS, sessionId)) {
+            while (iterator.hasNext()) {
+                Sample sample = iterator.next();
+                studyConfiguration.getSampleIds().forcePut(sample.getName(), toIntExact(sample.getId()));
+            }
         }
 
-        logger.debug("Get Cohorts");
-        QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY, COHORTS_QUERY_OPTIONS, sessionId);
 
-        for (Cohort cohort : cohorts.getResult()) {
-            int cohortId = (int) cohort.getId();
-            studyConfiguration.getCohortIds().forcePut(cohort.getName(), cohortId);
-            if (cohort.getName().equals(StudyEntry.DEFAULT_COHORT)) {
-                // Skip default cohort
-                // Members of this cohort are managed by storage
-                // Only register cohortId
-                studyConfiguration.getCohorts().putIfAbsent(cohortId, Collections.emptySet());
-                continue;
-            }
-            List<Integer> sampleIds = new ArrayList<>(cohort.getSamples().size());
-            for (Sample sample : cohort.getSamples()) {
-                sampleIds.add(toIntExact(sample.getId()));
-            }
-            studyConfiguration.getCohorts().put(cohortId, new HashSet<>(sampleIds));
-            if (cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
-                studyConfiguration.getCalculatedStats().add(cohortId);
-                studyConfiguration.getInvalidStats().remove(cohortId);
-            } else if (cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
-                studyConfiguration.getCalculatedStats().remove(cohortId);
-                studyConfiguration.getInvalidStats().add(cohortId);
-            } else { //CALCULATING || NONE
-                studyConfiguration.getCalculatedStats().remove(cohortId);
-                studyConfiguration.getInvalidStats().remove(cohortId);
+        logger.debug("Get Cohorts");
+        try (DBIterator<Cohort> iterator = catalogManager.getCohortManager()
+                .iterator(studyId, COHORTS_QUERY, COHORTS_QUERY_OPTIONS, sessionId)) {
+            while (iterator.hasNext()) {
+                Cohort cohort = iterator.next();
+                int cohortId = (int) cohort.getId();
+                studyConfiguration.getCohortIds().forcePut(cohort.getName(), cohortId);
+                if (cohort.getName().equals(StudyEntry.DEFAULT_COHORT)) {
+                    // Skip default cohort
+                    // Members of this cohort are managed by storage
+                    // Only register cohortId
+                    studyConfiguration.getCohorts().putIfAbsent(cohortId, Collections.emptySet());
+                    continue;
+                }
+                List<Integer> sampleIds = new ArrayList<>(cohort.getSamples().size());
+                for (Sample sample : cohort.getSamples()) {
+                    sampleIds.add(toIntExact(sample.getId()));
+                }
+                studyConfiguration.getCohorts().put(cohortId, new HashSet<>(sampleIds));
+                if (cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
+                    studyConfiguration.getCalculatedStats().add(cohortId);
+                    studyConfiguration.getInvalidStats().remove(cohortId);
+                } else if (cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
+                    studyConfiguration.getCalculatedStats().remove(cohortId);
+                    studyConfiguration.getInvalidStats().add(cohortId);
+                } else { //CALCULATING || NONE
+                    studyConfiguration.getCalculatedStats().remove(cohortId);
+                    studyConfiguration.getInvalidStats().remove(cohortId);
+                }
             }
         }
 
@@ -287,44 +290,52 @@ public class CatalogStudyConfigurationFactory {
 
         //Check if any cohort stat has been updated
         if (!studyConfiguration.getCalculatedStats().isEmpty()) {
-            for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
+            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(studyConfiguration.getStudyId(),
                     new Query(CohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getCalculatedStats())),
-                    new QueryOptions(), sessionId).getResult()) {
-                if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
-                    logger.debug("Cohort \"{}\":{} change status from {} to {}",
-                            cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
-                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.READY,
-                            "Update status from Storage", sessionId);
+                    new QueryOptions(), sessionId)) {
+                while (iterator.hasNext()) {
+                    Cohort cohort = iterator.next();
+                    if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
+                        logger.debug("Cohort \"{}\":{} change status from {} to {}",
+                                cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
+                        catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.READY,
+                                "Update status from Storage", sessionId);
+                    }
                 }
             }
         }
 
         //Check if any cohort stat has been invalidated
         if (!studyConfiguration.getInvalidStats().isEmpty()) {
-            for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
+            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(studyConfiguration.getStudyId(),
                     new Query(CohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getInvalidStats())),
-                    new QueryOptions(), sessionId).getResult()) {
-                if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
-                    logger.debug("Cohort \"{}\":{} change status from {} to {}",
-                            cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
-                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.INVALID,
-                            "Update status from Storage", sessionId);
+                    new QueryOptions(), sessionId)) {
+                while (iterator.hasNext()) {
+                    Cohort cohort = iterator.next();
+                    if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
+                        logger.debug("Cohort \"{}\":{} change status from {} to {}",
+                                cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
+                        catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.INVALID,
+                                "Update status from Storage", sessionId);
+                    }
                 }
             }
         }
 
         if (!studyConfiguration.getIndexedFiles().isEmpty()) {
-            for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(),
+            try (DBIterator<File> iterator = catalogManager.getFileManager().iterator(studyConfiguration.getStudyId(),
                     new Query(FileDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getIndexedFiles())),
-                    new QueryOptions(), sessionId)
-                    .getResult()) {
-                if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
-                    final FileIndex index;
-                    index = file.getIndex() == null ? new FileIndex() : file.getIndex();
-                    logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
-                            file.getIndex().getStatus().getName(), FileIndex.IndexStatus.READY);
-                    index.getStatus().setName(FileIndex.IndexStatus.READY);
-                    catalogManager.getFileManager().setFileIndex(file.getId(), index, sessionId);
+                    new QueryOptions(), sessionId)) {
+                while (iterator.hasNext()) {
+                    File file = iterator.next();
+                    if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
+                        final FileIndex index;
+                        index = file.getIndex() == null ? new FileIndex() : file.getIndex();
+                        logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
+                                file.getIndex().getStatus().getName(), FileIndex.IndexStatus.READY);
+                        index.getStatus().setName(FileIndex.IndexStatus.READY);
+                        catalogManager.getFileManager().setFileIndex(file.getId(), index, sessionId);
+                    }
                 }
             }
         }
@@ -337,18 +348,22 @@ public class CatalogStudyConfigurationFactory {
                         FileDBAdaptor.QueryParams.INDEX.key()));
         Set<Long> indexedFiles = new HashSet<>();
         studyConfiguration.getIndexedFiles().forEach((e) -> indexedFiles.add(e.longValue()));
-        for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(), query, queryOptions, sessionId).getResult()) {
-            if (!indexedFiles.contains(file.getId())) {
-                String newStatus;
-                if (hasTransformedFile(file.getIndex())) {
-                    newStatus = FileIndex.IndexStatus.TRANSFORMED;
-                } else {
-                    newStatus = FileIndex.IndexStatus.NONE;
+        try (DBIterator<File> iterator = catalogManager.getFileManager()
+                .iterator(studyConfiguration.getStudyId(), query, queryOptions, sessionId)) {
+            while (iterator.hasNext()) {
+                File file = iterator.next();
+                if (!indexedFiles.contains(file.getId())) {
+                    String newStatus;
+                    if (hasTransformedFile(file.getIndex())) {
+                        newStatus = FileIndex.IndexStatus.TRANSFORMED;
+                    } else {
+                        newStatus = FileIndex.IndexStatus.NONE;
+                    }
+                    logger.info("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
+                            FileIndex.IndexStatus.READY, newStatus);
+                    catalogManager.getFileManager()
+                            .updateFileIndexStatus(file, newStatus, "Not indexed, regarding StudyConfiguration", sessionId);
                 }
-                logger.info("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
-                        FileIndex.IndexStatus.READY, newStatus);
-                catalogManager.getFileManager()
-                        .updateFileIndexStatus(file, newStatus, "Not indexed, regarding StudyConfiguration", sessionId);
             }
         }
 
@@ -356,37 +371,42 @@ public class CatalogStudyConfigurationFactory {
         query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
                 FileIndex.IndexStatus.LOADING,
                 FileIndex.IndexStatus.INDEXING));
-        for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(), query, queryOptions, sessionId).getResult()) {
-            BatchFileOperation loadOperation = null;
-            // Find last load operation
-            for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
-                BatchFileOperation op = studyConfiguration.getBatches().get(i);
-                if (op.getType().equals(BatchFileOperation.Type.LOAD) && op.getFileIds().contains((int) file.getId())) {
-                    loadOperation = op;
-                    // Found last operation over this file.
-                    break;
-                }
-            }
+        try (DBIterator<File> iterator = catalogManager.getFileManager()
+                .iterator(studyConfiguration.getStudyId(), query, queryOptions, sessionId)) {
+            while (iterator.hasNext()) {
+                File file = iterator.next();
 
-            // If last LOAD operation is ERROR or there is no LOAD operation
-            if (loadOperation != null && loadOperation.getStatus().lastEntry().getValue().equals(BatchFileOperation.Status.ERROR)
-                    || loadOperation == null) {
-                final FileIndex index;
-                index = file.getIndex() == null ? new FileIndex() : file.getIndex();
-                String prevStatus = index.getStatus().getName();
-                String newStatus;
-                if (hasTransformedFile(index)) {
-                    newStatus = FileIndex.IndexStatus.TRANSFORMED;
-                } else {
-                    newStatus = FileIndex.IndexStatus.NONE;
+                BatchFileOperation loadOperation = null;
+                // Find last load operation
+                for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
+                    BatchFileOperation op = studyConfiguration.getBatches().get(i);
+                    if (op.getType().equals(BatchFileOperation.Type.LOAD) && op.getFileIds().contains((int) file.getId())) {
+                        loadOperation = op;
+                        // Found last operation over this file.
+                        break;
+                    }
                 }
-                logger.info("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
-                        prevStatus, newStatus);
-                catalogManager.getFileManager().updateFileIndexStatus(file, newStatus,
-                        "Error loading. Reset status to " + newStatus,
-                        sessionId);
-            }
 
+                // If last LOAD operation is ERROR or there is no LOAD operation
+                if (loadOperation != null && loadOperation.getStatus().lastEntry().getValue().equals(BatchFileOperation.Status.ERROR)
+                        || loadOperation == null) {
+                    final FileIndex index;
+                    index = file.getIndex() == null ? new FileIndex() : file.getIndex();
+                    String prevStatus = index.getStatus().getName();
+                    String newStatus;
+                    if (hasTransformedFile(index)) {
+                        newStatus = FileIndex.IndexStatus.TRANSFORMED;
+                    } else {
+                        newStatus = FileIndex.IndexStatus.NONE;
+                    }
+                    logger.info("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
+                            prevStatus, newStatus);
+                    catalogManager.getFileManager().updateFileIndexStatus(file, newStatus,
+                            "Error loading. Reset status to " + newStatus,
+                            sessionId);
+                }
+
+            }
         }
     }
 

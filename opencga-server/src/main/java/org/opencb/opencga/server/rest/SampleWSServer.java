@@ -162,6 +162,9 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
                            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+                           @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
+                               @QueryParam("nattributes") String nattributes,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
                            @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {

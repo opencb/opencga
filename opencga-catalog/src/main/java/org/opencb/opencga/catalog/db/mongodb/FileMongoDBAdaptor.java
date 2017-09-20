@@ -154,7 +154,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public QueryResult<File> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), true);
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
 
         if (myParams.isEmpty()) {
@@ -188,7 +188,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
 
         // We perform the update.
-        Bson queryBson = parseQuery(query, true);
+        Bson queryBson = parseQuery(query, false);
         Map<String, Object> fileParameters = getValidatedUpdateParams(parameters);
 
         if (!fileParameters.isEmpty()) {
@@ -385,8 +385,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key()) && !query.containsKey(QueryParams.ID.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!=" + File.FileStatus.REMOVED
+                    + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.DELETING);
         }
         if (studyPermission == null) {
             studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILES;
@@ -422,11 +423,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<File> documentList = new ArrayList<>();
-        DBIterator<File> dbIterator = iterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<File> queryResult;
+        try (DBIterator<File> dbIterator = iterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<File> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -447,11 +450,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult<File> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<File> documentList = new ArrayList<>();
-        DBIterator<File> dbIterator = iterator(query, options, user);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<File> queryResult;
+        try (DBIterator<File> dbIterator = iterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<File> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -465,11 +470,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DBIterator<Document> dbIterator = nativeIterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Document> queryResult;
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Document> queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery("Native get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -528,8 +535,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name());
         }
 
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key()) && !query.containsKey(QueryParams.ID.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!=" + File.FileStatus.REMOVED
+                    + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.DELETING);
         }
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
@@ -583,11 +591,11 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
-        DBIterator<File> catalogDBIterator = iterator(query, options);
-        while (catalogDBIterator.hasNext()) {
-            action.accept(catalogDBIterator.next());
+        try (DBIterator<File> catalogDBIterator = iterator(query, options)) {
+            while (catalogDBIterator.hasNext()) {
+                action.accept(catalogDBIterator.next());
+            }
         }
-        catalogDBIterator.close();
     }
 
     // Auxiliar methods
@@ -602,6 +610,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
         }
+
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

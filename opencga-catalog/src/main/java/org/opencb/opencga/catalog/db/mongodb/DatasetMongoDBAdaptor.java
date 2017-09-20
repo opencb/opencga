@@ -390,11 +390,11 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
-        DBIterator<Dataset> catalogDBIterator = iterator(query, options);
-        while (catalogDBIterator.hasNext()) {
-            action.accept(catalogDBIterator.next());
+        try (DBIterator<Dataset> catalogDBIterator = iterator(query, options)) {
+            while (catalogDBIterator.hasNext()) {
+                action.accept(catalogDBIterator.next());
+            }
         }
-        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {

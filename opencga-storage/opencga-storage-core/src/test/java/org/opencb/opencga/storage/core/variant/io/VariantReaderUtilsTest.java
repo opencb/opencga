@@ -55,6 +55,7 @@ public class VariantReaderUtilsTest {
         assertEquals("s1.genome.vcf.file.json.gz", VariantReaderUtils.getMetaFromTransformedFile("s1.genome.vcf.variants.proto.gz"));
         assertEquals("s1.genome.vcf.file.json.gz", VariantReaderUtils.getMetaFromTransformedFile("s1.genome.vcf.variants.proto.snappy"));
         assertEquals("s1.genome.vcf.file.json.gz", VariantReaderUtils.getMetaFromTransformedFile("s1.genome.vcf.variants.proto"));
+        assertEquals("s1_variants.genomes.vcf.gz.file.json.gz", VariantReaderUtils.getMetaFromTransformedFile("s1_variants.genomes.vcf.gz.variants.avro.gz"));
 
         thrown.expect(IllegalArgumentException.class);
         VariantReaderUtils.getMetaFromTransformedFile("s1.genome.vcf.gz");
@@ -62,22 +63,24 @@ public class VariantReaderUtilsTest {
 
     @Test
     public void validVariantsFile() {
-        assertEquals(true, VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.avro.gz"));
-        assertEquals(true, VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.avro"));
-        assertEquals(true, VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.json"));
-        assertEquals(true, VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.json.gz"));
-        assertEquals(true, VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.proto.gz"));
-        assertEquals(true, VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.proto"));
-        assertEquals(false, VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.gz.txt"));
-        assertEquals(false, VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.gz"));
-        assertEquals(false, VariantReaderUtils.isTransformedVariants("file.vcf"));
+        assertTrue(VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.avro.gz"));
+        assertTrue(VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.avro"));
+        assertTrue(VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.json"));
+        assertTrue(VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.json.gz"));
+        assertTrue(VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.proto.gz"));
+        assertTrue(VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.proto"));
+        assertFalse(VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.gz.txt"));
+        assertFalse(VariantReaderUtils.isTransformedVariants("file.vcf.gz.variants.gz"));
+        assertFalse(VariantReaderUtils.isTransformedVariants("file.vcf"));
+        assertFalse(VariantReaderUtils.isTransformedVariants("s1_variants.genomes.vcf.gz"));
 
 
-        assertEquals(true, VariantReaderUtils.isMetaFile("file.vcf.file.json.gz"));
-        assertEquals(false, VariantReaderUtils.isMetaFile("file.vcf.file.json"));
-        assertEquals(false, VariantReaderUtils.isMetaFile("file.vcf.file.avro.gz"));
-        assertEquals(false, VariantReaderUtils.isMetaFile("file.vcf.file.avro"));
-        assertEquals(false, VariantReaderUtils.isMetaFile("file.vcf.file.proto"));
+        assertTrue(VariantReaderUtils.isMetaFile("file.vcf.file.json.gz"));
+
+        assertFalse(VariantReaderUtils.isMetaFile("file.vcf.file.json"));
+        assertFalse(VariantReaderUtils.isMetaFile("file.vcf.file.avro.gz"));
+        assertFalse(VariantReaderUtils.isMetaFile("file.vcf.file.avro"));
+        assertFalse(VariantReaderUtils.isMetaFile("file.vcf.file.proto"));
     }
 
 

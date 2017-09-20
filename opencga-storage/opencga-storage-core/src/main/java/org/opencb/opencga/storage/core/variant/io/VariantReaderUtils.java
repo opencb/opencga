@@ -103,7 +103,7 @@ public class VariantReaderUtils {
 
     public static String getMetaFromTransformedFile(String variantsFile) {
         checkTransformedVariants(variantsFile);
-        int idx = variantsFile.indexOf(VARIANTS_FILE);
+        int idx = variantsFile.lastIndexOf(VARIANTS_FILE);
         return new StringBuilder().append(variantsFile, 0, idx).append(METADATA_FILE_FORMAT_GZ).toString();
     }
 

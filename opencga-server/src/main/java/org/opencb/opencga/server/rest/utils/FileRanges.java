@@ -22,7 +22,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
@@ -57,8 +56,6 @@ public class FileRanges extends OpenCGAWSServer {
         DataInputStream stream = null;
         try {
             AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
-                    resource.getUser(), FileAclEntry.FilePermissions.DOWNLOAD);
             QueryResult<File> queryResult = catalogManager.getFile(resource.getResourceId(), this.queryOptions, sessionId);
             File file = queryResult.getResult().get(0);
 

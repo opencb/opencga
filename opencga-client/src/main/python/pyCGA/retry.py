@@ -8,7 +8,7 @@ from pyCGA.exceptions import OpenCgaAuthorisationError, OpenCgaInvalidToken
 
 
 def retry(func, max_attempts, initial_retry_seconds, max_retry_seconds,
-          login_handler=None, on_retry=None):
+          login_handler=None, on_retry=None, dont_retry=None):
     """
     Attempt a function and retry until success or until running out of
     allowed attempts.
@@ -24,6 +24,8 @@ def retry(func, max_attempts, initial_retry_seconds, max_retry_seconds,
         of attempts
     :param on_retry: a callback to be called before retrying. Must accept 3 parameters:
         exception value, exception type, traceback.
+    :param dont_retry: optional; List of strings, if any are present in the exception
+        message don't retry
     :return: the result of func() if successful, otherwise the last exception raised
     by calling func.
     """
@@ -40,7 +42,9 @@ def retry(func, max_attempts, initial_retry_seconds, max_retry_seconds,
                 raise e
         except OpenCgaAuthorisationError as e:
             raise e
-        except Exception:
+        except Exception as e:
+            if dont_retry and any(string_ in str(e) for string_ in dont_retry):
+                raise e
             if attempt_number >= max_attempts:  # last attempt failed, propagate error:
                 raise
             if on_retry:

@@ -1488,7 +1488,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                             // Look for the file in catalog
                             Query query = new Query()
                                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                                    .append(FileDBAdaptor.QueryParams.URI.key(), path.toUri().toString());
+                                    .append(FileDBAdaptor.QueryParams.URI.key(), path.toUri().toString())
+                                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
                             QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -1551,7 +1552,8 @@ public class FileManager extends AbstractManager implements IFileManager {
 //                                    }
                                     Query query = new Query()
                                             .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                                            .append(FileDBAdaptor.QueryParams.URI.key(), folderUri);
+                                            .append(FileDBAdaptor.QueryParams.URI.key(), folderUri)
+                                            .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
                                     QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
 
@@ -1668,7 +1670,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                 stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
                 false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(),
                 null, null, catalogManager.getStudyManager().getCurrentRelease(studyId), null);
-        fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+        QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+        // Propagate ACLs
+        if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
+                    MongoDBAdaptorFactory.FILE_COLLECTION);
+        }
     }
 
     public QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
@@ -1831,6 +1838,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                         Collections.emptyList(), allFileAcls.getResult(), null, Collections.emptyMap(),
                         catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyMap());
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
+                // Propagate ACLs
+                if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+                    authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
+                            MongoDBAdaptorFactory.FILE_COLLECTION);
+                }
+
                 File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
                         new QueryOptions(), sessionId, false);
                 queryResult.setResult(Arrays.asList(file));
@@ -1895,7 +1908,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                                     Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(), null,
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
                                     Collections.emptyMap());
-                            fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+                            QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+                            // Propagate ACLs
+                            if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+                                authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),
+                                        allFileAcls.getResult(), MongoDBAdaptorFactory.FILE_COLLECTION);
+                            }
                         }
 
                     } catch (CatalogException e) {
@@ -1940,6 +1958,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
                                     Collections.emptyMap());
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
+                            // Propagate ACLs
+                            if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+                                authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),
+                                        allFileAcls.getResult(), MongoDBAdaptorFactory.FILE_COLLECTION);
+                            }
+
                             File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
                                     new QueryOptions(), sessionId, false);
                             if (isTransformedFile(file.getName())) {
@@ -2025,6 +2049,13 @@ public class FileManager extends AbstractManager implements IFileManager {
         String basePath = Paths.get(file.getPath()).toString();
         String suffixedPath = basePath + suffixName;
         if (file.getType().equals(File.Type.FILE)) {
+            if (fileQueryResult.first().getStatus().getName().equals(File.FileStatus.REMOVED)) {
+                return fileQueryResult;
+            }
+            if (!fileQueryResult.first().getStatus().getName().equals(File.FileStatus.READY)) {
+                throw new CatalogException("Cannot unlink. Unexpected file status: " + fileQueryResult.first().getStatus().getName());
+            }
+
             logger.debug("Unlinking file {}", file.getUri().toString());
 
             ObjectMap update = new ObjectMap()
@@ -2064,6 +2095,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                         }
 
                         File file = fileQueryResult.first();
+                        if (!file.getStatus().getName().equals(File.FileStatus.READY)) {
+                            logger.warn("Not unlinking file {}, file status: {}", file.getPath(), file.getStatus().getName());
+                            return FileVisitResult.CONTINUE;
+                        }
 
                         ObjectMap update = new ObjectMap()
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
@@ -2129,6 +2164,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                             }
 
                             File file = fileQueryResult.first();
+                            if (!file.getStatus().getName().equals(File.FileStatus.READY)) {
+                                logger.warn("Not unlinking folder {}, folder status: {}", file.getPath(), file.getStatus().getName());
+                                return FileVisitResult.CONTINUE;
+                            }
 
                             ObjectMap update = new ObjectMap()
                                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
@@ -2202,30 +2241,33 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Check the original files are not being indexed at the moment
             query = new Query(FileDBAdaptor.QueryParams.ID.key(), new ArrayList<>(fileIds));
-            DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor
-                    .QueryParams.INDEX.key(), FileDBAdaptor.QueryParams.ID.key())));
-            Map<Long, FileIndex> filesToUpdate = new HashMap<>();
-            while (iterator.hasNext()) {
-                File next = iterator.next();
-                String status = next.getIndex().getStatus().getName();
-                switch (status) {
-                    case FileIndex.IndexStatus.READY:
-                        // If they are already ready, we only need to remove the reference to the transformed files as they will be removed
-                        next.getIndex().setTransformedFile(null);
-                        filesToUpdate.put(next.getId(), next.getIndex());
-                        break;
-                    case FileIndex.IndexStatus.TRANSFORMED:
-                        // We need to remove the reference to the transformed files and change their status from TRANSFORMED to NONE
-                        next.getIndex().setTransformedFile(null);
-                        next.getIndex().getStatus().setName(FileIndex.IndexStatus.NONE);
-                        filesToUpdate.put(next.getId(), next.getIndex());
-                        break;
-                    case FileIndex.IndexStatus.NONE:
-                    case FileIndex.IndexStatus.DELETED:
-                    case FileIndex.IndexStatus.TRASHED:
-                        break;
-                    default:
-                        throw new CatalogException("Cannot delete files that are in use in storage.");
+            Map<Long, FileIndex> filesToUpdate;
+            try (DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                            FileDBAdaptor.QueryParams.INDEX.key(), FileDBAdaptor.QueryParams.ID.key())))) {
+                filesToUpdate = new HashMap<>();
+                while (iterator.hasNext()) {
+                    File next = iterator.next();
+                    String status = next.getIndex().getStatus().getName();
+                    switch (status) {
+                        case FileIndex.IndexStatus.READY:
+                            // If they are already ready, we only need to remove the reference to the transformed files as they will be
+                            // removed
+                            next.getIndex().setTransformedFile(null);
+                            filesToUpdate.put(next.getId(), next.getIndex());
+                            break;
+                        case FileIndex.IndexStatus.TRANSFORMED:
+                            // We need to remove the reference to the transformed files and change their status from TRANSFORMED to NONE
+                            next.getIndex().setTransformedFile(null);
+                            next.getIndex().getStatus().setName(FileIndex.IndexStatus.NONE);
+                            filesToUpdate.put(next.getId(), next.getIndex());
+                            break;
+                        case FileIndex.IndexStatus.NONE:
+                        case FileIndex.IndexStatus.DELETED:
+                        case FileIndex.IndexStatus.TRASHED:
+                            break;
+                        default:
+                            throw new CatalogException("Cannot delete files that are in use in storage.");
+                    }
                 }
             }
 

@@ -1318,11 +1318,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Study> documentList = new ArrayList<>();
-        DBIterator<Study> dbIterator = iterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Study> studyQueryResult;
+        try (DBIterator<Study> dbIterator = iterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Study> studyQueryResult = endQuery("Get", startTime, documentList);
+        studyQueryResult = endQuery("Get", startTime, documentList);
         for (Study study : studyQueryResult.getResult()) {
             joinFields(study, options);
         }
@@ -1333,11 +1335,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Study> documentList = new ArrayList<>();
-        DBIterator<Study> dbIterator = iterator(query, options, user);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Study> studyQueryResult;
+        try (DBIterator<Study> dbIterator = iterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Study> studyQueryResult = endQuery("Get", startTime, documentList);
+        studyQueryResult = endQuery("Get", startTime, documentList);
         for (Study study : studyQueryResult.getResult()) {
             joinFields(study, options, user);
         }
@@ -1348,9 +1352,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public QueryResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DBIterator<Document> dbIterator = nativeIterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
         return endQuery("Native get", startTime, documentList);
     }
@@ -1359,9 +1364,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DBIterator<Document> dbIterator = nativeIterator(query, options, user);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
         return endQuery("Native get", startTime, documentList);
     }
@@ -1437,11 +1443,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
-        DBIterator<Study> catalogDBIterator = iterator(query, options);
-        while (catalogDBIterator.hasNext()) {
-            action.accept(catalogDBIterator.next());
+        try (DBIterator<Study> catalogDBIterator = iterator(query, options)) {
+            while (catalogDBIterator.hasNext()) {
+                action.accept(catalogDBIterator.next());
+            }
         }
-        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
@@ -1450,6 +1456,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
         }
+
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

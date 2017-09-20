@@ -19,12 +19,15 @@ package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
+import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.converters.Converter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -47,11 +50,13 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
 
     private final ObjectMapper objectMapper;
     private final byte[] columnFamily;
+    private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter;
 
     public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper) {
         columnFamily = genomeHelper.getColumnFamily();
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        traitAssociationConverter = new VariantTraitAssociationToEvidenceEntryConverter();
     }
 
     public HBaseToVariantAnnotationConverter setReturnedFields(Set<VariantField> allReturnedFields) {
@@ -88,7 +93,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
         byte[] value = result.getValue(columnFamily, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
         if (ArrayUtils.isNotEmpty(value)) {
             try {
-                return objectMapper.readValue(value, VariantAnnotation.class);
+                return post(objectMapper.readValue(value, VariantAnnotation.class));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -108,7 +113,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
             String value = resultSet.getString(column);
             if (StringUtils.isNotEmpty(value)) {
                 try {
-                    return objectMapper.readValue(value, VariantAnnotation.class);
+                    return post(objectMapper.readValue(value, VariantAnnotation.class));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -119,5 +124,16 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
         }
         return null;
 
+    }
+
+    private VariantAnnotation post(VariantAnnotation variantAnnotation) {
+        // If there are VariantTraitAssociation, and there are none TraitAssociations (EvidenceEntry), convert
+        if (variantAnnotation.getVariantTraitAssociation() != null
+                && CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {
+            List<EvidenceEntry> evidenceEntries = traitAssociationConverter.convert(variantAnnotation.getVariantTraitAssociation());
+            variantAnnotation.setTraitAssociation(evidenceEntries);
+        }
+
+        return variantAnnotation;
     }
 }

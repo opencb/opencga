@@ -32,10 +32,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -281,7 +278,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public QueryResult<Individual> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), true);
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
 
         if (myParams.isEmpty()) {
@@ -566,11 +563,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Individual> documentList = new ArrayList<>();
-        DBIterator<Individual> dbIterator = iterator(query, options, user);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Individual> queryResult;
+        try (DBIterator<Individual> dbIterator = iterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Individual> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
         addSamples(queryResult, user);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
@@ -585,11 +584,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Individual> documentList = new ArrayList<>();
-        DBIterator<Individual> dbIterator = iterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Individual> queryResult;
+        try (DBIterator<Individual> dbIterator = iterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Individual> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -623,11 +624,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DBIterator<Document> dbIterator = nativeIterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Document> queryResult;
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Document> queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery("Native get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -739,11 +742,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
-        DBIterator<Individual> catalogDBIterator = iterator(query, options);
-        while (catalogDBIterator.hasNext()) {
-            action.accept(catalogDBIterator.next());
+        try (DBIterator<Individual> catalogDBIterator = iterator(query, options)) {
+            while (catalogDBIterator.hasNext()) {
+                action.accept(catalogDBIterator.next());
+            }
         }
-        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
@@ -760,9 +763,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             andBsonList.add(new Document("$isolated", 1));
         }
 
-        if (query.containsKey(QueryParams.ANNOTATION.key())) {
-            fixAnnotationQuery(query);
-        }
+        fixComplexQueryParam(QueryParams.ANNOTATION.key(), query);
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

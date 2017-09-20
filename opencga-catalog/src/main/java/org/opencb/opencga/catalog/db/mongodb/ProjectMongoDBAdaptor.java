@@ -53,6 +53,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixComplexQueryParam;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseUser;
 
 /**
@@ -427,11 +428,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public QueryResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Project> documentList = new ArrayList<>();
-        DBIterator<Project> dbIterator = iterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Project> queryResult;
+        try (DBIterator<Project> dbIterator = iterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Project> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
@@ -455,11 +458,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Project> documentList = new ArrayList<>();
-        DBIterator<Project> dbIterator = iterator(query, options, user);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Project> queryResult;
+        try (DBIterator<Project> dbIterator = iterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Project> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
@@ -482,9 +487,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DBIterator<Document> dbIterator = nativeIterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
         return endQuery("Native get", startTime, documentList);
     }
@@ -571,8 +577,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         }
         List<Bson> aggregates = new ArrayList<>();
 
+        Bson bsonQuery = parseQuery(query);
+        aggregates.add(Aggregates.match(bsonQuery));
         aggregates.add(Aggregates.unwind("$projects"));
-        aggregates.add(Aggregates.match(parseQuery(query)));
+        aggregates.add(Aggregates.match(bsonQuery));
 
         // Check include
         if (options != null && options.get(QueryOptions.INCLUDE) != null) {
@@ -619,15 +627,19 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
-        DBIterator<Project> catalogDBIterator = iterator(query, options);
-        while (catalogDBIterator.hasNext()) {
-            action.accept(catalogDBIterator.next());
+        try (DBIterator<Project> catalogDBIterator = iterator(query, options)) {
+            while (catalogDBIterator.hasNext()) {
+                action.accept(catalogDBIterator.next());
+            }
         }
-        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

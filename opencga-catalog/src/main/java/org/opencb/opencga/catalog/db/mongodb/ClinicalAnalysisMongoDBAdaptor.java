@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixComplexQueryParam;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -141,9 +142,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<ClinicalAnalysis> documentList = new ArrayList<>();
-        DBIterator<ClinicalAnalysis> dbIterator = iterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        try (DBIterator<ClinicalAnalysis> dbIterator = iterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
         QueryResult<ClinicalAnalysis> queryResult = endQuery("Get", startTime, documentList);
         addReferencesInfoToClinicalAnalysis(queryResult);
@@ -171,11 +173,13 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DBIterator<Document> dbIterator = nativeIterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Document> queryResult;
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Document> queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery("Native get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -377,6 +381,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
         }
+
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
+
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
