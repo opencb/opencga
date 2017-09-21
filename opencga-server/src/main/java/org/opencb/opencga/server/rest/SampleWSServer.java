@@ -62,7 +62,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "includeIndividual", value = "True to return the entire individual object", defaultValue = "false",
+            @ApiImplicitParam(name = "includeIndividual", value = "Add parent Individual object as attribute if true", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response infoSample(
@@ -150,7 +150,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "includeIndividual", value = "True to return the entire individual object", defaultValue = "false",
+            @ApiImplicitParam(name = "includeIndividual", value = "Add parent Individual object as attribute if true", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response search(@ApiParam(value = "DEPRECATED: use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
