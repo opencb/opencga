@@ -26,18 +26,21 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,9 +125,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, individual, options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
-        if (individual != null) {
-            addIndividualInformation(queryResult, sessionId);
-        }
+//        if (individual != null) {
+//            addIndividualInformation(queryResult, sessionId);
+//        }
 
         return queryResult;
     }
@@ -246,7 +249,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options, userId);
-        addIndividualInformation(sampleQueryResult, sessionId);
+//        addIndividualInformation(sampleQueryResult, sessionId);
         return sampleQueryResult;
     }
 
@@ -276,7 +279,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
-        addIndividualInformation(queryResult, sessionId);
+//        addIndividualInformation(queryResult, sessionId);
         return queryResult;
     }
 
@@ -884,40 +887,40 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
-    private void addIndividualInformation(QueryResult<Sample> sampleQueryResult, String sessionId) {
-        if (sampleQueryResult.getNumResults() == 0) {
-            return;
-        }
-        String individualIdList = sampleQueryResult.getResult().stream()
-                .map(Sample::getIndividual).filter(Objects::nonNull)
-                .map(Individual::getId).filter(id -> id > 0)
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
-        if (StringUtils.isEmpty(individualIdList)) {
-            return;
-        }
-        try {
-            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(null, individualIdList,
-                    QueryOptions.empty(), sessionId);
-
-            // We create a map of individualId - Individual
-            Map<Long, Individual> individualMap = new HashMap<>();
-            for (Individual individual : individualQueryResult.getResult()) {
-                individualMap.put(individual.getId(), individual);
-            }
-
-            // And set the individual information in the sample result
-            for (Sample sample : sampleQueryResult.getResult()) {
-                if (sample.getIndividual() != null && sample.getIndividual().getId() > 0) {
-                    sample.setIndividual(individualMap.get(sample.getIndividual().getId()));
-                }
-            }
-
-        } catch (CatalogException e) {
-            logger.warn("Could not retrieve individual information to complete sample object, {}", e.getMessage(), e);
-            sampleQueryResult.setWarningMsg("Could not retrieve individual information to complete sample object" + e.getMessage());
-        }
-    }
+//    private void addIndividualInformation(QueryResult<Sample> sampleQueryResult, String sessionId) {
+//        if (sampleQueryResult.getNumResults() == 0) {
+//            return;
+//        }
+//        String individualIdList = sampleQueryResult.getResult().stream()
+//                .map(Sample::getIndividual).filter(Objects::nonNull)
+//                .map(Individual::getId).filter(id -> id > 0)
+//                .map(String::valueOf)
+//                .collect(Collectors.joining(","));
+//        if (StringUtils.isEmpty(individualIdList)) {
+//            return;
+//        }
+//        try {
+//            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(null, individualIdList,
+//                    QueryOptions.empty(), sessionId);
+//
+//            // We create a map of individualId - Individual
+//            Map<Long, Individual> individualMap = new HashMap<>();
+//            for (Individual individual : individualQueryResult.getResult()) {
+//                individualMap.put(individual.getId(), individual);
+//            }
+//
+//            // And set the individual information in the sample result
+//            for (Sample sample : sampleQueryResult.getResult()) {
+//                if (sample.getIndividual() != null && sample.getIndividual().getId() > 0) {
+//                    sample.setIndividual(individualMap.get(sample.getIndividual().getId()));
+//                }
+//            }
+//
+//        } catch (CatalogException e) {
+//            logger.warn("Could not retrieve individual information to complete sample object, {}", e.getMessage(), e);
+//            sampleQueryResult.setWarningMsg("Could not retrieve individual information to complete sample object" + e.getMessage());
+//        }
+//    }
 
 
 }

@@ -121,6 +121,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
+        // Add sample information
+        addSampleInformation(queryResult, studyId, userId);
         return queryResult;
     }
 
@@ -136,6 +138,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, userId);
 
+        // Add sample information
+        addSampleInformation(individualQueryResult, studyId, userId);
         return individualQueryResult;
     }
 
@@ -149,6 +153,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options, userId);
 //        authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
+
+        // Add sample information
+        addSampleInformation(queryResult, studyId, userId);
         return queryResult;
     }
 
@@ -302,6 +309,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         QueryResult<Individual> queryResult = individualDBAdaptor.get(finalQuery, options, userId);
 //        authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
 
+        // Add sample information
+        addSampleInformation(queryResult, studyId, userId);
         return queryResult;
     }
 
@@ -385,6 +394,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             if (errorMessages.size() > 0) {
                 queryResult.setErrorMsg(StringUtils.join(errorMessages, "\n"));
             }
+
+            // Add sample information
+            addSampleInformation(queryResult, studyId, userId);
         }
 
         return queryResult;
@@ -402,6 +414,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         long individualId = resource.getResourceId();
 
         authorizationManager.checkIndividualPermission(studyId, individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE);
+        List<String> samples = null;
 
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             IndividualDBAdaptor.QueryParams queryParam = IndividualDBAdaptor.QueryParams.getParam(param.getKey());
@@ -456,6 +469,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         throw new CatalogDBException("Missing " + missing + " siblings in the database.");
                     }
                     break;
+                case SAMPLES:
+                    samples = parameters.getAsStringList(param.getKey());
+                    break;
                 case FATHER:
                 case MOTHER:
                 case ETHNICITY:
@@ -469,6 +485,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
             }
+        }
+
+        if (parameters.containsKey(IndividualDBAdaptor.QueryParams.SAMPLES.key())) {
+            parameters.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+        }
+        MyResourceIds sampleResource = null;
+        if (samples != null && !samples.isEmpty()) {
+            // 1. Get the sample ids to relate to the individual. We get the ids now to fail before doing anything in case we need to
+            sampleResource = catalogManager.getSampleManager().getIds(StringUtils.join(samples, ","), String.valueOf(studyId), sessionId);
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
@@ -485,8 +510,35 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
 //        options.putAll(parameters); //FIXME: Use separated params and options, or merge
-        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, parameters);
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
+        QueryResult<Individual> queryResult;
+        if (!parameters.isEmpty()) {
+            queryResult = individualDBAdaptor.update(individualId, parameters);
+            auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
+        } else {
+            queryResult = individualDBAdaptor.get(individualId, options, userId);
+        }
+
+        if (sampleResource != null) {
+            // Update samples
+
+            // 1. Remove all references to the individual in all the samples
+            Query query = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+            ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1L);
+            sampleDBAdaptor.update(query, params);
+
+            // 2. Add reference to the current individual in the samples indicated
+            query = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleResource.getResourceIds());
+            params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+            sampleDBAdaptor.update(query, params);
+        }
+
+        // Add sample information
+        addSampleInformation(queryResult, studyId, userId);
+
         return queryResult;
     }
 
@@ -970,6 +1022,42 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     getId(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
             query.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
             query.append(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), resource.getResourceId());
+        }
+    }
+
+    private void addSampleInformation(QueryResult<Individual> individualQueryResult, long studyId, String userId) {
+        if (individualQueryResult.getNumResults() == 0) {
+            return;
+        }
+        List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
+        if (individualIds.isEmpty()) {
+            return;
+        }
+        try {
+            Query query = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualIds);
+            QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, QueryOptions.empty(), userId);
+
+            Map<String, List<Sample>> individualSamplesMap = new HashMap<>();
+            // Initialise the map
+            for (Long individualId : individualIds) {
+                individualSamplesMap.put(String.valueOf(individualId), new ArrayList<>());
+            }
+            // Assign samples to the map
+            for (Sample sample : sampleQueryResult.getResult()) {
+                String individualId = String.valueOf(((Map<String, Object>) sample.getAttributes().get("individual")).get("id"));
+                individualSamplesMap.get(individualId).add(sample);
+            }
+
+            // Fill the individual queryResult with the list of samples obtained
+            for (Individual individual : individualQueryResult.getResult()) {
+                individual.setSamples(individualSamplesMap.get(String.valueOf(individual.getId())));
+            }
+
+        } catch (CatalogException e) {
+            logger.warn("Could not retrieve sample information to complete individual object, {}", e.getMessage(), e);
+            individualQueryResult.setWarningMsg("Could not retrieve sample information to complete individual object" + e.getMessage());
         }
     }
 

@@ -372,6 +372,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
+        if (parameters.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
+            parameters.put(PRIVATE_INDIVIDUAL_ID, parameters.get(QueryParams.INDIVIDUAL_ID.key()));
+            parameters.remove(QueryParams.INDIVIDUAL_ID.key());
+        }
+
         Map<String, Object> sampleParameters = new HashMap<>();
 
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
@@ -380,8 +385,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(), QueryParams.TYPE.key()};
         filterStringParams(parameters, sampleParameters, acceptedParams);
 
-        final String[] acceptedIntParams = {QueryParams.ID.key(), QueryParams.INDIVIDUAL_ID.key()};
-        filterIntParams(parameters, sampleParameters, acceptedIntParams);
+        final String[] acceptedIntParams = {QueryParams.ID.key(), PRIVATE_INDIVIDUAL_ID};
+        filterLongParams(parameters, sampleParameters, acceptedIntParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
@@ -420,7 +425,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
         if (!sampleParameters.isEmpty()) {
             QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
-                    new Document("$set", sampleParameters), null);
+                    new Document("$set", sampleParameters), new QueryOptions("multi", true));
             return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 

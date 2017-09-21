@@ -52,6 +52,9 @@ public class SampleConverter extends GenericDocumentComplexConverter<Sample> {
         }
         attributes.put("individual", object.get("_individual"));
 
+        // Temporary until individual is completely removed from the data models.
+        object.put("individual", object.get("_individual"));
+
         return super.convertToDataModelType(object);
     }
 

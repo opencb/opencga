@@ -308,8 +308,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         Map<String, Object> individualParameters = getValidatedUpdateParams(parameters);
 
         if (!individualParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false), new Document("$set",
-                            individualParameters), null);
+            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
+                    new Document("$set", individualParameters), new QueryOptions("multi", true));
             return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
@@ -559,6 +559,17 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         checkId(individualId);
         Query query = new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
+    }
+
+    @Override
+    public QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
+            throws CatalogDBException, CatalogAuthorizationException {
+        long studyId = getStudyId(individualId);
+        Query query = new Query()
+                .append(QueryParams.ID.key(), individualId)
+                .append(QueryParams.STUDY_ID.key(), studyId)
+                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        return get(query, options, userId);
     }
 
     @Override

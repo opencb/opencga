@@ -24,9 +24,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -58,7 +58,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value="JSON containing individual information", required = true) IndividualPOST params){
+            @ApiParam(value="JSON containing individual information", required = true) IndividualCreatePOST params){
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -339,7 +339,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "params", required = true) IndividualPOST updateParams) {
+                                 @ApiParam(value = "params", required = true) IndividualUpdatePOST updateParams) {
         try {
             ObjectMap params = new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams));
             QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualStr, params,
@@ -525,11 +525,28 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.KaryotypicSex karyotypicSex;
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
-        public List<SampleWSServer.CreateSamplePOST> samples;
         public List<CommonModels.AnnotationSetParams> annotationSets;
         public List<OntologyTerm> ontologyTerms;
         public Map<String, Object> attributes;
 
+        public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
+            List<AnnotationSet> annotationSetList = new ArrayList<>();
+            if (annotationSets != null) {
+                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+                    if (annotationSet != null) {
+                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+                    }
+                }
+            }
+
+            return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
+                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
+        }
+    }
+
+    protected static class IndividualCreatePOST extends IndividualPOST {
+        public List<SampleWSServer.CreateSamplePOST> samples;
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
             List<AnnotationSet> annotationSetList = new ArrayList<>();
@@ -552,5 +569,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
         }
     }
+
+    protected static class IndividualUpdatePOST extends IndividualPOST {
+        public List<String> samples;
+    }
+
 
 }
