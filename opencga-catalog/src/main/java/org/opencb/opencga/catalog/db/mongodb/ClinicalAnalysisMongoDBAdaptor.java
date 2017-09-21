@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -206,7 +207,13 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
         for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
             clinicalAnalysis.setFamily(getFamily(clinicalAnalysis.getFamily()));
-            clinicalAnalysis.setSubject(getIndividual(clinicalAnalysis.getSubject()));
+            if (clinicalAnalysis.getSubjects() != null) {
+                List<Individual> individualList = new ArrayList<>(clinicalAnalysis.getSubjects());
+                for (Individual individual : clinicalAnalysis.getSubjects()) {
+                    individualList.add(getIndividual(individual));
+                }
+                clinicalAnalysis.setSubjects(individualList);
+            }
         }
     }
 
@@ -458,8 +465,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case NAME:
                     case TYPE:
                     case SAMPLE_ID:
-                    case PROBAND_ID:
+                    case SUBJECT_ID:
                     case FAMILY_ID:
+                    case GERMLINE_ID:
+                    case SOMATIC_ID:
                     case CREATION_DATE:
                     case DESCRIPTION:
                     case RELEASE:

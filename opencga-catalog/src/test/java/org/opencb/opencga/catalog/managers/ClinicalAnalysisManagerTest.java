@@ -107,7 +107,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setName("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
                 .setFamily(new Family().setName("family"))
-                .setSubject(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2"))));
+                .setSubjects(Arrays.asList(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2")))));
         return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
     }
 
@@ -121,10 +121,10 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(catalogManager.getFamilyManager().getId("family", STUDY, sessionIdUser).getResourceId(),
                 dummyEnvironment.first().getFamily().getId());
         assertEquals(catalogManager.getIndividualManager().getId("child1", STUDY, sessionIdUser).getResourceId(),
-                dummyEnvironment.first().getSubject().getId());
-        assertEquals(1, dummyEnvironment.first().getSubject().getSamples().size());
+                dummyEnvironment.first().getSubjects().get(0).getId());
+        assertEquals(1, dummyEnvironment.first().getSubjects().get(0).getSamples().size());
         assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
-                dummyEnvironment.first().getSubject().getSamples().get(0).getId());
+                dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getId());
     }
 
 }
