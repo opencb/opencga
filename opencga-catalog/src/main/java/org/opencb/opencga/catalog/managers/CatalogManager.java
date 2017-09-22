@@ -235,6 +235,8 @@ public class CatalogManager implements AutoCloseable {
                 .add("username", configuration.getCatalog().getDatabase().getUser())
                 .add("password", configuration.getCatalog().getDatabase().getPassword())
                 .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
+                .setConnectionsPerHost(Integer.parseInt(configuration.getCatalog().getDatabase().getOptions()
+                        .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();

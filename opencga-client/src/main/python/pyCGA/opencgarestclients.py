@@ -384,10 +384,6 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('scanFiles', query_id=studyId, **options)
 
-    def create(self, data, **options):
-
-        return self._post('create', data=[data], **options)
-
 
 class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
     """
