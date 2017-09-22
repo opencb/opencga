@@ -58,6 +58,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     public static final String DB_NAME = "opencga_variants_test";
     public static final int FILE_ID = 6;
     public static final Set<String> VARIANTS_WITH_CONFLICTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "22:16050655-16063474:-:<CN0>",
+            "22:16050655-16063474:-:<CN2>",
+            "22:16050655-16063474:-:<CN3>",
+            "22:16050655-16063474:-:<CN4>",
             "22:16050655:G:A", // Overlaps with a CNV
 //            "22:16080425:TA:-",
             "22:16080425:T:C",

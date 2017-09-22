@@ -164,8 +164,6 @@ public class DocumentToStudyVariantEntryConverter {
                 if (fileObject.containsKey(ORI_FIELD)) {
                     Document ori = (Document) fileObject.get(ORI_FIELD);
                     fileEntry.setCall(ori.get("s") + ":" + ori.get("i"));
-                } else {
-                    fileEntry.setCall("");
                 }
             }
             study.setFiles(files);
