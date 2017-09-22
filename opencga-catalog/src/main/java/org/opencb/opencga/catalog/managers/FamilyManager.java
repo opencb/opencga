@@ -203,6 +203,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Family> queryResult = familyDBAdaptor.insert(family, studyId, options);
         auditManager.recordCreation(AuditRecord.Resource.family, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
+        addMemberInformation(queryResult, studyId, sessionId);
         return queryResult;
     }
 
@@ -216,7 +218,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        return familyDBAdaptor.get(query, options, userId);
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
+        addMemberInformation(familyQueryResult, studyId, sessionId);
+
+        return familyQueryResult;
     }
 
     public QueryResult<Family> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
@@ -248,7 +253,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         QueryResult<Family> queryResult = familyDBAdaptor.get(query, options, userId);
-//            authorizationManager.filterFamilies(userId, studyId, queryResultAux.getResult());
+        addMemberInformation(queryResult, studyId, sessionId);
+
         return queryResult;
     }
 
@@ -385,6 +391,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.family, familyId, resource.getUser(), parameters, null, null);
+
+        addMemberInformation(queryResult, resource.getStudyId(), sessionId);
+
         return queryResult;
     }
 
@@ -1065,6 +1074,33 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // If we have added new children (there is other level)...
         if (familyLevels.size() == level + 2) {
             populateFamily(familyLevels, familyMembers, level + 1);
+        }
+    }
+
+    private void addMemberInformation(QueryResult<Family> queryResult, long studyId, String sessionId) {
+        if (queryResult.getNumResults() == 0) {
+            return;
+        }
+        for (Family family : queryResult.getResult()) {
+            if (family.getMembers() != null && !family.getMembers().isEmpty()) {
+                List<Long> individualIds = family.getMembers().stream()
+                        .map(Individual::getId)
+                        .collect(Collectors.toList());
+                Query query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
+                try {
+                    QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager()
+                            .get(String.valueOf(studyId), query, QueryOptions.empty(), sessionId);
+                    if (individualQueryResult.getNumResults() == family.getMembers().size()) {
+                        family.setMembers(individualQueryResult.getResult());
+                    } else {
+                        throw new CatalogException("Could not fetch all the individuals from family");
+                    }
+                } catch (CatalogException e) {
+                    logger.warn("Could not retrieve individual information to complete family object, {}", e.getMessage(), e);
+                    queryResult.setWarningMsg("Could not retrieve individual information to complete family object" + e.getMessage());
+                }
+            }
         }
     }
 
