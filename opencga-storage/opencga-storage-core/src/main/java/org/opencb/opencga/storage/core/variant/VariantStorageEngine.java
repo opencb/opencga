@@ -617,7 +617,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (variantSearchManager.get() == null) {
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
-                    variantSearchManager.set(new VariantSearchManager(getStudyConfigurationManager(), getCellBaseUtils(), configuration));
+                    variantSearchManager.set(new VariantSearchManager(getStudyConfigurationManager(), configuration));
                 }
             }
         }

@@ -776,37 +776,35 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_HPO, VariantColumn.XREFS, filters);
 
-//        if (isValidParam(query, ANNOT_GO)) {
-//            String value = query.getString(ANNOT_GO.key());
-//            if (checkOperator(value) == QueryOperation.AND) {
-//                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
-//            }
-//            List<String> goValues = splitValue(value, QueryOperation.OR);
-//            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
-//            if (genesByGo.isEmpty()) {
-//                // If any gene was found, the query will return no results.
-//                // FIXME: Find another way of returning empty results
-//                filters.add(getVoidFilter());
-//            } else {
-//                addQueryFilter(new Query(ANNOT_GO.key(), genesByGo), ANNOT_GO, VariantColumn.GENES, filters);
-//            }
-//
-//        }
-//        if (isValidParam(query, ANNOT_EXPRESSION)) {
-//            String value = query.getString(ANNOT_EXPRESSION.key());
-//            if (checkOperator(value) == QueryOperation.AND) {
-//                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
-//            }
-//            List<String> expressionValues = splitValue(value, QueryOperation.OR);
-//            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
-//            if (genesByExpression.isEmpty()) {
-//                // If any gene was found, the query will return no results.
-//                // FIXME: Find another way of returning empty results
-//                filters.add(getVoidFilter());
-//            } else {
-//                addQueryFilter(new Query(ANNOT_EXPRESSION.key(), genesByExpression), ANNOT_EXPRESSION, VariantColumn.GENES, filters);
-//            }
-//        }
+        if (isValidParam(query, ANNOT_GO_GENES)) {
+            String value = query.getString(ANNOT_GO_GENES.key());
+            if (checkOperator(value) == QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
+            }
+            List<String> genesByGo = splitValue(value, QueryOperation.OR);
+            if (genesByGo.isEmpty()) {
+                // If any gene was found, the query will return no results.
+                // FIXME: Find another way of returning empty results
+                filters.add(getVoidFilter());
+            } else {
+                addQueryFilter(new Query(ANNOT_GO.key(), genesByGo), ANNOT_GO, VariantColumn.GENES, filters);
+            }
+
+        }
+        if (isValidParam(query, ANNOT_EXPRESSION_GENES)) {
+            String value = query.getString(ANNOT_EXPRESSION.key());
+            if (checkOperator(value) == QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+            }
+            List<String> genesByExpression = splitValue(value, QueryOperation.OR);
+            if (genesByExpression.isEmpty()) {
+                // If any gene was found, the query will return no results.
+                // FIXME: Find another way of returning empty results
+                filters.add(getVoidFilter());
+            } else {
+                addQueryFilter(new Query(ANNOT_EXPRESSION.key(), genesByExpression), ANNOT_EXPRESSION, VariantColumn.GENES, filters);
+            }
+        }
 
         addQueryFilter(query, ANNOT_PROTEIN_KEYWORDS, VariantColumn.PROTEIN_KEYWORDS, filters);
 
