@@ -44,17 +44,24 @@ public class SampleConverter extends GenericDocumentComplexConverter<Sample> {
             }
         }
 
-        // We add individual to attributes
-        Document attributes = (Document) object.get("attributes");
-        if (attributes == null) {
-            attributes = new Document();
-            object.put("attributes", attributes);
+        Document individual = (Document) object.get("_individual");
+        if (individual != null) {
+            individual.remove("_id");
+            individual.remove("_studyId");
+            individual.remove("_acl");
+            individual.remove("annotationSets");
+
+            // We add individual to attributes
+            Document attributes = (Document) object.get("attributes");
+            if (attributes == null) {
+                attributes = new Document();
+                object.put("attributes", attributes);
+            }
+            attributes.put("individual", individual);
+
+            // Temporary until individual is completely removed from the data models.
+            object.put("individual", individual);
         }
-        attributes.put("individual", object.get("_individual"));
-
-        // Temporary until individual is completely removed from the data models.
-        object.put("individual", object.get("_individual"));
-
         return super.convertToDataModelType(object);
     }
 
