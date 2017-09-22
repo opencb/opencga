@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -191,7 +190,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
         QueryResult<ClinicalAnalysis> queryResult = endQuery("Get", startTime, documentList);
-        addReferencesInfoToClinicalAnalysis(queryResult);
+//        addReferencesInfoToClinicalAnalysis(queryResult);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -201,21 +200,21 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         return queryResult;
     }
 
-    private void addReferencesInfoToClinicalAnalysis(QueryResult<ClinicalAnalysis> queryResult) {
-        if (queryResult.getResult() == null || queryResult.getResult().isEmpty()) {
-            return;
-        }
-        for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
-            clinicalAnalysis.setFamily(getFamily(clinicalAnalysis.getFamily()));
-            if (clinicalAnalysis.getSubjects() != null) {
-                List<Individual> individualList = new ArrayList<>(clinicalAnalysis.getSubjects());
-                for (Individual individual : clinicalAnalysis.getSubjects()) {
-                    individualList.add(getIndividual(individual));
-                }
-                clinicalAnalysis.setSubjects(individualList);
-            }
-        }
-    }
+//    private void addReferencesInfoToClinicalAnalysis(QueryResult<ClinicalAnalysis> queryResult) {
+//        if (queryResult.getResult() == null || queryResult.getResult().isEmpty()) {
+//            return;
+//        }
+//        for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
+//            clinicalAnalysis.setFamily(getFamily(clinicalAnalysis.getFamily()));
+//            if (clinicalAnalysis.getSubjects() != null) {
+//                List<Individual> individualList = new ArrayList<>(clinicalAnalysis.getSubjects());
+//                for (Individual individual : clinicalAnalysis.getSubjects()) {
+//                    individualList.add(getIndividual(individual));
+//                }
+//                clinicalAnalysis.setSubjects(individualList);
+//            }
+//        }
+//    }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
@@ -398,7 +397,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
 
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = clinicalCollection.find(bson, clinicalConverter, qOptions);
-        addReferencesInfoToClinicalAnalysis(clinicalAnalysisQueryResult);
+//        addReferencesInfoToClinicalAnalysis(clinicalAnalysisQueryResult);
 
         logger.debug("Clinical Analysis get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()), qOptions.toJson(), clinicalAnalysisQueryResult.getDbTime());

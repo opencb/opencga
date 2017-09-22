@@ -25,10 +25,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -42,10 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -181,7 +175,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        return clinicalDBAdaptor.get(query, options, userId);
+        QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
+        addMissingInformation(queryResult, studyId, sessionId);
+
+        return queryResult;
     }
 
     @Override
@@ -285,7 +282,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        return clinicalDBAdaptor.insert(studyId, clinicalAnalysis, options);
+        QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.insert(studyId, clinicalAnalysis, options);
+
+        addMissingInformation(queryResult, studyId, sessionId);
+        return queryResult;
     }
 
     private void validateInterpretations(List<ClinicalAnalysis.ClinicalInterpretation> interpretations, String studyStr, String sessionId)
@@ -394,6 +394,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
 //            authorizationManager.filterClinicalAnalysis(userId, studyId, queryResultAux.getResult());
 
+        addMissingInformation(queryResult, studyId, sessionId);
         return queryResult;
     }
 
@@ -455,6 +456,108 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         return null;
+    }
+
+    private void addMissingInformation(QueryResult<ClinicalAnalysis> queryResult, long studyId, String sessionId) {
+        if (queryResult.getNumResults() == 0) {
+            return;
+        }
+
+        List<String> warningMessages = new ArrayList<>();
+        for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
+
+            // Complete somatic file information
+            if (clinicalAnalysis.getSomatic() != null && clinicalAnalysis.getSomatic().getId() > 0) {
+                try {
+                    QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(String.valueOf(studyId),
+                            String.valueOf(clinicalAnalysis.getSomatic().getId()), QueryOptions.empty(), sessionId);
+                    if (fileQueryResult.getNumResults() == 1) {
+                        clinicalAnalysis.setSomatic(fileQueryResult.first());
+                    }
+                } catch (CatalogException e) {
+                    String message = "Could not fetch somatic file information to complete Clinical Analysis object";
+                    logger.warn("{}: {}", message, e.getMessage(), e);
+                    warningMessages.add(message);
+                }
+            }
+
+            // Complete germline file information
+            if (clinicalAnalysis.getGermline() != null && clinicalAnalysis.getGermline().getId() > 0) {
+                try {
+                    QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(String.valueOf(studyId),
+                            String.valueOf(clinicalAnalysis.getGermline().getId()), QueryOptions.empty(), sessionId);
+                    if (fileQueryResult.getNumResults() == 1) {
+                        clinicalAnalysis.setGermline(fileQueryResult.first());
+                    }
+                } catch (CatalogException e) {
+                    String message = "Could not fetch germline file information to complete Clinical Analysis object";
+                    logger.warn("{}: {}", message, e.getMessage(), e);
+                    warningMessages.add(message);
+                }
+            }
+
+            // Complete family information
+            if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getId() > 0) {
+                try {
+                    QueryResult<Family> familyQueryResult = catalogManager.getFamilyManager().get(String.valueOf(studyId),
+                            String.valueOf(clinicalAnalysis.getFamily().getId()), QueryOptions.empty(), sessionId);
+                    if (familyQueryResult.getNumResults() == 1) {
+                        clinicalAnalysis.setFamily(familyQueryResult.first());
+                    }
+                } catch (CatalogException e) {
+                    String message = "Could not fetch family information to complete Clinical Analysis object";
+                    logger.warn("{}: {}", message, e.getMessage(), e);
+                    warningMessages.add(message);
+                }
+            }
+
+            // Complete subject information
+            if (clinicalAnalysis.getSubjects() != null && !clinicalAnalysis.getSubjects().isEmpty()) {
+                try {
+                    List<Long> individualIds = clinicalAnalysis.getSubjects().stream()
+                            .map(Individual::getId)
+                            .filter(id -> id > 0)
+                            .collect(Collectors.toList());
+                    Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
+                    QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+                            query, QueryOptions.empty(), sessionId);
+
+                    // We create a map of individual id - individual to find the results easily
+                    Map<Long, Individual> individualMap = new HashMap<>();
+                    for (Individual individual : individualQueryResult.getResult()) {
+                        individualMap.put(individual.getId(), individual);
+                    }
+
+                    // We create a list of individuals (subjects) to be replaced in the clinicalAnalysis
+                    List<Individual> subjectList = new ArrayList<>();
+                    for (Individual subject : clinicalAnalysis.getSubjects()) {
+                        Individual completeIndividual = individualMap.get(subject.getId());
+
+                        // We need to filter out from the individuals fetched, the samples that are not of interest for the analysis
+                        if (subject.getSamples() != null && !subject.getSamples().isEmpty()) {
+                            // We create a set of the sample ids of interest
+                            Set<Long> samplesOfInterest = subject.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+
+                            // And we now filter out those that are not of interest
+                            completeIndividual.getSamples().removeIf(sample -> !samplesOfInterest.contains(sample.getId()));
+                        }
+
+                        subjectList.add(completeIndividual);
+                    }
+
+                    // We now assign the list of individuals
+                    clinicalAnalysis.setSubjects(subjectList);
+                } catch (CatalogException e) {
+                    String message = "Could not fetch subject information to complete Clinical Analysis object";
+                    logger.warn("{}: {}", message, e.getMessage(), e);
+                    warningMessages.add(message);
+                }
+            }
+        }
+
+        if (warningMessages.size() > 0) {
+            queryResult.setWarningMsg(StringUtils.join(warningMessages, "\n"));
+        }
     }
 
 }
