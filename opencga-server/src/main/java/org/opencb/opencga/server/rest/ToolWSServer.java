@@ -121,7 +121,7 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{toolId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 4, response = Tool.class)
+    @ApiOperation(value = "Update some user attributes", position = 4, response = Tool.class)
     public Response update(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) throws IOException {
         return createErrorResponse("update - GET", "PENDING");
     }
@@ -129,7 +129,7 @@ public class ToolWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{toolId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some user attributes using POST method", position = 4)
+    @ApiOperation(value = "Update some user attributes", position = 4)
     public Response updateByPost(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         return createErrorResponse("update - POST", "PENDING");

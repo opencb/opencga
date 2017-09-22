@@ -335,7 +335,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{individual}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some individual attributes using POST method", position = 6)
+    @ApiOperation(value = "Update some individual attributes", position = 6)
     public Response updateByPost(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,

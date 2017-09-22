@@ -77,8 +77,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Multi-study search that allows the user to look for families from from different studies of the same project "
-            + "applying filters.", position = 4, response = Sample[].class)
+    @ApiOperation(value = "Search families", position = 4, response = Family[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -116,7 +115,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/create")
-    @ApiOperation(value = "Create family", position = 2, response = Family.class)
+    @ApiOperation(value = "Create family and the individual objects if they do not exist", position = 2, response = Family.class)
     public Response createFamilyPOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
@@ -133,7 +132,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{family}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some family attributes using POST method", position = 6)
+    @ApiOperation(value = "Update some family attributes", position = 6)
     public Response updateByPost(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,

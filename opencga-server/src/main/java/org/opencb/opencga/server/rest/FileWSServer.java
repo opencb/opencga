@@ -894,7 +894,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{file}/update")
-    @ApiOperation(value = "Modify file", position = 16, response = File.class)
+    @ApiOperation(value = "Update some file attributes", position = 16, response = File.class)
     public Response updatePOST(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr,
