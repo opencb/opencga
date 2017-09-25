@@ -8,26 +8,42 @@ option java_multiple_files = true;
 option java_package = "org.opencb.opencga.storage.hadoop.variant.models.protobuf";
 
 import "protobuf/opencb/variant.proto";
+import "google/protobuf/struct.proto";
 
 
 /**
-** Mapping a ComplexGenotype to an individual (sample index)
-**/
-
+ * Mapping a ComplexGenotype to an individual (sample index)
+ * Column <STUDY>_X
+ */
 message ComplexVariant {
     repeated AlternateCoordinate secondaryAlternates = 1;
     map<int32,string> sampleToGenotype = 2;
 }
 
+/**
+ * Column <STUDY>_F
+ */
 message ComplexFilter {
     map<string, SampleList> filterNonPass = 1;
 }
+
+/**
+ * Other sample data
+ * Column <STUDY>_<SAMPLE>_SX
+ */
+message OtherSampleData {
+    map<string, string> sampleData = 1;
+    FileEntry file = 2;
+}
+
 
 message SampleList {
     repeated uint32 sampleIds = 1 [packed = true];
 }
 
-
+/**
+ * Element stored at the Archive table, under _V column
+ */
 message VariantTableStudyRowProto {
 
     uint32 start = 1;

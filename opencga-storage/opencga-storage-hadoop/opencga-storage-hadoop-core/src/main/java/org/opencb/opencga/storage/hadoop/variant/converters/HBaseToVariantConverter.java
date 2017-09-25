@@ -105,6 +105,10 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         this.samplesDataConverter = new HBaseToSamplesDataConverter(genomeHelper);
     }
 
+    public static List<String> getFixedFormat(StudyConfiguration studyConfiguration) {
+        return getFormat(studyConfiguration);
+    }
+
     public static List<String> getFormat(StudyConfiguration studyConfiguration) {
         List<String> format;
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());

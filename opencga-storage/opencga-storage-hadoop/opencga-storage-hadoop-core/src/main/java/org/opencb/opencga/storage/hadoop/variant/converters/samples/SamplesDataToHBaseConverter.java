@@ -17,9 +17,12 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.samples;
 
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.phoenix.schema.types.PVarbinary;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -28,6 +31,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConver
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.OtherSampleData;
 
 import java.util.*;
 
@@ -44,7 +48,8 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
     private static final int FILTER_FIELD = -2;
     private final Set<String> defaultGenotypes = new HashSet<>();
     private final StudyConfiguration studyConfiguration;
-    private final List<String> expectedFormat;
+    private final List<String> fixedFormat;
+    private final Set<String> fixedFormatSet;
     private final PhoenixHelper.Column studyColumn;
     private boolean addSecondaryAlternates;
 
@@ -59,7 +64,8 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
         this.addSecondaryAlternates = addSecondaryAlternates;
         defaultGenotypes.add("0/0");
         defaultGenotypes.add("0|0");
-        expectedFormat = HBaseToVariantConverter.getFormat(studyConfiguration);
+        fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
+        fixedFormatSet = new HashSet<>(fixedFormat);
     }
 
     @Override
@@ -85,19 +91,34 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
             Integer sampleId = studyConfiguration.getSampleIds().get(sampleName);
             if (sampleIds == null || sampleIds.contains(sampleId)) {
                 byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyConfiguration.getStudyId(), sampleId);
+                byte[] columnOther = VariantPhoenixHelper.buildOtherSampleDataColumnKey(studyConfiguration.getStudyId(), sampleId);
+                OtherSampleData.Builder builder = OtherSampleData.newBuilder();
                 List<String> sampleData = studyEntry.getSamplesData().get(sampleIdx);
                 if (!defaultGenotypes.contains(sampleData.get(gtIdx))) {
                     if (formatReMap != null) {
-                        sampleData = remapSampleData(studyEntry, formatReMap, sampleData);
+                        sampleData = remapSampleData(studyEntry, formatReMap, sampleData, builder);
                     }
+                    addFileAttributes(studyEntry, builder);
                     addSecondaryAlternates(variant, studyEntry, sampleData);
                     addVarcharArray(put, column, sampleData);
+                    add(put, columnOther, builder.build().toByteArray(), PVarbinary.INSTANCE);
                 }
             }
             sampleIdx++;
         }
 
         return put;
+    }
+
+    private void addFileAttributes(StudyEntry studyEntry, OtherSampleData.Builder builder) {
+        FileEntry fileEntry = studyEntry.getFiles().get(0);
+        VariantProto.FileEntry.Builder fileBuilder = VariantProto.FileEntry.newBuilder()
+                .putAllAttributes(fileEntry.getAttributes())
+                .setFileId(fileEntry.getFileId());
+        if (fileEntry.getCall() != null) {
+            fileBuilder.setCall(fileEntry.getCall());
+        }
+        builder.setFile(fileBuilder);
     }
 
     public void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, List<String> sampleData) {
@@ -128,10 +149,10 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
 
     private int[] buildFormatRemap(StudyEntry studyEntry) {
         int[] formatReMap;
-        if (!expectedFormat.equals(studyEntry.getFormat())) {
-            formatReMap = new int[expectedFormat.size()];
-            for (int i = 0; i < expectedFormat.size(); i++) {
-                String format = expectedFormat.get(i);
+        if (!fixedFormatSet.equals(studyEntry.getFormat())) {
+            formatReMap = new int[fixedFormat.size()];
+            for (int i = 0; i < fixedFormat.size(); i++) {
+                String format = fixedFormat.get(i);
                 Integer idx = studyEntry.getFormatPositions().get(format);
                 if (idx == null) {
                     if (format.equals(VariantMerger.GENOTYPE_FILTER_KEY)) {
@@ -148,8 +169,10 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
         return formatReMap;
     }
 
-    private List<String> remapSampleData(StudyEntry studyEntry, int[] formatReMap, List<String> sampleData) {
+    private List<String> remapSampleData(StudyEntry studyEntry, int[] formatReMap, List<String> sampleData,
+                                         OtherSampleData.Builder builder) {
         List<String> remappedSampleData = new ArrayList<>(formatReMap.length);
+
         for (int i : formatReMap) {
             switch (i) {
                 case UNKNOWN_FIELD:
@@ -163,8 +186,16 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
                     break;
             }
         }
-        sampleData = remappedSampleData;
-        return sampleData;
+
+        int sampleDataIdx = 0;
+        for (String key : studyEntry.getFormat()) {
+            if (!fixedFormat.contains(key)) {
+                builder.putSampleData(key, sampleData.get(sampleDataIdx));
+            }
+            sampleDataIdx++;
+        }
+
+        return remappedSampleData;
     }
 
 }
