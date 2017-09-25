@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.utils.CryptoUtils;
 
@@ -49,7 +50,6 @@ public class VariantStringIdConverter {
     protected static final int CI_POS_R = 5;
     protected static final int CI_END_L = 6;
     protected static final int CI_END_R = 7;
-    protected static final int CN = 8;
     protected static final char INS_SEQ_SEPARATOR = '_';
 
     public Variant convertToDataModelType(String object) {
@@ -81,7 +81,7 @@ public class VariantStringIdConverter {
                     getInt(split, CI_POS_R),
                     getInt(split, CI_END_L),
                     getInt(split, CI_END_R),
-                    getInt(split, CN),
+                    VariantBuilder.getCopyNumberFromAlternate(split[ALT]),
                     null, null, null);
         } else {
             return null;
@@ -134,11 +134,11 @@ public class VariantStringIdConverter {
                     .append(get(sv::getCiEndLeft))
                     .append(SEPARATOR_CHAR)
                     .append(get(sv::getCiEndRight));
-            if (sv.getCopyNumber() != null) {
-                stringBuilder
-                        .append(SEPARATOR_CHAR)
-                        .append(sv.getCopyNumber());
-            }
+//            if (sv.getCopyNumber() != null) {
+//                stringBuilder
+//                        .append(SEPARATOR_CHAR)
+//                        .append(sv.getCopyNumber());
+//            }
         }
 
         return stringBuilder.toString();
