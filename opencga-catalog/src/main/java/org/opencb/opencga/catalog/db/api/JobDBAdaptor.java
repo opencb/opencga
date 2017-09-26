@@ -55,11 +55,11 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
     }
 
     default QueryResult<Job> setStatus(long jobId, String status) throws CatalogDBException {
-        return update(jobId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(jobId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     default QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     default QueryResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {

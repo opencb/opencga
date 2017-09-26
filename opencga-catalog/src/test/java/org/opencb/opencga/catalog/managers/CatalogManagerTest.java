@@ -30,13 +30,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
-import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;

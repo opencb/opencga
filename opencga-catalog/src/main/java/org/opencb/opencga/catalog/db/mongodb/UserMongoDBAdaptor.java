@@ -371,7 +371,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
 
@@ -415,7 +415,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<User> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<User> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Update user by int id. The id should be a string.");
     }
 
@@ -423,7 +423,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         long startTime = startQuery();
         checkId(userId);
         Query query = new Query(QueryParams.ID.key(), userId);
-        QueryResult<Long> update = update(query, parameters);
+        QueryResult<Long> update = update(query, parameters, QueryOptions.empty());
         if (update.getResult().isEmpty() || update.first() != 1) {
             throw new CatalogDBException("Could not update user " + userId);
         }
@@ -431,7 +431,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     public QueryResult<User> setStatus(String userId, String status) throws CatalogDBException {

@@ -279,7 +279,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Individual> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Individual> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
@@ -303,7 +303,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> individualParameters = getValidatedUpdateParams(parameters);
 
@@ -879,11 +879,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     QueryResult<Individual> setStatus(long individualId, String status) throws CatalogDBException {
-        return update(individualId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(individualId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     /**
@@ -933,16 +933,16 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
      */
     private void deleteReferences(long individualId) throws CatalogDBException {
         Query query = new Query(QueryParams.FATHER_ID.key(), individualId);
-        Long count = update(query, new ObjectMap(QueryParams.FATHER_ID.key(), -1)).first();
+        Long count = update(query, new ObjectMap(QueryParams.FATHER_ID.key(), -1), QueryOptions.empty()).first();
         logger.debug("Individual id {} extracted as father from {} individuals", individualId, count);
 
         query = new Query(QueryParams.MOTHER_ID.key(), individualId);
-        count = update(query, new ObjectMap(QueryParams.MOTHER_ID.key(), -1)).first();
+        count = update(query, new ObjectMap(QueryParams.MOTHER_ID.key(), -1), QueryOptions.empty()).first();
         logger.debug("Individual id {} extracted as mother from {} individuals", individualId, count);
 
         query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
         count = dbAdaptorFactory.getCatalogSampleDBAdaptor()
-                .update(query, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1)).first();
+                .update(query, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1), QueryOptions.empty()).first();
         logger.debug("Individual id {} extracted from {} samples", individualId, count);
     }
 

@@ -118,9 +118,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
-    public QueryResult<Family> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Family> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, QueryOptions.empty());
         if (update.getNumTotalResults() != 1) {
             throw new CatalogDBException("Could not update family with id " + id);
         }
@@ -131,7 +131,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> familyParameters = new HashMap<>();
 
@@ -494,11 +494,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     private QueryResult<Family> setStatus(long familyId, String status) throws CatalogDBException {
-        return update(familyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(familyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     private QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {

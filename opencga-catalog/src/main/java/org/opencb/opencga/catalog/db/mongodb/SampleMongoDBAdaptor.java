@@ -21,7 +21,6 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -37,6 +36,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
@@ -57,6 +57,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  */
 public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements SampleDBAdaptor {
 
+    private static final String ID = "id";
     private static final String PRIVATE_INDIVIDUAL = "_individual";
     private static final String PRIVATE_INDIVIDUAL_ID = PRIVATE_INDIVIDUAL + ".id";
     private final MongoDBCollection sampleCollection;
@@ -106,7 +107,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Document sampleObject = sampleConverter.convertToStorageType(sample);
         sampleObject.put(PRIVATE_STUDY_ID, studyId);
         sampleObject.put(PRIVATE_INDIVIDUAL, sampleConverter.convertIndividual(individual));
-        sampleObject.put(PRIVATE_ID, sampleId);
+
+        // Versioning private parameters
+        sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
+        sampleObject.put(LAST_OF_VERSION, true);
+        sampleObject.put(LAST_OF_RELEASE, true);
+
         sampleCollection.insert(sampleObject, null);
 
         return endQuery("createSample", startTime, get(sampleId, options));
@@ -121,47 +127,146 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    public QueryResult<Sample> update(long sampleId, QueryOptions parameters) throws CatalogDBException {
+    public QueryResult<Sample> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, queryOptions);
+        if (update.getNumTotalResults() != 1) {
+            throw new CatalogDBException("Could not update sample with id " + id);
+        }
+        Query query = new Query()
+                .append(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
+        return endQuery("Update sample", startTime, get(query, queryOptions));
+    }
+
+    @Override
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
-        Map<String, Object> sampleParams = new HashMap<>();
-        //List<Bson> sampleParams = new ArrayList<>();
+        Document sampleParameters = parseAndValidateUpdateParams(parameters, query);
 
-        String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(), QueryParams.NAME.key()};
-        filterStringParams(parameters, sampleParams, acceptedParams);
+        if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            if (!sampleParameters.isEmpty()) {
+                QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
+                        new Document("$set", sampleParameters), new QueryOptions("multi", true));
 
-        if (sampleParams.containsKey(QueryParams.NAME.key())) {
+                return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
+            }
+        } else {
+            return updateAndCreateNewVersion(query, sampleParameters, queryOptions);
+        }
+
+        return endQuery("Update sample", startTime, new QueryResult<>());
+    }
+
+    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document sampleParameters, QueryOptions queryOptions)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+        int release = queryOptions.getInt(Constants.CURRENT_RELEASE, -1);
+        if (release == -1) {
+            throw new CatalogDBException("Internal error. Mandatory " + Constants.CURRENT_RELEASE + " parameter not passed to update "
+                    + "method");
+        }
+
+        for (Document sampleDocument : queryResult.getResult()) {
+            Document updateOldVersion = new Document();
+
+            List<Integer> supportedReleases = (List<Integer>) sampleDocument.get(RELEASE_FROM_VERSION);
+            if (supportedReleases.size() > 1) {
+                // If it contains several releases, it means this is the first update on the current release, so we just need to take the
+                // current release number out
+                supportedReleases.remove(supportedReleases.size() - 1);
+            } else {
+                // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
+                // last version of the release
+                updateOldVersion.put(LAST_OF_RELEASE, false);
+            }
+            updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
+            updateOldVersion.put(LAST_OF_VERSION, false);
+
+            // Perform the update on the previous version
+            Document queryDocument = new Document()
+                    .append(PRIVATE_STUDY_ID, sampleDocument.getLong(PRIVATE_STUDY_ID))
+                    .append(QueryParams.VERSION.key(), sampleDocument.getInteger(QueryParams.VERSION.key()))
+                    .append(PRIVATE_ID, sampleDocument.getLong(PRIVATE_ID));
+            QueryResult<UpdateResult> updateResult = sampleCollection.update(queryDocument, new Document("$set", updateOldVersion), null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("Internal error: Could not update sample");
+            }
+
+            // We update the information for the new version of the document
+            sampleDocument.put(LAST_OF_RELEASE, true);
+            sampleDocument.put(LAST_OF_VERSION, true);
+            sampleDocument.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+            sampleDocument.put(QueryParams.VERSION.key(), sampleDocument.getInteger(QueryParams.VERSION.key()) + 1);
+
+            // We apply the updates the user wanted to apply (if any)
+            mergeDocument(sampleDocument, sampleParameters);
+
+            // TODO: Check refresh references
+
+            // Insert the new version document
+            sampleCollection.insert(sampleDocument, QueryOptions.empty());
+        }
+
+        return endQuery("Update sample", startTime, Arrays.asList(queryResult.getNumTotalResults()));
+    }
+
+    private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
+        if (parameters.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
+            parameters.put(PRIVATE_INDIVIDUAL_ID, parameters.get(QueryParams.INDIVIDUAL_ID.key()));
+            parameters.remove(QueryParams.INDIVIDUAL_ID.key());
+        }
+
+        Document sampleParameters = new Document();
+
+        final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
+        filterBooleanParams(parameters, sampleParameters, acceptedBooleanParams);
+
+        final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(), QueryParams.TYPE.key()};
+        filterStringParams(parameters, sampleParameters, acceptedParams);
+
+        final String[] acceptedIntParams = {QueryParams.ID.key(), PRIVATE_INDIVIDUAL_ID};
+        filterLongParams(parameters, sampleParameters, acceptedIntParams);
+
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
+        filterMapParams(parameters, sampleParameters, acceptedMapParams);
+
+        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        filterObjectParams(parameters, sampleParameters, acceptedObjectParams);
+
+        if (parameters.containsKey(QueryParams.NAME.key())) {
+            // That can only be done to one sample...
+            QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
+            if (sampleQueryResult.getNumResults() == 0) {
+                throw new CatalogDBException("Update sample: No sample found to be updated");
+            }
+            if (sampleQueryResult.getNumResults() > 1) {
+                throw new CatalogDBException("Update sample: Cannot update name parameter. More than one sample found to be updated.");
+            }
+
             // Check that the new sample name is still unique
-            long studyId = getStudyId(sampleId);
+            long studyId = getStudyId(sampleQueryResult.first().getId());
 
-            QueryResult<Long> count = sampleCollection.count(
-                    new Document(QueryParams.NAME.key(), sampleParams.get(QueryParams.NAME.key())).append(PRIVATE_STUDY_ID, studyId));
+            Query tmpQuery = new Query()
+                    .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
+                    .append(QueryParams.STUDY_ID.key(), studyId);
+            QueryResult<Long> count = count(tmpQuery);
             if (count.getResult().get(0) > 0) {
-                throw new CatalogDBException("Sample { name: '" + sampleParams.get(QueryParams.NAME.key()) + "'} already exists.");
+                throw new CatalogDBException("Sample { name: '" + parameters.get(QueryParams.NAME.key()) + "'} already exists.");
             }
+
+            sampleParameters.put(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()));
         }
 
-        String[] acceptedLongParams = {QueryParams.INDIVIDUAL_ID.key()};
-        filterLongParams(parameters, sampleParams, acceptedLongParams);
-        if (sampleParams.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
-            sampleParams.put(PRIVATE_INDIVIDUAL + ".id", sampleParams.get(QueryParams.INDIVIDUAL_ID.key()));
-            sampleParams.remove(QueryParams.INDIVIDUAL_ID.key());
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            sampleParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+            sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
-        filterMapParams(parameters, sampleParams, acceptedMapParams);
-
-        if (!sampleParams.isEmpty()) {
-            Bson query = Filters.eq(PRIVATE_ID, sampleId);
-            Bson operation = new Document("$set", sampleParams);
-            QueryResult<UpdateResult> update = sampleCollection.update(query, operation, null);
-
-            if (update.getResult().isEmpty() || update.getResult().get(0).getMatchedCount() == 0) {
-                throw CatalogDBException.idNotFound("Sample", sampleId);
-            }
-        }
-
-        return endQuery("Modify sample", startTime, get(sampleId, new QueryOptions()));
+        return sampleParameters;
     }
 
     @Override
@@ -179,104 +284,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    public List<Long> getStudyIdsBySampleIds(String sampleIds) throws CatalogDBException {
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), sampleIds), false);
-        return sampleCollection.distinct(PRIVATE_STUDY_ID, query, Long.class).getResult();
-    }
+    public void updateProjectRelease(long studyId, int release) throws CatalogDBException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_ID.key(), studyId)
+                .append(QueryParams.SNAPSHOT.key(), release - 1);
+        Bson bson = parseQuery(query, false);
 
-    /*
-     * Annotations Methods
-     * ***************************
-     */
+        Document update = new Document()
+                .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
 
-    @Override
-    @Deprecated
-    public QueryResult<AnnotationSet> annotate(long sampleId, AnnotationSet annotationSet, boolean overwrite) throws
-            CatalogDBException {
-        long startTime = startQuery();
+        QueryOptions queryOptions = new QueryOptions("multi", true);
 
-        /*QueryResult<Long> count = sampleCollection.count(
-                new BasicDBObject("annotationSets.id", annotationSet.getId()).append(PRIVATE_ID, sampleId));*/
-        QueryResult<Long> count = sampleCollection.count(new Document("annotationSets.name", annotationSet.getName())
-                .append(PRIVATE_ID, sampleId));
-        if (overwrite) {
-            if (count.getResult().get(0) == 0) {
-                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getName());
-            }
-        } else {
-            if (count.getResult().get(0) > 0) {
-                throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
-            }
-        }
-
-        /*DBObject object = getDbObject(annotationSet, "AnnotationSet");
-
-        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);*/
-        Document object = getMongoDBDocument(annotationSet, "AnnotationSet");
-
-        Bson query = new Document(PRIVATE_ID, sampleId);
-        if (overwrite) {
-            ((Document) query).put("annotationSets.name", annotationSet.getName());
-        } else {
-            ((Document) query).put("annotationSets.name", new Document("$ne", annotationSet.getName()));
-        }
-
-        /*
-        DBObject update;
-        if (overwrite) {
-            update = new BasicDBObject("$set", new BasicDBObject("annotationSets.$", object));
-        } else {
-            update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
-        }
-*/
-
-        Bson update;
-        if (overwrite) {
-            update = Updates.set("annotationSets.$", object);
-        } else {
-            update = Updates.push("annotationSets", object);
-        }
-
-        QueryResult<UpdateResult> queryResult = sampleCollection.update(query, update, null);
-
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
-        }
-
-        return endQuery("", startTime, Collections.singletonList(annotationSet));
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException {
-
-        long startTime = startQuery();
-
-        Sample sample = get(sampleId, new QueryOptions("include", "projects.studies.samples.annotationSets")).first();
-        AnnotationSet annotationSet = null;
-        for (AnnotationSet as : sample.getAnnotationSets()) {
-            if (as.getName().equals(annotationId)) {
-                annotationSet = as;
-                break;
-            }
-        }
-
-        if (annotationSet == null) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
-        }
-
-        /*
-        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
-        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
-        */
-        Bson query = new Document(PRIVATE_ID, sampleId);
-        Bson update = Updates.pull("annotationSets", new Document("name", annotationId));
-        QueryResult<UpdateResult> resultQueryResult = sampleCollection.update(query, update, null);
-        if (resultQueryResult.first().getModifiedCount() < 1) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
-        }
-
-        return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
+        sampleCollection.update(bson, update, queryOptions);
     }
 
     @Deprecated
@@ -370,69 +389,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
-        long startTime = startQuery();
-        if (parameters.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
-            parameters.put(PRIVATE_INDIVIDUAL_ID, parameters.get(QueryParams.INDIVIDUAL_ID.key()));
-            parameters.remove(QueryParams.INDIVIDUAL_ID.key());
-        }
-
-        Map<String, Object> sampleParameters = new HashMap<>();
-
-        final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
-        filterBooleanParams(parameters, sampleParameters, acceptedBooleanParams);
-
-        final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(), QueryParams.TYPE.key()};
-        filterStringParams(parameters, sampleParameters, acceptedParams);
-
-        final String[] acceptedIntParams = {QueryParams.ID.key(), PRIVATE_INDIVIDUAL_ID};
-        filterLongParams(parameters, sampleParameters, acceptedIntParams);
-
-        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
-        filterMapParams(parameters, sampleParameters, acceptedMapParams);
-
-        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
-        filterObjectParams(parameters, sampleParameters, acceptedObjectParams);
-
-        if (parameters.containsKey(QueryParams.NAME.key())) {
-            // That can only be done to one sample...
-            QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
-            if (sampleQueryResult.getNumResults() == 0) {
-                throw new CatalogDBException("Update sample: No sample found to be updated");
-            }
-            if (sampleQueryResult.getNumResults() > 1) {
-                throw new CatalogDBException("Update sample: Cannot update name parameter. More than one sample found to be updated.");
-            }
-
-            // Check that the new sample name is still unique
-            long studyId = getStudyId(sampleQueryResult.first().getId());
-
-            Query tmpQuery = new Query()
-                    .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
-                    .append(QueryParams.STUDY_ID.key(), studyId);
-            QueryResult<Long> count = count(tmpQuery);
-            if (count.getResult().get(0) > 0) {
-                throw new CatalogDBException("Sample { name: '" + parameters.get(QueryParams.NAME.key()) + "'} already exists.");
-            }
-
-            sampleParameters.put(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()));
-        }
-
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            sampleParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
-        }
-
-        if (!sampleParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
-                    new Document("$set", sampleParameters), new QueryOptions("multi", true));
-            return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
-        }
-
-        return endQuery("Update sample", startTime, new QueryResult<>());
-    }
-
-    @Override
     public void delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), id);
         delete(query);
@@ -445,19 +401,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         if (remove.first().getDeletedCount() == 0) {
             throw CatalogDBException.deleteError("Sample");
         }
-    }
-
-    @Override
-    public QueryResult<Sample> update(long id, ObjectMap parameters) throws CatalogDBException {
-        long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
-        if (update.getNumTotalResults() != 1) {
-            throw new CatalogDBException("Could not update sample with id " + id);
-        }
-        Query query = new Query()
-                .append(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
-        return endQuery("Update sample", startTime, get(query, new QueryOptions()));
     }
 
     // TODO: Check clean
@@ -557,7 +500,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
         QueryResult<Document> queryResult;
@@ -759,7 +702,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case INDIVIDUAL_ID:
                         addAutoOrQuery(PRIVATE_INDIVIDUAL_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case SNAPSHOT:
+                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
+                    case RELEASE:
+                    case VERSION:
                     case SOURCE:
                     case DESCRIPTION:
                     case STATUS_NAME:
@@ -767,7 +715,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case STATUS_DATE:
                     case SOMATIC:
                     case TYPE:
-                    case RELEASE:
                     case ONTOLOGY_TERMS_ID:
                     case ONTOLOGY_TERMS_NAME:
                     case ONTOLOGY_TERMS_SOURCE:
@@ -786,6 +733,17 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                 } else {
                     throw new CatalogDBException("Error parsing query : " + query.toJson(), e);
                 }
+            }
+        }
+
+        // If they don't look for a concrete version...
+        if (!query.getBoolean(Constants.ALL_VERSIONS) && !query.containsKey(QueryParams.VERSION.key())) {
+            if (query.containsKey(QueryParams.RELEASE.key()) || query.containsKey(QueryParams.SNAPSHOT.key())) {
+                // If they look for anything from some release, we will try to find the latest from the release (snapshot)
+                andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
+            } else {
+                // Otherwise, we will always look for the latest version
+                andBsonList.add(Filters.eq(LAST_OF_VERSION, true));
             }
         }
 
@@ -808,11 +766,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     QueryResult<Sample> setStatus(long sampleId, String status) throws CatalogDBException {
-        return update(sampleId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(sampleId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     private void deleteReferencesToSample(long sampleId) throws CatalogDBException {

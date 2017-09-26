@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -91,6 +92,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
         sample.setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
+        sample.setVersion(1);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -136,8 +138,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     public QueryResult<Sample> create(String studyStr, String name, String source, String description, String type, boolean somatic,
                                       Individual individual, Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        Sample sample = new Sample(-1, name, source, null, description, type, somatic, -1, Collections.emptyList(), Collections.emptyList(),
-                attributes);
+        Sample sample = new Sample(-1, name, source, null, description, type, somatic, -1, 1, Collections.emptyList(),
+                Collections.emptyList(), attributes);
         return create(studyStr, sample, individual, options, sessionId);
     }
 
@@ -249,7 +251,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options, userId);
-//        addIndividualInformation(sampleQueryResult, sessionId);
+
+        if (sampleQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> sampleIds = query.getAsLongList("id");
+            for (Long sampleId : sampleIds) {
+                authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
+            }
+        }
+
         return sampleQueryResult;
     }
 
@@ -325,7 +334,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(SampleDBAdaptor.QueryParams.NAME.key(), newSampleName)
                         .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
-                queryResult = sampleDBAdaptor.update(sampleId, updateParams);
+                queryResult = sampleDBAdaptor.update(sampleId, updateParams, QueryOptions.empty());
 
                 auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, resourceId.getUser(), sampleQueryResult.first(),
                         queryResult.first(), null, null);
@@ -437,7 +446,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             parameters.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        QueryResult<Sample> queryResult = sampleDBAdaptor.update(resource.getResourceId(), parameters);
+        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
+            // We do need to get the current release to properly create a new version
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudyId()));
+        }
+
+        QueryResult<Sample> queryResult = sampleDBAdaptor.update(resource.getResourceId(), parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.sample, resource.getResourceId(), userId, parameters, null, null);
         return queryResult;
     }

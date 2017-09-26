@@ -176,6 +176,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
+
+        if (queryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> analysisList = query.getAsLongList("id");
+            for (Long analysisId : analysisList) {
+                authorizationManager.checkClinicalAnalysisPermission(studyId, analysisId, userId,
+                        ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW);
+            }
+        }
+
         addMissingInformation(queryResult, studyId, sessionId);
 
         return queryResult;

@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.config.Configuration;
@@ -320,6 +321,12 @@ public class OpenCGAWSServer {
                     break;
                 case QueryOptions.SKIP_COUNT:
                     queryOptions.put(QueryOptions.SKIP_COUNT, Boolean.parseBoolean(value));
+                    break;
+                case Constants.INCREMENT_VERSION:
+                    queryOptions.put(Constants.INCREMENT_VERSION, Boolean.parseBoolean(value));
+                    break;
+                case Constants.REFRESH:
+                    queryOptions.put(Constants.REFRESH, Boolean.parseBoolean(value));
                     break;
                 case "count":
                     count = Boolean.parseBoolean(value);

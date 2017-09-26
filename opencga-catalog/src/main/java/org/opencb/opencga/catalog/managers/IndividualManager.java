@@ -137,9 +137,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, userId);
-
         // Add sample information
         addSampleInformation(individualQueryResult, studyId, userId);
+
+        if (individualQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> idList = query.getAsLongList("id");
+            for (Long myId : idList) {
+                authorizationManager.checkIndividualPermission(studyId, myId, userId, IndividualAclEntry.IndividualPermissions.VIEW);
+            }
+        }
+
         return individualQueryResult;
     }
 
@@ -370,7 +377,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), queryResult.first().getId());
                     try {
                         // We update the sample metadata to relate it to the individual
-                        sampleDBAdaptor.update(resource.getResourceId(), params);
+                        sampleDBAdaptor.update(resource.getResourceId(), params, QueryOptions.empty());
                     } catch (CatalogDBException e1) {
                         logger.error("Internal error when attempting to associate the individual to the sample. {}" + sample.getName(),
                                 e1.getMessage(), e1);
@@ -512,7 +519,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 //        options.putAll(parameters); //FIXME: Use separated params and options, or merge
         QueryResult<Individual> queryResult;
         if (!parameters.isEmpty()) {
-            queryResult = individualDBAdaptor.update(individualId, parameters);
+            queryResult = individualDBAdaptor.update(individualId, parameters, options);
             auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
         } else {
             queryResult = individualDBAdaptor.get(individualId, options, userId);
@@ -526,14 +533,14 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
             ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1L);
-            sampleDBAdaptor.update(query, params);
+            sampleDBAdaptor.update(query, params, QueryOptions.empty());
 
             // 2. Add reference to the current individual in the samples indicated
             query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(SampleDBAdaptor.QueryParams.ID.key(), sampleResource.getResourceIds());
             params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-            sampleDBAdaptor.update(query, params);
+            sampleDBAdaptor.update(query, params, QueryOptions.empty());
         }
 
         // Add sample information
@@ -584,7 +591,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(IndividualDBAdaptor.QueryParams.NAME.key(), newIndividualName)
                         .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
-                queryResult = individualDBAdaptor.update(individualId, updateParams);
+                queryResult = individualDBAdaptor.update(individualId, updateParams, QueryOptions.empty());
 
                 auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, resourceId.getUser(),
                         individualQueryResult.first(), queryResult.first(), null, null);

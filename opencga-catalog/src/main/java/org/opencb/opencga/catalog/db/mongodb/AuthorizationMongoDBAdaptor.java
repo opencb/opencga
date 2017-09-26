@@ -425,7 +425,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                     update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-            collection.update(queryDocument, update, QueryOptions.empty());
+            collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
     }
 
@@ -527,7 +527,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                     update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-            collection.update(queryDocument, update, QueryOptions.empty());
+            collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
     }
 

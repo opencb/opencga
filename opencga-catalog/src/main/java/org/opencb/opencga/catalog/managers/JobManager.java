@@ -37,15 +37,15 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,7 +142,7 @@ public class JobManager extends ResourceManager<Job> {
 
         authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.VIEW);
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
-        return jobDBAdaptor.update(jobId, params);
+        return jobDBAdaptor.update(jobId, params, QueryOptions.empty());
     }
 
     public QueryResult<Job> create(long studyId, String name, String toolName, String description, String executor,
@@ -245,7 +245,16 @@ public class JobManager extends ResourceManager<Job> {
             query.remove("outputFiles");
         }
 
-        return jobDBAdaptor.get(query, options, userId);
+        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, userId);
+
+        if (jobQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> idList = query.getAsLongList("id");
+            for (Long myId : idList) {
+                authorizationManager.checkJobPermission(studyId, myId, userId, JobAclEntry.JobPermissions.VIEW);
+            }
+        }
+
+        return jobQueryResult;
     }
 
     @Override
@@ -320,7 +329,7 @@ public class JobManager extends ResourceManager<Job> {
         authorizationManager.checkJobPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 JobAclEntry.JobPermissions.UPDATE);
 
-        QueryResult<Job> queryResult = jobDBAdaptor.update(resource.getResourceId(), parameters);
+        QueryResult<Job> queryResult = jobDBAdaptor.update(resource.getResourceId(), parameters, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.job, resource.getResourceId(), resource.getUser(), parameters, null, null);
         return queryResult;
     }
@@ -371,7 +380,7 @@ public class JobManager extends ResourceManager<Job> {
 
                 ObjectMap params = new ObjectMap()
                         .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.DELETED);
-                queryResult = jobDBAdaptor.update(jobId, params);
+                queryResult = jobDBAdaptor.update(jobId, params, QueryOptions.empty());
                 queryResult.setId("Delete job " + jobId);
                 auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, jobQueryResult.first(), queryResult.first(),
                         null, null);
@@ -396,7 +405,7 @@ public class JobManager extends ResourceManager<Job> {
                         .append(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
 
                 ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
-                fileDBAdaptor.update(query, params);
+                fileDBAdaptor.update(query, params, QueryOptions.empty());
             } catch (CatalogDBException e) {
                 logger.error("An error occurred when removing reference of job " + jobId + " from files", e);
             }
@@ -429,7 +438,7 @@ public class JobManager extends ResourceManager<Job> {
         parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
         parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
 
-        jobDBAdaptor.update(resource.getResourceId(), parameters);
+        jobDBAdaptor.update(resource.getResourceId(), parameters, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.job, resource.getResourceId(), resource.getUser(), parameters, null, null);
     }
 

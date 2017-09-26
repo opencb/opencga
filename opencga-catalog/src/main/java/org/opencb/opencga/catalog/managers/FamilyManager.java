@@ -221,6 +221,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
         addMemberInformation(familyQueryResult, studyId, sessionId);
 
+        if (familyQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> idList = query.getAsLongList("id");
+            for (Long myId : idList) {
+                authorizationManager.checkFamilyPermission(studyId, myId, userId, FamilyAclEntry.FamilyPermissions.VIEW);
+            }
+        }
+
         return familyQueryResult;
     }
 
@@ -390,7 +397,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters);
+        QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.family, familyId, resource.getUser(), parameters, null, null);
 
         addMemberInformation(queryResult, resource.getStudyId(), sessionId);

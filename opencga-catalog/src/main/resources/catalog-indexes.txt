@@ -29,7 +29,8 @@
 {"collection": "file", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_studyId": 1}, "options": {"background": true}}
 
-{"collection": "sample", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
+{"collection": "sample", "fields": {"name": 1, "_studyId": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "sample", "fields": {"id": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "sample", "fields": {"individual.id": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"annotationSets.name": 1}, "options": {"background": true}}

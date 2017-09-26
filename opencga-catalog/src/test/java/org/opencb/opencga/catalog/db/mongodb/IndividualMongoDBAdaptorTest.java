@@ -134,7 +134,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         ObjectMap params = new ObjectMap("family", "new Family");
         params.append("sex", "MALE");
-        catalogIndividualDBAdaptor.update(individualId, params);
+        catalogIndividualDBAdaptor.update(individualId, params, QueryOptions.empty());
         Individual individual = catalogIndividualDBAdaptor.get(individualId, null).first();
         assertEquals("new Family", individual.getFamily());
         assertEquals(Individual.Sex.MALE, individual.getSex());
@@ -148,7 +148,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("sex", "bad sex"));
+        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("sex", "bad sex"), QueryOptions.empty());
     }
 
     @Test
@@ -158,7 +158,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("fatherId", 4000));
+        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("fatherId", 4000), QueryOptions.empty());
     }
 
     @Test
@@ -168,7 +168,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
         Individual individual = catalogIndividualDBAdaptor.update(individualId,
-                new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), -1)).first();
+                new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), -1), QueryOptions.empty()).first();
         assertEquals(-1, individual.getFather().getId());
     }
 
@@ -182,7 +182,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogIndividualDBAdaptor.insert(new Individual(0, "in2", 0, 0, "", Individual.Sex.UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("name", "in2"));
+        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("name", "in2"), QueryOptions.empty());
     }
 
     @Test

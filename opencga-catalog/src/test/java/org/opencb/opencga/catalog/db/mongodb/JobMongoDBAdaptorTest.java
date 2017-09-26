@@ -109,7 +109,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(!jobBefore.isVisited());
 
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
-        catalogJobDBAdaptor.update(jobBefore.getId(), params);
+        catalogJobDBAdaptor.update(jobBefore.getId(), params, QueryOptions.empty());
 
         Job jobAfter = catalogJobDBAdaptor.get(jobId, null).first();
         assertTrue(jobAfter.isVisited());
@@ -201,7 +201,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .append(JobDBAdaptor.QueryParams.INPUT.key(), fileInput)
                 .append(JobDBAdaptor.QueryParams.OUTPUT.key(), fileOutput);
 
-        QueryResult<Job> update = catalogJobDBAdaptor.update(insert.first().getId(), params);
+        QueryResult<Job> update = catalogJobDBAdaptor.update(insert.first().getId(), params, QueryOptions.empty());
         assertEquals(3, update.first().getInput().size());
         assertEquals(3, update.first().getOutput().size());
 

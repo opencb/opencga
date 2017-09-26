@@ -75,8 +75,8 @@ public class SampleMongoDBAdaptorTest {
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        s1 = catalogSampleDBAdaptor.insert(new Sample(0, "s1", "", new Individual(), "", "", false, 1, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null, null).first();
-        s2 = catalogSampleDBAdaptor.insert(new Sample(0, "s2", "", new Individual(), "", "", false, 1, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null, null).first();
+        s1 = catalogSampleDBAdaptor.insert(new Sample(0, "s1", "", new Individual(), "", "", false, 1, 1, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null, null).first();
+        s2 = catalogSampleDBAdaptor.insert(new Sample(0, "s2", "", new Individual(), "", "", false, 1, 1, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null, null).first();
 
     }
 
@@ -313,7 +313,7 @@ public class SampleMongoDBAdaptorTest {
         Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description", 1);
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(hg0097, studyId, null, null);
         dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                createResult.first().getId()));
+                createResult.first().getId()), QueryOptions.empty());
 
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
     }

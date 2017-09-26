@@ -39,12 +39,12 @@ import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
@@ -154,7 +154,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
-    public QueryResult<File> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<File> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
@@ -178,15 +178,15 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         // If the user wants to change the diskUsages of the file(s), we first make a query to obtain the old values.
         QueryResult fileQueryResult = null;
         if (parameters.containsKey(QueryParams.SIZE.key())) {
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                     FILTER_ROUTE_FILES + QueryParams.SIZE.key(), FILTER_ROUTE_FILES + PRIVATE_STUDY_ID));
-            fileQueryResult = nativeGet(query, queryOptions);
+            fileQueryResult = nativeGet(query, options);
         }
 
         // We perform the update.
@@ -708,11 +708,11 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     QueryResult<File> setStatus(long fileId, String status) throws CatalogDBException {
-        return update(fileId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(fileId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override

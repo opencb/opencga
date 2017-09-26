@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.monitor.daemons;
 
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -148,7 +149,7 @@ public abstract class MonitorParentDaemon implements Runnable {
         ObjectMap parameters = new ObjectMap();
         parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
         parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
-        dbAdaptorFactory.getCatalogJobDBAdaptor().update(jobId, parameters);
+        dbAdaptorFactory.getCatalogJobDBAdaptor().update(jobId, parameters, QueryOptions.empty());
     }
 
     void cleanPrivateJobInformation(Job job) {
@@ -159,7 +160,7 @@ public abstract class MonitorParentDaemon implements Runnable {
 
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
         try {
-            dbAdaptorFactory.getCatalogJobDBAdaptor().update(job.getId(), params);
+            dbAdaptorFactory.getCatalogJobDBAdaptor().update(job.getId(), params, QueryOptions.empty());
         } catch (CatalogException e) {
             logger.error("Could not remove session id from attributes of job {}. ", job.getId(), e);
         }

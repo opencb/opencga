@@ -912,8 +912,8 @@ public class FileWSServer extends OpenCGAWSServer {
             // TODO: sampleIds is deprecated
             if (StringUtils.isNotEmpty(params.getString("sampleIds"))
                     && StringUtils.isEmpty(params.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
-                params.remove("sampleIds");
                 params.put(FileDBAdaptor.QueryParams.SAMPLES.key(), params.getString("sampleIds"));
+                params.remove("sampleIds");
             }
 
             QueryResult<File> queryResult = fileManager.update(resource.getResourceId(), map, queryOptions, sessionId);

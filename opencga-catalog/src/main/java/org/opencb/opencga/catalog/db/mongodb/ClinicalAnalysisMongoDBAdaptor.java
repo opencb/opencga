@@ -115,12 +115,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<ClinicalAnalysis> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
