@@ -57,6 +57,7 @@ public class Sample extends Annotable {
         this.id = id;
         this.name = name;
         this.source = source;
+        this.version = version;
         this.individual = individual;
         this.type = type;
         this.somatic = somatic;

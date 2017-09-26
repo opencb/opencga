@@ -635,12 +635,12 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         );
         aggregation.add(new Document("$group",
                 new Document(
-                        "_id", new Document("name", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key())
+                        PRIVATE_ID, new Document("name", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key())
                             .append("value", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_VALUE.key()))
                         .append("count", new Document("$sum", 1))
                 )
         );
-        aggregation.add(new Document("$sort", new Document("_id.name", -1).append("count", -1)));
+        aggregation.add(new Document("$sort", new Document(PRIVATE_ID + ".name", -1).append("count", -1)));
 
         List<Document> result = getCollection().aggregate(aggregation, new QueryOptions()).getResult();
 
@@ -650,7 +650,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         VariableSummary v = new VariableSummary();
 
         for (Document document : result) {
-            Document id = (Document) document.get("_id");
+            Document id = (Document) document.get(PRIVATE_ID);
             String name = id.getString("name");
             Object value = id.get("value");
             int count = document.getInteger("count");

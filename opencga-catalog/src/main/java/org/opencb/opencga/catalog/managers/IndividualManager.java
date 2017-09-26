@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -313,6 +314,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         fixQuery(studyId, finalQuery, sessionId);
 
         finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
         QueryResult<Individual> queryResult = individualDBAdaptor.get(finalQuery, options, userId);
 //        authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
 
@@ -516,14 +518,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), tmpResource.getResourceId());
         }
 
-//        options.putAll(parameters); //FIXME: Use separated params and options, or merge
-        QueryResult<Individual> queryResult;
-        if (!parameters.isEmpty()) {
-            queryResult = individualDBAdaptor.update(individualId, parameters, options);
-            auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
-        } else {
-            queryResult = individualDBAdaptor.get(individualId, options, userId);
+        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
+            // We do need to get the current release to properly create a new version
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudyId()));
         }
+
+        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, parameters, options);
+        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
 
         if (sampleResource != null) {
             // Update samples

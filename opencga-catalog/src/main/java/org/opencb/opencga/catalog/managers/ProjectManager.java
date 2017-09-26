@@ -418,6 +418,7 @@ public class ProjectManager extends AbstractManager {
                     new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key()));
             for (Study study : studiesInProject.getResult()) {
                 sampleDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
+                individualDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
             }
 
             return integerQueryResult;

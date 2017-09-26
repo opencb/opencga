@@ -104,6 +104,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
         long sampleId = getNewId();
         sample.setId(sampleId);
+        sample.setVersion(1);
+
         Document sampleObject = sampleConverter.convertToStorageType(sample);
         sampleObject.put(PRIVATE_STUDY_ID, studyId);
         sampleObject.put(PRIVATE_INDIVIDUAL, sampleConverter.convertIndividual(individual));
@@ -130,7 +132,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     public QueryResult<Sample> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, queryOptions);
-        if (update.getNumTotalResults() != 1) {
+        if (update.getNumTotalResults() != 1 && parameters.size() > 0) {
             throw new CatalogDBException("Could not update sample with id " + id);
         }
         Query query = new Query()
@@ -736,10 +738,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             }
         }
 
-        // If they don't look for a concrete version...
+        // If the user doesn't look for a concrete version...
         if (!query.getBoolean(Constants.ALL_VERSIONS) && !query.containsKey(QueryParams.VERSION.key())) {
             if (query.containsKey(QueryParams.RELEASE.key()) || query.containsKey(QueryParams.SNAPSHOT.key())) {
-                // If they look for anything from some release, we will try to find the latest from the release (snapshot)
+                // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
                 andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
             } else {
                 // Otherwise, we will always look for the latest version
