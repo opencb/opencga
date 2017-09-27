@@ -315,7 +315,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        Document individualParameters = parseAndValidateUpdateParams(parameters);
+        Document individualParameters = parseAndValidateUpdateParams(parameters, query);
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             if (!individualParameters.isEmpty()) {
@@ -387,10 +387,35 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         return endQuery("Update individual", startTime, Arrays.asList(queryResult.getNumTotalResults()));
     }
 
-    private Document parseAndValidateUpdateParams(ObjectMap parameters) throws CatalogDBException {
+    private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
         Document individualParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
+        if (parameters.containsKey(QueryParams.NAME.key())) {
+            // That can only be done to one individual...
+            QueryResult<Individual> individualQueryResult = get(query, new QueryOptions());
+            if (individualQueryResult.getNumResults() == 0) {
+                throw new CatalogDBException("Update individual: No individual found to be updated");
+            }
+            if (individualQueryResult.getNumResults() > 1) {
+                throw new CatalogDBException("Update individual: Cannot set the same name parameter for different individuals");
+            }
+
+            // Check that the new individual name is still unique
+            long studyId = getStudyId(individualQueryResult.first().getId());
+
+            Query tmpQuery = new Query()
+                    .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
+                    .append(QueryParams.STUDY_ID.key(), studyId);
+            QueryResult<Long> count = count(tmpQuery);
+            if (count.getResult().get(0) > 0) {
+                throw new CatalogDBException("Cannot set name for individual. A individual with { name: '"
+                        + parameters.get(QueryParams.NAME.key()) + "'} already exists.");
+            }
+
+            individualParameters.put(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()));
+        }
+
+        String[] acceptedParams = {QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
                 QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.AFFECTATION_STATUS.key(),
                 QueryParams.DATE_OF_BIRTH.key(), };
