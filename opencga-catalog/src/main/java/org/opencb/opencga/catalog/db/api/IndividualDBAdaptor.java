@@ -72,7 +72,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     long getStudyId(long individualId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
-        ID("id", DECIMAL, ""),
+        ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT, ""),
         FATHER("father", TEXT, ""),
         MOTHER("mother", TEXT, ""),
@@ -82,6 +82,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         FAMILY("family", TEXT, ""),
         SEX("sex", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
+        SAMPLES_ID("samples.id", INTEGER_ARRAY, ""),
         ETHNICITY("ethnicity", TEXT, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
@@ -108,7 +109,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
-        STUDY_ID("studyId", DECIMAL, ""),
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),

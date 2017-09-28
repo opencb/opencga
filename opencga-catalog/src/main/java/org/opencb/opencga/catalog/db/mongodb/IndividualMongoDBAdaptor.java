@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
-import com.mongodb.WriteResult;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -108,9 +107,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         Document individualDocument = individualConverter.convertToStorageType(individual);
         individualDocument.put(PRIVATE_ID, individualId);
         individualDocument.put(PRIVATE_STUDY_ID, studyId);
-        QueryResult<WriteResult> insert = individualCollection.insert(individualDocument, null);
+        individualCollection.insert(individualDocument, null);
 
-        return endQuery("createIndividual", startQuery, Collections.singletonList(individual));
+        return endQuery("createIndividual", startQuery, get(individualId, options));
     }
 
     @Override
@@ -282,7 +281,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     public QueryResult<Individual> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
-        Map<String, Object> myParams = getValidatedUpdateParams(parameters);
+        Document myParams = getValidatedUpdateParams(parameters);
+        individualConverter.validateSamplesToUpdate(myParams);
 
         if (myParams.isEmpty()) {
             logger.debug("The map of parameters to update individual is empty. Originally it contained {}", parameters.safeToString());
@@ -316,8 +316,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         return endQuery("Update individual", startTime, new QueryResult<Long>());
     }
 
-    private Map<String, Object> getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
-        Map<String, Object> individualParameters = new HashMap<>();
+    private Document getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
+        Document individualParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
@@ -334,7 +334,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key(), QueryParams.MULTIPLES.key()};
+        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key(), QueryParams.MULTIPLES.key(), QueryParams.SAMPLES.key()};
         filterObjectParams(parameters, individualParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
@@ -844,6 +844,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case AFFECTATION_STATUS:
                     case CREATION_DATE:
                     case RELEASE:
+                    case SAMPLES_ID:
                     case ANNOTATION_SETS:
                     case ONTOLOGY_TERMS_ID:
                     case ONTOLOGY_TERMS_NAME:
@@ -914,11 +915,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         }
 
         // Check if the individual is being used in a sample
-        query = new Query()
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId)
-                .append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + File.FileStatus.DELETED);
-        count = dbAdaptorFactory.getCatalogSampleDBAdaptor().count(query).first();
-        if (count > 0) {
+        QueryResult<Individual> individualQueryResult = get(individualId,
+                new QueryOptions(QueryOptions.INCLUDE, QueryParams.SAMPLES.key()));
+        if (individualQueryResult.first().getSamples().size() > 0) {
             throw new CatalogDBException("The individual " + individualId + " cannot be deleted/removed because it is being referenced by "
                     + count + " samples.");
         }
