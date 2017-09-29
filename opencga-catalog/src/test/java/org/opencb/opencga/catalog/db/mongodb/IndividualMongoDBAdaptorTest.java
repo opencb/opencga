@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -186,6 +187,24 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
+    public void testAvoidDuplicatedSamples() throws CatalogDBException {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        Individual individual = new Individual()
+                .setName("in2")
+                .setSamples(Arrays.asList(new Sample().setId(5), new Sample().setId(5), new Sample().setId(7), new Sample().setId(-1)));
+        Individual individualStored = catalogIndividualDBAdaptor.insert(individual, studyId, null).first();
+        assertEquals(2, individualStored.getSamples().size());
+        assertTrue(individualStored.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList(5L,
+                7L)));
+
+        // Update samples
+        ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
+        Individual update = catalogIndividualDBAdaptor.update(individualStored.getId(), params, QueryOptions.empty()).first();
+        assertEquals(2, update.getSamples().size());
+        assertTrue(update.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList(5L, 7L)));
+    }
+
+    @Test
     public void testAnnotateIndividual() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
@@ -289,10 +308,10 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testDeleteIndividualInUseAsSample() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
-                .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(new Sample(0, "Sample", "", null, "", 1),
-                studyId, new Individual().setId(individualId), null);
+        long individualId = catalogIndividualDBAdaptor.insert(
+                new Individual(0, "in1", 0, 0, "", Individual.Sex.UNKNOWN, "", null, 1, Collections.emptyList(), null)
+                        .setSamples(Arrays.asList(new Sample().setId(5))),
+                studyId, null).first().getId();
 
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.delete(individualId, new QueryOptions());

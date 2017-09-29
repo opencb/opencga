@@ -124,7 +124,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(individual)) {
                 tmpIndividual = new Individual().setName(individual);
             }
-            return createOkResponse(sampleManager.create(studyStr, sample, tmpIndividual, queryOptions, sessionId));
+            return createOkResponse(sampleManager.create(studyStr, sample, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

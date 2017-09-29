@@ -21,11 +21,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.User;
@@ -74,8 +75,8 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor = new AuthorizationMongoDBAdaptor(configuration);
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(new Sample(0, "s1", "", new Individual(), "", "", false, 1, 1, Collections
-                .emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null, null).first();
+        s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample(0, "s1", "", new Individual(), "", "", false, 1, 1,
+                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), QueryOptions.empty()).first();
         acl_s1_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
         acl_s1_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
                 SampleAclEntry.SamplePermissions.VIEW.name(),

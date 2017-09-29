@@ -878,19 +878,20 @@ public class StudyManager extends AbstractManager {
 
         VariableSetSummary variableSetSummary = new VariableSetSummary(resource.getResourceId(), variableSet.first().getName());
 
-        QueryResult<VariableSummary> annotationSummary = sampleDBAdaptor.getAnnotationSummary(resource.getResourceId());
+        QueryResult<VariableSummary> annotationSummary = sampleDBAdaptor.getAnnotationSummary(resource.getStudyId(),
+                resource.getResourceId());
         dbTime += annotationSummary.getDbTime();
         variableSetSummary.setSamples(annotationSummary.getResult());
 
-        annotationSummary = cohortDBAdaptor.getAnnotationSummary(resource.getResourceId());
+        annotationSummary = cohortDBAdaptor.getAnnotationSummary(resource.getStudyId(), resource.getResourceId());
         dbTime += annotationSummary.getDbTime();
         variableSetSummary.setCohorts(annotationSummary.getResult());
 
-        annotationSummary = individualDBAdaptor.getAnnotationSummary(resource.getResourceId());
+        annotationSummary = individualDBAdaptor.getAnnotationSummary(resource.getStudyId(), resource.getResourceId());
         dbTime += annotationSummary.getDbTime();
         variableSetSummary.setIndividuals(annotationSummary.getResult());
 
-        annotationSummary = familyDBAdaptor.getAnnotationSummary(resource.getResourceId());
+        annotationSummary = familyDBAdaptor.getAnnotationSummary(resource.getStudyId(), resource.getResourceId());
         dbTime += annotationSummary.getDbTime();
         variableSetSummary.setFamilies(annotationSummary.getResult());
 

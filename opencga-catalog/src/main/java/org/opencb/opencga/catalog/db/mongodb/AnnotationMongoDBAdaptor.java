@@ -617,10 +617,11 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return getCollection().aggregate(aggregation, new QueryOptions()).getResult();
     }
 
-    public QueryResult<VariableSummary> getAnnotationSummary(long variableSetId) throws CatalogDBException {
+    public QueryResult<VariableSummary> getAnnotationSummary(long studyId, long variableSetId) throws CatalogDBException {
         long startTime = startQuery();
 
         List<Bson> aggregation = new ArrayList<>(6);
+        aggregation.add(new Document("$match", new Document(PRIVATE_STUDY_ID, studyId)));
         aggregation.add(new Document("$project", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), 1)));
         aggregation.add(new Document("$unwind", "$" + AnnotationSetParams.ANNOTATION_SETS.key()));
         aggregation.add(new Document("$unwind", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS.key()));
@@ -635,12 +636,12 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         );
         aggregation.add(new Document("$group",
                 new Document(
-                        PRIVATE_ID, new Document("name", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key())
+                        "_id", new Document("name", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key())
                             .append("value", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_VALUE.key()))
                         .append("count", new Document("$sum", 1))
                 )
         );
-        aggregation.add(new Document("$sort", new Document(PRIVATE_ID + ".name", -1).append("count", -1)));
+        aggregation.add(new Document("$sort", new Document("_id.name", -1).append("count", -1)));
 
         List<Document> result = getCollection().aggregate(aggregation, new QueryOptions()).getResult();
 
@@ -650,7 +651,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         VariableSummary v = new VariableSummary();
 
         for (Document document : result) {
-            Document id = (Document) document.get(PRIVATE_ID);
+            Document id = (Document) document.get("_id");
             String name = id.getString("name");
             Object value = id.get("value");
             int count = document.getInteger("count");

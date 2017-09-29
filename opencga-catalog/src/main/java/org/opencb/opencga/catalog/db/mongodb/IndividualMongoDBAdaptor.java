@@ -116,7 +116,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
         individualCollection.insert(individualDocument, null);
 
-        return endQuery("createIndividual", startQuery, Collections.singletonList(individual));
+        return endQuery("createIndividual", startQuery, get(individualId, options));
     }
 
     @Override
@@ -430,7 +430,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key(), QueryParams.MULTIPLES.key()};
+        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key(), QueryParams.MULTIPLES.key(), QueryParams.SAMPLES.key()};
         filterObjectParams(parameters, individualParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
@@ -448,6 +448,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                 }
             }
         }
+
+        individualConverter.validateSamplesToUpdate(individualParameters);
 
         return individualParameters;
     }
@@ -947,6 +949,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case CREATION_DATE:
                     case RELEASE:
                     case VERSION:
+                    case SAMPLES_ID:
                     case ANNOTATION_SETS:
                     case ONTOLOGY_TERMS_ID:
                     case ONTOLOGY_TERMS_NAME:
@@ -1028,11 +1031,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         }
 
         // Check if the individual is being used in a sample
-        query = new Query()
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId)
-                .append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + File.FileStatus.DELETED);
-        count = dbAdaptorFactory.getCatalogSampleDBAdaptor().count(query).first();
-        if (count > 0) {
+        QueryResult<Individual> individualQueryResult = get(individualId,
+                new QueryOptions(QueryOptions.INCLUDE, QueryParams.SAMPLES.key()));
+        if (individualQueryResult.first().getSamples().size() > 0) {
             throw new CatalogDBException("The individual " + individualId + " cannot be deleted/removed because it is being referenced by "
                     + count + " samples.");
         }
