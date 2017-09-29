@@ -34,7 +34,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
-@Path("/{version}/jobs")
+@Path("/{apiVersion}/jobs")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Jobs", position = 5, description = "Methods for working with 'jobs' endpoint")
 public class JobWSServer extends OpenCGAWSServer {

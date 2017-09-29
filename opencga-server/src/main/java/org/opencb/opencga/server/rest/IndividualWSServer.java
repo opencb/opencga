@@ -39,7 +39,7 @@ import java.util.*;
  * Created by jacobo on 22/06/15.
  */
 
-@Path("/{version}/individuals")
+@Path("/{apiVersion}/individuals")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Individuals", position = 6, description = "Methods for working with 'individuals' endpoint")
 public class IndividualWSServer extends OpenCGAWSServer {
@@ -86,16 +86,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                        @PathParam("individuals") String individualStr,
                                    @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
-                                   @ApiParam(value = "Individual version") @QueryParam("individualVersion") Integer version,
+                                   @ApiParam(value = "Individual version") @QueryParam("version") Integer version,
                                    @ApiParam(value = "Fetch all individual versions", defaultValue = "false")
                                        @QueryParam(Constants.ALL_VERSIONS) boolean allVersions) {
         try {
-            // TODO: Change this for version
-            if (version != null) {
-                query.put("version", query.get("individualVersion"));
-                query.remove("individualVersion");
-            }
-
             QueryResult<Individual> individualQueryResult = individualManager.get(studyStr, individualStr, query, queryOptions, sessionId);
 
             // We make a map of sample id - samples to put in the same queryResult all the samples coming from the same version

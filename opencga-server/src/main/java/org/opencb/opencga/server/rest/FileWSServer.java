@@ -63,7 +63,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
 
-@Path("/{version}/files")
+@Path("/{apiVersion}/files")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Files", position = 4, description = "Methods for working with 'files' endpoint")
 public class FileWSServer extends OpenCGAWSServer {

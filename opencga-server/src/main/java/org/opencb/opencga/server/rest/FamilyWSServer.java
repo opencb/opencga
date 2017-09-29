@@ -37,7 +37,7 @@ import java.util.*;
 /**
  * Created by pfurio on 03/05/17.
  */
-@Path("/{version}/families")
+@Path("/{apiVersion}/families")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Families", position = 8, description = "Methods for working with 'families' endpoint")
 public class FamilyWSServer extends OpenCGAWSServer {

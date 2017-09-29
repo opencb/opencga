@@ -41,12 +41,12 @@ import java.util.List;
 public class AdminRestWebService {
 
     @DefaultValue("v1")
-    @QueryParam("version")
-    protected String version;
+    @QueryParam("apiVersion")
+    protected String apiVersion;
 
     private static RestServer server;
 
-    public AdminRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo,
+    public AdminRestWebService(@PathParam("apiVersion") String version, @Context UriInfo uriInfo,
                                @Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
 //        super(version, uriInfo, httpServletRequest, context);
         System.out.println("Build AdminWSServer");
@@ -82,7 +82,7 @@ public class AdminRestWebService {
     protected Response createOkResponse(Object obj) {
         QueryResponse queryResponse = new QueryResponse();
         queryResponse.setTime(new Long(0).intValue());
-        queryResponse.setApiVersion(version);
+        queryResponse.setApiVersion(apiVersion);
 //        queryResponse.setQueryOptions(queryOptions);
 
         // Guarantee that the QueryResponse object contains a coll of results

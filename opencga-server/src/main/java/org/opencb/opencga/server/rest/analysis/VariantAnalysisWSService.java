@@ -47,7 +47,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 /**
  * Created by imedina on 17/08/16.
  */
-@Path("/{version}/analysis/variant")
+@Path("/{apiVersion}/analysis/variant")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Variant", position = 4, description = "Methods for working with 'files' endpoint")
 public class VariantAnalysisWSService extends AnalysisWSService {
@@ -58,9 +58,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public VariantAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantAnalysisWSService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, httpHeaders);
+        super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
     }
 
 

@@ -33,7 +33,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 17/08/16.
  */
-@Path("/{version}/analysis")
+@Path("/{apiVersion}/analysis")
 @Produces(MediaType.APPLICATION_JSON)
 public class AnalysisWSService extends OpenCGAWSServer {
 
@@ -41,12 +41,12 @@ public class AnalysisWSService extends OpenCGAWSServer {
 
     public AnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest, httpHeaders);
+        this(uriInfo.getPathParameters().getFirst("apiVersion"), uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public AnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public AnalysisWSService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, httpHeaders);
+        super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
 
         this.jobManager = catalogManager.getJobManager();
     }

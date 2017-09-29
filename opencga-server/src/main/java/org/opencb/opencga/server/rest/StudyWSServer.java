@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-@Path("/{version}/studies")
+@Path("/{apiVersion}/studies")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Studies", position = 3, description = "Methods for working with 'studies' endpoint")
 public class StudyWSServer extends OpenCGAWSServer {

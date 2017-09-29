@@ -42,7 +42,7 @@ import java.util.*;
 /**
  * Created by jacobo on 15/12/14.
  */
-@Path("/{version}/samples")
+@Path("/{apiVersion}/samples")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Samples", position = 7, description = "Methods for working with 'samples' endpoint")
 public class SampleWSServer extends OpenCGAWSServer {
@@ -67,16 +67,10 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Sample version") @QueryParam("sampleVersion") Integer version,
+            @ApiParam(value = "Sample version") @QueryParam("version") Integer version,
             @ApiParam(value = "Fetch all sample versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
                     boolean allVersions) {
         try {
-            // TODO: Change this for version
-            if (version != null) {
-                query.put("version", query.get("sampleVersion"));
-                query.remove("sampleVersion");
-            }
-
             QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, query, queryOptions, sessionId);
 
             // We make a map of sample id - samples to put in the same queryResult all the samples coming from the same version

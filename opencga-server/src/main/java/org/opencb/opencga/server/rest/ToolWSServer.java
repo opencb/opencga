@@ -31,7 +31,7 @@ import java.util.Map;
 /**
  * Created by jacobo on 30/10/14.
  */
-@Path("/{version}/tools")
+@Path("/{apiVersion}/tools")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Tools", hidden = true, position = 11, description = "Methods for working with 'tools' endpoint")
 public class ToolWSServer extends OpenCGAWSServer {
