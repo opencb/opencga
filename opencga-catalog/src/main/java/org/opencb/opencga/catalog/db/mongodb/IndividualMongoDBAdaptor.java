@@ -315,6 +315,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
+        if (queryOptions.getBoolean(Constants.REFRESH)) {
+            updateToLastSampleVersions(query, parameters);
+        }
+
         Document individualParameters = parseAndValidateUpdateParams(parameters, query);
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
@@ -329,6 +333,38 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         }
 
         return endQuery("Update individual", startTime, new QueryResult<Long>());
+    }
+
+    private void updateToLastSampleVersions(Query query, ObjectMap parameters) throws CatalogDBException {
+        if (parameters.containsKey(QueryParams.SAMPLES.key())) {
+            throw new CatalogDBException("Invalid option: Cannot update to the last version of samples and update to different samples at "
+                    + "the same time.");
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.SAMPLES.key());
+        QueryResult<Individual> queryResult = get(query, options);
+
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Individual not found.");
+        }
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogDBException("Update to the last version of samples in multiple individuals at once not supported.");
+        }
+
+        Individual individual = queryResult.first();
+        if (individual.getSamples() == null || individual.getSamples().isEmpty()) {
+            // Nothing to do
+            return;
+        }
+
+        List<Long> sampleIds = individual.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        Query sampleQuery = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+        options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.VERSION.key()
+        ));
+        QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sampleQuery, options);
+        parameters.put(QueryParams.SAMPLES.key(), sampleQueryResult.getResult());
     }
 
     private QueryResult<Long> updateAndCreateNewVersion(Query query, Document individualParameters, QueryOptions queryOptions)

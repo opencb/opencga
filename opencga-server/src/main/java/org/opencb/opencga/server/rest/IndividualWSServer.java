@@ -359,9 +359,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "Create a new version of individual", defaultValue = "false")
                                      @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
                                  @ApiParam(value = "Update all the sample references from the individual to point to their latest "
-                                         + "versions", defaultValue = "false") @QueryParam(Constants.REFRESH) boolean refresh,
+                                         + "versions", defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
                                  @ApiParam(value = "params", required = true) IndividualUpdatePOST updateParams) {
         try {
+            queryOptions.put(Constants.REFRESH, refresh);
+            queryOptions.remove("updateSampleVersion");
+            query.remove("updateSampleVersion");
+
             ObjectMap params = new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams));
             QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualStr, params,
                     queryOptions, sessionId);

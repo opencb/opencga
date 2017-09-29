@@ -127,43 +127,54 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setRelease(studyManager.getCurrentRelease(studyId));
 
         // Check samples exist and can be used or can be created by the user
+        Set<Long> existingSampleIds = new HashSet<>();
+        List<Sample> nonExistingSamples = new ArrayList<>();
         if (individual.getSamples().size() > 0) {
-            boolean checkUserCanCreateSamples = false;
-            List<Long> existingSampleIds = new ArrayList<>();
             for (Sample sample : individual.getSamples()) {
                 try {
                     MyResourceId resource = catalogManager.getSampleManager().getId(sample.getName(), String.valueOf(studyId), sessionId);
-                    sample.setId(resource.getResourceId());
-                    existingSampleIds.add(sample.getId());
+                    existingSampleIds.add(resource.getResourceId());
                 } catch (CatalogException e) {
                     // Sample does not exist so we need to check if the user has permissions to create the samples
-                    sample.setId(-1);
-                    checkUserCanCreateSamples = true;
+                    nonExistingSamples.add(sample);
                 }
             }
-            if (existingSampleIds.size() > 0) {
+            if (!existingSampleIds.isEmpty()) {
                 checkSamplesNotInUseInOtherIndividual(existingSampleIds, studyId, null);
             }
-            if (checkUserCanCreateSamples) {
+            if (!nonExistingSamples.isEmpty()) {
                 // Check the user can create new samples
                 authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
             }
         }
 
-        if (individual.getSamples().size() > 0) {
-            for (Sample sample : individual.getSamples()) {
-                if (sample.getId() <= 0) {
-                    // We need to create the sample
-                    QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(String.valueOf(studyId), sample,
-                            QueryOptions.empty(), sessionId);
-                    if (sampleQueryResult.getNumResults() == 0) {
-                        throw new CatalogException("Internal error. Could not obtain created sample");
-                    }
-                    sample.setId(sampleQueryResult.first().getId());
+        // Fetch the sample id and version necessary to point the individual to the proper samples
+        List<Sample> sampleList = new ArrayList<>(existingSampleIds.size() + nonExistingSamples.size());
+        if (!existingSampleIds.isEmpty()) {
+            // We need to obtain the latest version of the samples
+            Query sampleQuery = new Query().append(SampleDBAdaptor.QueryParams.ID.key(), existingSampleIds);
+            QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                    SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.VERSION.key()));
+
+            QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleQuery, sampleOptions);
+            if (sampleQueryResult.getNumResults() < existingSampleIds.size()) {
+                throw new CatalogException("Internal error. Could not obtain the current version of all the existing samples.");
+            }
+            sampleList.addAll(sampleQueryResult.getResult());
+        }
+        if (!nonExistingSamples.isEmpty()) {
+            for (Sample sample : nonExistingSamples) {
+                QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(String.valueOf(studyId), sample,
+                        QueryOptions.empty(), sessionId);
+                if (sampleQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Internal error. Could not obtain created sample");
                 }
+                sampleList.add(sampleQueryResult.first());
             }
         }
+        individual.setSamples(sampleList);
 
+        // Create the individual
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
@@ -172,7 +183,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return queryResult;
     }
 
-    private void checkSamplesNotInUseInOtherIndividual(List<Long> sampleIds, long studyId, Long individualId) throws CatalogException {
+    private void checkSamplesNotInUseInOtherIndividual(Set<Long> sampleIds, long studyId, Long individualId) throws CatalogException {
         // Check if any of the existing samples already belong to an individual
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.SAMPLES_ID.key(), sampleIds)
@@ -182,7 +193,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options);
         if (queryResult.getNumResults() > 0) {
             // Check which of the samples are already associated to an individual
-            Set<Long> existingSampleSet = new HashSet<>(sampleIds);
             List<Long> usedSamples = new ArrayList<>();
             for (Individual individual1 : queryResult.getResult()) {
                 if (individualId != null && individualId == individual1.getId()) {
@@ -191,7 +201,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 }
                 if (individual1.getSamples() != null) {
                     for (Sample sample : individual1.getSamples()) {
-                        if (existingSampleSet.contains(sample.getId())) {
+                        if (sampleIds.contains(sample.getId())) {
                             usedSamples.add(sample.getId());
                         }
                     }
@@ -480,7 +490,21 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     List<String> samples = parameters.getAsStringList(param.getKey());
                     MyResourceIds sampleResource = catalogManager.getSampleManager().getIds(StringUtils.join(samples, ","),
                             String.valueOf(studyId), sessionId);
-                    checkSamplesNotInUseInOtherIndividual(sampleResource.getResourceIds(), studyId, individualId);
+                    checkSamplesNotInUseInOtherIndividual(new HashSet<>(sampleResource.getResourceIds()), studyId, individualId);
+
+                    // Fetch the samples to obtain the latest version as well
+                    Query sampleQuery = new Query()
+                            .append(SampleDBAdaptor.QueryParams.ID.key(), sampleResource.getResourceIds());
+                    QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                            SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.VERSION.key()));
+                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleQuery, sampleOptions);
+
+                    if (sampleQueryResult.getNumResults() < sampleResource.getResourceIds().size()) {
+                        throw new CatalogException("Internal error: Could not obtain all the samples to be updated.");
+                    }
+
+                    // Update the parameters with the proper list of samples
+                    parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleQueryResult.getResult());
                     break;
                 case FATHER:
                 case MOTHER:
@@ -1014,27 +1038,31 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         List<String> errorMessages = new ArrayList<>();
         for (Individual individual : individualQueryResult.getResult()) {
-            List<Long> sampleList = individual.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-            if (sampleList.size() == 0) {
+            if (individual.getSamples() == null || individual.getSamples().isEmpty()) {
                 continue;
             }
 
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleList);
-            try {
-                QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, QueryOptions.empty(), userId);
-                if (sampleQueryResult.getNumResults() < sampleList.size()) {
-                    throw new CatalogException("Could only get information for " + sampleQueryResult.getNumResults() + " out of "
-                            + sampleList.size() + " samples belonging to individual " + individual.getName());
-                } else {
-                    individual.setSamples(sampleQueryResult.getResult());
+            List<Sample> sampleList = new ArrayList<>();
+            for (Sample sample : individual.getSamples()) {
+                Query query = new Query()
+                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId())
+                        .append(SampleDBAdaptor.QueryParams.VERSION.key(), sample.getVersion());
+                try {
+                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, QueryOptions.empty(), userId);
+                    if (sampleQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("Could not get information from sample " + sample.getId());
+                    } else {
+                        sampleList.add(sampleQueryResult.first());
+                    }
+                } catch (CatalogException e) {
+                    logger.warn("Could not retrieve sample information to complete individual {}, {}", individual.getName(), e.getMessage(),
+                            e);
+                    errorMessages.add("Could not retrieve sample information to complete individual " + individual.getName() + ", "
+                            + e.getMessage());
                 }
-            } catch (CatalogException e) {
-                logger.warn("Could not retrieve sample information to complete individual {}, {}", individual.getName(), e.getMessage(), e);
-                errorMessages.add("Could not retrieve sample information to complete individual " + individual.getName() + ", "
-                        + e.getMessage());
             }
+            individual.setSamples(sampleList);
         }
 
         if (errorMessages.size() > 0) {

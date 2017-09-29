@@ -19,10 +19,9 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Sample;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -56,15 +55,21 @@ public class IndividualConverter extends GenericDocumentComplexConverter<Individ
         List<Document> samples = (List) document.get("samples");
         if (samples != null) {
             // We make sure we don't store duplicates
-            Set<Long> sampleSet = new HashSet<>();
+            Map<Long, Sample> sampleMap = new HashMap<>();
             for (Document sample : samples) {
                 long id = sample.getInteger("id").longValue();
+                int version = sample.getInteger("version");
                 if (id > 0) {
-                    sampleSet.add(id);
+                    sampleMap.put(id, new Sample().setId(id).setVersion(version));
                 }
             }
 
-            document.put("samples", sampleSet.stream().map(sampleId -> new Document("id", sampleId)).collect(Collectors.toList()));
+            document.put("samples",
+                    sampleMap.entrySet().stream()
+                            .map(entry -> new Document()
+                                    .append("id", entry.getValue().getId())
+                                    .append("version", entry.getValue().getVersion()))
+                            .collect(Collectors.toList()));
         }
     }
 
