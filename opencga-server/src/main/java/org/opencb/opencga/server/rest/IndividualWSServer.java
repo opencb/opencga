@@ -353,14 +353,15 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individual}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some individual attributes", position = 6)
-    public Response updateByPost(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
-                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                        @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "Create a new version of individual", defaultValue = "false")
-                                     @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-                                 @ApiParam(value = "Update all the sample references from the individual to point to their latest "
-                                         + "versions", defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
-                                 @ApiParam(value = "params", required = true) IndividualUpdatePOST updateParams) {
+    public Response updateByPost(
+            @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Create a new version of individual", defaultValue = "false")
+                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
+                    defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
+            @ApiParam(value = "params", required = true) IndividualUpdatePOST updateParams) {
         try {
             queryOptions.put(Constants.REFRESH, refresh);
             queryOptions.remove("updateSampleVersion");

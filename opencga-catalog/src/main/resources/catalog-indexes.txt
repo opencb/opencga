@@ -66,7 +66,8 @@
 {"collection": "dataset", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "dataset", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
 
-{"collection": "family", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
+{"collection": "family", "fields": {"name": 1, "_studyId": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "family", "fields": {"id": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "family", "fields": {"mother.id": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"father.id": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"children.id": 1}, "options": {"background": true}}

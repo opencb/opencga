@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -190,12 +191,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         ParamUtils.checkObj(family, "family");
         ParamUtils.checkAlias(family.getName(), "name", configuration.getCatalog().getOffset());
+        family.setMembers(ParamUtils.defaultObject(family.getMembers(), Collections.emptyList()));
+        family.setDiseases(ParamUtils.defaultObject(family.getDiseases(), Collections.emptyList()));
         family.setCreationDate(TimeUtils.getTime());
         family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
         family.setStatus(new Status());
         family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
         family.setAnnotationSets(validateAnnotationSets(family.getAnnotationSets()));
         family.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+        family.setVersion(1);
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
         checkAndCreateAllIndividualsFromFamily(studyId, family, sessionId);
@@ -397,11 +401,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters, QueryOptions.empty());
+        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
+            // We do need to get the current release to properly create a new version
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudyId()));
+        }
+
+        QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.family, familyId, resource.getUser(), parameters, null, null);
 
         addMemberInformation(queryResult, resource.getStudyId(), sessionId);
-
         return queryResult;
     }
 
@@ -1089,26 +1097,37 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         if (queryResult.getNumResults() == 0) {
             return;
         }
+
+        List<String> errorMessages = new ArrayList<>();
         for (Family family : queryResult.getResult()) {
-            if (family.getMembers() != null && !family.getMembers().isEmpty()) {
-                List<Long> individualIds = family.getMembers().stream()
-                        .map(Individual::getId)
-                        .collect(Collectors.toList());
+            if (family.getMembers() == null || family.getMembers().isEmpty()) {
+                continue;
+            }
+
+            List<Individual> memberList = new ArrayList<>();
+            for (Individual member : family.getMembers()) {
                 Query query = new Query()
-                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), member.getId())
+                        .append(IndividualDBAdaptor.QueryParams.VERSION.key(), member.getVersion());
                 try {
-                    QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager()
-                            .get(String.valueOf(studyId), query, QueryOptions.empty(), sessionId);
-                    if (individualQueryResult.getNumResults() == family.getMembers().size()) {
-                        family.setMembers(individualQueryResult.getResult());
+                    QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+                            query, QueryOptions.empty(), sessionId);
+                    if (individualQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("Could not get information from member " + member.getId());
                     } else {
-                        throw new CatalogException("Could not fetch all the individuals from family");
+                        memberList.add(individualQueryResult.first());
                     }
                 } catch (CatalogException e) {
-                    logger.warn("Could not retrieve individual information to complete family object, {}", e.getMessage(), e);
-                    queryResult.setWarningMsg("Could not retrieve individual information to complete family object" + e.getMessage());
+                    logger.warn("Could not retrieve member information to complete family {}, {}", family.getName(), e.getMessage(), e);
+                    errorMessages.add("Could not retrieve member information to complete family " + family.getName() + ", "
+                            + e.getMessage());
                 }
             }
+            family.setMembers(memberList);
+        }
+
+        if (errorMessages.size() > 0) {
+            queryResult.setWarningMsg(StringUtils.join(errorMessages, "\n"));
         }
     }
 

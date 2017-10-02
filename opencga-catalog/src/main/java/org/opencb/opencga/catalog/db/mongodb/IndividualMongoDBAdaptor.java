@@ -414,8 +414,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             // We apply the updates the user wanted to apply (if any)
             mergeDocument(individualDocument, individualParameters);
 
-            // TODO: Check refresh references
-
             // Insert the new version document
             individualCollection.insert(individualDocument, QueryOptions.empty());
         }
