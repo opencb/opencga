@@ -19,7 +19,9 @@ package org.opencb.opencga.storage.hadoop.variant;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.util.ByteStringer;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.coprocessor.generated.PTableProtos;
 import org.apache.phoenix.schema.*;
 import org.apache.phoenix.schema.types.PUnsignedInt;
 import org.apache.phoenix.schema.types.PVarchar;
@@ -32,12 +34,9 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKey
 
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created on 20/11/15
@@ -114,12 +113,12 @@ public class GenomeHelperTest {
         PTableImpl table;
         try {
             List<PColumn> columns = Arrays.asList(
-                    new PColumnImpl(PNameFactory.newName("CHROMOSOME"), null, PVarchar.INSTANCE, null, null, false, 0, SortOrder.ASC, null, null, false, null, false, false),
-                    new PColumnImpl(PNameFactory.newName("POSITION"), null, PUnsignedInt.INSTANCE, null, null, false, 1, SortOrder.ASC, null, null, false, null, false, false),
-                    new PColumnImpl(PNameFactory.newName("REFERENCE"), null, PVarchar.INSTANCE, null, null, true, 2, SortOrder.ASC, null, null, false, null, false, false),
-                    new PColumnImpl(PNameFactory.newName("ALTERNATE"), null, PVarchar.INSTANCE, null, null, true, 3, SortOrder.ASC, null, null, false, null, false, false)
+                    PColumnImpl.createFromProto(PTableProtos.PColumn.newBuilder().setColumnNameBytes(ByteStringer.wrap(PNameFactory.newName("CHROMOSOME").getBytes())).setDataType(PVarchar.INSTANCE.getSqlTypeName()).setPosition(0).setNullable(false).setSortOrder(SortOrder.ASC.getSystemValue()).build()),
+                    PColumnImpl.createFromProto(PTableProtos.PColumn.newBuilder().setColumnNameBytes(ByteStringer.wrap(PNameFactory.newName("POSITION").getBytes())).setDataType(PUnsignedInt.INSTANCE.getSqlTypeName()).setPosition(1).setNullable(false).setSortOrder(SortOrder.ASC.getSystemValue()).build()),
+                    PColumnImpl.createFromProto(PTableProtos.PColumn.newBuilder().setColumnNameBytes(ByteStringer.wrap(PNameFactory.newName("REFERENCE").getBytes())).setDataType(PVarchar.INSTANCE.getSqlTypeName()).setPosition(2).setNullable(true).setSortOrder(SortOrder.ASC.getSystemValue()).build()),
+                    PColumnImpl.createFromProto(PTableProtos.PColumn.newBuilder().setColumnNameBytes(ByteStringer.wrap(PNameFactory.newName("ALTERNATE").getBytes())).setDataType(PVarchar.INSTANCE.getSqlTypeName()).setPosition(3).setNullable(true).setSortOrder(SortOrder.ASC.getSystemValue()).build())
             );
-            table = PTableImpl.makePTable(new PTableImpl(PNameFactory.newName("user"), null, "rk", 0, Collections.emptyList(), false), columns);
+            table = PTableImpl.makePTable(new PTableImpl(), columns);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
