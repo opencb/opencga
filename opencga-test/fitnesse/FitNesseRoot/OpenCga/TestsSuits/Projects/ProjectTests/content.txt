@@ -5,6 +5,8 @@
 !|Table: Rest Fixture | $baseURL |
 |let|pName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|pAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
 !3 Create New Project
 !|Table: Rest Fixture | $baseURL |
@@ -61,7 +63,7 @@
 
 !3 Create Study (Release 1)  
 !|Table: Rest Fixture | $baseURL |
-| setBody |{  "name": "$study", "alias": "$study", "type": "CASE_CONTROL"}|
+| setBody |{  "name": "$studyName", "alias": "$studyAlias", "type": "CASE_CONTROL"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/create?sid=$sessionId&projectId=$lProjectId |200|  Content-Type: application/json ||
 |let|studyId1|js|response.jsonbody.response[0].result[0].id||
@@ -102,7 +104,7 @@
 
 !3 Get Studies from Project From A Specific Release
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/search?sid=$sessionId&projectId=$lProjectId&release=1|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == '$study' && jsonbody.response[0].result[0].alias == '$study'|
+| GET | /v1/studies/search?sid=$sessionId&projectId=$lProjectId&release=1|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == '$studyName' && jsonbody.response[0].result[0].alias == '$studyAlias'|
 
 !3 Search Non-Existing Sample (Release 1)
 !|Table: Rest Fixture | $baseURL |

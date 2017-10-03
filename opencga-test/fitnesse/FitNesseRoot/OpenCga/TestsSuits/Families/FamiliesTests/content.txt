@@ -1,5 +1,4 @@
 !define TEST_SYSTEM {slim}
-!define file {4}
 
 !3 Generate Random Variables 
 !|Table: Rest Fixture | $baseURL |
@@ -12,11 +11,18 @@
 |let|asName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|asName2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
+!3 Login User A
+!|Table: Rest Fixture | $baseURL  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$userA/login |200|  Content-Type: application/json ||
+|let|sessionIdUserA|js|response.jsonbody.response[0].result[0].sessionId||
+
 !3 Create Individual
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$iName" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/individuals/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+| POST | /v1/individuals/create?sid=$sessionIdUserA&study=$study |200|  Content-Type: application/json ||
 |let|individualId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create First Family 
@@ -32,7 +38,7 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody |{"name": "$familyName2",  "members": [{"name": "father"}, {"name": "mother"},{"name": "son","father" : "father","mother" : "mother"}]}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/families/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+| POST | /v1/families/create?sid=$sessionIdUserA&study=$study |200|  Content-Type: application/json ||
 |let|familyId2|js|response.jsonbody.response[0].result[0].id||
 
 !3 Get First Family 
@@ -44,22 +50,21 @@
 | setBody | {"name" : "$updatedName"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/families/$familyId/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
-|let||js|response.jsonbody.response[0].result[0].name|$updatedName|
 
 !3 Get First Family After Update
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/families/$familyId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$familyId'|
+| GET | /v1/families/$familyId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$familyId' && jsonbody.response[0].result[0].name == '$updatedName'|
 
 !3 Search First Family By Name
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/families/search?sid=$sessionId&study=$study&name=$updatedName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$familyId' &&  jsonbody.response[0].result[0].name == '$updatedName'|
+| GET | /v1/families/search?sid=$sessionId&study=$study&name=$updatedName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$familyId'|
 
 #this test should fail as the individual has not proper mother and father to get eligible to be part of this family
 !3 (Neagtive) Update Second Family 
 !|Table: Rest Fixture | $baseURL |
 | setBody |{"members": [{"name": "father"},{"name": "mother"},{"name": "son"},{"name":"$iName"}]}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/families/$familyId2/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+| POST | /v1/families/$familyId2/update?sid=$sessionId&study=$study |500|  Content-Type: application/json ||
 
 !3 Update Individual 
 !|Table: Rest Fixture | $baseURL |
