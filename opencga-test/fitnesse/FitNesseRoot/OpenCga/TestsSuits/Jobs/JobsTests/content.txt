@@ -27,15 +27,15 @@
 
 !3 Find Info About A Job 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId' && jsonbody.response[0].result[0].toolName == 'opencga'|
+| GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$jobId' && jsonbody.response[0].result[0].toolId == 'opencga' && jsonbody.response[0].result[0].visited == false|
 
 !3 First Visit For A Job 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId/visit?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].visits == '0'|
+| GET | /v1/jobs/$jobId/visit?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].visited == true|
 
-!3 Second Visit For A Job 
+!3 Check Updated Visited Related To a Job
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId/visit?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].visits == '1'|
+| GET | /v1/jobs/search?sid=$sessionId&study=$study&name=$jobName1|200|  Content-Type: application/json |jsonbody.response[0].result[0].visited == true|
 
 !3 Get Jobs as Groups
 !|Table: Rest Fixture | $baseURL |

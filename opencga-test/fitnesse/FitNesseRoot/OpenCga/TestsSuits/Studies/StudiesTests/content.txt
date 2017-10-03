@@ -1,6 +1,6 @@
 !define TEST_SYSTEM {slim}
 !define file {4}
-!define projectId {$project}
+#!define projectId {$project}
 
 !3 Generate Random Variables 
 !|Table: Rest Fixture | $baseURL |
@@ -13,7 +13,7 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sName",  "alias" : "$sAlias", "type" : "CASE_CONTROL"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/create?sid=$sessionId&projectId=${projectId} |200|  Content-Type: application/json ||
+| POST | /v1/studies/create?sid=$sessionId&projectId=$projectId |200|  Content-Type: application/json ||
 |let|studyId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Get Study 
@@ -36,9 +36,9 @@
 
 !3 Create ACL For Study
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions" : "VIEW_FILES",  "members": "$userA"}|
+| setBody | {  "permissions" : "VIEW_FILES",  "action": "SET",  "study": "$studyId"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyId/acl/create?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 Update Study ACL (add)
 !|Table: Rest Fixture | $baseURL |
@@ -60,15 +60,17 @@
 
 !3 Get Member ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/acl/$userA/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| GET | /v1/studies/$studyId/acl?sid=$sessionId&$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
 
 !3 Delete Member ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/acl/$userA/delete?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == ''|
+| setBody | {  "permissions" : "",  "action": "REMOVE",  "study": "$studyId"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json ||
 
-!3 Get Member ACL (Deleted)
+!3 Get Member ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/acl/$userA/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/studies/$studyId/acl?sid=$sessionId&$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Create Group
 !|Table: Rest Fixture | $baseURL |
@@ -131,4 +133,4 @@
 
 !3 Search Study
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/search?sid=$sessionId&projectId=${projectId}&alias=$sAlias|200|  Content-Type: application/json |jsonbody.response[0].result[0].alias == '$sAlias'|
+| GET | /v1/studies/search?sid=$sessionId&projectId=$projectId&alias=$sAlias|200|  Content-Type: application/json |jsonbody.response[0].result[0].alias == '$sAlias'|

@@ -18,14 +18,18 @@
 | POST | /v1/samples/create?sid=$sessionId&study=$studyId |200|  Content-Type: application/json ||
 |let|sampleId|js|response.jsonbody.response[0].result[0].id||
 
-!3 Create Second Sample Including Individual And Annotation 
+!3 Create Second Sample Including Individual And Annotation (Deprecated)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sName2", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSet": "$gVariableSetId",  "annotations": {"var_int": "10"}}]}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/create?sid=$sessionId&study=$studyId |200|  Content-Type: application/json ||
+| POST | /v1/samples/create?sid=$sessionId&study=$studyId&lazy=false |200|  Content-Type: application/json ||
 |let|sampleId2|js|response.jsonbody.response[0].result[0].id||
-|let|individualId|js|response.jsonbody.response[0].result[0].individual.id||
 |let||js|response.jsonbody.response[0].result[0].annotationSets[0].annotations[1].value|10|
+
+!3 Search Individual Created Inside the Sample Using Individual Name
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$project:$study&name=$iName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$iName'|
+|let|individualId|js|response.jsonbody.response[0].result[0].id||
 
 !3 (Negative) Create Sample Including Individual And Annotation With Invalid Variable Set 
 !|Table: Rest Fixture | $baseURL |
