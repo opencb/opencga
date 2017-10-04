@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.core.models;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -32,7 +30,12 @@ public class ClinicalAnalysis {
     private String description;
     private Type type;
 
-    private Individual proband;
+    private OntologyTerm disease;
+
+    private File germline;
+    private File somatic;
+
+    private List<Individual> subjects;
     private Family family;
     private List<ClinicalInterpretation> interpretations;
 
@@ -55,20 +58,23 @@ public class ClinicalAnalysis {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(long id, String name, String description, Type type, Family family, Individual proband,
-                            List <ClinicalInterpretation> interpretations, String creationDate, Status status, int release,
-                            Map<String, Object> attributes) {
+    public ClinicalAnalysis(long id, String name, String description, Type type, OntologyTerm disease, File germline, File somatic,
+                            List<Individual> subjects, Family family, List<ClinicalInterpretation> interpretations, String creationDate,
+                            Status status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.type = type;
+        this.disease = disease;
+        this.germline = germline;
+        this.somatic = somatic;
+        this.subjects = subjects;
         this.family = family;
-        this.proband = proband;
-        this.interpretations = defaultObject(interpretations, ArrayList::new);
+        this.interpretations = interpretations;
         this.creationDate = creationDate;
         this.status = status;
         this.release = release;
-        this.attributes = defaultObject(attributes, HashMap::new);
+        this.attributes = attributes;
     }
 
     @Override
@@ -78,7 +84,10 @@ public class ClinicalAnalysis {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
-        sb.append(", proband=").append(proband);
+        sb.append(", disease=").append(disease);
+        sb.append(", germline=").append(germline);
+        sb.append(", somatic=").append(somatic);
+        sb.append(", subjects=").append(subjects);
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -125,21 +134,48 @@ public class ClinicalAnalysis {
         return this;
     }
 
+    public OntologyTerm getDisease() {
+        return disease;
+    }
+
+    public ClinicalAnalysis setDisease(OntologyTerm disease) {
+        this.disease = disease;
+        return this;
+    }
+
+    public File getGermline() {
+        return germline;
+    }
+
+    public ClinicalAnalysis setGermline(File germline) {
+        this.germline = germline;
+        return this;
+    }
+
+    public File getSomatic() {
+        return somatic;
+    }
+
+    public ClinicalAnalysis setSomatic(File somatic) {
+        this.somatic = somatic;
+        return this;
+    }
+
+    public List<Individual> getSubjects() {
+        return subjects;
+    }
+
+    public ClinicalAnalysis setSubjects(List<Individual> subjects) {
+        this.subjects = subjects;
+        return this;
+    }
+
     public Family getFamily() {
         return family;
     }
 
     public ClinicalAnalysis setFamily(Family family) {
         this.family = family;
-        return this;
-    }
-
-    public Individual getProband() {
-        return proband;
-    }
-
-    public ClinicalAnalysis setProband(Individual proband) {
-        this.proband = proband;
         return this;
     }
 
@@ -195,19 +231,19 @@ public class ClinicalAnalysis {
         return object;
     }
 
-    public class ClinicalInterpretation {
+    public static class ClinicalInterpretation {
 
         private String id;
         private String name;
-        private long jobId;
+        private File file;
 
         public ClinicalInterpretation() {
         }
 
-        public ClinicalInterpretation(String id, String name, long jobId) {
+        public ClinicalInterpretation(String id, String name, File file) {
             this.id = id;
             this.name = name;
-            this.jobId = jobId;
+            this.file = file;
         }
 
 
@@ -216,7 +252,7 @@ public class ClinicalAnalysis {
             final StringBuilder sb = new StringBuilder("Interpretation{");
             sb.append("id='").append(id).append('\'');
             sb.append(", name='").append(name).append('\'');
-            sb.append(", jobId=").append(jobId);
+            sb.append(", file=").append(file);
             sb.append('}');
             return sb.toString();
         }
@@ -240,12 +276,12 @@ public class ClinicalAnalysis {
             return this;
         }
 
-        public long getJobId() {
-            return jobId;
+        public File getFile() {
+            return file;
         }
 
-        public ClinicalInterpretation setJobId(long jobId) {
-            this.jobId = jobId;
+        public ClinicalInterpretation setFile(File file) {
+            this.file = file;
             return this;
         }
     }

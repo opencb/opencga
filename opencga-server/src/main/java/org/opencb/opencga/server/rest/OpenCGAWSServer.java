@@ -325,6 +325,10 @@ public class OpenCGAWSServer {
                     count = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), count);
                     break;
+                case "includeIndividual": // SampleWS
+                    lazy = !Boolean.parseBoolean(value);
+                    queryOptions.put("lazy", lazy);
+                    break;
                 case "lazy":
                     lazy = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), lazy);

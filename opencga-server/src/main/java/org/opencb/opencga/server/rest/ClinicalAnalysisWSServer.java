@@ -17,13 +17,11 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -113,8 +111,10 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Description") @QueryParam("description") String description,
+            @ApiParam(value = "Germline") @QueryParam("germline") String germline,
+            @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
             @ApiParam(value = "Family") @QueryParam("family") String family,
-            @ApiParam(value = "Proband") @QueryParam("proband") String proband,
+            @ApiParam(value = "Subject") @QueryParam("subject") String subject,
             @ApiParam(value = "Sample") @QueryParam("sample") String sample,
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
@@ -136,9 +136,19 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String name;
     }
 
-    private static class ProbandParams {
+    private static class SubjectParams {
         public String name;
         public List<SampleParams> samples;
+    }
+
+    private static class ClinicalInterpretationParameters {
+        public String id;
+        public String name;
+        public String file;
+
+        public ClinicalAnalysis.ClinicalInterpretation toClinicalInterpretation() {
+            return new ClinicalAnalysis.ClinicalInterpretation(id, name, new File().setName(file));
+        }
     }
 
     private static class ClinicalAnalysisParameters {
@@ -146,25 +156,43 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         public String description;
         public ClinicalAnalysis.Type type;
 
+        public OntologyTerm disease;
+
+        public String germline;
+        public String somatic;
+
+        public List<SubjectParams> subjects;
         public String family;
-        public ProbandParams proband;
-        public List<ClinicalAnalysis.ClinicalInterpretation> interpretations;
+        public List<ClinicalInterpretationParameters> interpretations;
 
         public Map<String, Object> attributes;
 
         public ClinicalAnalysis toClinicalAnalysis() {
 
-            Individual individual = new Individual();
-            individual.setName(proband.name);
-            if (proband.samples != null) {
-                List<Sample> sampleList = proband.samples.stream()
-                        .map(sample -> new Sample().setName(sample.name))
-                        .collect(Collectors.toList());
-                individual.setSamples(sampleList);
+            List<Individual> individuals = new ArrayList<>();
+            if (subjects != null && !subjects.isEmpty()) {
+                for (SubjectParams subject : subjects) {
+                    Individual individual = new Individual().setName(subject.name);
+                    if (subject.samples != null) {
+                        List<Sample> sampleList = subject.samples.stream()
+                                .map(sample -> new Sample().setName(sample.name))
+                                .collect(Collectors.toList());
+                        individual.setSamples(sampleList);
+                    }
+                    individuals.add(individual);
+                }
             }
 
-            return new ClinicalAnalysis(-1, name, description, type, new Family().setName(family), individual, interpretations, null, null,
-                    1, attributes);
+            File germlineFile = StringUtils.isNotEmpty(germline) ? new File().setName(germline) : null;
+            File somaticFile = StringUtils.isNotEmpty(somatic) ? new File().setName(somatic) : null;
+
+            List<ClinicalAnalysis.ClinicalInterpretation> interpretationList =
+                    interpretations != null
+                            ? interpretations.stream()
+                                .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
+                            : new ArrayList<>();
+            return new ClinicalAnalysis(-1, name, description, type, disease, germlineFile, somaticFile, individuals,
+                    new Family().setName(family), interpretationList, null, null, 1, attributes);
         }
     }
 

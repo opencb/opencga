@@ -134,11 +134,13 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             throws CatalogDBException {
         long startTime = startQuery();
 
+        Document clinicalInterpretation = getMongoDBDocument(interpretation, "ClinicalInterpretation");
+        clinicalConverter.validateInterpretation(clinicalInterpretation);
+
         Document match = new Document()
                 .append(PRIVATE_ID, clinicalAnalysisId)
                 .append(QueryParams.INTERPRETATIONS_ID.key(), new Document("$ne", interpretation.getId()));
-        Document update = new Document("$push", new Document(QueryParams.INTERPRETATIONS.key(),
-                getMongoDBDocument(interpretation, "ClinicalInterpretation")));
+        Document update = new Document("$push", new Document(QueryParams.INTERPRETATIONS.key(), clinicalInterpretation));
 
         QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
 
@@ -188,7 +190,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
         QueryResult<ClinicalAnalysis> queryResult = endQuery("Get", startTime, documentList);
-        addReferencesInfoToClinicalAnalysis(queryResult);
+//        addReferencesInfoToClinicalAnalysis(queryResult);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -198,15 +200,21 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         return queryResult;
     }
 
-    private void addReferencesInfoToClinicalAnalysis(QueryResult<ClinicalAnalysis> queryResult) {
-        if (queryResult.getResult() == null || queryResult.getResult().isEmpty()) {
-            return;
-        }
-        for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
-            clinicalAnalysis.setFamily(getFamily(clinicalAnalysis.getFamily()));
-            clinicalAnalysis.setProband(getIndividual(clinicalAnalysis.getProband()));
-        }
-    }
+//    private void addReferencesInfoToClinicalAnalysis(QueryResult<ClinicalAnalysis> queryResult) {
+//        if (queryResult.getResult() == null || queryResult.getResult().isEmpty()) {
+//            return;
+//        }
+//        for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
+//            clinicalAnalysis.setFamily(getFamily(clinicalAnalysis.getFamily()));
+//            if (clinicalAnalysis.getSubjects() != null) {
+//                List<Individual> individualList = new ArrayList<>(clinicalAnalysis.getSubjects());
+//                for (Individual individual : clinicalAnalysis.getSubjects()) {
+//                    individualList.add(getIndividual(individual));
+//                }
+//                clinicalAnalysis.setSubjects(individualList);
+//            }
+//        }
+//    }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
@@ -389,7 +397,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
 
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = clinicalCollection.find(bson, clinicalConverter, qOptions);
-        addReferencesInfoToClinicalAnalysis(clinicalAnalysisQueryResult);
+//        addReferencesInfoToClinicalAnalysis(clinicalAnalysisQueryResult);
 
         logger.debug("Clinical Analysis get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()), qOptions.toJson(), clinicalAnalysisQueryResult.getDbTime());
@@ -456,8 +464,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case NAME:
                     case TYPE:
                     case SAMPLE_ID:
-                    case PROBAND_ID:
+                    case SUBJECT_ID:
                     case FAMILY_ID:
+                    case GERMLINE_ID:
+                    case SOMATIC_ID:
                     case CREATION_DATE:
                     case DESCRIPTION:
                     case RELEASE:

@@ -50,8 +50,10 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         RELEASE("release", INTEGER, ""),
 
         FAMILY_ID("family.id", INTEGER, ""),
-        PROBAND_ID("proband.id", INTEGER, ""),
-        SAMPLE_ID("proband.samples.id", INTEGER, ""),
+        SOMATIC_ID("somatic.id", INTEGER, ""),
+        GERMLINE_ID("germline.id", INTEGER, ""),
+        SUBJECT_ID("subjects.id", INTEGER, ""),
+        SAMPLE_ID("subjects.samples.id", INTEGER, ""),
         INTERPRETATIONS("intepretations", TEXT_ARRAY, ""),
         INTERPRETATIONS_ID("intepretations.id", TEXT_ARRAY, ""),
 

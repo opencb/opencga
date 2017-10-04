@@ -24,9 +24,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -39,7 +39,7 @@ import java.util.*;
  */
 @Path("/{version}/families")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Families (BETA)", position = 8, description = "Methods for working with 'families' endpoint")
+@Api(value = "Families", position = 8, description = "Methods for working with 'families' endpoint")
 public class FamilyWSServer extends OpenCGAWSServer {
 
     private FamilyManager familyManager;
@@ -77,8 +77,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Multi-study search that allows the user to look for families from from different studies of the same project "
-            + "applying filters.", position = 4, response = Sample[].class)
+    @ApiOperation(value = "Search families", position = 4, response = Family[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -116,7 +115,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/create")
-    @ApiOperation(value = "Create family", position = 2, response = Family.class)
+    @ApiOperation(value = "Create family and the individual objects if they do not exist", position = 2, response = Family.class)
     public Response createFamilyPOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
@@ -133,7 +132,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{family}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some family attributes using POST method", position = 6)
+    @ApiOperation(value = "Update some family attributes", position = 6)
     public Response updateByPost(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,
@@ -306,23 +305,50 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
-    private static class RelativesPOST {
-        public IndividualWSServer.IndividualPOST member;
-        public IndividualWSServer.IndividualPOST father;
-        public IndividualWSServer.IndividualPOST mother;
-        public List<String> diseases;
-        public List<String> carrier;
-        public boolean parentalConsanguinity;
-        public Multiples multiples;
+    protected static class MultiplesParameters {
+        private String type;
+        private List<String> siblings;
 
-        private Relatives toRelatives(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            Individual realIndividual = member != null ? member.toIndividual(studyStr, studyManager, sessionId) : null;
-            Individual realFather = father != null ? father.toIndividual(studyStr, studyManager, sessionId) : null;
-            Individual realMother = mother != null ? mother.toIndividual(studyStr, studyManager, sessionId) : null;
-
-            return new Relatives(realIndividual, realFather, realMother, diseases, carrier, multiples, parentalConsanguinity);
+        public Multiples toMultiples() {
+            return new Multiples(type, siblings);
         }
+    }
 
+    protected static class IndividualPOST {
+        public String name;
+
+        public String father;
+        public String mother;
+        public MultiplesParameters multiples;
+
+        public Individual.Sex sex;
+        public String ethnicity;
+        public Boolean parentalConsanguinity;
+        public Individual.Population population;
+        public String dateOfBirth;
+        public Individual.KaryotypicSex karyotypicSex;
+        public Individual.LifeStatus lifeStatus;
+        public Individual.AffectationStatus affectationStatus;
+        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<OntologyTerm> ontologyTerms;
+        public Map<String, Object> attributes;
+
+
+        public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
+            List<AnnotationSet> annotationSetList = new ArrayList<>();
+            if (annotationSets != null) {
+                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+                    if (annotationSet != null) {
+                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+                    }
+                }
+            }
+
+            return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
+                    mother != null ? new Individual().setName(mother) : null, multiples != null ? multiples.toMultiples() : null, sex,
+                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
+        }
     }
 
     private static class FamilyPOST {
@@ -330,7 +356,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public String description;
 
         public List<OntologyTerm> diseases;
-        public List<RelativesPOST> members;
+        public List<IndividualPOST> members;
 
         public Map<String, Object> attributes;
     }
@@ -349,9 +375,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 }
             }
 
-            List<Relatives> relatives = new ArrayList<>(members.size());
-            for (RelativesPOST member : members) {
-                relatives.add(member.toRelatives(studyStr, studyManager, sessionId));
+            List<Individual> relatives = new ArrayList<>(members.size());
+            for (IndividualPOST member : members) {
+                relatives.add(member.toIndividual(studyStr, studyManager, sessionId));
             }
 
             return new Family(name, diseases, relatives, description, annotationSetList, attributes);

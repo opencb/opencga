@@ -27,10 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.OntologyTerm;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.exception.VersionException;
@@ -62,7 +59,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "lazy", value = "False to return the entire individual object", defaultValue = "true", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute (this replaces old lazy parameter)",
+                    defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response infoSample(
             @ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples") String sampleStr,
@@ -85,19 +83,28 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/create")
-    @ApiOperation(value = "Create sample", position = 2, response = Sample.class)
+    @ApiOperation(value = "Create sample", position = 2, response = Sample.class,
+            notes = "WARNING: The Individual object in the body is deprecated and will be completely removed in a future release. From"
+                    + " that moment on it will not be possible to create an individual when creating a new sample. To do that you must "
+                    + "use the individual/create web service, this web service allows now to create a new individual with its samples. "
+                    + "This web service now allows to create a new sample and associate it to an existing individual.")
     public Response createSamplePOST(
             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
+            @ApiParam(value = "Individual id or name to whom the sample will correspond.") @QueryParam("individual") String individual,
             @ApiParam(value="JSON containing sample information", required = true) CreateSamplePOST params) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
 
-            return createOkResponse(sampleManager.create(studyStr, params.toSample(studyStr, catalogManager.getStudyManager(), sessionId),
-                    queryOptions, sessionId));
+            Sample sample = params.toSample(studyStr, catalogManager.getStudyManager(), sessionId);
+            Individual tmpIndividual = sample.getIndividual();
+            if (StringUtils.isNotEmpty(individual)) {
+                tmpIndividual = new Individual().setName(individual);
+            }
+            return createOkResponse(sampleManager.create(studyStr, sample, tmpIndividual, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -149,7 +156,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "lazy", value = "False to return the entire individual object", defaultValue = "true", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute (this replaces old lazy parameter)",
+                    defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response search(@ApiParam(value = "DEPRECATED: use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
                            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
@@ -202,7 +210,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sample}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some sample attributes using POST method", position = 6)
+    @ApiOperation(value = "Update some sample attributes", position = 6)
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,
@@ -552,7 +560,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String individual;
     }
 
-    private static class CreateSamplePOST extends SamplePOST {
+    public static class CreateSamplePOST extends SamplePOST {
         public IndividualWSServer.IndividualPOST individual;
 
         public Sample toSample(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {

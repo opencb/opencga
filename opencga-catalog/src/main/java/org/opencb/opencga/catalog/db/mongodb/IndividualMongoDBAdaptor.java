@@ -32,15 +32,18 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -305,8 +308,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         Map<String, Object> individualParameters = getValidatedUpdateParams(parameters);
 
         if (!individualParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false), new Document("$set",
-                            individualParameters), null);
+            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
+                    new Document("$set", individualParameters), new QueryOptions("multi", true));
             return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
@@ -326,12 +329,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         filterEnumParams(parameters, individualParameters, acceptedEnums);
 
         String[] acceptedIntParams = {QueryParams.FATHER_ID.key(), QueryParams.MOTHER_ID.key()};
-        filterIntParams(parameters, individualParameters, acceptedIntParams);
+        filterLongParams(parameters, individualParameters, acceptedIntParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key(), QueryParams.MULTIPLES.key()};
         filterObjectParams(parameters, individualParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
@@ -339,11 +342,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        //Check individualIds exists
-        String[] individualIdParams = {"fatherId", "motherId"};
+        //Check individualIds exist
+        String[] individualIdParams = {QueryParams.FATHER_ID.key(), QueryParams.MOTHER_ID.key()};
         for (String individualIdParam : individualIdParams) {
             if (individualParameters.containsKey(individualIdParam)) {
-                Integer individualId1 = (Integer) individualParameters.get(individualIdParam);
+                Long individualId1 = (Long) individualParameters.get(individualIdParam);
                 if (individualId1 > 0 && !exists(individualId1)) {
                     throw CatalogDBException.idNotFound("Individual " + individualIdParam, individualId1);
                 }
@@ -556,6 +559,17 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         checkId(individualId);
         Query query = new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
+    }
+
+    @Override
+    public QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
+            throws CatalogDBException, CatalogAuthorizationException {
+        long studyId = getStudyId(individualId);
+        Query query = new Query()
+                .append(QueryParams.ID.key(), individualId)
+                .append(QueryParams.STUDY_ID.key(), studyId)
+                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        return get(query, options, userId);
     }
 
     @Override

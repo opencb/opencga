@@ -326,45 +326,33 @@ public class VariantMongoDBQueryParser {
 //                        + "." + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD).elemMatch(geneTraitQuery);
 //            }
 
-//            if (isValidParam(query, ANNOT_GO)) {
-//                String value = query.getString(ANNOT_GO.key());
-//
-//                // Check if comma separated of semi colon separated (AND or OR)
-//                QueryOperation queryOperation = checkOperator(value);
-//                // Split by comma or semi colon
-//                List<String> goValues = splitValue(value, queryOperation);
-//
-//                if (queryOperation == QueryOperation.AND) {
-//                    throw VariantQueryException.malformedParam(ANNOT_GO, value, "Unimplemented AND operator");
-//                }
-//
-//                Set<String> genes = cellBaseUtils.getGenesByGo(goValues);
-//
-//                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
-//                        + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
-//                        + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD).in(genes);
-//
-//            }
-//
-//            if (isValidParam(query, ANNOT_EXPRESSION)) {
-//                String value = query.getString(ANNOT_EXPRESSION.key());
-//
-//                // Check if comma separated of semi colon separated (AND or OR)
-//                QueryOperation queryOperation = checkOperator(value);
-//                // Split by comma or semi colon
-//                List<String> expressionValues = splitValue(value, queryOperation);
-//
-//                if (queryOperation == QueryOperation.AND) {
-//                    throw VariantQueryException.malformedParam(ANNOT_EXPRESSION, value, "Unimplemented AND operator");
-//                }
-//
-//                Set<String> genes = cellBaseUtils.getGenesByExpression(expressionValues);
-//
-//                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
-//                        + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
-//                        + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD).in(genes);
-//
-//            }
+            if (isValidParam(query, ANNOT_GO_GENES)) {
+                String value = query.getString(ANNOT_GO_GENES.key());
+
+                // Check if comma separated of semi colon separated (AND or OR)
+                QueryOperation queryOperation = checkOperator(value);
+                // Split by comma or semi colon
+                List<String> goGenes = splitValue(value, queryOperation);
+
+                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD).in(goGenes);
+
+            }
+
+            if (isValidParam(query, ANNOT_EXPRESSION_GENES)) {
+                String value = query.getString(ANNOT_EXPRESSION_GENES.key());
+
+                // Check if comma separated of semi colon separated (AND or OR)
+                QueryOperation queryOperation = checkOperator(value);
+                // Split by comma or semi colon
+                List<String> expressionGenes = splitValue(value, queryOperation);
+
+                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD).in(expressionGenes);
+
+            }
 
 
             if (isValidParam(query, ANNOT_PROTEIN_KEYWORDS)) {

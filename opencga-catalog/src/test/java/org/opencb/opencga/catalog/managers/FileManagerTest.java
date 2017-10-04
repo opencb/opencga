@@ -33,11 +33,11 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
 import java.net.URI;
@@ -462,6 +462,35 @@ public class FileManagerTest extends GenericTest {
             assertEquals("Name should not have changed", file.getName(), file.getName());
             assertTrue("File uri: " + file.getUri() + " should exist", ioManager.exists(file.getUri()));
         }
+    }
+
+    @Test
+    public void testUnlinkFile() throws CatalogException, IOException {
+        URI uri = Paths.get(getStudyURI()).resolve("data").toUri();
+        link(uri, "myDirectory", Long.toString(studyId), new ObjectMap("parents", true), sessionIdUser);
+
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+        QueryResult<File> fileQueryResultLinked = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser);
+
+        System.out.println("Number of files/folders linked = " + fileQueryResultLinked.getNumResults());
+
+        // Now we try to unlink the file
+        catalogManager.getFileManager().unlink("myDirectory/data/test/folder/test_0.5K.txt", Long.toString(studyId), sessionIdUser);
+        fileQueryResultLinked = catalogManager.getFileManager().get(35L, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, fileQueryResultLinked.getNumResults());
+        assertTrue(fileQueryResultLinked.first().getPath().contains(".REMOVED"));
+        assertEquals(fileQueryResultLinked.first().getPath().indexOf(".REMOVED"),
+                fileQueryResultLinked.first().getPath().lastIndexOf(".REMOVED"));
+
+        // We send the unlink command again
+        catalogManager.getFileManager().unlink("35", Long.toString(studyId), sessionIdUser);
+        fileQueryResultLinked = catalogManager.getFileManager().get(35L, QueryOptions.empty(), sessionIdUser);
+        // We check REMOVED is only contained once in the path
+        assertEquals(fileQueryResultLinked.first().getPath().indexOf(".REMOVED"),
+                fileQueryResultLinked.first().getPath().lastIndexOf(".REMOVED"));
     }
 
     @Test

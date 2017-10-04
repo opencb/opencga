@@ -165,7 +165,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{variableset}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some variableset attributes using POST method [PENDING]", position = 3, response = VariableSet.class)
+    @ApiOperation(value = "Update some variableset attributes [PENDING]", position = 3, response = VariableSet.class)
     public Response updateByPost(
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
             @ApiParam(value="JSON containing the parameters to be updated", required = true) VariableSetUpdateParameters params) {

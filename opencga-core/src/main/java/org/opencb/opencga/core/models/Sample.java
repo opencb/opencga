@@ -29,6 +29,7 @@ public class Sample extends Annotable {
     private long id;
     private String name;
     private String source;
+    @Deprecated
     private Individual individual;
 
     private int release;

@@ -12,8 +12,8 @@ def catalog_login(func):
         if not os.path.exists(opencga_dir):
             os.system("mkdir " + opencga_dir)
         if not configuration:
-            if os.path.exists(os.path.join(opencga_dir, 'configuration.json')):
-                configuration = json.load(open(os.path.join(opencga_dir, 'configuration.json')))
+            if os.path.exists(os.path.join(opencga_dir, 'opencga_configuration.json')):
+                configuration = json.load(open(os.path.join(opencga_dir, 'opencga_configuration.json')))
             else:
                 configuration = create_configuration_file(opencga_dir)
         else:
@@ -44,7 +44,7 @@ def catalog_login(func):
 
     def create_configuration_file(opencga_dir, configuration=None):
 
-        fdw = open(os.path.join(opencga_dir, 'configuration.json'), 'w')
+        fdw = open(os.path.join(opencga_dir, 'opencga_configuration.json'), 'w')
         if not configuration:
             host = raw_input("Please provide OpenCGA Host name: ")
             conf_json = {'version': 'v1', 'rest': {'hosts': [host]}}

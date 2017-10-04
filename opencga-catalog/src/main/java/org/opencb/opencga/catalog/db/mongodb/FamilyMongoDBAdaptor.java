@@ -38,10 +38,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.Annotable;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -301,6 +298,42 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         }
         return queryResult;
     }
+
+//    private void addMemberInfoToFamily(QueryResult<Family> queryResult) {
+//        Set<Long> memberIds = new HashSet<>();
+//        for (Family family : queryResult.getResult()) {
+//            // Add the ids of all the members
+//            if (family.getMembers() == null) {
+//                continue;
+//            }
+//            memberIds.addAll(family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet()));
+//        }
+//
+//        if (memberIds.size() == 0) {
+//            return;
+//        }
+//
+//        Query query = new Query(QueryParams.ID.key(), memberIds);
+//        try {
+//            QueryResult<Individual> individualQueryResult =
+//                    dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, QueryOptions.empty());
+//            Map<Long, Individual> individualMap = new HashMap<>();
+//            for (Individual individual : individualQueryResult.getResult()) {
+//                individualMap.put(individual.getId(), individual);
+//            }
+//
+//            // We add the whole individual information to the family results
+//            for (Family family : queryResult.getResult()) {
+//                List<Individual> memberList = new ArrayList<>();
+//                for (Individual individual : family.getMembers()) {
+//                    memberList.add(individualMap.get(individual.getId()));
+//                }
+//                family.setMembers(memberList);
+//            }
+//        } catch (CatalogDBException e) {
+//            logger.error("Could not obtain extra individual information, {}", e.getMessage(), e);
+//        }
+//    }
 
     @Override
     public DBIterator<Family> iterator(Query query, QueryOptions options) throws CatalogDBException {

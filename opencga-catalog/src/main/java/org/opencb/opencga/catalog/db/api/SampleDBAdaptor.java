@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 
 import java.util.List;
@@ -126,7 +127,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         }
     }
 
-    QueryResult<Sample> insert(Sample sample, long studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Sample> insert(Sample sample, long studyId, Individual individual, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException;
 
