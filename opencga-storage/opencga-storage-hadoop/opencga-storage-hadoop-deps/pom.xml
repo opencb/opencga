@@ -92,7 +92,8 @@
         <sqlline.version>1.1.9</sqlline.version>
         <jline.version>2.11</jline.version>
         <antlr.version>3.5</antlr.version>
-        <tephra.version>0.7.0</tephra.version>
+        <!--Do not specify tephra version here, so it can be overwritten-->
+        <!--<tephra.version>0.7.0</tephra.version>-->
         <snappy.version>0.3</snappy.version>
 
     </properties>
@@ -558,6 +559,23 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
+                <executions>
+                    <execution>
+                        <id>my_install</id>
+                        <goals>
+                            <goal>install</goal>
+                        </goals>
+                        <configuration>
+                            <!--<generatePom>false</generatePom>-->
+                            <!--<pomFile></pomFile>-->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
                     <execution>
@@ -567,6 +585,17 @@
                         </goals>
                         <configuration>
                             <classifier>${opencga-storage-hadoop-deps.classifier}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${opencga-storage-hadoop-deps.classifier}-tests</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
                         </configuration>
                     </execution>
                 </executions>
@@ -583,10 +612,11 @@
                         </goals>
                         <configuration>
                             <shadedClassifierName>${opencga-storage-hadoop-deps.classifier}-shaded</shadedClassifierName>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <!--<generateUniqueDependencyReducedPom>true</generateUniqueDependencyReducedPom>-->
                             <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <!--<shadedClassifierName>jar-with-dependencies</shadedClassifierName>-->
-                            <!--<shadedClassifierName>shaded</shadedClassifierName>-->
                             <createSourcesJar>true</createSourcesJar>
+                            <shadeSourcesContent>true</shadeSourcesContent>
 
                             <filters>
                                 <filter>

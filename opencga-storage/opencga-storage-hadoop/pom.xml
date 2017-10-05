@@ -25,6 +25,7 @@
         <hadoop.version>2.7.1</hadoop.version>
         <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
         <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
+        <tephra.version>0.7.0</tephra.version>
         <module-opencga-storage-hadoop-deps>false</module-opencga-storage-hadoop-deps>
     </properties>
     <parent>
@@ -115,7 +116,80 @@
                 <hadoop.version>2.7.3</hadoop.version>
                 <hbase.version>1.3.1</hbase.version>
                 <phoenix.version>4.11.0-HBase-1.3</phoenix.version>
+                <apache.tephra.version>0.12.0-incubating</apache.tephra.version>
             </properties>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>opencga-storage-hadoop-deps</artifactId>
+                        <version>${opencga-storage-hadoop-deps.version}</version>
+                        <classifier>${opencga-storage-hadoop-deps.classifier}-shaded</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-api</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-core</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-hbase-compat-1.1</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>opencga-storage-hadoop-deps</artifactId>
+                        <version>${opencga-storage-hadoop-deps.version}</version>
+                        <classifier>${opencga-storage-hadoop-deps.classifier}-tests</classifier>
+                        <type>test-jar</type>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-api</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-core</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-hbase-compat-1.1</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.tephra</groupId>
+                    <artifactId>tephra-api</artifactId>
+                    <version>${apache.tephra.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.tephra</groupId>
+                    <artifactId>tephra-core</artifactId>
+                    <version>${apache.tephra.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>logback-core</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>logback-classic</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.tephra</groupId>
+                    <artifactId>tephra-hbase-compat-1.1</artifactId>
+                    <version>${apache.tephra.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
         <profile>
             <id>emr-5.3.0</id>
@@ -184,7 +258,7 @@
                 <executions>
                     <execution>
                         <id>compile-hadoop-deps</id>
-                        <phase>compile</phase>
+                        <phase>generate-resources</phase>
                         <configuration>
                             <target>
                                 <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpathref="maven.plugin.classpath" />
