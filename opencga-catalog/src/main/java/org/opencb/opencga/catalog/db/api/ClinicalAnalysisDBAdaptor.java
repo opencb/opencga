@@ -49,13 +49,17 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         STATUS_DATE("status.date", TEXT, ""),
         RELEASE("release", INTEGER, ""),
 
+        FAMILY("family", TEXT_ARRAY, ""),
         FAMILY_ID("family.id", INTEGER, ""),
+        SOMATIC("somatic", TEXT_ARRAY, ""),
         SOMATIC_ID("somatic.id", INTEGER, ""),
+        GERMLINE("germline", TEXT_ARRAY, ""),
         GERMLINE_ID("germline.id", INTEGER, ""),
+        SUBJECTS("subjects", TEXT_ARRAY, ""),
         SUBJECT_ID("subjects.id", INTEGER, ""),
         SAMPLE_ID("subjects.samples.id", INTEGER, ""),
-        INTERPRETATIONS("intepretations", TEXT_ARRAY, ""),
-        INTERPRETATIONS_ID("intepretations.id", TEXT_ARRAY, ""),
+        INTERPRETATIONS("interpretations", TEXT_ARRAY, ""),
+        INTERPRETATIONS_ID("interpretations.id", TEXT_ARRAY, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.

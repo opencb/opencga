@@ -213,7 +213,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         }
 
         public ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions getClinicalAnalysisPermission() {
-            if (this.type == DISEASE_PANEL) {
+            if (this.type == CLINICAL_ANALYSIS) {
                 return ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.valueOf(this.permission);
             }
             return null;
