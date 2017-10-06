@@ -210,8 +210,18 @@ public class VariantSqlQueryParser {
                     }
                 });
             }
+            if (returnedFields.contains(VariantField.STUDIES_FILES)) {
+                returnedSamples.forEach((studyId, sampleIds) -> {
+                    for (Integer sampleId : sampleIds) {
+                        sb.append(",\"");
+                        VariantPhoenixHelper.buildOtherSampleDataColumnKey(studyId, sampleId, sb);
+                        sb.append('"');
+                    }
+                });
+            }
 
-            if (returnedFields.contains(VariantField.ANNOTATION)) {
+
+                if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
             }
 

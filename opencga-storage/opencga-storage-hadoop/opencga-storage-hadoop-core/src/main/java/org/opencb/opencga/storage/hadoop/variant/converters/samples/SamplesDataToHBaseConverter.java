@@ -113,8 +113,12 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
     private void addFileAttributes(StudyEntry studyEntry, OtherSampleData.Builder builder) {
         FileEntry fileEntry = studyEntry.getFiles().get(0);
         VariantProto.FileEntry.Builder fileBuilder = VariantProto.FileEntry.newBuilder()
-                .putAllAttributes(fileEntry.getAttributes())
                 .setFileId(fileEntry.getFileId());
+        fileEntry.getAttributes().forEach((key, value) -> {
+            if (value != null) {
+                fileBuilder.putAttributes(key, value);
+            }
+        });
         if (fileEntry.getCall() != null) {
             fileBuilder.setCall(fileEntry.getCall());
         }

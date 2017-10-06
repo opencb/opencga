@@ -220,7 +220,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                         org.apache.hadoop.hbase.ipc.PhoenixRpcSchedulerFactory.class.getName());
                 conf.set("hbase.rpc.controllerfactory.class",
                         org.apache.hadoop.hbase.ipc.controller.ServerRpcControllerFactory.class.getName());
-
+                conf.setInt("hbase.master.info.port", 16011);
 
                 // Not required in Phoenix 4.8
 //                conf.set("hbase.master.loadbalancer.class",

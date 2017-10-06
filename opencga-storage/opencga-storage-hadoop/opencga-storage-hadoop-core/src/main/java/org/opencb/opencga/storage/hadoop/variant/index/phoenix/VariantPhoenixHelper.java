@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CONSERVATION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_FUNCTIONAL_SCORE;
@@ -279,7 +278,11 @@ public class VariantPhoenixHelper {
 
     public void registerNewSamples(Connection con, String table, Integer studyId, Collection<Integer> sampleIds) throws SQLException {
         createTableIfNeeded(con, table);
-        List<Column> columns = sampleIds.stream().map(sampleId -> getSampleColumn(studyId, sampleId)).collect(Collectors.toList());
+        List<Column> columns = new ArrayList<>(sampleIds.size() * 2 + 1);
+        for (Integer sampleId : sampleIds) {
+            columns.add(getSampleColumn(studyId, sampleId));
+            columns.add(getOtherSampleDataColumnKey(studyId, sampleId));
+        }
         columns.add(getStudyColumn(studyId));
         phoenixHelper.addMissingColumns(con, table, columns, true);
         con.commit();

@@ -35,6 +35,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -82,10 +83,12 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
                 new ObjectMap(Options.TRANSFORM_FORMAT.key(), "proto")
                         .append(Options.FILE_ID.key(), FILE_ID)
                         .append(Options.ANNOTATE.key(), true)
+                        .append(Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                         .append(Options.CALCULATE_STATS.key(), false)
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, true)
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
+                        .append(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
         );
 
         source = variantStorageManager.readVariantSource(etlResult.getTransformResult());
@@ -283,5 +286,12 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
             assertEquals(Collections.singleton(FILE_ID), sc.getIndexedFiles());
             System.out.println("sc = " + sc);
         }
+    }
+
+    @Test
+    public void printVariants() throws Exception {
+        URI outDir = newOutputUri();
+        System.out.println("print variants at = " + outDir);
+        VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, outDir);
     }
 }
