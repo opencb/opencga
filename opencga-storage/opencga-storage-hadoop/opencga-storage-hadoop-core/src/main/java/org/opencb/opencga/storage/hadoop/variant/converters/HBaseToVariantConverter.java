@@ -63,15 +63,11 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     protected final HBaseToVariantStatsConverter statsConverter;
     protected final HBaseToStudyEntryConverter studyEntryConverter;
     protected final GenomeHelper genomeHelper;
-    protected final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
     protected final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
-
-    protected List<String> returnedSamples = null;
 
     protected static boolean failOnWrongVariants = false; //FIXME
     protected boolean failOnEmptyVariants = false;
 //    protected boolean readFullSamplesData = true;
-    protected List<String> expectedFormat;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new StudyConfigurationManager(
@@ -86,6 +82,11 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper, scm);
     }
 
+    /**
+     * Get fixed format for the VARCHAR ARRAY sample columns.
+     * @param studyConfiguration    StudyConfiguration
+     * @return  List of fixed formats
+     */
     public static List<String> getFixedFormat(StudyConfiguration studyConfiguration) {
         return getFormat(studyConfiguration);
     }
@@ -113,7 +114,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     }
 
     public HBaseToVariantConverter<T> setReturnedSamples(List<String> returnedSamples) {
-        this.returnedSamples = returnedSamples;
+        studyEntryConverter.setReturnedSamples(returnedSamples);
         return this;
     }
 
@@ -160,7 +161,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
      * @return this
      */
     public HBaseToVariantConverter<T> setFormats(List<String> formats) {
-        this.expectedFormat = formats;
+        studyEntryConverter.setFormats(formats);
         return this;
     }
 
@@ -284,22 +285,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         String sampleName = mapSampleIds.get(sampleId);
         return returnedSamplesPosition.get(sampleName);
     }
-
-    /**
-     * Creates a SORTED MAP with the required samples position.
-     *
-     * @param studyConfiguration Study Configuration
-     * @return Sorted linked hash map
-     */
-    private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
-        if (!returnedSamplesPositionMap.containsKey(studyConfiguration.getStudyId())) {
-            LinkedHashMap<String, Integer> samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
-                    returnedSamples == null ? null : new LinkedHashSet<>(returnedSamples), StudyConfiguration::getIndexedSamplesPosition);
-            returnedSamplesPositionMap.put(studyConfiguration.getStudyId(), samplesPosition);
-        }
-        return returnedSamplesPositionMap.get(studyConfiguration.getStudyId());
-    }
-
 
     public static boolean isFailOnWrongVariants() {
         return failOnWrongVariants;

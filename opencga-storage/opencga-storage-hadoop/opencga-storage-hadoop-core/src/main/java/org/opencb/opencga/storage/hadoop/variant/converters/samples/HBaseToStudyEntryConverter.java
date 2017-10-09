@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters.samples;
 import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Result;
@@ -62,7 +63,7 @@ import java.util.stream.Collectors;
  */
 public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
-    private static final String UNKNOWN_SAMPLE_DATA = ".";
+    private static final String UNKNOWN_SAMPLE_DATA = VCFConstants.MISSING_VALUE_v4;
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
@@ -76,6 +77,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private static final String UNKNOWN_GENOTYPE = "?/?";
     private String unknownGenotype = UNKNOWN_GENOTYPE;
     private boolean mutableSamplesPosition = true;
+    private List<String> expectedFormat;
 
     protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
 
@@ -140,6 +142,17 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     public HBaseToStudyEntryConverter setMutableSamplesPosition(boolean mutableSamplesPosition) {
         this.mutableSamplesPosition = mutableSamplesPosition;
+        return this;
+    }
+
+    /**
+     * Format of the converted variants. Discard other values.
+     * @see org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils#getIncludeFormats
+     * @param formats Formats for converted variants
+     * @return this
+     */
+    public HBaseToStudyEntryConverter setFormats(List<String> formats) {
+        this.expectedFormat = formats;
         return this;
     }
 
@@ -224,8 +237,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
-
         Map<String, List<String>> alternateSampleMap = new HashMap<>();
+        int[] formatsMap = getFormatsMap(fixedFormat);
 
         while (iterator.hasNext()) {
             Pair<String, Object> next = iterator.next();
@@ -234,7 +247,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 Array value = (Array) next.getValue();
                 if (value != null) {
                     List<String> sampleData = toModifiableList(value);
-                    addMainSampleDataColumn(studyConfiguration, fixedFormat, studyEntry, alternateSampleMap, columnName, sampleData);
+                    addMainSampleDataColumn(studyConfiguration, studyEntry, fixedFormat, formatsMap, columnName, sampleData,
+                            alternateSampleMap);
                 }
             } else if (columnName.endsWith(VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX)) {
                 byte[] bytes = (byte[]) next.getValue();
@@ -259,8 +273,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
-
         Map<String, List<String>> alternateSampleMap = new HashMap<>();
+        int[] formatsMap = getFormatsMap(fixedFormat);
+
         try {
             ResultSetMetaData metaData = resultSet.getMetaData();
             for (Integer i : columnIds) {
@@ -269,7 +284,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     Array value = resultSet.getArray(i);
                     if (value != null) {
                         List<String> sampleData = toModifiableList(value);
-                        addMainSampleDataColumn(studyConfiguration, fixedFormat, studyEntry, alternateSampleMap, columnName, sampleData);
+                        addMainSampleDataColumn(studyConfiguration, studyEntry, fixedFormat, formatsMap, columnName, sampleData,
+                                alternateSampleMap);
                     }
                 } else if (columnName.endsWith(VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX)) {
                     byte[] bytes = resultSet.getBytes(i);
@@ -298,6 +314,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
         Map<String, List<String>> alternateSampleMap = new HashMap<>();
+        int[] formatsMap = getFormatsMap(fixedFormat);
 
         for (byte[] qualifier : columns) {
             byte[] value = result.getValue(columnFamily, qualifier);
@@ -307,7 +324,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 if (value != null) {
                     Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
                     List<String> sampleData = toModifiableList(array);
-                    addMainSampleDataColumn(studyConfiguration, fixedFormat, studyEntry, alternateSampleMap, columnName, sampleData);
+                    addMainSampleDataColumn(studyConfiguration, studyEntry, fixedFormat, formatsMap, columnName, sampleData,
+                            alternateSampleMap);
                 }
             } else if (endsWith(qualifier, VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX_BYTES)) {
                 if (value != null) {
@@ -335,7 +353,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             studyEntry = new StudyEntry(String.valueOf(studyConfiguration.getStudyId()));
         }
 
-        studyEntry.setFormat(new ArrayList<>(fixedFormat));
+        if (expectedFormat == null) {
+            studyEntry.setFormat(new ArrayList<>(fixedFormat));
+        } else {
+            studyEntry.setFormat(new ArrayList<>(expectedFormat));
+        }
+
         LinkedHashMap<String, Integer> returnedSamplesPosition;
         if (mutableSamplesPosition) {
             returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
@@ -347,8 +370,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return studyEntry;
     }
 
-    protected void addMainSampleDataColumn(StudyConfiguration studyConfiguration, List<String> fixedFormat, StudyEntry studyEntry,
-                                           Map<String, List<String>> alternateSampleMap, String columnName, List<String> sampleData) {
+    protected void addMainSampleDataColumn(StudyConfiguration studyConfiguration, StudyEntry studyEntry, List<String> fixedFormat,
+                                           int[] formatsMap, String columnName, List<String> sampleData,
+                                           Map<String, List<String>> alternateSampleMap) {
         String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
 //                        Integer studyId = getStudyId(split);
         Integer sampleId = getSampleId(split);
@@ -371,7 +395,39 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 //          sampleIds.add(sampleId);
         }
 
+        sampleData = remapSamplesData(sampleData, formatsMap);
+
         studyEntry.addSampleData(sampleName, sampleData);
+    }
+
+    private int[] getFormatsMap(List<String> fixedFormat) {
+        int[] formatsMap;
+        if (expectedFormat != null && !expectedFormat.equals(fixedFormat)) {
+            formatsMap = new int[expectedFormat.size()];
+            for (int i = 0; i < expectedFormat.size(); i++) {
+                formatsMap[i] = fixedFormat.indexOf(expectedFormat.get(i));
+            }
+        } else {
+            formatsMap = null;
+        }
+        return formatsMap;
+    }
+
+    private List<String> remapSamplesData(List<String> sampleData, int[] formatsMap) {
+        if (formatsMap == null) {
+            // Nothing to do!
+            return sampleData;
+        } else {
+            List<String> filteredSampleData = new ArrayList<>(formatsMap.length);
+            for (int i : formatsMap) {
+                if (i < 0) {
+                    filteredSampleData.add(UNKNOWN_SAMPLE_DATA);
+                } else {
+                    filteredSampleData.add(sampleData.get(i));
+                }
+            }
+            return filteredSampleData;
+        }
     }
 
     private void addOtherSampleDataColumn(StudyConfiguration studyConfiguration, StudyEntry studyEntry, byte[] bytes, String columnName) {
@@ -386,6 +442,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         Integer sampleId = getSampleId(split);
 
         otherSampleData.getSampleDataMap().forEach((format, value) -> {
+
+            if (expectedFormat != null && !expectedFormat.contains(format)) {
+                // Skip non expected formats
+                // continue;
+                return;
+            }
 
             if (!studyEntry.getFormatPositions().containsKey(format)) {
                 studyEntry.addFormat(format);
@@ -402,7 +464,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 //            }
         });
 
-        if (studyEntry.getFiles().stream().noneMatch(f -> f.getFileId().equalsIgnoreCase(otherSampleData.getFile().getFileId()))) {
+        if (!otherSampleData.getFile().getFileId().isEmpty()
+                && studyEntry.getFiles().stream().noneMatch(f -> f.getFileId().equalsIgnoreCase(otherSampleData.getFile().getFileId()))) {
             FileEntry fileEntry = new FileEntry(
                     otherSampleData.getFile().getFileId(),
                     otherSampleData.getFile().getCall(),

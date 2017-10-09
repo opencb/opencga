@@ -19,6 +19,10 @@
  */
 package org.opencb.opencga.storage.hadoop.variant;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HConstants;
@@ -244,9 +248,14 @@ public class VariantHbaseTestUtils {
 
     private static void printVariantsFromDBAdaptor(VariantHadoopDBAdaptor dbAdaptor, PrintStream out) {
         VariantDBIterator iterator = dbAdaptor.iterator(new Query(), new QueryOptions("simpleGenotypes", true));
+        ObjectMapper mapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
-            out.println(variant.toJson());
+            try {
+                out.println(mapper.writeValueAsString(variant));
+            } catch (JsonProcessingException e) {
+                throw Throwables.propagate(e);
+            }
         }
     }
 
