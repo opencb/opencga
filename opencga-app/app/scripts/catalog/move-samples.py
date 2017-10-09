@@ -60,6 +60,8 @@ if studies[0]['_projectId'] != studies[1]['_projectId']:
     exit(1)
 
 for sampleName in args.samples:
+    print
+
     # 1. Look for the sample in both studies
     sampleSource = None
     sampleTarget = None
@@ -81,13 +83,25 @@ for sampleName in args.samples:
     files = []
     fileIds = []
     filePaths = []
+    error = False
     for file in client['file'].find({
         'samples.id': sampleSource['id'],
         '_studyId': sourceStudyId
     }):
+        # Check that the files are not related to more than one sample
+        if len(file['samples']) > 1:
+            print("File " + str(file['id']) + " is associated to more than one sample.")
+            error = True
+            continue
         files.append(file)
         fileIds.append(file['id'])
         filePaths.append(file['path'])
+
+    if error:
+        print("Sample " + sampleName + " is related to some files that are related to more than one file. Please, fix "
+                                       "it. Moving on to next sample.")
+        continue
+
 
     # 3. Check that none of the files exist in the target study
     for file in client['file'].find({
