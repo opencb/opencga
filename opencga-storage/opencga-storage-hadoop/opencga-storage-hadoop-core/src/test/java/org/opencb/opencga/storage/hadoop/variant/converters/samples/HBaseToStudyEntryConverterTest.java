@@ -13,8 +13,10 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.OtherSampleData;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,9 +28,9 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseToSamplesDataConverterTest {
+public class HBaseToStudyEntryConverterTest {
 
-    private HBaseToSamplesDataConverter converter;
+    private HBaseToStudyEntryConverter converter;
     private StudyConfiguration sc;
     private StudyConfigurationManager scm;
 
@@ -47,10 +49,11 @@ public class HBaseToSamplesDataConverterTest {
         sc.getSampleIds().put("S5", 5);
         sc.getSampleIds().put("S6", 6);
         sc.getSampleIds().put("S7", 7);
+        sc.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
 
         scm.updateStudyConfiguration(sc, null);
 
-        converter = new HBaseToSamplesDataConverter(new GenomeHelper(new Configuration()), scm);
+        converter = new HBaseToStudyEntryConverter(new GenomeHelper(new Configuration()), scm);
 
     }
 
@@ -88,9 +91,43 @@ public class HBaseToSamplesDataConverterTest {
                 .putSampleData("KEY_1", "VALUE_1")
                 .putSampleData("KEY_2", "VALUE_2")
                 .build().toByteArray()));
+        values.add(Pair.of(new String(VariantPhoenixHelper.buildSampleColumnKey(1, 2)), new PhoenixArray(PVarchar.INSTANCE, new String[]{"1/1", "8,9", "70"})));
         values.add(Pair.of(new String(VariantPhoenixHelper.buildSampleColumnKey(1, 3)), new PhoenixArray(PVarchar.INSTANCE, new String[]{"0/1", "3,4", "20"})));
+        values.add(Pair.of(new String(VariantPhoenixHelper.buildOtherSampleDataColumnKey(1, 3)), OtherSampleData.newBuilder()
+                .putSampleData("KEY_1", "VALUE_1")
+                .putSampleData("KEY_4", "VALUE_4")
+                .build().toByteArray()));
 
         StudyEntry s = converter.convert(values.iterator(), new Variant("1:1000:A:C"), 1, null);
+        System.out.println("s = " + s);
+    }
+
+    @Test
+    public void testConvertExtendedFormatFileEntryDataAndRows() throws Exception {
+        sc.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
+        sc.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
+        scm.updateStudyConfiguration(sc, null);
+
+        List<Pair<String, Object>> values = new ArrayList<>();
+        values.add(Pair.of(new String(VariantPhoenixHelper.buildSampleColumnKey(1, 1)), new PhoenixArray(PVarchar.INSTANCE, new String[]{"0/0", "1,2", "10"})));
+        values.add(Pair.of(new String(VariantPhoenixHelper.buildOtherSampleDataColumnKey(1, 1)), OtherSampleData.newBuilder()
+                .putSampleData("KEY_1", "VALUE_1")
+                .putSampleData("KEY_2", "VALUE_2")
+                .build().toByteArray()));
+        values.add(Pair.of(new String(VariantPhoenixHelper.buildSampleColumnKey(1, 3)), new PhoenixArray(PVarchar.INSTANCE, new String[]{"0/1", "3,4", "20"})));
+        values.add(Pair.of(new String(VariantPhoenixHelper.buildOtherSampleDataColumnKey(1, 2)), OtherSampleData.newBuilder()
+                .putSampleData("KEY_2", "VALUE_2")
+                .putSampleData("KEY_4", "VALUE_4")
+                .build().toByteArray()));
+
+        VariantTableStudyRowProto.Builder rowBuilder = VariantTableStudyRowProto.newBuilder()
+                .setStart(1000)
+                .setReference("A")
+                .setAlternate("C")
+                .setHomRefCount(5)
+                .addHet(3);
+        VariantTableStudyRow row = new VariantTableStudyRow(rowBuilder.build(), "1", 1);
+        StudyEntry s = converter.convert(values.iterator(), new Variant("1:1000:A:C"), 1, row);
         System.out.println("s = " + s);
     }
 }

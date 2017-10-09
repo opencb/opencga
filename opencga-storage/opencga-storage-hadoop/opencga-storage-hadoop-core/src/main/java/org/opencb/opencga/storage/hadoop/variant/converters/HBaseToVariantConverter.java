@@ -30,15 +30,13 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converters.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.samples.HBaseToSamplesDataConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.samples.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
@@ -51,7 +49,6 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.extractVariantFromVariantRowKey;
 
@@ -62,27 +59,18 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  */
 public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant> {
 
-    private static final String UNKNOWN_GENOTYPE = "?/?";
-    protected final StudyConfigurationManager scm;
     protected final HBaseToVariantAnnotationConverter annotationConverter;
     protected final HBaseToVariantStatsConverter statsConverter;
-    protected final HBaseToSamplesDataConverter samplesDataConverter;
+    protected final HBaseToStudyEntryConverter studyEntryConverter;
     protected final GenomeHelper genomeHelper;
-    protected final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
-            .append(StudyConfigurationManager.CACHED, true);
     protected final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
     protected final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
 
     protected List<String> returnedSamples = null;
 
     protected static boolean failOnWrongVariants = false; //FIXME
-    protected boolean studyNameAsStudyId = false;
-    protected boolean mutableSamplesPosition = true;
     protected boolean failOnEmptyVariants = false;
-    protected boolean simpleGenotypes = false;
-    protected boolean readFullSamplesData = true;
-    protected Set<VariantField> variantFields = null;
-    protected String unknownGenotype = UNKNOWN_GENOTYPE;
+//    protected boolean readFullSamplesData = true;
     protected List<String> expectedFormat;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
@@ -93,16 +81,13 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
         this.genomeHelper = genomeHelper;
-        this.scm = scm;
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper);
         this.statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
-        this.samplesDataConverter = new HBaseToSamplesDataConverter(genomeHelper, scm);
+        this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper, scm);
     }
 
     public static List<String> getFixedFormat(StudyConfiguration studyConfiguration) {
-        List<String> format = getFormat(studyConfiguration);
-        System.out.println("fixedFormat = " + format);
-        return format;
+        return getFormat(studyConfiguration);
     }
 
     public static List<String> getFormat(StudyConfiguration studyConfiguration) {
@@ -133,42 +118,38 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     }
 
     public HBaseToVariantConverter<T> setReturnedFields(Set<VariantField> fields) {
-        variantFields = fields;
         annotationConverter.setReturnedFields(fields);
         return this;
     }
 
     public HBaseToVariantConverter<T> setStudyNameAsStudyId(boolean studyNameAsStudyId) {
-        this.studyNameAsStudyId = studyNameAsStudyId;
+        studyEntryConverter.setStudyNameAsStudyId(studyNameAsStudyId);
         return this;
     }
 
     public HBaseToVariantConverter<T> setMutableSamplesPosition(boolean mutableSamplesPosition) {
-        this.mutableSamplesPosition = mutableSamplesPosition;
+        studyEntryConverter.setMutableSamplesPosition(mutableSamplesPosition);
         return this;
     }
 
     public HBaseToVariantConverter<T> setFailOnEmptyVariants(boolean failOnEmptyVariants) {
-        this.failOnEmptyVariants = failOnEmptyVariants;
+        studyEntryConverter.setFailOnWrongVariants(failOnEmptyVariants);
         return this;
     }
 
     public HBaseToVariantConverter<T> setSimpleGenotypes(boolean simpleGenotypes) {
-        this.simpleGenotypes = simpleGenotypes;
+        studyEntryConverter.setSimpleGenotypes(simpleGenotypes);
         return this;
     }
 
+    @Deprecated
     public HBaseToVariantConverter<T> setReadFullSamplesData(boolean readFullSamplesData) {
-        this.readFullSamplesData = readFullSamplesData;
+//        this.readFullSamplesData = readFullSamplesData;
         return this;
     }
 
     public HBaseToVariantConverter<T> setUnknownGenotype(String unknownGenotype) {
-        if (StringUtils.isEmpty(unknownGenotype)) {
-            this.unknownGenotype = UNKNOWN_GENOTYPE;
-        } else {
-            this.unknownGenotype = unknownGenotype;
-        }
+        studyEntryConverter.setUnknownGenotype(unknownGenotype);
         return this;
     }
 
@@ -232,16 +213,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;
-    }
-
-    private String getDefaultGenotype(StudyConfiguration studyConfiguration) {
-        String defaultGenotype;
-        if (VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes()).equals(VariantStorageEngine.MergeMode.ADVANCED)) {
-            defaultGenotype = "0/0";
-        } else {
-            defaultGenotype = unknownGenotype;
-        }
-        return defaultGenotype;
     }
 
 //    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, VariantStudyMetadata variantMetadata,
@@ -379,10 +350,8 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
                 Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
                 VariantAnnotation annotation = annotationConverter.convert(resultSet);
-                Map<Integer, VariantTableStudyRow> variantTableStudyRows = VariantTableStudyRow.parse(variant, resultSet, genomeHelper)
-                        .stream().collect(Collectors.toMap(VariantTableStudyRow::getStudyId, r -> r));
 
-                Map<Integer, StudyEntry> samplesData = readFullSamplesData ? samplesDataConverter.convert(resultSet) : null;
+                Map<Integer, StudyEntry> samplesData = studyEntryConverter.convert(resultSet);
                 return convert(resultSet, variant, samplesData, stats, annotation);
             } catch (RuntimeException | SQLException e) {
                 logger.error("Fail to parse variant: " + variant);
@@ -404,9 +373,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         public Variant convert(Result result) {
             VariantAnnotation annotation = annotationConverter.convert(result);
             Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(result);
-            Map<Integer, StudyEntry> studies = readFullSamplesData ? samplesDataConverter.convert(result) : null;
-            Map<Integer, VariantTableStudyRow> rows = VariantTableStudyRow.parse(result, genomeHelper)
-                    .stream().collect(Collectors.toMap(VariantTableStudyRow::getStudyId, r -> r));
+            Map<Integer, StudyEntry> studies = studyEntryConverter.convert(result);
             return convert(result, extractVariantFromVariantRowKey(result.getRow()), studies, stats, annotation);
         }
     }

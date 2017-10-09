@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters.samples;
 import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -34,6 +35,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -58,28 +60,88 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
+public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
-    protected static final String UNKNOWN_SAMPLE_DATA = ".";
+    private static final String UNKNOWN_SAMPLE_DATA = ".";
     private final GenomeHelper genomeHelper;
-    protected final StudyConfigurationManager scm;
-    protected final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
+    private final StudyConfigurationManager scm;
+    private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
             .append(StudyConfigurationManager.CACHED, true);
-    protected final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
-    protected List<String> returnedSamples = null;
+    private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
+    private List<String> returnedSamples = null;
 
     // TODO: Add setters
-    protected boolean studyNameAsStudyId = false;
-    protected boolean simpleGenotypes = false;
-    protected boolean failOnWrongVariants = false;
-    protected String unknownGenotype = "./.";
+    private boolean studyNameAsStudyId = false;
+    private boolean simpleGenotypes = false;
+    private boolean failOnWrongVariants = false;
+    private static final String UNKNOWN_GENOTYPE = "?/?";
+    private String unknownGenotype = UNKNOWN_GENOTYPE;
+    private boolean mutableSamplesPosition = true;
 
-    protected final Logger logger = LoggerFactory.getLogger(HBaseToSamplesDataConverter.class);
+    protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
 
-    public HBaseToSamplesDataConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
+    public HBaseToStudyEntryConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
         super(genomeHelper.getColumnFamily());
         this.genomeHelper = genomeHelper;
         this.scm = scm;
+    }
+
+    public List<String> getReturnedSamples() {
+        return returnedSamples;
+    }
+
+    public HBaseToStudyEntryConverter setReturnedSamples(List<String> returnedSamples) {
+        this.returnedSamples = returnedSamples;
+        return this;
+    }
+
+    public boolean isStudyNameAsStudyId() {
+        return studyNameAsStudyId;
+    }
+
+    public HBaseToStudyEntryConverter setStudyNameAsStudyId(boolean studyNameAsStudyId) {
+        this.studyNameAsStudyId = studyNameAsStudyId;
+        return this;
+    }
+
+    public boolean isSimpleGenotypes() {
+        return simpleGenotypes;
+    }
+
+    public HBaseToStudyEntryConverter setSimpleGenotypes(boolean simpleGenotypes) {
+        this.simpleGenotypes = simpleGenotypes;
+        return this;
+    }
+
+    public boolean isFailOnWrongVariants() {
+        return failOnWrongVariants;
+    }
+
+    public HBaseToStudyEntryConverter setFailOnWrongVariants(boolean failOnWrongVariants) {
+        this.failOnWrongVariants = failOnWrongVariants;
+        return this;
+    }
+
+    public String getUnknownGenotype() {
+        return unknownGenotype;
+    }
+
+    public HBaseToStudyEntryConverter setUnknownGenotype(String unknownGenotype) {
+        if (StringUtils.isEmpty(unknownGenotype)) {
+            this.unknownGenotype = UNKNOWN_GENOTYPE;
+        } else {
+            this.unknownGenotype = unknownGenotype;
+        }
+        return this;
+    }
+
+    public boolean isMutableSamplesPosition() {
+        return mutableSamplesPosition;
+    }
+
+    public HBaseToStudyEntryConverter setMutableSamplesPosition(boolean mutableSamplesPosition) {
+        this.mutableSamplesPosition = mutableSamplesPosition;
+        return this;
     }
 
     protected StudyConfiguration getStudyConfiguration(Integer studyId) {
@@ -120,7 +182,6 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
 
             HashMap<Integer, StudyEntry> map = new HashMap<>();
             columnsPerStudy.forEach((studyId, columnIds) -> {
-
                 map.put(studyId, convert(resultSet, variant, studyId, columnIds, rows.get(studyId)));
             });
 
@@ -128,7 +189,6 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
         } catch (SQLException e) {
             throw Throwables.propagate(e);
         }
-
     }
 
     public Map<Integer, StudyEntry> convert(Result result) {
@@ -158,8 +218,6 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
         });
 
         return map;
-
-
     }
 
     protected StudyEntry convert(Iterator<Pair<String, Object>> iterator, Variant variant, Integer studyId, VariantTableStudyRow row) {
@@ -192,7 +250,7 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
         if (row != null) {
             convert(variant, studyEntry, studyConfiguration, row);
         }
-        fillEmptySamplesData(studyEntry);
+        fillEmptySamplesData(studyEntry, studyConfiguration);
 
         return studyEntry;
     }
@@ -230,7 +288,7 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
         if (row != null) {
             convert(variant, studyEntry, studyConfiguration, row);
         }
-        fillEmptySamplesData(studyEntry);
+        fillEmptySamplesData(studyEntry, studyConfiguration);
 
         return studyEntry;
     }
@@ -265,7 +323,7 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
         if (row != null) {
             convert(variant, studyEntry, studyConfiguration, row);
         }
-        fillEmptySamplesData(studyEntry);
+        fillEmptySamplesData(studyEntry, studyConfiguration);
 
         return studyEntry;
     }
@@ -279,7 +337,13 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
         }
 
         studyEntry.setFormat(new ArrayList<>(fixedFormat));
-        studyEntry.setSortedSamplesPosition(getReturnedSamplesPosition(studyConfiguration));
+        LinkedHashMap<String, Integer> returnedSamplesPosition;
+        if (mutableSamplesPosition) {
+            returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
+        } else {
+            returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
+        }
+        studyEntry.setSortedSamplesPosition(returnedSamplesPosition);
 //        studyEntry.setSamplesData(new ArrayList<>(samplesPosition.size()));
         return studyEntry;
     }
@@ -485,6 +549,16 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
         }
 
         return studyEntry;
+    }
+
+    private String getDefaultGenotype(StudyConfiguration studyConfiguration) {
+        String defaultGenotype;
+        if (VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes()).equals(VariantStorageEngine.MergeMode.ADVANCED)) {
+            defaultGenotype = "0/0";
+        } else {
+            defaultGenotype = unknownGenotype;
+        }
+        return defaultGenotype;
     }
 
     private String getSimpleGenotype(String genotype) {
