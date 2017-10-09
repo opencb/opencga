@@ -111,8 +111,6 @@ public class VariantExporter {
         // Task<Variant, Variant>
         ParallelTaskRunner.TaskWithException<Variant, Variant, Exception> progressTask;
         if (logProgress) {
-            progressTask = batch -> batch;
-        } else {
             final Query finalQuery = query;
             final QueryOptions finalQueryOptions = queryOptions;
             ProgressLogger progressLogger = new ProgressLogger("Export variants", () -> {
@@ -126,6 +124,8 @@ public class VariantExporter {
                 progressLogger.increment(batch.size(), () -> "up to position " + batch.get(batch.size() - 1).toString());
                 return batch;
             };
+        } else {
+            progressTask = batch -> batch;
         }
 
         // DataWriter
