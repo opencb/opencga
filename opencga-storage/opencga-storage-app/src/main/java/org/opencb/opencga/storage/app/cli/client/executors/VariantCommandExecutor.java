@@ -431,6 +431,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
             options.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
         }
+        options.put(VariantQueryParam.REGION.key(), statsVariantsCommandOptions.region);
         options.put(VariantStorageEngine.Options.RESUME.key(), statsVariantsCommandOptions.resume);
 
         if (statsVariantsCommandOptions.commonOptions.params != null) {
