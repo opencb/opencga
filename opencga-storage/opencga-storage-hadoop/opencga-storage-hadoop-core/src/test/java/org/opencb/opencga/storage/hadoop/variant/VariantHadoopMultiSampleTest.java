@@ -505,7 +505,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         testPlatinumFilesOneByOne(new ObjectMap()
                 .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 5);
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 17);
     }
 
     public void testPlatinumFilesOneByOne(ObjectMap otherParams, int maxFilesLoaded) throws Exception {

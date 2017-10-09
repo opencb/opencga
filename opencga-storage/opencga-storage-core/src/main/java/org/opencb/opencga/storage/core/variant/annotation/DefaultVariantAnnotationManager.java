@@ -241,7 +241,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
                             .setProgressLogger(progressLogger), null, config);
             ptr.run();
         } catch (ExecutionException e) {
-            throw new StorageEngineException("Error loading variant annotation");
+            throw new StorageEngineException("Error loading variant annotation", e);
         }
 
     }

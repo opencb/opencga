@@ -70,7 +70,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
     private List<String> returnedSamples = null;
 
-    // TODO: Add setters
     private boolean studyNameAsStudyId = false;
     private boolean simpleGenotypes = false;
     private boolean failOnWrongVariants = false;
@@ -331,9 +330,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected StudyEntry newStudyEntry(StudyConfiguration studyConfiguration, List<String> fixedFormat) {
         StudyEntry studyEntry;
         if (studyNameAsStudyId) {
-            studyEntry = new StudyEntry(String.valueOf(studyConfiguration.getStudyId()));
-        } else {
             studyEntry = new StudyEntry(studyConfiguration.getStudyName());
+        } else {
+            studyEntry = new StudyEntry(String.valueOf(studyConfiguration.getStudyId()));
         }
 
         studyEntry.setFormat(new ArrayList<>(fixedFormat));
@@ -412,12 +411,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
     }
 
-    private void fillEmptySamplesData(StudyEntry studyEntry) {
+    private void fillEmptySamplesData(StudyEntry studyEntry, StudyConfiguration studyConfiguration) {
         List<String> format = studyEntry.getFormat();
         List<String> emptyData = new ArrayList<>(format.size());
+        String defaultGenotype = getDefaultGenotype(studyConfiguration);
         for (String formatKey : format) {
             if ("GT".equals(formatKey)) {
-                emptyData.add(unknownGenotype);
+                emptyData.add(defaultGenotype);
             } else {
                 emptyData.add(UNKNOWN_SAMPLE_DATA);
             }
@@ -427,6 +427,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         studyEntry.getSamplesData().replaceAll(strings -> {
             if (strings == null) {
                 return unmodifiableEmptyData;
+            } else if (strings.size() < unmodifiableEmptyData.size()) {
+                for (int i = strings.size(); i < unmodifiableEmptyData.size(); i++) {
+                    strings.add(unmodifiableEmptyData.get(i));
+                }
+                return strings;
             } else {
                 return strings;
             }
@@ -439,9 +444,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
-        studyEntry.setFormat(new ArrayList<>(fixedFormat));
-        studyEntry.setSortedSamplesPosition(getReturnedSamplesPosition(studyConfiguration));
-
         return convert(variant, studyEntry, studyConfiguration, row);
     }
 
@@ -453,7 +455,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
 //        calculatePassCallRates(row, attributesMap, loadedSamplesSize);
 
-        if (studyEntry.getFormatPositions().containsKey("GT")) {
+        Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+        if (gtIdx != null) {
             Set<Integer> sampleWithVariant = new HashSet<>();
             for (String genotype : row.getGenotypes()) {
                 sampleWithVariant.addAll(row.getSampleIds(genotype));
@@ -466,9 +469,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     if (sampleIdx == null) {
                         continue;   //Sample may not be required. Ignore this sample.
                     }
-                    List<String> lst = Arrays.asList(genotype, VariantMerger.PASS_VALUE);
+//                    List<String> lst = Arrays.asList(genotype, VariantMerger.PASS_VALUE);
 //                samplesDataArray[sampleIdx] = lst;
-                    studyEntry.addSampleData(sampleIdx, lst);
+//                    studyEntry.addSampleData(sampleIdx, lst);
+                    studyEntry.addSampleData(sampleIdx, gtIdx, genotype, UNKNOWN_SAMPLE_DATA);
                 }
             }
 
@@ -477,7 +481,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 sampleWithVariant.add(entry.getKey());
 
                 String sampleName = mapSampleIds.get(entry.getKey());
-                if (!returnedSamplesPosition.containsKey(sampleName)) {
+                Integer samplePosition = returnedSamplesPosition.get(sampleName);
+                if (samplePosition == null) {
                     continue;   //Sample may not be required. Ignore this sample.
                 }
                 String genotype = entry.getValue();
@@ -491,17 +496,18 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 }
 //            samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE);
 //            studyEntry.addSampleData(samplePosition, Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE));
-                studyEntry.addSampleData(sampleName, "GT", returnedGenotype);
+//                studyEntry.addSampleData(sampleName, "GT", returnedGenotype);
+                studyEntry.addSampleData(samplePosition, gtIdx, returnedGenotype, UNKNOWN_SAMPLE_DATA);
             }
 
             // Fill gaps (with HOM_REF)
-            int gapCounter = 0;
-            for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
-                if (studyEntry.getSamplesData().get(i) == null) {
-                    ++gapCounter;
-                    studyEntry.addSampleData(i, Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE));
-                }
-            }
+//            int gapCounter = 0;
+//            for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
+//                if (studyEntry.getSamplesData().get(i) == null) {
+//                    ++gapCounter;
+//                    studyEntry.addSampleData(i, Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE));
+//                }
+//            }
 //            for (int i = 0; i < samplesDataArray.length; i++) {
 //                if (samplesDataArray[i] == null) {
 //                    ++gapCounter;
@@ -525,7 +531,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
         }
 
-        if (studyEntry.getFormatPositions().containsKey("FT")) {
+        Integer ftIdx = studyEntry.getFormatPositions().get("FT");
+        if (ftIdx != null) {
             // Set pass field
             int passCount = loadedSamplesSize;
             for (Map.Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPass().entrySet()) {
@@ -533,10 +540,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 passCount -= entry.getValue().getSampleIdsCount();
                 for (Integer sampleId : entry.getValue().getSampleIdsList()) {
                     String sampleName = mapSampleIds.get(sampleId);
-                    if (!returnedSamplesPosition.containsKey(sampleName)) {
+                    Integer samplePosition = returnedSamplesPosition.get(sampleName);
+                    if (samplePosition == null) {
                         continue;   //Sample may not be required. Ignore this sample.
                     }
-                    studyEntry.addSampleData(sampleName, "FT", filterString);
+                    studyEntry.addSampleData(samplePosition, ftIdx, filterString, UNKNOWN_SAMPLE_DATA);
                 }
             }
 

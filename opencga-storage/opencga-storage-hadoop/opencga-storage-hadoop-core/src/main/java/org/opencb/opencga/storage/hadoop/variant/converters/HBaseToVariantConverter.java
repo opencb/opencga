@@ -198,7 +198,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
         for (Integer studyId : studies.keySet()) {
             StudyEntry studyEntry = studies.get(studyId);
-            stats.get(studyId).forEach((cohortId, variantStats) -> {
+            stats.getOrDefault(studyId, Collections.emptyMap()).forEach((cohortId, variantStats) -> {
                 studyEntry.setStats(cohortId.toString(), variantStats);
             });
             variant.addStudyEntry(studyEntry);
@@ -320,8 +320,9 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
         @Override
         public Variant convert(VariantTableStudyRow row) {
-            return convert(row, new Variant(row.getChromosome(), row.getPos(), row.getRef(), row.getAlt()),
-                    null, Collections.emptyMap(), null);
+            Variant variant = new Variant(row.getChromosome(), row.getPos(), row.getRef(), row.getAlt());
+            StudyEntry studyEntry = studyEntryConverter.convert(variant, row);
+            return convert(row, variant, Collections.singletonMap(row.getStudyId(), studyEntry), Collections.emptyMap(), null);
         }
     }
 

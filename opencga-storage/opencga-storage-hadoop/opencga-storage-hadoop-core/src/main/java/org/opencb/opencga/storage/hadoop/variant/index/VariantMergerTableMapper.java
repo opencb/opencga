@@ -75,7 +75,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
 
     public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
             VariantType.SNV, VariantType.SNP,
-            VariantType.INDEL, VariantType.INSERTION, VariantType.DELETION,
+            VariantType.INDEL, /* VariantType.INSERTION, VariantType.DELETION,*/
             VariantType.MNV, VariantType.MNP);
     private List<String> expectedFormats;
 
