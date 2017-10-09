@@ -525,8 +525,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     // We can freely assign the sample to the individual
                     List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() + 1);
                     sampleList.addAll(individual.getSamples());
+
+                    // Get the current sample version
+                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(resource.getResourceId(),
+                            new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.VERSION.key()));
+
                     // Add current sample
-                    sampleList.add(new Sample().setId(resource.getResourceId()));
+                    sampleList.add(new Sample()
+                            .setId(resource.getResourceId())
+                            .setVersion(sampleQueryResult.first().getVersion()));
 
                     individual.setSamples(sampleList);
                 }

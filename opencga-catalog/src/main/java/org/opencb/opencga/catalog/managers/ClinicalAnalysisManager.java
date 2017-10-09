@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -322,7 +321,32 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     @Override
     public QueryResult<ClinicalAnalysis> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options,
                                                 String sessionId) throws CatalogException {
-        throw new NotImplementedException("Update clinical analysis not implemented");
+        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        authorizationManager.checkClinicalAnalysisPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+
+        for (Map.Entry<String, Object> param : parameters.entrySet()) {
+            ClinicalAnalysisDBAdaptor.QueryParams queryParam = ClinicalAnalysisDBAdaptor.QueryParams.getParam(param.getKey());
+            switch (queryParam) {
+                case NAME:
+                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
+                    break;
+                case INTERPRETATIONS:
+                    List<LinkedHashMap<String, Object>> interpretationList = (List<LinkedHashMap<String, Object>>) param.getValue();
+                    for (LinkedHashMap<String, Object> interpretationMap : interpretationList) {
+                        LinkedHashMap<String, Object> fileMap = (LinkedHashMap<String, Object>) interpretationMap.get("file");
+                        MyResourceId fileResource = catalogManager.getFileManager().getId(String.valueOf(fileMap.get("name")),
+                                String.valueOf(resource.getStudyId()), sessionId);
+                        fileMap.put("id", fileResource.getResourceId());
+                    }
+                    break;
+                default:
+                    break;
+//                    throw new CatalogException("Cannot update " + queryParam);
+            }
+        }
+
+        return clinicalDBAdaptor.update(resource.getResourceId(), parameters, QueryOptions.empty());
     }
 
     public QueryResult<ClinicalAnalysis> updateInterpretation(String studyStr, String clinicalAnalysisStr,
