@@ -26,6 +26,7 @@
 
 !3 Search Individual Created Inside the Sample Using Individual Name
 !|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&name=$iName|200|  Content-Type: application/json ||
 | GET | /v1/individuals/search?sid=$sessionId&study=$study&name=$iName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$iName'|
 |let|individualId|js|response.jsonbody.response[0].result[0].id||
 
@@ -47,7 +48,7 @@
 
 !3 Get Sample Including Individual
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/info?sid=$sessionId&includeIndividual=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId2' && jsonbody.response[0].result[0].individual.id == '$individualId'|
+| GET | /v1/samples/$sampleId2/info?sid=$sessionId&includeIndividual=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId2' && jsonbody.response[0].result[0].individual.id == '$individualId'|
 
 !3 Get Individual 
 !|Table: Rest Fixture | $baseURL |
