@@ -221,7 +221,7 @@ public class VariantSqlQueryParser {
             }
 
 
-                if (returnedFields.contains(VariantField.ANNOTATION)) {
+            if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
             }
 

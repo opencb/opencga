@@ -229,7 +229,6 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         if (sampleNames.isEmpty() || !this.exportGenotype.get()) {
             builder.setOption(Options.DO_NOT_WRITE_GENOTYPES);
         }
-        builder.setOption(Options.ALLOW_MISSING_FIELDS_IN_HEADER);
         List<String> formatFields = studyConfiguration.getAttributes()
                 .getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key());
         List<String> formatFieldsType = studyConfiguration.getAttributes()

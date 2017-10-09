@@ -83,12 +83,10 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
                 new ObjectMap(Options.TRANSFORM_FORMAT.key(), "proto")
                         .append(Options.FILE_ID.key(), FILE_ID)
                         .append(Options.ANNOTATE.key(), true)
-                        .append(Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                         .append(Options.CALCULATE_STATS.key(), false)
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, true)
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
-                        .append(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
         );
 
         source = variantStorageManager.readVariantSource(etlResult.getTransformResult());

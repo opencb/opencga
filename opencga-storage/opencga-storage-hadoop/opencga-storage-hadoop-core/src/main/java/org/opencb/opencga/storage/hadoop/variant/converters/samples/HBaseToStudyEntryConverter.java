@@ -168,18 +168,34 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         try {
             ResultSetMetaData metaData = resultSet.getMetaData();
 
-            Map<Integer, List<Integer>> columnsPerStudy = new HashMap<>();
+            Set<Integer> studies = new HashSet<>();
+            Map<Integer, List<Pair<Integer, List<String>>>> sampleDataMap = new HashMap<>();
+            Map<Integer, List<Pair<Integer, byte[]>>> otherSampleDataMap = new HashMap<>();
 
             for (int i = 1; i <= metaData.getColumnCount(); i++) {
                 String columnName = metaData.getColumnName(i);
-                if (columnName.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX)
-                        || columnName.endsWith(VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX)) {
+                if (columnName.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX)) {
                     String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                     Integer studyId = getStudyId(split);
-                    columnsPerStudy.computeIfAbsent(studyId, s -> new ArrayList<>()).add(i);
+                    Integer sampleId = getSampleId(split);
+                    Array value = resultSet.getArray(i);
+                    if (value != null) {
+                        List<String> sampleData = toModifiableList(value);
+                        studies.add(studyId);
+                        sampleDataMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(sampleId, sampleData));
+                    }
+                } else if (columnName.endsWith(VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX)) {
+                    String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
+                    Integer studyId = getStudyId(split);
+                    Integer sampleId = getSampleId(split);
+                    byte[] bytes = resultSet.getBytes(i);
+                    if (bytes != null) {
+                        studies.add(studyId);
+                        otherSampleDataMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(sampleId, bytes));
+                    }
                 } else if (columnName.endsWith(VariantTableStudyRow.HOM_REF)) {
                     Integer studyId = VariantTableStudyRow.extractStudyId(columnName, true);
-                    columnsPerStudy.computeIfAbsent(studyId, s -> new ArrayList<>()).add(i);
+                    studies.add(studyId);
                 }
             }
 
@@ -193,9 +209,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     .stream().collect(Collectors.toMap(VariantTableStudyRow::getStudyId, r -> r));
 
             HashMap<Integer, StudyEntry> map = new HashMap<>();
-            columnsPerStudy.forEach((studyId, columnIds) -> {
-                map.put(studyId, convert(resultSet, variant, studyId, columnIds, rows.get(studyId)));
-            });
+            for (Integer studyId : studies) {
+                map.put(studyId, convert(sampleDataMap.get(studyId), otherSampleDataMap.get(studyId), variant, studyId, rows.get(studyId)));
+            }
 
             return map;
         } catch (SQLException e) {
@@ -204,137 +220,73 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     public Map<Integer, StudyEntry> convert(Result result) {
-        Map<Integer, List<byte[]>> columnsPerStudy = new HashMap<>();
+        Set<Integer> studies = new HashSet<>();
+        Map<Integer, List<Pair<Integer, List<String>>>> sampleDataMap = new HashMap<>();
+        Map<Integer, List<Pair<Integer, byte[]>>> otherSampleDataMap = new HashMap<>();
 
-        for (byte[] qualifier : result.getFamilyMap(columnFamily).keySet()) {
-
-            if (endsWith(qualifier, VariantPhoenixHelper.SAMPLE_DATA_SUFIX_BYTES)
-                    || endsWith(qualifier, VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX_BYTES)) {
+        for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(columnFamily).entrySet()) {
+            byte[] qualifier = entry.getKey();
+            byte[] bytes = entry.getValue();
+            if (endsWith(qualifier, VariantPhoenixHelper.SAMPLE_DATA_SUFIX_BYTES)) {
                 String columnName = Bytes.toString(qualifier);
                 String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                 Integer studyId = getStudyId(split);
-                columnsPerStudy.computeIfAbsent(studyId, s -> new ArrayList<>()).add(qualifier);
+                Integer sampleId = getSampleId(split);
+                Array array = (Array) PVarcharArray.INSTANCE.toObject(bytes);
+                List<String> sampleData = toModifiableList(array);
+                studies.add(studyId);
+                sampleDataMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(sampleId, sampleData));
+            } else if (endsWith(qualifier, VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX_BYTES)) {
+                String columnName = Bytes.toString(qualifier);
+                String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
+                Integer studyId = getStudyId(split);
+                Integer sampleId = getSampleId(split);
+                studies.add(studyId);
+                otherSampleDataMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(sampleId, bytes));
             } else if (endsWith(qualifier, VariantTableStudyRow.HOM_REF_BYTES)) {
                 String columnName = Bytes.toString(qualifier);
                 Integer studyId = VariantTableStudyRow.extractStudyId(columnName, true);
-                columnsPerStudy.computeIfAbsent(studyId, s -> new ArrayList<>()).add(qualifier);
-            }
-        }
-
-        Map<Integer, VariantTableStudyRow> rows = VariantTableStudyRow.parse(result, genomeHelper)
-                .stream().collect(Collectors.toMap(VariantTableStudyRow::getStudyId, r -> r));
-
-        HashMap<Integer, StudyEntry> map = new HashMap<>();
-        columnsPerStudy.forEach((studyId, columnnIds) -> {
-            map.put(studyId, convert(result, studyId, columnnIds, rows.get(studyId)));
-        });
-
-        return map;
-    }
-
-    protected StudyEntry convert(Iterator<Pair<String, Object>> iterator, Variant variant, Integer studyId, VariantTableStudyRow row) {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
-        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
-        StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
-
-        Map<String, List<String>> alternateSampleMap = new HashMap<>();
-        int[] formatsMap = getFormatsMap(fixedFormat);
-
-        while (iterator.hasNext()) {
-            Pair<String, Object> next = iterator.next();
-            String columnName = next.getKey();
-            if (columnName.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX)) {
-                Array value = (Array) next.getValue();
-                if (value != null) {
-                    List<String> sampleData = toModifiableList(value);
-                    addMainSampleDataColumn(studyConfiguration, studyEntry, fixedFormat, formatsMap, columnName, sampleData,
-                            alternateSampleMap);
-                }
-            } else if (columnName.endsWith(VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX)) {
-                byte[] bytes = (byte[]) next.getValue();
-                if (bytes != null) {
-                    addOtherSampleDataColumn(studyConfiguration, studyEntry, bytes, columnName);
-                }
-            }
-        }
-
-        addSecondaryAlternates(variant, studyEntry, studyConfiguration.getVariantMetadata(), alternateSampleMap);
-
-        if (row != null) {
-            convert(variant, studyEntry, studyConfiguration, row);
-        }
-        fillEmptySamplesData(studyEntry, studyConfiguration);
-
-        return studyEntry;
-    }
-
-    private StudyEntry convert(ResultSet resultSet, Variant variant, Integer studyId, List<Integer> columnIds, VariantTableStudyRow row) {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
-        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
-        StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
-
-        Map<String, List<String>> alternateSampleMap = new HashMap<>();
-        int[] formatsMap = getFormatsMap(fixedFormat);
-
-        try {
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            for (Integer i : columnIds) {
-                String columnName = metaData.getColumnName(i);
-                if (columnName.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX)) {
-                    Array value = resultSet.getArray(i);
-                    if (value != null) {
-                        List<String> sampleData = toModifiableList(value);
-                        addMainSampleDataColumn(studyConfiguration, studyEntry, fixedFormat, formatsMap, columnName, sampleData,
-                                alternateSampleMap);
-                    }
-                } else if (columnName.endsWith(VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX)) {
-                    byte[] bytes = resultSet.getBytes(i);
-                    if (bytes != null) {
-                        addOtherSampleDataColumn(studyConfiguration, studyEntry, bytes, columnName);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            throw Throwables.propagate(e);
-        }
-
-        addSecondaryAlternates(variant, studyEntry, studyConfiguration.getVariantMetadata(), alternateSampleMap);
-
-        if (row != null) {
-            convert(variant, studyEntry, studyConfiguration, row);
-        }
-        fillEmptySamplesData(studyEntry, studyConfiguration);
-
-        return studyEntry;
-    }
-
-    private StudyEntry convert(Result result, Integer studyId, List<byte[]> columns, VariantTableStudyRow row) {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
-        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
-        StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
-
-        Map<String, List<String>> alternateSampleMap = new HashMap<>();
-        int[] formatsMap = getFormatsMap(fixedFormat);
-
-        for (byte[] qualifier : columns) {
-            byte[] value = result.getValue(columnFamily, qualifier);
-            String columnName = Bytes.toString(qualifier);
-
-            if (endsWith(qualifier, VariantPhoenixHelper.SAMPLE_DATA_SUFIX_BYTES)) {
-                if (value != null) {
-                    Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
-                    List<String> sampleData = toModifiableList(array);
-                    addMainSampleDataColumn(studyConfiguration, studyEntry, fixedFormat, formatsMap, columnName, sampleData,
-                            alternateSampleMap);
-                }
-            } else if (endsWith(qualifier, VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX_BYTES)) {
-                if (value != null) {
-                    addOtherSampleDataColumn(studyConfiguration, studyEntry, value, columnName);
-                }
+                studies.add(studyId);
             }
         }
 
         Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
+        Map<Integer, VariantTableStudyRow> rows = VariantTableStudyRow.parse(result, genomeHelper)
+                .stream().collect(Collectors.toMap(VariantTableStudyRow::getStudyId, r -> r));
+
+        HashMap<Integer, StudyEntry> map = new HashMap<>();
+        for (Integer studyId : studies) {
+            map.put(studyId, convert(sampleDataMap.get(studyId), otherSampleDataMap.get(studyId), variant, studyId, rows.get(studyId)));
+        }
+
+        return map;
+    }
+
+    protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
+                                 List<Pair<Integer, byte[]>> otherSampleDataMap,
+                                 Variant variant, Integer studyId, VariantTableStudyRow row) {
+        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
+        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
+        StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
+
+        Map<String, List<String>> alternateSampleMap = new HashMap<>();
+        int[] formatsMap = getFormatsMap(fixedFormat);
+
+        for (Pair<Integer, List<String>> pair : sampleDataMap) {
+            Integer sampleId = pair.getKey();
+            List<String> sampleData = pair.getValue();
+            addMainSampleDataColumn(studyConfiguration, studyEntry, fixedFormat, formatsMap, sampleId, sampleData,
+                    alternateSampleMap);
+
+        }
+        for (Pair<Integer, byte[]> pair : otherSampleDataMap) {
+            Integer sampleId = pair.getKey();
+            byte[] bytes = pair.getValue();
+            if (bytes != null) {
+                addOtherSampleDataColumn(studyConfiguration, studyEntry, bytes, sampleId);
+            }
+        }
+
         addSecondaryAlternates(variant, studyEntry, studyConfiguration.getVariantMetadata(), alternateSampleMap);
 
         if (row != null) {
@@ -376,6 +328,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
 //                        Integer studyId = getStudyId(split);
         Integer sampleId = getSampleId(split);
+        addMainSampleDataColumn(studyConfiguration, studyEntry, fixedFormat, formatsMap, sampleId, sampleData, alternateSampleMap);
+    }
+
+    protected void addMainSampleDataColumn(StudyConfiguration studyConfiguration, StudyEntry studyEntry, List<String> fixedFormat,
+                                           int[] formatsMap, Integer sampleId, List<String> sampleData,
+                                           Map<String, List<String>> alternateSampleMap) {
+
         String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
 
         // Remove secondary alternate
@@ -431,15 +390,20 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     private void addOtherSampleDataColumn(StudyConfiguration studyConfiguration, StudyEntry studyEntry, byte[] bytes, String columnName) {
+
+        String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
+//                        Integer studyId = getStudyId(split);
+        Integer sampleId = getSampleId(split);
+        addOtherSampleDataColumn(studyConfiguration, studyEntry, bytes, sampleId);
+    }
+
+    private void addOtherSampleDataColumn(StudyConfiguration studyConfiguration, StudyEntry studyEntry, byte[] bytes, Integer sampleId) {
         OtherSampleData otherSampleData;
         try {
             otherSampleData = OtherSampleData.parseFrom(bytes);
         } catch (InvalidProtocolBufferException e) {
             throw Throwables.propagate(e);
         }
-        String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
-//                        Integer studyId = getStudyId(split);
-        Integer sampleId = getSampleId(split);
 
         otherSampleData.getSampleDataMap().forEach((format, value) -> {
 
