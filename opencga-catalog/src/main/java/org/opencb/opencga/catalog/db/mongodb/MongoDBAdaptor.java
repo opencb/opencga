@@ -46,10 +46,11 @@ import java.util.stream.Collectors;
  */
 public class MongoDBAdaptor extends AbstractDBAdaptor {
 
-    static final String PRIVATE_ID = "_id";
+    static final String PRIVATE_ID = "id";
     static final String PRIVATE_PROJECT_ID = "_projectId";
     static final String PRIVATE_OWNER_ID = "_ownerId";
     static final String PRIVATE_STUDY_ID = "_studyId";
+
     static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";
@@ -59,6 +60,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String FILTER_ROUTE_FILES = "projects.studies.files.";
     static final String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
     static final String FILTER_ROUTE_PANELS = "projects.studies.panels.";
+
+    static final String LAST_OF_VERSION = "_lastOfVersion";
+    static final String RELEASE_FROM_VERSION = "_releaseFromVersion";
+    static final String LAST_OF_RELEASE = "_lastOfRelease";
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
 

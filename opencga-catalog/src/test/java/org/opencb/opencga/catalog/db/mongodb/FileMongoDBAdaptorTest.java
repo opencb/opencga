@@ -165,7 +165,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         ObjectMap parameters = new ObjectMap();
         parameters.put("status.name", File.FileStatus.READY);
         parameters.put("stats", stats);
-        System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
+        System.out.println(catalogFileDBAdaptor.update(fileId, parameters, QueryOptions.empty()));
 
         file = catalogFileDBAdaptor.get(fileId, null).first();
         assertEquals(file.getStatus().getName(), File.FileStatus.READY);
@@ -173,7 +173,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         parameters = new ObjectMap();
         parameters.put("stats", "{}");
-        System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
+        System.out.println(catalogFileDBAdaptor.update(fileId, parameters, QueryOptions.empty()));
 
         file = catalogFileDBAdaptor.get(fileId, null).first();
         assertEquals(file.getStats(), new LinkedHashMap<String, Object>());

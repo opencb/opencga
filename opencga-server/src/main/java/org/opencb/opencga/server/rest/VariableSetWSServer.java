@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Created by jacobo on 16/12/14.
  */
-@Path("/{version}/variableset")
+@Path("/{apiVersion}/variableset")
 @Produces("application/json")
 @Api(value = "VariableSet", position = 8, description = "Methods for working with 'variableset' endpoint")
 public class VariableSetWSServer extends OpenCGAWSServer {

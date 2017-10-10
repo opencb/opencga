@@ -114,7 +114,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<ClinicalAnalysis> update(long id, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         Document analysisParams = new Document();
@@ -153,11 +153,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
 
-        return endQuery("Modify clinical analysis", startTime, get(id, new QueryOptions()));
+        return endQuery("Modify clinical analysis", startTime, get(id, options));
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 

@@ -146,7 +146,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             try {
 //                DBObject metadataObject = getDbObject(new Metadata(), "Metadata");
                 Document metadataObject = getMongoDBDocument(new Metadata(), "Metadata");
-                metadataObject.put("_id", METADATA_OBJECT_ID);
+                metadataObject.put("id", METADATA_OBJECT_ID);
                 metadataObject.put("admin", getMongoDBDocument(admin, "Admin"));
 
                 metaCollection.insert(metadataObject, null);
@@ -199,7 +199,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     @Override
     public boolean isCatalogDBReady() {
-        QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("_id", METADATA_OBJECT_ID));
+        QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("id", METADATA_OBJECT_ID));
         return queryResult.getResult().get(0) == 1;
     }
 

@@ -194,7 +194,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 }
 
                 try {
-                    jobDBAdaptor.update(job.getId(), parameters);
+                    jobDBAdaptor.update(job.getId(), parameters, QueryOptions.empty());
                 } catch (CatalogException e) {
                     logger.error("Error updating job {} with {}", job.getId(), parameters.toJson(), e);
                 }
@@ -298,7 +298,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
             updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
-            QueryResult<Job> update = jobDBAdaptor.update(job.getId(), updateObjectMap);
+            QueryResult<Job> update = jobDBAdaptor.update(job.getId(), updateObjectMap, QueryOptions.empty());
             if (update.getNumResults() == 1) {
                 job = update.first();
                 executeJob(job, userSessionId);
@@ -324,7 +324,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         job.getAttributes().remove("sessionId");
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
         try {
-            jobDBAdaptor.update(job.getId(), params);
+            jobDBAdaptor.update(job.getId(), params, QueryOptions.empty());
         } catch (CatalogException e) {
             logger.error("Could not remove session id from attributes of job {}. ", job.getId(), e);
         }

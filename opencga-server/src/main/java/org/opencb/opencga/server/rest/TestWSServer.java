@@ -28,7 +28,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Map;
 
-@Path("/{version}/test")
+@Path("/{apiVersion}/test")
 @Api(value = "test", hidden = true, position = 12, description = "test web services")
 public class TestWSServer extends OpenCGAWSServer {
 

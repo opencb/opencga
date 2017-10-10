@@ -37,7 +37,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@Path("/{version}/utils")
+@Path("/{apiVersion}/utils")
 @Produces("application/json")
 public class FileRanges extends OpenCGAWSServer {
 

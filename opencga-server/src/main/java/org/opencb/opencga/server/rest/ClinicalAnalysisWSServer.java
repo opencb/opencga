@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 05/06/17.
  */
-@Path("/{version}/clinical")
+@Path("/{apiVersion}/clinical")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Clinical Analysis (BETA)", position = 9, description = "Methods for working with 'clinical analysis' endpoint")
 

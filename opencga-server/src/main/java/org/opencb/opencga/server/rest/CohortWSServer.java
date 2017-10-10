@@ -39,7 +39,7 @@ import java.util.*;
 /**
  * Created by jacobo on 15/12/14.
  */
-@Path("/{version}/cohorts")
+@Path("/{apiVersion}/cohorts")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Cohorts", position = 9, description = "Methods for working with 'cohorts' endpoint")
 public class CohortWSServer extends OpenCGAWSServer {

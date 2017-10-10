@@ -350,7 +350,7 @@ public class ProjectManager extends AbstractManager {
                 parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key());
             }
             if (!objectMap.isEmpty()) {
-                queryResult = projectDBAdaptor.update(projectId, objectMap);
+                queryResult = projectDBAdaptor.update(projectId, objectMap, QueryOptions.empty());
             } else {
                 throw new CatalogException("Cannot update organism information that is already filled in");
             }
@@ -363,7 +363,7 @@ public class ProjectManager extends AbstractManager {
         }
         userDBAdaptor.updateUserLastModified(ownerId);
         if (parameters.size() > 0) {
-            queryResult = projectDBAdaptor.update(projectId, parameters);
+            queryResult = projectDBAdaptor.update(projectId, parameters, QueryOptions.empty());
         }
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, parameters, null, null);
         return queryResult;
@@ -410,7 +410,19 @@ public class ProjectManager extends AbstractManager {
         }
 
         if (checkCurrentReleaseInUse(allStudiesInProject, currentRelease)) {
-            return projectDBAdaptor.incrementCurrentRelease(projectId);
+            // Increment current project release
+            QueryResult<Integer> integerQueryResult = projectDBAdaptor.incrementCurrentRelease(projectId);
+
+            // Upgrade release in sample, family and individuals
+            QueryResult<Study> studiesInProject = studyDBAdaptor.getAllStudiesInProject(projectId,
+                    new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key()));
+            for (Study study : studiesInProject.getResult()) {
+                sampleDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
+                individualDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
+                familyDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
+            }
+
+            return integerQueryResult;
         } else {
             throw new CatalogException("Cannot increment current release number. The current release " + currentRelease + " has not yet "
                     + "been used in any entry");

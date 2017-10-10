@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.config.Configuration;
@@ -69,14 +70,14 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @ApplicationPath("/")
-@Path("/{version}")
+@Path("/{apiVersion}")
 @Produces(MediaType.APPLICATION_JSON)
 public class OpenCGAWSServer {
 
     @DefaultValue("v1")
-    @PathParam("version")
-    @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
-    protected String version;
+    @PathParam("apiVersion")
+    @ApiParam(name = "apiVersion", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
+    protected String apiVersion;
     protected String exclude;
     protected String include;
     protected int limit;
@@ -146,12 +147,12 @@ public class OpenCGAWSServer {
 
     public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest, httpHeaders);
+        this(uriInfo.getPathParameters().getFirst("apiVersion"), uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public OpenCGAWSServer(@PathParam("apiVersion") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        this.version = version;
+        this.apiVersion = version;
         this.uriInfo = uriInfo;
         this.httpServletRequest = httpServletRequest;
 
@@ -274,20 +275,20 @@ public class OpenCGAWSServer {
     }
 
     private void parseParams() throws VersionException {
-        // If by any reason 'version' is null we try to read it from the URI path, if not present an Exception is thrown
-        if (version == null) {
-            if (uriInfo.getPathParameters().containsKey("version")) {
-                logger.warn("Setting 'version' from UriInfo object");
-                this.version = uriInfo.getPathParameters().getFirst("version");
+        // If by any reason 'apiVersion' is null we try to read it from the URI path, if not present an Exception is thrown
+        if (apiVersion == null) {
+            if (uriInfo.getPathParameters().containsKey("apiVersion")) {
+                logger.warn("Setting 'apiVersion' from UriInfo object");
+                this.apiVersion = uriInfo.getPathParameters().getFirst("apiVersion");
             } else {
-                throw new VersionException("Version not valid: '" + version + "'");
+                throw new VersionException("Version not valid: '" + apiVersion + "'");
             }
         }
 
-        // Check version parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate version.
-        if (version.equalsIgnoreCase("latest")) {
-            logger.info("Version 'latest' detected, setting 'version' parameter to 'v1'");
-            version = "v1";
+        // Check apiVersion parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate apiVersion.
+        if (apiVersion.equalsIgnoreCase("latest")) {
+            logger.info("Version 'latest' detected, setting 'apiVersion' parameter to 'v1'");
+            apiVersion = "v1";
         }
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
@@ -320,6 +321,12 @@ public class OpenCGAWSServer {
                     break;
                 case QueryOptions.SKIP_COUNT:
                     queryOptions.put(QueryOptions.SKIP_COUNT, Boolean.parseBoolean(value));
+                    break;
+                case Constants.INCREMENT_VERSION:
+                    queryOptions.put(Constants.INCREMENT_VERSION, Boolean.parseBoolean(value));
+                    break;
+                case Constants.REFRESH:
+                    queryOptions.put(Constants.REFRESH, Boolean.parseBoolean(value));
                     break;
                 case "count":
                     count = Boolean.parseBoolean(value);
@@ -447,7 +454,7 @@ public class OpenCGAWSServer {
         // Now we prepare the response to client
         QueryResponse<ObjectMap> queryResponse = new QueryResponse<>();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
-        queryResponse.setApiVersion(version);
+        queryResponse.setApiVersion(apiVersion);
         queryResponse.setQueryOptions(queryOptions);
         if (StringUtils.isEmpty(e.getMessage())) {
             queryResponse.setError(e.toString());
@@ -491,7 +498,7 @@ public class OpenCGAWSServer {
     protected Response createOkResponse(Object obj) {
         QueryResponse queryResponse = new QueryResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
-        queryResponse.setApiVersion(version);
+        queryResponse.setApiVersion(apiVersion);
         queryResponse.setQueryOptions(queryOptions);
 
         // Guarantee that the QueryResponse object contains a list of results

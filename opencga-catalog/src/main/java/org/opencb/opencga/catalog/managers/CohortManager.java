@@ -33,13 +33,13 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +125,16 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        return cohortDBAdaptor.get(query, options, userId);
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, options, userId);
+
+        if (cohortQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> idList = query.getAsLongList("id");
+            for (Long myId : idList) {
+                authorizationManager.checkCohortPermission(studyId, myId, userId, CohortAclEntry.CohortPermissions.VIEW);
+            }
+        }
+
+        return cohortQueryResult;
     }
 
     /**

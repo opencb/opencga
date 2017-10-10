@@ -93,10 +93,9 @@ public interface DBAdaptor<T> extends Iterable<T> {
         return queryResults;
     }
 
+    QueryResult<T> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<T> update(long id, ObjectMap parameters) throws CatalogDBException;
-
-    QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
     void delete(long id) throws CatalogDBException;
 
