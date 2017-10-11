@@ -266,7 +266,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                                  List<Pair<Integer, byte[]>> otherSampleDataMap,
                                  Variant variant, Integer studyId, VariantTableStudyRow row) {
         StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
-        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
+        List<String> fixedFormat;
+        if (sampleDataMap.isEmpty() && otherSampleDataMap.isEmpty()) {
+            fixedFormat = Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY);
+        } else {
+            fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
+        }
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
         Map<String, List<String>> alternateSampleMap = new HashMap<>();
@@ -443,7 +448,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         List<String> emptyData = new ArrayList<>(format.size());
         String defaultGenotype = getDefaultGenotype(studyConfiguration);
         for (String formatKey : format) {
-            if ("GT".equals(formatKey)) {
+            if (VariantMerger.GT_KEY.equals(formatKey)) {
                 emptyData.add(defaultGenotype);
             } else {
                 emptyData.add(UNKNOWN_SAMPLE_DATA);
@@ -466,12 +471,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     public StudyEntry convert(Variant variant, VariantTableStudyRow row) {
-
-        StudyConfiguration studyConfiguration = getStudyConfiguration(row.getStudyId());
-        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
-        StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
-
-        return convert(variant, studyEntry, studyConfiguration, row);
+        return convert(Collections.emptyList(), Collections.emptyList(), variant, row.getStudyId(), row);
     }
 
     public StudyEntry convert(Variant variant, StudyEntry studyEntry, StudyConfiguration studyConfiguration, VariantTableStudyRow row) {
@@ -482,7 +482,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
 //        calculatePassCallRates(row, attributesMap, loadedSamplesSize);
 
-        Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+        Integer gtIdx = studyEntry.getFormatPositions().get(VariantMerger.GT_KEY);
         if (gtIdx != null) {
             Set<Integer> sampleWithVariant = new HashSet<>();
             for (String genotype : row.getGenotypes()) {
@@ -528,13 +528,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
 
             // Fill gaps (with HOM_REF)
-//            int gapCounter = 0;
-//            for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
-//                if (studyEntry.getSamplesData().get(i) == null) {
-//                    ++gapCounter;
-//                    studyEntry.addSampleData(i, Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE));
-//                }
-//            }
+            int gapCounter = 0;
+            List<String> defaultSampleData = Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE);
+            for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
+                if (studyEntry.getSamplesData().get(i) == null) {
+                    gapCounter++;
+                    studyEntry.addSampleData(i, new ArrayList<>(defaultSampleData));
+                }
+            }
 //            for (int i = 0; i < samplesDataArray.length; i++) {
 //                if (samplesDataArray[i] == null) {
 //                    ++gapCounter;

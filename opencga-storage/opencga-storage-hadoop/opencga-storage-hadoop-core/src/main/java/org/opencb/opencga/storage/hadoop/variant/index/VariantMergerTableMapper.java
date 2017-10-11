@@ -76,7 +76,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             VariantType.SNV, VariantType.SNP,
             VariantType.INDEL, /* VariantType.INSERTION, VariantType.DELETION,*/
             VariantType.MNV, VariantType.MNP);
-    private List<String> expectedFormats;
+    private List<String> fixedFormat;
 
     private boolean isParallel() {
         return this.parallel.get();
@@ -115,7 +115,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             }
         }
 
-        expectedFormats = HBaseToVariantConverter.getFormat(getStudyConfiguration());
+        fixedFormat = HBaseToVariantConverter.getFixedFormat(getStudyConfiguration());
 
 
         variantMerger = newVariantMerger(collapseDeletions);
@@ -132,7 +132,8 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     public VariantMerger newVariantMerger(boolean collapseDeletions) {
         VariantMerger variantMerger = new VariantMerger(collapseDeletions);
         variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
-        variantMerger.setExpectedFormats(expectedFormats);
+        // Format is no longer fixed when merging variants.
+//        variantMerger.setExpectedFormats(fixedFormat);
         variantMerger.configure(getStudyConfiguration().getVariantHeader());
         return variantMerger;
     }
@@ -574,7 +575,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
                         for (StudyEntry tse : tar.getStudies()) {
                             StudyEntry se = new StudyEntry(tse.getStudyId());
                             se.setFiles(Collections.singletonList(new FileEntry("", "", new HashMap<>())));
-                            se.setFormat(expectedFormats);
+                            se.setFormat(fixedFormat);
                             se.setSamplesPosition(new HashMap<>());
                             se.setSamplesData(new ArrayList<>());
                             tarNew.addStudyEntry(se);
