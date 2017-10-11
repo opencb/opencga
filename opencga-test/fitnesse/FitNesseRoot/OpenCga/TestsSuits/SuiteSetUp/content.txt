@@ -52,7 +52,7 @@
 
 !3 Create Global Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  {  "unique": false,  "name": "$gvsName",  "description": "string",  "variables": [{"name": "var_int", "type" : "INTEGER", "required" : true,"multiValue": false }, {"name": "var_double", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
+| setBody |  {  "unique": false, "confidential" : "false",  "name": "$gvsName",  "description": "string",  "variables": [{"name": "var_int", "type" : "INTEGER", "required" : true,"multiValue": false }, {"name": "var_double", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
 |let|gVariableSetId|js|response.jsonbody.response[0].result[0].id||
@@ -76,6 +76,7 @@
 | setBody | {  "action": "SET",  "study": "$study", "template": "admin"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/acl/$userA/update?sid=$sessionId |200|  Content-Type: application/json ||
+
 
 !define userProjectStudy {$user@$project:$study}
 
