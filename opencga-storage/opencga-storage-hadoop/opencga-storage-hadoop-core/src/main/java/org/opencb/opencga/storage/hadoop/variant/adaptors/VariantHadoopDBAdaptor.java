@@ -167,7 +167,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (fileMetadata == null) {
             throw new StorageEngineException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
-        return new ArchiveTableHelper(genomeHelper, fileMetadata);
+        return new ArchiveTableHelper(genomeHelper, studyId, fileMetadata);
 
     }
 

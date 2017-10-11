@@ -188,7 +188,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         }
 
         // Transformer
-        ArchiveTableHelper helper = new ArchiveTableHelper(conf, fileMetadata);
+        ArchiveTableHelper helper = new ArchiveTableHelper(conf, getStudyId(), fileMetadata);
         ProgressLogger progressLogger = new ProgressLogger("Transform proto:").setBatchSize(100000);
 
         logger.info("Generating output file {}", outputVariantsFile);
