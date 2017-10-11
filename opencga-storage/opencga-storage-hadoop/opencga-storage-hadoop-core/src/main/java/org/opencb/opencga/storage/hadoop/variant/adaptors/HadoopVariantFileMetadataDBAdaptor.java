@@ -21,15 +21,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -47,19 +46,19 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
+public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDBAdaptor {
 
-    protected static Logger logger = LoggerFactory.getLogger(HadoopVariantSourceDBAdaptor.class);
+    protected static Logger logger = LoggerFactory.getLogger(HadoopVariantFileMetadataDBAdaptor.class);
 
     private final GenomeHelper genomeHelper;
     private final HBaseManager hBaseManager;
     private final ObjectMapper objectMapper;
 
-    public HadoopVariantSourceDBAdaptor(Configuration configuration) {
+    public HadoopVariantFileMetadataDBAdaptor(Configuration configuration) {
         this(new GenomeHelper(configuration), null);
     }
 
-    public HadoopVariantSourceDBAdaptor(GenomeHelper genomeHelper, HBaseManager hBaseManager) {
+    public HadoopVariantFileMetadataDBAdaptor(GenomeHelper genomeHelper, HBaseManager hBaseManager) {
         this.genomeHelper = genomeHelper;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
@@ -76,27 +75,23 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
         throw new UnsupportedOperationException();
     }
 
-    public VcfMeta getVcfMeta(int studyId, int fileId, QueryOptions options) throws IOException {
-        return new VcfMeta(getVariantSource(studyId, fileId, options));
-    }
-
-    public VariantSource getVariantSource(int studyId, int fileId, QueryOptions options)
+    public VariantFileMetadata getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
             throws IOException {
         return iterator(studyId, Collections.singletonList(fileId), options).next();
     }
 
     @Override
-    public Iterator<VariantSource> iterator(Query query, QueryOptions options) throws IOException {
-        int studyId = query.getInt(VariantSourceQueryParam.STUDY_ID.key());
-        List<Integer> fileIds = query.getAsIntegerList(VariantSourceQueryParam.FILE_ID.key());
+    public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) throws IOException {
+        int studyId = query.getInt(VariantFileMetadataQueryParam.STUDY_ID.key());
+        List<Integer> fileIds = query.getAsIntegerList(VariantFileMetadataQueryParam.FILE_ID.key());
         return iterator(studyId, fileIds, options);
     }
 
-    public Iterator<VariantSource> iterator(int studyId, QueryOptions options) throws IOException {
+    public Iterator<VariantFileMetadata> iterator(int studyId, QueryOptions options) throws IOException {
         return iterator(studyId, Collections.emptyList(), options);
     }
 
-    public Iterator<VariantSource> iterator(int studyId, List<Integer> fileIds, QueryOptions options) throws IOException {
+    public Iterator<VariantFileMetadata> iterator(int studyId, List<Integer> fileIds, QueryOptions options) throws IOException {
         String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
         long start = System.currentTimeMillis();
         Get get = new Get(genomeHelper.getMetaRowKey());
@@ -122,7 +117,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
                     .filter(entry -> !Arrays.equals(entry.getKey(), genomeHelper.getMetaRowKey()))
                     .map(entry -> {
                         try {
-                            return objectMapper.readValue(entry.getValue(), VariantSource.class);
+                            return objectMapper.readValue(entry.getValue(), VariantFileMetadata.class);
                         } catch (IOException e) {
                             throw new UncheckedIOException("Problem with " + Bytes.toString(entry.getKey()), e);
                         }
@@ -137,43 +132,38 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration,
-                                         QueryOptions queryOptions) {
+    public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration,
+                                   QueryOptions queryOptions) {
 //        String tableName = HadoopVariantStorageEngine.getTableName(Integer.parseInt(variantSource.getStudyId()));
         logger.warn("Unimplemented method!");
         return null;
     }
 
-    public void updateVcfMetaData(VcfMeta meta) throws IOException {
-        Objects.requireNonNull(meta);
-        update(meta.getVariantSource());
-    }
-
     @Override
-    public void updateVariantSource(VariantSource variantSource) throws StorageEngineException {
+    public void updateVariantFileMetadata(String studyId, VariantFileMetadata metadata) throws StorageEngineException {
         try {
-            update(variantSource);
+            update(studyId, metadata);
         } catch (IOException e) {
-            throw new StorageEngineException("Unable to update VariantSoruce " + variantSource, e);
+            throw new StorageEngineException("Unable to update VariantFileMetadata " + metadata, e);
         }
     }
 
-    public void update(VariantSource variantSource) throws IOException {
-        Objects.requireNonNull(variantSource);
-        String tableName = HadoopVariantStorageEngine.getArchiveTableName(Integer.parseInt(variantSource.getStudyId()),
+    public void update(String studyId, VariantFileMetadata metadata) throws IOException {
+        Objects.requireNonNull(metadata);
+        String tableName = HadoopVariantStorageEngine.getArchiveTableName(Integer.parseInt(studyId),
                 genomeHelper.getConf());
         if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
-        Put put = wrapVcfMetaAsPut(variantSource, this.genomeHelper);
+        Put put = wrapAsPut(metadata, this.genomeHelper);
         hBaseManager.act(tableName, table -> {
             table.put(put);
         });
     }
 
-    public static Put wrapVcfMetaAsPut(VariantSource variantSource, GenomeHelper helper) {
+    public static Put wrapAsPut(VariantFileMetadata variantSource, GenomeHelper helper) {
         Put put = new Put(helper.getMetaRowKey());
-        put.addColumn(helper.getColumnFamily(), Bytes.toBytes(variantSource.getFileId()),
+        put.addColumn(helper.getColumnFamily(), Bytes.toBytes(variantSource.getId()),
                 variantSource.getImpl().toString().getBytes());
         return put;
     }

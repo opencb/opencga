@@ -16,27 +16,30 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-import java.util.*;
-
 import org.apache.hadoop.conf.Configuration;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
 
 public class VariantMergerTableMapperTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
@@ -45,7 +48,7 @@ public class VariantMergerTableMapperTest extends VariantStorageBaseTest impleme
 
     private VariantHadoopDBAdaptor dbAdaptor;
 
-    private VariantSource loadFile(String resource, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
+    private VariantFileMetadata loadFile(String resource, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
         return VariantHbaseTestUtils.loadFile(getVariantStorageEngine(), DB_NAME, outputUri, resource, studyConfiguration, map);
     }
 
@@ -73,7 +76,7 @@ public class VariantMergerTableMapperTest extends VariantStorageBaseTest impleme
     @Test
     public void testMap() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+        loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         System.out.println("Query from HBase : " + DB_NAME);
         Configuration conf = configuration.get();
         HBaseManager hm = new HBaseManager(conf);
@@ -96,8 +99,8 @@ public class VariantMergerTableMapperTest extends VariantStorageBaseTest impleme
     @Test
     public void testFilterMap() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
-        VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+        loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         System.out.println("Query from HBase : " + DB_NAME);
         Configuration conf = configuration.get();
         HBaseManager hm = new HBaseManager(conf);

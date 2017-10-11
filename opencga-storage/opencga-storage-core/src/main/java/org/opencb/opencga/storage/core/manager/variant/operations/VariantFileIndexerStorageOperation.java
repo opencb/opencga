@@ -17,8 +17,8 @@
 package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -62,6 +62,7 @@ import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
  */
 public class VariantFileIndexerStorageOperation extends StorageOperation {
 
+    public static final String DEFAULT_COHORT_DESCRIPTION = "Default cohort with almost all indexed samples";
     private final FileManager fileManager;
 
 
@@ -512,10 +513,10 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (!metaFile.toFile().exists()) {
                 throw new IOException("Stats file not found.");
             }
-            VariantGlobalStats stats;
+            VariantSetStats stats;
             try {
-                VariantSource variantSource = VariantReaderUtils.readVariantSource(metaFile, null);
-                stats = variantSource.getStats();
+                VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(metaFile, null);
+                stats = fileMetadata.getStats();
             } catch (StorageEngineException e) {
                 throw new CatalogException("Error reading file \"" + metaFile + "\"", e);
             }
@@ -606,7 +607,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     private Cohort createDefaultCohort(Study study, String sessionId) throws CatalogException {
         return catalogManager.getCohortManager().create(study.getId(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
-                "Default cohort with almost all indexed samples", Collections.emptyList(), null, null, sessionId).first();
+                DEFAULT_COHORT_DESCRIPTION, Collections.emptyList(), null, null, sessionId).first();
     }
 
     private void updateDefaultCohortStatus(String sessionId, Study study, StorageEngineException exception) throws CatalogException {

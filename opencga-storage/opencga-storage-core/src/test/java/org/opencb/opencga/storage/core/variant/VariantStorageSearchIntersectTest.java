@@ -23,8 +23,8 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -65,7 +65,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     private VariantDBAdaptor dbAdaptor;
     private StudyConfiguration studyConfiguration;
     private static VariantQueryResult<Variant> allVariants;
-    private VariantSource source;
+    private VariantFileMetadata fileMetadata;
     private static boolean loaded = false;
     private SolrClient solrClient;
 
@@ -88,14 +88,14 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         studyConfiguration = newStudyConfiguration();
 
         clearDB(DB_NAME);
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
+        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                 .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
 
         StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, params);
-        source = variantStorageEngine.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
+        fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
         Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
 
         //Calculate stats

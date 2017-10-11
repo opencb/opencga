@@ -21,7 +21,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -36,7 +36,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,25 +200,25 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        return new VariantSourceDBAdaptor() {
+    public VariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
+        return new VariantFileMetadataDBAdaptor() {
             @Override
             public QueryResult<Long> count(Query query) {
                 return new QueryResult<>();
             }
 
             @Override
-            public void updateVariantSource(VariantSource variantSource) throws StorageEngineException {
+            public void updateVariantFileMetadata(String studyId, VariantFileMetadata variantSource) throws StorageEngineException {
 
             }
 
             @Override
-            public Iterator<VariantSource> iterator(Query query, QueryOptions options) throws IOException {
+            public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) throws IOException {
                 return Collections.emptyIterator();
             }
 
             @Override
-            public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
+            public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
                 return new QueryResult();
             }
 

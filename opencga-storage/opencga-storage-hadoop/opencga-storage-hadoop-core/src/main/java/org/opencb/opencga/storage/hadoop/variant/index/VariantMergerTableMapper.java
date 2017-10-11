@@ -37,7 +37,6 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -134,12 +133,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         VariantMerger variantMerger = new VariantMerger(collapseDeletions);
         variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
         variantMerger.setExpectedFormats(expectedFormats);
-        for (VariantStudyMetadata.VariantMetadataRecord record : getStudyConfiguration().getVariantMetadata().getFormat().values()) {
-            variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
-        }
-        for (VariantStudyMetadata.VariantMetadataRecord record : getStudyConfiguration().getVariantMetadata().getInfo().values()) {
-            variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
-        }
+        variantMerger.configure(getStudyConfiguration().getVariantHeader());
         return variantMerger;
     }
 

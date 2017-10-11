@@ -21,7 +21,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -365,7 +365,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     }
 
     @Override
-    protected VariantSource.Aggregation getAggregation() {
-        return VariantSource.Aggregation.NONE;
+    protected Aggregation getAggregation() {
+        return Aggregation.NONE;
     }
 }

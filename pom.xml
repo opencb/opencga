@@ -216,6 +216,10 @@
                         <groupId>com.google.protobuf</groupId>
                         <artifactId>protobuf-lite</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
