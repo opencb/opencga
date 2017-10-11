@@ -37,16 +37,14 @@ import java.util.*;
  */
 public abstract class AbstractVariantReader implements VariantReader {
 
-    private Path metadataPath;
-    private VariantStudyMetadata metadata;
+    private final Path metadataPath;
+    private final Map<String, LinkedHashMap<String, Integer>> samplesPositions;
     private LinkedHashMap<String, Integer> samplesPosition;
-    private Map<String, LinkedHashMap<String, Integer>> samplesPositions;
     private VariantFileMetadata fileMetadata;
 
     public AbstractVariantReader(Path metadataPath, VariantStudyMetadata metadata) {
         this.metadataPath = metadataPath;
-        this.metadata = metadata;
-        this.samplesPositions = Collections.emptyMap();
+        this.samplesPositions = null;
         if (metadata.getFiles().isEmpty()) {
             fileMetadata = new VariantFileMetadata("", "");
             metadata.getFiles().add(fileMetadata.getImpl());
@@ -57,7 +55,6 @@ public abstract class AbstractVariantReader implements VariantReader {
 
     public AbstractVariantReader(Map<String, LinkedHashMap<String, Integer>> samplesPositions) {
         this.metadataPath = null;
-        this.metadata = null;
         this.samplesPositions = samplesPositions;
     }
 
@@ -96,18 +93,20 @@ public abstract class AbstractVariantReader implements VariantReader {
     }
 
     protected List<Variant> addSamplesPosition(List<Variant> variants) {
-        if (metadata == null) {
+        if (samplesPositions != null) {
             for (Variant variant : variants) {
                 for (StudyEntry studyEntry : variant.getStudies()) {
-                    LinkedHashMap samplesPosition = samplesPositions.get(studyEntry.getStudyId());
+                    LinkedHashMap<String, Integer> samplesPosition = samplesPositions.get(studyEntry.getStudyId());
                     if (samplesPosition != null) {
-                        studyEntry.setSamplesPosition(samplesPosition);
+                        studyEntry.setSortedSamplesPosition(samplesPosition);
                     }
                 }
             }
         } else {
             for (Variant variant : variants) {
-                variant.getStudy(metadata.getId()).setSamplesPosition(samplesPosition);
+                if (variant.getStudies().size() == 1) {
+                    variant.getStudies().get(0).setSortedSamplesPosition(samplesPosition);
+                }
             }
         }
 

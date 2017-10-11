@@ -55,34 +55,32 @@ public class ArchiveTableHelper extends GenomeHelper {
     private final Logger logger = LoggerFactory.getLogger(ArchiveTableHelper.class);
     private final AtomicReference<VariantFileMetadata> meta = new AtomicReference<>();
     private final ArchiveRowKeyFactory keyFactory;
-    private byte[] column;
+    private final byte[] column;
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
 
     public ArchiveTableHelper(Configuration conf) throws IOException {
-        this(conf, null);
+        super(conf);
         int fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
-        int studyId = conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), 0);
         try (HadoopVariantFileMetadataDBAdaptor metadataManager = new HadoopVariantFileMetadataDBAdaptor(conf)) {
             VariantFileMetadata meta = metadataManager.getVariantFileMetadata(getStudyId(), fileId, null);
             this.meta.set(meta);
+            column = Bytes.toBytes(getColumnName(meta));
         }
-        column = Bytes.toBytes(getColumnName(meta.get()));
+        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
     }
 
-    public ArchiveTableHelper(GenomeHelper helper, VariantFileMetadata meta) {
-        super(helper);
+    public ArchiveTableHelper(GenomeHelper helper, int studyId, VariantFileMetadata meta) {
+        super(helper, studyId);
         this.meta.set(meta);
         column = Bytes.toBytes(getColumnName(meta));
         keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
     }
 
-    public ArchiveTableHelper(Configuration conf, VariantFileMetadata meta) {
-        super(conf);
-        if (meta != null) {
-            this.meta.set(meta);
-            column = Bytes.toBytes(getColumnName(meta));
-        }
+    public ArchiveTableHelper(Configuration conf, int studyId, VariantFileMetadata meta) {
+        super(conf, studyId);
+        this.meta.set(meta);
+        column = Bytes.toBytes(getColumnName(meta));
         keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
     }
 

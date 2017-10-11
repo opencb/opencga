@@ -217,7 +217,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(sc.getStudyId()), fileMetadata);
 
-        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), fileMetadata);
+        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getStudyId(), fileMetadata);
 
 
         // Create dummy reader

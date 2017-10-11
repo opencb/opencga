@@ -115,7 +115,7 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
 
         long start = System.currentTimeMillis();
         if (VariantReaderUtils.isProto(fileName)) {
-            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), fileMetadata);
+            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), studyId, fileMetadata);
 
             ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
             if (fileMetadata.getStats() != null) {
@@ -124,7 +124,7 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
 
             loadFromProto(input, table, helper, progressLogger);
         } else {
-            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), fileMetadata);
+            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), studyId, fileMetadata);
 
             ProgressLogger progressLogger;
             if (fileMetadata.getStats() != null) {
