@@ -213,8 +213,9 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), DB_NAME);
 
-        // Create empty VariantSource
+        // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
+        fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
         dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(sc.getStudyId()), fileMetadata);
 
         ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getStudyId(), fileMetadata);
@@ -252,8 +253,10 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         String archiveTableName = engine.getArchiveTableName(study.getStudyId());
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
 
-        // Create empty VariantSource
-        dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(study.getStudyId()), new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId)));
+        // Create empty VariantFileMetadata
+        VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
+        fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
+        dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(study.getStudyId()), fileMetadata);
 
         // Create dummy reader
         VariantSliceReader reader = getVariantSliceReader(variants);

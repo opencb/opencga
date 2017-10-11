@@ -210,7 +210,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
             HashMap<Integer, StudyEntry> map = new HashMap<>();
             for (Integer studyId : studies) {
-                map.put(studyId, convert(sampleDataMap.get(studyId), otherSampleDataMap.get(studyId), variant, studyId, rows.get(studyId)));
+                map.put(studyId, convert(
+                        sampleDataMap.getOrDefault(studyId, Collections.emptyList()),
+                        otherSampleDataMap.getOrDefault(studyId, Collections.emptyList()), variant, studyId, rows.get(studyId)));
             }
 
             return map;
@@ -256,7 +258,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         HashMap<Integer, StudyEntry> map = new HashMap<>();
         for (Integer studyId : studies) {
-            map.put(studyId, convert(sampleDataMap.get(studyId), otherSampleDataMap.get(studyId), variant, studyId, rows.get(studyId)));
+            map.put(studyId, convert(
+                    sampleDataMap.getOrDefault(studyId, Collections.emptyList()),
+                    otherSampleDataMap.getOrDefault(studyId, Collections.emptyList()), variant, studyId, rows.get(studyId)));
         }
 
         return map;
