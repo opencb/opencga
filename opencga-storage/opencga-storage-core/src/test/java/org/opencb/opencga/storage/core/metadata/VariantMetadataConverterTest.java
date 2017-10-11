@@ -1,9 +1,9 @@
 package org.opencb.opencga.storage.core.metadata;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -64,8 +64,8 @@ public class VariantMetadataConverterTest {
 
         variantMetadataConverter = new VariantMetadataConverter();
         objectWriter = new ObjectMapper()
-                .configure(SerializationConfig.Feature.REQUIRE_SETTERS_FOR_GETTERS, true)
-                .setSerializationInclusion(JsonSerialize.Inclusion.NON_EMPTY)
+                .configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true)
+                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .writerWithDefaultPrettyPrinter();
     }
 

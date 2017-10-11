@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.app.cli.main.executors.catalog.commons;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;

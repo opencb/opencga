@@ -30,16 +30,16 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 /**
  * Created by imedina on 02/03/15.
  */
-public class CliOptionsParser extends GeneralCliOptions {
+public class ClientCliOptionsParser extends GeneralCliOptions {
 
-    private final CliOptionsParser.IndexCommandOptions indexCommandOptions;
-    private final CliOptionsParser.QueryCommandOptions queryCommandOptions;
+    private final ClientCliOptionsParser.IndexCommandOptions indexCommandOptions;
+    private final ClientCliOptionsParser.QueryCommandOptions queryCommandOptions;
 
     private StorageAlignmentCommandOptions alignmentCommandOptions;
     private StorageVariantCommandOptions variantCommandOptions;
 //    private FeatureCommandOptions featureCommandOptions;
 
-    public CliOptionsParser() {
+    public ClientCliOptionsParser() {
         indexCommandOptions = new IndexCommandOptions();
         queryCommandOptions = new QueryCommandOptions();
 
