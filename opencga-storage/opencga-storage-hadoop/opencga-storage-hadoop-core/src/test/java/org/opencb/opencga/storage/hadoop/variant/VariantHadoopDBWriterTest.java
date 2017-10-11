@@ -39,15 +39,16 @@ import org.mockito.Mockito;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.variant.VariantNormalizer;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -70,7 +71,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 /**
  * Created on 23/05/17.
@@ -212,10 +214,10 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), DB_NAME);
 
         // Create empty VariantSource
-        VariantSource source = new VariantSource(String.valueOf(fileId), String.valueOf(fileId), String.valueOf(sc.getStudyId()), sc.getStudyName());
-        dbAdaptor.getVariantSourceDBAdaptor().update(source);
+        VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
+        dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(sc.getStudyId()), fileMetadata);
 
-        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), source);
+        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), fileMetadata);
 
 
         // Create dummy reader
@@ -251,7 +253,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
 
         // Create empty VariantSource
-        dbAdaptor.getVariantSourceDBAdaptor().update(new VariantSource(String.valueOf(fileId), String.valueOf(fileId), String.valueOf(study.getStudyId()), study.getStudyName()));
+        dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(study.getStudyId()), new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId)));
 
         // Create dummy reader
         VariantSliceReader reader = getVariantSliceReader(variants);
@@ -286,7 +288,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         return new VariantSliceReader(100, new VariantReader() {
             boolean empty = false;
             @Override public List<String> getSampleNames() { return variants.get(0).getStudies().get(0).getOrderedSamplesName(); }
-            @Override public String getHeader() { return null; }
+            @Override public VariantFileMetadata getVariantFileMetadata() { return null; }
             @Override public List<Variant> read(int i) {
                 if (empty) {
                     return Collections.emptyList();

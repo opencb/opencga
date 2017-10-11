@@ -53,7 +53,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 
-@Path("/{version}/ga4gh")
+@Path("/{apiVersion}/ga4gh")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "GA4GH", position = 13, description = "Global Alliance for Genomics & Health RESTful API")
 public class Ga4ghWSServer extends OpenCGAWSServer {

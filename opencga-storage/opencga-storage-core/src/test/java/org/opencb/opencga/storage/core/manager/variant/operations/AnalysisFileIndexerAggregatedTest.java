@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.File;
@@ -52,7 +52,7 @@ public class AnalysisFileIndexerAggregatedTest extends AbstractVariantStorageOpe
     @Test
     public void testIndexWithAggregatedStats() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.BASIC);
+                .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.BASIC);
 
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
@@ -63,7 +63,7 @@ public class AnalysisFileIndexerAggregatedTest extends AbstractVariantStorageOpe
     }
 
     @Override
-    protected VariantSource.Aggregation getAggregation() {
-        return VariantSource.Aggregation.BASIC;
+    protected Aggregation getAggregation() {
+        return Aggregation.BASIC;
     }
 }

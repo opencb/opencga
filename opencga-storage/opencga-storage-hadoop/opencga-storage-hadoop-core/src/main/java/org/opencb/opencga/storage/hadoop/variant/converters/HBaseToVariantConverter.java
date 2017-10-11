@@ -27,7 +27,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.biodata.tools.variant.converters.Converter;
+import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -216,7 +216,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return variant;
     }
 
-//    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, VariantStudyMetadata variantMetadata,
+//    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, VariantFileHeader variantMetadata,
 //                                                              List<String> format, Map<Integer, VariantTableStudyRow> rowsMap,
 //                                                              Map<Integer, Map<Integer, List<String>>> fullSamplesData) {
 //        List<AlternateCoordinate> secAltArr;

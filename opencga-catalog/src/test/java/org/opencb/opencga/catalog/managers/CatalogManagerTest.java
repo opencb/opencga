@@ -30,13 +30,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
-import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
@@ -1599,8 +1599,8 @@ public class CatalogManagerTest extends GenericTest {
                 new QueryOptions(), sessionIdUser).first().getId();
 
         Sample sample = catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualId), null, sessionIdUser)
-                .first();
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualId),
+                        new QueryOptions("lazy", false), sessionIdUser).first();
 
         assertEquals(individualId, sample.getIndividual().getId());
     }
@@ -1640,18 +1640,21 @@ public class CatalogManagerTest extends GenericTest {
         long sampleId1 = catalogManager.getSampleManager()
                 .create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, new Individual().setName(String.valueOf(individualId)), null,
                         new QueryOptions(), sessionIdUser).first().getId();
-        Sample sample = catalogManager.getSampleManager().get(sampleId1, QueryOptions.empty(), sessionIdUser).first();
 
-        assertEquals(String.valueOf(individualId), String.valueOf(((Map<String, Object>) sample.getAttributes().get("individual"))
-                .get("id")));
+        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+                String.valueOf(individualId), QueryOptions.empty(), sessionIdUser);
+        assertEquals(sampleId1, individualQueryResult.first().getSamples().get(0).getId());
 
         // Create sample linking to individual based on the individual name
         long sampleId2 = catalogManager.getSampleManager()
                 .create("user@1000G:phase1", "SAMPLE_2", "", "", null, false, new Individual().setName("Individual1"), null,
                         new QueryOptions(), sessionIdUser).first().getId();
-        sample = catalogManager.getSampleManager().get(sampleId2, QueryOptions.empty(), sessionIdUser).first();
-        assertEquals(String.valueOf(individualId), String.valueOf(((Map<String, Object>) sample.getAttributes().get("individual"))
-                .get("id")));
+        individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+                String.valueOf(individualId), QueryOptions.empty(), sessionIdUser);
+        assertEquals(2, individualQueryResult.first().getSamples().size());
+        assertTrue(individualQueryResult.first().getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(
+                Arrays.asList(sampleId1, sampleId2)
+        ));
     }
 
     @Test
@@ -1662,19 +1665,6 @@ public class CatalogManagerTest extends GenericTest {
         thrown.expect(CatalogDBException.class);
         catalogManager.getSampleManager()
                 .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), 4), null, sessionIdUser);
-    }
-
-    @Test
-    public void testModifySampleUnknownIndividual() throws CatalogException {
-        long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, null, null, new
-                QueryOptions(), sessionIdUser).first().getId();
-
-        catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), -1), null, sessionIdUser);
-
-        Sample sample = catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), -2), null, sessionIdUser).first();
-        assertEquals(-1, sample.getIndividual().getId());
     }
 
     @Test

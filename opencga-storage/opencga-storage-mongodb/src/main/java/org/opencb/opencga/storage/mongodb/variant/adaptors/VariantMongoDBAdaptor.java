@@ -89,7 +89,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final String collectionName;
     private final MongoDBCollection variantsCollection;
-    private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
+    private final VariantFileMetadataMongoDBAdaptor variantFileMetadataMongoDBAdaptor;
     private final StorageConfiguration storageConfiguration;
     private final MongoCredentials credentials;
     private final VariantMongoDBQueryParser queryParser;
@@ -122,7 +122,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.credentials = credentials;
         this.mongoManager = mongoManager;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(db, filesCollectionName);
+        variantFileMetadataMongoDBAdaptor = new VariantFileMetadataMongoDBAdaptor(db, filesCollectionName);
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
@@ -1152,8 +1152,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantSourceMongoDBAdaptor getVariantSourceDBAdaptor() {
-        return variantSourceMongoDBAdaptor;
+    public VariantFileMetadataMongoDBAdaptor getVariantFileMetadataDBAdaptor() {
+        return variantFileMetadataMongoDBAdaptor;
     }
 
     @Override

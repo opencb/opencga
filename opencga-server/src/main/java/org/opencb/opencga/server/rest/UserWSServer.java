@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 
-@Path("/{version}/users")
+@Path("/{apiVersion}/users")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Users", position = 1, description = "Methods for working with 'users' endpoint")
 public class UserWSServer extends OpenCGAWSServer {

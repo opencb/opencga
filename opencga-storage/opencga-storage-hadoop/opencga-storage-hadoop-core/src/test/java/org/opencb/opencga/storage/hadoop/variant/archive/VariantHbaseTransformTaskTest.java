@@ -20,8 +20,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -32,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by mh719 on 04/05/16.
@@ -46,9 +45,7 @@ public class VariantHbaseTransformTaskTest {
     public ParallelTaskRunner<Variant, VcfSliceProtos.VcfSlice> createParallelRunner(int size, DataWriter<VcfSliceProtos.VcfSlice> collector) throws Exception {
         VcfVariantReader reader = VcfVariantReaderTest.createReader(size);
         Configuration conf = new Configuration();
-        VariantSource source = new VariantSource("1","1", "1","1");
-        VcfMeta vs = new VcfMeta(source);
-        ArchiveTableHelper helper = new ArchiveTableHelper(conf, vs);
+        ArchiveTableHelper helper = new ArchiveTableHelper(conf, new VariantFileMetadata("1", "1"));
         ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper, null);
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(1)
@@ -66,9 +63,7 @@ public class VariantHbaseTransformTaskTest {
     public Runnable createSerialRunner(int size, DataWriter<VcfSliceProtos.VcfSlice> collector) throws Exception {
         VcfVariantReader reader = VcfVariantReaderTest.createReader(size);
         Configuration conf = new Configuration();
-        VariantSource source = new VariantSource("1","1", "1","1");
-        VcfMeta vs = new VcfMeta(source);
-        ArchiveTableHelper helper = new ArchiveTableHelper(conf, vs);
+        ArchiveTableHelper helper = new ArchiveTableHelper(conf, new VariantFileMetadata("", ""));
         ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper, null);
 
 

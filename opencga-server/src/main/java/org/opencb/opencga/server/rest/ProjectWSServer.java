@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 
-@Path("/{version}/projects")
+@Path("/{apiVersion}/projects")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Projects", position = 2, description = "Methods for working with 'projects' endpoint")
 public class ProjectWSServer extends OpenCGAWSServer {

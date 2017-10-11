@@ -33,6 +33,7 @@ public class Sample extends Annotable {
     private Individual individual;
 
     private int release;
+    private int version;
     private String creationDate;
     private Status status;
     private String description;
@@ -47,15 +48,16 @@ public class Sample extends Annotable {
     }
 
     public Sample(long id, String name, String source, Individual individual, String description, int release) {
-        this(id, name, source, individual, description, "", false, release, new LinkedList<>(),
+        this(id, name, source, individual, description, "", false, release, 1, new LinkedList<>(),
                 new ArrayList<>(), new HashMap<>());
     }
 
     public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic, int release,
-                  List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList, Map<String, Object> attributes) {
+                  int version, List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
+        this.version = version;
         this.individual = individual;
         this.type = type;
         this.somatic = somatic;
@@ -71,19 +73,20 @@ public class Sample extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Sample{");
-        sb.append(", id=").append(id);
+        sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", source='").append(source).append('\'');
         sb.append(", individual=").append(individual);
         sb.append(", release=").append(release);
+        sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", ontologyTerms=").append(ontologyTerms);
         sb.append(", attributes=").append(attributes);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
@@ -204,6 +207,15 @@ public class Sample extends Annotable {
 
     public Sample setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public Sample setVersion(int version) {
+        this.version = version;
         return this;
     }
 

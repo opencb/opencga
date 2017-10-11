@@ -48,8 +48,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixComplexQueryParam;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -115,12 +114,50 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> update(long id, ObjectMap parameters) throws CatalogDBException {
-        return null;
+    public QueryResult<ClinicalAnalysis> update(long id, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Document analysisParams = new Document();
+
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        filterStringParams(parameters, analysisParams, acceptedParams);
+
+        if (analysisParams.containsKey(QueryParams.NAME.key())) {
+            // Check that the new sample name is still unique
+            long studyId = getStudyId(id);
+
+            QueryResult<Long> count = clinicalCollection.count(
+                    new Document(QueryParams.NAME.key(), analysisParams.get(QueryParams.NAME.key()))
+                            .append(PRIVATE_STUDY_ID, studyId));
+            if (count.getResult().get(0) > 0) {
+                throw new CatalogDBException("Clinical analysis { name: '" + analysisParams.get(QueryParams.NAME.key())
+                        + "'} already exists.");
+            }
+        }
+
+        String[] acceptedObjectParams = {QueryParams.INTERPRETATIONS.key()};
+        filterObjectParams(parameters, analysisParams, acceptedObjectParams);
+
+        if (!analysisParams.isEmpty()) {
+            clinicalConverter.validateDocumentToUpdate(analysisParams);
+
+            System.out.println(parameters.safeToString());
+            System.out.println(analysisParams);
+
+            Bson query = Filters.eq(PRIVATE_ID, id);
+            Bson operation = new Document("$set", analysisParams);
+            QueryResult<UpdateResult> update = clinicalCollection.update(query, operation, null);
+
+            if (update.getResult().isEmpty() || update.getResult().get(0).getMatchedCount() == 0) {
+                throw CatalogDBException.idNotFound("Clinical Analysis", id);
+            }
+        }
+
+        return endQuery("Modify clinical analysis", startTime, get(id, options));
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 

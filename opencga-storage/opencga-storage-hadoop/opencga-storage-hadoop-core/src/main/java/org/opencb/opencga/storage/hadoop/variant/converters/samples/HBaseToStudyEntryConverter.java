@@ -30,12 +30,12 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -287,7 +287,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
         }
 
-        addSecondaryAlternates(variant, studyEntry, studyConfiguration.getVariantMetadata(), alternateSampleMap);
+        addSecondaryAlternates(variant, studyEntry, studyConfiguration.getVariantHeader(), alternateSampleMap);
 
         if (row != null) {
             convert(variant, studyEntry, studyConfiguration, row);
@@ -633,10 +633,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
      *
      * @param variant           Variant coordinates.
      * @param studyEntry        Study Entry all samples data
-     * @param variantMetadata   Variant Metadata from the study, to configure the VariantMerger
+     * @param variantHeader     VariantHeader from the study, to configure the VariantMerger
      * @param alternateSampleIdMap  Map from SecondaryAlternate to SamplesData
      */
-    private void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, VariantStudyMetadata variantMetadata,
+    private void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, VariantFileHeader variantHeader,
                                         Map<String, List<String>> alternateSampleIdMap) {
         final List<AlternateCoordinate> alternateCoordinates;
         if (alternateSampleIdMap.isEmpty()) {
@@ -649,12 +649,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             VariantMerger variantMerger = new VariantMerger(false);
             variantMerger.setExpectedFormats(studyEntry.getFormat());
             variantMerger.setStudyId("0");
-            for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
-                variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
-            }
-            for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
-                variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
-            }
+            variantMerger.configure(variantHeader);
+
 
             // Create one variant for each alternate with the samples data
             List<Variant> variants = new ArrayList<>(alternateSampleIdMap.size());

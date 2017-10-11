@@ -21,12 +21,16 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -36,7 +40,6 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -47,7 +50,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 /**
  * Created by imedina on 17/08/16.
  */
-@Path("/{version}/analysis/variant")
+@Path("/{apiVersion}/analysis/variant")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Variant", position = 4, description = "Methods for working with 'files' endpoint")
 public class VariantAnalysisWSService extends AnalysisWSService {
@@ -58,9 +61,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public VariantAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantAnalysisWSService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, httpHeaders);
+        super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
     }
 
 
@@ -521,6 +524,31 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             return createErrorResponse(e);
         }
     }
+
+    @GET
+    @Path("/metadata")
+    @ApiOperation(value = "", position = 15, response = VariantMetadata.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "studies", value = STUDIES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "files", value = FILES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "samples", value = SAMPLES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "returnedStudies", value = RETURNED_STUDIES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "returnedSamples", value = RETURNED_SAMPLES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "returnedFiles", value = RETURNED_FILES_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
+    })
+    public Response metadata() {
+        try {
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = VariantStorageManager.getVariantQuery(queryOptions);
+            return createOkResponse(variantManager.getMetadata(query, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 }
 
 

@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -65,7 +65,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
+import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -276,7 +276,7 @@ public class FileManager extends ResourceManager<File> {
             }
             relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
             ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
-            fileDBAdaptor.update(json.getId(), params);
+            fileDBAdaptor.update(json.getId(), params, QueryOptions.empty());
 
             // Update transformed file
             logger.debug("Updating transformed relation");
@@ -286,7 +286,7 @@ public class FileManager extends ResourceManager<File> {
             }
             relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
             params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
-            fileDBAdaptor.update(transformedFile.getId(), params);
+            fileDBAdaptor.update(transformedFile.getId(), params, QueryOptions.empty());
 
             // Update vcf file
             logger.debug("Updating vcf relation");
@@ -303,14 +303,14 @@ public class FileManager extends ResourceManager<File> {
                 index.setStatus(new FileIndex.IndexStatus(FileIndex.IndexStatus.TRANSFORMED));
             }
             params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
-            fileDBAdaptor.update(vcf.getId(), params);
+            fileDBAdaptor.update(vcf.getId(), params, QueryOptions.empty());
 
             // Update variant stats
             Path statsFile = Paths.get(json.getUri().getRawPath());
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
-                VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
-                VariantGlobalStats stats = variantSource.getStats();
-                params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
+                VariantFileMetadata fileMetadata = new ObjectMapper().readValue(is, VariantFileMetadata.class);
+                VariantSetStats stats = fileMetadata.getStats();
+                params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_FILE_STATS, stats));
                 update(vcf.getId(), params, new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
@@ -333,7 +333,7 @@ public class FileManager extends ResourceManager<File> {
         parameters.putIfNotNull(FileDBAdaptor.QueryParams.STATUS_NAME.key(), status);
         parameters.putIfNotNull(FileDBAdaptor.QueryParams.STATUS_MSG.key(), message);
 
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
 
@@ -354,7 +354,7 @@ public class FileManager extends ResourceManager<File> {
             index = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(newStatus), -1, new ObjectMap());
         }
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
-        fileDBAdaptor.update(file.getId(), params);
+        fileDBAdaptor.update(file.getId(), params, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.file, file.getId(), userId, params, null, null);
 
         return new QueryResult<>("Update file index", 0, 1, 1, "", "", Arrays.asList(index));
@@ -585,6 +585,13 @@ public class FileManager extends ResourceManager<File> {
 
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, userId);
 
+        if (fileQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> idList = query.getAsLongList("id");
+            for (Long myId : idList) {
+                authorizationManager.checkFilePermission(studyId, myId, userId, FileAclEntry.FilePermissions.VIEW);
+            }
+        }
+
         return fileQueryResult;
     }
 
@@ -805,7 +812,7 @@ public class FileManager extends ResourceManager<File> {
         }
 
         String ownerId = studyDBAdaptor.getOwnerId(resource.getStudyId());
-        fileDBAdaptor.update(resource.getResourceId(), parameters);
+        fileDBAdaptor.update(resource.getResourceId(), parameters, QueryOptions.empty());
         QueryResult<File> queryResult = fileDBAdaptor.get(resource.getResourceId(), options);
         auditManager.recordUpdate(AuditRecord.Resource.file, resource.getResourceId(), userId, parameters, null, null);
         userDBAdaptor.updateUserLastModified(ownerId);
@@ -924,7 +931,7 @@ public class FileManager extends ResourceManager<File> {
                     ObjectMap updateParams = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
                     if (file.getType().equals(File.Type.FILE)) {
                         checkCanDelete(Arrays.asList(fileId));
-                        fileDBAdaptor.update(fileId, updateParams);
+                        fileDBAdaptor.update(fileId, updateParams, QueryOptions.empty());
                         Query query = new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                         jobDBAdaptor.extractFilesFromJobs(query, Arrays.asList(fileId));
                     } else {
@@ -938,7 +945,7 @@ public class FileManager extends ResourceManager<File> {
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
                         checkCanDelete(query);
-                        fileDBAdaptor.update(query, updateParams);
+                        fileDBAdaptor.update(query, updateParams, QueryOptions.empty());
 
                         // Remove any reference to the file ids recently sent to the trash bin
                         query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
@@ -1017,7 +1024,7 @@ public class FileManager extends ResourceManager<File> {
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), suffixedPath);
 
-            QueryResult<File> retFile = fileDBAdaptor.update(file.getId(), update);
+            QueryResult<File> retFile = fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
 
             // Remove any reference to the file ids recently sent to the trash bin
             jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId), Arrays.asList(file.getId()));
@@ -1059,7 +1066,7 @@ public class FileManager extends ResourceManager<File> {
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath().replaceFirst(basePath, suffixedPath));
 
-                        fileDBAdaptor.update(file.getId(), update);
+                        fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
 
                         logger.debug("{} unlinked", file.toString());
 
@@ -1129,7 +1136,7 @@ public class FileManager extends ResourceManager<File> {
                                     .append(FileDBAdaptor.QueryParams.PATH.key(),
                                             file.getPath().replaceFirst(basePath, suffixedPath));
 
-                            fileDBAdaptor.update(file.getId(), update);
+                            fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
 
                             logger.debug("{} unlinked", dir.toString());
 
@@ -1532,7 +1539,7 @@ public class FileManager extends ResourceManager<File> {
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
 
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
@@ -1543,7 +1550,7 @@ public class FileManager extends ResourceManager<File> {
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.SIZE.key(), size);
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
 
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
@@ -1554,7 +1561,7 @@ public class FileManager extends ResourceManager<File> {
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(), date);
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
 
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
@@ -1565,7 +1572,7 @@ public class FileManager extends ResourceManager<File> {
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.URI.key(), uri);
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
 
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
@@ -2013,7 +2020,7 @@ public class FileManager extends ResourceManager<File> {
             // 1. Set the file status to deleting
             ObjectMap update = new ObjectMap()
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING);
-            fileDBAdaptor.update(fileOrDirectory.getId(), update);
+            fileDBAdaptor.update(fileOrDirectory.getId(), update, QueryOptions.empty());
 
             // 2. Delete the file from disk
             ioManager.deleteFile(fileUri);
@@ -2022,7 +2029,7 @@ public class FileManager extends ResourceManager<File> {
             update = new ObjectMap()
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), fileOrDirectory.getPath() + suffixName);
-            removedFileResult = fileDBAdaptor.update(fileOrDirectory.getId(), update);
+            removedFileResult = fileDBAdaptor.update(fileOrDirectory.getId(), update, QueryOptions.empty());
 
             if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
                 // Remove any reference to the file ids recently sent to the trash bin
@@ -2080,7 +2087,7 @@ public class FileManager extends ResourceManager<File> {
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE)
                                 .append(FileDBAdaptor.QueryParams.URI.key(), newUri)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
-                        fileDBAdaptor.update(file.getId(), update);
+                        fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
                     }
 
                     if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
@@ -2122,7 +2129,7 @@ public class FileManager extends ResourceManager<File> {
 
                             // 1. Set the file status to deleting
                             ObjectMap update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING);
-                            fileDBAdaptor.update(file.getId(), update);
+                            fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
 
                             logger.debug("Deleting file '" + path.toString() + "' from filesystem and Catalog");
 
@@ -2134,7 +2141,7 @@ public class FileManager extends ResourceManager<File> {
                                     .append(FileDBAdaptor.QueryParams.PATH.key(), newPath)
                                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
 
-                            fileDBAdaptor.update(file.getId(), update);
+                            fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
                             logger.debug("DELETE: {} successfully removed from the filesystem and catalog", path.toString());
 
                             if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
@@ -2192,7 +2199,7 @@ public class FileManager extends ResourceManager<File> {
                                             .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED)
                                             .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
 
-                                    fileDBAdaptor.update(file.getId(), update);
+                                    fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
                                     logger.debug("REMOVE: {} successfully removed from the filesystem and catalog", dir.toString());
 
                                     if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
@@ -2694,7 +2701,8 @@ public class FileManager extends ResourceManager<File> {
             }
 
             for (Map.Entry<Long, FileIndex> indexEntry : filesToUpdate.entrySet()) {
-                fileDBAdaptor.update(indexEntry.getKey(), new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), indexEntry.getValue()));
+                fileDBAdaptor.update(indexEntry.getKey(), new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), indexEntry.getValue()),
+                        QueryOptions.empty());
             }
         }
     }

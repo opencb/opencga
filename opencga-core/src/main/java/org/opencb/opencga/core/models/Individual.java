@@ -19,10 +19,8 @@ package org.opencb.opencga.core.models;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -50,6 +48,7 @@ public class Individual extends Annotable {
     private Population population;
     private String dateOfBirth;
     private int release;
+    private int version;
     private String creationDate;
     private Status status;
     private LifeStatus lifeStatus;
@@ -83,9 +82,9 @@ public class Individual extends Annotable {
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
                       int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, sex, null, ethnicity, population, "", release, TimeUtils.getTime(), new Status(),
-                false, LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), new ArrayList<>(), annotationSets,
-                attributes);
+        this(id, name, new Individual(), new Individual(), new Multiples(), fatherId, motherId, family, sex, null, ethnicity, new Species(),
+                population, "", release, 1, TimeUtils.getTime(), new Status(), LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN,
+                Collections.emptyList(), Collections.emptyList(), false, annotationSets, attributes);
     }
 
     public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, Sex sex, KaryotypicSex karyotypicSex,
@@ -93,62 +92,30 @@ public class Individual extends Annotable {
                       String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
                       List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList) {
         this(id, name, father, mother, multiples, -1, -1, null, sex, karyotypicSex, ethnicity, null, population, dateOfBirth,
-                release, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, ontologyTermList, samples, parentalConsanguinity,
+                release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, ontologyTermList, samples, parentalConsanguinity,
                 annotationSets, Collections.emptyMap());
-        if (population == null) {
-            new Population();
-        }
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
                       String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
                       List<OntologyTerm> ontologyTermList) {
-        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, TimeUtils.getTime(),
-                new Status(), parentalConsanguinity, lifeStatus, affectationStatus, ontologyTermList, new ArrayList<>(), annotationSets,
-                Collections.emptyMap());
-        if (population == null) {
-            new Population();
-        }
-    }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Population population, String dateOfBirth, int release, String creationDate, Status status,
-                      boolean parentalConsanguinity, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      List<OntologyTerm> ontologyTerms, List<Sample> samples, List<AnnotationSet> annotationSets,
-                      Map<String, Object> attributes) {
-        this.id = id;
-        this.name = name;
-        this.fatherId = fatherId;
-        this.motherId = motherId;
-        this.family = family;
-        this.sex = sex;
-        this.karyotypicSex = karyotypicSex;
-        this.ethnicity = ethnicity;
-        this.population = population;
-        this.dateOfBirth = dateOfBirth;
-        this.release = release;
-        this.creationDate = creationDate;
-        this.parentalConsanguinity = parentalConsanguinity;
-        this.status = status;
-        this.lifeStatus = lifeStatus;
-        this.affectationStatus = affectationStatus;
-        this.ontologyTerms = ontologyTerms;
-        this.samples = samples;
-        this.annotationSets = annotationSets;
-        this.attributes = attributes;
+        this(id, name, new Individual(), new Individual(), new Multiples(), fatherId, motherId, family, sex, karyotypicSex, ethnicity,
+                new Species(), population, dateOfBirth, release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus,
+                ontologyTermList, new ArrayList<>(), parentalConsanguinity, annotationSets, Collections.emptyMap());
     }
 
     public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, long fatherId, long motherId,
                       String family, Sex sex, KaryotypicSex karyotypicSex, String ethnicity, Species species, Population population,
-                      String dateOfBirth, int release, String creationDate, Status status, LifeStatus lifeStatus,
+                      String dateOfBirth, int release, int version, String creationDate, Status status, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, List<OntologyTerm> ontologyTerms, List<Sample> samples,
                       boolean parentalConsanguinity, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
-        this.father = father;
-        this.mother = mother;
-        this.multiples = multiples;
+        this.father = defaultObject(father, Individual::new);
+        this.mother = defaultObject(mother, Individual::new);
+        this.multiples = defaultObject(multiples, Multiples::new);;
         this.fatherId = fatherId;
         this.motherId = motherId;
         this.family = family;
@@ -156,18 +123,19 @@ public class Individual extends Annotable {
         this.karyotypicSex = karyotypicSex;
         this.ethnicity = ethnicity;
         this.species = species;
-        this.population = population;
+        this.population = defaultObject(population, Population::new);
         this.dateOfBirth = dateOfBirth;
         this.release = release;
-        this.creationDate = creationDate;
-        this.status = status;
+        this.version = version;
+        this.creationDate = defaultObject(creationDate, TimeUtils::getTime);
+        this.status = defaultObject(status, Status::new);
         this.lifeStatus = lifeStatus;
         this.affectationStatus = affectationStatus;
-        this.ontologyTerms = ontologyTerms;
-        this.samples = samples;
+        this.ontologyTerms = defaultObject(ontologyTerms, ArrayList::new);
+        this.samples = defaultObject(samples, ArrayList::new);
         this.parentalConsanguinity = parentalConsanguinity;
         this.annotationSets = annotationSets;
-        this.attributes = attributes;
+        this.attributes = defaultObject(attributes, HashMap::new);
     }
 
     @Deprecated
@@ -284,12 +252,14 @@ public class Individual extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
-        sb.append(", id=").append(id);
+        sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
+        sb.append(", father=").append(father);
+        sb.append(", mother=").append(mother);
+        sb.append(", multiples=").append(multiples);
         sb.append(", fatherId=").append(fatherId);
         sb.append(", motherId=").append(motherId);
         sb.append(", family='").append(family).append('\'');
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", sex=").append(sex);
         sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -297,6 +267,7 @@ public class Individual extends Annotable {
         sb.append(", population=").append(population);
         sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
         sb.append(", release=").append(release);
+        sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", lifeStatus=").append(lifeStatus);
@@ -305,6 +276,7 @@ public class Individual extends Annotable {
         sb.append(", samples=").append(samples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
         sb.append(", attributes=").append(attributes);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
@@ -462,6 +434,15 @@ public class Individual extends Annotable {
         return this;
     }
 
+    public int getVersion() {
+        return version;
+    }
+
+    public Individual setVersion(int version) {
+        this.version = version;
+        return this;
+    }
+
     public LifeStatus getLifeStatus() {
         return lifeStatus;
     }
@@ -560,6 +541,13 @@ public class Individual extends Annotable {
             this.propagate = propagate;
             return this;
         }
+    }
+
+    public static <O> O defaultObject(O object, Supplier<O> supplier) {
+        if (object == null) {
+            object = supplier.get();
+        }
+        return object;
     }
 
 }

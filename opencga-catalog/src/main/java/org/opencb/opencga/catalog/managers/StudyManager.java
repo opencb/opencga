@@ -283,11 +283,11 @@ public class StudyManager extends AbstractManager {
             }
         }
 
-        study = studyDBAdaptor.update(study.getId(), new ObjectMap("uri", uri)).first();
+        study = studyDBAdaptor.update(study.getId(), new ObjectMap("uri", uri), QueryOptions.empty()).first();
         auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
 
         long rootFileId = fileDBAdaptor.getId(study.getId(), "");    //Set studyUri to the root folder too
-        rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri)).first();
+        rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty()).first();
         auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
 
         userDBAdaptor.updateUserLastModified(userId);
@@ -441,7 +441,7 @@ public class StudyManager extends AbstractManager {
 
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
         userDBAdaptor.updateUserLastModified(ownerId);
-        QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters);
+        QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
         return result;
     }
@@ -856,7 +856,7 @@ public class StudyManager extends AbstractManager {
             }
         }
 
-        QueryResult<DiseasePanel> result = panelDBAdaptor.update(diseasePanelId, parameters);
+        QueryResult<DiseasePanel> result = panelDBAdaptor.update(diseasePanelId, parameters, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.panel, diseasePanelId, userId, parameters, null, null);
         return result;
     }
@@ -878,19 +878,20 @@ public class StudyManager extends AbstractManager {
 
         VariableSetSummary variableSetSummary = new VariableSetSummary(resource.getResourceId(), variableSet.first().getName());
 
-        QueryResult<VariableSummary> annotationSummary = sampleDBAdaptor.getAnnotationSummary(resource.getResourceId());
+        QueryResult<VariableSummary> annotationSummary = sampleDBAdaptor.getAnnotationSummary(resource.getStudyId(),
+                resource.getResourceId());
         dbTime += annotationSummary.getDbTime();
         variableSetSummary.setSamples(annotationSummary.getResult());
 
-        annotationSummary = cohortDBAdaptor.getAnnotationSummary(resource.getResourceId());
+        annotationSummary = cohortDBAdaptor.getAnnotationSummary(resource.getStudyId(), resource.getResourceId());
         dbTime += annotationSummary.getDbTime();
         variableSetSummary.setCohorts(annotationSummary.getResult());
 
-        annotationSummary = individualDBAdaptor.getAnnotationSummary(resource.getResourceId());
+        annotationSummary = individualDBAdaptor.getAnnotationSummary(resource.getStudyId(), resource.getResourceId());
         dbTime += annotationSummary.getDbTime();
         variableSetSummary.setIndividuals(annotationSummary.getResult());
 
-        annotationSummary = familyDBAdaptor.getAnnotationSummary(resource.getResourceId());
+        annotationSummary = familyDBAdaptor.getAnnotationSummary(resource.getStudyId(), resource.getResourceId());
         dbTime += annotationSummary.getDbTime();
         variableSetSummary.setFamilies(annotationSummary.getResult());
 

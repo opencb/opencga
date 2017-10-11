@@ -46,7 +46,8 @@ public class VcfSliceCombiner extends Reducer<ImmutableBytesWritable, VcfSliceWr
     protected void setup(Context context) throws IOException,
             InterruptedException {
         ArchiveTableHelper helper = new ArchiveTableHelper(context.getConfiguration());
-        converterFromSlice = new VcfSliceToVariantListConverter(helper.getMeta());
+        converterFromSlice = new VcfSliceToVariantListConverter(helper.getFileMetadata()
+                .toVariantStudyMetadata(String.valueOf(helper.getStudyId())));
         converterToSlice = new VariantToVcfSliceConverter();
         keyFactory = helper.getKeyFactory();
     }
