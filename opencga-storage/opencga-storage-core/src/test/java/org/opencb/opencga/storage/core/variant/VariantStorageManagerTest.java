@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -494,6 +495,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                 values.set(2, v1);
                 while (values.get(2).length() < 5) values.set(2, values.get(2) + "0");   //Set lost zeros
             });
+            for (FileEntry fileEntry : loadedStudy.getFiles()) {
+                if(StringUtils.isEmpty(fileEntry.getCall())) {
+                    fileEntry.setCall(null);
+                }
+            }
             variant.resetLength();
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant, loadedVariant);
 
