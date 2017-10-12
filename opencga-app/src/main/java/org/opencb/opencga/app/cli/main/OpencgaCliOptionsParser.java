@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterDescription;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -26,6 +27,9 @@ import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -115,7 +119,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         studySubCommands.addCommand("acl", studyCommandOptions.aclsCommandOptions);
         studySubCommands.addCommand("acl-update", studyCommandOptions.aclsUpdateCommandOptions);
 
-        fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,dataModelOptions, numericOptions, jCommander);
+        fileCommandOptions = new FileCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
         JCommander fileSubCommands = jCommander.getCommands().get("files");
 //        fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);
@@ -151,7 +155,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         jobSubCommands.addCommand("group-by", jobCommandOptions.groupByCommandOptions);
         jobSubCommands.addCommand("acl", jobCommandOptions.aclsCommandOptions);
         jobSubCommands.addCommand("acl-update", jobCommandOptions.aclsUpdateCommandOptions);
-       // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
+        // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
 
         individualCommandOptions = new IndividualCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("individuals", individualCommandOptions);
@@ -236,24 +240,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationDeleteCommandOptions);
 
-//        toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
-//        jCommander.addCommand("tools", toolCommandOptions);
-//        JCommander toolSubCommands = jCommander.getCommands().get("tools");
-//        toolSubCommands.addCommand("help", toolCommandOptions.helpCommandOptions);
-//        toolSubCommands.addCommand("info", toolCommandOptions.infoCommandOptions);
-//        toolSubCommands.addCommand("search", toolCommandOptions.searchCommandOptions);
-//        toolSubCommands.addCommand("update", toolCommandOptions.updateCommandOptions);
-//        toolSubCommands.addCommand("delete", toolCommandOptions.deleteCommandOptions);
-
-//        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, jCommander);
-//        jCommander.addCommand("panels", panelCommandOptions);
-//        JCommander panelSubCommands = jCommander.getCommands().get("panels");
-//        panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
-//        panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
-//        panelSubCommands.addCommand("acl", panelCommandOptions.aclsCommandOptions);
-//        panelSubCommands.addCommand("acl-update", panelCommandOptions.aclsUpdateCommandOptions);
-
-
         alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
@@ -335,6 +321,99 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
                 System.err.printf("%14s  %s\n", command, jCommander.getCommandDescription(command));
             }
         }
+    }
+
+    /*
+    * creating the following strings from the jCommander to create AutoComplete bash script
+    * commands="users projects studies files jobs individuals families samples variables cohorts alignments variant"
+    * users="create info update change-password delete projects login logout reset-password"
+    * .....
+    * users_create_options="--password --no-header --help --log-file --email --name --user --log-level --conf --metadata --verbose --organization --output-format --session-id"
+    * ...
+    * */
+
+    public void generateBashAutoComplete(String fileName, String bashFunctionName) throws IOException {
+
+        Map<String, JCommander> jCommands = jCommander.getCommands();
+        StringBuilder mainCommands = new StringBuilder();
+        StringBuilder subCommmands = new StringBuilder();
+        StringBuilder subCommmandsOptions = new StringBuilder();
+
+        for (String command : jCommands.keySet()) {
+            JCommander subCommand = jCommands.get(command);
+            mainCommands.append(command).append(" ");
+            subCommmands.append(command + "=" + "\"");
+            Map<String, JCommander> subSubCommands = subCommand.getCommands();
+            for (String sc : subSubCommands.keySet()) {
+                subCommmands.append(sc).append(" ");
+                subCommmandsOptions.append(command + "_");
+                // - is not allowed in bash main variable name, replacing it with _
+                subCommmandsOptions.append(sc.replace("-", "_") + "_" + "options=" + "\"");
+                JCommander subCommandOptions = subSubCommands.get(sc);
+                for (ParameterDescription param : subCommandOptions.getParameters()) {
+                    if ("-D".equals(param.getLongestName())) {
+                        continue; // -D excluded in autocomplete
+                    }
+                    subCommmandsOptions.append(param.getLongestName()).append(' ');
+                }
+                subCommmandsOptions.replace(0, subCommmandsOptions.length(), subCommmandsOptions.toString().trim()).append("\"" + "\n");
+            }
+            subCommmands.replace(0, subCommmands.length(), subCommmands.toString().trim()).append("\"" + "\n");
+        }
+
+        // Commands(Commands, subCommands and subCommandOptions) are populated intro three strings until this point,
+        // Now we write bash script commands and blend these strings into those as appropriate
+
+        StringBuilder autoComplete = new StringBuilder();
+        autoComplete.append("_" + bashFunctionName + "() \n { \n local cur prev opts \n COMPREPLY=() \n cur=" +
+                "$" + "{COMP_WORDS[COMP_CWORD]} \n prev=" + "$" +
+                "{COMP_WORDS[COMP_CWORD-1]} \n");
+
+        autoComplete.append("commands=\"").append(mainCommands.toString().trim()).append('"').append('\n');
+        autoComplete.append(subCommmands.toString());
+        autoComplete.append(subCommmandsOptions.toString());
+        autoComplete.append("if [[ ${#COMP_WORDS[@]} > 2 && ${#COMP_WORDS[@]} < 4 ]] ; then \n local options \n case " +
+                "$" + "{prev} in \n");
+
+        for (String command : mainCommands.toString().split(" ")) {
+            autoComplete.append("\t" + command + ") options=" + "\"" + "${" + command + "}" + "\"" + " ;; \n");
+        }
+
+        autoComplete.append("*) ;; \n esac \n COMPREPLY=( $( compgen -W " + "\"" + "$" + "options" + "\"" +
+                " -- ${cur}) ) \n return 0 \n elif [[ ${#COMP_WORDS[@]} > 3 ]] ; then \n local options \n case " + "$" +
+                "{COMP_WORDS[1]} in \n");
+
+        int subCommandIndex = 0;
+        for (String command : mainCommands.toString().split(" ")) {
+            autoComplete.append('\t').append(command).append(") \n");
+            autoComplete.append("\t\t case " + "$" + "{COMP_WORDS[2]} in \n");
+            String[] splittedSubCommands = subCommmands.toString().split("\n")[subCommandIndex]
+                    .replace(command + "=" + "\"", "").replace("\"", "").split(" ");
+
+            for (String subCommand : splittedSubCommands) {
+                autoComplete.append("\t\t").append(subCommand).append(") options=").append("\"").append("${").
+                        append(command).append("_").append(subCommand.replace("-", "_")).append("_options}").
+                        append("\"").append(" ;; \n");
+            }
+            autoComplete.append("\t\t *) ;; esac ;; \n");
+            ++subCommandIndex;
+        }
+        autoComplete.append("*) ;;  esac \n COMPREPLY=( $( compgen -W " + "\"" + "$" + "options" + "\"" + " -- ${cur}) )" +
+                " \n return 0 \n fi \n if [[ ${cur} == * ]] ; then \n COMPREPLY=( $(compgen -W " + "\"" + "$" +
+                "{commands}" + "\"" + " -- ${cur}) ) \n return 0 \n fi \n } \n");
+        autoComplete.append("\ncomplete -F _opencga opencga.sh \n");
+
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+            writer.write(autoComplete.toString());
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public GeneralCliOptions.GeneralOptions getGeneralOptions() {
+        return generalOptions;
     }
 
     public GeneralCliOptions.CommonCommandOptions getCommonCommandOptions() {
