@@ -25,6 +25,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.Converter;
@@ -49,6 +50,7 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.extractVariantFromVariantRowKey;
 
@@ -111,6 +113,15 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             format.addAll(extraFields);
         }
         return format;
+    }
+
+    public static List<String> getFixedAttributes(StudyConfiguration studyConfiguration) {
+        return studyConfiguration.getVariantHeader()
+                .getComplexLines()
+                .stream()
+                .filter(line -> line.getKey().equalsIgnoreCase("INFO"))
+                .map(VariantFileHeaderComplexLine::getId)
+                .collect(Collectors.toList());
     }
 
     public HBaseToVariantConverter<T> setReturnedSamples(List<String> returnedSamples) {

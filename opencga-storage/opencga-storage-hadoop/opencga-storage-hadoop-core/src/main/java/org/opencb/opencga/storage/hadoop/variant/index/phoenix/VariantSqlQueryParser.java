@@ -211,13 +211,17 @@ public class VariantSqlQueryParser {
                 });
             }
             if (returnedFields.contains(VariantField.STUDIES_FILES)) {
-                returnedSamples.forEach((studyId, sampleIds) -> {
-                    for (Integer sampleId : sampleIds) {
-                        sb.append(",\"");
-                        VariantPhoenixHelper.buildOtherSampleDataColumnKey(studyId, sampleId, sb);
-                        sb.append('"');
-                    }
-                });
+                Collection<Integer> returnedFiles = getReturnedFiles(query, options, returnedFields, studyConfigurationManager);
+                StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, studyConfigurationManager);
+                if (returnedFiles == null) {
+                    returnedFiles = defaultStudyConfiguration.getIndexedFiles();
+                }
+                //FIXME! Not all the files belong to the default study
+                for (Integer fileId : returnedFiles) {
+                    sb.append(",\"");
+                    VariantPhoenixHelper.buildFileColumnKey(defaultStudyConfiguration.getStudyId(), fileId, sb);
+                    sb.append('"');
+                }
             }
 
 
@@ -420,6 +424,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#TYPE}
      * {@link VariantQueryParam#STUDIES}
      * {@link VariantQueryParam#FILES}
+     * {@link VariantQueryParam#FILTER}
      * {@link VariantQueryParam#COHORTS}
      * {@link VariantQueryParam#GENOTYPE}
      *
@@ -539,6 +544,8 @@ public class VariantSqlQueryParser {
         }
 
         unsupportedFilter(query, FILES);
+
+        unsupportedFilter(query, FILTER);
 
         if (isValidParam(query, COHORTS)) {
             for (String cohort : query.getAsStringList(COHORTS.key())) {

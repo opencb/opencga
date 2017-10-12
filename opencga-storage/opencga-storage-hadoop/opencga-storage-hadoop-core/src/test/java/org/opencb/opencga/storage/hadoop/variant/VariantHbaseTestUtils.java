@@ -60,7 +60,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexVariant;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.OtherSampleData;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.io.*;
@@ -191,15 +190,11 @@ public class VariantHbaseTestUtils {
                             || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.CALL_CNT)
                             || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.PASS_CNT)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX)) {
+                    } else if (key.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX) || key.endsWith(VariantPhoenixHelper.FILE_SUFIX)) {
                         os.println("\t" + key + " = " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.MAF_SUFIX)
                             || key.endsWith(VariantPhoenixHelper.MGF_SUFIX)) {
                         os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.OTHER_SAMPLE_DATA_SUFIX)) {
-                        OtherSampleData data = OtherSampleData.parseFrom(entry.getValue());
-//                        os.println("\t" + key + " = " + TextFormat.shortDebugString(data));
-                        os.println("\t" + key + " = " + "fileId : " + data.getFile().getFileId() + ", call : " + data.getFile().getCall() + ", sampleData : " + data.getSampleDataMap() + ", attributes : " + data.getFile().getAttributesMap());
                     } else if (entry.getValue().length == 4) {
                         Object o = null;
                         try {

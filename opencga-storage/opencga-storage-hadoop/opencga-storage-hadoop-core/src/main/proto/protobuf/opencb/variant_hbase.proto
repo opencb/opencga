@@ -27,16 +27,6 @@ message ComplexFilter {
     map<string, SampleList> filterNonPass = 1;
 }
 
-/**
- * Other sample data
- * Column <STUDY>_<SAMPLE>_SX
- */
-message OtherSampleData {
-    map<string, string> sampleData = 1;
-    FileEntry file = 2;
-}
-
-
 message SampleList {
     repeated uint32 sampleIds = 1 [packed = true];
 }

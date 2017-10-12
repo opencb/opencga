@@ -660,7 +660,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                             }
                         }
                     }
-                    phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
+                    phoenixHelper.registerNewFiles(jdbcConnection, tableName, studyConfiguration.getStudyId(), fileIds, newSamples);
 
                 } catch (SQLException e) {
                     throw new StorageEngineException("Unable to register samples in Phoenix", e);

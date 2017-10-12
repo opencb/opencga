@@ -241,7 +241,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, QueryOptions.empty());
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId());
-        phoenixHelper.registerNewSamples(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId(), sc.getSamplesInFiles().get(fileId));
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId(), Collections.singleton(fileId), sc.getSamplesInFiles().get(fileId));
     }
 
     private void loadVariants(StudyConfiguration studyConfiguration, int fileId, List<Variant> variants) throws Exception {
@@ -362,7 +362,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(study, QueryOptions.empty());
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), DB_NAME, study.getStudyId());
-        phoenixHelper.registerNewSamples(dbAdaptor.getJdbcConnection(), DB_NAME, study.getStudyId(), fileIds.stream().flatMap(i -> study.getSamplesInFiles().get(i).stream()).collect(Collectors.toSet()));
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), DB_NAME, study.getStudyId(), fileIds, fileIds.stream().flatMap(i -> study.getSamplesInFiles().get(i).stream()).collect(Collectors.toSet()));
     }
 
     private Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context mockContext(Map<String, Counter> counterMap) throws IOException, InterruptedException {

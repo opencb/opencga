@@ -56,8 +56,8 @@ public class VariantPhoenixHelper {
     public static final String STATS_PROTOBUF_SUFIX = "_PB";
     public static final String SAMPLE_DATA_SUFIX = "_S";
     public static final byte[] SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(SAMPLE_DATA_SUFIX);
-    public static final String OTHER_SAMPLE_DATA_SUFIX = "_SX";
-    public static final byte[] OTHER_SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(OTHER_SAMPLE_DATA_SUFIX);
+    public static final String FILE_SUFIX = "_FI";
+    public static final byte[] FILE_SUFIX_BYTES = Bytes.toBytes(FILE_SUFIX);
     public static final byte[] STATS_PROTOBUF_SUFIX_BYTES = Bytes.toBytes(STATS_PROTOBUF_SUFIX);
     public static final String MAF_SUFIX = "_MAF";
     public static final String MGF_SUFIX = "_MGF";
@@ -276,12 +276,15 @@ public class VariantPhoenixHelper {
         con.commit();
     }
 
-    public void registerNewSamples(Connection con, String table, Integer studyId, Collection<Integer> sampleIds) throws SQLException {
+    public void registerNewFiles(Connection con, String table, Integer studyId, Collection<Integer> fileIds, Collection<Integer> sampleIds)
+            throws SQLException {
         createTableIfNeeded(con, table);
-        List<Column> columns = new ArrayList<>(sampleIds.size() * 2 + 1);
+        List<Column> columns = new ArrayList<>(fileIds.size() + sampleIds.size() + 1);
+        for (Integer fileId : fileIds) {
+            columns.add(getFileColumnKey(studyId, fileId));
+        }
         for (Integer sampleId : sampleIds) {
             columns.add(getSampleColumn(studyId, sampleId));
-            columns.add(getOtherSampleDataColumnKey(studyId, sampleId));
         }
         columns.add(getStudyColumn(studyId));
         phoenixHelper.addMissingColumns(con, table, columns, true);
@@ -519,16 +522,16 @@ public class VariantPhoenixHelper {
         return Column.build(buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
-    public static byte[] buildOtherSampleDataColumnKey(int studyId, Integer sampleId) {
-        return Bytes.toBytes(buildOtherSampleDataColumnKey(studyId, sampleId, new StringBuilder()).toString());
+    public static byte[] buildFileColumnKey(int studyId, int fileId) {
+        return Bytes.toBytes(buildFileColumnKey(studyId, fileId, new StringBuilder()).toString());
     }
 
-    public static StringBuilder buildOtherSampleDataColumnKey(int studyId, int sampleId, StringBuilder stringBuilder) {
-        return stringBuilder.append(studyId).append(COLUMN_KEY_SEPARATOR).append(sampleId).append(OTHER_SAMPLE_DATA_SUFIX);
+    public static StringBuilder buildFileColumnKey(int studyId, int fileId, StringBuilder stringBuilder) {
+        return stringBuilder.append(studyId).append(COLUMN_KEY_SEPARATOR).append(fileId).append(FILE_SUFIX);
     }
 
-    public static Column getOtherSampleDataColumnKey(int studyId, int sampleId) {
-        return Column.build(buildOtherSampleDataColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarbinary.INSTANCE);
+    public static Column getFileColumnKey(int studyId, int sampleId) {
+        return Column.build(buildFileColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
 }

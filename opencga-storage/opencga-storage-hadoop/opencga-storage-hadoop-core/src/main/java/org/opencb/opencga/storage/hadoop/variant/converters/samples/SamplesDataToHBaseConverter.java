@@ -17,12 +17,10 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.samples;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.phoenix.schema.types.PVarbinary;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -31,7 +29,6 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConver
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.OtherSampleData;
 
 import java.util.*;
 
@@ -50,6 +47,7 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
     private final StudyConfiguration studyConfiguration;
     private final List<String> fixedFormat;
     private final Set<String> fixedFormatSet;
+    private final List<String> fileAttributes;
     private final PhoenixHelper.Column studyColumn;
     private boolean addSecondaryAlternates;
 
@@ -66,6 +64,7 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
         defaultGenotypes.add("0|0");
         fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         fixedFormatSet = new HashSet<>(fixedFormat);
+        fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
     }
 
     @Override
@@ -87,42 +86,48 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
         Integer gtIdx = studyEntry.getFormatPositions().get(VariantMerger.GT_KEY);
         int[] formatReMap = buildFormatRemap(studyEntry);
         int sampleIdx = 0;
-        for (String sampleName : studyEntry.getOrderedSamplesName()) {
+        List<String> samplesName = studyEntry.getOrderedSamplesName();
+        // Allways write file attributes if there is no samples (i.e. aggregated files)
+        boolean writeFileAttributes = samplesName.isEmpty();
+        for (String sampleName : samplesName) {
             Integer sampleId = studyConfiguration.getSampleIds().get(sampleName);
             if (sampleIds == null || sampleIds.contains(sampleId)) {
                 byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyConfiguration.getStudyId(), sampleId);
-                byte[] columnOther = VariantPhoenixHelper.buildOtherSampleDataColumnKey(studyConfiguration.getStudyId(), sampleId);
-                OtherSampleData.Builder builder = OtherSampleData.newBuilder();
                 List<String> sampleData = studyEntry.getSamplesData().get(sampleIdx);
                 if (!defaultGenotypes.contains(sampleData.get(gtIdx))) {
                     if (formatReMap != null) {
-                        sampleData = remapSampleData(studyEntry, formatReMap, sampleData, builder);
+                        sampleData = remapSampleData(studyEntry, formatReMap, sampleData);
                     }
-                    addFileAttributes(studyEntry, builder);
                     addSecondaryAlternates(variant, studyEntry, sampleData);
                     addVarcharArray(put, column, sampleData);
-                    add(put, columnOther, builder.build().toByteArray(), PVarbinary.INSTANCE);
+                    writeFileAttributes = true;
                 }
             }
             sampleIdx++;
+        }
+        if (writeFileAttributes) {
+            FileEntry fileEntry = studyEntry.getFiles().get(0);
+            byte[] fileColumnKey = VariantPhoenixHelper
+                    .buildFileColumnKey(studyConfiguration.getStudyId(), Integer.parseInt(fileEntry.getFileId()));
+            List<String> fileColumn = remapFileData(fileEntry);
+            addVarcharArray(put, fileColumnKey, fileColumn);
         }
 
         return put;
     }
 
-    private void addFileAttributes(StudyEntry studyEntry, OtherSampleData.Builder builder) {
-        FileEntry fileEntry = studyEntry.getFiles().get(0);
-        VariantProto.FileEntry.Builder fileBuilder = VariantProto.FileEntry.newBuilder()
-                .setFileId(fileEntry.getFileId());
-        fileEntry.getAttributes().forEach((key, value) -> {
-            if (value != null) {
-                fileBuilder.putAttributes(key, value);
-            }
-        });
-        if (fileEntry.getCall() != null) {
-            fileBuilder.setCall(fileEntry.getCall());
+    private List<String> remapFileData(FileEntry fileEntry) {
+        List<String> fileColumn = new ArrayList<>(fileAttributes.size() + 3);
+
+        Map<String, String> attributes = fileEntry.getAttributes();
+        fileColumn.add(attributes.get(StudyEntry.QUAL));
+        fileColumn.add(attributes.get(StudyEntry.FILTER));
+        fileColumn.add(fileEntry.getCall());
+        for (String fileAttribute : fileAttributes) {
+            fileColumn.add(attributes.get(fileAttribute));
         }
-        builder.setFile(fileBuilder);
+
+        return fileColumn;
     }
 
     public void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, List<String> sampleData) {
@@ -173,8 +178,7 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
         return formatReMap;
     }
 
-    private List<String> remapSampleData(StudyEntry studyEntry, int[] formatReMap, List<String> sampleData,
-                                         OtherSampleData.Builder builder) {
+    private List<String> remapSampleData(StudyEntry studyEntry, int[] formatReMap, List<String> sampleData) {
         List<String> remappedSampleData = new ArrayList<>(formatReMap.length);
 
         for (int i : formatReMap) {
@@ -191,13 +195,13 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
             }
         }
 
-        int sampleDataIdx = 0;
-        for (String key : studyEntry.getFormat()) {
-            if (!fixedFormat.contains(key)) {
-                builder.putSampleData(key, sampleData.get(sampleDataIdx));
-            }
-            sampleDataIdx++;
-        }
+//        int sampleDataIdx = 0;
+//        for (String key : studyEntry.getFormat()) {
+//            if (!fixedFormat.contains(key)) {
+//                builder.putSampleData(key, sampleData.get(sampleDataIdx));
+//            }
+//            sampleDataIdx++;
+//        }
 
         return remappedSampleData;
     }
