@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.search.solr;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -46,7 +46,7 @@ public class SolrFacetedQueryParserTest {
         int rows = 0;
         StorageConfiguration config = new StorageConfiguration();
         config.setSearch(new SearchConfiguration(host, mode, user, password, active, timeout, rows));
-        VariantSearchManager searchManager = new VariantSearchManager(null, null, config);
+        VariantSearchManager searchManager = new VariantSearchManager(null, config);
         try {
             queryOptions.put(QueryOptions.LIMIT, rows);
             FacetedQueryResult result = searchManager.facetedQuery(collection, query, queryOptions);

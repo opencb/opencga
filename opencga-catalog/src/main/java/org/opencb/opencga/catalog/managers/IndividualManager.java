@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -85,43 +86,133 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         this.studyManager = catalogManager.getStudyManager();
     }
 
+    @Deprecated
     public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                           String ethnicity, String populationName, String populationSubpopulation,
                                           String populationDescription, String dateOfBirth, Individual.KaryotypicSex karyotypicSex,
                                           Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
                                           QueryOptions options, String sessionId) throws CatalogException {
+        Individual individual = new Individual(-1, name, null, null, null, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
+                null, new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1, null,
+                null, lifeStatus, affectationStatus, null, null, false, null, null);
+        return create(String.valueOf(studyId), individual, options, sessionId);
+    }
+
+    @Override
+    public QueryResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String sessionId)
+            throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        sex = ParamUtils.defaultObject(sex, Individual.Sex.UNKNOWN);
-        logger.info(Long.toString(configuration.getCatalog().getOffset()));
-        ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
-        family = ParamUtils.defaultObject(family, "");
-        ethnicity = ParamUtils.defaultObject(ethnicity, "");
-        populationName = ParamUtils.defaultObject(populationName, "");
-        populationSubpopulation = ParamUtils.defaultObject(populationSubpopulation, "");
-        populationDescription = ParamUtils.defaultObject(populationDescription, "");
-        karyotypicSex = ParamUtils.defaultObject(karyotypicSex, Individual.KaryotypicSex.UNKNOWN);
-        lifeStatus = ParamUtils.defaultObject(lifeStatus, Individual.LifeStatus.UNKNOWN);
-        affectationStatus = ParamUtils.defaultObject(affectationStatus, Individual.AffectationStatus.UNKNOWN);
-        if (StringUtils.isEmpty(dateOfBirth)) {
-            dateOfBirth = "";
-        } else {
-            if (!TimeUtils.isValidFormat("yyyyMMdd", dateOfBirth)) {
-                throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
+
+        ParamUtils.checkAlias(individual.getName(), "name", configuration.getCatalog().getOffset());
+        individual.setFamily(ParamUtils.defaultObject(individual.getFamily(), ""));
+        individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
+        individual.setSpecies(ParamUtils.defaultObject(individual.getSpecies(), Individual.Species::new));
+        individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
+        individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), Individual.LifeStatus.UNKNOWN));
+        individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), Individual.KaryotypicSex.UNKNOWN));
+        individual.setSex(ParamUtils.defaultObject(individual.getSex(), Individual.Sex.UNKNOWN));
+        individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(), Individual.AffectationStatus.UNKNOWN));
+        individual.setOntologyTerms(ParamUtils.defaultObject(individual.getOntologyTerms(), Collections.emptyList()));
+        individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
+        individual.setAnnotationSets(validateAnnotationSets(individual.getAnnotationSets()));
+        individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
+        individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), Collections.emptyList()));
+        individual.setStatus(new Status());
+        individual.setCreationDate(TimeUtils.getTime());
+
+        String userId = userManager.getUserId(sessionId);
+        long studyId = studyManager.getId(userId, studyStr);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
+
+        individual.setRelease(studyManager.getCurrentRelease(studyId));
+
+        // Check samples exist and can be used or can be created by the user
+        Set<Long> existingSampleIds = new HashSet<>();
+        List<Sample> nonExistingSamples = new ArrayList<>();
+        if (individual.getSamples().size() > 0) {
+            for (Sample sample : individual.getSamples()) {
+                try {
+                    MyResourceId resource = catalogManager.getSampleManager().getId(sample.getName(), String.valueOf(studyId), sessionId);
+                    existingSampleIds.add(resource.getResourceId());
+                } catch (CatalogException e) {
+                    // Sample does not exist so we need to check if the user has permissions to create the samples
+                    nonExistingSamples.add(sample);
+                }
+            }
+            if (!existingSampleIds.isEmpty()) {
+                checkSamplesNotInUseInOtherIndividual(existingSampleIds, studyId, null);
+            }
+            if (!nonExistingSamples.isEmpty()) {
+                // Check the user can create new samples
+                authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
             }
         }
 
-        String userId = userManager.getUserId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
+        // Fetch the sample id and version necessary to point the individual to the proper samples
+        List<Sample> sampleList = new ArrayList<>(existingSampleIds.size() + nonExistingSamples.size());
+        if (!existingSampleIds.isEmpty()) {
+            // We need to obtain the latest version of the samples
+            Query sampleQuery = new Query().append(SampleDBAdaptor.QueryParams.ID.key(), existingSampleIds);
+            QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                    SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.VERSION.key()));
 
-        Individual individual = new Individual(0, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
-                new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus, affectationStatus,
-                dateOfBirth, false, studyManager.getCurrentRelease(studyId), Collections.emptyList(),
-                new ArrayList<>());
+            QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleQuery, sampleOptions);
+            if (sampleQueryResult.getNumResults() < existingSampleIds.size()) {
+                throw new CatalogException("Internal error. Could not obtain the current version of all the existing samples.");
+            }
+            sampleList.addAll(sampleQueryResult.getResult());
+        }
+        if (!nonExistingSamples.isEmpty()) {
+            for (Sample sample : nonExistingSamples) {
+                QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(String.valueOf(studyId), sample,
+                        QueryOptions.empty(), sessionId);
+                if (sampleQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Internal error. Could not obtain created sample");
+                }
+                sampleList.add(sampleQueryResult.first());
+            }
+        }
+        individual.setSamples(sampleList);
 
+        // Create the individual
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
+        addSampleInformation(queryResult, studyId, userId);
+
         return queryResult;
+    }
+
+    private void checkSamplesNotInUseInOtherIndividual(Set<Long> sampleIds, long studyId, Long individualId) throws CatalogException {
+        // Check if any of the existing samples already belong to an individual
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.SAMPLES_ID.key(), sampleIds)
+                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                IndividualDBAdaptor.QueryParams.SAMPLES.key(), IndividualDBAdaptor.QueryParams.ID.key()));
+        QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options);
+        if (queryResult.getNumResults() > 0) {
+            // Check which of the samples are already associated to an individual
+            List<Long> usedSamples = new ArrayList<>();
+            for (Individual individual1 : queryResult.getResult()) {
+                if (individualId != null && individualId == individual1.getId()) {
+                    // It already belongs to the proper individual. Nothing to do
+                    continue;
+                }
+                if (individual1.getSamples() != null) {
+                    for (Sample sample : individual1.getSamples()) {
+                        if (sampleIds.contains(sample.getId())) {
+                            usedSamples.add(sample.getId());
+                        }
+                    }
+                }
+            }
+
+            if (usedSamples.size() > 0) {
+                throw new CatalogException("Cannot associate some of the samples to the individual. Samples belonging to other "
+                        + "individuals: " + StringUtils.join(usedSamples, ", "));
+            }
+        }
     }
 
     @Override
@@ -133,23 +224,29 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         long studyId = studyManager.getId(userId, studyStr);
 
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        if (query.containsKey(IndividualDBAdaptor.QueryParams.SAMPLES.key())) {
+            MyResourceIds ids = catalogManager.getSampleManager().getIds(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()),
+                    String.valueOf(studyId), sessionId);
+            query.put(IndividualDBAdaptor.QueryParams.SAMPLES_ID.key(), ids.getResourceIds());
+            query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+        }
 
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, userId);
+        // Add sample information
+        addSampleInformation(individualQueryResult, studyId, userId);
+
+        if (individualQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> idList = query.getAsLongList("id");
+            for (Long myId : idList) {
+                authorizationManager.checkIndividualPermission(studyId, myId, userId, IndividualAclEntry.IndividualPermissions.VIEW);
+            }
+        }
 
         return individualQueryResult;
     }
 
-    public QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkObj(sessionId, "sessionId");
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(sessionId);
-        query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options, userId);
-//        authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
-        return queryResult;
+    public QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        return get(String.valueOf(studyId), query, options, sessionId);
     }
 
     @Override
@@ -299,9 +396,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         fixQuery(studyId, finalQuery, sessionId);
 
         finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
         QueryResult<Individual> queryResult = individualDBAdaptor.get(finalQuery, options, userId);
 //        authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
 
+        // Add sample information
+        addSampleInformation(queryResult, studyId, userId);
         return queryResult;
     }
 
@@ -317,40 +417,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         QueryResult<Long> queryResultAux = individualDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
-    }
-
-    @Override
-    public QueryResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String sessionId)
-            throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        ParamUtils.checkAlias(individual.getName(), "name", configuration.getCatalog().getOffset());
-        individual.setFamily(ParamUtils.defaultObject(individual.getFamily(), ""));
-        individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
-        individual.setSpecies(ParamUtils.defaultObject(individual.getSpecies(), Individual.Species::new));
-        individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
-        individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), Individual.LifeStatus.UNKNOWN));
-        individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), Individual.KaryotypicSex.UNKNOWN));
-        individual.setSex(ParamUtils.defaultObject(individual.getSex(), Individual.Sex.UNKNOWN));
-        individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(), Individual.AffectationStatus.UNKNOWN));
-        individual.setOntologyTerms(ParamUtils.defaultObject(individual.getOntologyTerms(), Collections.emptyList()));
-        individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
-        individual.setAnnotationSets(validateAnnotationSets(individual.getAnnotationSets()));
-        individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
-        individual.setSamples(Collections.emptyList());
-        individual.setStatus(new Status());
-        individual.setCreationDate(TimeUtils.getTime());
-
-        String userId = userManager.getUserId(sessionId);
-        long studyId = studyManager.getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
-
-        individual.setRelease(studyManager.getCurrentRelease(studyId));
-
-        QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
-        auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
-
-        return queryResult;
     }
 
     @Override
@@ -419,6 +485,27 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         throw new CatalogDBException("Missing " + missing + " siblings in the database.");
                     }
                     break;
+                case SAMPLES:
+                    // Check those samples can be used
+                    List<String> samples = parameters.getAsStringList(param.getKey());
+                    MyResourceIds sampleResource = catalogManager.getSampleManager().getIds(StringUtils.join(samples, ","),
+                            String.valueOf(studyId), sessionId);
+                    checkSamplesNotInUseInOtherIndividual(new HashSet<>(sampleResource.getResourceIds()), studyId, individualId);
+
+                    // Fetch the samples to obtain the latest version as well
+                    Query sampleQuery = new Query()
+                            .append(SampleDBAdaptor.QueryParams.ID.key(), sampleResource.getResourceIds());
+                    QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                            SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.VERSION.key()));
+                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleQuery, sampleOptions);
+
+                    if (sampleQueryResult.getNumResults() < sampleResource.getResourceIds().size()) {
+                        throw new CatalogException("Internal error: Could not obtain all the samples to be updated.");
+                    }
+
+                    // Update the parameters with the proper list of samples
+                    parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleQueryResult.getResult());
+                    break;
                 case FATHER:
                 case MOTHER:
                 case ETHNICITY:
@@ -447,9 +534,17 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), tmpResource.getResourceId());
         }
 
-//        options.putAll(parameters); //FIXME: Use separated params and options, or merge
-        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, parameters);
+        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
+            // We do need to get the current release to properly create a new version
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudyId()));
+        }
+
+        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
+
+        // Add sample information
+        addSampleInformation(queryResult, studyId, userId);
+
         return queryResult;
     }
 
@@ -495,7 +590,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(IndividualDBAdaptor.QueryParams.NAME.key(), newIndividualName)
                         .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
-                queryResult = individualDBAdaptor.update(individualId, updateParams);
+                queryResult = individualDBAdaptor.update(individualId, updateParams, QueryOptions.empty());
 
                 auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, resourceId.getUser(),
                         individualQueryResult.first(), queryResult.first(), null, null);
@@ -911,13 +1006,18 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private List<Long> getSamplesFromIndividuals(MyResourceIds resourceIds) throws CatalogDBException {
         // Look for all the samples belonging to the individual
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
+                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                .append(IndividualDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
 
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query,
-                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query,
+                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()));
 
-        return sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+        List<Long> sampleIds = new ArrayList<>();
+        for (Individual individual : individualQueryResult.getResult()) {
+            sampleIds.addAll(individual.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        }
+
+        return sampleIds;
     }
 
     // Checks if father or mother are in query and transforms them into father.id and mother.id respectively
@@ -933,6 +1033,45 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     getId(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
             query.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
             query.append(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), resource.getResourceId());
+        }
+    }
+
+    private void addSampleInformation(QueryResult<Individual> individualQueryResult, long studyId, String userId) {
+        if (individualQueryResult.getNumResults() == 0) {
+            return;
+        }
+
+        List<String> errorMessages = new ArrayList<>();
+        for (Individual individual : individualQueryResult.getResult()) {
+            if (individual.getSamples() == null || individual.getSamples().isEmpty()) {
+                continue;
+            }
+
+            List<Sample> sampleList = new ArrayList<>();
+            for (Sample sample : individual.getSamples()) {
+                Query query = new Query()
+                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId())
+                        .append(SampleDBAdaptor.QueryParams.VERSION.key(), sample.getVersion());
+                try {
+                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, QueryOptions.empty(), userId);
+                    if (sampleQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("Could not get information from sample " + sample.getId());
+                    } else {
+                        sampleList.add(sampleQueryResult.first());
+                    }
+                } catch (CatalogException e) {
+                    logger.warn("Could not retrieve sample information to complete individual {}, {}", individual.getName(), e.getMessage(),
+                            e);
+                    errorMessages.add("Could not retrieve sample information to complete individual " + individual.getName() + ", "
+                            + e.getMessage());
+                }
+            }
+            individual.setSamples(sampleList);
+        }
+
+        if (errorMessages.size() > 0) {
+            individualQueryResult.setWarningMsg(StringUtils.join(errorMessages, "\n"));
         }
     }
 

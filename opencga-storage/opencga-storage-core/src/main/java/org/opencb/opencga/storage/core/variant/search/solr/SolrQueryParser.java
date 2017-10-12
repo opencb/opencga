@@ -23,10 +23,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,16 +41,14 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
 public class SolrQueryParser {
 
     private final StudyConfigurationManager studyConfigurationManager;
-    private final CellBaseUtils cellbaseUtils;
 
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
 
     protected static Logger logger = LoggerFactory.getLogger(SolrQueryParser.class);
 
-    public SolrQueryParser(StudyConfigurationManager studyConfigurationManager, CellBaseUtils cellbaseUtils) {
+    public SolrQueryParser(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
-        this.cellbaseUtils = cellbaseUtils;
     }
 
     /**
@@ -248,12 +245,20 @@ public class SolrQueryParser {
         }
 
         // GO
-        key = VariantQueryParam.ANNOT_GO.key();
-        if (StringUtils.isNotEmpty(query.getString(key))) {
-            List<String> gos = Arrays.asList(query.getString(key).split(","));
-            Set genesByGo = cellbaseUtils.getGenesByGo(gos);
-            if (genesByGo != null && CollectionUtils.isNotEmpty(genesByGo)) {
+        key = ANNOT_GO_GENES.key();
+        if (isValidParam(query, ANNOT_GO_GENES)) {
+            List<String> genesByGo = query.getAsStringList(key);
+            if (CollectionUtils.isNotEmpty(genesByGo)) {
                 filterList.add(parseCategoryTermValue("xrefs", StringUtils.join(genesByGo, ",")));
+            }
+        }
+
+        // EXPRESSION
+        key = ANNOT_EXPRESSION_GENES.key();
+        if (isValidParam(query, ANNOT_EXPRESSION_GENES)) {
+            List<String> genesByExpression = query.getAsStringList(key);
+            if (CollectionUtils.isNotEmpty(genesByExpression)) {
+                filterList.add(parseCategoryTermValue("xrefs", StringUtils.join(genesByExpression, ",")));
             }
         }
 

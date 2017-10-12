@@ -87,8 +87,9 @@ public class CellBaseUtils {
             try {
                 String[] split = expressionValue.split(":");
                 expressionValue = split[0];
-                // TODO: Add expression value {UP, DOWN}. See https://github.com/opencb/cellbase/issues/245
-                Query cellbaseQuery = new Query(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_TISSUE.key(), expressionValue);
+                Query cellbaseQuery = new Query(2)
+                        .append(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_TISSUE.key(), expressionValue)
+                        .append(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_VALUE.key(), "UP");
                 List<QueryResult<Gene>> responses = cellBaseClient.getGeneClient().search(cellbaseQuery, params)
                         .getResponse();
                 for (QueryResult<Gene> response : responses) {

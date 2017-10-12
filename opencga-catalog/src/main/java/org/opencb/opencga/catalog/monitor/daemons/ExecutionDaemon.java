@@ -228,7 +228,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                         .append(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes())
                         .append(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
-                QueryResult<Job> update = jobDBAdaptor.update(job.getId(), params);
+                QueryResult<Job> update = jobDBAdaptor.update(job.getId(), params, QueryOptions.empty());
                 if (update.getNumResults() == 1) {
                     job = update.first();
                     executeJob(job, userToken);

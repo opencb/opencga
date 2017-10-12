@@ -34,7 +34,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -47,11 +46,10 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,14 +84,14 @@ public class VariantSearchManager {
         variantSearchToVariantConverter = new VariantSearchToVariantConverter();
     }
 
-    public VariantSearchManager(StudyConfigurationManager studyConfigurationManager, CellBaseUtils cellbaseUtils,
+    public VariantSearchManager(StudyConfigurationManager studyConfigurationManager,
                                 StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
 
         logger = LoggerFactory.getLogger(VariantSearchManager.class);
 
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-        this.solrQueryParser = new SolrQueryParser(studyConfigurationManager, cellbaseUtils);
+        this.solrQueryParser = new SolrQueryParser(studyConfigurationManager);
 
         init();
     }
@@ -523,8 +521,7 @@ public class VariantSearchManager {
 
     private void loadAvro(String collection, Path path) throws IOException, VariantSearchException, StorageEngineException {
         // reader
-        VariantSource source = null;
-        VariantReader reader = VariantReaderUtils.getVariantReader(path, source);
+        VariantReader reader = VariantReaderUtils.getVariantReader(path, null);
 
         List<Variant> variants;
 

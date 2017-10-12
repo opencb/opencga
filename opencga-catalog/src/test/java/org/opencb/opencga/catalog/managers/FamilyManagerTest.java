@@ -194,7 +194,7 @@ public class FamilyManagerTest extends GenericTest {
                 Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("does not match");
+        thrown.expectMessage("Incomplete sibling information");
         familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
@@ -234,7 +234,7 @@ public class FamilyManagerTest extends GenericTest {
                 Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("does not match");
+        thrown.expectMessage("Incomplete sibling information");
         familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
@@ -265,7 +265,7 @@ public class FamilyManagerTest extends GenericTest {
                 Arrays.asList(relFather, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("Missing family member");
+        thrown.expectMessage("not present in the members list");
         familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
@@ -297,7 +297,7 @@ public class FamilyManagerTest extends GenericTest {
                 Arrays.asList(relFather, relMother, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("Missing disease");
+        thrown.expectMessage("not present in any member of the family");
         familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
@@ -328,9 +328,15 @@ public class FamilyManagerTest extends GenericTest {
         Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
                 Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1),"", Collections.emptyList(), Collections.emptyMap());
 
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("Multiple members with same name");
-        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        assertEquals(4, familyQueryResult.first().getMembers().size());
+    }
+
+    @Test
+    public void createEmptyFamily() throws CatalogException {
+        Family family = new Family("xxx", null, null,"", Collections.emptyList(), Collections.emptyMap());
+        QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, familyQueryResult.getNumResults());
     }
 
 //    @Test
@@ -385,7 +391,7 @@ public class FamilyManagerTest extends GenericTest {
     public void updateFamilyMissingMember() throws CatalogException, JsonProcessingException {
         QueryResult<Family> originalFamily = createDummyFamily("Martinez-Martinez");
 
-        Individual father = new Individual().setName("father").setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual father = new Individual().setName("father");
         Individual mother = new Individual().setName("mother2");
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
@@ -407,7 +413,7 @@ public class FamilyManagerTest extends GenericTest {
         params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), params.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("Incomplete family");
+        thrown.expectMessage("not present in the members list");
         familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(), sessionIdUser);
     }
 
@@ -452,7 +458,7 @@ public class FamilyManagerTest extends GenericTest {
         params = new ObjectMap(FamilyDBAdaptor.QueryParams.DISEASES.key(), params.get(FamilyDBAdaptor.QueryParams.DISEASES.key()));
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("Missing disease");
+        thrown.expectMessage("not present in any member of the family");
         familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(), sessionIdUser);
     }
 

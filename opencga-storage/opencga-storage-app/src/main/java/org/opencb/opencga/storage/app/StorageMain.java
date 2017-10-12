@@ -20,7 +20,7 @@ import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.client.executors.AlignmentCommandExecutor;
-import org.opencb.opencga.storage.app.cli.client.CliOptionsParser;
+import org.opencb.opencga.storage.app.cli.client.ClientCliOptionsParser;
 import org.opencb.opencga.storage.app.cli.client.executors.VariantCommandExecutor;
 
 import java.io.IOException;
@@ -35,7 +35,7 @@ public class StorageMain {
     }
 
     public static int privateMain(String[] args) {
-        CliOptionsParser cliOptionsParser = new CliOptionsParser();
+        ClientCliOptionsParser cliOptionsParser = new ClientCliOptionsParser();
 
         try {
             cliOptionsParser.parse(args);

@@ -23,7 +23,7 @@ import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.io.AbstractVariantReader;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
@@ -56,12 +56,10 @@ public class VariantJsonReader extends AbstractVariantReader {
 
     private String variantFilename;
 
-    private VariantSource source;
 
     //    public VariantJsonReader(String variantFilename, String globalFilename) {
-    public VariantJsonReader(VariantSource source, String variantFilename, String globalFilename) {
-        super(Paths.get(globalFilename), source);
-        this.source = source;
+    public VariantJsonReader(VariantStudyMetadata metadata, String variantFilename, String globalFilename) {
+        super(Paths.get(globalFilename), metadata);
         this.variantFilename = variantFilename;
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);

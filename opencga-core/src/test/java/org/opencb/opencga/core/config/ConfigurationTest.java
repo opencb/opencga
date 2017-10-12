@@ -17,7 +17,6 @@
 package org.opencb.opencga.core.config;
 
 import org.junit.Test;
-import org.opencb.opencga.core.config.*;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

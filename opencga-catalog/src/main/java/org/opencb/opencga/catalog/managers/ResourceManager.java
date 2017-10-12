@@ -9,9 +9,9 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 
 import javax.annotation.Nullable;
@@ -100,13 +100,29 @@ public abstract class ResourceManager<R> extends AbstractManager {
      * @throws CatalogException CatalogException.
      */
     public QueryResult<R> get(String studyStr, String entryStr, QueryOptions options, String sessionId) throws CatalogException {
+        return get(studyStr, entryStr, new Query(), options, sessionId);
+    }
+
+    /**
+     * Fetch all the R objects matching the query.
+     *
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param entryStr Comma separated list of entries to be fetched.
+     * @param query Query object.
+     * @param options QueryOptions object, like "include", "exclude", "limit" and "skip".
+     * @param sessionId sessionId
+     * @return All matching elements.
+     * @throws CatalogException CatalogException.
+     */
+    public QueryResult<R> get(String studyStr, String entryStr, Query query, QueryOptions options, String sessionId) throws
+            CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        Query queryCopy = new Query(query);
         MyResourceIds resources = getIds(entryStr, studyStr, sessionId);
-        Query query = new Query("id", resources.getResourceIds());
-        QueryResult<R> queryResult = get(String.valueOf(resources.getStudyId()), query, options, sessionId);
-        if (queryResult.getNumResults() == 0) {
-            throw CatalogAuthorizationException.deny(resources.getUser(), "VIEW", "", resources.getResourceIds().get(0), null);
-        }
-        return get(String.valueOf(resources.getStudyId()), query, options, sessionId);
+        queryCopy.put("id", resources.getResourceIds());
+
+        QueryResult<R> queryResult = get(String.valueOf(resources.getStudyId()), queryCopy, options, sessionId);
+        return queryResult;
     }
 
     /**

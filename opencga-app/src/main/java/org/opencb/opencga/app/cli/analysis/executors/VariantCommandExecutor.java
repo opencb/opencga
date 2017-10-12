@@ -32,6 +32,7 @@ import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -265,14 +266,21 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
     private void indexSearch() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
             InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException {
-        VariantCommandOptions.VariantIndexCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
+        VariantCommandOptions.VariantIndexSearchCommandOptions cliOptions = variantCommandOptions.variantIndexSearchCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
-        variantManager.searchIndex(cliOptions.study, sessionId);
+        String study = cliOptions.study;
+        if (StringUtils.isEmpty(study) && StringUtils.isNotEmpty(cliOptions.project)) {
+            QueryResult<Study> result = catalogManager.getStudyManager().get(cliOptions.project, new Query(), new QueryOptions(), sessionId);
+            if (!result.getResult().isEmpty()) {
+                study = String.valueOf(result.first().getId());
+            }
+        }
+        variantManager.searchIndex(study, new Query(), queryOptions, sessionId);
     }
 
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
@@ -290,6 +298,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.genericVariantStatsOptions.aggregated)
                 .append(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.genericVariantStatsOptions.aggregationMappingFile)
                 .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantStatsOptions.resume)
+                .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantStatsOptions.region)
                 .append(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), cliOptions.genericVariantStatsOptions.fileId);
 

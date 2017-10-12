@@ -19,7 +19,9 @@ package org.opencb.opencga.storage.hadoop.variant.metadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
@@ -29,6 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -75,7 +78,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         this.tableName = Objects.requireNonNull(tableName);
         this.options = options;
         this.genomeHelper = new GenomeHelper(configuration);
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = new ObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         this.studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
         this.studiesSummaryColumn = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
         if (hBaseManager == null) {
@@ -118,12 +121,12 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
 
     @Override
     protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
-        long startTime = System.currentTimeMillis();
+        StopWatch watch = StopWatch.createStarted();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
         logger.debug("Get StudyConfiguration {} from DB {}", studyName, tableName);
         if (StringUtils.isEmpty(studyName)) {
-            return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime),
+            return new QueryResult<>("", (int) watch.getTime(),
                     studyConfigurationList.size(), studyConfigurationList.size(), "", "", studyConfigurationList);
         }
         Get get = new Get(studiesRow);
@@ -154,7 +157,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         } catch (IOException e) {
             throw new IllegalStateException("Problem checking Table " + tableName, e);
         }
-        return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime),
+        return new QueryResult<>("", (int) watch.getTime(),
                 studyConfigurationList.size(), studyConfigurationList.size(), "", error, studyConfigurationList);
     }
 

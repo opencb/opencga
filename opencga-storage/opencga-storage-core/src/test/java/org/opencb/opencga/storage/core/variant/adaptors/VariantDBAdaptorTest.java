@@ -26,12 +26,12 @@ import org.hamcrest.Matcher;
 import org.hamcrest.core.IsAnything;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -81,7 +81,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     protected static int NUM_VARIANTS = 998;
     protected static Set<String> FORMAT;
     protected static boolean fileIndexed;
-    protected static VariantSource source;
+    protected static VariantFileMetadata fileMetadata;
     protected static StudyConfiguration studyConfiguration;
     protected VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
@@ -108,7 +108,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
-            ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
+            ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
                     .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                     .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                     .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
@@ -122,8 +122,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             FORMAT.addAll(params.getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
 
             StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, params);
-            source = variantStorageEngine.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
-            NUM_VARIANTS = getExpectedNumLoadedVariants(source);
+            fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
+            NUM_VARIANTS = getExpectedNumLoadedVariants(fileMetadata);
             fileIndexed = true;
             Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
 
@@ -782,6 +782,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         totalResults = result.getNumResults();
 
+        genes = Arrays.asList("MMP11", "KLK15", "HPR", "GZMA", "METAP1D", "MMP23B");
+        // Last 3 genes does not match with that GO term
+        List<String> extraGenes = Arrays.asList("MMP11", "KLK15", "HPR", "GZMA", "METAP1D", "MMP23B", "MIB2", "ADSL", "BRCA2");
+        query = new Query(ANNOT_GO.key(), "GO:0006508").append(GENE.key(), extraGenes);
+        result = variantStorageEngine.get(query, null);
+        System.out.println("numResults: " + result.getNumResults());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant);
+        }
+        assertNotEquals(0, result.getNumResults());
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
+
         query = new Query(ANNOT_GO.key(), "GO:0000050");
         result = variantStorageEngine.get(query, null);
         System.out.println("numResults: " + result.getNumResults());
@@ -813,7 +825,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         QueryResult<Variant> result = variantStorageEngine.get(query, null);
         assertEquals(0, result.getNumResults());
 
-        for (String tissue : Arrays.asList("skin", "brain")) {
+        for (String tissue : Arrays.asList("umbilical cord", "midbrain")) {
 
             query = new Query(ANNOT_EXPRESSION.key(), tissue);
             result = variantStorageEngine.get(query, null);

@@ -24,7 +24,7 @@ import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
-import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.io.DataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public class VcfVariantReader implements DataReader<Variant> {
     protected final VCFCodec vcfCodec;
     protected final VariantContextToVariantConverter converter;
     protected final VariantNormalizer normalizer;
-    protected final VariantGlobalStatsCalculator variantStatsTask;
+    protected final VariantSetStatsCalculator variantStatsTask;
     protected final AtomicLong timesOverall = new AtomicLong(0);
 //    protected final AtomicLong timeHts = new AtomicLong(0);
 //    protected final AtomicLong timeAvro = new AtomicLong(0);
@@ -57,7 +57,7 @@ public class VcfVariantReader implements DataReader<Variant> {
 
     public VcfVariantReader(
             DataReader<String> reader, VCFHeader header, VCFHeaderVersion version, VariantContextToVariantConverter
-            converter, VariantGlobalStatsCalculator variantStatsTask, VariantNormalizer normalizer) {
+            converter, VariantSetStatsCalculator variantStatsTask, VariantNormalizer normalizer) {
         this.vcfCodec = new FullVcfCodec(header, version);
         this.converter = converter;
         this.normalizer = normalizer;
@@ -68,7 +68,7 @@ public class VcfVariantReader implements DataReader<Variant> {
 
     public VcfVariantReader(
             Path path, VCFHeader header, VCFHeaderVersion version, VariantContextToVariantConverter
-            converter, VariantGlobalStatsCalculator variantStatsTask, VariantNormalizer normalizer) {
+            converter, VariantSetStatsCalculator variantStatsTask, VariantNormalizer normalizer) {
         this(new StringDataReader(path), header, version, converter, variantStatsTask, normalizer);
     }
 

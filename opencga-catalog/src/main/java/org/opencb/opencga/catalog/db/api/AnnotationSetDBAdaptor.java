@@ -161,9 +161,11 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
     /**
      * Makes a groupBy to obtain the different values that every annotation has and the total number of each.
      *
+     *
+     * @param studyId study id.
      * @param variableSetId variable set id for which the group by will be done.
      * @return a list of Feature count with every different value.
      * @throws CatalogDBException when there is an error in the database.
      */
-    QueryResult<VariableSummary> getAnnotationSummary(long variableSetId) throws CatalogDBException;
+    QueryResult<VariableSummary> getAnnotationSummary(long studyId, long variableSetId) throws CatalogDBException;
 }

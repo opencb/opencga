@@ -17,23 +17,20 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
-import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created on 28/11/16.
@@ -63,20 +60,10 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        return super.newVariantStatisticsManager();
-    }
-
-    @Override
-    public VariantExporter newVariantExporter() throws StorageEngineException {
-        return super.newVariantExporter();
-    }
-
-    @Override
     protected VariantImporter newVariantImporter() throws StorageEngineException {
         return new VariantImporter(getDBAdaptor()) {
             @Override
-            public void importData(URI input, ExportMetadata metadata, Map<StudyConfiguration, StudyConfiguration> map)
+            public void importData(URI input, VariantMetadata metadata, List<StudyConfiguration> scs)
                     throws StorageEngineException, IOException {
             }
         };

@@ -73,6 +73,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
+                .setSamples(Arrays.asList(
+                        new Sample().setName("sample1"),
+                        new Sample().setName("sample2"),
+                        new Sample().setName("sample3"),
+                        new Sample().setName("sample4")
+                ))
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setName("child2")
@@ -96,28 +102,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     private QueryResult<ClinicalAnalysis> createDummyEnvironment() throws CatalogException {
 
-        List<Sample> sampleList = Arrays.asList(
-                new Sample().setName("sample1"),
-                new Sample().setName("sample2"),
-                new Sample().setName("sample3"),
-                new Sample().setName("sample4")
-        );
-        for (Sample sample : sampleList) {
-            catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
-        }
-
         createDummyFamily();
-
-        // Update individual to contain the samples
-        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "child1");
-        for (Sample sample : sampleList) {
-            catalogManager.getSampleManager().update(STUDY, sample.getName(), params, QueryOptions.empty(), sessionIdUser);
-        }
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setName("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
                 .setFamily(new Family().setName("family"))
-                .setSubject(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2"))));
+                .setSubjects(Arrays.asList(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2")))));
         return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
     }
 
@@ -131,10 +121,10 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(catalogManager.getFamilyManager().getId("family", STUDY, sessionIdUser).getResourceId(),
                 dummyEnvironment.first().getFamily().getId());
         assertEquals(catalogManager.getIndividualManager().getId("child1", STUDY, sessionIdUser).getResourceId(),
-                dummyEnvironment.first().getSubject().getId());
-        assertEquals(1, dummyEnvironment.first().getSubject().getSamples().size());
+                dummyEnvironment.first().getSubjects().get(0).getId());
+        assertEquals(1, dummyEnvironment.first().getSubjects().get(0).getSamples().size());
         assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
-                dummyEnvironment.first().getSubject().getSamples().get(0).getId());
+                dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getId());
     }
 
 }

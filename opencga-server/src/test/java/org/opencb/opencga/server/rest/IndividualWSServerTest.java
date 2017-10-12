@@ -24,28 +24,27 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -68,7 +67,6 @@ public class IndividualWSServerTest {
     {
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
@@ -218,6 +216,38 @@ public class IndividualWSServerTest {
         assertTrue(individual.getMother().getId() > 0);
         assertEquals(1, individual.getMultiples().getSiblings().size());
         assertEquals("in4", individual.getMultiples().getSiblings().get(0));
+    }
+
+    @Test
+    public void updateIndividualSamplesTest() throws IOException, CatalogException {
+        // Create an individual with two samples
+        Individual individual = new Individual()
+                .setName("individual")
+                .setSamples(Arrays.asList(
+                        new Sample().setName("sample1"),
+                        new Sample().setName("sample2")
+                ));
+        OpenCGAWSServer.catalogManager.getIndividualManager().create(String.valueOf(studyId), individual, null, sessionId);
+
+        Sample sample = new Sample().setName("sample3");
+        OpenCGAWSServer.catalogManager.getSampleManager().create(String.valueOf(studyId), sample, null, sessionId);
+
+        // Update the individual information to contain a third sample as well
+        ObjectMap params = new ObjectMap()
+                .append("samples", Arrays.asList("sample1", "sample2", "sample3"));
+        String json = webTarget.path("individuals").path("individual").path("update")
+                .queryParam("study", studyId)
+                .request()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + sessionId)
+                .post(Entity.json(jsonObjectMapper.writeValueAsString(params)))
+                .readEntity(String.class);
+
+        QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
+
+        individual = response.getResponse().get(0).first();
+        assertEquals(3, individual.getSamples().size());
+        assertTrue(individual.getSamples().stream().map(Sample::getName).collect(Collectors.toSet())
+                .containsAll(Arrays.asList("sample1", "sample2", "sample3")));
     }
 
     @Test

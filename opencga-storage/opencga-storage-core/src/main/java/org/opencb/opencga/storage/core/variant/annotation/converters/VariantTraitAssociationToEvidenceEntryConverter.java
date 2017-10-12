@@ -4,7 +4,7 @@ package org.opencb.opencga.storage.core.variant.annotation.converters;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.biodata.tools.variant.converters.Converter;
+import org.opencb.biodata.tools.Converter;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,7 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
         if (CollectionUtils.isNotEmpty(clinVar.getTraits())) {
             heritableTraits = clinVar.getTraits()
                     .stream()
-                    .map(trait -> new HeritableTrait(trait, null))
+                    .map(trait -> new HeritableTrait(trait, ModeOfInheritance.NA))
                     .collect(Collectors.toList());
         }
         List<GenomicFeature> genomicFeatures;
@@ -89,13 +89,13 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
         VariantClassification variantClassification = getVariantClassification(clinVar.getClinicalSignificance().toLowerCase());
         ConsistencyStatus consistencyStatus = getConsistencyStatus(clinVar.getReviewStatus().toLowerCase());
         return new EvidenceEntry(
-                evidenceSource, null, null, url,
+                evidenceSource, Collections.emptyList(), null, url,
                 clinVar.getAccession(), null, null,
                 heritableTraits, genomicFeatures,
                 variantClassification, null, null,
                 consistencyStatus,
-                null, null, null, null,
-                additionalProperties, null);
+                EthnicCategory.Z, null, null, null,
+                additionalProperties, Collections.emptyList());
     }
 
     protected EvidenceEntry fromCosmic(Cosmic cosmic) {
@@ -120,11 +120,11 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
                     new Property(null, MUTATION_SOMATIC_STATUS_IN_SOURCE_FILE, cosmic.getMutationSomaticStatus()));
         }
         return new EvidenceEntry(
-                evidenceSource, null,
+                evidenceSource, Collections.emptyList(),
                 somaticInformation, null,
-                cosmic.getMutationId(), null, null, null,
-                genomicFeatures, null, null, null, null, null, null, null, null,
-                additionalProperties, null);
+                cosmic.getMutationId(), null, null, Collections.emptyList(),
+                genomicFeatures, null, null, null, null, EthnicCategory.Z, null, null, null,
+                additionalProperties, Collections.emptyList());
     }
 
     private ConsistencyStatus getConsistencyStatus(String lineField) {

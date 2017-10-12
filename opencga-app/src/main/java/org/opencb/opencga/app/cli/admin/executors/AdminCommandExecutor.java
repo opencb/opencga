@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.admin;
+package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
+import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.util.Collections;
@@ -46,6 +47,13 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
         return this;
     }
 
+    protected void setCatalogDatabaseCredentials(AdminCliOptionsParser.CatalogDatabaseCommandOptions catalogDatabaseOptions,
+                                                 AdminCliOptionsParser.AdminCommonCommandOptions adminOptions) throws CatalogException {
+        setCatalogDatabaseCredentials(catalogDatabaseOptions.databaseHost,
+                catalogDatabaseOptions.prefix, catalogDatabaseOptions.databaseUser,
+                catalogDatabaseOptions.databasePassword,
+                adminOptions.adminPassword);
+    }
     protected void setCatalogDatabaseCredentials(String host, String prefix, String user, String password, String adminPassword)
             throws CatalogException {
 

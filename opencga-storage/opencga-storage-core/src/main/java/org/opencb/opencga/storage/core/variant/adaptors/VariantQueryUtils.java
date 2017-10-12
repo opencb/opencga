@@ -44,7 +44,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 public class VariantQueryUtils {
 
-    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
+    private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
     private static final Pattern GENOTYPE_FILTER_PATTERN = Pattern.compile("(?<sample>[^,;]+):(?<gts>([^:;,]+,?)+)(?<op>[;,.])");
 
     public static final String OR = ",";
@@ -56,6 +56,9 @@ public class VariantQueryUtils {
     public static final String NONE = "none";
     public static final String ALL = "all";
     public static final String GT = "GT";
+
+    public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
@@ -714,15 +717,12 @@ public class VariantQueryUtils {
             if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
                 throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
             }
-            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
-            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+//            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
             Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
             if (genesByExpression.isEmpty()) {
-                genes.add("none");
-            } else {
-                genes.addAll(genesByExpression);
+                genesByExpression = Collections.singleton(NONE);
             }
-            query.put(VariantQueryParam.GENE.key(), genes);
+            query.put(ANNOT_EXPRESSION_GENES.key(), genesByExpression);
         }
     }
 
@@ -737,16 +737,12 @@ public class VariantQueryUtils {
             if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
                 throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
             }
-            query.remove(VariantQueryParam.ANNOT_GO.key());
-            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+//            query.remove(VariantQueryParam.ANNOT_GO.key());
             Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
             if (genesByGo.isEmpty()) {
-                genes.add("none");
-            } else {
-                genes.addAll(genesByGo);
+                genesByGo = Collections.singleton(NONE);
             }
-            query.put(VariantQueryParam.GENE.key(), genes);
+            query.put(ANNOT_GO_GENES.key(), genesByGo);
         }
     }
-
 }

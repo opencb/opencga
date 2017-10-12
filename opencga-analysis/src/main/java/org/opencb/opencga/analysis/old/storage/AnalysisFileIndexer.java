@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.old.storage;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -37,7 +37,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -178,16 +178,16 @@ public class AnalysisFileIndexer {
                         VariantReaderUtils utils = new VariantReaderUtils();
                         try {
                             // Read the VariantSource to get the source file
-                            VariantSource variantSource = utils.readVariantSource(catalogManager.getFileManager().getUri(inputFile));
-                            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), variantSource.getFileName());
+                            VariantFileMetadata fileMetadata = utils.readVariantFileMetadata(catalogManager.getFileManager().getUri(inputFile));
+                            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), fileMetadata.getPath());
                             QueryResult<File> result = catalogManager.getFileManager().get(studyIdByOutDirId, query, null, sessionId);
                             if (result.getResult().size() == 0) {
                                 // TODO: Continue with the transformed file as indexed file?
-                                throw new CatalogException("Unable to find file \"" + variantSource.getFileName() + "\" "
+                                throw new CatalogException("Unable to find file \"" + fileMetadata.getPath() + "\" "
                                         + "as source file from \"" + inputFile.getName() + "\"");
                             } else if (result.getResult().size() > 1) {
                                 List<String> foundFilesSummary = result.getResult().stream().map(File::getPath).collect(Collectors.toList());
-                                throw new CatalogException("Unable to find single file \"" + variantSource.getFileName() + "\" "
+                                throw new CatalogException("Unable to find single file \"" + fileMetadata.getPath() + "\" "
                                         + "as source file from \"" + inputFile.getName() + "\". Got multiple versions: " + foundFilesSummary);
                             } else {
                                 externalTransformed = true;
@@ -370,7 +370,7 @@ public class AnalysisFileIndexer {
         jobAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobAttributes.put(Job.INDEXED_FILE_ID, originalFile.getId());
         jobAttributes.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), VariantStorageEngine.Options.CALCULATE_STATS.defaultValue()));
-//        jobAttributes.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), options.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class, VariantStorageEngine.Options.AGGREGATED_TYPE.defaultValue()));
+//        jobAttributes.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), options.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.class, VariantStorageEngine.Options.AGGREGATED_TYPE.defaultValue()));
 
         String jobName;
         String jobDescription;

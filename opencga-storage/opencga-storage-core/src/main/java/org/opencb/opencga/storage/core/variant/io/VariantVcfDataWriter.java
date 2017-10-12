@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +77,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     private static final String ALL_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop"
             + "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
     private final StudyConfiguration studyConfiguration;
-    private final VariantSourceDBAdaptor sourceDBAdaptor;
+    private final VariantFileMetadataDBAdaptor fileMetadataDBAdaptor;
     private final OutputStream outputStream;
     private final Query query;
     private final QueryOptions queryOptions;
@@ -91,10 +91,10 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     private final AtomicReference<BiConsumer<Variant, RuntimeException>> converterErrorListener = new AtomicReference<>((v, r) -> { });
     private final AtomicBoolean exportGenotype = new AtomicBoolean(true);
 
-    public VariantVcfDataWriter(StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor, OutputStream outputStream,
-                                Query query, QueryOptions queryOptions) {
+    public VariantVcfDataWriter(StudyConfiguration studyConfiguration, VariantFileMetadataDBAdaptor fileMetadataDBAdaptor,
+                                OutputStream outputStream, Query query, QueryOptions queryOptions) {
         this.studyConfiguration = studyConfiguration;
-        this.sourceDBAdaptor = sourceDBAdaptor;
+        this.fileMetadataDBAdaptor = fileMetadataDBAdaptor;
         this.outputStream = outputStream;
         this.query = query == null ? new Query() : query;
         this.queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
@@ -163,10 +163,11 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     }
 
     @Deprecated
-    public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor,
+    public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration,
+                                VariantFileMetadataDBAdaptor fileMetadataDBAdaptor,
                                 OutputStream outputStream, Query query, QueryOptions queryOptions) {
 
-        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, query,
+        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, fileMetadataDBAdaptor, outputStream, query,
                 queryOptions);
 
         exporter.open();

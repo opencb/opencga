@@ -31,7 +31,7 @@ import java.io.IOException;
  * Created by pfurio on 01/06/16.
  */
 
-@Path("/{version}/panels")
+@Path("/{apiVersion}/panels")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Panels", hidden = true, position = 10, description = "Methods for working with 'panels' endpoint")
 public class DiseasePanelWSServer extends OpenCGAWSServer {

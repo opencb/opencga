@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.admin;
+package org.opencb.opencga.app.cli.admin.executors;
+
+import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 
 /**
  * Created by imedina on 21/04/16.

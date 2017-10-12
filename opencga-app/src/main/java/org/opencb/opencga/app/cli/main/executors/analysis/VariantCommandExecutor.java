@@ -29,9 +29,11 @@ import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
-import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
-import org.opencb.biodata.tools.variant.converters.VariantContextToProtoVariantConverter;
+import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
+import org.opencb.biodata.tools.variant.converters.avro.VariantStudyMetadataToVCFHeaderConverter;
+import org.opencb.biodata.tools.variant.converters.proto.VariantProtoToVariantContextConverter;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
@@ -283,7 +285,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void printVcf(VariantQueryResult<Variant> variantQueryResult, Iterator<VariantProto.Variant> variantIterator, String study,
-                          List<String> samples, List<String> annotations, PrintStream outputStream) {
+                          List<String> samples, List<String> annotations, PrintStream outputStream) throws CatalogException, IOException {
 //        logger.debug("Samples from variantQueryResult: {}", variantQueryResult.getSamples());
 //
 //        Map<String, List<String>> samplePerStudy = new HashMap<>();
@@ -379,29 +381,31 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             formats = VcfUtils.DEFAULT_SAMPLE_FORMAT;
         }
 
-        // TODO: modify VcfUtils in biodata project to take into account the formatArities
-        VCFHeader vcfHeader = VcfUtils.createVCFHeader(cohorts, annotations, formats, formatTypes, formatDescriptions, samples, null);
+        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(new ObjectMap(VariantQueryParam.STUDIES.key(), study)
+                .append(VariantQueryParam.SAMPLES.key(), samples), new QueryOptions(QueryOptions.EXCLUDE, "files")).firstResult();
+
+        VCFHeader vcfHeader = new VariantStudyMetadataToVCFHeaderConverter().convert(metadata.getStudies().get(0), annotations);
         VariantContextWriter variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary(), null);
         variantContextWriter.writeHeader(vcfHeader);
 
         if (variantQueryResult != null) {
-            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter = new VariantContextToAvroVariantConverter(study, samples, formats, annotations);
+            VariantAvroToVariantContextConverter converter = new VariantAvroToVariantContextConverter(study, samples, formats, annotations);
             for (Variant variant : variantQueryResult.getResult()) {
-                // FIXME: This should not be needed! VariantContextToAvroVariantConverter must be fixed
+                // FIXME: This should not be needed! VariantAvroToVariantContextConverter must be fixed
                 if (variant.getStudies().isEmpty()) {
                     StudyEntry studyEntry = new StudyEntry(study);
                     studyEntry.getFiles().add(new FileEntry("", null, Collections.emptyMap()));
                     variant.addStudyEntry(studyEntry);
                 }
 
-                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+                VariantContext variantContext = converter.convert(variant);
                 variantContextWriter.add(variantContext);
             }
         } else {
-            VariantContextToProtoVariantConverter variantContextToProtoVariantConverter = new VariantContextToProtoVariantConverter(study, samples, formats, annotations);
+            VariantProtoToVariantContextConverter converter = new VariantProtoToVariantContextConverter(study, samples, formats, annotations);
                 while (variantIterator.hasNext()) {
                     VariantProto.Variant next = variantIterator.next();
-                    variantContextWriter.add(variantContextToProtoVariantConverter.from(next));
+                    variantContextWriter.add(converter.convert(next));
                 }
         }
         variantContextWriter.close();

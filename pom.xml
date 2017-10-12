@@ -41,7 +41,7 @@
         <java.version>1.8</java.version>
         <java-common-libs.version>3.6.0-SNAPSHOT</java-common-libs.version>
         <biodata.version>1.3.0-SNAPSHOT</biodata.version>
-        <cellbase.version>4.5.0-rc.3</cellbase.version>
+        <cellbase.version>4.5.0</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta4-SNAPSHOT</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
@@ -215,6 +215,10 @@
                     <exclusion>
                         <groupId>com.google.protobuf</groupId>
                         <artifactId>protobuf-lite</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
