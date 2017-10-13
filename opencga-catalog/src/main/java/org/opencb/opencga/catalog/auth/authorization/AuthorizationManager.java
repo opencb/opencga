@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.acls.permissions.*;
 
 import javax.annotation.Nullable;
@@ -49,8 +50,8 @@ public interface AuthorizationManager {
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getAnalystAcls() {
-        return EnumSet.of(StudyAclEntry.StudyPermissions.VIEW_STUDY, StudyAclEntry.StudyPermissions.UPDATE_STUDY,
-                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET,
+        return EnumSet.of(StudyAclEntry.StudyPermissions.VIEW_STUDY,
+                StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET,
                 StudyAclEntry.StudyPermissions.WRITE_FILES, StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS, StudyAclEntry.StudyPermissions.VIEW_FILES,
                 StudyAclEntry.StudyPermissions.DOWNLOAD_FILES, StudyAclEntry.StudyPermissions.UPLOAD_FILES,
@@ -91,6 +92,22 @@ public interface AuthorizationManager {
 
     void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission, String message)
             throws CatalogException;
+
+    void checkCanEditStudy(long studyId, String userId) throws CatalogException;
+
+    void checkCanViewStudy(long studyId, String userId) throws CatalogException;
+
+    void checkCreateDeleteGroupPermissions(long studyId, String userId, String group) throws CatalogException;
+
+    void checkSyncGroupPermissions(long studyId, String userId, String group) throws CatalogException;
+
+    void checkUpdateGroupPermissions(long studyId, String userId, String group, GroupParams params) throws CatalogException;
+
+    void checkNotAssigningPermissionsToAdminsGroup(List<String> members) throws CatalogException;
+
+    void checkCanAssignOrSeePermissions(long studyId, String userId) throws CatalogException;
+
+    void checkCanCreateUpdateDeleteVariableSets(long studyId, String userId) throws CatalogException;
 
     void checkFilePermission(long studyId, long fileId, String userId, FileAclEntry.FilePermissions permission) throws CatalogException;
 

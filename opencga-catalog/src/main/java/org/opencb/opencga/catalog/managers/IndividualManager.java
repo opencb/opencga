@@ -687,7 +687,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 Long.toString(resource.getStudyId()), sessionId);
 
         QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
-                resource.getUser(), null);
+                resource.getUser());
         if (variableSet.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resource.getUser() + " cannot create annotations over "
@@ -781,7 +781,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     + "be found in the database.");
         }
         // We make this query because it will check the proper permissions in case the variable set is confidential
-        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resource.getUser(), null);
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resource.getUser());
 
         individualDBAdaptor.deleteAnnotationSet(resource.getResourceId(), annotationSetName);
 
@@ -923,11 +923,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // Obtain the resource ids
         MyResourceIds resourceIds = getIds(individualStr, studyStr, sessionId);
 
-        // Check the user has the permissions needed to change permissions over those individuals
-        for (Long individualId : resourceIds.getResourceIds()) {
-            authorizationManager.checkIndividualPermission(resourceIds.getStudyId(), individualId, resourceIds.getUser(),
-                    IndividualAclEntry.IndividualPermissions.SHARE);
-        }
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -936,6 +932,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 

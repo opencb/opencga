@@ -60,6 +60,7 @@ public class StudyManager extends AbstractManager {
 
     protected static Logger logger = LoggerFactory.getLogger(StudyManager.class);
     private static final String MEMBERS = "@members";
+    private static final String ADMINS = "@admins";
 
     StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                         DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -261,9 +262,9 @@ public class StudyManager extends AbstractManager {
         // StudyAcl studyAcl = new StudyAcl(userId, AuthorizationManager.getAdminAcls());
 
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, Arrays.asList(new Group(MEMBERS, Collections.emptyList())), experiments, files, jobs,
-                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(),
-                null, datastores, getProjectCurrentRelease(projectId), stats, attributes);
+                0, cipher, Arrays.asList(new Group(MEMBERS, Collections.emptyList()), new Group(ADMINS, Collections.emptyList())),
+                experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                Collections.emptyList(), new LinkedList<>(), null, datastores, getProjectCurrentRelease(projectId), stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.insert(projectId, study, userId, options);
@@ -424,7 +425,7 @@ public class StudyManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
+        authorizationManager.checkCanEditStudy(studyId, userId);
 
         if (parameters.containsKey("alias")) {
             rename(studyId, parameters.getString("alias"), sessionId);
@@ -441,7 +442,7 @@ public class StudyManager extends AbstractManager {
 
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
         userDBAdaptor.updateUserLastModified(ownerId);
-        QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters, QueryOptions.empty());
+        QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
         return result;
     }
@@ -516,7 +517,7 @@ public class StudyManager extends AbstractManager {
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
 
-        Study studyInfo = get(String.valueOf((Long) studyId), queryOptions, sessionId).first();
+        Study studyInfo = get(String.valueOf(studyId), queryOptions, sessionId).first();
 
         StudySummary studySummary = new StudySummary()
                 .setAlias(studyInfo.getAlias())
@@ -580,20 +581,13 @@ public class StudyManager extends AbstractManager {
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
-        studyDBAdaptor.checkId(studyId);
-
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
 
         // Fix the groupId
         if (!groupId.startsWith("@")) {
             groupId = "@" + groupId;
         }
 
-        if (groupId.equals(MEMBERS)) {
-            throw new CatalogException("Cannot create group @members. @members is managed and used internally to keep track of all the "
-                    + "users with any permissions in the study");
-        }
+        authorizationManager.checkCreateDeleteGroupPermissions(studyId, userId, groupId);
 
         // Create the list of users
         List<String> userList;
@@ -622,9 +616,7 @@ public class StudyManager extends AbstractManager {
     public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
-        studyDBAdaptor.checkId(studyId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
 
         // Fix the groupId
         if (groupId != null && !groupId.startsWith("@")) {
@@ -648,11 +640,13 @@ public class StudyManager extends AbstractManager {
             groupId = "@" + groupId;
         }
 
+        authorizationManager.checkUpdateGroupPermissions(studyId, userId, groupId, groupParams);
+
         List<String> users;
         if (StringUtils.isNotEmpty(groupParams.getUsers())) {
             users = Arrays.asList(groupParams.getUsers().split(","));
             List<String> tmpUsers = users;
-            if (groupId.equals(MEMBERS)) {
+            if (groupId.equals(MEMBERS) || groupId.equals(ADMINS)) {
                 // Remove anonymous user if present for the checks.
                 // Anonymous user is only allowed in MEMBERS group, otherwise we keep it as if it is present it should fail.
                 tmpUsers = users.stream().filter(user -> !user.equals(ANONYMOUS)).collect(Collectors.toList());
@@ -664,19 +658,9 @@ public class StudyManager extends AbstractManager {
             users = Collections.emptyList();
         }
 
-        // Check permissions
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
-
         // Fix the group name
         if (!groupId.startsWith("@")) {
             groupId = "@" + groupId;
-        }
-        if (groupId.equals(MEMBERS) && groupParams.getAction() != GroupParams.Action.ADD
-                && groupParams.getAction() != GroupParams.Action.REMOVE) {
-            throw new CatalogException("Action " + groupParams.getAction() + " not allowed for group @members. @members is managed and "
-                    + "used internally to keep track of all the users with any permissions in the study. Only " + GroupParams.Action.ADD
-                    + " and " + GroupParams.Action.REMOVE + " actions are allowed.");
         }
 
         switch (groupParams.getAction()) {
@@ -710,8 +694,6 @@ public class StudyManager extends AbstractManager {
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
 
         if (StringUtils.isEmpty(groupId)) {
             throw new CatalogException("Missing group name parameter");
@@ -725,6 +707,8 @@ public class StudyManager extends AbstractManager {
         if (!groupId.startsWith("@")) {
             groupId = "@" + groupId;
         }
+
+        authorizationManager.checkSyncGroupPermissions(studyId, userId, groupId);
 
         QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
         if (group.first().getSyncedFrom() != null && StringUtils.isNotEmpty(group.first().getSyncedFrom().getAuthOrigin())
@@ -748,18 +732,13 @@ public class StudyManager extends AbstractManager {
     public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
-        studyDBAdaptor.checkId(studyId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
 
         // Fix the groupId
         if (!groupId.startsWith("@")) {
             groupId = "@" + groupId;
         }
-        if (groupId.equals(MEMBERS)) {
-            throw new CatalogException("Cannot delete group @members. @members is managed and used internally to keep track of all the "
-                    + "users with any permissions in the study");
-        }
+
+        authorizationManager.checkCreateDeleteGroupPermissions(studyId, userId, groupId);
 
         QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
         group.setId("Delete group");
@@ -867,7 +846,7 @@ public class StudyManager extends AbstractManager {
 
         String userId = resource.getUser();
 
-        QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(resource.getResourceId(), new QueryOptions(), userId, null);
+        QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(resource.getResourceId(), new QueryOptions(), userId);
         if (variableSet.getNumResults() == 0) {
             logger.error("getVariableSetSummary: Could not find variable set id {}. {} results returned", variableSetStr,
                     variableSet.getNumResults());
@@ -920,7 +899,8 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(variables, "Variables Set");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
+        authorizationManager.checkCanCreateUpdateDeleteVariableSets(studyId, userId);
+
         unique = ParamUtils.defaultObject(unique, true);
         confidential = ParamUtils.defaultObject(confidential, false);
         description = ParamUtils.defaultString(description, "");
@@ -952,7 +932,7 @@ public class StudyManager extends AbstractManager {
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         MyResourceId resourceId = getVariableSetId(variableSet, studyStr, sessionId);
-        return studyDBAdaptor.getVariableSet(resourceId.getResourceId(), options, resourceId.getUser(), null);
+        return studyDBAdaptor.getVariableSet(resourceId.getResourceId(), options, resourceId.getUser());
     }
 
     public QueryResult<VariableSet> searchVariableSets(String studyStr, Query query, QueryOptions options, String sessionId)
@@ -974,10 +954,9 @@ public class StudyManager extends AbstractManager {
 
     public QueryResult<VariableSet> deleteVariableSet(String studyStr, String variableSetStr, String sessionId) throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
-//        long studyId = resource.getStudyId();
         String userId = resource.getUser();
 
-//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.DELETE_VARIABLE_SET);
+        authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
         QueryResult<VariableSet> queryResult = studyDBAdaptor.deleteVariableSet(resource.getResourceId(), QueryOptions.empty(), userId);
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
         return queryResult;
@@ -987,9 +966,8 @@ public class StudyManager extends AbstractManager {
             throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
-//        long studyId = resource.getStudyId();
 
-//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
+        authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
         QueryResult<VariableSet> queryResult = studyDBAdaptor.addFieldToVariableSet(resource.getResourceId(), variable, userId);
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
         return queryResult;
@@ -999,9 +977,8 @@ public class StudyManager extends AbstractManager {
             throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
-//        long studyId = resource.getStudyId();
 
-//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
+        authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
         QueryResult<VariableSet> queryResult = studyDBAdaptor.removeFieldFromVariableSet(resource.getResourceId(), name, userId);
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
         return queryResult;
@@ -1011,9 +988,8 @@ public class StudyManager extends AbstractManager {
                                                                String sessionId) throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
-//        long studyId = resource.getStudyId();
 
-//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
+        authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
         QueryResult<VariableSet> queryResult = studyDBAdaptor.renameFieldVariableSet(resource.getResourceId(), oldName, newName, userId);
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
         return queryResult;
@@ -1098,7 +1074,7 @@ public class StudyManager extends AbstractManager {
 
         // Check the user has the permissions needed to change permissions
         for (Long studyId : studyIds) {
-            authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+            authorizationManager.checkCanAssignOrSeePermissions(studyId, userId);
         }
 
         // Validate that the members are actually valid members
@@ -1108,6 +1084,7 @@ public class StudyManager extends AbstractManager {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         for (Long studyId : studyIds) {
             checkMembers(studyId, members);
         }
@@ -1148,7 +1125,7 @@ public class StudyManager extends AbstractManager {
 //        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
 
         //User can't write/modify the study
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
+        authorizationManager.checkCanEditStudy(studyId, userId);
 
         // Both users must bu updated
         userDBAdaptor.updateUserLastModified(userId);

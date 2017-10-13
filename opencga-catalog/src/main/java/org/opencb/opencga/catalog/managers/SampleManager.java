@@ -688,7 +688,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resourceId.getStudyId()), sessionId);
         QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
-                resourceId.getUser(), null);
+                resourceId.getUser());
         if (variableSet.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resourceId.getUser() + " cannot create annotations over "
@@ -783,7 +783,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     + "be found in the database.");
         }
         // We make this query because it will check the proper permissions in case the variable set is confidential
-        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser(), null);
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser());
 
         sampleDBAdaptor.deleteAnnotationSet(resourceId.getResourceId(), annotationSetName);
 
@@ -966,12 +966,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         MyResourceIds resourceIds = getIds(sampleStr, studyStr, sessionId);
-
-        // Check the user has the permissions needed to change permissions over those samples
-        for (Long sampleId : resourceIds.getResourceIds()) {
-            authorizationManager.checkSamplePermission(resourceIds.getStudyId(), sampleId, resourceIds.getUser(),
-                    SampleAclEntry.SamplePermissions.SHARE);
-        }
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -980,6 +975,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 

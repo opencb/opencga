@@ -67,11 +67,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
     public enum StudyPermissions {
         VIEW_STUDY,
-        UPDATE_STUDY,
-        SHARE_STUDY, // Add members to groups, add members/groups to roles.
         VIEW_VARIABLE_SET,
-        WRITE_VARIABLE_SET,
-        DELETE_VARIABLE_SET,
         CONFIDENTIAL_VARIABLE_SET_ACCESS,
 
         // FILES
@@ -82,19 +78,16 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         DELETE_FILES(FileAclEntry.FilePermissions.DELETE.name(), FILE),
         DOWNLOAD_FILES(FileAclEntry.FilePermissions.DOWNLOAD.name(), FILE),
         UPLOAD_FILES(FileAclEntry.FilePermissions.UPLOAD.name(), FILE),
-        SHARE_FILES(FileAclEntry.FilePermissions.SHARE.name(), FILE),
 
         // JOBS
         VIEW_JOBS(JobAclEntry.JobPermissions.VIEW.name(), JOB),
         WRITE_JOBS(JobAclEntry.JobPermissions.UPDATE.name(), JOB),
         DELETE_JOBS(JobAclEntry.JobPermissions.DELETE.name(), JOB),
-        SHARE_JOBS(JobAclEntry.JobPermissions.SHARE.name(), JOB),
 
         // SAMPLES
         VIEW_SAMPLES(SampleAclEntry.SamplePermissions.VIEW.name(), SAMPLE),
         WRITE_SAMPLES(SampleAclEntry.SamplePermissions.UPDATE.name(), SAMPLE),
         DELETE_SAMPLES(SampleAclEntry.SamplePermissions.DELETE.name(), SAMPLE),
-        SHARE_SAMPLES(SampleAclEntry.SamplePermissions.SHARE.name(), SAMPLE),
         WRITE_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS.name(), SAMPLE),
         VIEW_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), SAMPLE),
         DELETE_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS.name(), SAMPLE),
@@ -103,7 +96,6 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         VIEW_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.VIEW.name(), INDIVIDUAL),
         WRITE_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.UPDATE.name(), INDIVIDUAL),
         DELETE_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.DELETE.name(), INDIVIDUAL),
-        SHARE_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.SHARE.name(), INDIVIDUAL),
         WRITE_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS.name(), INDIVIDUAL),
         VIEW_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), INDIVIDUAL),
         DELETE_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS.name(), INDIVIDUAL),
@@ -112,7 +104,6 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         VIEW_FAMILIES(FamilyAclEntry.FamilyPermissions.VIEW.name(), FAMILY),
         WRITE_FAMILIES(FamilyAclEntry.FamilyPermissions.UPDATE.name(), FAMILY),
         DELETE_FAMILIES(FamilyAclEntry.FamilyPermissions.DELETE.name(), FAMILY),
-        SHARE_FAMILIES(FamilyAclEntry.FamilyPermissions.SHARE.name(), FAMILY),
         WRITE_FAMILY_ANNOTATIONS(FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS.name(), FAMILY),
         VIEW_FAMILY_ANNOTATIONS(FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), FAMILY),
         DELETE_FAMILY_ANNOTATIONS(FamilyAclEntry.FamilyPermissions.DELETE_ANNOTATIONS.name(), FAMILY),
@@ -121,7 +112,6 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         VIEW_COHORTS(CohortAclEntry.CohortPermissions.VIEW.name(), COHORT),
         WRITE_COHORTS(CohortAclEntry.CohortPermissions.UPDATE.name(), COHORT),
         DELETE_COHORTS(CohortAclEntry.CohortPermissions.DELETE.name(), COHORT),
-        SHARE_COHORTS(CohortAclEntry.CohortPermissions.SHARE.name(), COHORT),
         WRITE_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS.name(), COHORT),
         VIEW_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), COHORT),
         DELETE_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.DELETE_ANNOTATIONS.name(), COHORT),
@@ -130,19 +120,16 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         VIEW_DATASETS(DatasetAclEntry.DatasetPermissions.VIEW.name(), DATASET),
         WRITE_DATASETS(DatasetAclEntry.DatasetPermissions.UPDATE.name(), DATASET),
         DELETE_DATASETS(DatasetAclEntry.DatasetPermissions.DELETE.name(), DATASET),
-        SHARE_DATASETS(DatasetAclEntry.DatasetPermissions.SHARE.name(), DATASET),
 
         // DISEASE PANELS
         VIEW_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.VIEW.name(), DISEASE_PANEL),
         WRITE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE.name(), DISEASE_PANEL),
         DELETE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.DELETE.name(), DISEASE_PANEL),
-        SHARE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.SHARE.name(), DISEASE_PANEL),
 
         // CLINICAL ANALYSIS
         VIEW_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), CLINICAL_ANALYSIS),
         WRITE_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE.name(), CLINICAL_ANALYSIS),
-        DELETE_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name(), CLINICAL_ANALYSIS),
-        SHARE_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.SHARE.name(), CLINICAL_ANALYSIS);
+        DELETE_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name(), CLINICAL_ANALYSIS);
 
         private String permission;
         private int type;

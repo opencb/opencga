@@ -474,7 +474,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 Long.toString(resourceId.getStudyId()), sessionId);
 
         QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
-                resourceId.getUser(), null);
+                resourceId.getUser());
         if (variableSet.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resourceId.getUser() + " cannot create annotations over "
@@ -569,7 +569,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     + "be found in the database.");
         }
         // We make this query because it will check the proper permissions in case the variable set is confidential
-        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser(), null);
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser());
 
         familyDBAdaptor.deleteAnnotationSet(resourceId.getResourceId(), annotationSetName);
 
@@ -687,13 +687,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         MyResourceIds resourceIds = getIds(familyStr, studyStr, sessionId);
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         String collectionName = MongoDBAdaptorFactory.FAMILY_COLLECTION;
-        // Check the user has the permissions needed to change permissions over those families
-        for (Long familyId : resourceIds.getResourceIds()) {
-            authorizationManager.checkFamilyPermission(resourceIds.getStudyId(), familyId, resourceIds.getUser(),
-                    FamilyAclEntry.FamilyPermissions.SHARE);
-        }
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -702,6 +698,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 

@@ -499,8 +499,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user,
-                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET.toString());
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableNotInVariableSet(variableSet.first(), variable.getName());
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
@@ -524,8 +523,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user,
-                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET.toString());
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableNotInVariableSet(variableSet.first(), newName);
 
         // The field can be changed if we arrive to this point.
@@ -574,8 +572,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user,
-                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET.toString());
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableInVariableSet(variableSet.first(), name);
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
@@ -652,21 +649,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user, String additionalPermission)
+    public QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
         Bson query = new Document("variableSets", new Document("$elemMatch", new Document("id", variableSetId)));
         QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "variableSets.$,_ownerId,groups,_acl");
         QueryResult<Document> studyQueryResult = studyCollection.find(query, qOptions);
-//        Query query = new Query(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-//        Bson projection = Projections.elemMatch("variableSets", Filters.eq("id", variableSetId));
-//        if (options == null) {
-//            options = new QueryOptions();
-//        }
-//        QueryOptions qOptions = new QueryOptions(options);
-//        qOptions.put(MongoDBCollection.ELEM_MATCH, projection);
-//        QueryResult<Document> studyQueryResult = nativeGet(query, qOptions);
 
         if (studyQueryResult.getNumResults() == 0) {
             throw new CatalogDBException("Variable set not found.");
@@ -674,11 +663,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (!checkStudyPermission(studyQueryResult.first(), user, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET.toString())) {
             throw CatalogAuthorizationException.deny(user, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET.toString(), "VariableSet",
                     variableSetId, "");
-        }
-        if (StringUtils.isNotEmpty(additionalPermission)) {
-            if (!checkStudyPermission(studyQueryResult.first(), user, additionalPermission)) {
-                throw CatalogAuthorizationException.deny(user, additionalPermission, "VariableSet", variableSetId, "");
-            }
         }
         Study study = studyConverter.convertToDataModelType(studyQueryResult.first());
         if (study.getVariableSets() == null || study.getVariableSets().isEmpty()) {
@@ -828,8 +812,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions, user,
-                StudyAclEntry.StudyPermissions.DELETE_VARIABLE_SET.toString());
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions, user);
         checkVariableSetInUse(variableSetId);
 
         Bson query = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);

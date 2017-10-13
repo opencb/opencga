@@ -1650,14 +1650,10 @@ public class FileManager extends ResourceManager<File> {
 
         // Obtain the resource ids
         MyResourceIds resourceIds = getIds(fileStr, studyStr, sessionId);
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
+
         // Increase the list with the files/folders within the list of ids that correspond with folders
         resourceIds = getRecursiveFilesAndFolders(resourceIds);
-
-        // Check the user has the permissions needed to change permissions over those files
-        for (Long fileId : resourceIds.getResourceIds()) {
-            authorizationManager.checkFilePermission(resourceIds.getStudyId(), fileId, resourceIds.getUser(),
-                    FileAclEntry.FilePermissions.SHARE);
-        }
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -1666,6 +1662,7 @@ public class FileManager extends ResourceManager<File> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
