@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.samples.SamplesDataToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     private ArchiveRowKeyFactory rowKeyFactory;
     private boolean specificPut;
     protected boolean loadSampleColumns;
-    private SamplesDataToHBaseConverter samplesDataToHBaseConverter;
+    private StudyEntryToHBaseConverter studyEntryToHBaseConverter;
     private HBaseToVariantConverter<VariantTableStudyRow> rowToVariantConverter;
 
 
@@ -141,9 +141,9 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             if (put != null) {
                 if (loadSampleColumns) {
                     if (specificPut) {
-                        samplesDataToHBaseConverter.convert(variant, put, newSampleIds);
+                        studyEntryToHBaseConverter.convert(variant, put, newSampleIds);
                     } else {
-                        samplesDataToHBaseConverter.convert(variant, put);
+                        studyEntryToHBaseConverter.convert(variant, put);
                     }
                 }
                 puts.add(put);
@@ -221,7 +221,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         super.setup(context);
         this.specificPut = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, true);
         this.loadSampleColumns = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS, true);
-        samplesDataToHBaseConverter = new SamplesDataToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration());
+        studyEntryToHBaseConverter = new StudyEntryToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration());
         rowToVariantConverter = HBaseToVariantConverter.fromRow(getHelper())
                 .setFailOnEmptyVariants(true)
                 .setSimpleGenotypes(false);

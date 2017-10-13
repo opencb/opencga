@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant.converters.samples;
+package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -38,8 +38,7 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implements Converter<Variant, Put> {
-
+public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter implements Converter<Variant, Put> {
 
     private static final int UNKNOWN_FIELD = -1;
     private static final int FILTER_FIELD = -2;
@@ -51,11 +50,11 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
     private final PhoenixHelper.Column studyColumn;
     private boolean addSecondaryAlternates;
 
-    public SamplesDataToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration) {
+    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration) {
         this(columnFamily, studyConfiguration, false);
     }
 
-    public SamplesDataToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates) {
+    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates) {
         super(columnFamily);
         this.studyConfiguration = studyConfiguration;
         studyColumn = VariantPhoenixHelper.getStudyColumn(studyConfiguration.getStudyId());
@@ -120,9 +119,9 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
         List<String> fileColumn = new ArrayList<>(fileAttributes.size() + 3);
 
         Map<String, String> attributes = fileEntry.getAttributes();
+        fileColumn.add(fileEntry.getCall());
         fileColumn.add(attributes.get(StudyEntry.QUAL));
         fileColumn.add(attributes.get(StudyEntry.FILTER));
-        fileColumn.add(fileEntry.getCall());
         for (String fileAttribute : fileAttributes) {
             fileColumn.add(attributes.get(fileAttribute));
         }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant.converters.samples;
+package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
@@ -390,8 +390,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private void addFileEntry(StudyConfiguration studyConfiguration, StudyEntry studyEntry, String fileId, PhoenixArray fileColumn) {
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
-        attributes.put(StudyEntry.QUAL, (String) (fileColumn.getElement(0)));
-        attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(1)));
+        attributes.put(StudyEntry.QUAL, (String) (fileColumn.getElement(1)));
+        attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(2)));
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
         int i = 3;
         for (String attribute : fixedAttributes) {
@@ -401,7 +401,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
             i++;
         }
-        studyEntry.getFiles().add(new FileEntry(fileId, (String) (fileColumn.getElement(2)), attributes));
+        studyEntry.getFiles().add(new FileEntry(fileId, (String) (fileColumn.getElement(0)), attributes));
     }
 
     private void fillEmptySamplesData(StudyEntry studyEntry, StudyConfiguration studyConfiguration) {

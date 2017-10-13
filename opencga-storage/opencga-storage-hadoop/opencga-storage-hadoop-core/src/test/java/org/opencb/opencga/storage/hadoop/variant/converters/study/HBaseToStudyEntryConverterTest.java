@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.converters.samples;
+package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;

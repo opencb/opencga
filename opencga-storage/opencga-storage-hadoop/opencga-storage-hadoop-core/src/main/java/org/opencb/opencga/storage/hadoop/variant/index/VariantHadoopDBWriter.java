@@ -24,7 +24,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.samples.SamplesDataToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,7 +39,7 @@ import java.util.List;
 public class VariantHadoopDBWriter implements DataWriter<Variant> {
 
     private final String tableName;
-    private final SamplesDataToHBaseConverter converter;
+    private final StudyEntryToHBaseConverter converter;
     private final HBaseManager hBaseManager;
     private BufferedMutator tableMutator;
 
@@ -49,7 +49,7 @@ public class VariantHadoopDBWriter implements DataWriter<Variant> {
 
     public VariantHadoopDBWriter(GenomeHelper helper, String tableName, StudyConfiguration sc, HBaseManager hBaseManager) {
         this.tableName = tableName;
-        converter = new SamplesDataToHBaseConverter(helper.getColumnFamily(), sc, true);
+        converter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), sc, true);
         if (hBaseManager == null) {
             this.hBaseManager = new HBaseManager(helper.getConf());
         } else {
