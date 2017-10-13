@@ -478,6 +478,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readProjectDeny() throws CatalogException {
+        catalogManager.getStudyManager().updateGroup(String.valueOf(s1), "@members", new GroupParams(externalUser,
+                        GroupParams.Action.REMOVE), ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getProjectManager().get(String.valueOf((Long) p1), null, externalSessionId);
     }
@@ -496,6 +498,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readStudyDeny() throws CatalogException {
+        catalogManager.getStudyManager().updateGroup(String.valueOf(s1), "@members", new GroupParams(externalUser,
+                GroupParams.Action.REMOVE), ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getStudyManager().get(String.valueOf((Long) s1), null, externalSessionId);
     }

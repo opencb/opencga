@@ -28,6 +28,21 @@ public class AuthorizationMongoDBUtils {
     private static final Pattern MEMBERS_PATTERN = Pattern.compile("^" + MEMBERS);
     private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^\\" + ANONYMOUS);
 
+    public static boolean checkCanViewStudy(Document study, String user) {
+        // 0. If the user corresponds with the owner, we don't have to check anything else
+        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+            return true;
+        }
+        if (ADMIN.equals(user)) {
+            return true;
+        }
+        // If user does not exist in the members group, the user will not have any permission
+        if (isUserInMembers(study, user)) {
+            return true;
+        }
+        return false;
+    }
+
     public static boolean checkStudyPermission(Document study, String user, String studyPermission) {
         // 0. If the user corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {

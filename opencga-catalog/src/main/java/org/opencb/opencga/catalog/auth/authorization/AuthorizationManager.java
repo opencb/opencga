@@ -50,8 +50,7 @@ public interface AuthorizationManager {
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getAnalystAcls() {
-        return EnumSet.of(StudyAclEntry.StudyPermissions.VIEW_STUDY,
-                StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET,
+        return EnumSet.of(
                 StudyAclEntry.StudyPermissions.WRITE_FILES, StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS, StudyAclEntry.StudyPermissions.VIEW_FILES,
                 StudyAclEntry.StudyPermissions.DOWNLOAD_FILES, StudyAclEntry.StudyPermissions.UPLOAD_FILES,
@@ -69,7 +68,7 @@ public interface AuthorizationManager {
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getViewOnlyAcls() {
-        return EnumSet.of(StudyAclEntry.StudyPermissions.VIEW_STUDY, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET,
+        return EnumSet.of(
                 StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS,
                 StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.DOWNLOAD_FILES,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.VIEW_SAMPLES,
@@ -86,7 +85,9 @@ public interface AuthorizationManager {
 
     boolean isPublicRegistration();
 
-    void checkProjectPermission(long projectId, String userId, StudyAclEntry.StudyPermissions permission) throws CatalogException;
+    void checkCanViewProject(long projectId, String userId) throws CatalogException;
+
+    void checkCanEditProject(long projectId, String userId) throws CatalogException;
 
     void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission) throws CatalogException;
 

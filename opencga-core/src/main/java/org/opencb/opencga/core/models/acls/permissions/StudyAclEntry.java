@@ -66,8 +66,6 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
     private static final int CLINICAL_ANALYSIS = 9;
 
     public enum StudyPermissions {
-        VIEW_STUDY,
-        VIEW_VARIABLE_SET,
         CONFIDENTIAL_VARIABLE_SET_ACCESS,
 
         // FILES

@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -32,7 +31,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
-import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +70,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     // List of Acls defined for the special users (admin, daemon...) read from the main configuration file.
     private static final List<StudyAclEntry> SPECIAL_ACL_LIST = Arrays.asList(
             new StudyAclEntry(ADMIN, Arrays.asList("VIEW_FILE_HEADERS", "VIEW_FILE_CONTENTS", "VIEW_FILES", "WRITE_FILES",
-                    "VIEW_JOBS", "WRITE_JOBS", "VIEW_STUDY")));
+                    "VIEW_JOBS", "WRITE_JOBS")));
 
     private final boolean openRegister;
 
@@ -115,33 +113,32 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkProjectPermission(long projectId, String userId, StudyAclEntry.StudyPermissions permission) throws CatalogException {
+    public void checkCanEditProject(long projectId, String userId) throws CatalogException {
+        if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
+            return;
+        }
+        throw new CatalogAuthorizationException("Permission denied: Only the owner of the project can update it.");
+    }
+
+    @Override
+    public void checkCanViewProject(long projectId, String userId) throws CatalogException {
+        if (userId.equals(ADMIN)) {
+            return;
+        }
         if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
             return;
         }
 
-        if (permission.equals(StudyAclEntry.StudyPermissions.VIEW_STUDY)) {
-            if (userId.equals(ADMIN)) {
-                if (getSpecialPermissions(ADMIN).getPermissions().contains(permission)) {
-                    return;
-                }
-            } else {
-                final Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
-                final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FILTER_ROUTE_STUDIES
-                        + StudyDBAdaptor.QueryParams.ID.key());
+        // Only members of any study belonging to the project can view the project
+        final Query query = new Query()
+                .append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
+                .append(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), userId);
 
-                for (Study study : studyDBAdaptor.get(query, queryOptions).getResult()) {
-                    try {
-                        checkStudyPermission(study.getId(), userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
-                        return; //Return if can read some study
-                    } catch (CatalogException e) {
-                        logger.error("{}", e.getMessage(), e);
-                    }
-                }
-            }
+        if (studyDBAdaptor.count(query).first() > 0) {
+            return;
         }
 
-        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Project", projectId, null);
+        throw CatalogAuthorizationException.deny(userId, "view", "Project", projectId, null);
     }
 
     @Override

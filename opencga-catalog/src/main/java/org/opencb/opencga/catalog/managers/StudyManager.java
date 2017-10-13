@@ -454,7 +454,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkObj(projectId, "projectId");
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
+        authorizationManager.checkCanViewProject(projectId, userId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -475,7 +475,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkObj(projectId, "projectId");
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
+        authorizationManager.checkCanViewProject(projectId, userId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -496,7 +496,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkObj(projectId, "projectId");
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
+        authorizationManager.checkCanViewProject(projectId, userId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -515,7 +515,7 @@ public class StudyManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Long studyId = getId(userId, studyStr);
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
+        authorizationManager.checkCanViewStudy(studyId, userId);
 
         Study studyInfo = get(String.valueOf(studyId), queryOptions, sessionId).first();
 
@@ -616,7 +616,7 @@ public class StudyManager extends AbstractManager {
     public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
+        authorizationManager.checkCanViewStudy(studyId, userId);
 
         // Fix the groupId
         if (groupId != null && !groupId.startsWith("@")) {
