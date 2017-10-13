@@ -317,16 +317,9 @@ public abstract class CommandExecutor {
         }
     }
 
-    protected static String getParsedSubCommand(JCommander jCommander) {
-        String parsedCommand = jCommander.getParsedCommand();
-        if (jCommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
-        } else {
-            return "";
-        }
+    public static String getParsedSubCommand(JCommander jCommander) {
+        return CliOptionsParser.getSubCommand(jCommander);
     }
-
 
     public Configuration getConfiguration() {
         return configuration;

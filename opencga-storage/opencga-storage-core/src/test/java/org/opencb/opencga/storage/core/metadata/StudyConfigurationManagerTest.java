@@ -20,7 +20,7 @@ import com.google.common.collect.BiMap;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
@@ -51,7 +51,7 @@ public class StudyConfigurationManagerTest {
         studyConfiguration.getSampleIds().put("s0", 1);
         studyConfiguration.getSampleIds().put("s10", 4);
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap();
         StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
         assertTrue(studyConfiguration.getSampleIds().keySet().containsAll(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5")));
@@ -69,7 +69,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithSampleIdsTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         studyConfiguration.getSampleIds().put("s10", 4);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25");
         StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
@@ -94,7 +94,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithSamplesInFilesTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25");
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24, 25)));
         StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
@@ -104,7 +104,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithRepeatedSampleIdsTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25");
         studyConfiguration.getSampleIds().put("s0", 0);
 
@@ -117,7 +117,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithExtraSampleIdsTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25," +
                 "UNEXISTING_SAMPLE:30");
 
@@ -130,7 +130,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithAlphanumericSampleIdsTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:NaN,s5:25");
 
         thrown.expect(StorageEngineException.class);
@@ -142,7 +142,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithMalformedSampleIds1Test() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:");
 
         thrown.expect(StorageEngineException.class);
@@ -154,7 +154,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithMalformedSampleIds2Test() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3,s4:24,s5:25");
 
         thrown.expect(StorageEngineException.class);
@@ -166,7 +166,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithMissingSampleIdsTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20");
 
         thrown.expect(StorageEngineException.class);
@@ -178,7 +178,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithMissingSamplesInFilesTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25");
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24)));
         thrown.expect(StorageEngineException.class);
@@ -190,7 +190,7 @@ public class StudyConfigurationManagerTest {
     public void checkAndUpdateStudyConfigurationWithExtraSamplesInFilesTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         Integer fileId = 5;
-        VariantSource source = createVariantSource(studyConfiguration, fileId);
+        VariantFileMetadata source = createVariantFileMetadata(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25");
         studyConfiguration.getSampleIds().put("GhostSample", 0);
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24, 25, 0)));
@@ -222,10 +222,9 @@ public class StudyConfigurationManagerTest {
 
     }
 
-    protected VariantSource createVariantSource(StudyConfiguration studyConfiguration, Integer fileId) {
+    protected VariantFileMetadata createVariantFileMetadata(StudyConfiguration studyConfiguration, Integer fileId) {
         studyConfiguration.getFileIds().put("fileName", fileId);
-        VariantSource source = new VariantSource("fileName", fileId.toString(), studyConfiguration.getStudyId() + "", studyConfiguration
-                .getStudyName());
+        VariantFileMetadata source = new VariantFileMetadata("fileName", fileId.toString());
         Map<String, Integer> samplesPosition = new HashMap<>();
         samplesPosition.put("s0", 0);
         samplesPosition.put("s1", 1);

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -110,7 +111,7 @@ public class DummyStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
     }
 
     public static void writeAll(Path path) {
-        ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
+        ObjectMapper objectMapper = new ObjectMapper(new JsonFactory()).configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
         for (StudyConfiguration studyConfiguration : DummyStudyConfigurationAdaptor.STUDY_CONFIGURATIONS_BY_NAME.values()) {
             try (OutputStream os = new FileOutputStream(path.resolve(prefix + studyConfiguration.getStudyName()).toFile())) {

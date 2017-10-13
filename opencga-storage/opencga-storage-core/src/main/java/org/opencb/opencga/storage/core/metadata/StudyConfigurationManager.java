@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.metadata;
 
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -467,7 +467,7 @@ public class StudyConfigurationManager implements AutoCloseable {
      * some sample was missing in the given SAMPLE_IDS param
      *
      */
-    public static void checkAndUpdateStudyConfiguration(StudyConfiguration studyConfiguration, int fileId, VariantSource source,
+    public static void checkAndUpdateStudyConfiguration(StudyConfiguration studyConfiguration, int fileId, VariantFileMetadata fileMetadata,
                                                         ObjectMap options)
             throws StorageEngineException {
         if (options.containsKey(VariantStorageEngine.Options.SAMPLE_IDS.key())
@@ -485,7 +485,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                     throw new StorageEngineException("SampleId " + split[1] + " is not an integer", e);
                 }
 
-                if (!source.getSamplesPosition().containsKey(sampleName)) {
+                if (!fileMetadata.getSamplesPosition().containsKey(sampleName)) {
                     //ERROR
                     throw new StorageEngineException("Given sampleName '" + sampleName + "' is not in the input file");
                 } else {
@@ -504,13 +504,13 @@ public class StudyConfigurationManager implements AutoCloseable {
 
             //Check that all samples has a sampleId
             List<String> missingSamples = new LinkedList<>();
-            for (String sampleName : source.getSamples()) {
-                if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
-                    missingSamples.add(sampleName);
+            for (String sample : fileMetadata.getSampleIds()) {
+                if (!studyConfiguration.getSampleIds().containsKey(sample)) {
+                    missingSamples.add(sample);
                 } /*else {
-                    Integer sampleId = studyConfiguration.getSampleIds().get(sampleName);
+                    Integer sampleId = studyConfiguration.getSampleIds().get(sample);
                     if (studyConfiguration.getIndexedSamples().contains(sampleId)) {
-                        logger.warn("Sample " + sampleName + ":" + sampleId + " was already loaded.
+                        logger.warn("Sample " + sample + ":" + sampleId + " was already loaded.
                         It was in the StudyConfiguration.indexedSamples");
                     }
                 }*/
@@ -528,13 +528,13 @@ public class StudyConfigurationManager implements AutoCloseable {
                 }
             }
             //Assign new sampleIds
-            for (String sample : source.getSamples()) {
+            for (String sample : fileMetadata.getSampleIds()) {
                 if (!studyConfiguration.getSampleIds().containsKey(sample)) {
                     //If the sample was not in the original studyId, a new SampleId is assigned.
 
                     int sampleId;
                     int samplesSize = studyConfiguration.getSampleIds().size();
-                    Integer samplePosition = source.getSamplesPosition().get(sample);
+                    Integer samplePosition = fileMetadata.getSamplesPosition().get(sample);
                     if (!studyConfiguration.getSampleIds().containsValue(samplePosition)) {
                         //1- Use with the SamplePosition
                         sampleId = samplePosition;
@@ -556,20 +556,20 @@ public class StudyConfigurationManager implements AutoCloseable {
         if (studyConfiguration.getSamplesInFiles().containsKey(fileId)) {
             LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
             List<String> missingSamples = new LinkedList<>();
-            for (String sampleName : source.getSamples()) {
-                if (!sampleIds.contains(studyConfiguration.getSampleIds().get(sampleName))) {
-                    missingSamples.add(sampleName);
+            for (String sample : fileMetadata.getSampleIds()) {
+                if (!sampleIds.contains(studyConfiguration.getSampleIds().get(sample))) {
+                    missingSamples.add(sample);
                 }
             }
             if (!missingSamples.isEmpty()) {
                 throw new StorageEngineException("Samples " + missingSamples.toString() + " were not in file " + fileId);
             }
-            if (sampleIds.size() != source.getSamples().size()) {
+            if (sampleIds.size() != fileMetadata.getSampleIds().size()) {
                 throw new StorageEngineException("Incorrect number of samples in file " + fileId);
             }
         } else {
-            LinkedHashSet<Integer> sampleIdsInFile = new LinkedHashSet<>(source.getSamples().size());
-            for (String sample : source.getSamples()) {
+            LinkedHashSet<Integer> sampleIdsInFile = new LinkedHashSet<>(fileMetadata.getSampleIds().size());
+            for (String sample : fileMetadata.getSampleIds()) {
                 sampleIdsInFile.add(studyConfiguration.getSampleIds().get(sample));
             }
             studyConfiguration.getSamplesInFiles().put(fileId, sampleIdsInFile);

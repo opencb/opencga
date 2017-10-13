@@ -24,7 +24,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseVariantMapper;
@@ -61,7 +61,7 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
         this.getHbaseToVariantConverter().setReadFullSamplesData(false);
         studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
         variantStatisticsCalculator = new VariantStatisticsCalculator(true);
-        this.variantStatisticsCalculator.setAggregationType(VariantSource.Aggregation.NONE, null);
+        this.variantStatisticsCalculator.setAggregationType(Aggregation.NONE, null);
         this.studyId = Integer.valueOf(this.getStudyConfiguration().getStudyId()).toString();
         BiMap<Integer, String> sampleIds = getStudyConfiguration().getSampleIds().inverse();
         variantStatsToHBaseConverter = new VariantStatsToHBaseConverter(this.getHelper(), this.getStudyConfiguration());

@@ -31,9 +31,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 
 import java.io.DataOutputStream;
@@ -79,7 +79,7 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
         final Configuration conf = job.getConfiguration();
         boolean withGenotype = conf.getBoolean(VariantTableExportDriver.CONFIG_VARIANT_TABLE_EXPORT_GENOTYPE, false);
 
-        try (VariantSourceDBAdaptor source = new HadoopVariantSourceDBAdaptor(conf)) {
+        try (VariantFileMetadataDBAdaptor source = new HadoopVariantFileMetadataDBAdaptor(conf)) {
             VariantTableHelper helper = new VariantTableHelper(conf);
             StudyConfiguration sc = helper.readStudyConfiguration();
             QueryOptions options = new QueryOptions();

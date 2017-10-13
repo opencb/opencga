@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import org.bson.Document;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 
 /**
@@ -26,17 +26,21 @@ import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class DocumentToVariantSourceSimpleConverter extends GenericDocumentComplexConverter<VariantSource> {
+public class DocumentToVariantFileMetadataConverter extends GenericDocumentComplexConverter<VariantFileMetadata> {
 
-    public DocumentToVariantSourceSimpleConverter() {
-        super(VariantSource.class);
+    public DocumentToVariantFileMetadataConverter() {
+        super(VariantFileMetadata.class);
         getObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
     }
 
     @Override
-    public Document convertToStorageType(VariantSource object) {
+    public Document convertToStorageType(VariantFileMetadata object) {
+        throw new UnsupportedOperationException();
+    }
+
+    public Document convertToStorageType(String studyId, VariantFileMetadata object) {
         Document document = super.convertToStorageType(object);
-        document.append("_id", buildId(object.getStudyId(), object.getFileId()));
+        document.append("_id", buildId(studyId, object.getId()));
         return document;
     }
 

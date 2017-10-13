@@ -182,7 +182,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      */
     QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options);
 
-    VariantSourceDBAdaptor getVariantSourceDBAdaptor();
+    VariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor();
 
     StudyConfigurationManager getStudyConfigurationManager();
 

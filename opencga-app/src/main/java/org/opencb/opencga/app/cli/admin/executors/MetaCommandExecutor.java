@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.admin;
+package org.opencb.opencga.app.cli.admin.executors;
 
 /**
  * Created by wasim on 08/06/17.

@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
 import java.util.HashMap;
@@ -28,6 +29,16 @@ import java.util.Map;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class GeneralCliOptions {
+
+    private final JCommander jCommander;
+
+    public GeneralCliOptions(JCommander jCommander) {
+        this.jCommander = jCommander;
+    }
+
+    public String getSubCommand() {
+        return CliOptionsParser.getSubCommand(jCommander);
+    }
 
     public static class GeneralOptions {
 

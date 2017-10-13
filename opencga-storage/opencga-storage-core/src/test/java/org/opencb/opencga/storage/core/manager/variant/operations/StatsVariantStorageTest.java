@@ -20,7 +20,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -80,7 +80,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                 QueryOptions(), sessionId).first().getId();
     }
 
-    public File beforeAggregated(String fileName, VariantSource.Aggregation aggregation) throws Exception {
+    public File beforeAggregated(String fileName, Aggregation aggregation) throws Exception {
 
         Map<String, Object> attributes;
         if (aggregation != null) {
@@ -129,8 +129,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     }
 
     @Override
-    protected VariantSource.Aggregation getAggregation() {
-        return VariantSource.Aggregation.NONE;
+    protected Aggregation getAggregation() {
+        return Aggregation.NONE;
     }
 
     @After
@@ -301,14 +301,14 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testCalculateAggregatedStats() throws Exception {
-        beforeAggregated("variant-test-aggregated-file.vcf.gz", VariantSource.Aggregation.BASIC);
+        beforeAggregated("variant-test-aggregated-file.vcf.gz", Aggregation.BASIC);
 
         calculateAggregatedStats(new QueryOptions());
     }
 
     @Test
     public void testCalculateAggregatedStatsWithoutCohorts() throws Exception {
-        beforeAggregated("variant-test-aggregated-file.vcf.gz", VariantSource.Aggregation.BASIC);
+        beforeAggregated("variant-test-aggregated-file.vcf.gz", Aggregation.BASIC);
 
         calculateStats(new QueryOptions());
     }
@@ -317,13 +317,13 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     public void testCalculateAggregatedStatsNonAggregatedStudy() throws Exception {
         beforeAggregated("variant-test-aggregated-file.vcf.gz", null);
 
-        calculateAggregatedStats(new QueryOptions(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.BASIC));
+        calculateAggregatedStats(new QueryOptions(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.BASIC));
 
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
 
         String agg = study.getAttributes().get(VariantStorageEngine.Options.AGGREGATED_TYPE.key()).toString();
         assertNotNull(agg);
-        assertEquals(VariantSource.Aggregation.BASIC.toString(), agg);
+        assertEquals(Aggregation.BASIC.toString(), agg);
     }
 
     public void calculateAggregatedStats(QueryOptions options) throws Exception {
@@ -338,7 +338,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testCalculateAggregatedExacStats() throws Exception {
-        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+        beforeAggregated("exachead.vcf.gz", Aggregation.EXAC);
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
         List<String> cohortIds = createCohorts(sessionId, studyId, tagMap, catalogManager, logger)
@@ -361,7 +361,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testCalculateAggregatedExacStatsExplicitCohorts() throws Exception {
-        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+        beforeAggregated("exachead.vcf.gz", Aggregation.EXAC);
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 
@@ -382,7 +382,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testCalculateAggregatedExacStatsWrongExplicitCohorts() throws Exception {
-        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+        beforeAggregated("exachead.vcf.gz", Aggregation.EXAC);
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 
@@ -394,11 +394,11 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testCalculateAggregatedExacMissingAggregationMappingFile() throws Exception {
-        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+        beforeAggregated("exachead.vcf.gz", Aggregation.EXAC);
 
         QueryOptions options = new QueryOptions();
 
-        thrown.expectMessage(VariantStatsStorageOperation.missingAggregationMappingFile(VariantSource.Aggregation.EXAC).getMessage());
+        thrown.expectMessage(VariantStatsStorageOperation.missingAggregationMappingFile(Aggregation.EXAC).getMessage());
         calculateStats(options, Collections.emptyList());
     }
 
@@ -416,7 +416,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testCalculateAggregatedExacStatsWithoutCohorts() throws Exception {
-        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+        beforeAggregated("exachead.vcf.gz", Aggregation.EXAC);
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 

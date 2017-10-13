@@ -27,8 +27,8 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
@@ -36,7 +36,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,44 +53,34 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ArchiveTableHelper extends GenomeHelper {
 
     private final Logger logger = LoggerFactory.getLogger(ArchiveTableHelper.class);
-    private final AtomicReference<VcfMeta> meta = new AtomicReference<>();
+    private final AtomicReference<VariantFileMetadata> meta = new AtomicReference<>();
     private final ArchiveRowKeyFactory keyFactory;
-    private byte[] column;
+    private final byte[] column;
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
 
     public ArchiveTableHelper(Configuration conf) throws IOException {
-        this(conf, null);
-        int fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
-        int studyId = conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), 0);
-        try (HadoopVariantSourceDBAdaptor metadataManager = new HadoopVariantSourceDBAdaptor(conf)) {
-            VcfMeta meta = metadataManager.getVcfMeta(getStudyId(), fileId, null);
-            this.meta.set(meta);
-        }
-        column = Bytes.toBytes(getColumnName(meta.get().getVariantSource()));
-    }
-
-    public ArchiveTableHelper(GenomeHelper helper, VcfMeta meta) {
-        super(helper);
-        this.meta.set(meta);
-        column = Bytes.toBytes(getColumnName(meta.getVariantSource()));
-        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
-    }
-
-    public ArchiveTableHelper(Configuration conf, VcfMeta meta) {
         super(conf);
-        if (meta != null) {
+        int fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
+        try (HadoopVariantFileMetadataDBAdaptor metadataManager = new HadoopVariantFileMetadataDBAdaptor(conf)) {
+            VariantFileMetadata meta = metadataManager.getVariantFileMetadata(getStudyId(), fileId, null);
             this.meta.set(meta);
-            VariantSource variantSource = getMeta().getVariantSource();
-            column = Bytes.toBytes(getColumnName(variantSource));
+            column = Bytes.toBytes(getColumnName(meta));
         }
         keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
     }
 
-    public ArchiveTableHelper(GenomeHelper helper, VariantSource source) {
-        super(helper);
-        this.meta.set(new VcfMeta(source));
-        column = Bytes.toBytes(getColumnName(source));
+    public ArchiveTableHelper(GenomeHelper helper, int studyId, VariantFileMetadata meta) {
+        super(helper, studyId);
+        this.meta.set(meta);
+        column = Bytes.toBytes(getColumnName(meta));
+        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
+    }
+
+    public ArchiveTableHelper(Configuration conf, int studyId, VariantFileMetadata meta) {
+        super(conf, studyId);
+        this.meta.set(meta);
+        column = Bytes.toBytes(getColumnName(meta));
         keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
     }
 
@@ -121,11 +111,11 @@ public class ArchiveTableHelper extends GenomeHelper {
     /**
      * Get the archive column name for a file given a VariantSource.
      *
-     * @param variantSource VariantSource
+     * @param fileMetadata VariantFileMetadata
      * @return Column name or Qualifier
      */
-    public static String getColumnName(VariantSource variantSource) {
-        return variantSource.getFileId();
+    public static String getColumnName(VariantFileMetadata fileMetadata) {
+        return fileMetadata.getId();
     }
 
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
@@ -143,8 +133,12 @@ public class ArchiveTableHelper extends GenomeHelper {
         return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
     }
 
-    public VcfMeta getMeta() {
+    public VariantFileMetadata getFileMetadata() {
         return meta.get();
+    }
+
+    public VariantStudyMetadata getStudyMetadata() {
+        return meta.get().toVariantStudyMetadata(String.valueOf(getStudyId()));
     }
 
     public byte[] getColumn() {

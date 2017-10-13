@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -34,16 +34,16 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public interface VariantSourceDBAdaptor extends AutoCloseable {
+public interface VariantFileMetadataDBAdaptor extends AutoCloseable {
 
-    enum VariantSourceQueryParam implements QueryParam {
+    enum VariantFileMetadataQueryParam implements QueryParam {
         STUDY_ID("studyId", Type.INTEGER_ARRAY),
         FILE_ID("fileId", Type.INTEGER_ARRAY);
 
         private final String key;
         private final Type type;
 
-        VariantSourceQueryParam(String key, Type type) {
+        VariantFileMetadataQueryParam(String key, Type type) {
             this.key = key;
             this.type = type;
         }
@@ -70,32 +70,36 @@ public interface VariantSourceDBAdaptor extends AutoCloseable {
 
     QueryResult<Long> count(Query query);
 
-    void updateVariantSource(VariantSource variantSource) throws StorageEngineException;
+    default void updateVariantFileMetadata(Number studyId, VariantFileMetadata metadata) throws StorageEngineException {
+        updateVariantFileMetadata(studyId.toString(), metadata);
+    }
 
-    default QueryResult<VariantSource> get(String fileId, QueryOptions options) throws StorageEngineException {
+    void updateVariantFileMetadata(String studyId, VariantFileMetadata metadata) throws StorageEngineException;
+
+    default QueryResult<VariantFileMetadata> get(String fileId, QueryOptions options) throws StorageEngineException {
         StopWatch stopWatch = StopWatch.createStarted();
-        Iterator<VariantSource> iterator;
+        Iterator<VariantFileMetadata> iterator;
         try {
-            iterator = iterator(new Query(VariantSourceQueryParam.FILE_ID.key(), fileId), options);
+            iterator = iterator(new Query(VariantFileMetadataQueryParam.FILE_ID.key(), fileId), options);
         } catch (IOException e) {
-            throw new StorageEngineException("Error reading VariantSourceDBAdaptor", e);
+            throw new StorageEngineException("Error reading from VariantFileMetadataDBAdaptor", e);
         }
         if (iterator.hasNext()) {
-            VariantSource variantSource = iterator.next();
+            VariantFileMetadata metadata = iterator.next();
             return new QueryResult<>("", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), 1, 1, null, null,
-                    Collections.singletonList(variantSource));
+                    Collections.singletonList(metadata));
         } else {
             return new QueryResult<>("", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), 0, 0, null, null, Collections.emptyList());
         }
     }
 
-    Iterator<VariantSource> iterator(Query query, QueryOptions options) throws IOException;
+    Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) throws IOException;
 
 //    QueryResult<String> getSamplesBySource(String fileId, QueryOptions options);
 
 //    QueryResult<String> getSamplesBySources(List<String> fileIds, QueryOptions options);
 
-    QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
+    QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
 
     void delete(int study, int file) throws IOException;
 

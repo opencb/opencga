@@ -22,12 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 
 import java.io.IOException;
@@ -53,7 +51,6 @@ public class JsonOutputWriter extends AbstractOutputWriter {
         // Same options as in OpenCGAWSServer
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        objectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         objectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         objectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

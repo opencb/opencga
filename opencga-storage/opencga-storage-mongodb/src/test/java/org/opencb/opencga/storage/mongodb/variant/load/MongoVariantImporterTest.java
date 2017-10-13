@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
@@ -50,9 +51,10 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
     @Before
     public void setUp() throws Exception {
         studyConfiguration = newStudyConfiguration();
-        runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration);
+        runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration,
+                new ObjectMap(VariantStorageEngine.Options.FILE_ID.key(), 500)
+                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS"));
     }
-
 
     @Test
     public void testSimpleImport() throws Exception {
