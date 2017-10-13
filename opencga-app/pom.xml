@@ -253,7 +253,7 @@
 
                                 <exec executable="mvn">
                                     <arg value="test"/>
-                                    <arg value="-Dtest=OpencgaMainTest"/>
+                                    <arg value="-Dtest=OpencgaCliCompletionTest"/>
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
@@ -263,6 +263,7 @@
                                     <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
                                     <arg value="${project.basedir}/target/conf"/>
+                                    <arg value="${app.dir}/completion"/>
                                     <arg value="${app.dir}/examples"/>
                                     <arg value="${app.dir}/migration"/>
                                     <arg value="${app.dir}/tools"/>
@@ -279,6 +280,14 @@
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>
+                                </exec>
+
+                                <echo>Coping configuration files</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/target/opencga"/>
+                                    <arg value="${project.basedir}/target/opencga-admin"/>
+                                    <arg value="${project.basedir}/target/opencga-analysis"/>
+                                    <arg value="${build.dir}/completion"/>
                                 </exec>
 
                                 <echo>Coping war file</echo>
