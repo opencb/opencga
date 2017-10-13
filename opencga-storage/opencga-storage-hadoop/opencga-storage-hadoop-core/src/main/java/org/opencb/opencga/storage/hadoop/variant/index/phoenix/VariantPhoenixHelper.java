@@ -99,7 +99,7 @@ public class VariantPhoenixHelper {
         GERP(ANNOTATION_PREFIX + "GERP", PFloat.INSTANCE),
 
         //Functional Scores
-        CADD_SCALLED(FUNCTIONAL_SCORE_PREFIX + "CADD_S", PFloat.INSTANCE),
+        CADD_SCALED(FUNCTIONAL_SCORE_PREFIX + "CADD_SC", PFloat.INSTANCE),
         CADD_RAW(FUNCTIONAL_SCORE_PREFIX + "CADD_R", PFloat.INSTANCE),
 
         FULL_ANNOTATION(ANNOTATION_PREFIX + "FULL", PVarchar.INSTANCE);
@@ -406,7 +406,7 @@ public class VariantPhoenixHelper {
                 new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(PHYLOP), defaultInclude),
                 new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(GERP), defaultInclude),
                 new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(CADD_RAW), defaultInclude),
-                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(CADD_SCALLED), defaultInclude),
+                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(CADD_SCALED), defaultInclude),
                 // Index the min value
                 new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList("\"" + POLYPHEN + "\"[1]"), defaultInclude),
                 // Index the max value
@@ -435,7 +435,7 @@ public class VariantPhoenixHelper {
             case "CADD_RAW":
                 return CADD_RAW;
             case "CADD_SCALED":
-                return CADD_SCALLED;
+                return CADD_SCALED;
             default:
                 if (throwException) {
 //                    throw VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, rawValue, "Unknown functional score.");

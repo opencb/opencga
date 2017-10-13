@@ -203,6 +203,67 @@ public class VariantQueryUtils {
         return variant;
     }
 
+    public static final class SelectVariantElements {
+        private final Set<VariantField> fields;
+        private final List<Integer> studies;
+        private final Map<Integer, StudyConfiguration> studyConfigurations;
+        private final Map<Integer, List<Integer>> samples;
+        private final Map<Integer, List<Integer>> files;
+//        private final Map<Integer, List<Integer>> cohortIds;
+
+        private SelectVariantElements(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyConfiguration> studyConfigurations,
+                                      Map<Integer, List<Integer>> samples, Map<Integer, List<Integer>> files) {
+            this.fields = fields;
+            this.studies = studies;
+            this.studyConfigurations = studyConfigurations;
+            this.samples = samples;
+            this.files = files;
+        }
+
+        public Set<VariantField> getFields() {
+            return fields;
+        }
+
+        public List<Integer> getStudies() {
+            return studies;
+        }
+
+        public Map<Integer, StudyConfiguration> getStudyConfigurations() {
+            return studyConfigurations;
+        }
+
+        public Map<Integer, List<Integer>> getSamples() {
+            return samples;
+        }
+
+        public Map<Integer, List<Integer>> getFiles() {
+            return files;
+        }
+    }
+
+    public static SelectVariantElements parseSelectElements(
+            Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager) {
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        List<Integer> returnedStudies = VariantQueryUtils.getReturnedStudies(query, options, studyConfigurationManager, returnedFields);
+
+        Map<Integer, StudyConfiguration> studyConfigurations = new HashMap<>();
+
+        for (Integer studyId : returnedStudies) {
+            StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyId, options).first();
+            if (sc == null) {
+                throw VariantQueryException.studyNotFound(studyId, studyConfigurationManager.getStudyNames(options));
+            }
+            studyConfigurations.put(studyId, sc);
+        }
+
+        Function<Integer, StudyConfiguration> provider = studyConfigurations::get;
+        Map<Integer, List<Integer>> sampleIds = VariantQueryUtils.getReturnedSamples(query, options, returnedStudies, provider);
+        Map<Integer, List<Integer>> fileIds = VariantQueryUtils.getReturnedFiles(query, returnedStudies, returnedFields, provider);
+
+
+        return new SelectVariantElements(returnedFields, returnedStudies, studyConfigurations, sampleIds, fileIds);
+    }
+
     public static StudyConfiguration getDefaultStudyConfiguration(Query query, QueryOptions options,
                                                                   StudyConfigurationManager studyConfigurationManager) {
         final StudyConfiguration defaultStudyConfiguration;
@@ -255,7 +316,11 @@ public class VariantQueryUtils {
     }
 
     public static List<Integer> getReturnedStudies(Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager) {
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        return getReturnedStudies(query, options, studyConfigurationManager, VariantField.getReturnedFields(options));
+    }
+
+    private static List<Integer> getReturnedStudies(Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager,
+                                                   Set<VariantField> returnedFields) {
         List<Integer> studyIds;
         if (!returnedFields.contains(VariantField.STUDIES)) {
             studyIds = Collections.emptyList();
@@ -282,7 +347,7 @@ public class VariantQueryUtils {
     }
 
     /**
-     * Get list of returned files.
+     * Get list of returned files for each study.
      * <p>
      * Use {@link VariantQueryParam#RETURNED_FILES} if defined.
      * If missing, get non negated values from {@link VariantQueryParam#FILES}
@@ -292,14 +357,75 @@ public class VariantQueryUtils {
      * Return NONE if empty list
      *
      * @param query                     Query with the QueryParams
-     * @param options                   Query options
+     * @param studyIds                  Returned studies
      * @param fields                    Returned fields
-     * @param studyConfigurationManager StudyConfigurationManager
+     * @param studyProvider             StudyConfiguration provider
      * @return List of fileIds to return.
      */
-    public static List<Integer> getReturnedFiles(Query query, QueryOptions options, Set<VariantField> fields,
-                                                 StudyConfigurationManager studyConfigurationManager) {
-        List<Integer> returnedFiles;
+    private static Map<Integer, List<Integer>> getReturnedFiles(
+            Query query, Collection<Integer> studyIds, Set<VariantField> fields, Function<Integer, StudyConfiguration> studyProvider) {
+
+        List<String> sampleNames = query.getAsStringList(VariantQueryParam.SAMPLES.key()).stream()
+                .filter(s -> !isNegated(s))
+                .collect(Collectors.toList());
+        List<String> returnedFilesList = getReturnedFilesList(query, fields);
+
+        Map<Integer, List<Integer>> files = new HashMap<>(studyIds.size());
+        for (Integer studyId : studyIds) {
+            StudyConfiguration sc = studyProvider.apply(studyId);
+            if (sc == null) {
+                continue;
+            }
+
+            List<Integer> fileIds;
+            if (returnedFilesList != null) {
+                fileIds = new ArrayList<>();
+                for (String file : returnedFilesList) {
+                    Integer fileId = getFileId(file, sc);
+                    if (fileId != null) {
+                        fileIds.add(fileId);
+                    }
+                }
+            } else if (!sampleNames.isEmpty()) {
+                Set<Integer> fileSet = new LinkedHashSet<>();
+                for (String sample : sampleNames) {
+                    Integer sampleId = getSampleId(sample, sc);
+                    if (sampleId != null) {
+                        for (Integer indexedFile : sc.getIndexedFiles()) {
+                            if (sc.getSamplesInFiles().get(indexedFile).contains(sampleId)) {
+                                fileSet.add(indexedFile);
+                            }
+                        }
+                    }
+                }
+                fileIds = new ArrayList<>(fileSet);
+            } else {
+                // Return all files
+                fileIds = new ArrayList<>(sc.getIndexedFiles());
+            }
+            files.put(sc.getStudyId(), fileIds);
+        }
+
+        return files;
+    }
+
+    /**
+     * Get list of returned files.
+     * <p>
+     * Use {@link VariantQueryParam#RETURNED_FILES} if defined.
+     * If missing, get non negated values from {@link VariantQueryParam#FILES}
+     * <p>
+     * Null for undefined returned files. If null, return ALL files.
+     * Return NONE if empty list
+     *
+     * Does not validate if file names are valid at any study.
+     *
+     * @param query                     Query with the QueryParams
+     * @param fields                    Returned fields
+     * @return List of fileIds to return.
+     */
+    private static List<String> getReturnedFilesList(Query query, Set<VariantField> fields) {
+        List<String> returnedFiles;
         if (!fields.contains(VariantField.STUDIES_FILES)) {
             returnedFiles = Collections.emptyList();
         } else if (query.containsKey(RETURNED_FILES.key())) {
@@ -309,41 +435,119 @@ public class VariantQueryUtils {
             } else if (files.equals(NONE)) {
                 returnedFiles = Collections.emptyList();
             } else {
-                returnedFiles = query.getAsIntegerList(RETURNED_FILES.key());
+                returnedFiles = query.getAsStringList(RETURNED_FILES.key());
             }
         } else if (query.containsKey(FILES.key())) {
             String files = query.getString(FILES.key());
             returnedFiles = splitValue(files, checkOperator(files))
                     .stream()
-                    .filter((value) -> !isNegated(value)) // Discard negated
-                    .map(Integer::parseInt)
+                    .filter(value -> !isNegated(value))
                     .collect(Collectors.toList());
             if (returnedFiles.isEmpty()) {
                 returnedFiles = null;
             }
         } else {
-            List<String> sampleNames = query.getAsStringList(VariantQueryParam.SAMPLES.key());
-            StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options, studyConfigurationManager);
-
-            if (studyConfiguration == null) {
-                return null;
-            }
-
-            Set<Integer> returnedFilesSet = new LinkedHashSet<>();
-            for (String sample : sampleNames) {
-                Integer sampleId = studyConfigurationManager.getSampleId(sample, studyConfiguration);
-                studyConfiguration.getSamplesInFiles().forEach((fileId, samples) -> {
-                    if (samples.contains(sampleId)) {
-                        returnedFilesSet.add(fileId);
-                    }
-                });
-            }
-            returnedFiles = new ArrayList<>(returnedFilesSet);
-            if (returnedFiles.isEmpty()) {
-                returnedFiles = null;
-            }
+            returnedFiles = null;
         }
         return returnedFiles;
+    }
+
+    // TODO: Move to StudyConfigurationManager
+    private static Integer getFileId(Object fileObj, StudyConfiguration sc) {
+        final Integer fileId;
+        if (fileObj instanceof Number) {
+            int aux = ((Number) fileObj).intValue();
+            if (sc.getFileIds().containsValue(aux)) {
+                fileId = aux;
+            } else {
+                fileId = null;
+            }
+        } else {
+            String fileStr = fileObj.toString();
+            if (StringUtils.isNumeric(fileStr)) {
+                fileId = Integer.parseInt(fileStr);
+            } else {
+                int idx = fileStr.indexOf(':');
+                if (idx > 0) {
+                    String[] split = fileStr.split(":", 2);
+                    String study = split[0];
+                    fileStr = split[1];
+                    if (study.equals(sc.getStudyName())
+                            || StringUtils.isNumeric(study) && Integer.valueOf(study).equals(sc.getStudyId())) {
+                        if (StringUtils.isNumeric(fileStr)) {
+                            int aux = Integer.valueOf(fileStr);
+                            if (sc.getFileIds().containsValue(aux)) {
+                                fileId = aux;
+                            } else {
+                                fileId = null;
+                            }
+                        } else {
+                            fileId = sc.getFileIds().get(fileStr);
+                        }
+                    } else {
+                        fileId = null;
+                    }
+                } else  if (StringUtils.isNumeric(fileStr)) {
+                    int aux = Integer.valueOf(fileStr);
+                    if (sc.getFileIds().containsValue(aux)) {
+                        fileId = aux;
+                    } else {
+                        fileId = null;
+                    }
+                } else {
+                    fileId = sc.getFileIds().get(fileStr);
+                }
+            }
+        }
+        return fileId;
+    }
+
+    // TODO: Move to StudyConfigurationManager
+    private static Integer getSampleId(Object sampleObj, StudyConfiguration sc) {
+        final Integer sampleId;
+        if (sampleObj instanceof Number) {
+            int aux = ((Number) sampleObj).intValue();
+            if (sc.getSampleIds().containsValue(aux)) {
+                sampleId = aux;
+            } else {
+                sampleId = null;
+            }
+        } else {
+            String sampleStr = sampleObj.toString();
+            if (StringUtils.isNumeric(sampleStr)) {
+                sampleId = Integer.parseInt(sampleStr);
+            } else {
+                int idx = sampleStr.indexOf(':');
+                if (idx > 0) {
+                    String[] split = sampleStr.split(":", 2);
+                    if (split[0].equals(sc.getStudyName())
+                            || StringUtils.isNumeric(split[0]) && Integer.valueOf(split[0]).equals(sc.getStudyId())) {
+                        if (StringUtils.isNumeric(sampleStr)) {
+                            int aux = Integer.valueOf(sampleStr);
+                            if (sc.getSampleIds().containsValue(aux)) {
+                                sampleId = aux;
+                            } else {
+                                sampleId = null;
+                            }
+                        } else {
+                            sampleId = sc.getSampleIds().get(sampleStr);
+                        }
+                    } else {
+                        sampleId = null;
+                    }
+                } else if (StringUtils.isNumeric(sampleStr)) {
+                    int aux = Integer.valueOf(sampleStr);
+                    if (sc.getSampleIds().containsValue(aux)) {
+                        sampleId = aux;
+                    } else {
+                        sampleId = null;
+                    }
+                } else {
+                    sampleId = sc.getSampleIds().get(sampleStr);
+                }
+            }
+        }
+        return sampleId;
     }
 
     public static boolean isReturnedSamplesDefined(Query query, Set<VariantField> returnedFields) {
@@ -401,7 +605,7 @@ public class VariantQueryUtils {
         return getReturnedSamples(query, options, map.keySet(), map::get);
     }
 
-    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, Collection<Integer> studyIds,
+    private static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, Collection<Integer> studyIds,
                                                                  Function<Integer, StudyConfiguration> studyProvider) {
         return getReturnedSamples(query, options, studyIds, studyProvider, (sc, s) -> sc.getSampleIds().get(s),
                 StudyConfiguration::getStudyId);
@@ -483,7 +687,7 @@ public class VariantQueryUtils {
      * @param query Query with the QueryParams
      * @return List of samples to return.
      */
-    public static List<String> getReturnedSamplesList(Query query) {
+    private static List<String> getReturnedSamplesList(Query query) {
         List<String> samples;
         if (isValidParam(query, RETURNED_SAMPLES)) {
             String samplesString = query.getString(VariantQueryParam.RETURNED_SAMPLES.key());

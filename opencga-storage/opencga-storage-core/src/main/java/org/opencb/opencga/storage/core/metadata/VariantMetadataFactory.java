@@ -5,12 +5,13 @@ import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -36,14 +37,14 @@ public class VariantMetadataFactory {
     }
 
     public VariantMetadata makeVariantMetadata(Query query, QueryOptions queryOptions) throws StorageEngineException {
-        Map<Integer, List<Integer>> returnedSamples = VariantQueryUtils.getReturnedSamples(query, queryOptions, scm);
-        Map<Integer, List<Integer>> returnedFiles = new HashMap<>(returnedSamples.size());
-        List<StudyConfiguration> studyConfigurations = new ArrayList<>(returnedSamples.size());
-        Set<VariantField> fields = VariantField.getReturnedFields(queryOptions);
+        VariantQueryUtils.SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, queryOptions, scm);
+        Map<Integer, List<Integer>> returnedSamples = selectElements.getSamples();
+        Map<Integer, List<Integer>> returnedFiles = selectElements.getFiles();
 
-        for (Integer studyId : returnedSamples.keySet()) {
+        List<StudyConfiguration> studyConfigurations = new ArrayList<>(selectElements.getStudies().size());
+
+        for (Integer studyId : selectElements.getStudies()) {
             studyConfigurations.add(scm.getStudyConfiguration(studyId, QueryOptions.empty()).first());
-            returnedFiles.put(studyId, VariantQueryUtils.getReturnedFiles(query, queryOptions, fields, scm));
         }
 
         return makeVariantMetadata(studyConfigurations, returnedSamples, returnedFiles);

@@ -162,11 +162,10 @@ public class VariantSqlQueryParser {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
-
-            Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-
-            Map<Integer, List<Integer>> returnedSamples = VariantQueryUtils.getReturnedSamples(query, options, studyConfigurationManager);
-            Collection<Integer> studyIds = returnedSamples.keySet();
+            SelectVariantElements selectVariantElements = parseSelectElements(query, options, studyConfigurationManager);
+            Set<VariantField> returnedFields = selectVariantElements.getFields();
+            Map<Integer, List<Integer>> returnedSamples = selectVariantElements.getSamples();
+            Collection<Integer> studyIds = selectVariantElements.getStudies();
 
             sb.append(VariantColumn.CHROMOSOME).append(',')
                     .append(VariantColumn.POSITION).append(',')
@@ -201,6 +200,15 @@ public class VariantSqlQueryParser {
                     }
                 }
             }
+            if (returnedFields.contains(VariantField.STUDIES_FILES)) {
+                selectVariantElements.getFiles().forEach((studyId, fileIds) -> {
+                    for (Integer fileId : fileIds) {
+                        sb.append(",\"");
+                        VariantPhoenixHelper.buildFileColumnKey(studyId, fileId, sb);
+                        sb.append('"');
+                    }
+                });
+            }
             if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
                 returnedSamples.forEach((studyId, sampleIds) -> {
                     for (Integer sampleId : sampleIds) {
@@ -210,21 +218,6 @@ public class VariantSqlQueryParser {
                     }
                 });
             }
-            if (returnedFields.contains(VariantField.STUDIES_FILES)) {
-                Collection<Integer> returnedFiles = getReturnedFiles(query, options, returnedFields, studyConfigurationManager);
-                StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, studyConfigurationManager);
-                if (returnedFiles == null) {
-                    returnedFiles = defaultStudyConfiguration.getIndexedFiles();
-                }
-                //FIXME! Not all the files belong to the default study
-                for (Integer fileId : returnedFiles) {
-                    sb.append(",\"");
-                    VariantPhoenixHelper.buildFileColumnKey(defaultStudyConfiguration.getStudyId(), fileId, sb);
-                    sb.append('"');
-                }
-            }
-
-
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
             }
