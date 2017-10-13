@@ -27,9 +27,9 @@ import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 
 /**
@@ -332,14 +332,16 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     * ...
     * */
 
-    public void generateBashAutoComplete(String fileName, String bashFunctionName) throws IOException {
-
+    public void generateBashAutoComplete(String fileName, String bashFunctName, List<String> excludeParams) throws IOException {
         Map<String, JCommander> jCommands = jCommander.getCommands();
         StringBuilder mainCommands = new StringBuilder();
         StringBuilder subCommmands = new StringBuilder();
         StringBuilder subCommmandsOptions = new StringBuilder();
 
-        for (String command : jCommands.keySet()) {
+        // Create a HashSet to skip excluded parameters
+        Set<String> excludeParamsSet = new HashSet<>(excludeParams);
+
+        for (String command: jCommands.keySet()) {
             JCommander subCommand = jCommands.get(command);
             mainCommands.append(command).append(" ");
             subCommmands.append(command + "=" + "\"");
@@ -351,10 +353,10 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
                 subCommmandsOptions.append(sc.replace("-", "_") + "_" + "options=" + "\"");
                 JCommander subCommandOptions = subSubCommands.get(sc);
                 for (ParameterDescription param : subCommandOptions.getParameters()) {
-                    if ("-D".equals(param.getLongestName())) {
-                        continue; // -D excluded in autocomplete
+                    // Add parameter if it is not excluded
+                    if (!excludeParamsSet.contains(param.getLongestName())) {
+                        subCommmandsOptions.append(param.getLongestName()).append(' ');
                     }
-                    subCommmandsOptions.append(param.getLongestName()).append(' ');
                 }
                 subCommmandsOptions.replace(0, subCommmandsOptions.length(), subCommmandsOptions.toString().trim()).append("\"" + "\n");
             }
@@ -363,9 +365,8 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 
         // Commands(Commands, subCommands and subCommandOptions) are populated intro three strings until this point,
         // Now we write bash script commands and blend these strings into those as appropriate
-
         StringBuilder autoComplete = new StringBuilder();
-        autoComplete.append("_" + bashFunctionName + "() \n { \n local cur prev opts \n COMPREPLY=() \n cur=" +
+        autoComplete.append("_" + bashFunctName + "() \n { \n local cur prev opts \n COMPREPLY=() \n cur=" +
                 "$" + "{COMP_WORDS[COMP_CWORD]} \n prev=" + "$" +
                 "{COMP_WORDS[COMP_CWORD-1]} \n");
 
@@ -384,13 +385,13 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
                 "{COMP_WORDS[1]} in \n");
 
         int subCommandIndex = 0;
-        for (String command : mainCommands.toString().split(" ")) {
+        for (String command: mainCommands.toString().split(" ")) {
             autoComplete.append('\t').append(command).append(") \n");
             autoComplete.append("\t\t case " + "$" + "{COMP_WORDS[2]} in \n");
             String[] splittedSubCommands = subCommmands.toString().split("\n")[subCommandIndex]
                     .replace(command + "=" + "\"", "").replace("\"", "").split(" ");
 
-            for (String subCommand : splittedSubCommands) {
+            for (String subCommand: splittedSubCommands) {
                 autoComplete.append("\t\t").append(subCommand).append(") options=").append("\"").append("${").
                         append(command).append("_").append(subCommand.replace("-", "_")).append("_options}").
                         append("\"").append(" ;; \n");
@@ -401,12 +402,16 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         autoComplete.append("*) ;;  esac \n COMPREPLY=( $( compgen -W " + "\"" + "$" + "options" + "\"" + " -- ${cur}) )" +
                 " \n return 0 \n fi \n if [[ ${cur} == * ]] ; then \n COMPREPLY=( $(compgen -W " + "\"" + "$" +
                 "{commands}" + "\"" + " -- ${cur}) ) \n return 0 \n fi \n } \n");
-        autoComplete.append("\ncomplete -F _opencga opencga.sh \n");
+
+        autoComplete.append("\n");
+        autoComplete.append("complete -F _" + bashFunctName + " " + bashFunctName + ".sh").append('\n');
+        autoComplete.append("complete -F _" + bashFunctName + " ./bin/" + bashFunctName + ".sh").append('\n');
+        autoComplete.append("complete -F _" + bashFunctName + " /opt/" + bashFunctName + "/bin/" + bashFunctName + ".sh").append('\n');
 
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-            writer.write(autoComplete.toString());
-            writer.close();
+            PrintWriter pw = new PrintWriter(new FileOutputStream(fileName));
+            pw.write(autoComplete.toString());
+            pw.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
