@@ -212,6 +212,13 @@
                                 <maxMemorySize>4096m</maxMemorySize>
                             </jvmSettings>
                         </program>
+                        <program>
+                            <id>opencga-clicompletion.sh</id>
+                            <mainClass>org.opencb.opencga.app.cli.utils.CliCompletionMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
@@ -245,22 +252,18 @@
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
+
                                 <exec executable="mkdir">
                                     <arg value="-p"/>
+                                    <arg value="${build.dir}/bin/utils"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
-                                </exec>
-
-                                <exec executable="mvn">
-                                    <arg value="test"/>
-                                    <arg value="-Dtest=OpencgaCliCompletionTest"/>
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${app.dir}/bin"/>
-                                    <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
                                     <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/completion"/>
@@ -273,7 +276,24 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Coping configuration files</echo>
+                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-analysis.sh"/>
+                                    <arg value="${build.dir}/bin"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
+                                    <arg value="${build.dir}/bin/utils"/>
+                                </exec>
+
+                                <exec executable="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh">
+                                    <arg value="${build.dir}/completion"/>
+                                </exec>
+
+                                <echo>Copying configuration files</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-core/target/classes/log4j.properties"/>
@@ -282,21 +302,13 @@
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
 
-                                <echo>Coping configuration files</echo>
-                                <exec executable="cp">
-                                    <arg value="${project.basedir}/target/opencga"/>
-                                    <arg value="${project.basedir}/target/opencga-admin"/>
-                                    <arg value="${project.basedir}/target/opencga-analysis"/>
-                                    <arg value="${build.dir}/completion"/>
-                                </exec>
-
-                                <echo>Coping war file</echo>
+                                <echo>Copying war file</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-server/target/${opencga.war.name}.war"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Coping Acceptance testing files</echo>
+                                <echo>Copying Acceptance testing files</echo>
                                 <exec executable="mvn">
                                     <arg value="-f"/>
                                     <arg value="${project.basedir}/../opencga-test/pom.xml"/>
@@ -310,7 +322,7 @@
                                     <arg value="${project.basedir}/../opencga-test/fitnesse"/>
                                     <arg value="${build.dir}/test"/>
                                 </exec>
-				<exec executable="sed">
+                                <exec executable="sed">
                                     <arg value="-i"/>
                                     <arg value="s/target\/appassembler\/dependencies/dependencies/"/>
                                     <arg value="${build.dir}/test/fitnesse/FitNesseRoot/OpenCga/TestsSuits/SuiteSetUp/content.txt"/>
