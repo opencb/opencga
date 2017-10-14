@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-analysis</artifactId>
+            <artifactId>opencga-storage-core</artifactId>
         </dependency>
 
         <dependency>
