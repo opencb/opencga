@@ -67,41 +67,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
             <version>${jersey.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
-            <version>${opencga.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -110,7 +78,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
         <!--Uncomment if hadoop dependencies are provided-->
         <!--<dependency>-->
             <!--<groupId>org.apache.hadoop</groupId>-->
@@ -130,14 +97,6 @@
             <!--<version>${hbase.version}</version>-->
             <!--<scope>test</scope>-->
         <!--</dependency>-->
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-client</artifactId>
-            <version>${opencga.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

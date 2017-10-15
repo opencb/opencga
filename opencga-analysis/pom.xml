@@ -33,10 +33,6 @@
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
         <dependency>
@@ -68,24 +64,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <version>0.9.10</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-app</artifactId>
-            <version>${opencga.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>

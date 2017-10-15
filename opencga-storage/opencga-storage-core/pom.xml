@@ -33,15 +33,11 @@
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-core</artifactId>
+            <artifactId>opencga-catalog</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
             <artifactId>cellbase-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
         </dependency>
         <!-- cellbase-lib dependency required to enable direct annotation against the database using the adaptors -->
         <dependency>
@@ -63,10 +59,6 @@
                     <artifactId>spark-sql_2.11</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -109,14 +101,8 @@
             <version>2.23.0</version>
         </dependency>
         <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.10</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>${solr.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.solr</groupId>
@@ -129,15 +115,6 @@
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>${jackson.version}</version>
         </dependency>
@@ -147,11 +124,6 @@
             <version>${opencga.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-datastore-core</artifactId>
-            <version>${java-common-libs.version}</version>
         </dependency>
     </dependencies>
 
