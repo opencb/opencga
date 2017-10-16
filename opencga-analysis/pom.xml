@@ -60,6 +60,14 @@
                     <artifactId>avro-mapred</artifactId>
                     <groupId>org.apache.avro</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>com.sun.jersey</artifactId>
+                    <groupId>jersey-json</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>com.sun.jersey</artifactId>
+                    <groupId>jersey-server</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 

@@ -82,12 +82,12 @@
             <type>test-jar</type>
             <version>${opencga.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-analysis</artifactId>
-            <scope>test</scope>
-            <version>${opencga.version}</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.opencb.opencga</groupId>-->
+            <!--<artifactId>opencga-analysis</artifactId>-->
+            <!--<scope>test</scope>-->
+            <!--<version>${opencga.version}</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>

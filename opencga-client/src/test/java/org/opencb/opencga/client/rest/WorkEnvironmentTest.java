@@ -16,19 +16,14 @@
 
 package org.opencb.opencga.client.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.rules.ExternalResource;
-import org.opencb.opencga.analysis.old.AnalysisExecutionException;
-import org.opencb.opencga.analysis.demo.AnalysisDemo;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -124,16 +119,16 @@ public class WorkEnvironmentTest extends ExternalResource {
         }
     }
 
-    protected void loadTestPedigreeFile() throws CatalogException, StorageEngineException {
-        AnalysisDemo.insertPedigreeFile(catalogManager, 6L, opencgaHome.resolve("examples/20130606_g1k.ped"),
-                openCGAClient.getSessionId());
-    }
+//    protected void loadTestPedigreeFile() throws CatalogException, StorageEngineException {
+//        AnalysisDemo.insertPedigreeFile(catalogManager, 6L, opencgaHome.resolve("examples/20130606_g1k.ped"),
+//                openCGAClient.getSessionId());
+//    }
 
-    protected void loadTestVariantFile()
-            throws StorageEngineException, AnalysisExecutionException, CatalogException, JsonProcessingException {
-        AnalysisDemo.insertVariantFile(catalogManager, 6L,
-                opencgaHome.resolve("examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                openCGAClient.getSessionId());
-    }
+//    protected void loadTestVariantFile()
+//            throws StorageEngineException, AnalysisExecutionException, CatalogException, JsonProcessingException {
+//        AnalysisDemo.insertVariantFile(catalogManager, 6L,
+//                opencgaHome.resolve("examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+//                openCGAClient.getSessionId());
+//    }
 
 }
