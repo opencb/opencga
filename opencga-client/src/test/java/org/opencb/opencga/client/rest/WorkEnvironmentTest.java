@@ -17,7 +17,7 @@
 package org.opencb.opencga.client.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.analysis.demo.AnalysisDemo;
