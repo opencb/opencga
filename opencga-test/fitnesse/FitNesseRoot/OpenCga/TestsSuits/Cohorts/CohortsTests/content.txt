@@ -93,7 +93,7 @@
 
 !3 Update ACL For A Member
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "add": "SHARE" }|
+| setBody | {  "add": "DELETE" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/$cohortId/acl/$userA/update?sid=$sessionId&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2'|
 

@@ -120,22 +120,22 @@
 
 !3 Update (SET) ACL Individual And Propagate (True)
 !| Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "SHARE", "action": "SET", "individual" : "$individualId" , "propagate" : "true"} |
+| setBody | {  "permissions": "DELETE", "action": "SET", "individual" : "$individualId" , "propagate" : "true"} |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 
 !3 Get Sample 1,2 ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions =='SHARE'|
-| GET | /v1/samples/$sampleId2/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions =='SHARE'|
+| GET | /v1/samples/$sampleId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions =='DELETE'|
+| GET | /v1/samples/$sampleId2/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions =='DELETE'|
 
 !3 Get Member ACL (Individual)
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'SHARE' |
+| GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'DELETE' |
 
 !3 Get Member ACL (Sample)
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'SHARE' |
+| GET | /v1/samples/$sampleId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'DELETE' |
 
 !3 Update (ADD) ACL Individual And Propagate (True)
 !| Table: Rest Fixture | $baseURL |
@@ -158,7 +158,7 @@
 
 !3 Update (REMOVE) ACL Individual And Propagate (False)
 !| Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "SHARE", "action": "REMOVE", "individual" : "$individualId" , "propagate" : "false"} |
+| setBody | {  "permissions": "DELETE", "action": "REMOVE", "individual" : "$individualId" , "propagate" : "false"} |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 
@@ -172,7 +172,7 @@
 
 !3 Update (REMOVE) ACL Individual And Propagate (True)
 !| Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "SHARE,VIEW", "action": "REMOVE", "individual" : "$individualId" , "propagate" : "true"} |
+| setBody | {  "permissions": "DELETE,VIEW", "action": "REMOVE", "individual" : "$individualId" , "propagate" : "true"} |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 
@@ -186,7 +186,7 @@
 
 !3 Update (ADD) ACL Individual And Propagate (True) While Not Connected to Any Sample
 !| Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "SHARE", "action": "ADD", "individual" : "$individualId2" , "propagate" : "true"} |
+| setBody | {  "permissions": "DELETE", "action": "ADD", "individual" : "$individualId2" , "propagate" : "true"} |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' |
 

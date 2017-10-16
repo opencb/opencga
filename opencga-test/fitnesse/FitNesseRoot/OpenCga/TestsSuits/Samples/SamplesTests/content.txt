@@ -112,7 +112,7 @@
 
 !3 Update Sample ACL (set)
 !|Table: Rest Fixture | $baseURL |
-|setBody|{"set": "SHARE"}|
+|setBody|{"set": "DELETE"}|
 |setHeader|Content-Type:application/json|
 |POST| /v1/samples/$sampleId/acl/$userA/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '1'|
 
@@ -135,7 +135,7 @@
 
 !3 Update (SET) ACL Individual And Propagate to Sample 2
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "SHARE", "action": "SET", "individual" : "$individualId" , "propagate" : "true"}|
+| setBody | {  "permissions": "DELETE", "action": "SET", "individual" : "$individualId" , "propagate" : "true"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 

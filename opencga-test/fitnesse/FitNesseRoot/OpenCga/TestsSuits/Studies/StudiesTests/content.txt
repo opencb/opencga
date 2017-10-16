@@ -90,7 +90,8 @@
 
 !3 Get Groups From A Study
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '3.0'|
+| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '4.0'|
+| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|  Content-Type: application/json ||
 
 #@groupId in above line is exception to handle groups
 
