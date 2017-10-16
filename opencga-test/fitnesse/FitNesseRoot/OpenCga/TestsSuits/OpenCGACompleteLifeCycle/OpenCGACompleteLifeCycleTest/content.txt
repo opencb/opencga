@@ -34,12 +34,6 @@
 | setHeader|Content-Type:application/json|
 | POST |/v1/studies/$studyAId/groups/admins/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
 
-#!3 Update (Create) ACL For Admin
-#!|Table: Rest Fixture | $baseURL |
-#| setBody | {  "action": "SET",  "study": "$studyAId",  "template": "admin"}|
-#| setHeader|Content-Type:application/json|
-#| POST | /v1/studies/acl/$admin/update?sid=$sessionId|200|  Content-Type: application/json ||
-
 !3 Update (Create) ACL For Analyst With Admin
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "action": "SET",  "study": "$studyAId",  "template": "analyst"}|

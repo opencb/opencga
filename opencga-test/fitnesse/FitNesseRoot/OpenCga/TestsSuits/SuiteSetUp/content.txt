@@ -71,11 +71,11 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
 
-!3 Update (Create) ACL for User (userA)
-!|Table: Rest Fixture | $baseURL  |
-| setBody | {  "action": "SET",  "study": "$study", "template": "admin"}|
+!3 Add User A to Admin group
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"users" : "$userA", "action" : "ADD" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/acl/$userA/update?sid=$sessionId |200|  Content-Type: application/json ||
+| POST |/v1/studies/$study/groups/admins/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
 
 
 !define userProjectStudy {$user@$project:$study}
