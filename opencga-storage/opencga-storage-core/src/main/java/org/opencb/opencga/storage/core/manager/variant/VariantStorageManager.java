@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.manager.variant;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;

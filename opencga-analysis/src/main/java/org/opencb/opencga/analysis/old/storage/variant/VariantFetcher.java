@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.old.storage.variant;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;

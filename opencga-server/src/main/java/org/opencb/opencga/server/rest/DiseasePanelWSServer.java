@@ -17,13 +17,16 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.DiseasePanel;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 
@@ -86,7 +89,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
 //        }
-        return createErrorResponse(new NotImplementedException());
+        return createErrorResponse(new NotImplementedException(""));
     }
 
 }
