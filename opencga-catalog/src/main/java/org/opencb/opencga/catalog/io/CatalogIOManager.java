@@ -398,6 +398,11 @@ public abstract class CatalogIOManager {
         return getFileObject(fileUri, start, limit);
     }
 
+    public DataInputStream getFileObject(URI fileUri)
+            throws CatalogIOException {
+        return getFileObject(fileUri, -1, -1);
+    }
+
     public abstract DataInputStream getFileObject(URI fileUri, int start, int limit)
             throws CatalogIOException;
 

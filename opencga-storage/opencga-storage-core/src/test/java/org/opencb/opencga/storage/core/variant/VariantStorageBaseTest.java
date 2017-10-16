@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant;
 
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.formats.io.FileFormatException;

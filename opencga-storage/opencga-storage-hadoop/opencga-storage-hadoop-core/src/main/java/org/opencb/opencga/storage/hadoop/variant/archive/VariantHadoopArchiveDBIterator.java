@@ -22,8 +22,7 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -61,21 +60,12 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         this.iterator = this.resultScanner.iterator();
         this.columnFamily = archiveHelper.getColumnFamily();
         this.fileIdBytes = archiveHelper.getColumn();
-        VariantSource variantSource = archiveHelper.getMeta().getVariantSource();
-        converter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
-                variantSource.getStudyId(), variantSource.getFileId());
-        setLimit(options.getLong("limit"));
+        VariantFileMetadata fileMetadata = archiveHelper.getFileMetadata();
+        converter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(fileMetadata.getSamplesPosition()),
+                String.valueOf(archiveHelper.getStudyId()), fileMetadata.getId());
+        setLimit(options.getLong(QueryOptions.LIMIT));
     }
 
-    public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, byte[] columnFamily, byte[] fileIdBytes, VcfMeta meta) {
-        this.resultScanner = resultScanner;
-        this.iterator = this.resultScanner.iterator();
-        this.columnFamily = columnFamily;
-        this.fileIdBytes = fileIdBytes;
-        VariantSource variantSource = meta.getVariantSource();
-        converter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
-                variantSource.getStudyId(), variantSource.getFileId());
-    }
 
     @Override
     public boolean hasNext() {

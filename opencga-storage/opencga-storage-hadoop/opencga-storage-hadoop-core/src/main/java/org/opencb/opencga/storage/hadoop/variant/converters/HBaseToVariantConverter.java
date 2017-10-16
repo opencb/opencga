@@ -27,16 +27,16 @@ import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.biodata.tools.variant.converters.Converter;
+import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -273,7 +273,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
             // Load Secondary Index
             List<AlternateCoordinate> secAltArr = getAlternateCoordinates(variant, studyId,
-                    studyConfiguration.getVariantMetadata(), format, rowsMap, fullSamplesData);
+                    studyConfiguration.getVariantHeader(), format, rowsMap, fullSamplesData);
 
             Integer nSamples = returnedSamplesPosition.size();
 
@@ -462,7 +462,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return defaultGenotype;
     }
 
-    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, VariantStudyMetadata variantMetadata,
+    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, VariantFileHeader variantMetadata,
                                                               List<String> format, Map<Integer, VariantTableStudyRow> rowsMap,
                                                               Map<Integer, Map<Integer, List<String>>> fullSamplesData) {
         List<AlternateCoordinate> secAltArr;

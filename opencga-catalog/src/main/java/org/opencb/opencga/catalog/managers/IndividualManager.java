@@ -1006,13 +1006,18 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private List<Long> getSamplesFromIndividuals(MyResourceIds resourceIds) throws CatalogDBException {
         // Look for all the samples belonging to the individual
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
+                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                .append(IndividualDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
 
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query,
-                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query,
+                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()));
 
-        return sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+        List<Long> sampleIds = new ArrayList<>();
+        for (Individual individual : individualQueryResult.getResult()) {
+            sampleIds.addAll(individual.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        }
+
+        return sampleIds;
     }
 
     // Checks if father or mother are in query and transforms them into father.id and mother.id respectively

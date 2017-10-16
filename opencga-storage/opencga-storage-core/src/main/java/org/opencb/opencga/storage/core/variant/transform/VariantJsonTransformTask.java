@@ -20,8 +20,8 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.opencb.biodata.formats.variant.VariantFactory;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,14 +32,15 @@ import java.util.List;
  */
 public class VariantJsonTransformTask extends VariantTransformTask<String> {
 
-    public VariantJsonTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile,
-                                    VariantGlobalStatsCalculator variantStatsTask, boolean includesrc, boolean generateReferenceBlocks) {
-        super(factory, source, outputFileJsonFile, variantStatsTask, includesrc, generateReferenceBlocks);
+    public VariantJsonTransformTask(VariantFactory factory, String studyId, VariantFileMetadata fileMetadata, Path outputFileJsonFile,
+                                    VariantSetStatsCalculator variantStatsTask, boolean includesrc, boolean generateReferenceBlocks) {
+        super(factory, studyId, fileMetadata, outputFileJsonFile, variantStatsTask, includesrc, generateReferenceBlocks);
     }
 
-    public VariantJsonTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source, Path outputFileJsonFile,
-                                    VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc, boolean generateReferenceBlocks) {
-        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
+    public VariantJsonTransformTask(VCFHeader header, VCFHeaderVersion version, String studyId,
+                                    VariantFileMetadata fileMetadata, Path outputFileJsonFile,
+                                    VariantSetStatsCalculator variantStatsTask, boolean includeSrc, boolean generateReferenceBlocks) {
+        super(header, version, studyId, fileMetadata, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
     }
 
     @Override

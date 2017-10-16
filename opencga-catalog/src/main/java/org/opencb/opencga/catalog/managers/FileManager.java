@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -65,7 +65,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
+import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -308,9 +308,9 @@ public class FileManager extends ResourceManager<File> {
             // Update variant stats
             Path statsFile = Paths.get(json.getUri().getRawPath());
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
-                VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
-                VariantGlobalStats stats = variantSource.getStats();
-                params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
+                VariantFileMetadata fileMetadata = new ObjectMapper().readValue(is, VariantFileMetadata.class);
+                VariantSetStats stats = fileMetadata.getStats();
+                params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_FILE_STATS, stats));
                 update(vcf.getId(), params, new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);

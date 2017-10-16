@@ -35,16 +35,15 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
-import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceCombiner;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceReducer;
@@ -95,11 +94,10 @@ public class ArchiveDriver extends Configured implements Tool {
         }
 
         // add metadata config as string
-        VcfMeta meta = readMetaData(conf, inputMetaFile);
+        VariantFileMetadata meta = readMetaData(conf, inputMetaFile);
         // StudyID and FileID may not be correct. Use the given through the CLI and overwrite the values from meta.
-        meta.getVariantSource().setStudyId(Integer.toString(studyId));
-        meta.getVariantSource().setFileId(Integer.toString(fileId));
-        storeMetaData(meta, conf);
+        meta.setId(String.valueOf(fileId));
+        storeMetaData(String.valueOf(studyId), meta, conf);
 
         /* JOB setup */
         final Job job = Job.getInstance(conf, "opencga: Load file [" + fileId + "] to ArchiveTable '" + tableName + "'");
@@ -137,19 +135,19 @@ public class ArchiveDriver extends Configured implements Tool {
         boolean succeed = job.waitForCompletion(true);
         Runtime.getRuntime().removeShutdownHook(hook);
 
-        try (HadoopVariantSourceDBAdaptor manager = new HadoopVariantSourceDBAdaptor(conf)) {
+        try (HadoopVariantFileMetadataDBAdaptor manager = new HadoopVariantFileMetadataDBAdaptor(conf)) {
             manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
         }
         return succeed ? 0 : 1;
     }
 
-    private void storeMetaData(VcfMeta meta, Configuration conf) throws IOException {
-        try (HadoopVariantSourceDBAdaptor manager = new HadoopVariantSourceDBAdaptor(conf)) {
-            manager.updateVcfMetaData(meta);
+    private void storeMetaData(String studyId, VariantFileMetadata meta, Configuration conf) throws IOException, StorageEngineException {
+        try (HadoopVariantFileMetadataDBAdaptor manager = new HadoopVariantFileMetadataDBAdaptor(conf)) {
+            manager.updateVariantFileMetadata(studyId, meta);
         }
     }
 
-    private VcfMeta readMetaData(Configuration conf, URI inputMetaFile) throws IOException {
+    private VariantFileMetadata readMetaData(Configuration conf, URI inputMetaFile) throws IOException {
         Path from = new Path(inputMetaFile);
         FileSystem fs = FileSystem.get(conf);
         DatumReader<VariantFileMetadata> userDatumReader = new SpecificDatumReader<>(VariantFileMetadata.class);
@@ -159,7 +157,7 @@ public class ArchiveDriver extends Configured implements Tool {
             objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
 
             try (InputStream ids = inputMetaFile.toString().endsWith("json.gz") ? new GZIPInputStream(fs.open(from)) : fs.open(from)) {
-                variantFileMetadata = objectMapper.readValue(ids, VariantSource.class).getImpl();
+                variantFileMetadata = objectMapper.readValue(ids, VariantFileMetadata.class);
             }
         } else {
             try (FSDataInputStream ids = fs.open(from);
@@ -174,7 +172,7 @@ public class ArchiveDriver extends Configured implements Tool {
                 }
             }
         }
-        return new VcfMeta(new VariantSource(variantFileMetadata));
+        return variantFileMetadata;
     }
 
     public static String buildCommandLineArgs(URI input, URI inputMeta, String server, String outputTable,

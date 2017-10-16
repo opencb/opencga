@@ -20,7 +20,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.tools.variant.converters.Converter;
+import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;

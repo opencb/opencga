@@ -16,19 +16,18 @@
 
 package org.opencb.opencga.storage.core.variant.io;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ExportMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
@@ -41,7 +40,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
@@ -59,12 +57,14 @@ public class VariantExporter {
     public static final String METADATA_FILE_EXTENSION = ".meta.json.gz";
     private final VariantStorageEngine engine;
     private final VariantWriterFactory variantWriterFactory;
+    private final VariantMetadataFactory metadataFactory;
 
     private final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
 
-    public VariantExporter(VariantStorageEngine engine) throws StorageEngineException {
+    public VariantExporter(VariantStorageEngine engine, VariantMetadataFactory metadataFactory) throws StorageEngineException {
         this.engine = engine;
         variantWriterFactory = new VariantWriterFactory(engine.getDBAdaptor());
+        this.metadataFactory =metadataFactory;
     }
 
     /**
@@ -84,14 +84,14 @@ public class VariantExporter {
             outputFile = outputFileUri.getPath();
         }
         outputFile = VariantWriterFactory.checkOutput(outputFile, outputFormat);
-        List<Integer> studyIds = engine.getDBAdaptor().getReturnedStudies(query, QueryOptions.empty());
 
         try (OutputStream os = VariantWriterFactory.getOutputStream(outputFile, outputFormat)) {
             boolean logProgress = !VariantWriterFactory.isStandardOutput(outputFile);
             exportData(os, outputFormat, query, queryOptions, logProgress);
         }
-        if (!VariantWriterFactory.isStandardOutput(outputFile)) {
-            exportMetaData(query, queryOptions, studyIds, outputFile + METADATA_FILE_EXTENSION);
+        if (metadataFactory != null && !VariantWriterFactory.isStandardOutput(outputFile)) {
+            VariantMetadata metadata = metadataFactory.makeVariantMetadata(query, queryOptions);
+            writeMetadata(metadata, outputFile + METADATA_FILE_EXTENSION);
         }
     }
 
@@ -111,8 +111,6 @@ public class VariantExporter {
         // Task<Variant, Variant>
         ParallelTaskRunner.TaskWithException<Variant, Variant, Exception> progressTask;
         if (logProgress) {
-            progressTask = batch -> batch;
-        } else {
             final Query finalQuery = query;
             final QueryOptions finalQueryOptions = queryOptions;
             ProgressLogger progressLogger = new ProgressLogger("Export variants", () -> {
@@ -126,6 +124,8 @@ public class VariantExporter {
                 progressLogger.increment(batch.size(), () -> "up to position " + batch.get(batch.size() - 1).toString());
                 return batch;
             };
+        } else {
+            progressTask = batch -> batch;
         }
 
         // DataWriter
@@ -145,43 +145,11 @@ public class VariantExporter {
 
     }
 
-    protected void exportMetaData(Query query, QueryOptions queryOptions, List studies, String output)
-            throws IOException, StorageEngineException {
-        StudyConfigurationManager scm = engine.getStudyConfigurationManager();
-
-        Map<Integer, List<Integer>> returnedSamples = VariantQueryUtils.getReturnedSamples(query, queryOptions, scm);
-        List<StudyConfiguration> studyConfigurations = new ArrayList<>(returnedSamples.size());
-        returnedSamples.forEach((studyId, samplesList) -> {
-            StudyConfiguration sc = scm.getStudyConfiguration(studyId, QueryOptions.empty()).first();
-            List<Integer> samplesToRemove = new ArrayList<>();
-            for (Integer sampleId : sc.getSampleIds().values()) {
-                if (!samplesList.contains(sampleId)) {
-                    samplesToRemove.add(sampleId);
-                }
-            }
-            for (Integer sampleToRemove : samplesToRemove) {
-                sc.getSampleIds().inverse().remove(sampleToRemove);
-                for (LinkedHashSet<Integer> samplesInFile : sc.getSamplesInFiles().values()) {
-                    samplesInFile.remove(sampleToRemove);
-                }
-                sc.getCohorts().values().forEach(samplesInCohort -> samplesInCohort.remove(sampleToRemove));
-            }
-            sc.setBatches(Collections.emptyList());
-
-            studyConfigurations.add(sc);
-        });
-
-        ExportMetadata exportMetadata = new ExportMetadata(studyConfigurations, query, queryOptions);
-
-        writeMetadata(exportMetadata, output);
-
-    }
-
-    protected void writeMetadata(ExportMetadata exportMetadata, String output) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
+    protected void writeMetadata(VariantMetadata metadata, String output) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         File file = Paths.get(output).toFile();
         try (OutputStream os = new GZIPOutputStream(new FileOutputStream(file))) {
-            objectMapper.writeValue(os, exportMetadata);
+            objectMapper.writeValue(os, metadata);
         }
     }
 

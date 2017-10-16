@@ -293,6 +293,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
             }
         }
+        addIndividualInformation(sampleQueryResult, studyId, options, sessionId);
 
         return sampleQueryResult;
     }
@@ -323,7 +324,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
-//        addIndividualInformation(queryResult, sessionId);
+        addIndividualInformation(queryResult, studyId, options, sessionId);
         return queryResult;
     }
 
