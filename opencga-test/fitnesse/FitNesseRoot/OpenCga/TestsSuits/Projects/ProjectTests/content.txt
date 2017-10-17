@@ -51,10 +51,16 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/$lProjectId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].description == 'update'|
 
+!3 Get Project Release (Suite Set UP)
+!|Table: Rest Fixture | $baseURL |
+| setHeader|Content-Type:application/json|
+| GET | /v1/projects/$projectId/info?sid=$sessionId |200|  Content-Type: application/json ||
+| let | releaseNumber | js | response.jsonbody.response[0].result[0].currentRelease||
+
 !3 Increment Project Release (Suite Set UP)
 !|Table: Rest Fixture | $baseURL |
 | setHeader|Content-Type:application/json|
-| POST | /v1/projects/$projectId/increlease?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0] == '2'|
+| POST | /v1/projects/$projectId/increlease?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0] > "$releaseNumber"|
 
 !3 (Negative) Increment Empty Project Release
 !|Table: Rest Fixture | $baseURL |

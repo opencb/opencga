@@ -38,7 +38,7 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "action": "SET",  "study": "$studyAId",  "template": "analyst"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/acl/$analyst/update?sid=$adminSessionId|200|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$analyst/update?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 (Negative) Create ACL For ROU Using Analyst
 !|Table: Rest Fixture | $baseURL |
@@ -46,11 +46,29 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/acl/$ROU/update?sid=$analystSessionId|403|  Content-Type: application/json ||
 
+!3 Remove Admin From Admin Group 
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"users" : "$admin", "action" : "REMOVE" }|
+| setHeader|Content-Type:application/json|
+| POST |/v1/studies/$studyAId/groups/admins/update?sid=$sessionId|200|  Content-Type: application/json ||
+
+!3 (Negative) Create ACL For ROU
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "action": "SET",  "study": "$studyAId",  "template": "view_only"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/acl/$ROU/update?sid=$adminSessionId||  Content-Type: application/json |jsonbody.error == "Only owners or administrative users are allowed to assign permissions"|
+
+!3 Update Admin Group 
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"users" : "$admin", "action" : "ADD" }|
+| setHeader|Content-Type:application/json|
+| POST |/v1/studies/$studyAId/groups/admins/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
+
 !3 Create ACL For ROU
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "action": "SET",  "study": "$studyAId",  "template": "view_only"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/acl/$ROU/update?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$ROU/update?sid=$adminSessionId|200|  Content-Type: application/json ||
 
 !3 (Negative) Remove ACL For ROU Using Analyst
 !|Table: Rest Fixture | $baseURL |

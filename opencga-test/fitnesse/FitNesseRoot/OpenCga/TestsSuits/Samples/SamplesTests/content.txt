@@ -16,6 +16,23 @@
 | POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 |let|sampleId|js|response.jsonbody.response[0].result[0].id||
 
+!3 Create Sample
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "someSample" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+
+!3 Get Project Release 
+!|Table: Rest Fixture | $baseURL |
+| setHeader|Content-Type:application/json|
+| GET | /v1/projects/$projectId/info?sid=$sessionId |200|  Content-Type: application/json ||
+| let | releaseNumber | js | response.jsonbody.response[0].result[0].currentRelease||
+
+!3 Increment Project Release 
+!|Table: Rest Fixture | $baseURL |
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/$projectId/increlease?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0] > "$releaseNumber"|
+
 !3 Create Second Sample Including Individual And Annotation (Deprecated)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sName2", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSet": "$gVariableSetId",  "annotations": {"var_int": "10"}}]}|
@@ -226,6 +243,33 @@
 !3 Search Sample With Count
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/search?sid=$sessionId&study=$study&count=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].numTotalResults > '0'|
+
+
+#       -------------------- 
+#      | Release1 |Release2 | 
+#	   |--------------------|
+#      |  Sa1,Sb  |         |Snapshot1
+#      |--------------------|
+#      | Sa2,3    |Sc1      |Snapshot2
+#      |          |         | 
+#       --------------------     
+
+
+!3 Get Snap Shot 1 
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&snapshot=1 | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id =='$sampleId' && jsonbody.response[0].result.length =='2'|
+
+!3 Get Snap Shot 2 
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&snapshot=2 | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length =='3'|
+
+!3 Get Release 1 
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&release=1 | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length =='2'|
+
+!3 Get Release 2 
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&release=2 | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id  =='$sampleId2' && jsonbody.response[0].result.length == '1'  && jsonbody.response[0].result[0].version =='1'|
 
 !3 Delete Sample
 !|Table: Rest Fixture | $baseURL |
