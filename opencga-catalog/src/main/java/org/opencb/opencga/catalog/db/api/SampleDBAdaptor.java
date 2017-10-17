@@ -42,6 +42,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         DESCRIPTION("description", TEXT, ""),
         TYPE("type", TEXT, ""),
         SOMATIC("somatic", BOOLEAN, ""),
+        STATS("stats", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

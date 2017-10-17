@@ -182,17 +182,17 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         fileManager.updateAcl(Long.toString(s1), Long.toString(data_d1_d2_d3_d4_txt), externalUser, new File.FileAclParams
                 (ALL_FILE_PERMISSIONS, AclParams.Action.SET, null), ownerSessionId);
 
-        smp1 = catalogManager.getSampleManager().create(Long.toString(s1), "smp1", null, null, null, false, null, null, null,
+        smp1 = catalogManager.getSampleManager().create(Long.toString(s1), "smp1", null, null, null, false, null, new HashMap<>(), null, null,
                 ownerSessionId).first();
-        smp2 = catalogManager.getSampleManager().create(Long.toString(s1), "smp2", null, null, null, false, null, null, null,
+        smp2 = catalogManager.getSampleManager().create(Long.toString(s1), "smp2", null, null, null, false, null, new HashMap<>(), null, null,
                 ownerSessionId).first();
-        smp3 = catalogManager.getSampleManager().create(Long.toString(s1), "smp3", null, null, null, false, null, null, null,
+        smp3 = catalogManager.getSampleManager().create(Long.toString(s1), "smp3", null, null, null, false, null, new HashMap<>(), null, null,
                 ownerSessionId).first();
-        smp4 = catalogManager.getSampleManager().create(Long.toString(s1), "smp4", null, null, null, false, null, null, null,
+        smp4 = catalogManager.getSampleManager().create(Long.toString(s1), "smp4", null, null, null, false, null, new HashMap<>(), null, null,
                 ownerSessionId).first();
-        smp5 = catalogManager.getSampleManager().create(Long.toString(s1), "smp5", null, null, null, false, null, null, null,
+        smp5 = catalogManager.getSampleManager().create(Long.toString(s1), "smp5", null, null, null, false, null, new HashMap<>(), null, null,
                 ownerSessionId).first();
-        smp6 = catalogManager.getSampleManager().create(Long.toString(s1), "smp6", null, null, null, false, null, null, null,
+        smp6 = catalogManager.getSampleManager().create(Long.toString(s1), "smp6", null, null, null, false, null, new HashMap<>(), null, null,
                 ownerSessionId).first();
         catalogManager.getCohortManager().create(s1, "all", Study.Type.COLLECTION, "", Arrays.asList(smp1, smp2, smp3), null, null,
                 ownerSessionId);

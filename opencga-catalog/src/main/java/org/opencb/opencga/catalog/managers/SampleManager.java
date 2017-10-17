@@ -83,6 +83,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
         sample.setAnnotationSets(validateAnnotationSets(sample.getAnnotationSets()));
+        sample.setStats(ParamUtils.defaultObject(sample.getStats(), Collections.emptyMap()));
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
         sample.setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
@@ -171,10 +172,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Deprecated
     public QueryResult<Sample> create(String studyStr, String name, String source, String description, String type, boolean somatic,
-                                      Individual individual, Map<String, Object> attributes, QueryOptions options, String sessionId)
+                                      Individual individual, Map<String, Object> stats, Map<String, Object> attributes,
+                                      QueryOptions options, String sessionId)
             throws CatalogException {
         Sample sample = new Sample(-1, name, source, individual, description, type, somatic, -1, 1, Collections.emptyList(),
-                Collections.emptyList(), attributes);
+                Collections.emptyList(), stats, attributes);
         return create(studyStr, sample, options, sessionId);
     }
 
@@ -462,8 +464,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 case TYPE:
                 case SOMATIC:
                 case DESCRIPTION:
-                case ATTRIBUTES:
                 case ONTOLOGY_TERMS:
+                case STATS:
+                case ATTRIBUTES:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);

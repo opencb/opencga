@@ -237,7 +237,8 @@ public class AnalysisMainTest {
                 / 2 + 1, allSamples.getResult().size()), null, null, sessionId).first().getId();
         Long c3 = catalogManager.getCohortManager().create(studyId, "C3", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(0, 1), null,
                 null, sessionId).first().getId();
-        Sample sample = catalogManager.getSampleManager().create(Long.toString(studyId), "Sample", "", "", null, false, null, null, null,
+        Sample sample = catalogManager.getSampleManager().create(Long.toString(studyId), "Sample", "", "", null, false, null, new
+                        HashMap<>(), null, null,
                 sessionId).first();
         Long c4 = catalogManager.getCohortManager().create(studyId, "C4", Study.Type.CONTROL_SET, "", Collections.singletonList(sample),
                 null, null, sessionId).first().getId();

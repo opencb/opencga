@@ -41,6 +41,7 @@ public class Sample extends Annotable {
     private boolean somatic;
     private List<OntologyTerm> ontologyTerms;
 
+    private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
 
@@ -49,11 +50,12 @@ public class Sample extends Annotable {
 
     public Sample(long id, String name, String source, Individual individual, String description, int release) {
         this(id, name, source, individual, description, "", false, release, 1, new LinkedList<>(),
-                new ArrayList<>(), new HashMap<>());
+                new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }
 
     public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic, int release,
-                  int version, List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList, Map<String, Object> attributes) {
+                  int version, List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList, Map<String, Object> stats,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
@@ -67,6 +69,7 @@ public class Sample extends Annotable {
         this.release = release;
         this.ontologyTerms = ontologyTermList;
         this.annotationSets = annotationSets;
+        this.stats = stats;
         this.attributes = attributes;
     }
 
@@ -85,6 +88,7 @@ public class Sample extends Annotable {
         sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", ontologyTerms=").append(ontologyTerms);
+        sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
@@ -225,6 +229,15 @@ public class Sample extends Annotable {
 
     public Sample setOntologyTerms(List<OntologyTerm> ontologyTerms) {
         this.ontologyTerms = ontologyTerms;
+        return this;
+    }
+
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public Sample setStats(Map<String, Object> stats) {
+        this.stats = stats;
         return this;
     }
 

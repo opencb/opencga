@@ -224,7 +224,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         final String[] acceptedIntParams = {QueryParams.ID.key()};
         filterLongParams(parameters, sampleParameters, acceptedIntParams);
 
-        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
+        final String[] acceptedMapParams = {QueryParams.STATS.key(), QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
 
         final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};

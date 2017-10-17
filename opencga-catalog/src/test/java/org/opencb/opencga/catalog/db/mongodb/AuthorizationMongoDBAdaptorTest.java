@@ -76,7 +76,7 @@ public class AuthorizationMongoDBAdaptorTest {
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample(0, "s1", "", new Individual(), "", "", false, 1, 1,
-                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), QueryOptions.empty()).first();
+                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap(), Collections.emptyMap()), QueryOptions.empty()).first();
         acl_s1_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
         acl_s1_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
                 SampleAclEntry.SamplePermissions.VIEW.name(),
