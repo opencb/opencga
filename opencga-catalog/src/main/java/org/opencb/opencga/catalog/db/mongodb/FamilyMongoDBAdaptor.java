@@ -168,17 +168,24 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             updateToLastIndividualVersions(query, parameters);
         }
 
-        Document individualParameters = parseAndValidateUpdateParams(parameters, query);
+        Document familyParameters = parseAndValidateUpdateParams(parameters, query);
+        if (familyParameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.put(Constants.ALL_VERSIONS, true);
+            QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
+                    new Document("$set", familyParameters), new QueryOptions("multi", true));
+
+            return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            if (!individualParameters.isEmpty()) {
+            if (!familyParameters.isEmpty()) {
                 QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
-                        new Document("$set", individualParameters), new QueryOptions("multi", true));
+                        new Document("$set", familyParameters), new QueryOptions("multi", true));
 
                 return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {
-            return updateAndCreateNewVersion(query, individualParameters, queryOptions);
+            return updateAndCreateNewVersion(query, familyParameters, queryOptions);
         }
 
         return endQuery("Update family", startTime, new QueryResult<>());

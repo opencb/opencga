@@ -320,6 +320,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         }
 
         Document individualParameters = parseAndValidateUpdateParams(parameters, query);
+        if (individualParameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.put(Constants.ALL_VERSIONS, true);
+            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
+                    new Document("$set", individualParameters), new QueryOptions("multi", true));
+
+            return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
+
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             if (!individualParameters.isEmpty()) {

@@ -142,6 +142,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         long startTime = startQuery();
 
         Document sampleParameters = parseAndValidateUpdateParams(parameters, query);
+        if (sampleParameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.put(Constants.ALL_VERSIONS, true);
+            QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
+                    new Document("$set", sampleParameters), new QueryOptions("multi", true));
+
+            return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             if (!sampleParameters.isEmpty()) {
