@@ -920,16 +920,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             // Obtain the individual ids
             MyResourceIds ids = catalogManager.getIndividualManager().getIds(sampleAclParams.getIndividual(), studyStr, sessionId);
 
-            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ids.getResourceIds());
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
-            QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(ids.getStudyId(), query, options, sessionId);
-
-            Set<Long> sampleSet = sampleQueryResult.getResult().stream().map(Sample::getId)
-                    .collect(Collectors.toSet());
-            sampleStr = StringUtils.join(sampleSet, ",");
-
             // I do this to make faster the search of the studyId when looking for the individuals
             studyStr = Long.toString(ids.getStudyId());
+
+            Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key());
+            QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(studyStr, query, options, sessionId);
+
+            Set<Long> sampleSet = new HashSet<>();
+            for (Individual individual : indQueryResult.getResult()) {
+                sampleSet.addAll(individual.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()));
+            }
+            sampleStr = StringUtils.join(sampleSet, ",");
         }
 
         if (StringUtils.isNotEmpty(sampleAclParams.getFile())) {
@@ -980,7 +982,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
         authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
-//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.SAMPLE_COLLECTION;
 

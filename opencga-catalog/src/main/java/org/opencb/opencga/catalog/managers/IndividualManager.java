@@ -909,12 +909,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             // Obtain the sample ids
             MyResourceIds ids = catalogManager.getSampleManager().getIds(aclParams.getSample(), studyStr, sessionId);
 
-            Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), ids.getResourceIds());
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
-            QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(ids.getStudyId(), query, options, sessionId);
+            Query query = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+            QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(ids.getStudyId(), query, options, sessionId);
 
-            Set<Long> individualSet = sampleQueryResult.getResult().stream().map(sample -> sample.getIndividual().getId())
-                    .collect(Collectors.toSet());
+            Set<Long> individualSet = indQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toSet());
             individualStr = StringUtils.join(individualSet, ",");
 
             studyStr = Long.toString(ids.getStudyId());
