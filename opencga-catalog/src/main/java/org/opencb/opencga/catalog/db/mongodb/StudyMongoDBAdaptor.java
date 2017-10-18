@@ -223,7 +223,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public String getOwnerId(long studyId) throws CatalogDBException {
-        return dbAdaptorFactory.getCatalogProjectDbAdaptor().getOwnerId(getProjectIdByStudyId(studyId));
+        Query query = new Query(QueryParams.ID.key(), studyId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_OWNER_ID);
+        QueryResult<Document> documentQueryResult = nativeGet(query, options);
+        if (documentQueryResult.getNumResults() == 0) {
+            throw CatalogDBException.idNotFound("Study", studyId);
+        }
+        return documentQueryResult.first().getString(PRIVATE_OWNER_ID);
     }
 
     @Override
