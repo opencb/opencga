@@ -196,7 +196,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
                                @QueryParam("release") String release,
                            @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
-                                       String snapshot) {
+                                       int snapshot) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 

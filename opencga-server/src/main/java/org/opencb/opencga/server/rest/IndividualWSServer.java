@@ -164,7 +164,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
                 @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of individuals in the specified release)") @QueryParam("snapshot")
-                    String snapshot) {
+                    int snapshot) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 

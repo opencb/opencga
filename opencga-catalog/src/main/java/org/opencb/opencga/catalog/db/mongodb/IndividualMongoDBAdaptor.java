@@ -1002,7 +1002,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
         // If the user doesn't look for a concrete version...
         if (!query.getBoolean(Constants.ALL_VERSIONS) && !query.containsKey(QueryParams.VERSION.key())) {
-            if (query.containsKey(QueryParams.RELEASE.key()) || query.containsKey(QueryParams.SNAPSHOT.key())) {
+            if (query.containsKey(QueryParams.SNAPSHOT.key())) {
                 // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
                 andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
             } else {
