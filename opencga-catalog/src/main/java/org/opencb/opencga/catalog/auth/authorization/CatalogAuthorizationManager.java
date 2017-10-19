@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -29,10 +28,10 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Group;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.acls.permissions.*;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.Group;
+import org.opencb.opencga.core.models.GroupParams;
+import org.opencb.opencga.core.models.acls.permissions.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +48,7 @@ import java.util.stream.Collectors;
 public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private static final String MEMBERS_GROUP = "@members";
+    private static final String ADMINS_GROUP = "@admins";
     private static final String ADMIN = "admin";
 
     private final Logger logger;
@@ -70,7 +70,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     // List of Acls defined for the special users (admin, daemon...) read from the main configuration file.
     private static final List<StudyAclEntry> SPECIAL_ACL_LIST = Arrays.asList(
             new StudyAclEntry(ADMIN, Arrays.asList("VIEW_FILE_HEADERS", "VIEW_FILE_CONTENTS", "VIEW_FILES", "WRITE_FILES",
-                    "VIEW_JOBS", "WRITE_JOBS", "VIEW_STUDY", "UPDATE_STUDY", "SHARE_STUDY")));
+                    "VIEW_JOBS", "WRITE_JOBS")));
 
     private final boolean openRegister;
 
@@ -113,33 +113,32 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkProjectPermission(long projectId, String userId, StudyAclEntry.StudyPermissions permission) throws CatalogException {
+    public void checkCanEditProject(long projectId, String userId) throws CatalogException {
+        if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
+            return;
+        }
+        throw new CatalogAuthorizationException("Permission denied: Only the owner of the project can update it.");
+    }
+
+    @Override
+    public void checkCanViewProject(long projectId, String userId) throws CatalogException {
+        if (userId.equals(ADMIN)) {
+            return;
+        }
         if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
             return;
         }
 
-        if (permission.equals(StudyAclEntry.StudyPermissions.VIEW_STUDY)) {
-            if (userId.equals(ADMIN)) {
-                if (getSpecialPermissions(ADMIN).getPermissions().contains(permission)) {
-                    return;
-                }
-            } else {
-                final Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
-                final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FILTER_ROUTE_STUDIES
-                        + StudyDBAdaptor.QueryParams.ID.key());
+        // Only members of any study belonging to the project can view the project
+        final Query query = new Query()
+                .append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
+                .append(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), userId);
 
-                for (Study study : studyDBAdaptor.get(query, queryOptions).getResult()) {
-                    try {
-                        checkStudyPermission(study.getId(), userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
-                        return; //Return if can read some study
-                    } catch (CatalogException e) {
-                        logger.error("{}", e.getMessage(), e);
-                    }
-                }
-            }
+        if (studyDBAdaptor.count(query).first() > 0) {
+            return;
         }
 
-        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Project", projectId, null);
+        throw CatalogAuthorizationException.deny(userId, "view", "Project", projectId, null);
     }
 
     @Override
@@ -160,6 +159,113 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
         throw CatalogAuthorizationException.deny(userId, message, "Study", studyId, null);
+    }
+
+    @Override
+    public void checkCanEditStudy(long studyId, String userId) throws CatalogException {
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+
+        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to modify a study");
+        }
+    }
+
+    @Override
+    public void checkCanViewStudy(long studyId, String userId) throws CatalogException {
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+
+        if (ownerId.equals(userId)) {
+            return;
+        }
+
+        QueryResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
+        if (groupBelonging.getNumResults() == 0) {
+            throw new CatalogAuthorizationException("Only the members of the study are allowed to see it");
+        }
+    }
+
+    @Override
+    public void checkCreateDeleteGroupPermissions(long studyId, String userId, String group) throws CatalogException {
+        if (group.equals(MEMBERS_GROUP) || group.equals(ADMINS_GROUP)) {
+            throw new CatalogAuthorizationException(group + " is a protected group that cannot be created or deleted.");
+        }
+
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+        if (!userId.equals(ownerId) && !isAdministrativeUser(studyId, userId)) {
+            throw new CatalogAuthorizationException("Only administrative users are allowed to create/remove groups.");
+        }
+    }
+
+    @Override
+    public void checkSyncGroupPermissions(long studyId, String userId, String group) throws CatalogException {
+        checkCreateDeleteGroupPermissions(studyId, userId, group);
+    }
+
+    @Override
+    public void checkUpdateGroupPermissions(long studyId, String userId, String group, GroupParams params) throws CatalogException {
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+
+        if (userId.equals(ownerId)) {
+            // Granted permission but check it is a valid action
+            if (group.equals(MEMBERS_GROUP)
+                    && (params.getAction() != GroupParams.Action.ADD && params.getAction() != GroupParams.Action.REMOVE)) {
+                throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for @members group.");
+            }
+            return;
+        }
+
+        if (group.equals(ADMINS_GROUP)) {
+            throw new CatalogAuthorizationException("Only the owner of the study can assign/remove users to the administrative group.");
+        }
+
+        if (!isAdministrativeUser(studyId, userId)) {
+            throw new CatalogAuthorizationException("Only administrative users are allowed to assign/remove users to groups.");
+        }
+
+        // Check it is a valid action
+        if (group.equals(MEMBERS_GROUP)
+                && (params.getAction() != GroupParams.Action.ADD && params.getAction() != GroupParams.Action.REMOVE)) {
+            throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for @members group.");
+        }
+    }
+
+    @Override
+    public void checkNotAssigningPermissionsToAdminsGroup(List<String> members) throws CatalogException {
+        for (String member : members) {
+            if (member.equals(ADMINS_GROUP)) {
+                throw new CatalogAuthorizationException("Assigning permissions to @admins group is not allowed.");
+            }
+        }
+    }
+
+    @Override
+    public void checkCanAssignOrSeePermissions(long studyId, String userId) throws CatalogException {
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+
+        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to assign permissions");
+        }
+    }
+
+    @Override
+    public void checkCanCreateUpdateDeleteVariableSets(long studyId, String userId) throws CatalogException {
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+
+        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to create/update/delete variable "
+                    + "sets");
+        }
+    }
+
+
+    private boolean isAdministrativeUser(long studyId, String user) throws CatalogException {
+        QueryResult<Group> groupBelonging = getGroupBelonging(studyId, user);
+        for (Group group : groupBelonging.getResult()) {
+            if (group.getName().equals(ADMINS_GROUP)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -190,9 +296,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 break;
             case UPLOAD:
                 studyPermission = StudyAclEntry.StudyPermissions.UPLOAD_FILES;
-                break;
-            case SHARE:
-                studyPermission = StudyAclEntry.StudyPermissions.SHARE_FILES;
                 break;
             default:
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
@@ -235,9 +338,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case DELETE:
                 studyPermission = StudyAclEntry.StudyPermissions.DELETE_SAMPLES;
                 break;
-            case SHARE:
-                studyPermission = StudyAclEntry.StudyPermissions.SHARE_SAMPLES;
-                break;
             case WRITE_ANNOTATIONS:
                 studyPermission = StudyAclEntry.StudyPermissions.WRITE_SAMPLE_ANNOTATIONS;
                 break;
@@ -274,9 +374,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case DELETE:
                 studyPermission = StudyAclEntry.StudyPermissions.DELETE_INDIVIDUALS;
                 break;
-            case SHARE:
-                studyPermission = StudyAclEntry.StudyPermissions.SHARE_INDIVIDUALS;
-                break;
             case WRITE_ANNOTATIONS:
                 studyPermission = StudyAclEntry.StudyPermissions.WRITE_INDIVIDUAL_ANNOTATIONS;
                 break;
@@ -312,9 +409,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case DELETE:
                 studyPermission = StudyAclEntry.StudyPermissions.DELETE_JOBS;
                 break;
-            case SHARE:
-                studyPermission = StudyAclEntry.StudyPermissions.SHARE_JOBS;
-                break;
             default:
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
@@ -341,9 +435,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 break;
             case DELETE:
                 studyPermission = StudyAclEntry.StudyPermissions.DELETE_COHORTS;
-                break;
-            case SHARE:
-                studyPermission = StudyAclEntry.StudyPermissions.SHARE_COHORTS;
                 break;
             case WRITE_ANNOTATIONS:
                 studyPermission = StudyAclEntry.StudyPermissions.WRITE_COHORT_ANNOTATIONS;
@@ -382,9 +473,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case DELETE:
                 studyPermission = StudyAclEntry.StudyPermissions.DELETE_PANELS;
                 break;
-            case SHARE:
-                studyPermission = StudyAclEntry.StudyPermissions.SHARE_PANELS;
-                break;
             default:
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
@@ -411,9 +499,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 break;
             case DELETE:
                 studyPermission = StudyAclEntry.StudyPermissions.DELETE_FAMILIES;
-                break;
-            case SHARE:
-                studyPermission = StudyAclEntry.StudyPermissions.SHARE_FAMILIES;
                 break;
             case WRITE_ANNOTATIONS:
                 studyPermission = StudyAclEntry.StudyPermissions.WRITE_FAMILY_ANNOTATIONS;
@@ -452,9 +537,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case DELETE:
                 studyPermission = StudyAclEntry.StudyPermissions.DELETE_CLINICAL_ANALYSIS;
                 break;
-            case SHARE:
-                studyPermission = StudyAclEntry.StudyPermissions.SHARE_CLINICAL_ANALYSIS;
-                break;
             default:
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
@@ -467,15 +549,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException {
-        studyDBAdaptor.checkId(studyId);
-        checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+        checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(studyId, null, MongoDBAdaptorFactory.STUDY_COLLECTION);
     }
 
     @Override
     public QueryResult<StudyAclEntry> getStudyAcl(String userId, long studyId, String member) throws CatalogException {
         try {
-            checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+            checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
             // It will be OK if the userId asking for the ACLs wants to see its own permissions
             checkAskingOwnPermissions(userId, member, studyId);
@@ -497,14 +578,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<SampleAclEntry> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
-        checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
+        checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(sampleId, null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
     }
 
     @Override
     public QueryResult<SampleAclEntry> getSampleAcl(long studyId, long sampleId, String userId, String member) throws CatalogException {
         try {
-            checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
+            checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
             // It will be OK if the userId asking for the ACLs wants to see its own permissions
             checkAskingOwnPermissions(userId, member, studyId);
@@ -533,7 +614,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<FileAclEntry> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
             throws CatalogException {
         if (checkPermission) {
-            checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.SHARE);
+            checkCanAssignOrSeePermissions(studyId, userId);
         }
         return aclDBAdaptor.get(fileId, null, MongoDBAdaptorFactory.FILE_COLLECTION);
     }
@@ -541,7 +622,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<FileAclEntry> getFileAcl(long studyId, long fileId, String userId, String member) throws CatalogException {
         try {
-            checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.SHARE);
+            checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
             // It will be OK if the userId asking for the ACLs wants to see its own permissions
             checkAskingOwnPermissions(userId, member, studyId);
@@ -563,7 +644,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<IndividualAclEntry> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException {
-        checkIndividualPermission(studyId, individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
+        checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(individualId, null, MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
     }
 
@@ -571,7 +652,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<IndividualAclEntry> getIndividualAcl(long studyId, long individualId, String userId, String member)
             throws CatalogException {
         try {
-            checkIndividualPermission(studyId, individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
+            checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
             // It will be OK if the userId asking for the ACLs wants to see its own permissions
             checkAskingOwnPermissions(userId, member, studyId);
@@ -593,14 +674,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
-        checkCohortPermission(studyId, cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
+        checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(cohortId, null, MongoDBAdaptorFactory.COHORT_COLLECTION);
     }
 
     @Override
     public QueryResult<CohortAclEntry> getCohortAcl(long studyId, long cohortId, String userId, String member) throws CatalogException {
         try {
-            checkCohortPermission(studyId, cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
+            checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
             // It will be OK if the userId asking for the ACLs wants to see its own permissions
             checkAskingOwnPermissions(userId, member, studyId);
@@ -622,14 +703,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
-        checkJobPermission(studyId, jobId, userId, JobAclEntry.JobPermissions.SHARE);
+        checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(jobId, null, MongoDBAdaptorFactory.JOB_COLLECTION);
     }
 
     @Override
     public QueryResult<JobAclEntry> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException {
         try {
-            checkJobPermission(studyId, jobId, userId, JobAclEntry.JobPermissions.SHARE);
+            checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
             // It will be OK if the userId asking for the ACLs wants to see its own permissions
             checkAskingOwnPermissions(userId, member, studyId);
@@ -651,14 +732,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<FamilyAclEntry> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
-        checkFamilyPermission(studyId, familyId, userId, FamilyAclEntry.FamilyPermissions.SHARE);
+        checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(familyId, null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
     }
 
     @Override
     public QueryResult<FamilyAclEntry> getFamilyAcl(long studyId, long familyId, String userId, String member) throws CatalogException {
         try {
-            checkFamilyPermission(studyId, familyId, userId, FamilyAclEntry.FamilyPermissions.SHARE);
+            checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
             // It will be OK if the userId asking for the ACLs wants to see its own permissions
             checkAskingOwnPermissions(userId, member, studyId);
@@ -860,7 +941,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             try {
                 getValue.apply(permission);
             } catch (IllegalArgumentException e) {
-                throw new CatalogException("The permission " + permission + " is not a correct permission.");
+                throw new CatalogAuthorizationException("The permission " + permission + " is not a correct permission.");
             }
         }
     }

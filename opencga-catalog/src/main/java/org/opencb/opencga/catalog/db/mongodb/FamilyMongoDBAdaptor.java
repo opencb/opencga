@@ -168,17 +168,24 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             updateToLastIndividualVersions(query, parameters);
         }
 
-        Document individualParameters = parseAndValidateUpdateParams(parameters, query);
+        Document familyParameters = parseAndValidateUpdateParams(parameters, query);
+        if (familyParameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.put(Constants.ALL_VERSIONS, true);
+            QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
+                    new Document("$set", familyParameters), new QueryOptions("multi", true));
+
+            return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            if (!individualParameters.isEmpty()) {
+            if (!familyParameters.isEmpty()) {
                 QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
-                        new Document("$set", individualParameters), new QueryOptions("multi", true));
+                        new Document("$set", familyParameters), new QueryOptions("multi", true));
 
                 return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {
-            return updateAndCreateNewVersion(query, individualParameters, queryOptions);
+            return updateAndCreateNewVersion(query, familyParameters, queryOptions);
         }
 
         return endQuery("Update family", startTime, new QueryResult<>());
@@ -278,7 +285,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, familyParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.DISEASES.key()};
+        final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.PHENOTYPES.key()};
         filterObjectParams(parameters, familyParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.NAME.key())) {
@@ -626,6 +633,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case PHENOTYPES:
+                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
+                        break;
                     case VARIABLE_SET_ID:
                         addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
                         break;
@@ -652,6 +662,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case DESCRIPTION:
                     case RELEASE:
                     case VERSION:
+                    case PHENOTYPES_ID:
+                    case PHENOTYPES_NAME:
+                    case PHENOTYPES_SOURCE:
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
@@ -672,7 +685,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
         // If the user doesn't look for a concrete version...
         if (!query.getBoolean(Constants.ALL_VERSIONS) && !query.containsKey(QueryParams.VERSION.key())) {
-            if (query.containsKey(QueryParams.RELEASE.key()) || query.containsKey(QueryParams.SNAPSHOT.key())) {
+            if (query.containsKey(QueryParams.SNAPSHOT.key())) {
                 // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
                 andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
             } else {

@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterDescription;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -26,6 +27,9 @@ import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 
 /**
@@ -115,7 +119,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         studySubCommands.addCommand("acl", studyCommandOptions.aclsCommandOptions);
         studySubCommands.addCommand("acl-update", studyCommandOptions.aclsUpdateCommandOptions);
 
-        fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,dataModelOptions, numericOptions, jCommander);
+        fileCommandOptions = new FileCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
         JCommander fileSubCommands = jCommander.getCommands().get("files");
 //        fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);
@@ -151,7 +155,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         jobSubCommands.addCommand("group-by", jobCommandOptions.groupByCommandOptions);
         jobSubCommands.addCommand("acl", jobCommandOptions.aclsCommandOptions);
         jobSubCommands.addCommand("acl-update", jobCommandOptions.aclsUpdateCommandOptions);
-       // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
+        // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
 
         individualCommandOptions = new IndividualCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("individuals", individualCommandOptions);
@@ -236,24 +240,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationDeleteCommandOptions);
 
-//        toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
-//        jCommander.addCommand("tools", toolCommandOptions);
-//        JCommander toolSubCommands = jCommander.getCommands().get("tools");
-//        toolSubCommands.addCommand("help", toolCommandOptions.helpCommandOptions);
-//        toolSubCommands.addCommand("info", toolCommandOptions.infoCommandOptions);
-//        toolSubCommands.addCommand("search", toolCommandOptions.searchCommandOptions);
-//        toolSubCommands.addCommand("update", toolCommandOptions.updateCommandOptions);
-//        toolSubCommands.addCommand("delete", toolCommandOptions.deleteCommandOptions);
-
-//        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, jCommander);
-//        jCommander.addCommand("panels", panelCommandOptions);
-//        JCommander panelSubCommands = jCommander.getCommands().get("panels");
-//        panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
-//        panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
-//        panelSubCommands.addCommand("acl", panelCommandOptions.aclsCommandOptions);
-//        panelSubCommands.addCommand("acl-update", panelCommandOptions.aclsUpdateCommandOptions);
-
-
         alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
@@ -335,6 +321,10 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
                 System.err.printf("%14s  %s\n", command, jCommander.getCommandDescription(command));
             }
         }
+    }
+
+    public GeneralCliOptions.GeneralOptions getGeneralOptions() {
+        return generalOptions;
     }
 
     public GeneralCliOptions.CommonCommandOptions getCommonCommandOptions() {

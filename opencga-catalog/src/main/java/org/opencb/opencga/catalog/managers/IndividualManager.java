@@ -112,7 +112,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), Individual.KaryotypicSex.UNKNOWN));
         individual.setSex(ParamUtils.defaultObject(individual.getSex(), Individual.Sex.UNKNOWN));
         individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(), Individual.AffectationStatus.UNKNOWN));
-        individual.setOntologyTerms(ParamUtils.defaultObject(individual.getOntologyTerms(), Collections.emptyList()));
+        individual.setPhenotypes(ParamUtils.defaultObject(individual.getPhenotypes(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
         individual.setAnnotationSets(validateAnnotationSets(individual.getAnnotationSets()));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
@@ -512,7 +512,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 case POPULATION_DESCRIPTION:
                 case POPULATION_NAME:
                 case POPULATION_SUBPOPULATION:
-                case ONTOLOGY_TERMS:
+                case PHENOTYPES:
                 case LIFE_STATUS:
                 case AFFECTATION_STATUS:
                     break;
@@ -687,7 +687,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 Long.toString(resource.getStudyId()), sessionId);
 
         QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
-                resource.getUser(), null);
+                resource.getUser());
         if (variableSet.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resource.getUser() + " cannot create annotations over "
@@ -781,7 +781,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     + "be found in the database.");
         }
         // We make this query because it will check the proper permissions in case the variable set is confidential
-        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resource.getUser(), null);
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resource.getUser());
 
         individualDBAdaptor.deleteAnnotationSet(resource.getResourceId(), annotationSetName);
 
@@ -909,12 +909,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             // Obtain the sample ids
             MyResourceIds ids = catalogManager.getSampleManager().getIds(aclParams.getSample(), studyStr, sessionId);
 
-            Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), ids.getResourceIds());
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
-            QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(ids.getStudyId(), query, options, sessionId);
+            Query query = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+            QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(ids.getStudyId(), query, options, sessionId);
 
-            Set<Long> individualSet = sampleQueryResult.getResult().stream().map(sample -> sample.getIndividual().getId())
-                    .collect(Collectors.toSet());
+            Set<Long> individualSet = indQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toSet());
             individualStr = StringUtils.join(individualSet, ",");
 
             studyStr = Long.toString(ids.getStudyId());
@@ -923,11 +922,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // Obtain the resource ids
         MyResourceIds resourceIds = getIds(individualStr, studyStr, sessionId);
 
-        // Check the user has the permissions needed to change permissions over those individuals
-        for (Long individualId : resourceIds.getResourceIds()) {
-            authorizationManager.checkIndividualPermission(resourceIds.getStudyId(), individualId, resourceIds.getUser(),
-                    IndividualAclEntry.IndividualPermissions.SHARE);
-        }
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -936,6 +931,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 

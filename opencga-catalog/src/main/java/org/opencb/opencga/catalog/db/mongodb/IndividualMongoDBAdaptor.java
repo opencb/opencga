@@ -320,6 +320,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         }
 
         Document individualParameters = parseAndValidateUpdateParams(parameters, query);
+        if (individualParameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.put(Constants.ALL_VERSIONS, true);
+            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
+                    new Document("$set", individualParameters), new QueryOptions("multi", true));
+
+            return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
+
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             if (!individualParameters.isEmpty()) {
@@ -464,7 +472,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key(), QueryParams.MULTIPLES.key(), QueryParams.SAMPLES.key()};
+        final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.MULTIPLES.key(), QueryParams.SAMPLES.key()};
         filterObjectParams(parameters, individualParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
@@ -943,9 +951,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case ONTOLOGIES:
-                    case ONTOLOGY_TERMS:
-                        addOntologyQueryFilter(QueryParams.ONTOLOGY_TERMS.key(), queryParam.key(), query, andBsonList);
+                    case PHENOTYPES:
+                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
                         break;
                     case VARIABLE_SET_ID:
                         addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
@@ -985,11 +992,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case VERSION:
                     case SAMPLES_ID:
                     case ANNOTATION_SETS:
-                    case ONTOLOGY_TERMS_ID:
-                    case ONTOLOGY_TERMS_NAME:
-                    case ONTOLOGY_TERMS_SOURCE:
-                    case ONTOLOGY_TERMS_AGE_OF_ONSET:
-                    case ONTOLOGY_TERMS_MODIFIERS:
+                    case PHENOTYPES_ID:
+                    case PHENOTYPES_NAME:
+                    case PHENOTYPES_SOURCE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
@@ -1002,7 +1007,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
         // If the user doesn't look for a concrete version...
         if (!query.getBoolean(Constants.ALL_VERSIONS) && !query.containsKey(QueryParams.VERSION.key())) {
-            if (query.containsKey(QueryParams.RELEASE.key()) || query.containsKey(QueryParams.SNAPSHOT.key())) {
+            if (query.containsKey(QueryParams.SNAPSHOT.key())) {
                 // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
                 andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
             } else {

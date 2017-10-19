@@ -106,7 +106,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
-            @ApiParam(value = "Comma separated list of disease ids") @QueryParam("diseases") String diseases,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
@@ -115,7 +115,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value (Current release from the moment the families were first created)")
                 @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
-                    String snapshot) {
+                    int snapshot) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             QueryResult<Family> queryResult;
@@ -352,7 +352,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
         public List<CommonModels.AnnotationSetParams> annotationSets;
-        public List<OntologyTerm> ontologyTerms;
+        public List<OntologyTerm> phenotypes;
         public Map<String, Object> attributes;
 
 
@@ -369,7 +369,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
                     mother != null ? new Individual().setName(mother) : null, multiples != null ? multiples.toMultiples() : null, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
         }
     }
 
@@ -377,7 +377,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
 
-        public List<OntologyTerm> diseases;
+        public List<OntologyTerm> phenotypes;
         public List<IndividualPOST> members;
 
         public Map<String, Object> attributes;
@@ -402,7 +402,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 relatives.add(member.toIndividual(studyStr, studyManager, sessionId));
             }
 
-            return new Family(name, diseases, relatives, description, annotationSetList, attributes);
+            return new Family(name, phenotypes, relatives, description, annotationSetList, attributes);
         }
     }
 

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.utils.CryptoUtils;
 

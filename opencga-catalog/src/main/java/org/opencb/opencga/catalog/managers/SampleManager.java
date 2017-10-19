@@ -80,9 +80,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setType(ParamUtils.defaultString(sample.getType(), ""));
-        sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
+        sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
         sample.setAnnotationSets(validateAnnotationSets(sample.getAnnotationSets()));
+        sample.setStats(ParamUtils.defaultObject(sample.getStats(), Collections.emptyMap()));
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
         sample.setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
@@ -171,10 +172,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Deprecated
     public QueryResult<Sample> create(String studyStr, String name, String source, String description, String type, boolean somatic,
-                                      Individual individual, Map<String, Object> attributes, QueryOptions options, String sessionId)
+                                      Individual individual, Map<String, Object> stats, Map<String, Object> attributes,
+                                      QueryOptions options, String sessionId)
             throws CatalogException {
         Sample sample = new Sample(-1, name, source, individual, description, type, somatic, -1, 1, Collections.emptyList(),
-                Collections.emptyList(), attributes);
+                Collections.emptyList(), stats, attributes);
         return create(studyStr, sample, options, sessionId);
     }
 
@@ -462,8 +464,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 case TYPE:
                 case SOMATIC:
                 case DESCRIPTION:
+                case PHENOTYPES:
+                case STATS:
                 case ATTRIBUTES:
-                case ONTOLOGY_TERMS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
@@ -688,7 +691,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resourceId.getStudyId()), sessionId);
         QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
-                resourceId.getUser(), null);
+                resourceId.getUser());
         if (variableSet.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resourceId.getUser() + " cannot create annotations over "
@@ -783,7 +786,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     + "be found in the database.");
         }
         // We make this query because it will check the proper permissions in case the variable set is confidential
-        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser(), null);
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser());
 
         sampleDBAdaptor.deleteAnnotationSet(resourceId.getResourceId(), annotationSetName);
 
@@ -917,16 +920,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             // Obtain the individual ids
             MyResourceIds ids = catalogManager.getIndividualManager().getIds(sampleAclParams.getIndividual(), studyStr, sessionId);
 
-            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ids.getResourceIds());
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
-            QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(ids.getStudyId(), query, options, sessionId);
-
-            Set<Long> sampleSet = sampleQueryResult.getResult().stream().map(Sample::getId)
-                    .collect(Collectors.toSet());
-            sampleStr = StringUtils.join(sampleSet, ",");
-
             // I do this to make faster the search of the studyId when looking for the individuals
             studyStr = Long.toString(ids.getStudyId());
+
+            Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key());
+            QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(studyStr, query, options, sessionId);
+
+            Set<Long> sampleSet = new HashSet<>();
+            for (Individual individual : indQueryResult.getResult()) {
+                sampleSet.addAll(individual.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()));
+            }
+            sampleStr = StringUtils.join(sampleSet, ",");
         }
 
         if (StringUtils.isNotEmpty(sampleAclParams.getFile())) {
@@ -966,12 +971,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         MyResourceIds resourceIds = getIds(sampleStr, studyStr, sessionId);
-
-        // Check the user has the permissions needed to change permissions over those samples
-        for (Long sampleId : resourceIds.getResourceIds()) {
-            authorizationManager.checkSamplePermission(resourceIds.getStudyId(), sampleId, resourceIds.getUser(),
-                    SampleAclEntry.SamplePermissions.SHARE);
-        }
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -980,8 +980,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
-//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.SAMPLE_COLLECTION;
 
@@ -1040,7 +1040,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Check that the samples are not being used in cohorts
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
-                .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds());
+                .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds())
+                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED);
         long count = cohortDBAdaptor.count(query).first();
         if (count > 0) {
             if (resources.getResourceIds().size() == 1) {
