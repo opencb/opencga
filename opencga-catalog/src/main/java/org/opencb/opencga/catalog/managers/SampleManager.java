@@ -1041,7 +1041,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
                 .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds())
-                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Status.READY);
+                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED);
         long count = cohortDBAdaptor.count(query).first();
         if (count > 0) {
             if (resources.getResourceIds().size() == 1) {
