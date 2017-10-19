@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-@Path("/{version}/studies")
+@Path("/{apiVersion}/studies")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Studies", position = 3, description = "Methods for working with 'studies' endpoint")
 public class StudyWSServer extends OpenCGAWSServer {
@@ -458,6 +458,22 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, "@members", params.toGroupParams(), sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/groups/admins/update")
+    @ApiOperation(value = "Add/Remove users with administrative permissions to the study.",
+            notes = "Only the owner of the study will be able to run this webservice")
+    public Response registerAdministrativeUsersToStudy(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
+            @ApiParam(value="JSON containing the action to be performed", required = true) MemberParams params) {
+        try {
+            return createOkResponse(
+                    catalogManager.getStudyManager().updateGroup(studyStr, "@admins", params.toGroupParams(), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

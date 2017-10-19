@@ -18,6 +18,7 @@ package org.opencb.opencga.client.rest.analysis;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -50,6 +51,14 @@ public class VariantClient extends AbstractParentClient {
     public QueryResponse<Job> index(String fileIds, ObjectMap params) throws IOException {
         params.append("file", fileIds);
         return execute(VARIANT_URL, "index", params, GET, Job.class);
+    }
+
+
+    public QueryResponse<VariantMetadata> metadata(ObjectMap params, QueryOptions options) throws IOException {
+        if (options != null) {
+            params.putAll(options);
+        }
+        return execute(VARIANT_URL, "metadata", params, GET, VariantMetadata.class);
     }
 
     public QueryResponse<Variant> query(ObjectMap params, QueryOptions options) throws IOException {

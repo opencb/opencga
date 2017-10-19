@@ -39,6 +39,7 @@ public class Family extends Annotable {
     private String description;
 
     private int release;
+    private int version;
     private Map<String, Object> attributes;
 
     public Family() {
@@ -46,11 +47,11 @@ public class Family extends Annotable {
 
     public Family(String name, List<OntologyTerm> diseases, List<Individual> members, String description, List<AnnotationSet> annotationSets,
                   Map<String, Object> attributes) {
-        this(name, diseases, members, TimeUtils.getTime(), new Status(Status.READY), description, -1, annotationSets, attributes);
+        this(name, diseases, members, TimeUtils.getTime(), new Status(Status.READY), description, -1, 1, annotationSets, attributes);
     }
 
-    public Family(String name, List<OntologyTerm> diseases, List<Individual> members, String creationDate, Status status, String description,
-                  int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Family(String name, List<OntologyTerm> diseases, List<Individual> members, String creationDate, Status status,
+                  String description, int release, int version, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.name = name;
         this.diseases = defaultObject(diseases, Collections::emptyList);
         this.members = defaultObject(members, Collections::emptyList);
@@ -58,8 +59,27 @@ public class Family extends Annotable {
         this.status = defaultObject(status, new Status());
         this.description = description;
         this.release = release;
+        this.version = version;
         this.annotationSets = defaultObject(annotationSets, Collections::emptyList);
         this.attributes = defaultObject(attributes, Collections::emptyMap);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Family{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", diseases=").append(diseases);
+        sb.append(", members=").append(members);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", release=").append(release);
+        sb.append(", version=").append(version);
+        sb.append(", attributes=").append(attributes);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append('}');
+        return sb.toString();
     }
 
     public long getId() {
@@ -131,6 +151,15 @@ public class Family extends Annotable {
 
     public Family setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public Family setVersion(int version) {
+        this.version = version;
         return this;
     }
 

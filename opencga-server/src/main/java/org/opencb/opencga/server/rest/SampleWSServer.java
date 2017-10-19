@@ -27,10 +27,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
-import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -41,7 +42,7 @@ import java.util.*;
 /**
  * Created by jacobo on 15/12/14.
  */
-@Path("/{version}/samples")
+@Path("/{apiVersion}/samples")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Samples", position = 7, description = "Methods for working with 'samples' endpoint")
 public class SampleWSServer extends OpenCGAWSServer {
@@ -65,14 +66,27 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response infoSample(
             @ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr) {
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Sample version") @QueryParam("version") Integer version,
+            @ApiParam(value = "Fetch all sample versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
+                    boolean allVersions) {
         try {
-            QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, queryOptions, sessionId);
-            // We parse the query result to create one queryresult per sample
-            List<QueryResult<Sample>> queryResultList = new ArrayList<>(sampleQueryResult.getNumResults());
+            QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, query, queryOptions, sessionId);
+
+            // We make a map of sample id - samples to put in the same queryResult all the samples coming from the same version
+            Map<Long, List<Sample>> sampleMap = new HashMap<>();
             for (Sample sample : sampleQueryResult.getResult()) {
-                queryResultList.add(new QueryResult<>(sample.getName() + "-" + sample.getId(), sampleQueryResult.getDbTime(), 1, -1,
-                        sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), Arrays.asList(sample)));
+                if (!sampleMap.containsKey(sample.getId())) {
+                    sampleMap.put(sample.getId(), new ArrayList<>());
+                }
+                sampleMap.get(sample.getId()).add(sample);
+            }
+
+            List<QueryResult<Sample>> queryResultList = new ArrayList<>(sampleMap.size());
+            for (Map.Entry<Long, List<Sample>> entry : sampleMap.entrySet()) {
+                queryResultList.add(new QueryResult<>(String.valueOf(entry.getValue().get(0).getId()), sampleQueryResult.getDbTime(),
+                        entry.getValue().size(), -1, sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(),
+                        entry.getValue()));
             }
 
             return createOkResponse(queryResultList);
@@ -104,7 +118,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(individual)) {
                 tmpIndividual = new Individual().setName(individual);
             }
-            return createOkResponse(sampleManager.create(studyStr, sample, tmpIndividual, queryOptions, sessionId));
+            return createOkResponse(sampleManager.create(studyStr, sample, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -179,7 +193,10 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
                                @QueryParam("nattributes") String nattributes,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
-                           @ApiParam(value = "Release value") @QueryParam("release") String release) {
+                           @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
+                               @QueryParam("release") String release,
+                           @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
+                                       int snapshot) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
@@ -213,7 +230,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some sample attributes", position = 6)
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                 @QueryParam("study") String studyStr,
+                                    @QueryParam("study") String studyStr,
+                                 @ApiParam(value = "Create a new version of sample", defaultValue = "false")
+                                     @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
                                  @ApiParam(value = "params", required = true) UpdateSamplePOST parameters) {
         try {
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
@@ -551,6 +570,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public boolean somatic;
         public List<OntologyTerm> ontologyTerms;
         public List<CommonModels.AnnotationSetParams> annotationSets;
+        public Map<String, Object> stats;
         public Map<String, Object> attributes;
     }
 
@@ -574,7 +594,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, type, somatic, 1, annotationSetList, ontologyTerms, attributes);
+                    description, type, somatic, 1, 1, annotationSetList, ontologyTerms, stats, attributes);
         }
     }
 }

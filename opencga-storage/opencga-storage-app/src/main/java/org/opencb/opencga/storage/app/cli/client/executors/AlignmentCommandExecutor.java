@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.client.CliOptionsParser;
+import org.opencb.opencga.storage.app.cli.client.ClientCliOptionsParser;
 import org.opencb.opencga.storage.app.cli.client.options.StorageAlignmentCommandOptions;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipeline;
@@ -55,7 +55,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         this.alignmentCommandOptions = alignmentCommandOptions;
     }
 
-    private void configure(CliOptionsParser.CommonOptions commonOptions, String dbName) throws Exception {
+    private void configure(ClientCliOptionsParser.CommonOptions commonOptions, String dbName) throws Exception {
 
         this.logFile = commonOptions.logFile;
 

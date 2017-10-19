@@ -25,7 +25,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentConverter;
+import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -123,7 +123,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         // It will only enter this if when the query has been done via REST
         if (queryResponse != null) {
             if (alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.outputFormat.toLowerCase().contains("text")) {
-                SAMRecordToAvroReadAlignmentConverter converter = new SAMRecordToAvroReadAlignmentConverter();
+                SAMRecordToAvroReadAlignmentBiConverter converter = new SAMRecordToAvroReadAlignmentBiConverter();
                 for (ReadAlignment readAlignment : queryResponse.allResults()) {
                     System.out.print(converter.from(readAlignment).getSAMString());
                 }

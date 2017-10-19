@@ -37,10 +37,10 @@ import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.StudyMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
@@ -50,6 +50,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.checkCanViewStudy;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.checkStudyPermission;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -193,7 +194,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public void updateStudyLastModified(long studyId) throws CatalogDBException {
-        update(studyId, new ObjectMap("lastModified", TimeUtils.getTime()));
+        update(studyId, new ObjectMap("lastModified", TimeUtils.getTime()), QueryOptions.empty());
     }
 
     @Override
@@ -222,7 +223,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public String getOwnerId(long studyId) throws CatalogDBException {
-        return dbAdaptorFactory.getCatalogProjectDbAdaptor().getOwnerId(getProjectIdByStudyId(studyId));
+        Query query = new Query(QueryParams.ID.key(), studyId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_OWNER_ID);
+        QueryResult<Document> documentQueryResult = nativeGet(query, options);
+        if (documentQueryResult.getNumResults() == 0) {
+            throw CatalogDBException.idNotFound("Study", studyId);
+        }
+        return documentQueryResult.first().getString(PRIVATE_OWNER_ID);
     }
 
     @Override
@@ -499,8 +506,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user,
-                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET.toString());
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableNotInVariableSet(variableSet.first(), variable.getName());
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
@@ -524,8 +530,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user,
-                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET.toString());
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableNotInVariableSet(variableSet.first(), newName);
 
         // The field can be changed if we arrive to this point.
@@ -574,8 +579,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user,
-                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET.toString());
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableInVariableSet(variableSet.first(), name);
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
@@ -652,33 +656,19 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user, String additionalPermission)
+    public QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
         Bson query = new Document("variableSets", new Document("$elemMatch", new Document("id", variableSetId)));
         QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "variableSets.$,_ownerId,groups,_acl");
         QueryResult<Document> studyQueryResult = studyCollection.find(query, qOptions);
-//        Query query = new Query(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-//        Bson projection = Projections.elemMatch("variableSets", Filters.eq("id", variableSetId));
-//        if (options == null) {
-//            options = new QueryOptions();
-//        }
-//        QueryOptions qOptions = new QueryOptions(options);
-//        qOptions.put(MongoDBCollection.ELEM_MATCH, projection);
-//        QueryResult<Document> studyQueryResult = nativeGet(query, qOptions);
 
         if (studyQueryResult.getNumResults() == 0) {
             throw new CatalogDBException("Variable set not found.");
         }
-        if (!checkStudyPermission(studyQueryResult.first(), user, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET.toString())) {
-            throw CatalogAuthorizationException.deny(user, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET.toString(), "VariableSet",
-                    variableSetId, "");
-        }
-        if (StringUtils.isNotEmpty(additionalPermission)) {
-            if (!checkStudyPermission(studyQueryResult.first(), user, additionalPermission)) {
-                throw CatalogAuthorizationException.deny(user, additionalPermission, "VariableSet", variableSetId, "");
-            }
+        if (!checkCanViewStudy(studyQueryResult.first(), user)) {
+            throw CatalogAuthorizationException.deny(user, "view", "VariableSet", variableSetId, "");
         }
         Study study = studyConverter.convertToDataModelType(studyQueryResult.first());
         if (study.getVariableSets() == null || study.getVariableSets().isEmpty()) {
@@ -805,7 +795,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             return endQuery("", startTime, Collections.emptyList());
         }
 
-        if (!checkStudyPermission(queryResult.first(), user, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET.toString())) {
+        if (!checkCanViewStudy(queryResult.first(), user)) {
             throw new CatalogAuthorizationException("Permission denied: " + user + " cannot see any variable set");
         }
 
@@ -828,8 +818,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions, user,
-                StudyAclEntry.StudyPermissions.DELETE_VARIABLE_SET.toString());
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions, user);
         checkVariableSetInUse(variableSetId);
 
         Bson query = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
@@ -1024,7 +1013,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         //FIXME: Check the commented code from modifyStudy
         /*
         long startTime = startQuery();
@@ -1115,10 +1104,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Study> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
 
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, QueryOptions.empty());
         if (update.getNumTotalResults() != 1) {
             throw new CatalogDBException("Could not update study with id " + id);
         }
@@ -1165,11 +1154,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     QueryResult<Study> setStatus(long studyId, String status) throws CatalogDBException {
-        return update(studyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(studyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override
@@ -1388,7 +1377,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public DBIterator<Study> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        Function<Document, Boolean> iteratorFilter = (d) -> checkStudyPermission(d, user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name());
+        Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
         return new StudyMongoDBIterator<>(mongoCursor, studyConverter, iteratorFilter);
     }
 
@@ -1396,7 +1385,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        Function<Document, Boolean> iteratorFilter = (d) -> checkStudyPermission(d, user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name());
+        Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
         return new StudyMongoDBIterator<Document>(mongoCursor, iteratorFilter);
     }
 

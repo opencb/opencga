@@ -241,7 +241,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 //            System.out.println(variant.toJson());
             count++;
         }
-        Assert.assertEquals(source.getStats().getNumRecords(), count);
+        Assert.assertEquals(fileMetadata.getStats().getNumVariants(), count);
     }
 
 }

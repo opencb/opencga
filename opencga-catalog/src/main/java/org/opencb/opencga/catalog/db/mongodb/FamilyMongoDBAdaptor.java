@@ -30,18 +30,16 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -73,6 +71,39 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
      */
     public MongoDBCollection getFamilyCollection() {
         return familyCollection;
+    }
+
+    @Override
+    public QueryResult<Family> insert(Family family, long studyId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+        List<Bson> filterList = new ArrayList<>();
+        filterList.add(Filters.eq(QueryParams.NAME.key(), family.getName()));
+        filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
+        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
+
+        Bson bson = Filters.and(filterList);
+        QueryResult<Long> count = familyCollection.count(bson);
+        if (count.getResult().get(0) > 0) {
+            throw new CatalogDBException("Cannot create family. A family with { name: '" + family.getName() + "'} already exists.");
+        }
+
+        long familyId = getNewId();
+        family.setId(familyId);
+        family.setVersion(1);
+
+        Document familyObject = familyConverter.convertToStorageType(family);
+        familyObject.put(PRIVATE_STUDY_ID, studyId);
+
+        // Versioning private parameters
+        familyObject.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
+        familyObject.put(LAST_OF_VERSION, true);
+        familyObject.put(LAST_OF_RELEASE, true);
+
+        familyCollection.insert(familyObject, null);
+
+        return endQuery("createFamily", startTime, get(familyId, options));
     }
 
     @Override
@@ -118,22 +149,135 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
-    public QueryResult<Family> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Family> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
-        if (update.getNumTotalResults() != 1) {
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, queryOptions);
+        if (update.getNumTotalResults() != 1 && parameters.size() > 0) {
             throw new CatalogDBException("Could not update family with id " + id);
         }
         Query query = new Query()
                 .append(QueryParams.ID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
-        return endQuery("Update family", startTime, get(query, new QueryOptions()));
+        return endQuery("Update family", startTime, get(query, queryOptions));
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        Map<String, Object> familyParameters = new HashMap<>();
+        if (queryOptions.getBoolean(Constants.REFRESH)) {
+            updateToLastIndividualVersions(query, parameters);
+        }
+
+        Document familyParameters = parseAndValidateUpdateParams(parameters, query);
+        if (familyParameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.put(Constants.ALL_VERSIONS, true);
+            QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
+                    new Document("$set", familyParameters), new QueryOptions("multi", true));
+
+            return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
+
+        if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            if (!familyParameters.isEmpty()) {
+                QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
+                        new Document("$set", familyParameters), new QueryOptions("multi", true));
+
+                return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
+            }
+        } else {
+            return updateAndCreateNewVersion(query, familyParameters, queryOptions);
+        }
+
+        return endQuery("Update family", startTime, new QueryResult<>());
+    }
+
+    private void updateToLastIndividualVersions(Query query, ObjectMap parameters) throws CatalogDBException {
+        if (parameters.containsKey(QueryParams.MEMBERS.key())) {
+            throw new CatalogDBException("Invalid option: Cannot update to the last version of members and update to different members at "
+                    + "the same time.");
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.MEMBERS.key());
+        QueryResult<Family> queryResult = get(query, options);
+
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Family not found.");
+        }
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogDBException("Update to the last version of members in multiple families at once not supported.");
+        }
+
+        Family family = queryResult.first();
+        if (family.getMembers() == null || family.getMembers().isEmpty()) {
+            // Nothing to do
+            return;
+        }
+
+        List<Long> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+        Query individualQuery = new Query()
+                .append(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
+        options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.VERSION.key()
+        ));
+        QueryResult<Individual> individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individualQuery, options);
+        parameters.put(QueryParams.MEMBERS.key(), individualQueryResult.getResult());
+    }
+
+    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document familyParameters, QueryOptions queryOptions)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+        int release = queryOptions.getInt(Constants.CURRENT_RELEASE, -1);
+        if (release == -1) {
+            throw new CatalogDBException("Internal error. Mandatory " + Constants.CURRENT_RELEASE + " parameter not passed to update "
+                    + "method");
+        }
+
+        for (Document familyDocument : queryResult.getResult()) {
+            Document updateOldVersion = new Document();
+
+            List<Integer> supportedReleases = (List<Integer>) familyDocument.get(RELEASE_FROM_VERSION);
+            if (supportedReleases.size() > 1) {
+                // If it contains several releases, it means this is the first update on the current release, so we just need to take the
+                // current release number out
+                supportedReleases.remove(supportedReleases.size() - 1);
+            } else {
+                // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
+                // last version of the release
+                updateOldVersion.put(LAST_OF_RELEASE, false);
+            }
+            updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
+            updateOldVersion.put(LAST_OF_VERSION, false);
+
+            // Perform the update on the previous version
+            Document queryDocument = new Document()
+                    .append(PRIVATE_STUDY_ID, familyDocument.getLong(PRIVATE_STUDY_ID))
+                    .append(QueryParams.VERSION.key(), familyDocument.getInteger(QueryParams.VERSION.key()))
+                    .append(PRIVATE_ID, familyDocument.getLong(PRIVATE_ID));
+            QueryResult<UpdateResult> updateResult = familyCollection.update(queryDocument, new Document("$set", updateOldVersion), null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("Internal error: Could not update family");
+            }
+
+            // We update the information for the new version of the document
+            familyDocument.put(LAST_OF_RELEASE, true);
+            familyDocument.put(LAST_OF_VERSION, true);
+            familyDocument.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+            familyDocument.put(QueryParams.VERSION.key(), familyDocument.getInteger(QueryParams.VERSION.key()) + 1);
+
+            // We apply the updates the user wanted to apply (if any)
+            mergeDocument(familyDocument, familyParameters);
+
+            // Insert the new version document
+            familyCollection.insert(familyDocument, QueryOptions.empty());
+        }
+
+        return endQuery("Update family", startTime, Arrays.asList(queryResult.getNumTotalResults()));
+    }
+
+    private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
+        Document familyParameters = new Document();
 
         final String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, familyParameters, acceptedParams);
@@ -174,18 +318,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             familyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        logger.debug(familyParameters.toString());
+        familyConverter.validateDocumentToUpdate(familyParameters);
 
-        Document familyParametersDocument = getMongoDBDocument(familyParameters, "Family");
-        familyConverter.validateDocumentToUpdate(familyParametersDocument);
-
-        if (!familyParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
-                    new Document("$set", familyParametersDocument), null);
-            return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
-        }
-
-        return endQuery("Update family", startTime, new QueryResult<>());
+        return familyParameters;
     }
 
     @Override
@@ -298,42 +433,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         }
         return queryResult;
     }
-
-//    private void addMemberInfoToFamily(QueryResult<Family> queryResult) {
-//        Set<Long> memberIds = new HashSet<>();
-//        for (Family family : queryResult.getResult()) {
-//            // Add the ids of all the members
-//            if (family.getMembers() == null) {
-//                continue;
-//            }
-//            memberIds.addAll(family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet()));
-//        }
-//
-//        if (memberIds.size() == 0) {
-//            return;
-//        }
-//
-//        Query query = new Query(QueryParams.ID.key(), memberIds);
-//        try {
-//            QueryResult<Individual> individualQueryResult =
-//                    dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, QueryOptions.empty());
-//            Map<Long, Individual> individualMap = new HashMap<>();
-//            for (Individual individual : individualQueryResult.getResult()) {
-//                individualMap.put(individual.getId(), individual);
-//            }
-//
-//            // We add the whole individual information to the family results
-//            for (Family family : queryResult.getResult()) {
-//                List<Individual> memberList = new ArrayList<>();
-//                for (Individual individual : family.getMembers()) {
-//                    memberList.add(individualMap.get(individual.getId()));
-//                }
-//                family.setMembers(memberList);
-//            }
-//        } catch (CatalogDBException e) {
-//            logger.error("Could not obtain extra individual information, {}", e.getMessage(), e);
-//        }
-//    }
 
     @Override
     public DBIterator<Family> iterator(Query query, QueryOptions options) throws CatalogDBException {
@@ -453,33 +552,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
-    public QueryResult<Family> insert(Family family, long studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.NAME.key(), family.getName()));
-        filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
-        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
-
-        Bson bson = Filters.and(filterList);
-        QueryResult<Long> count = familyCollection.count(bson);
-        if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Cannot create family. A family with { name: '" + family.getName() + "'} already exists.");
-        }
-
-        long familyId = getNewId();
-        family.setId(familyId);
-
-        Document familyObject = familyConverter.convertToStorageType(family);
-        familyObject.put(PRIVATE_STUDY_ID, studyId);
-        familyObject.put(PRIVATE_ID, familyId);
-        familyCollection.insert(familyObject, null);
-
-        return endQuery("createFamily", startTime, get(familyId, options));
-    }
-
-    @Override
     public long getStudyId(long familyId) throws CatalogDBException {
         Bson query = new Document(PRIVATE_ID, familyId);
         Bson projection = Projections.include(PRIVATE_STUDY_ID);
@@ -493,12 +565,27 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         }
     }
 
+    @Override
+    public void updateProjectRelease(long studyId, int release) throws CatalogDBException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_ID.key(), studyId)
+                .append(QueryParams.SNAPSHOT.key(), release - 1);
+        Bson bson = parseQuery(query, false);
+
+        Document update = new Document()
+                .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
+
+        QueryOptions queryOptions = new QueryOptions("multi", true);
+
+        familyCollection.update(bson, update, queryOptions);
+    }
+
     private QueryResult<Family> setStatus(long familyId, String status) throws CatalogDBException {
-        return update(familyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(familyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     private QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
@@ -562,12 +649,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case ANNOTATION_SET_NAME:
                         addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
+                    case SNAPSHOT:
+                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case FATHER_ID:
                     case MOTHER_ID:
                     case MEMBER_ID:
                     case NAME:
                     case DESCRIPTION:
                     case RELEASE:
+                    case VERSION:
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
@@ -583,6 +674,17 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                 } else {
                     throw new CatalogDBException("Error parsing query : " + query.toJson(), e);
                 }
+            }
+        }
+
+        // If the user doesn't look for a concrete version...
+        if (!query.getBoolean(Constants.ALL_VERSIONS) && !query.containsKey(QueryParams.VERSION.key())) {
+            if (query.containsKey(QueryParams.SNAPSHOT.key())) {
+                // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
+                andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
+            } else {
+                // Otherwise, we will always look for the latest version
+                andBsonList.add(Filters.eq(LAST_OF_VERSION, true));
             }
         }
 

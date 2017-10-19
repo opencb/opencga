@@ -23,8 +23,8 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
@@ -105,7 +105,7 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
         return samplesData;
     }
 
-    public List<AlternateCoordinate> extractSecondaryAlternates(Variant variant, VariantStudyMetadata variantMetadata,
+    public List<AlternateCoordinate> extractSecondaryAlternates(Variant variant, VariantFileHeader variantMetadata,
                                                                 List<String> expectedFormat, Map<Integer, List<String>> samplesDataMap) {
         Map<String, List<Integer>> alternateSampleIdMap = new HashMap<>();
 
@@ -132,12 +132,7 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
             VariantMerger variantMerger = new VariantMerger(false);
             variantMerger.setExpectedFormats(expectedFormat);
             variantMerger.setStudyId("0");
-            for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
-                variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
-            }
-            for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
-                variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
-            }
+            variantMerger.configure(variantMetadata);
 
             // Create one variant for each alternate with the samples data
             List<Variant> variants = new ArrayList<>(alternateSampleIdMap.size());

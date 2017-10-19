@@ -18,8 +18,10 @@ package org.opencb.opencga.storage.core.metadata;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.avro.generic.GenericRecord;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +40,8 @@ public class FileStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(FileStudyConfigurationAdaptor.class);
 
     private static final Map<Integer, Path> FILE_PATHS = new HashMap<>();
+    private static ObjectMapper objectMapper = new ObjectMapper(new JsonFactory())
+            .addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
 
     @Override
     protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
@@ -125,12 +129,12 @@ public class FileStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
         if (path == null || !path.toFile().exists()) {
             return new StudyConfiguration(1, "default");
         } else {
-            return new ObjectMapper(new JsonFactory()).readValue(path.toFile(), StudyConfiguration.class);
+            return objectMapper.readValue(path.toFile(), StudyConfiguration.class);
         }
     }
 
     public static void write(StudyConfiguration studyConfiguration, Path path) throws IOException {
-        new ObjectMapper(new JsonFactory()).writerWithDefaultPrettyPrinter().writeValue(path.toFile(),
+        objectMapper.writerWithDefaultPrettyPrinter().writeValue(path.toFile(),
                 studyConfiguration);
     }
 

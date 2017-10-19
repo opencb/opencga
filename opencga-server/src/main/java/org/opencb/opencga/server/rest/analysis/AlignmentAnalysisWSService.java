@@ -41,7 +41,7 @@ import java.util.Map;
 /**
  * Created by imedina on 17/08/16.
  */
-@Path("/{version}/analysis/alignment")
+@Path("/{apiVersion}/analysis/alignment")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Alignment", position = 4, description = "Methods for working with 'files' endpoint")
 public class AlignmentAnalysisWSService extends AnalysisWSService {
@@ -51,9 +51,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public AlignmentAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public AlignmentAnalysisWSService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, httpHeaders);
+        super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
     }
 
     @GET

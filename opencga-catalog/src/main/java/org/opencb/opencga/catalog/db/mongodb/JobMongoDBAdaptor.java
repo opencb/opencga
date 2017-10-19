@@ -201,7 +201,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> jobParameters = getValidatedUpdateParams(parameters);
 
@@ -228,7 +228,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Job> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);

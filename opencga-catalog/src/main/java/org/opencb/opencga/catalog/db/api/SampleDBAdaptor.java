@@ -22,11 +22,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -45,6 +42,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         DESCRIPTION("description", TEXT, ""),
         TYPE("type", TEXT, ""),
         SOMATIC("somatic", BOOLEAN, ""),
+        STATS("stats", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -52,7 +50,9 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        RELEASE("release", INTEGER, ""),
+        RELEASE("release", INTEGER, ""), //  Release where the sample was created
+        SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
+        VERSION("version", INTEGER, ""), // Version of the sample
         CREATION_DATE("creationDate", TEXT, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
@@ -127,28 +127,14 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         }
     }
 
-    QueryResult<Sample> insert(Sample sample, long studyId, Individual individual, QueryOptions options) throws CatalogDBException;
+    QueryResult<Sample> insert(long studyId, Sample sample, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException;
 
-//    @Deprecated
-//    QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
-//
-//    @Deprecated
-//    QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
-
     QueryResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Sample> update(long sampleId, QueryOptions parameters) throws CatalogDBException;
 
     long getStudyId(long sampleId) throws CatalogDBException;
 
-    List<Long> getStudyIdsBySampleIds(String sampleIds) throws CatalogDBException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> annotate(long sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException;
+    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
 }

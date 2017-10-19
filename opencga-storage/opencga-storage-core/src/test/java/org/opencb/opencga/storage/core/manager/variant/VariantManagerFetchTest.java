@@ -20,11 +20,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -50,8 +51,8 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
     }
 
     @Override
-    protected VariantSource.Aggregation getAggregation() {
-        return VariantSource.Aggregation.NONE;
+    protected Aggregation getAggregation() {
+        return Aggregation.NONE;
     }
 
     @Test
@@ -99,8 +100,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testQueryAnonymous() throws Exception {
-        Study.StudyAclParams aclParams = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.ADD, null);
-        catalogManager.getStudyManager().updateAcl(studyStr, "*", aclParams, sessionId).get(0);
+        catalogManager.getStudyManager().updateGroup(studyStr, "@members", new GroupParams("*", GroupParams.Action.ADD), sessionId);
 
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "s1");
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "p1:s1");

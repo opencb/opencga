@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-@Path("/{version}/util")
+@Path("/{apiVersion}/util")
 @Produces("application/json")
 public class UtilsWSServer extends OpenCGAWSServer {
 

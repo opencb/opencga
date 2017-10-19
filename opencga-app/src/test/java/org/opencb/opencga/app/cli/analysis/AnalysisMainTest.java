@@ -19,7 +19,7 @@ package org.opencb.opencga.app.cli.analysis;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -85,9 +85,9 @@ public class AnalysisMainTest {
         datastores.put(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbNameVariants));
         datastores.put(File.Bioformat.ALIGNMENT, new DataStore(STORAGE_ENGINE, dbNameAlignments));
 
-        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
-                "1", null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key
-                (), VariantSource.Aggregation.NONE), null, sessionId).first().getId();
+        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1",
+                null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+                        Aggregation.NONE), null, sessionId).first().getId();
         outdirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null,
                 true, null, QueryOptions.empty(), sessionId).first().getId();
     }
@@ -237,7 +237,8 @@ public class AnalysisMainTest {
                 / 2 + 1, allSamples.getResult().size()), null, null, sessionId).first().getId();
         Long c3 = catalogManager.getCohortManager().create(studyId, "C3", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(0, 1), null,
                 null, sessionId).first().getId();
-        Sample sample = catalogManager.getSampleManager().create(Long.toString(studyId), "Sample", "", "", null, false, null, null, null,
+        Sample sample = catalogManager.getSampleManager().create(Long.toString(studyId), "Sample", "", "", null, false, null, new
+                        HashMap<>(), null, null,
                 sessionId).first();
         Long c4 = catalogManager.getCohortManager().create(studyId, "C4", Study.Type.CONTROL_SET, "", Collections.singletonList(sample),
                 null, null, sessionId).first().getId();

@@ -26,19 +26,19 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
@@ -76,11 +76,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     public QueryResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String sessionId) throws CatalogException {
-        return create(studyStr, sample, null, options, sessionId);
-    }
-
-    public QueryResult<Sample> create(String studyStr, Sample sample, @Nullable Individual individual, QueryOptions options,
-                                      String sessionId) throws CatalogException {
         ParamUtils.checkAlias(sample.getName(), "name", configuration.getCatalog().getOffset());
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
@@ -88,57 +83,101 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
         sample.setAnnotationSets(validateAnnotationSets(sample.getAnnotationSets()));
+        sample.setStats(ParamUtils.defaultObject(sample.getStats(), Collections.emptyMap()));
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
         sample.setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
+        sample.setVersion(1);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        // 1. We check everything can be done
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
 
-        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+        // We will store the individual information if the individual already exists
+        Individual individual = null;
 
-        if (individual != null) {
-            individual.setSamples(null);
+        // if 0, it means there is no individual passed with the sample.
+        // if 1, it means there is an individual that already exists, and we will need to update the sample array.
+        // if 2, it means the individual does not exist and we will have to create it from scratch containing the current sample.
+        int individualInfo = 0;
 
+        if (sample.getIndividual() != null && StringUtils.isNotEmpty(sample.getIndividual().getName())) {
             try {
-                MyResourceId resource = catalogManager.getIndividualManager().getId(individual.getName(), String.valueOf(studyId),
+                QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+                        sample.getIndividual().getName(),
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                                IndividualDBAdaptor.QueryParams.ID.key(),
+                                IndividualDBAdaptor.QueryParams.SAMPLES.key())),
                         sessionId);
-                // The individual exists, so we just write the individual id
-                individual.setId(resource.getResourceId());
+
+                // Check if the user can update the individual
+                authorizationManager.checkIndividualPermission(studyId, individualQueryResult.first().getId(), userId,
+                        IndividualAclEntry.IndividualPermissions.UPDATE);
+
+                individual = individualQueryResult.first();
+                individualInfo = 1;
+
             } catch (CatalogException e) {
-                // The individual seems not to exist, so we will try to create it
-                QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().create(Long.toString(studyId),
-                        individual, new QueryOptions(), sessionId);
-                if (individualQueryResult.getNumResults() == 0) {
-                    throw new CatalogException("Unexpected error occurred when creating the individual. Neither the sample nor the "
-                            + "individual were created");
-                } else {
-                    // We set the id
-                    individual.setId(individualQueryResult.first().getId());
+                if (e instanceof CatalogAuthorizationException) {
+                    throw e;
                 }
+
+                // The individual does not exist so we check if the user will be able to create it
+                authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
+                individualInfo = 2;
             }
         }
 
-        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, individual, options);
+        // 2. We create the sample
+        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(studyId, sample, options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
-//        if (individual != null) {
-//            addIndividualInformation(queryResult, sessionId);
-//        }
+        // 3. We update or create an individual if any..
+        // We check if we have to update or create a new individual containing the sample
+        if (individualInfo > 0) {
+            if (individualInfo == 1) { // Update individual info
+                List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() + 1);
+                sampleList.addAll(individual.getSamples());
+                sampleList.add(queryResult.first());
+
+                ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
+                try {
+                    individualDBAdaptor.update(individual.getId(), params, QueryOptions.empty());
+                } catch (CatalogDBException e) {
+                    logger.error("Internal error. The sample was created but the sample could not be associated to the individual. {}",
+                            e.getMessage(), e);
+                    queryResult.setErrorMsg("Internal error. The sample was created but the sample could not be associated to the "
+                            + "individual. " + e.getMessage());
+                }
+            } else { // = 2 - Create new individual
+                sample.getIndividual().setSamples(Arrays.asList(queryResult.first()));
+                try {
+                    catalogManager.getIndividualManager().create(String.valueOf(studyId), sample.getIndividual(), QueryOptions.empty(),
+                            sessionId);
+                } catch (CatalogException e) {
+                    logger.error("Internal error. The sample was created but the individual could not be created. {}", e.getMessage(), e);
+                    queryResult.setErrorMsg("Internal error. The sample was created but the individual could not be created. "
+                            + e.getMessage());
+                }
+            }
+        }
 
         return queryResult;
     }
 
     @Deprecated
     public QueryResult<Sample> create(String studyStr, String name, String source, String description, String type, boolean somatic,
-                                      Individual individual, Map<String, Object> attributes, QueryOptions options, String sessionId)
+                                      Individual individual, Map<String, Object> stats, Map<String, Object> attributes,
+                                      QueryOptions options, String sessionId)
             throws CatalogException {
-        Sample sample = new Sample(-1, name, source, null, description, type, somatic, -1, Collections.emptyList(), Collections.emptyList(),
-                attributes);
-        return create(studyStr, sample, individual, options, sessionId);
+        Sample sample = new Sample(-1, name, source, individual, description, type, somatic, -1, 1, Collections.emptyList(),
+                Collections.emptyList(), stats, attributes);
+        return create(studyStr, sample, options, sessionId);
     }
 
     @Override
@@ -249,7 +288,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options, userId);
-//        addIndividualInformation(sampleQueryResult, sessionId);
+
+        if (sampleQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> sampleIds = query.getAsLongList("id");
+            for (Long sampleId : sampleIds) {
+                authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
+            }
+        }
+        addIndividualInformation(sampleQueryResult, studyId, options, sessionId);
+
         return sampleQueryResult;
     }
 
@@ -279,7 +326,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
-//        addIndividualInformation(queryResult, sessionId);
+        addIndividualInformation(queryResult, studyId, options, sessionId);
         return queryResult;
     }
 
@@ -325,7 +372,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(SampleDBAdaptor.QueryParams.NAME.key(), newSampleName)
                         .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
-                queryResult = sampleDBAdaptor.update(sampleId, updateParams);
+                queryResult = sampleDBAdaptor.update(sampleId, updateParams, QueryOptions.empty());
 
                 auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, resourceId.getUser(), sampleQueryResult.first(),
                         queryResult.first(), null, null);
@@ -417,8 +464,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 case TYPE:
                 case SOMATIC:
                 case DESCRIPTION:
-                case ATTRIBUTES:
                 case ONTOLOGY_TERMS:
+                case STATS:
+                case ATTRIBUTES:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
@@ -426,22 +474,142 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
+            Individual individual = null;
+
             String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+
+            // Look for the individual where the sample is assigned
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.SAMPLES_ID.key(), resource.getResourceId())
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudyId());
+            QueryOptions indOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                    IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key()));
+            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, indOptions);
+
             if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
-                parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1);
+                // Take out sample from individual
+
+                if (individualQueryResult.getNumResults() == 1) {
+                    individual = individualQueryResult.first();
+
+                    authorizationManager.checkIndividualPermission(resource.getStudyId(), individual.getId(), userId,
+                            IndividualAclEntry.IndividualPermissions.UPDATE);
+
+                    List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() - 1);
+                    for (Sample sample : individual.getSamples()) {
+                        if (sample.getId() != resource.getResourceId()) {
+                            sampleList.add(sample);
+                        }
+                    }
+
+                    individual.setSamples(sampleList);
+                } // else - nothing to do
+
             } else {
-                MyResourceId indResource = catalogManager.getIndividualManager().getId(individualStr, Long.toString(resource.getStudyId()),
-                        sessionId);
-                parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), indResource.getResourceId());
+                // Obtain the individual where the sample is intended to be associated to
+                QueryResult<Individual> newIndividualQueryResult = catalogManager.getIndividualManager().get(
+                        String.valueOf(resource.getStudyId()), individualStr, indOptions, sessionId);
+
+                if (newIndividualQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Individual " + individualStr + " not found");
+                }
+
+                // Check if the sample is not already assigned to other individual
+                if (individualQueryResult.getNumResults() == 1) {
+                    if (individualQueryResult.first().getId() != newIndividualQueryResult.first().getId()) {
+                        throw new CatalogException("Cannot update sample. The sample is already associated to other individual ("
+                                + individualQueryResult.first().getId() + "). Please, first remove the sample from the individual.");
+                    }
+                } else {
+                    individual = newIndividualQueryResult.first();
+
+                    authorizationManager.checkIndividualPermission(resource.getStudyId(), individual.getId(), userId,
+                            IndividualAclEntry.IndividualPermissions.UPDATE);
+
+                    // We can freely assign the sample to the individual
+                    List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() + 1);
+                    sampleList.addAll(individual.getSamples());
+
+                    // Get the current sample version
+                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(resource.getResourceId(),
+                            new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.VERSION.key()));
+
+                    // Add current sample
+                    sampleList.add(new Sample()
+                            .setId(resource.getResourceId())
+                            .setVersion(sampleQueryResult.first().getVersion()));
+
+                    individual.setSamples(sampleList);
+                }
             }
+
+            if (individual != null) {
+                // We need to update the sample array from the individual
+                ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
+                try {
+                    individualDBAdaptor.update(individual.getId(), params, QueryOptions.empty());
+                } catch (CatalogDBException e) {
+                    logger.error("Could not update sample information: {}", e.getMessage(), e);
+                    throw new CatalogException("Could not update sample information: " + e.getMessage());
+                }
+            }
+
             parameters.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        QueryResult<Sample> queryResult = sampleDBAdaptor.update(resource.getResourceId(), parameters);
+        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
+            // We do need to get the current release to properly create a new version
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudyId()));
+        }
+
+        QueryResult<Sample> queryResult = sampleDBAdaptor.update(resource.getResourceId(), parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.sample, resource.getResourceId(), userId, parameters, null, null);
+
+        addIndividualInformation(queryResult, resource.getStudyId(), options, sessionId);
         return queryResult;
     }
 
+    private void addIndividualInformation(QueryResult<Sample> queryResult, long studyId, QueryOptions options, String sessionId) {
+        if (options == null || options.getBoolean("lazy", true)) {
+            return;
+        }
+
+        List<Long> sampleIds = queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+        if (sampleIds.size() == 0) {
+            return;
+        }
+
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleIds);
+        try {
+            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId), query,
+                    QueryOptions.empty(), sessionId);
+            // We create a map of sampleId - corresponding Individual
+            Map<Long, Individual> sampleIndividualMap = new HashMap<>();
+            for (Individual individual : individualQueryResult.getResult()) {
+                for (Sample sample : individual.getSamples()) {
+                    sampleIndividualMap.put(sample.getId(), individual);
+                }
+            }
+
+            // And now we set the corresponding individuals where possible
+            for (Sample sample : queryResult.getResult()) {
+                if (sampleIndividualMap.containsKey(sample.getId())) {
+                    sample.setIndividual(sampleIndividualMap.get(sample.getId()));
+                    if (sample.getAttributes() == null) {
+                        sample.setAttributes(new HashMap<>());
+                    }
+                    sample.getAttributes().put("individual", sample.getIndividual());
+                }
+            }
+        } catch (CatalogException e) {
+            logger.error("Could not fetch individual information to complete sample result: {}", e.getMessage(), e);
+            queryResult.setWarningMsg("Could not fetch individual information to complete sample result: " + e.getMessage());
+        }
+
+    }
+
+    @Deprecated
     public QueryResult<Sample> update(Long sampleId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         return update(null, String.valueOf(sampleId), parameters, options, sessionId);
@@ -523,7 +691,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resourceId.getStudyId()), sessionId);
         QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
-                resourceId.getUser(), null);
+                resourceId.getUser());
         if (variableSet.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resourceId.getUser() + " cannot create annotations over "
@@ -618,7 +786,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     + "be found in the database.");
         }
         // We make this query because it will check the proper permissions in case the variable set is confidential
-        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser(), null);
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser());
 
         sampleDBAdaptor.deleteAnnotationSet(resourceId.getResourceId(), annotationSetName);
 
@@ -752,16 +920,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             // Obtain the individual ids
             MyResourceIds ids = catalogManager.getIndividualManager().getIds(sampleAclParams.getIndividual(), studyStr, sessionId);
 
-            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ids.getResourceIds());
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
-            QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(ids.getStudyId(), query, options, sessionId);
-
-            Set<Long> sampleSet = sampleQueryResult.getResult().stream().map(Sample::getId)
-                    .collect(Collectors.toSet());
-            sampleStr = StringUtils.join(sampleSet, ",");
-
             // I do this to make faster the search of the studyId when looking for the individuals
             studyStr = Long.toString(ids.getStudyId());
+
+            Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key());
+            QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(studyStr, query, options, sessionId);
+
+            Set<Long> sampleSet = new HashSet<>();
+            for (Individual individual : indQueryResult.getResult()) {
+                sampleSet.addAll(individual.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()));
+            }
+            sampleStr = StringUtils.join(sampleSet, ",");
         }
 
         if (StringUtils.isNotEmpty(sampleAclParams.getFile())) {
@@ -801,12 +971,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         MyResourceIds resourceIds = getIds(sampleStr, studyStr, sessionId);
-
-        // Check the user has the permissions needed to change permissions over those samples
-        for (Long sampleId : resourceIds.getResourceIds()) {
-            authorizationManager.checkSamplePermission(resourceIds.getStudyId(), sampleId, resourceIds.getUser(),
-                    SampleAclEntry.SamplePermissions.SHARE);
-        }
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -815,8 +980,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
-//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.SAMPLE_COLLECTION;
 

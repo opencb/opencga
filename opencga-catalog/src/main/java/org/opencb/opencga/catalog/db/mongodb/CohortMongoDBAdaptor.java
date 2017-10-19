@@ -106,10 +106,10 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     }
 
     @Override
-    public QueryResult<Cohort> update(long cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Cohort> update(long cohortId, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        update(new Query(QueryParams.ID.key(), cohortId), parameters);
-        return endQuery("Modify cohort", startTime, get(cohortId, options));
+        update(new Query(QueryParams.ID.key(), cohortId), parameters, QueryOptions.empty());
+        return endQuery("Update cohort", startTime, get(cohortId, queryOptions));
     }
 
     @Override
@@ -233,14 +233,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     }
 
     @Override
-    public QueryResult<Cohort> update(long id, ObjectMap parameters) throws CatalogDBException {
-        long startTime = startQuery();
-        update(new Query(QueryParams.ID.key(), id), parameters);
-        return endQuery("Update cohort", startTime, get(id, new QueryOptions()));
-    }
-
-    @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> cohortParams = new HashMap<>();
 
@@ -336,11 +329,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     }
 
     QueryResult<Cohort> setStatus(long cohortId, String status) throws CatalogDBException {
-        return update(cohortId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(cohortId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override

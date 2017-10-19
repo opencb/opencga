@@ -299,11 +299,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
         long projectId = getId(userId, projectStr);
-        String ownerId = projectDBAdaptor.getOwnerId(projectId);
-
-        if (!userId.equals(ownerId)) {
-            throw new CatalogException("Permission denied: Only the owner of the project can update it.");
-        }
+        authorizationManager.checkCanEditProject(projectId, userId);
 
         QueryResult<Project> queryResult = new QueryResult<>();
         if (parameters.containsKey("alias")) {
@@ -350,7 +346,7 @@ public class ProjectManager extends AbstractManager {
                 parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key());
             }
             if (!objectMap.isEmpty()) {
-                queryResult = projectDBAdaptor.update(projectId, objectMap);
+                queryResult = projectDBAdaptor.update(projectId, objectMap, QueryOptions.empty());
             } else {
                 throw new CatalogException("Cannot update organism information that is already filled in");
             }
@@ -361,9 +357,9 @@ public class ProjectManager extends AbstractManager {
                 throw new CatalogDBException("Parameter '" + s + "' can't be changed");
             }
         }
-        userDBAdaptor.updateUserLastModified(ownerId);
+        userDBAdaptor.updateUserLastModified(userId);
         if (parameters.size() > 0) {
-            queryResult = projectDBAdaptor.update(projectId, parameters);
+            queryResult = projectDBAdaptor.update(projectId, parameters, QueryOptions.empty());
         }
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, parameters, null, null);
         return queryResult;
@@ -374,13 +370,9 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkAlias(newProjectAlias, "newProjectAlias", configuration.getCatalog().getOffset());
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
-        String ownerId = projectDBAdaptor.getOwnerId(projectId);
+        authorizationManager.checkCanEditProject(projectId, userId);
 
-        if (!userId.equals(ownerId)) {
-            throw new CatalogException("Permission denied: Only the owner of the project can update it.");
-        }
-
-        userDBAdaptor.updateUserLastModified(ownerId);
+        userDBAdaptor.updateUserLastModified(userId);
         projectDBAdaptor.renameAlias(projectId, newProjectAlias);
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, new ObjectMap("alias", newProjectAlias), null, null);
         return projectDBAdaptor.get(projectId, QueryOptions.empty());
@@ -389,10 +381,7 @@ public class ProjectManager extends AbstractManager {
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long projectId = getId(userId, projectStr);
-
-        if (!userId.equals(projectDBAdaptor.getOwnerId(projectId))) {
-            throw new CatalogException("Only the owner of the project can increment the release number");
-        }
+        authorizationManager.checkCanEditProject(projectId, userId);
 
         // Obtain the current release number
         QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE,
@@ -410,7 +399,19 @@ public class ProjectManager extends AbstractManager {
         }
 
         if (checkCurrentReleaseInUse(allStudiesInProject, currentRelease)) {
-            return projectDBAdaptor.incrementCurrentRelease(projectId);
+            // Increment current project release
+            QueryResult<Integer> integerQueryResult = projectDBAdaptor.incrementCurrentRelease(projectId);
+
+            // Upgrade release in sample, family and individuals
+            QueryResult<Study> studiesInProject = studyDBAdaptor.getAllStudiesInProject(projectId,
+                    new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key()));
+            for (Study study : studiesInProject.getResult()) {
+                sampleDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
+                individualDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
+                familyDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
+            }
+
+            return integerQueryResult;
         } else {
             throw new CatalogException("Cannot increment current release number. The current release " + currentRelease + " has not yet "
                     + "been used in any entry");

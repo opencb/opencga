@@ -15,7 +15,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Map;
 
-@Path("/{version}/analysis/tool")
+@Path("/{apiVersion}/analysis/tool")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Tool", position = 4, description = "Methods for working with 'tool' endpoint")
 public class ToolAnalysisWSService extends AnalysisWSService {
@@ -25,9 +25,9 @@ public class ToolAnalysisWSService extends AnalysisWSService {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public ToolAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+    public ToolAnalysisWSService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                       @Context HttpHeaders httpHeaders) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, httpHeaders);
+        super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
     }
 
     private static class ExecuteParams {

@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.exception.VersionException;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 05/06/17.
  */
-@Path("/{version}/clinical")
+@Path("/{apiVersion}/clinical")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Clinical Analysis (BETA)", position = 9, description = "Methods for working with 'clinical analysis' endpoint")
 
@@ -61,6 +62,24 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                 ClinicalAnalysisParameters params) {
         try {
             return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{clinicalAnalysis}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update a clinical analysis", position = 1, response = ClinicalAnalysis.class)
+    public Response update(
+            @ApiParam(value="Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(name = "params", value="JSON containing clinical analysis information", required = true)
+                    ClinicalAnalysisParameters params) {
+        try {
+            ObjectMap parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(params.toClinicalAnalysis()));
+            return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
