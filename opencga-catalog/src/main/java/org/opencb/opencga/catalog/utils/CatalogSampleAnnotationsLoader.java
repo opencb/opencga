@@ -120,7 +120,7 @@ public class CatalogSampleAnnotationsLoader {
             } else {
                 QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(Long.toString(studyId), individual.getId(),
                         pedFile.getName(), "Sample loaded from the pedigree File = {id: " + pedFile.getId() + ", name: \""
-                                + pedFile.getName() + "\" }", null, false, null, Collections.emptyMap(), null, sessionId);
+                                + pedFile.getName() + "\" }", null, false, null, new HashMap<>(), Collections.emptyMap(), null, sessionId);
                 sample = sampleQueryResult.getResult().get(0);
             }
             sampleMap.put(individual.getId(), sample);

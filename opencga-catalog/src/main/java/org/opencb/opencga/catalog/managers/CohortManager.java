@@ -544,7 +544,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         MyResourceId variableSetResource = studyManager.getVariableSetId(variableSetId,
                 Long.toString(resource.getStudyId()), sessionId);
         QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
-                resource.getUser(), null);
+                resource.getUser());
         if (variableSet.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resource.getUser() + " cannot create annotations over "
@@ -640,7 +640,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     + "be found in the database.");
         }
         // We make this query because it will check the proper permissions in case the variable set is confidential
-        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resource.getUser(), null);
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resource.getUser());
 
         cohortDBAdaptor.deleteAnnotationSet(cohortId, annotationSetName);
 
@@ -760,11 +760,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         // Obtain the resource ids
         MyResourceIds resourceIds = getIds(cohortStr, studyStr, sessionId);
 
-        // Check the user has the permissions needed to change permissions
-        for (Long cohortId : resourceIds.getResourceIds()) {
-            authorizationManager.checkCohortPermission(resourceIds.getStudyId(), cohortId, resourceIds.getUser(),
-                    CohortAclEntry.CohortPermissions.SHARE);
-        }
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -774,6 +770,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             members = Collections.emptyList();
         }
         checkMembers(resourceIds.getStudyId(), members);
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.COHORT_COLLECTION;

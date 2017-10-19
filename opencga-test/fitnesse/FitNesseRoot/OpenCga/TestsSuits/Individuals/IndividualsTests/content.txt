@@ -35,7 +35,7 @@
 
 !3 Create Second Individual
 !| Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$iName2", "sex": "MALE", "ontologyTerms": [{"id": "ontologyTerms","name": "firstTerm","source": "firstSource"}]}} |
+| setBody | {"name" : "$iName2", "sex": "MALE", "phenotypes": [{"id": "phenotypes","name": "firstTerm","source": "firstSource"}]}} |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json | |
 | let | individualId2 | js | response.jsonbody.response[0].result[0].id ||
@@ -79,7 +79,7 @@
 
 !3 Update Individual
 !| Table: Rest Fixture | $baseURL |
-| setBody | { "sex" : "MALE", "karyotypicSex" :"XY", "lifeStatus" : "ALIVE", "ontologyTerms": [{"id": "ontologyTerms","name": "firstTerm","source": "firstSource"}]}} |
+| setBody | { "sex" : "MALE", "karyotypicSex" :"XY", "lifeStatus" : "ALIVE", "phenotypes": [{"id": "phenotypes","name": "firstTerm","source": "firstSource"}]}} |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/$individualId/update?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' && jsonbody.response[0].result[0].ontologyTerms.length > 0 |
 

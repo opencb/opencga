@@ -76,12 +76,11 @@ public class AuthorizationMongoDBAdaptorTest {
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample(0, "s1", "", new Individual(), "", "", false, 1, 1,
-                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), QueryOptions.empty()).first();
+                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap(), Collections.emptyMap()), QueryOptions.empty()).first();
         acl_s1_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
         acl_s1_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
                 SampleAclEntry.SamplePermissions.VIEW.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(),
-                SampleAclEntry.SamplePermissions.SHARE.name(),
                 SampleAclEntry.SamplePermissions.UPDATE.name()
         ));
         aclDBAdaptor.setAcls(Arrays.asList(s1.getId()), Arrays.asList(acl_s1_user1, acl_s1_user2), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
@@ -110,14 +109,13 @@ public class AuthorizationMongoDBAdaptorTest {
             assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
         }
 
-        aclDBAdaptor.setToMembers(Arrays.asList(s1.getId()), Arrays.asList("user1"), Arrays.asList("DELETE", "SHARE"),
+        aclDBAdaptor.setToMembers(Arrays.asList(s1.getId()), Arrays.asList("user1"), Arrays.asList("DELETE"),
                 MongoDBAdaptorFactory.SAMPLE_COLLECTION);
         sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList("user1", "user2"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
         assertEquals(2, sampleAcl.getNumResults());
         for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
             if (sampleAclEntry.getMember().equals("user1")) {
                 assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("DELETE")));
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("SHARE")));
             } else {
                 assertEquals("user2", sampleAclEntry.getMember());
                 assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
@@ -130,8 +128,7 @@ public class AuthorizationMongoDBAdaptorTest {
                 MongoDBAdaptorFactory.SAMPLE_COLLECTION);
         sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList("user1"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
         assertEquals(1, sampleAcl.getNumResults());
-        assertEquals(1, sampleAcl.first().getPermissions().size());
-        assertTrue(sampleAcl.first().getPermissions().contains(SampleAclEntry.SamplePermissions.SHARE));
+        assertEquals(0, sampleAcl.first().getPermissions().size());
 
         // Reset user
         aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getId()), Arrays.asList("user1"), null,
@@ -199,16 +196,15 @@ public class AuthorizationMongoDBAdaptorTest {
         QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList(user2.getId()),
                 MongoDBAdaptorFactory.SAMPLE_COLLECTION);
         assertEquals(1, sampleAcl.getNumResults());
-        assertEquals(4, sampleAcl.first().getPermissions().size());
+        assertEquals(3, sampleAcl.first().getPermissions().size());
         aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getId()), Arrays.asList(user2.getId()),
                 Arrays.asList("VIEW_ANNOTATIONS", "DELETE", "VIEW"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
 //        sampleDBAdaptor.unsetSampleAcl(s1.getId(), Arrays.asList(user2.getId()),
 //                Arrays.asList("VIEW_ANNOTATIONS", "DELETE", "VIEW"));
         sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList(user2.getId()), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
         assertEquals(1, sampleAcl.getNumResults());
-        assertEquals(2, sampleAcl.first().getPermissions().size());
-        assertTrue(sampleAcl.first().getPermissions().containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.UPDATE,
-                SampleAclEntry.SamplePermissions.SHARE)));
+        assertEquals(1, sampleAcl.first().getPermissions().size());
+        assertTrue(sampleAcl.first().getPermissions().containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.UPDATE)));
 
     }
 

@@ -31,8 +31,7 @@ public class DiseasePanelAclEntry extends AbstractAclEntry<DiseasePanelAclEntry.
     public enum DiseasePanelPermissions {
         VIEW,
         UPDATE,
-        DELETE,
-        SHARE
+        DELETE
     }
 
     public DiseasePanelAclEntry() {

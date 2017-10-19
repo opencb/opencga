@@ -574,12 +574,7 @@ public class JobManager extends ResourceManager<Job> {
 
         // Obtain the resource ids
         MyResourceIds resourceIds = getIds(jobStr, studyStr, sessionId);
-
-        // Check the user has the permissions needed to change permissions
-        for (Long jobId : resourceIds.getResourceIds()) {
-            authorizationManager.checkJobPermission(resourceIds.getStudyId(), jobId, resourceIds.getUser(),
-                    JobAclEntry.JobPermissions.SHARE);
-        }
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -588,6 +583,7 @@ public class JobManager extends ResourceManager<Job> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 

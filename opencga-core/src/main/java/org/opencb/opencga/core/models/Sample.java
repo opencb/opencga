@@ -39,8 +39,9 @@ public class Sample extends Annotable {
     private String description;
     private String type;
     private boolean somatic;
-    private List<OntologyTerm> ontologyTerms;
+    private List<OntologyTerm> phenotypes;
 
+    private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
 
@@ -49,11 +50,12 @@ public class Sample extends Annotable {
 
     public Sample(long id, String name, String source, Individual individual, String description, int release) {
         this(id, name, source, individual, description, "", false, release, 1, new LinkedList<>(),
-                new ArrayList<>(), new HashMap<>());
+                new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }
 
     public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic, int release,
-                  int version, List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList, Map<String, Object> attributes) {
+                  int version, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList, Map<String, Object> stats,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
@@ -65,8 +67,9 @@ public class Sample extends Annotable {
         this.status = new Status();
         this.description = description;
         this.release = release;
-        this.ontologyTerms = ontologyTermList;
+        this.phenotypes = phenotypeList;
         this.annotationSets = annotationSets;
+        this.stats = stats;
         this.attributes = attributes;
     }
 
@@ -84,7 +87,8 @@ public class Sample extends Annotable {
         sb.append(", description='").append(description).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
-        sb.append(", ontologyTerms=").append(ontologyTerms);
+        sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
@@ -110,14 +114,14 @@ public class Sample extends Annotable {
                 && Objects.equals(status, sample.status)
                 && Objects.equals(description, sample.description)
                 && Objects.equals(type, sample.type)
-                && Objects.equals(ontologyTerms, sample.ontologyTerms)
+                && Objects.equals(phenotypes, sample.phenotypes)
                 && Objects.equals(attributes, sample.attributes);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, name, source, individual, release, creationDate, status,
-                description, type, somatic, ontologyTerms, attributes);
+                description, type, somatic, phenotypes, attributes);
     }
 
     public long getId() {
@@ -219,12 +223,21 @@ public class Sample extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getOntologyTerms() {
-        return ontologyTerms;
+    public List<OntologyTerm> getPhenotypes() {
+        return phenotypes;
     }
 
-    public Sample setOntologyTerms(List<OntologyTerm> ontologyTerms) {
-        this.ontologyTerms = ontologyTerms;
+    public Sample setPhenotypes(List<OntologyTerm> phenotypes) {
+        this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public Sample setStats(Map<String, Object> stats) {
+        this.stats = stats;
         return this;
     }
 

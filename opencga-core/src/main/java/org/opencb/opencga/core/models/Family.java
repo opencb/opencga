@@ -31,7 +31,7 @@ public class Family extends Annotable {
     private long id;
     private String name;
 
-    private List<OntologyTerm> diseases;
+    private List<OntologyTerm> phenotypes;
     private List<Individual> members;
 
     private String creationDate;
@@ -45,15 +45,15 @@ public class Family extends Annotable {
     public Family() {
     }
 
-    public Family(String name, List<OntologyTerm> diseases, List<Individual> members, String description, List<AnnotationSet> annotationSets,
-                  Map<String, Object> attributes) {
-        this(name, diseases, members, TimeUtils.getTime(), new Status(Status.READY), description, -1, 1, annotationSets, attributes);
+    public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(name, phenotypes, members, TimeUtils.getTime(), new Status(Status.READY), description, -1, 1, annotationSets, attributes);
     }
 
-    public Family(String name, List<OntologyTerm> diseases, List<Individual> members, String creationDate, Status status,
+    public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate, Status status,
                   String description, int release, int version, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.name = name;
-        this.diseases = defaultObject(diseases, Collections::emptyList);
+        this.phenotypes = defaultObject(phenotypes, Collections::emptyList);
         this.members = defaultObject(members, Collections::emptyList);
         this.creationDate = defaultObject(creationDate, TimeUtils::getTime);
         this.status = defaultObject(status, new Status());
@@ -69,7 +69,7 @@ public class Family extends Annotable {
         final StringBuilder sb = new StringBuilder("Family{");
         sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
-        sb.append(", diseases=").append(diseases);
+        sb.append(", phenotypes=").append(phenotypes);
         sb.append(", members=").append(members);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
@@ -100,12 +100,12 @@ public class Family extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getDiseases() {
-        return diseases;
+    public List<OntologyTerm> getPhenotypes() {
+        return phenotypes;
     }
 
-    public Family setDiseases(List<OntologyTerm> diseases) {
-        this.diseases = diseases;
+    public Family setPhenotypes(List<OntologyTerm> phenotypes) {
+        this.phenotypes = phenotypes;
         return this;
     }
 

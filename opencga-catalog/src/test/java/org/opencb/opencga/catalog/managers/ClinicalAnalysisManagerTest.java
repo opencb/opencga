@@ -5,18 +5,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -61,16 +58,16 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
         OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
 
-        Individual father = new Individual().setName("father").setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setOntologyTerms(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setOntologyTerms(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         Individual relChild1 = new Individual().setName("child1")
-                .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
+                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setSamples(Arrays.asList(
@@ -82,13 +79,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setName("child2")
-                .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setName("child3")
-                .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
