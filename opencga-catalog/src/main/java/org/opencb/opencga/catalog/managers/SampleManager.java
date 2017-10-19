@@ -1040,7 +1040,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Check that the samples are not being used in cohorts
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
-                .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds());
+                .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds())
+                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Status.READY);
         long count = cohortDBAdaptor.count(query).first();
         if (count > 0) {
             if (resources.getResourceIds().size() == 1) {
