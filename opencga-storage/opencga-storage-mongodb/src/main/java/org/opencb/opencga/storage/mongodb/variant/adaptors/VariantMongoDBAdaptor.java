@@ -181,7 +181,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Integer studyId = studyConfigurationManager.getStudyId(study, null, false);
         StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-        List<Integer> fileIds = studyConfigurationManager.getFileIds(files, false, sc);
+        List<Integer> fileIds = studyConfigurationManager.getFileIdsFromStudy(files, sc);
 
         ArrayList<Integer> otherIndexedFiles = new ArrayList<>(sc.getIndexedFiles());
         otherIndexedFiles.removeAll(fileIds);

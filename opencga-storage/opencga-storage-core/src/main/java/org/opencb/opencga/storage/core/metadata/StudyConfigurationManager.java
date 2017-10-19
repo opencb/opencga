@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.core.metadata;
 
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -333,65 +335,189 @@ public class StudyConfigurationManager implements AutoCloseable {
         return studyConfiguration;
     }
 
-    public List<Integer> getFileIds(List files, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
-        List<Integer> fileIds;
+    /**
+     * Get list of fileIds for each study.
+     *
+     * @param files                     List of files
+     * @param skipNegated               Do not include negated files in the list
+     * @param defaultStudyConfiguration Default study configuration. Use to relate files with a study.
+     * @return Map from studyId to list of fileIds
+     */
+    public Map<Integer, List<Integer>> getFileIdsMap(List<?> files, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
         if (files == null || files.isEmpty()) {
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
-        fileIds = new ArrayList<>(files.size());
+        Map<Integer, List<Integer>> fileIdsMap = new HashMap<>();
         for (Object fileObj : files) {
-            Integer fileId = getFileId(fileObj, skipNegated, defaultStudyConfiguration);
-            if (fileId != null) {
-                fileIds.add(fileId);
+            Pair<Integer, Integer> pair = getFileIdPair(fileObj, skipNegated, defaultStudyConfiguration);
+            if (pair != null) {
+                Integer studyId = pair.getKey();
+                Integer fileId = pair.getValue();
+                fileIdsMap.computeIfAbsent(studyId, k -> new ArrayList<>()).add(fileId);
             }
+        }
+        return fileIdsMap;
+    }
+
+    public Pair<Integer, Integer> getFileIdPair(Object fileObj, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
+        final Integer studyId;
+        final Integer fileId;
+
+        if (fileObj instanceof Number) {
+            fileId = ((Number) fileObj).intValue();
+            if (defaultStudyConfiguration != null && (defaultStudyConfiguration.getFileIds().containsValue(fileId)
+                    || defaultStudyConfiguration.getFileIds().containsValue(-fileId))) {
+                studyId = defaultStudyConfiguration.getStudyId();
+            } else {
+                studyId = null;
+            }
+        } else {
+            String fileStr = String.valueOf(fileObj);
+            if (isNegated(fileStr)) { //Skip negated studies
+                if (skipNegated) {
+                    return null;
+                } else {
+                    fileStr = removeNegation(fileStr);
+                }
+            }
+            if (fileStr.contains(":")) {
+                String[] studyFile = fileStr.split(":");
+                String study = studyFile[0];
+                fileStr = studyFile[1];
+                StudyConfiguration sc;
+                if (defaultStudyConfiguration != null
+                        && (study.equals(defaultStudyConfiguration.getStudyName())
+                        || NumberUtils.isParsable(study) && Integer.valueOf(study).equals(defaultStudyConfiguration.getStudyId()))) {
+                    sc = defaultStudyConfiguration;
+                } else {
+                    QueryResult<StudyConfiguration> queryResult = getStudyConfiguration(study, new QueryOptions());
+                    if (queryResult.getResult().isEmpty()) {
+                        throw VariantQueryException.studyNotFound(study);
+                    }
+                    sc = queryResult.first();
+                }
+                studyId = sc.getStudyId();
+                fileId = sc.getFileIds().get(fileStr);
+            } else if (defaultStudyConfiguration != null) {
+                if (NumberUtils.isParsable(fileStr)) {
+                    fileId = Integer.parseInt(fileStr);
+                    if (defaultStudyConfiguration.getFileIds().containsValue(fileId)
+                            || defaultStudyConfiguration.getFileIds().containsValue(-fileId)) {
+                        studyId = defaultStudyConfiguration.getStudyId();
+                    } else {
+                        studyId = null;
+                    }
+                } else {
+                    fileId = defaultStudyConfiguration.getFileIds().get(fileStr);
+                    if (fileId != null) {
+                        studyId = defaultStudyConfiguration.getStudyId();
+                    } else {
+                        studyId = null;
+                    }
+                }
+            } else if (NumberUtils.isParsable(fileStr)) {
+                studyId = null;
+                fileId = Integer.parseInt(fileStr);
+            } else {
+                studyId = null;
+                fileId = null;
+            }
+        }
+        //TODO: Find the studyId?
+        if (studyId == null) {
+            throw VariantQueryException.missingStudyForFile(fileObj.toString(), getStudyNames(null));
+        }
+
+        return Pair.of(studyId, fileId);
+    }
+
+    /**
+     * Get list of fileIds from a study.
+     *
+     * @param files              List of files
+     * @param studyConfiguration Study configuration.
+     * @return List of file ids within this study
+     * @throws VariantQueryException if the list of files contains files from other studies
+     */
+    public List<Integer> getFileIdsFromStudy(List<?> files, StudyConfiguration studyConfiguration) throws VariantQueryException {
+        Objects.requireNonNull(studyConfiguration);
+        List<Integer> fileIds = new ArrayList<>(files.size());
+        for (Object fileObj : files) {
+            Integer fileId = getFileIdFromStudy(fileObj, studyConfiguration);
+            if (fileId == null) {
+                throw VariantQueryException.fileNotFound(fileObj, studyConfiguration.getStudyName());
+            }
+            fileIds.add(fileId);
         }
         return fileIds;
     }
 
-    public Integer getFileId(Object fileObj, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
-        if (fileObj == null) {
-            return null;
-        } else if (fileObj instanceof Number) {
-            return ((Number) fileObj).intValue();
-        } else {
-            String file = String.valueOf(fileObj);
-            if (isNegated(file)) { //Skip negated studies
-                if (skipNegated) {
-                    return null;
-                } else {
-                    file = removeNegation(file);
-                }
-            }
-            if (file.contains(":")) {
-                String[] studyFile = file.split(":");
-                QueryResult<StudyConfiguration> queryResult = getStudyConfiguration(studyFile[0], new QueryOptions());
-                if (queryResult.getResult().isEmpty()) {
-                    throw VariantQueryException.studyNotFound(studyFile[0]);
-                }
-                return queryResult.first().getFileIds().get(studyFile[1]);
+    /**
+     * Get fileId from a given study configuration.
+     *
+     * @param fileObj            List of files
+     * @param studyConfiguration Study configuration.
+     * @return File id within this study. Null if the file does not exist.
+     */
+    public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration) {
+        final Integer fileId;
+        if (fileObj instanceof Number) {
+            int aux = ((Number) fileObj).intValue();
+            if (studyConfiguration.getFileIds().containsValue(aux)) {
+                fileId = aux;
             } else {
-                try {
-                    return Integer.parseInt(file);
-                } catch (NumberFormatException e) {
-                    if (defaultStudyConfiguration != null) {
-                        return defaultStudyConfiguration.getFileIds().get(file);
+                fileId = null;
+            }
+        } else {
+            String fileStr = fileObj.toString();
+            if (StringUtils.isNumeric(fileStr)) {
+                fileId = Integer.parseInt(fileStr);
+            } else {
+                int idx = fileStr.indexOf(':');
+                if (idx > 0) {
+                    String[] split = fileStr.split(":", 2);
+                    String study = split[0];
+                    fileStr = split[1];
+                    if (study.equals(studyConfiguration.getStudyName())
+                            || StringUtils.isNumeric(study) && Integer.valueOf(study).equals(studyConfiguration.getStudyId())) {
+                        if (StringUtils.isNumeric(fileStr)) {
+                            int aux = Integer.valueOf(fileStr);
+                            if (studyConfiguration.getFileIds().containsValue(aux)) {
+                                fileId = aux;
+                            } else {
+                                fileId = null;
+                            }
+                        } else {
+                            fileId = studyConfiguration.getFileIds().get(fileStr);
+                        }
                     } else {
-                        List<String> studyNames = getStudyNames(null);
-                        throw new VariantQueryException("Unknown file \"" + file + "\". "
-                                + "Please, specify the study belonging."
-                                + (studyNames == null ? "" : " Available studies: " + studyNames));
+                        fileId = null;
                     }
+                } else if (StringUtils.isNumeric(fileStr)) {
+                    int aux = Integer.valueOf(fileStr);
+                    if (studyConfiguration.getFileIds().containsValue(aux)) {
+                        fileId = aux;
+                    } else {
+                        fileId = null;
+                    }
+                } else {
+                    fileId = studyConfiguration.getFileIds().get(fileStr);
                 }
             }
         }
+        return fileId;
     }
 
+    // TODO: Return sampleId and studyId as a Pair
     public int getSampleId(Object sampleObj, StudyConfiguration defaultStudyConfiguration) {
         int sampleId;
         if (sampleObj instanceof Number) {
             sampleId = ((Number) sampleObj).intValue();
         } else {
             String sampleStr = sampleObj.toString();
+            if (isNegated(sampleStr)) {
+                sampleStr = removeNegation(sampleStr);
+            }
             if (StringUtils.isNumeric(sampleStr)) {
                 sampleId = Integer.parseInt(sampleStr);
             } else {
@@ -407,10 +533,10 @@ public class StudyConfigurationManager implements AutoCloseable {
                         if (queryResult.getResult().isEmpty()) {
                             throw VariantQueryException.studyNotFound(study);
                         }
-                        if (!queryResult.first().getSampleIds().containsKey(sampleStr)) {
-                            throw VariantQueryException.sampleNotFound(sampleStr, study);
-                        }
                         sc = queryResult.first();
+                    }
+                    if (!sc.getSampleIds().containsKey(sampleStr)) {
+                        throw VariantQueryException.sampleNotFound(sampleStr, study);
                     }
                     sampleId = sc.getSampleIds().get(sampleStr);
                 } else if (defaultStudyConfiguration != null) {
@@ -428,6 +554,54 @@ public class StudyConfigurationManager implements AutoCloseable {
         return sampleId;
     }
 
+    public static Integer getSampleIdFromStudy(Object sampleObj, StudyConfiguration sc) {
+        final Integer sampleId;
+        if (sampleObj instanceof Number) {
+            int aux = ((Number) sampleObj).intValue();
+            if (sc.getSampleIds().containsValue(aux)) {
+                sampleId = aux;
+            } else {
+                sampleId = null;
+            }
+        } else {
+            String sampleStr = sampleObj.toString();
+            if (StringUtils.isNumeric(sampleStr)) {
+                sampleId = Integer.parseInt(sampleStr);
+            } else {
+                int idx = sampleStr.indexOf(':');
+                if (idx > 0) {
+                    String[] split = sampleStr.split(":", 2);
+                    if (split[0].equals(sc.getStudyName())
+                            || StringUtils.isNumeric(split[0]) && Integer.valueOf(split[0]).equals(sc.getStudyId())) {
+                        if (StringUtils.isNumeric(sampleStr)) {
+                            int aux = Integer.valueOf(sampleStr);
+                            if (sc.getSampleIds().containsValue(aux)) {
+                                sampleId = aux;
+                            } else {
+                                sampleId = null;
+                            }
+                        } else {
+                            sampleId = sc.getSampleIds().get(sampleStr);
+                        }
+                    } else {
+                        sampleId = null;
+                    }
+                } else if (StringUtils.isNumeric(sampleStr)) {
+                    int aux = Integer.valueOf(sampleStr);
+                    if (sc.getSampleIds().containsValue(aux)) {
+                        sampleId = aux;
+                    } else {
+                        sampleId = null;
+                    }
+                } else {
+                    sampleId = sc.getSampleIds().get(sampleStr);
+                }
+            }
+        }
+        return sampleId;
+    }
+
+    // TODO: Return cohortId and studyId as a Pair
     /**
      * Finds the cohortId from a cohort reference.
      *

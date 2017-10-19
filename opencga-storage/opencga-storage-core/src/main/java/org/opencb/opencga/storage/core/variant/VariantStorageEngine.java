@@ -503,7 +503,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected List<Integer> preRemoveFiles(String study, List<String> files) throws StorageEngineException {
         List<Integer> fileIds = new ArrayList<>();
         getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
-            fileIds.addAll(getStudyConfigurationManager().getFileIds(files, false, studyConfiguration));
+            fileIds.addAll(getStudyConfigurationManager().getFileIdsFromStudy(files, studyConfiguration));
 
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, fileIds, resume,

@@ -221,7 +221,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void multiIterator() throws Exception {
         List<String> variantsToQuery = allVariants.getResult()
                 .stream()
-                .map(Variant::toString).limit(allVariants.getResult().size() / 2)
+                .filter(v -> !v.isSymbolic())
+                .map(Variant::toString)
+                .limit(allVariants.getResult().size() / 2)
                 .collect(Collectors.toList());
 
         VariantDBIterator iterator = dbAdaptor.iterator(variantsToQuery.iterator(), new Query(), new QueryOptions());
@@ -486,7 +488,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         List<Variant> variants = new ArrayList<>();
         for (Variant variant : allVariants.getResult()) {
             if (i++ % 10 == 0) {
-                variants.add(variant);
+                if (!variant.isSymbolic()) {
+                    variants.add(variant);
+                }
             }
         }
         List<Variant> result = dbAdaptor.get(new Query(ID.key(), variants), new QueryOptions()).getResult();
@@ -1261,9 +1265,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         numResults = dbAdaptor.count(query).first();
         assertEquals(NUM_VARIANTS, numResults);
 
+        VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyConfiguration.getStudyName()));
+        thrown.expectMessage(e.getMessage());
+        thrown.expect(e.getClass());
         query = new Query(FILES.key(), -1);
-        numResults = dbAdaptor.count(query).first();
-        assertEquals("There is no file with ID -1", 0, numResults);
+        dbAdaptor.count(query).first();
+//        assertEquals("There is no file with ID -1", 0, numResults);
     }
 
     @Test

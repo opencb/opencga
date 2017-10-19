@@ -381,7 +381,7 @@ public class VariantQueryUtils {
             if (returnedFilesList != null) {
                 fileIds = new ArrayList<>();
                 for (String file : returnedFilesList) {
-                    Integer fileId = getFileId(file, sc);
+                    Integer fileId = StudyConfigurationManager.getFileIdFromStudy(file, sc);
                     if (fileId != null) {
                         fileIds.add(fileId);
                     }
@@ -389,7 +389,7 @@ public class VariantQueryUtils {
             } else if (!sampleNames.isEmpty()) {
                 Set<Integer> fileSet = new LinkedHashSet<>();
                 for (String sample : sampleNames) {
-                    Integer sampleId = getSampleId(sample, sc);
+                    Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, sc);
                     if (sampleId != null) {
                         for (Integer indexedFile : sc.getIndexedFiles()) {
                             if (sc.getSamplesInFiles().get(indexedFile).contains(sampleId)) {
@@ -450,104 +450,6 @@ public class VariantQueryUtils {
             returnedFiles = null;
         }
         return returnedFiles;
-    }
-
-    // TODO: Move to StudyConfigurationManager
-    private static Integer getFileId(Object fileObj, StudyConfiguration sc) {
-        final Integer fileId;
-        if (fileObj instanceof Number) {
-            int aux = ((Number) fileObj).intValue();
-            if (sc.getFileIds().containsValue(aux)) {
-                fileId = aux;
-            } else {
-                fileId = null;
-            }
-        } else {
-            String fileStr = fileObj.toString();
-            if (StringUtils.isNumeric(fileStr)) {
-                fileId = Integer.parseInt(fileStr);
-            } else {
-                int idx = fileStr.indexOf(':');
-                if (idx > 0) {
-                    String[] split = fileStr.split(":", 2);
-                    String study = split[0];
-                    fileStr = split[1];
-                    if (study.equals(sc.getStudyName())
-                            || StringUtils.isNumeric(study) && Integer.valueOf(study).equals(sc.getStudyId())) {
-                        if (StringUtils.isNumeric(fileStr)) {
-                            int aux = Integer.valueOf(fileStr);
-                            if (sc.getFileIds().containsValue(aux)) {
-                                fileId = aux;
-                            } else {
-                                fileId = null;
-                            }
-                        } else {
-                            fileId = sc.getFileIds().get(fileStr);
-                        }
-                    } else {
-                        fileId = null;
-                    }
-                } else  if (StringUtils.isNumeric(fileStr)) {
-                    int aux = Integer.valueOf(fileStr);
-                    if (sc.getFileIds().containsValue(aux)) {
-                        fileId = aux;
-                    } else {
-                        fileId = null;
-                    }
-                } else {
-                    fileId = sc.getFileIds().get(fileStr);
-                }
-            }
-        }
-        return fileId;
-    }
-
-    // TODO: Move to StudyConfigurationManager
-    private static Integer getSampleId(Object sampleObj, StudyConfiguration sc) {
-        final Integer sampleId;
-        if (sampleObj instanceof Number) {
-            int aux = ((Number) sampleObj).intValue();
-            if (sc.getSampleIds().containsValue(aux)) {
-                sampleId = aux;
-            } else {
-                sampleId = null;
-            }
-        } else {
-            String sampleStr = sampleObj.toString();
-            if (StringUtils.isNumeric(sampleStr)) {
-                sampleId = Integer.parseInt(sampleStr);
-            } else {
-                int idx = sampleStr.indexOf(':');
-                if (idx > 0) {
-                    String[] split = sampleStr.split(":", 2);
-                    if (split[0].equals(sc.getStudyName())
-                            || StringUtils.isNumeric(split[0]) && Integer.valueOf(split[0]).equals(sc.getStudyId())) {
-                        if (StringUtils.isNumeric(sampleStr)) {
-                            int aux = Integer.valueOf(sampleStr);
-                            if (sc.getSampleIds().containsValue(aux)) {
-                                sampleId = aux;
-                            } else {
-                                sampleId = null;
-                            }
-                        } else {
-                            sampleId = sc.getSampleIds().get(sampleStr);
-                        }
-                    } else {
-                        sampleId = null;
-                    }
-                } else if (StringUtils.isNumeric(sampleStr)) {
-                    int aux = Integer.valueOf(sampleStr);
-                    if (sc.getSampleIds().containsValue(aux)) {
-                        sampleId = aux;
-                    } else {
-                        sampleId = null;
-                    }
-                } else {
-                    sampleId = sc.getSampleIds().get(sampleStr);
-                }
-            }
-        }
-        return sampleId;
     }
 
     public static boolean isReturnedSamplesDefined(Query query, Set<VariantField> returnedFields) {

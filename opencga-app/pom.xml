@@ -359,6 +359,9 @@
             <id>storage-mongodb</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>storage-mongodb</name>
+                </property>
             </activation>
             <dependencies>
                 <dependency>

@@ -506,19 +506,25 @@ public class VariantMongoDBQueryParser {
                 }
             }
 
+            List<Integer> fileIds = Collections.emptyList();
             if (isValidParam(query, FILES)) {
-                addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
-                        query.getString(FILES.key()), studyBuilder, QueryOperation.AND,
-                        f -> studyConfigurationManager.getFileId(f, false, defaultStudyConfiguration));
-            }
-
-            if (isValidParam(query, FILTER)) {
                 String filesValue = query.getString(FILES.key());
                 QueryOperation filesOperation = checkOperator(filesValue);
                 List<String> fileNames = splitValue(filesValue, filesOperation);
-                List<Integer> fileIds = studyConfigurationManager.getFileIds(fileNames, true, defaultStudyConfiguration);
 
+                fileIds = fileNames
+                        .stream()
+                        .filter(value -> !isNegated(value))
+                        .map(value -> studyConfigurationManager.getFileIdPair(value, false, defaultStudyConfiguration).getValue())
+                        .collect(Collectors.toList());
+
+                addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
+                                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
+                        fileNames, studyBuilder, QueryOperation.AND, filesOperation,
+                        f -> studyConfigurationManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
+            }
+
+            if (isValidParam(query, FILTER)) {
                 String fileQueryPrefix;
                 if (fileIds.isEmpty()) {
                     fileQueryPrefix = studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.';
@@ -673,8 +679,7 @@ public class VariantMongoDBQueryParser {
                 if (filesFilterBySamples && !files.isEmpty()
                         && !files.containsAll(defaultStudyConfiguration.getIndexedFiles())) {
                     addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD, files, studyBuilder, QueryOperation.AND,
-                            f -> studyConfigurationManager.getFileId(f, false, defaultStudyConfiguration));
+                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD, files, studyBuilder, QueryOperation.AND);
                 }
             }
 
@@ -868,14 +873,23 @@ public class VariantMongoDBQueryParser {
         });
     }
 
-    private <T> QueryBuilder addQueryFilter(String key, Collection<?> value, final QueryBuilder builder, QueryOperation op,
-                                            Function<String, T> map) {
-        return addQueryFilter(key, value.stream().map(Object::toString).collect(Collectors.joining(AND)), builder, op, map);
-    }
-
     private <T> QueryBuilder addQueryFilter(String key, String value, final QueryBuilder builder, QueryOperation op,
                                             Function<String, T> map) {
-        VariantQueryUtils.QueryOperation operation = checkOperator(value);
+        VariantQueryUtils.QueryOperation intraOp = checkOperator(value);
+        return addQueryFilter(key, splitValue(value, intraOp), builder, op, intraOp, map);
+    }
+
+    private <T> QueryBuilder addQueryFilter(String key, Collection<T> value, final QueryBuilder builder, QueryOperation op) {
+        return addQueryFilter(key, value, builder, op, t -> t);
+    }
+
+    private <S, T> QueryBuilder addQueryFilter(String key, Collection<S> value, final QueryBuilder builder, QueryOperation op,
+                                               Function<S, T> map) {
+        return addQueryFilter(key, value, builder, op, QueryOperation.AND, map);
+    }
+
+    private <S, T> QueryBuilder addQueryFilter(String key, Collection<S> values, QueryBuilder builder, QueryOperation op,
+                                               QueryOperation intraOp, Function<S, T> map) {
         QueryBuilder auxBuilder;
         if (op == VariantQueryUtils.QueryOperation.OR) {
             auxBuilder = QueryBuilder.start();
@@ -883,27 +897,27 @@ public class VariantMongoDBQueryParser {
             auxBuilder = builder;
         }
 
-        if (operation == null) {
-            if (isNegated(value)) {
-                T mapped = map.apply(removeNegation(value));
+        if (values.size() == 1) {
+            S elem = values.iterator().next();
+            if (elem instanceof String && isNegated((String) elem)) {
+                T mapped = map.apply((S) removeNegation((String) elem));
                 if (mapped instanceof Collection) {
                     auxBuilder.and(key).notIn(mapped);
                 } else {
                     auxBuilder.and(key).notEquals(mapped);
                 }
             } else {
-                T mapped = map.apply(value);
+                T mapped = map.apply(elem);
                 if (mapped instanceof Collection) {
                     auxBuilder.and(key).in(mapped);
                 } else {
                     auxBuilder.and(key).is(mapped);
                 }
             }
-        } else if (operation == VariantQueryUtils.QueryOperation.OR) {
-            String[] array = value.split(OR);
-            List list = new ArrayList(array.length);
-            for (String elem : array) {
-                if (isNegated(elem)) {
+        } else if (intraOp == QueryOperation.OR) {
+            List<Object> list = new ArrayList<>(values.size());
+            for (S elem : values) {
+                if (elem instanceof String && isNegated((String) elem)) {
                     throw new VariantQueryException("Unable to use negate (!) operator in OR sequences (<it_1>(,<it_n>)*)");
                 } else {
                     T mapped = map.apply(elem);
@@ -914,16 +928,19 @@ public class VariantMongoDBQueryParser {
                     }
                 }
             }
-            auxBuilder.and(key).in(list);
+            if (list.size() == 1) {
+                auxBuilder.and(key).is(list);
+            } else {
+                auxBuilder.and(key).in(list);
+            }
         } else {
             //Split in two lists: positive and negative
-            String[] array = value.split(AND);
-            List listIs = new ArrayList(array.length);
-            List listNotIs = new ArrayList(array.length);
+            List<Object> listIs = new ArrayList<>(values.size());
+            List<Object> listNotIs = new ArrayList<>(values.size());
 
-            for (String elem : array) {
-                if (isNegated(elem)) {
-                    T mapped = map.apply(removeNegation(elem));
+            for (S elem : values) {
+                if (elem instanceof String && isNegated((String) elem)) {
+                    T mapped = map.apply((S) removeNegation((String) elem));
                     if (mapped instanceof Collection) {
                         listNotIs.addAll(((Collection) mapped));
                     } else {
