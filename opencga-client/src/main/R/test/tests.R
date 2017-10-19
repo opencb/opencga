@@ -1,15 +1,28 @@
 library(opencgaR)
 
+
 ## Test reading config
 ##############################
 # Configuration in list format
 conf <- list(version="v1",
              rest=list(host="http://localhost:8080/opencga/"))
-con <- opencgaReadConfig(conf)
+
+con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", 
+                    user = "user1")
+con <- opencgaLogin(opencga = con, userid = "user1", passwd = "user1_pass")
+
+
+debug(fetchOpenCGA)
+fetchOpenCGA(object = con, category = "studies", action = "create", params = params, httpMethod = "POST", as.queryParam = "projectId")
+
+
+# Conexion a HGVA
+
+
 
 # Configuration in file format ("YAML" or "JSON")
 conf <- "/Users/mbleda/appl/opencga/build/conf/client-configuration.yml"
-con <- OpencgaReadConfig(conf)
+con <- initOpencgaR(opencgaConfig = conf)
 
 
 

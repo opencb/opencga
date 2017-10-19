@@ -1,30 +1,14 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ################################################################################
-#' OpencgaR constructor function
-#' @aliases OpencgaR
-#' @title OpencgaR
+#' OpencgaR init function
+#' @aliases initOpencgaR
+#' @title initOpencgaR
 #' 
-#' @description  This is a constructor function for the OpencgaR object
+#' @description  This function inicializes the OpencgaR object with the 
+#' necessary details to generate a connection.
 #' @details
-#' This class defines the OpencgaR object. It holds the default configuration 
+#' This class initializes the OpencgaR object. It holds the default configuration 
 #' required by OpencgaR methods to connect to OpenCGA web services. By defult, 
 #' it is configured to query HGVA (http://hgva.opencb.org/).
-#' @import methods
 #' @param host a character specifying the host url, e.g.  
 #' "http://bioinfo.hpc.cam.ac.uk/hgva"
 #' @param version a character specifying the API version, e.g. "v1"
@@ -34,12 +18,24 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 #' @examples
-#'    cga <- OpencgaR()
-#'    print(cga)
+#'    ocga <- initOpencgaR()
+#'    print(ocga)
 #' @export
 
-OpencgaConfig <- function(host, version){
-    new("OpencgaConfig", host=host, version=version)
+initOpencgaR <- function(host=NULL, version="v1", user="", opencgaConfig=NULL){
+    if (is.null(opencgaConfig)){
+        # Check values provided
+        if (!is.null(host) & user != ""){
+            new("OpencgaR", host=host, version=version, user=user, sessionId="")
+        }else if(!is.null(host)){
+            new("OpencgaR", host=host, version=version, sessionId="")
+        }else{
+            cat("No connection parameters given. Using HGVA setup.")
+            new("OpencgaR")
+        }
+    }else{
+        opencgaReadConfig(opencgaConfig)
+    }
 }
 
 setMethod("show", signature = "OpencgaR", definition = function(object){
@@ -47,6 +43,7 @@ setMethod("show", signature = "OpencgaR", definition = function(object){
     cat(paste("| Host:", object@host))
     cat(paste("\n| Version:", object@version))
 })
+
 
 ################################################################################
 #' Read OpenCGA configuration
@@ -75,8 +72,14 @@ opencgaReadConfig <- function(conf){
         # read from file
         conf <- readConfFile(conf)
     }
+    if ("user" %in% conf){
+        user=conf$user
+    }else{
+        cat("User name not specified. Please specify it if login is required.")
+        user=""
+    }
     ocgaConf <- new(Class = "OpencgaR", host=conf$host, version=conf$version,
-                    user=NULL, sessionId=NULL)
+                    user=user, sessionId="")
     return(ocgaConf)
 }
 
@@ -103,4 +106,58 @@ readConfFile <- function(conf){
     conf.obj <- read.config(conf, warn = F)
     
     readConfList(conf.obj)
+}
+
+################################################################################
+#' @title Login to OpenCGA Web Services
+#' 
+#' @description
+#' A function to login Opencga web services
+#' 
+#' @aliases OpencgaLogin
+#' @param ocga an object of type OpencgaR generated using initOpencgaR
+#' @param userid a charatcer with the username
+#' @param passwd a charcter with the user password
+#' #@param version a character with the OpenCGA version to use
+#' @param interactive whether to launch a graphical interface, FALSE by default
+#' #@param ... Any other arguments
+#' 
+#' @return an Opencga class object
+#' 
+#' @export
+opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
+    if (class(opencga) == "OpencgaR"){
+        host <- slot(object = opencga, name = "host")
+        version <- slot(object = opencga, name = "version")
+    }else{
+        stop("Please, provide a valid config object. See initOpencgaR")
+    }
+    
+    if(!endsWith(x = host, suffix = "/")){
+        host <- paste0(host, "/")
+    }
+    if (!grepl("webservices/rest", host)){
+        host <- paste0(host, "webservices/rest/")
+    }
+    baseurl <- paste0(host, version,"/users")
+    
+    if(interactive==TRUE){
+        cred <- user_login()
+        user <- cred$user
+        passwd <- cred$pass
+    }
+    baseurl <- paste(baseurl, userid, "login", sep="/")
+    
+    # Send request
+    query <- POST(baseurl, body = list(password = passwd), encode = "json")
+    
+    # check query status
+    warn_for_status(query)
+    stop_for_status(query)
+    
+    res <- content(query)
+    sessionId <- res$response[[1]]$result[[1]]$sessionId
+    opencga@user <- userid
+    opencga@sessionId <- sessionId
+    return(opencga)
 }
