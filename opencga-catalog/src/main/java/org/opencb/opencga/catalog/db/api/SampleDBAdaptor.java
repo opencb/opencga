@@ -58,13 +58,10 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
-        ONTOLOGIES("ontologies", TEXT_ARRAY, ""), // Alias in the webservice to ONTOLOGY_TERMS
-        ONTOLOGY_TERMS("ontologyTerms", TEXT_ARRAY, ""),
-        ONTOLOGY_TERMS_ID("ontologyTerms.id", TEXT, ""),
-        ONTOLOGY_TERMS_NAME("ontologyTerms.name", TEXT, ""),
-        ONTOLOGY_TERMS_SOURCE("ontologyTerms.source", TEXT, ""),
-        ONTOLOGY_TERMS_AGE_OF_ONSET("ontologyTerms.ageOfOnset", TEXT, ""),
-        ONTOLOGY_TERMS_MODIFIERS("ontologyTerms.modifiers", TEXT_ARRAY, ""),
+        PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
+        PHENOTYPES_ID("phenotypes.id", TEXT, ""),
+        PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
+        PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),

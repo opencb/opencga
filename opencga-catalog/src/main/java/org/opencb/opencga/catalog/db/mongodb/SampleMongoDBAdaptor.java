@@ -234,7 +234,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         final String[] acceptedMapParams = {QueryParams.STATS.key(), QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key()};
         filterObjectParams(parameters, sampleParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.NAME.key())) {
@@ -687,9 +687,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case ONTOLOGIES:
-                    case ONTOLOGY_TERMS:
-                        addOntologyQueryFilter(QueryParams.ONTOLOGY_TERMS.key(), queryParam.key(), query, andBsonList);
+                    case PHENOTYPES:
+                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
                         break;
                     case VARIABLE_SET_ID:
                         addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
@@ -720,11 +719,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case STATUS_DATE:
                     case SOMATIC:
                     case TYPE:
-                    case ONTOLOGY_TERMS_ID:
-                    case ONTOLOGY_TERMS_NAME:
-                    case ONTOLOGY_TERMS_SOURCE:
-                    case ONTOLOGY_TERMS_AGE_OF_ONSET:
-                    case ONTOLOGY_TERMS_MODIFIERS:
+                    case PHENOTYPES_ID:
+                    case PHENOTYPES_NAME:
+                    case PHENOTYPES_SOURCE:
                     case ANNOTATION_SETS:
                     case CREATION_DATE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);

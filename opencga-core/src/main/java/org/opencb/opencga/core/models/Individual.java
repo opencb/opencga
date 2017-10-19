@@ -53,7 +53,7 @@ public class Individual extends Annotable {
     private Status status;
     private LifeStatus lifeStatus;
     private AffectationStatus affectationStatus;
-    private List<OntologyTerm> ontologyTerms;
+    private List<OntologyTerm> phenotypes;
     private List<Sample> samples;
     private boolean parentalConsanguinity;
 
@@ -90,26 +90,26 @@ public class Individual extends Annotable {
     public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
                       String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
-                      List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList) {
+                      List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList) {
         this(id, name, father, mother, multiples, -1, -1, null, sex, karyotypicSex, ethnicity, null, population, dateOfBirth,
-                release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, ontologyTermList, samples, parentalConsanguinity,
+                release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, samples, parentalConsanguinity,
                 annotationSets, Collections.emptyMap());
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
                       String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
-                      List<OntologyTerm> ontologyTermList) {
+                      List<OntologyTerm> phenotypeList) {
 
         this(id, name, new Individual(), new Individual(), new Multiples(), fatherId, motherId, family, sex, karyotypicSex, ethnicity,
                 new Species(), population, dateOfBirth, release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus,
-                ontologyTermList, new ArrayList<>(), parentalConsanguinity, annotationSets, Collections.emptyMap());
+                phenotypeList, new ArrayList<>(), parentalConsanguinity, annotationSets, Collections.emptyMap());
     }
 
     public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, long fatherId, long motherId,
                       String family, Sex sex, KaryotypicSex karyotypicSex, String ethnicity, Species species, Population population,
                       String dateOfBirth, int release, int version, String creationDate, Status status, LifeStatus lifeStatus,
-                      AffectationStatus affectationStatus, List<OntologyTerm> ontologyTerms, List<Sample> samples,
+                      AffectationStatus affectationStatus, List<OntologyTerm> phenotypes, List<Sample> samples,
                       boolean parentalConsanguinity, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -131,7 +131,7 @@ public class Individual extends Annotable {
         this.status = defaultObject(status, Status::new);
         this.lifeStatus = lifeStatus;
         this.affectationStatus = affectationStatus;
-        this.ontologyTerms = defaultObject(ontologyTerms, ArrayList::new);
+        this.phenotypes = defaultObject(phenotypes, ArrayList::new);
         this.samples = defaultObject(samples, ArrayList::new);
         this.parentalConsanguinity = parentalConsanguinity;
         this.annotationSets = annotationSets;
@@ -272,7 +272,7 @@ public class Individual extends Annotable {
         sb.append(", status=").append(status);
         sb.append(", lifeStatus=").append(lifeStatus);
         sb.append(", affectationStatus=").append(affectationStatus);
-        sb.append(", ontologyTerms=").append(ontologyTerms);
+        sb.append(", phenotypes=").append(phenotypes);
         sb.append(", samples=").append(samples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
         sb.append(", attributes=").append(attributes);
@@ -461,12 +461,12 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getOntologyTerms() {
-        return ontologyTerms;
+    public List<OntologyTerm> getPhenotypes() {
+        return phenotypes;
     }
 
-    public Individual setOntologyTerms(List<OntologyTerm> ontologyTerms) {
-        this.ontologyTerms = ontologyTerms;
+    public Individual setPhenotypes(List<OntologyTerm> phenotypes) {
+        this.phenotypes = phenotypes;
         return this;
     }
 

@@ -80,7 +80,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setType(ParamUtils.defaultString(sample.getType(), ""));
-        sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
+        sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
         sample.setAnnotationSets(validateAnnotationSets(sample.getAnnotationSets()));
         sample.setStats(ParamUtils.defaultObject(sample.getStats(), Collections.emptyMap()));
@@ -464,7 +464,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 case TYPE:
                 case SOMATIC:
                 case DESCRIPTION:
-                case ONTOLOGY_TERMS:
+                case PHENOTYPES:
                 case STATS:
                 case ATTRIBUTES:
                     break;

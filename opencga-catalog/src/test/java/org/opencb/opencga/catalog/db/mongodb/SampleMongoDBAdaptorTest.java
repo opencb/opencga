@@ -199,7 +199,7 @@ public class SampleMongoDBAdaptorTest {
                 new OntologyTerm("hpo:456", "Another hpo term", "hpo"),
                 new OntologyTerm("go:123", "My go term", "go")
         );
-        Sample sample1 = new Sample().setName("sample1").setOntologyTerms(ontologyList);
+        Sample sample1 = new Sample().setName("sample1").setPhenotypes(ontologyList);
 
         ontologyList = Arrays.asList(
                 new OntologyTerm("hpo:789", "One hpo term", "hpo"),
@@ -207,14 +207,14 @@ public class SampleMongoDBAdaptorTest {
                 new OntologyTerm("hpo:456", "Another hpo term", "hpo"),
                 new OntologyTerm("go:yyy", "My go term", "go")
         );
-        Sample sample2 = new Sample().setName("sample2").setOntologyTerms(ontologyList);
+        Sample sample2 = new Sample().setName("sample2").setPhenotypes(ontologyList);
 
         catalogSampleDBAdaptor.insert(studyId, sample1, new QueryOptions()).first().getId();
         catalogSampleDBAdaptor.insert(studyId, sample2, new QueryOptions()).first().getId();
 
         // Start the search
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ONTOLOGY_TERMS.key(), "=hpo:456,hpo:xxx")
+                .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "=hpo:456,hpo:xxx")
                 .append(SampleDBAdaptor.QueryParams.NAME.key(), "=sample2");
 
         QueryResult<Sample> sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
@@ -222,23 +222,23 @@ public class SampleMongoDBAdaptorTest {
         assertEquals(sample2.getName(), sampleQueryResult.first().getName());
 
         query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ONTOLOGY_TERMS.key(), "hpo:456,hpo:xxx");
+                .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "hpo:456,hpo:xxx");
         sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
         assertEquals(2, sampleQueryResult.getNumResults());
 
         query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ONTOLOGY_TERMS.key(), "My go term");
+                .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "My go term");
         sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
         assertEquals(2, sampleQueryResult.getNumResults());
 
         query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ONTOLOGIES.key(), "go:123");
+                .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "go:123");
         sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
         assertEquals(1, sampleQueryResult.getNumResults());
         assertEquals(sample1.getName(), sampleQueryResult.first().getName());
 
         query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ONTOLOGIES.key(), "=hpo:456,My go term");
+                .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "=hpo:456,My go term");
         sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
         assertEquals(2, sampleQueryResult.getNumResults());
     }

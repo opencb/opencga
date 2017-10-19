@@ -184,7 +184,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
                            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
                            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-                           @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
+                           @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
                            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
@@ -568,7 +568,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String type;
         public String source;
         public boolean somatic;
-        public List<OntologyTerm> ontologyTerms;
+        public List<OntologyTerm> phenotypes;
         public List<CommonModels.AnnotationSetParams> annotationSets;
         public Map<String, Object> stats;
         public Map<String, Object> attributes;
@@ -594,7 +594,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, type, somatic, 1, 1, annotationSetList, ontologyTerms, stats, attributes);
+                    description, type, somatic, 1, 1, annotationSetList, phenotypes, stats, attributes);
         }
     }
 }

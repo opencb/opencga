@@ -146,7 +146,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                       String populationSubpopulation,
             @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
                       String populationDescription,
-            @ApiParam(value = "Ontology terms", required = false) @QueryParam("ontologies") String ontologies,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
                       Individual.KaryotypicSex karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
@@ -552,7 +552,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
         public List<CommonModels.AnnotationSetParams> annotationSets;
-        public List<OntologyTerm> ontologyTerms;
+        public List<OntologyTerm> phenotypes;
         public Map<String, Object> attributes;
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
@@ -567,7 +567,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
         }
     }
 
@@ -593,7 +593,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
             return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
         }
     }
 
