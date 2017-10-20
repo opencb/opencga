@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -26,21 +27,24 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -415,6 +419,142 @@ public class ProjectManager extends AbstractManager {
         } else {
             throw new CatalogException("Cannot increment current release number. The current release " + currentRelease + " has not yet "
                     + "been used in any entry");
+        }
+    }
+
+    private int getCurrentRelease(long projectId) throws CatalogException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
+        if (projectQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Internal error. Cannot retrieve current release from project");
+        }
+        return projectQueryResult.first().getCurrentRelease();
+    }
+
+    public void exportReleases(String projectStr, int release, String outputDirStr, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        if (!"admin".equals(userId)) {
+            throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
+        }
+
+        Path outputDir = Paths.get(outputDirStr);
+        if (outputDir == null) {
+            throw new CatalogException("Missing output directory");
+        }
+        if (outputDir.toFile().exists() && !outputDir.toFile().isDirectory()) {
+            throw new CatalogException("The output directory parameter seems not to contain a directory");
+        }
+
+        if (!outputDir.toFile().exists()) {
+            try {
+                Files.createDirectory(outputDir);
+            } catch (IOException e) {
+                logger.error("Error when attempting to create directory for exported data: {}", e.getMessage(), e);
+                throw new CatalogException("Error when attempting to create directory for exported data: " + e.getMessage());
+            }
+        }
+
+        long projectId = getId(userId, projectStr);
+        int currentRelease = getCurrentRelease(projectId);
+        release = Math.min(currentRelease, release);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        DBIterator dbIterator = projectDBAdaptor.nativeIterator(query, QueryOptions.empty());
+        exportToFile(dbIterator, outputDir.resolve("projects.json").toFile(), objectMapper, "project");
+
+        // Get all the studies contained in the project
+        query = new Query()
+                .append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
+                .append(StudyDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query,
+                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key()));
+        if (studyQueryResult.getNumResults() == 0) {
+            logger.info("The project does not contain any study under the specified release");
+            return;
+        }
+        dbIterator = studyDBAdaptor.nativeIterator(query, QueryOptions.empty());
+        exportToFile(dbIterator, outputDir.resolve("studies.json").toFile(), objectMapper, "studies");
+
+        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getId).collect(Collectors.toList());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(SampleDBAdaptor.QueryParams.SNAPSHOT.key(), "<=" + release)
+                .append(Constants.ALL_VERSIONS, true);
+        dbIterator = sampleDBAdaptor.nativeIterator(query, QueryOptions.empty());
+        exportToFile(dbIterator, outputDir.resolve("samples.json").toFile(), objectMapper, "samples");
+
+        query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(IndividualDBAdaptor.QueryParams.SNAPSHOT.key(), "<=" + release)
+                .append(Constants.ALL_VERSIONS, true);
+        dbIterator = individualDBAdaptor.nativeIterator(query, QueryOptions.empty());
+        exportToFile(dbIterator, outputDir.resolve("individuals.json").toFile(), objectMapper, "individuals");
+
+        query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FamilyDBAdaptor.QueryParams.SNAPSHOT.key(), "<=" + release)
+                .append(Constants.ALL_VERSIONS, true);
+        dbIterator = familyDBAdaptor.nativeIterator(query, QueryOptions.empty());
+        exportToFile(dbIterator, outputDir.resolve("families.json").toFile(), objectMapper, "families");
+
+        query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
+        dbIterator = fileDBAdaptor.nativeIterator(query, QueryOptions.empty());
+        exportToFile(dbIterator, outputDir.resolve("files.json").toFile(), objectMapper, "files");
+
+        query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
+        dbIterator = clinicalDBAdaptor.nativeIterator(query, QueryOptions.empty());
+        exportToFile(dbIterator, outputDir.resolve("clinical_analysis.json").toFile(), objectMapper, "clinical analysis");
+
+        query = new Query()
+                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CohortDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
+        dbIterator = cohortDBAdaptor.nativeIterator(query, QueryOptions.empty());
+        exportToFile(dbIterator, outputDir.resolve("cohorts.json").toFile(), objectMapper, "cohorts");
+
+        query = new Query()
+                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(JobDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
+        dbIterator = jobDBAdaptor.nativeIterator(query, QueryOptions.empty());
+        exportToFile(dbIterator, outputDir.resolve("jobs.json").toFile(), objectMapper, "jobs");
+
+    }
+
+    private void exportToFile(DBIterator dbIterator, File file, ObjectMapper objectMapper, String entity) throws CatalogException {
+        FileWriter fileWriter;
+        try {
+            fileWriter = new FileWriter(file);
+        } catch (IOException e) {
+            logger.error("Error creating fileWriter: {}", e.getMessage(), e);
+            throw new CatalogException("Error creating fileWriter: " + e.getMessage());
+        }
+        logger.info("Exporting " + entity + "...");
+        while (dbIterator.hasNext()) {
+            Map<String, Object> next = (Map) dbIterator.next();
+            if (next.get("groups") != null) {
+                next.put("groups", Collections.emptyList());
+            }
+            if (next.get("_acl") != null) {
+                next.put("_acl", Collections.emptyList());
+            }
+            try {
+                fileWriter.write(objectMapper.writeValueAsString(next));
+                fileWriter.write("\n");
+            } catch (IOException e) {
+                logger.error("Error writing to file: {}", e.getMessage(), e);
+                throw new CatalogException("Error writing to file: " + e.getMessage());
+            }
+        }
+        try {
+            fileWriter.close();
+        } catch (IOException e) {
+            logger.error("Error closing FileWriter: {}", e.getMessage(), e);
         }
     }
 

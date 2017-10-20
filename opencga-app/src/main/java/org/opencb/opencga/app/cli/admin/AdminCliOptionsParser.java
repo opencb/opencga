@@ -59,6 +59,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         catalogSubCommands.addCommand("clean", catalogCommandOptions.cleanCatalogCommandOptions);
         catalogSubCommands.addCommand("stats", catalogCommandOptions.statsCatalogCommandOptions);
         catalogSubCommands.addCommand("dump", catalogCommandOptions.dumpCatalogCommandOptions);
+        catalogSubCommands.addCommand("export", catalogCommandOptions.exportCatalogCommandOptions);
         catalogSubCommands.addCommand("import", catalogCommandOptions.importCatalogCommandOptions);
         catalogSubCommands.addCommand("daemon", catalogCommandOptions.daemonCatalogCommandOptions);
 
@@ -159,6 +160,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public CleanCatalogCommandOptions cleanCatalogCommandOptions;
         public StatsCatalogCommandOptions statsCatalogCommandOptions;
         public DumpCatalogCommandOptions dumpCatalogCommandOptions;
+        public ExportCatalogCommandOptions exportCatalogCommandOptions;
         public ImportCatalogCommandOptions importCatalogCommandOptions;
         public DaemonCatalogCommandOptions daemonCatalogCommandOptions;
 
@@ -172,6 +174,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.cleanCatalogCommandOptions = new CleanCatalogCommandOptions();
             this.statsCatalogCommandOptions = new StatsCatalogCommandOptions();
             this.dumpCatalogCommandOptions = new DumpCatalogCommandOptions();
+            this.exportCatalogCommandOptions = new ExportCatalogCommandOptions();
             this.importCatalogCommandOptions = new ImportCatalogCommandOptions();
             this.daemonCatalogCommandOptions = new DaemonCatalogCommandOptions();
         }
@@ -381,6 +384,25 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         @Parameter(names = {"--collections"}, description = "A comma-separated list of collections to be dumped", arity = 1)
         public String collections = "ALL";
+    }
+
+    @Parameters(commandNames = {"export"}, commandDescription = "Export a project up to the specified release")
+    public class ExportCatalogCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--project"}, description = "Project to be exported (owner@projectAlias or projectId)", required = true,
+                arity = 1)
+        public String project;
+
+        @Parameter(names = {"--release"}, description = "Release number up to which the data will be exported. If not provided, all the " +
+                "data belonging to the project will be exported.", arity = 1)
+        public int release = Integer.MAX_VALUE;
+
+        @Parameter(names = {"--output-dir"}, description = "Output directory where the data will be exported to.", arity = 1,
+                required = true)
+        public String outputDir;
     }
 
     @Parameters(commandNames = {"import"}, commandDescription = "Create a dump of Catalog database")
