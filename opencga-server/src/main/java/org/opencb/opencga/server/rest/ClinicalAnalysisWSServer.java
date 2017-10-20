@@ -205,13 +205,18 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             File germlineFile = StringUtils.isNotEmpty(germline) ? new File().setName(germline) : null;
             File somaticFile = StringUtils.isNotEmpty(somatic) ? new File().setName(somatic) : null;
 
+            Family f = null;
+            if (StringUtils.isNotEmpty(family)) {
+                f = new Family().setName(family);
+            }
+
             List<ClinicalAnalysis.ClinicalInterpretation> interpretationList =
                     interpretations != null
                             ? interpretations.stream()
                                 .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
-            return new ClinicalAnalysis(-1, name, description, type, disease, germlineFile, somaticFile, individuals,
-                    new Family().setName(family), interpretationList, null, null, 1, attributes);
+            return new ClinicalAnalysis(-1, name, description, type, disease, germlineFile, somaticFile, individuals, f, interpretationList,
+                    null, null, 1, attributes);
         }
     }
 

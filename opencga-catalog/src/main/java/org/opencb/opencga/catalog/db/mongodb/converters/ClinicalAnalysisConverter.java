@@ -81,6 +81,36 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
                 validateInterpretation(interpretationList.get(i));
             }
         }
+
+        Document family = (Document) document.get("family");
+        if (family != null) {
+            long familyId = family.getInteger("id") <= 0 ? -1L : family.getInteger("id").longValue();
+            document.put("family", new Document("id", familyId));
+        }
+
+        List<Document> subjectList = (List) document.get("subjects");
+        if (subjectList != null) {
+            List<Document> finalSubjects = new ArrayList<>(subjectList.size());
+
+            for (Document individual : subjectList) {
+                long probandId = individual.getInteger("id") <= 0 ? -1L : individual.getInteger("id").longValue();
+
+                List<Document> sampleDocList = (List) individual.get("samples");
+                List<Document> sampleList = new ArrayList<>(sampleDocList.size());
+                if (sampleDocList != null) {
+                    for (Document sampleDocument : sampleDocList) {
+                        sampleList.add(new Document("id", sampleDocument.getInteger("id").longValue()));
+                    }
+                }
+
+                finalSubjects.add(new Document()
+                        .append("id", probandId)
+                        .append("samples", sampleList)
+                );
+            }
+
+            document.put("subjects", finalSubjects);
+        }
     }
 
     public void validateInterpretation(Document interpretation) {
