@@ -63,6 +63,9 @@ import java.util.stream.Collectors;
 public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private static final String UNKNOWN_SAMPLE_DATA = VCFConstants.MISSING_VALUE_v4;
+    public static final int FILE_CALL_IDX = 0;
+    public static final int FILE_QUAL_IDX = 1;
+    public static final int FILE_FILTER_IDX = 2;
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
@@ -390,8 +393,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private void addFileEntry(StudyConfiguration studyConfiguration, StudyEntry studyEntry, String fileId, PhoenixArray fileColumn) {
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
-        attributes.put(StudyEntry.QUAL, (String) (fileColumn.getElement(1)));
-        attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(2)));
+        attributes.put(StudyEntry.QUAL, (String) (fileColumn.getElement(FILE_QUAL_IDX)));
+        attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(FILE_FILTER_IDX)));
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
         int i = 3;
         for (String attribute : fixedAttributes) {
@@ -401,7 +404,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
             i++;
         }
-        studyEntry.getFiles().add(new FileEntry(fileId, (String) (fileColumn.getElement(0)), attributes));
+        studyEntry.getFiles().add(new FileEntry(fileId, (String) (fileColumn.getElement(FILE_CALL_IDX)), attributes));
     }
 
     private void fillEmptySamplesData(StudyEntry studyEntry, StudyConfiguration studyConfiguration) {

@@ -29,13 +29,15 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
@@ -45,8 +47,6 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -537,23 +537,48 @@ public class VariantSqlQueryParser {
 //            filters.add(sb.toString());
         }
 
+        String filtersFilter = null;
+        if (isValidParam(query, FILTER)) {
+            String value = query.getString(FILTER.key());
+            QueryOperation operation = checkOperator(value);
+            List<String> filterValues = splitValue(value, operation);
+            if (!filterValues.isEmpty()) {
+                if (!isValidParam(query, FILES)) {
+                    throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILES.key() + "\" filter");
+                }
+                if (filterValues.size() == 1) {
+                    filtersFilter = '\'' + filterValues.get(0) + '\'';
+                } else {
+                    filtersFilter = filterValues.stream().collect(Collectors.joining("','", "ANY('", "')"));
+                }
+            }
+        }
+
         if (isValidParam(query, FILES)) {
             String value = query.getString(FILES.key());
             QueryOperation operation = checkOperator(value);
             List<String> values = splitValue(value, operation);
+
+
             StringBuilder sb = new StringBuilder();
             for (Iterator<String> iterator = values.iterator(); iterator.hasNext();) {
                 String file = iterator.next();
                 Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration);
 
-                if (isNegated(file)) {
-                    sb.append('"');
-                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
-                    sb.append("\" IS NULL ");
+                sb.append('"');
+                buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                sb.append('"');
+
+                if (filtersFilter == null) {
+                    if (isNegated(file)) {
+                        sb.append(" IS NULL ");
+                    } else {
+                        sb.append(" IS NOT NULL ");
+                    }
                 } else {
-                    sb.append('"');
-                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
-                    sb.append("\" IS NOT NULL ");
+                    // Arrays in SQL are 1-based.
+                    sb.append('[').append(HBaseToStudyEntryConverter.FILE_FILTER_IDX + 1).append("] = ");
+                    sb.append(filtersFilter);
                 }
                 if (iterator.hasNext()) {
                     if (operation == null || operation.equals(QueryOperation.AND)) {
@@ -565,8 +590,6 @@ public class VariantSqlQueryParser {
             }
             filters.add(sb.toString());
         }
-
-        unsupportedFilter(query, FILTER);
 
         if (isValidParam(query, COHORTS)) {
             for (String cohort : query.getAsStringList(COHORTS.key())) {

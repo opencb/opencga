@@ -189,9 +189,9 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
-    public void testGetAllVariants_filter() {
-        Assume.assumeTrue(FILES);
-        super.testGetAllVariants_filter();
+    public void testGetAllVariants_filterNoFile() {
+        thrown.expect(VariantQueryException.class);
+        super.testGetAllVariants_filterNoFile();
     }
 
     @Override

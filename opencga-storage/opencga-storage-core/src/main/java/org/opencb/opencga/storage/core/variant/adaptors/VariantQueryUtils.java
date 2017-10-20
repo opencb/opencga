@@ -518,14 +518,15 @@ public class VariantQueryUtils {
             Function<Integer, StudyConfiguration> studyProvider,
             BiFunction<StudyConfiguration, String, T> getSample, Function<StudyConfiguration, T> getStudyId) {
 
-        List<Integer> fileIds = null;
+        List<String> files;
         if (isValidParam(query, FILES)) {
-            String files = query.getString(FILES.key());
-            fileIds = splitValue(files, checkOperator(files))
+            String value = query.getString(FILES.key());
+            files = splitValue(value, checkOperator(value))
                     .stream()
-                    .filter((value) -> !isNegated(value)) // Discard negated
-                    .map(Integer::parseInt)
+                    .filter((v) -> !isNegated(v)) // Discard negated
                     .collect(Collectors.toList());
+        } else {
+            files = Collections.emptyList();
         }
 
         List<String> returnedSamples = getReturnedSamplesList(query, options);
@@ -540,7 +541,7 @@ public class VariantQueryUtils {
             }
 
             List<T> sampleNames;
-            if (returnedSamplesSet != null || returnAllSamples || fileIds == null) {
+            if (returnedSamplesSet != null || returnAllSamples || files.isEmpty()) {
                 LinkedHashMap<String, Integer> returnedSamplesPosition
                         = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
                 @SuppressWarnings("unchecked")
@@ -549,7 +550,11 @@ public class VariantQueryUtils {
                 returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, getSample.apply(sc, sample)));
             } else {
                 Set<T> sampleSet = new LinkedHashSet<>();
-                for (Integer fileId : fileIds) {
+                for (String file : files) {
+                    Integer fileId = StudyConfigurationManager.getFileIdFromStudy(file, sc);
+                    if (fileId == null) {
+                        continue;
+                    }
                     LinkedHashSet<Integer> sampleIds = sc.getSamplesInFiles().get(fileId);
                     if (sampleIds != null) {
                         for (Integer sampleId : sampleIds) {
