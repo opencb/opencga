@@ -64,7 +64,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
                 .setReturnedFields(returnedFields)
                 .setReturnedSamples(returnedSamples)
                 .setMutableSamplesPosition(false)
-                .setStudyNameAsStudyId(true)
+                .setStudyNameAsStudyId(options.getBoolean("studyNameAsStudyId", true))
                 .setUnknownGenotype(unknownGenotype)
                 .setSimpleGenotypes(options.getBoolean("simpleGenotypes", true))
                 .setFormats(formats);

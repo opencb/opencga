@@ -97,7 +97,6 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                     if (formatReMap != null) {
                         sampleData = remapSampleData(studyEntry, formatReMap, sampleData);
                     }
-                    addSecondaryAlternates(variant, studyEntry, sampleData);
                     addVarcharArray(put, column, sampleData);
                     writeFileAttributes = true;
                 }
@@ -108,18 +107,23 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
             FileEntry fileEntry = studyEntry.getFiles().get(0);
             byte[] fileColumnKey = VariantPhoenixHelper
                     .buildFileColumnKey(studyConfiguration.getStudyId(), Integer.parseInt(fileEntry.getFileId()));
-            List<String> fileColumn = remapFileData(fileEntry);
+            List<String> fileColumn = remapFileData(variant, studyEntry, fileEntry);
             addVarcharArray(put, fileColumnKey, fileColumn);
         }
 
         return put;
     }
 
-    private List<String> remapFileData(FileEntry fileEntry) {
-        List<String> fileColumn = new ArrayList<>(fileAttributes.size() + 3);
+    private List<String> remapFileData(Variant variant, StudyEntry studyEntry, FileEntry fileEntry) {
+        List<String> fileColumn = new ArrayList<>(fileAttributes.size() + HBaseToStudyEntryConverter.FILE_INFO_START_IDX);
 
         Map<String, String> attributes = fileEntry.getAttributes();
         fileColumn.add(fileEntry.getCall());
+        if (addSecondaryAlternates && studyEntry.getSecondaryAlternates() != null && !studyEntry.getSecondaryAlternates().isEmpty()) {
+            fileColumn.add(getSecondaryAlternates(variant, studyEntry));
+        } else {
+            fileColumn.add(null);
+        }
         fileColumn.add(attributes.get(StudyEntry.QUAL));
         fileColumn.add(attributes.get(StudyEntry.FILTER));
         for (String fileAttribute : fileAttributes) {
@@ -129,30 +133,28 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         return fileColumn;
     }
 
-    public void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, List<String> sampleData) {
-        if (addSecondaryAlternates && studyEntry.getSecondaryAlternates() != null && !studyEntry.getSecondaryAlternates().isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            Iterator<AlternateCoordinate> iterator = studyEntry.getSecondaryAlternates().iterator();
-            while (iterator.hasNext()) {
-                AlternateCoordinate alt = iterator.next();
-                sb.append(alt.getChromosome() == null ? variant.getChromosome() : alt.getChromosome());
-                sb.append(':');
-                sb.append(alt.getStart() == null ? variant.getStart() : alt.getStart());
-                sb.append(':');
-                sb.append(alt.getEnd() == null ? variant.getEnd() : alt.getEnd());
-                sb.append(':');
-                sb.append(alt.getReference() == null ? variant.getReference() : alt.getReference());
-                sb.append(':');
-                sb.append(alt.getAlternate() == null ? variant.getAlternate() : alt.getAlternate());
-                sb.append(':');
-                sb.append(alt.getType() == null ? variant.getType() : alt.getType());
+    private String getSecondaryAlternates(Variant variant, StudyEntry studyEntry) {
+        StringBuilder sb = new StringBuilder();
+        Iterator<AlternateCoordinate> iterator = studyEntry.getSecondaryAlternates().iterator();
+        while (iterator.hasNext()) {
+            AlternateCoordinate alt = iterator.next();
+            sb.append(alt.getChromosome() == null ? variant.getChromosome() : alt.getChromosome());
+            sb.append(':');
+            sb.append(alt.getStart() == null ? variant.getStart() : alt.getStart());
+            sb.append(':');
+            sb.append(alt.getEnd() == null ? variant.getEnd() : alt.getEnd());
+            sb.append(':');
+            sb.append(alt.getReference() == null ? variant.getReference() : alt.getReference());
+            sb.append(':');
+            sb.append(alt.getAlternate() == null ? variant.getAlternate() : alt.getAlternate());
+            sb.append(':');
+            sb.append(alt.getType() == null ? variant.getType() : alt.getType());
 
-                if (iterator.hasNext()) {
-                    sb.append(',');
-                }
+            if (iterator.hasNext()) {
+                sb.append(',');
             }
-            sampleData.add(sb.toString());
         }
+        return sb.toString();
     }
 
     private int[] buildFormatRemap(StudyEntry studyEntry) {

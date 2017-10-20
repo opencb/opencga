@@ -30,7 +30,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -64,8 +63,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private static final String UNKNOWN_SAMPLE_DATA = VCFConstants.MISSING_VALUE_v4;
     public static final int FILE_CALL_IDX = 0;
-    public static final int FILE_QUAL_IDX = 1;
-    public static final int FILE_FILTER_IDX = 2;
+    public static final int FILE_SEC_ALTS_IDX = 1;
+    public static final int FILE_QUAL_IDX = 2;
+    public static final int FILE_FILTER_IDX = 3;
+    public static final int FILE_INFO_START_IDX = 4;
+
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
@@ -281,24 +283,23 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
-        Map<String, List<String>> alternateSampleMap = new HashMap<>();
         int[] formatsMap = getFormatsMap(fixedFormat);
 
         for (Pair<Integer, List<String>> pair : sampleDataMap) {
             Integer sampleId = pair.getKey();
             List<String> sampleData = pair.getValue();
-            addMainSampleDataColumn(studyConfiguration, studyEntry, fixedFormat, formatsMap, sampleId, sampleData,
-                    alternateSampleMap);
+            addMainSampleDataColumn(studyConfiguration, studyEntry, formatsMap, sampleId, sampleData);
 
         }
 
+        Map<String, List<String>> alternateFileMap = new HashMap<>();
         for (Pair<String, PhoenixArray> pair : filesMap) {
             String fileId = pair.getKey();
             PhoenixArray fileColumn = pair.getValue();
-            addFileEntry(studyConfiguration, studyEntry, fileId, fileColumn);
+            addFileEntry(studyConfiguration, studyEntry, fileId, fileColumn, alternateFileMap);
         }
 
-        addSecondaryAlternates(variant, studyEntry, studyConfiguration.getVariantHeader(), alternateSampleMap);
+        addSecondaryAlternates(variant, studyEntry, studyConfiguration, alternateFileMap);
 
         if (row != null) {
             convert(variant, studyEntry, studyConfiguration, row);
@@ -333,31 +334,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return studyEntry;
     }
 
-    protected void addMainSampleDataColumn(StudyConfiguration studyConfiguration, StudyEntry studyEntry, List<String> fixedFormat,
-                                           int[] formatsMap, Integer sampleId, List<String> sampleData,
-                                           Map<String, List<String>> alternateSampleMap) {
-
-        String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
-
-        // Remove secondary alternate
-        if (sampleData.size() > fixedFormat.size()) {
-            // Do not use "remove" over the last element. sampleData may be an unmodifiable list
-            String alternate = sampleData.get(sampleData.size() - 1);
-            sampleData = sampleData.subList(0, sampleData.size() - 1);
-
-            alternateSampleMap.compute(alternate, (key, list) -> {
-                if (list == null) {
-                    list = new ArrayList<>(1);
-                }
-                list.add(sampleName);
-                return list;
-            });
-//          List<Integer> sampleIds = study.alternateSampleIdMap.computeIfAbsent(alternate, key -> new ArrayList<>());
-//          sampleIds.add(sampleId);
-        }
-
+    protected void addMainSampleDataColumn(StudyConfiguration studyConfiguration, StudyEntry studyEntry,
+                                           int[] formatsMap, Integer sampleId, List<String> sampleData) {
         sampleData = remapSamplesData(sampleData, formatsMap);
 
+        String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
         studyEntry.addSampleData(sampleName, sampleData);
     }
 
@@ -391,12 +372,17 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
     }
 
-    private void addFileEntry(StudyConfiguration studyConfiguration, StudyEntry studyEntry, String fileId, PhoenixArray fileColumn) {
+    private void addFileEntry(StudyConfiguration studyConfiguration, StudyEntry studyEntry, String fileId, PhoenixArray fileColumn,
+                              Map<String, List<String>> alternateFileMap) {
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
         attributes.put(StudyEntry.QUAL, (String) (fileColumn.getElement(FILE_QUAL_IDX)));
         attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(FILE_FILTER_IDX)));
+        String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
+        if (StringUtils.isNotEmpty(alternate)) {
+            alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileId);
+        }
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
-        int i = 3;
+        int i = FILE_INFO_START_IDX;
         for (String attribute : fixedAttributes) {
             String value = (String) (fileColumn.getElement(i));
             if (value != null) {
@@ -596,30 +582,30 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     /**
      * Add secondary alternates to the StudyEntry. Merge secondar alternates if needed.
      *
-     * @param variant           Variant coordinates.
-     * @param studyEntry        Study Entry all samples data
-     * @param variantHeader     VariantHeader from the study, to configure the VariantMerger
-     * @param alternateSampleIdMap  Map from SecondaryAlternate to SamplesData
+     * @param variant            Variant coordinates.
+     * @param studyEntry         Study Entry all samples data
+     * @param studyConfiguration StudyConfiguration from the study
+     * @param alternateFileIdMap Map from SecondaryAlternate to FileId
      */
-    private void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, VariantFileHeader variantHeader,
-                                        Map<String, List<String>> alternateSampleIdMap) {
+    private void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, StudyConfiguration studyConfiguration,
+                                        Map<String, List<String>> alternateFileIdMap) {
         final List<AlternateCoordinate> alternateCoordinates;
-        if (alternateSampleIdMap.isEmpty()) {
+        if (alternateFileIdMap.isEmpty()) {
             alternateCoordinates = Collections.emptyList();
-        } else if (alternateSampleIdMap.size() == 1) {
-            alternateCoordinates = getAlternateCoordinates(alternateSampleIdMap.keySet().iterator().next());
+        } else if (alternateFileIdMap.size() == 1) {
+            alternateCoordinates = getAlternateCoordinates(alternateFileIdMap.keySet().iterator().next());
         } else {
             // There are multiple secondary alternates.
             // We need to rearrange the genotypes to match with the secondary alternates order.
             VariantMerger variantMerger = new VariantMerger(false);
             variantMerger.setExpectedFormats(studyEntry.getFormat());
             variantMerger.setStudyId("0");
-            variantMerger.configure(variantHeader);
+            variantMerger.configure(studyConfiguration.getVariantHeader());
 
 
             // Create one variant for each alternate with the samples data
-            List<Variant> variants = new ArrayList<>(alternateSampleIdMap.size());
-            for (Map.Entry<String, List<String>> entry : alternateSampleIdMap.entrySet()) {
+            List<Variant> variants = new ArrayList<>(alternateFileIdMap.size());
+            for (Map.Entry<String, List<String>> entry : alternateFileIdMap.entrySet()) {
                 String secondaryAlternates = entry.getKey();
 
                 Variant sampleVariant = new Variant(
@@ -630,8 +616,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 StudyEntry se = new StudyEntry("0");
                 se.setSecondaryAlternates(getAlternateCoordinates(secondaryAlternates));
                 se.setFormat(studyEntry.getFormat());
-                for (String sample : entry.getValue()) {
-                    se.addSampleData(sample, studyEntry.getSampleData(sample));
+
+                for (String fileId : entry.getValue()) {
+                    se.getFiles().add(studyEntry.getFile(fileId));
+                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(Integer.parseInt(fileId))) {
+                        String sample = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                        se.addSampleData(sample, studyEntry.getSampleData(sample));
+                    }
                 }
                 sampleVariant.addStudyEntry(se);
                 variants.add(sampleVariant);
@@ -641,16 +632,19 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             Variant newVariant = variantMerger.merge(variants.get(0), variants.subList(1, variants.size()));
 
             // Update samplesData information
-            StudyEntry se = newVariant.getStudies().get(0);
-            for (String sample : se.getSamplesName()) {
-                studyEntry.addSampleData(sample, se.getSampleData(sample));
+            StudyEntry newSe = newVariant.getStudies().get(0);
+            for (String sample : newSe.getSamplesName()) {
+                studyEntry.addSampleData(sample, newSe.getSampleData(sample));
             }
-//            for (Map.Entry<String, Integer> entry : se.getSamplesPosition().entrySet()) {
-//                List<String> data = se.getSamplesData().get(entry.getValue());
+            for (FileEntry fileEntry : newSe.getFiles()) {
+                studyEntry.getFile(fileEntry.getFileId()).setAttributes(fileEntry.getAttributes());
+            }
+//            for (Map.Entry<String, Integer> entry : newSe.getSamplesPosition().entrySet()) {
+//                List<String> data = newSe.getSamplesData().get(entry.getValue());
 //                Integer sampleId = Integer.valueOf(entry.getKey());
 //                samplesDataMap.put(sampleId, data);
 //            }
-            alternateCoordinates = se.getSecondaryAlternates();
+            alternateCoordinates = newSe.getSecondaryAlternates();
         }
         studyEntry.setSecondaryAlternates(alternateCoordinates);
     }
