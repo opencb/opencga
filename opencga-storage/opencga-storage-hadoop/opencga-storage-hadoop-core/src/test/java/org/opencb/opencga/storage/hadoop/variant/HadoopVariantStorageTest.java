@@ -76,6 +76,8 @@ import org.apache.zookeeper.server.PrepRequestProcessor;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
@@ -404,6 +406,14 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         if (manager.get() != null) {
             manager.get().close();
         }
+    }
+
+    default int getExpectedNumLoadedVariants(VariantFileMetadata fileMetadata) {
+        int numRecords = 0;
+        for (VariantType variantType : VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET) {
+            numRecords += fileMetadata.getStats().getVariantTypeCount(variantType);
+        }
+        return numRecords;
     }
 
     class TestMRExecutor implements MRExecutor {

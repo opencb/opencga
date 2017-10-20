@@ -281,7 +281,7 @@ public class VariantPhoenixHelper {
         createTableIfNeeded(con, table);
         List<Column> columns = new ArrayList<>(fileIds.size() + sampleIds.size() + 1);
         for (Integer fileId : fileIds) {
-            columns.add(getFileColumnKey(studyId, fileId));
+            columns.add(getFileColumn(studyId, fileId));
         }
         for (Integer sampleId : sampleIds) {
             columns.add(getSampleColumn(studyId, sampleId));
@@ -530,7 +530,7 @@ public class VariantPhoenixHelper {
         return stringBuilder.append(studyId).append(COLUMN_KEY_SEPARATOR).append(fileId).append(FILE_SUFIX);
     }
 
-    public static Column getFileColumnKey(int studyId, int sampleId) {
+    public static Column getFileColumn(int studyId, int sampleId) {
         return Column.build(buildFileColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 

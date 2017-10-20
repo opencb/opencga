@@ -99,12 +99,12 @@ public class VariantQueryException extends IllegalArgumentException {
                 + (availableCohortsList.isEmpty() ? "" : " Available cohorts: " + availableCohortsList));
     }
 
-    public static VariantQueryException missingStudyForSample(String sample, List<String> availableStudies) {
+    public static VariantQueryException missingStudyForSample(String sample, Collection<String> availableStudies) {
         return new VariantQueryException("Unknown sample \"" + sample + "\". Please, specify the study belonging."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }
 
-    public static VariantQueryException missingStudyForFile(String file, List<String> availableStudies) {
+    public static VariantQueryException missingStudyForFile(String file, Collection<String> availableStudies) {
         return new VariantQueryException("Unknown file \"" + file + "\". Please, specify the study belonging."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }

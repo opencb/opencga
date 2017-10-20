@@ -423,9 +423,19 @@ public class StudyConfigurationManager implements AutoCloseable {
                 fileId = null;
             }
         }
-        //TODO: Find the studyId?
+
         if (studyId == null) {
-            throw VariantQueryException.missingStudyForFile(fileObj.toString(), getStudyNames(null));
+            Map<String, Integer> studies = getStudies(null);
+            Collection<Integer> studyIds = studies.values();
+            Integer fileIdFromStudy;
+            for (Integer id : studyIds) {
+                StudyConfiguration sc = getStudyConfiguration(id, new QueryOptions(READ_ONLY, true).append(CACHED, true)).first();
+                fileIdFromStudy = getFileIdFromStudy(fileId != null ? fileId : fileObj, sc);
+                if (fileIdFromStudy != null) {
+                    return Pair.of(sc.getStudyId(), fileIdFromStudy);
+                }
+            }
+            throw VariantQueryException.missingStudyForFile(fileObj.toString(), studies.keySet());
         }
 
         return Pair.of(studyId, fileId);

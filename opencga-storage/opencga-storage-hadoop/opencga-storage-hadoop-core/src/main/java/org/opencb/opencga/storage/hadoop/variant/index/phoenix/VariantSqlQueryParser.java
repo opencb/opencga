@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
@@ -494,7 +495,7 @@ public class VariantSqlQueryParser {
             while (iterator.hasNext()) {
                 String study = iterator.next();
                 Integer studyId = studyConfigurationManager.getStudyId(study, false, studies);
-                if (study.startsWith("!")) {
+                if (isNegated(study)) {
                     sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NULL ");
                 } else {
                     notNullStudies.add(studyId);
@@ -536,7 +537,34 @@ public class VariantSqlQueryParser {
 //            filters.add(sb.toString());
         }
 
-        unsupportedFilter(query, FILES);
+        if (isValidParam(query, FILES)) {
+            String value = query.getString(FILES.key());
+            QueryOperation operation = checkOperator(value);
+            List<String> values = splitValue(value, operation);
+            StringBuilder sb = new StringBuilder();
+            for (Iterator<String> iterator = values.iterator(); iterator.hasNext();) {
+                String file = iterator.next();
+                Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration);
+
+                if (isNegated(file)) {
+                    sb.append('"');
+                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append("\" IS NULL ");
+                } else {
+                    sb.append('"');
+                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append("\" IS NOT NULL ");
+                }
+                if (iterator.hasNext()) {
+                    if (operation == null || operation.equals(QueryOperation.AND)) {
+                        sb.append(" AND ");
+                    } else {
+                        sb.append(" OR ");
+                    }
+                }
+            }
+            filters.add(sb.toString());
+        }
 
         unsupportedFilter(query, FILTER);
 
