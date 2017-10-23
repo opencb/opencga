@@ -86,18 +86,20 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         int[] formatReMap = buildFormatRemap(studyEntry);
         int sampleIdx = 0;
         List<String> samplesName = studyEntry.getOrderedSamplesName();
-        // Allways write file attributes if there is no samples (i.e. aggregated files)
+        // Always write file attributes if there is no samples (i.e. aggregated files)
         boolean writeFileAttributes = samplesName.isEmpty();
         for (String sampleName : samplesName) {
             Integer sampleId = studyConfiguration.getSampleIds().get(sampleName);
             if (sampleIds == null || sampleIds.contains(sampleId)) {
                 byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyConfiguration.getStudyId(), sampleId);
                 List<String> sampleData = studyEntry.getSamplesData().get(sampleIdx);
-                if (!defaultGenotypes.contains(sampleData.get(gtIdx))) {
+                // Write sample data if the is no genotype information, or if the genotype is equals to the default genotype
+                if (gtIdx == null || !defaultGenotypes.contains(sampleData.get(gtIdx))) {
                     if (formatReMap != null) {
                         sampleData = remapSampleData(studyEntry, formatReMap, sampleData);
                     }
                     addVarcharArray(put, column, sampleData);
+                    // Write file attributes if at least one sample is written.
                     writeFileAttributes = true;
                 }
             }
