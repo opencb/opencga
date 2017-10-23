@@ -558,12 +558,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 if (!StringUtils.isEmpty(query.getString(QueryParams.USER_ID.key()))
                         && !user.equals(query.getString(QueryParams.USER_ID.key()))) {
                     // User does not have proper permissions
-                    throw CatalogAuthorizationException.deny(user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), "project", -1, "");
+                    throw CatalogAuthorizationException.deny(user, "view", "project", -1, "");
                 }
                 query.put(QueryParams.USER_ID.key(), user);
             } else {
                 // User does not have proper permissions
-                throw CatalogAuthorizationException.deny(user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), "project", -1, "");
+                throw CatalogAuthorizationException.deny(user, "view", "project", -1, "");
             }
         } else {
             // We get all the projects the user can see

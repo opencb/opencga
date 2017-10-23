@@ -366,7 +366,7 @@ public class FileMetadataReader {
                         } else {
                             try {
                                 sampleList.add(catalogManager.getSampleManager().create(Long.toString(study.getId()), sampleName, file
-                                        .getName(), null, null, false, null, null, null, sessionId).first());
+                                        .getName(), null, null, false, null, new HashMap<>(), null, null, sessionId).first());
                             } catch (CatalogException e) {
                                 Query query = new Query("name", sampleName);
                                 QueryOptions queryOptions = new QueryOptions("include", includeSampleNameId);

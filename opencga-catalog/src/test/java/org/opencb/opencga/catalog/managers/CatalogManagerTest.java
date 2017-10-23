@@ -209,23 +209,23 @@ public class CatalogManagerTest extends GenericTest {
         VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyId, "vs", true, false, "", null, variables, sessionIdUser).first();
 
 
-        s_1 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_1", "", "", null, false, null, null, new QueryOptions()
+        s_1 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions()
                 , sessionIdUser).first().getId();
-        s_2 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_2", "", "", null, false, null, null, new QueryOptions()
+        s_2 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_2", "", "", null, false, null, new HashMap<>(), null, new QueryOptions()
                 , sessionIdUser).first().getId();
-        s_3 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_3", "", "", null, false, null, null, new QueryOptions()
+        s_3 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_3", "", "", null, false, null, new HashMap<>(), null, new QueryOptions()
                 , sessionIdUser).first().getId();
-        s_4 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_4", "", "", null, false, null, null, new QueryOptions()
+        s_4 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_4", "", "", null, false, null, new HashMap<>(), null, new QueryOptions()
                 , sessionIdUser).first().getId();
-        s_5 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_5", "", "", null, false, null, null, new QueryOptions()
+        s_5 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_5", "", "", null, false, null, new HashMap<>(), null, new QueryOptions()
                 , sessionIdUser).first().getId();
-        s_6 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_6", "", "", null, false, null, null, new QueryOptions()
+        s_6 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_6", "", "", null, false, null, new HashMap<>(), null, new QueryOptions()
                 , sessionIdUser).first().getId();
-        s_7 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_7", "", "", null, false, null, null, new QueryOptions()
+        s_7 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_7", "", "", null, false, null, new HashMap<>(), null, new QueryOptions()
                 , sessionIdUser).first().getId();
-        s_8 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_8", "", "", null, false, null, null, new QueryOptions()
+        s_8 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_8", "", "", null, false, null, new HashMap<>(), null, new QueryOptions()
                 , sessionIdUser).first().getId();
-        s_9 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_9", "", "", null, false, null, null, new QueryOptions()
+        s_9 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_9", "", "", null, false, null, new HashMap<>(), null, new QueryOptions()
                 , sessionIdUser).first().getId();
 
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_1), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_1").append("AGE", 6).append("ALIVE", true)
@@ -544,7 +544,9 @@ public class CatalogManagerTest extends GenericTest {
                 .GROUP_USER_IDS.key(), "user2"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
 
-        catalogManager.getStudyManager().createGroup(Long.toString(study_4), "admins", "user3", sessionIdUser);
+//        catalogManager.getStudyManager().createGroup(Long.toString(study_4), "admins", "user3", sessionIdUser);
+        catalogManager.getStudyManager().updateGroup(Long.toString(study_4), "admins", new GroupParams("user3", GroupParams.Action.SET),
+                sessionIdUser);
         assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user3"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
@@ -618,8 +620,7 @@ public class CatalogManagerTest extends GenericTest {
         } catch (CatalogException e) {
         }
 
-        Study.StudyAclParams aclParams = new Study.StudyAclParams("VIEW_STUDY", AclParams.Action.ADD, null);
-        catalogManager.getStudyManager().updateAcl("phase3", "*", aclParams, sessionIdUser2).get(0);
+        catalogManager.getStudyManager().updateGroup("phase3", "@members", new GroupParams("*", GroupParams.Action.ADD), sessionIdUser2);
 
         List<Long> ids = studyManager.getIds("*", null);
         assertEquals(1, ids.size());
@@ -637,10 +638,9 @@ public class CatalogManagerTest extends GenericTest {
         }
 
         // Create another study with alias phase3
-        QueryResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "Phase 3", "phase3", Study.Type
-        .CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
-        Study.StudyAclParams aclParams = new Study.StudyAclParams("VIEW_STUDY", AclParams.Action.ADD, null);
-        catalogManager.getStudyManager().updateAcl("phase3", "*", aclParams, sessionIdUser2).get(0);
+        QueryResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "Phase 3", "phase3",
+                Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
+        catalogManager.getStudyManager().updateGroup("phase3", "@members", new GroupParams("*", GroupParams.Action.ADD), sessionIdUser2);
 
         List<Long> ids = studyManager.getIds("*", "phase3");
         assertEquals(1, ids.size());
@@ -668,15 +668,10 @@ public class CatalogManagerTest extends GenericTest {
         StudyManager studyManager = catalogManager.getStudyManager();
 
         // Assign permissions to study
-        Study.StudyAclParams studyAclParams = new Study.StudyAclParams("VIEW_STUDY", AclParams.Action.SET, null);
-        List<QueryResult<StudyAclEntry>> queryResults = studyManager.updateAcl(Long.toString(studyId), "user2,user3", studyAclParams,
-                sessionIdUser);
-        assertEquals(Long.toString(studyId), queryResults.get(0).getId());
-        assertEquals(2, queryResults.get(0).getNumResults());
-        for (StudyAclEntry studyAclEntry : queryResults.get(0).getResult()) {
-            assertTrue(studyAclEntry.getPermissions().contains(StudyAclEntry.StudyPermissions.VIEW_STUDY));
-            assertTrue(Arrays.asList("user2", "user3").contains(studyAclEntry.getMember()));
-        }
+        QueryResult<Group> groupQueryResult = studyManager.updateGroup(String.valueOf(studyId), "@members",
+                new GroupParams("user2,user3", GroupParams.Action.ADD), sessionIdUser);
+        assertEquals(2, groupQueryResult.first().getUserIds().size());
+        assertEquals("@members", groupQueryResult.first().getName());
 
         // Obtain all samples from study
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyId, new Query(), QueryOptions.empty(),
@@ -699,9 +694,9 @@ public class CatalogManagerTest extends GenericTest {
         }
 
         // Remove all the permissions to both users in the study. That should also remove the permissions they had in all the samples.
-        studyAclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
-        queryResults = studyManager.updateAcl(Long.toString(studyId), "user2,user3", studyAclParams, sessionIdUser);
-        assertEquals(0, queryResults.get(0).getNumResults());
+        groupQueryResult = studyManager.updateGroup(String.valueOf(studyId), "@members", new GroupParams("user2,user3",
+                GroupParams.Action.REMOVE), sessionIdUser);
+        assertEquals(0, groupQueryResult.first().getUserIds().size());
 
         // Get sample permissions for those members
         for (Long sampleId : sampleIds) {
@@ -718,15 +713,10 @@ public class CatalogManagerTest extends GenericTest {
         StudyManager studyManager = catalogManager.getStudyManager();
 
         // Assign permissions to study
-        Study.StudyAclParams studyAclParams = new Study.StudyAclParams("VIEW_STUDY", AclParams.Action.SET, null);
-        List<QueryResult<StudyAclEntry>> queryResults = studyManager.updateAcl(Long.toString(studyId), "user2,user3", studyAclParams,
-                sessionIdUser);
-        assertEquals(Long.toString(studyId), queryResults.get(0).getId());
-        assertEquals(2, queryResults.get(0).getNumResults());
-        for (StudyAclEntry studyAclEntry : queryResults.get(0).getResult()) {
-            assertTrue(studyAclEntry.getPermissions().contains(StudyAclEntry.StudyPermissions.VIEW_STUDY));
-            assertTrue(Arrays.asList("user2", "user3").contains(studyAclEntry.getMember()));
-        }
+        QueryResult<Group> groupQueryResult = studyManager.updateGroup(String.valueOf(studyId), "@members",
+                new GroupParams("user2,user3", GroupParams.Action.ADD), sessionIdUser);
+        assertEquals(2, groupQueryResult.first().getUserIds().size());
+        assertEquals("@members", groupQueryResult.first().getName());
 
         // Obtain all samples from study
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyId, new Query(), QueryOptions.empty(),
@@ -760,7 +750,7 @@ public class CatalogManagerTest extends GenericTest {
         studyAcl = catalogManager.getAuthorizationManager().getStudyAcl(userId, studyId1, "user3");
         assertEquals(0, studyAcl.getNumResults());
 
-        QueryResult<Group> groupQueryResult = catalogManager.getStudyManager().getGroup(Long.toString(studyId), null, sessionIdUser);
+        groupQueryResult = catalogManager.getStudyManager().getGroup(Long.toString(studyId), null, sessionIdUser);
         for (Group group : groupQueryResult.getResult()) {
             assertTrue(!group.getUserIds().contains("user2"));
             assertTrue(!group.getUserIds().contains("user3"));
@@ -961,7 +951,7 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testDeleteVariableSetInUse() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
-        long sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null,
+        long sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first().getId();
         List<Variable> variables = Arrays.asList(
                 new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
@@ -996,8 +986,29 @@ public class CatalogManagerTest extends GenericTest {
         long studyId = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser).first().getId();
 
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(Long.toString(studyId), "HG007", "IMDb", "",
-                null, false, null, null, null, sessionIdUser);
+                null, false, null, new HashMap<>(), null, null, sessionIdUser);
         System.out.println("sampleQueryResult = " + sampleQueryResult);
+    }
+
+    @Test
+    public void testUpdateSampleStats() throws CatalogException {
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
+        long studyId = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser).first().getId();
+
+        catalogManager.getSampleManager().create(Long.toString(studyId), "HG007", "IMDb", "", null, false, null, new HashMap<>(), null,
+                null, sessionIdUser);
+        QueryResult<Sample> update = catalogManager.getSampleManager().update(Long.toString(studyId), "HG007", new ObjectMap
+                (SampleDBAdaptor.QueryParams.STATS.key(), new ObjectMap("one", "two")), new QueryOptions(), sessionIdUser);
+        assertEquals(1, update.first().getStats().size());
+        assertTrue(update.first().getStats().containsKey("one"));
+        assertEquals("two", update.first().getStats().get("one"));
+
+        update = catalogManager.getSampleManager().update(Long.toString(studyId), "HG007",
+                new ObjectMap(SampleDBAdaptor.QueryParams.STATS.key(), new ObjectMap("two", "three")), new QueryOptions(), sessionIdUser);
+        assertEquals(2, update.first().getStats().size());
+//        assertTrue(update.first().getStats().containsKey("two"));
+//        assertEquals("three", update.first().getStats().get("two"));
     }
 
     @Test
@@ -1008,7 +1019,7 @@ public class CatalogManagerTest extends GenericTest {
 
         String name = "HG007.sample";
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(Long.toString(studyId), name, "IMDb", "", null,
-                false, null, null, null, sessionIdUser);
+                false, null, new HashMap<>(), null, null, sessionIdUser);
 
         assertEquals(name, sampleQueryResult.first().getName());
     }
@@ -1098,8 +1109,8 @@ public class CatalogManagerTest extends GenericTest {
     public void testAnnotateMulti() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionIdUser).first();
-        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null,
-                null, new QueryOptions(), sessionIdUser).first()
+        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, new
+                HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
 
         Set<Variable> variables = new HashSet<>();
@@ -1126,8 +1137,8 @@ public class CatalogManagerTest extends GenericTest {
     public void testAnnotateUnique() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionIdUser).first();
-        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null,
-                null, new QueryOptions(), sessionIdUser).first()
+        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, new
+                HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
 
         Set<Variable> variables = new HashSet<>();
@@ -1179,8 +1190,8 @@ public class CatalogManagerTest extends GenericTest {
     public void testAnnotateIncorrectType() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionIdUser).first();
-        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null,
-                null, new QueryOptions(), sessionIdUser).first()
+        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, new
+                HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
 
         Set<Variable> variables = new HashSet<>();
@@ -1209,7 +1220,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testAnnotateRange() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionIdUser).first();
-        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first()
+        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
 
         Set<Variable> variables = new HashSet<>();
@@ -1243,7 +1254,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testAnnotateCategorical() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionIdUser).first();
-        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first()
+        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
 
         Set<Variable> variables = new HashSet<>();
@@ -1279,18 +1290,15 @@ public class CatalogManagerTest extends GenericTest {
     public void testAnnotateNested() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionIdUser).first();
-        long sampleId1 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first()
+        long sampleId1 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
-        long sampleId2 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_2", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first()
+        long sampleId2 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_2", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
-        long sampleId3 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_3", "", "", null, false, null,
-                null, new QueryOptions(), sessionIdUser).first()
+        long sampleId3 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_3", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
-        long sampleId4 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_4", "", "", null, false, null,
-                null, new QueryOptions(), sessionIdUser).first()
+        long sampleId4 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_4", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
-        long sampleId5 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_5", "", "", null, false, null,
-                null, new QueryOptions(), sessionIdUser).first()
+        long sampleId5 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_5", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first()
                 .getId();
 
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getId(), "vs1", false, false, "", null, Collections
@@ -1592,7 +1600,7 @@ public class CatalogManagerTest extends GenericTest {
         String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase1");
         long sampleId1 = catalogManager.getSampleManager()
-                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(),
+                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(),
                         sessionIdUser).first().getId();
         long individualId = catalogManager.getIndividualManager().create(studyId, "Individual1", "", (long) 0, (long) 0, Individual.Sex
                         .MALE, "", "", "", "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN,
@@ -1609,23 +1617,23 @@ public class CatalogManagerTest extends GenericTest {
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
                 Account.GUEST, QueryOptions.empty());
-        catalogManager.getStudyManager().updateAcl("user@1000G:phase1", "dummy",
-                new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.SET, ""), sessionIdUser);
+        catalogManager.getStudyManager().updateGroup(String.valueOf(studyId), "@members", new GroupParams("dummy",
+                GroupParams.Action.ADD), sessionIdUser);
 
         String token = catalogManager.getUserManager().login("dummy", "dummy");
         QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(), token);
         assertEquals(1, queryResult.getNumResults());
 
-        catalogManager.getStudyManager().updateAcl("user@1000G:phase1", "*",
-                new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.SET, ""), sessionIdUser);
+        catalogManager.getStudyManager().updateGroup(String.valueOf(studyId), "@members", new GroupParams("*", GroupParams.Action.ADD),
+                sessionIdUser);
         queryResult = catalogManager.getProjectManager().getSharedProjects("*", QueryOptions.empty(), null);
         assertEquals(1, queryResult.getNumResults());
     }
 
     @Test
     public void smartResolutorStudyAliasFromAnonymousUser() throws CatalogException {
-        catalogManager.getStudyManager().updateAcl("user@1000G:phase1", "*",
-                new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.SET, ""), sessionIdUser);
+        catalogManager.getStudyManager().updateGroup(String.valueOf(studyId), "@members", new GroupParams("*", GroupParams.Action.ADD),
+                sessionIdUser);
         long id = catalogManager.getStudyManager().getId("*", "1000G:phase1");
         assertTrue(id > 0);
     }
@@ -1638,7 +1646,7 @@ public class CatalogManagerTest extends GenericTest {
                         .MALE, "", "", "", "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN,
                 new QueryOptions(), sessionIdUser).first().getId();
         long sampleId1 = catalogManager.getSampleManager()
-                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, new Individual().setName(String.valueOf(individualId)), null,
+                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, new Individual().setName(String.valueOf(individualId)), new HashMap<>(), null,
                         new QueryOptions(), sessionIdUser).first().getId();
 
         QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
@@ -1647,7 +1655,7 @@ public class CatalogManagerTest extends GenericTest {
 
         // Create sample linking to individual based on the individual name
         long sampleId2 = catalogManager.getSampleManager()
-                .create("user@1000G:phase1", "SAMPLE_2", "", "", null, false, new Individual().setName("Individual1"), null,
+                .create("user@1000G:phase1", "SAMPLE_2", "", "", null, false, new Individual().setName("Individual1"), new HashMap<>(), null,
                         new QueryOptions(), sessionIdUser).first().getId();
         individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
                 String.valueOf(individualId), QueryOptions.empty(), sessionIdUser);
@@ -1659,7 +1667,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifySampleBadIndividual() throws CatalogException {
-        long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, null, null, new
+        long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new
                 QueryOptions(), sessionIdUser).first().getId();
 
         thrown.expect(CatalogDBException.class);
@@ -1670,7 +1678,7 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testDeleteSample() throws CatalogException, IOException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
-        long sampleId = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first().getId();
+        long sampleId = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first().getId();
 
         List<QueryResult<Sample>> queryResult = catalogManager.getSampleManager()
                 .delete(Long.toString(studyId), Long.toString(sampleId), new QueryOptions(), sessionIdUser);
@@ -1696,10 +1704,10 @@ public class CatalogManagerTest extends GenericTest {
     public void testCreateCohort() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, null,
+        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_3", "", "", null, false, null, null,
+        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_3", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first();
         Cohort myCohort = catalogManager.getCohortManager().create(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1,
                 sampleId2, sampleId3), null, null, sessionIdUser).first();
@@ -1747,14 +1755,14 @@ public class CatalogManagerTest extends GenericTest {
     public void testGetAllCohorts() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, null,
+        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_3", "", "", null, false, null, null,
+        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_3", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first();
-        Sample sampleId4 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_4", "", "", null, false, null, null,
+        Sample sampleId4 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_4", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first();
-        Sample sampleId5 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_5", "", "", null, false, null, null,
+        Sample sampleId5 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_5", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first();
         Cohort myCohort1 = catalogManager.getCohortManager().create(studyId, "MyCohort1", Study.Type.FAMILY, "", Arrays.asList(sampleId1,
                 sampleId2, sampleId3), null, null, sessionIdUser).first();
@@ -1812,7 +1820,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testCreateCohortAlreadyExisting() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
         catalogManager.getCohortManager().create(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1), null, null,
                 sessionIdUser).first();
 
@@ -1826,12 +1834,12 @@ public class CatalogManagerTest extends GenericTest {
     public void testUpdateCohort() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_3", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
-        Sample sampleId4 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_4", "", "", null, false, null, null,
+        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_3", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
+        Sample sampleId4 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_4", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first();
-        Sample sampleId5 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_5", "", "", null, false, null, null,
+        Sample sampleId5 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_5", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first();
 
         Cohort myCohort = catalogManager.getCohortManager().create(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1,
@@ -1865,9 +1873,9 @@ public class CatalogManagerTest extends GenericTest {
         String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase1");
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_3", "", "", null, false, null, null,
+        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_3", "", "", null, false, null, new HashMap<>(), null,
                 new QueryOptions(), sessionIdUser).first();
 
         Cohort myCohort = catalogManager.getCohortManager().create(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1,

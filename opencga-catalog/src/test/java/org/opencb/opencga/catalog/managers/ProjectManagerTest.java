@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -111,8 +112,8 @@ public class ProjectManagerTest extends GenericTest {
         // Create a new study in project2 with some dummy permissions for user
         long s2 = catalogManager.getStudyManager().create(String.valueOf(project2), "Study 2", "s2", Study.Type.CONTROL_SET, null, "",
                 null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
-        Study.StudyAclParams aclParams2 = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), AclParams.Action.ADD, null);
-        catalogManager.getStudyManager().updateAcl(Long.toString(s2), "user", aclParams2, sessionIdUser2).get(0);
+        catalogManager.getStudyManager().updateGroup(String.valueOf(s2), "@members", new GroupParams("user", GroupParams.Action.ADD),
+                sessionIdUser2);
 
         QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
@@ -121,8 +122,6 @@ public class ProjectManagerTest extends GenericTest {
 
         // Add permissions to a group were user belongs
         catalogManager.getStudyManager().createGroup(Long.toString(studyId3), "@member", "user", sessionIdUser2);
-        Study.StudyAclParams aclParams1 = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), AclParams.Action.ADD, null);
-        catalogManager.getStudyManager().updateAcl(Long.toString(studyId3), "@member", aclParams1, sessionIdUser2).get(0);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
@@ -132,8 +131,8 @@ public class ProjectManagerTest extends GenericTest {
         // Add permissions to user in a study of user3
         long s3 = catalogManager.getStudyManager().create(String.valueOf(project3), "StudyProject3", "s3", Study.Type.CONTROL_SET, null,
                 "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getId();
-        Study.StudyAclParams aclParams = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), AclParams.Action.ADD, null);
-        catalogManager.getStudyManager().updateAcl(Long.toString(s3), "user", aclParams, sessionIdUser3).get(0);
+        catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", new GroupParams("user", GroupParams.Action.ADD),
+                sessionIdUser3);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(2, queryResult.getNumResults());

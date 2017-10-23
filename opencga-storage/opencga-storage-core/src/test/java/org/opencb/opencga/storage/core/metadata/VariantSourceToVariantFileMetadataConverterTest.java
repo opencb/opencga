@@ -34,6 +34,8 @@ public class VariantSourceToVariantFileMetadataConverterTest extends VariantStor
                 new ObjectMapper().readValue(resource, org.opencb.biodata.models.variant.avro.legacy.VariantSource.class);
         VariantFileMetadata convertedFileMetadata = new VariantSourceToVariantFileMetadataConverter().convert(legacy);
 
+        // Impossible to get StdDev from legacy VariantSource
+        expectedFileMetadata.getStats().setStdDevQuality(0);
 
         assertEquals(expectedFileMetadata, convertedFileMetadata);
     }

@@ -192,7 +192,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         ParamUtils.checkObj(family, "family");
         ParamUtils.checkAlias(family.getName(), "name", configuration.getCatalog().getOffset());
         family.setMembers(ParamUtils.defaultObject(family.getMembers(), Collections.emptyList()));
-        family.setDiseases(ParamUtils.defaultObject(family.getDiseases(), Collections.emptyList()));
+        family.setPhenotypes(ParamUtils.defaultObject(family.getPhenotypes(), Collections.emptyList()));
         family.setCreationDate(TimeUtils.getTime());
         family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
         family.setStatus(new Status());
@@ -205,7 +205,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         autoCompleteFamilyMembers(family, studyId, sessionId);
         validateFamily(family);
         validateMultiples(family);
-        validateDiseases(family);
+        validatePhenotypes(family);
         createMissingMembers(family, studyId, sessionId);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -344,7 +344,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw new CatalogException("Family " + familyId + " not found");
         }
 
-        // In case the user is updating members or disease list, we will create the family variable. If it is != null, it will mean that
+        // In case the user is updating members or phenotype list, we will create the family variable. If it is != null, it will mean that
         // all or some of those parameters have been passed to be updated, and we will need to call the private validator to check if the
         // fields are valid.
         Family family = null;
@@ -356,7 +356,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 case NAME:
                     ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
                     break;
-                case DISEASES:
+                case PHENOTYPES:
                 case MEMBERS:
                     if (family == null) {
                         // We parse the parameters to a family object
@@ -378,7 +378,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         if (family != null) {
-            // MEMBERS or DISEASES have been passed. We will complete the family object with the stored parameters that are not expected
+            // MEMBERS or PHENOTYPES have been passed. We will complete the family object with the stored parameters that are not expected
             // to be updated
             if (family.getMembers() == null || family.getMembers().isEmpty()) {
                 family.setMembers(familyQueryResult.first().getMembers());
@@ -386,13 +386,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // We will need to complete the individual information provided
                 autoCompleteFamilyMembers(family, resource.getStudyId(), sessionId);
             }
-            if (family.getDiseases() == null || family.getMembers().isEmpty()) {
-                family.setDiseases(familyQueryResult.first().getDiseases());
+            if (family.getPhenotypes() == null || family.getMembers().isEmpty()) {
+                family.setPhenotypes(familyQueryResult.first().getPhenotypes());
             }
 
             validateFamily(family);
             validateMultiples(family);
-            validateDiseases(family);
+            validatePhenotypes(family);
 
             ObjectMap tmpParams;
             try {
@@ -406,8 +406,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             if (parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
                 parameters.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
             }
-            if (parameters.containsKey(FamilyDBAdaptor.QueryParams.DISEASES.key())) {
-                parameters.put(FamilyDBAdaptor.QueryParams.DISEASES.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.DISEASES.key()));
+            if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())) {
+                parameters.put(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.PHENOTYPES.key()));
             }
         }
 
@@ -474,7 +474,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 Long.toString(resourceId.getStudyId()), sessionId);
 
         QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
-                resourceId.getUser(), null);
+                resourceId.getUser());
         if (variableSet.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resourceId.getUser() + " cannot create annotations over "
@@ -569,7 +569,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     + "be found in the database.");
         }
         // We make this query because it will check the proper permissions in case the variable set is confidential
-        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser(), null);
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser());
 
         familyDBAdaptor.deleteAnnotationSet(resourceId.getResourceId(), annotationSetName);
 
@@ -687,13 +687,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         MyResourceIds resourceIds = getIds(familyStr, studyStr, sessionId);
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         String collectionName = MongoDBAdaptorFactory.FAMILY_COLLECTION;
-        // Check the user has the permissions needed to change permissions over those families
-        for (Long familyId : resourceIds.getResourceIds()) {
-            authorizationManager.checkFamilyPermission(resourceIds.getStudyId(), familyId, resourceIds.getUser(),
-                    FamilyAclEntry.FamilyPermissions.SHARE);
-        }
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -702,6 +698,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
@@ -733,10 +730,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 //            throw new CatalogException("Missing members in family");
 //        }
 //
-//        // Store all the disease ids in a set
-//        Set<String> diseaseSet = new HashSet<>();
-//        if (family.getDiseases() != null) {
-//            diseaseSet = family.getDiseases().stream().map(Disease::getId).collect(Collectors.toSet());
+//        // Store all the phenotype ids in a set
+//        Set<String> phenotypeSet = new HashSet<>();
+//        if (family.getPhenotypes() != null) {
+//            phenotypeSet = family.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.toSet());
 //        }
 //
 //        Set<String> familyMembers = new HashSet<>(family.getMembers().size());
@@ -760,11 +757,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 //                throw new CatalogException("Missing family member " + relatives.getMother().getName());
 //            }
 //
-//            // Check all the diseases are contained in the main array of diseases of the family
-//            if (relatives.getDiseases() != null) {
-//                if (!diseaseSet.containsAll(relatives.getDiseases())) {
-//                    throw new CatalogException("Missing diseases that some family members have from the main disease list: "
-//                            + StringUtils.join(relatives.getDiseases(), ","));
+//            // Check all the phenotypes are contained in the main array of phenotypes of the family
+//            if (relatives.getPhenotypes() != null) {
+//                if (!phenotypeSet.containsAll(relatives.getPhenotypes())) {
+//                    throw new CatalogException("Missing phenotypes that some family members have from the main phenotype list: "
+//                            + StringUtils.join(relatives.getPhenotypes(), ","));
 //                }
 //            }
 //        }
@@ -919,8 +916,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    private void validateDiseases(Family family) throws CatalogException {
-        if (family.getDiseases() == null || family.getDiseases().isEmpty()) {
+    private void validatePhenotypes(Family family) throws CatalogException {
+        if (family.getPhenotypes() == null || family.getPhenotypes().isEmpty()) {
             return;
         }
 
@@ -928,15 +925,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw new CatalogException("Missing family members");
         }
 
-        Set<String> memberDiseases = new HashSet<>();
+        Set<String> memberPhenotypes = new HashSet<>();
         for (Individual individual : family.getMembers()) {
-            if (individual.getOntologyTerms() != null && !individual.getOntologyTerms().isEmpty()) {
-                memberDiseases.addAll(individual.getOntologyTerms().stream().map(OntologyTerm::getId).collect(Collectors.toSet()));
+            if (individual.getPhenotypes() != null && !individual.getPhenotypes().isEmpty()) {
+                memberPhenotypes.addAll(individual.getPhenotypes().stream().map(OntologyTerm::getId).collect(Collectors.toSet()));
             }
         }
-        Set<String> familyDiseases = family.getDiseases().stream().map(OntologyTerm::getId).collect(Collectors.toSet());
-        if (!familyDiseases.containsAll(memberDiseases)) {
-            throw new CatalogException("Some of the diseases are not present in any member of the family");
+        Set<String> familyPhenotypes = family.getPhenotypes().stream().map(OntologyTerm::getId).collect(Collectors.toSet());
+        if (!familyPhenotypes.containsAll(memberPhenotypes)) {
+            throw new CatalogException("Some of the phenotypes are not present in any member of the family");
         }
     }
 

@@ -33,7 +33,6 @@ public class FamilyAclEntry extends AbstractAclEntry<FamilyAclEntry.FamilyPermis
         VIEW,
         UPDATE,
         DELETE,
-        SHARE,
         WRITE_ANNOTATIONS,
         VIEW_ANNOTATIONS,
         DELETE_ANNOTATIONS

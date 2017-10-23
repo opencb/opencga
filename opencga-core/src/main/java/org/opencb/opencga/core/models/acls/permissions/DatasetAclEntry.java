@@ -31,8 +31,7 @@ public class DatasetAclEntry extends AbstractAclEntry<DatasetAclEntry.DatasetPer
     public enum DatasetPermissions {
         VIEW,
         UPDATE,
-        DELETE,
-        SHARE
+        DELETE
     }
 
     public DatasetAclEntry() {

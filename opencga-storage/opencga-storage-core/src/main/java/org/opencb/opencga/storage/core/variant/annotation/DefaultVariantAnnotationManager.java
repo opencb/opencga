@@ -81,6 +81,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
     private VariantDBAdaptor dbAdaptor;
     private VariantAnnotator variantAnnotator;
+    private long numAnnotationsToLoad = 0;
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
@@ -166,8 +167,11 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
         try {
             DataReader<Variant> variantDataReader = new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
-
-            ProgressLogger progressLogger = new ProgressLogger("Annotated variants:", () -> dbAdaptor.count(query).first(), 200);
+            ProgressLogger progressLogger = new ProgressLogger("Annotated variants:", () -> {
+                Long count = dbAdaptor.count(query).first();
+                numAnnotationsToLoad = count;
+                return count;
+            }, 200);
             ParallelTaskRunner.TaskWithException<Variant, VariantAnnotation, VariantAnnotatorException> annotationTask = variantList -> {
                 List<VariantAnnotation> variantAnnotationList;
                 long start = System.currentTimeMillis();
@@ -236,7 +240,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
         reader = newVariantAnnotationDataReader(uri);
         try {
-            ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ");
+            ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ", numAnnotationsToLoad);
             ParallelTaskRunner<VariantAnnotation, Object> ptr = new ParallelTaskRunner<>(reader,
                     () -> newVariantAnnotationDBWriter(dbAdaptor, new QueryOptions(params))
                             .setProgressLogger(progressLogger), null, config);

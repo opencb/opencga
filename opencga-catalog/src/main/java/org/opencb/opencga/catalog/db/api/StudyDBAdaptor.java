@@ -221,12 +221,11 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param variableSetId variable set id.
      * @param options Query options.
      * @param user User asking for the variable set.
-     * @param additionalPermission Additional permission to be checked apart from VIEW_VARIABLE_SET
      * @return variableSet
      * @throws CatalogDBException catalogDBException.
      * @throws CatalogAuthorizationException if there is any permission error.
      */
-    QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user, String additionalPermission)
+    QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
     QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions) throws CatalogDBException;

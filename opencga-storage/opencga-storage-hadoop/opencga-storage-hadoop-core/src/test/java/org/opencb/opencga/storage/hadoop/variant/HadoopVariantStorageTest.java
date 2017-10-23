@@ -20,7 +20,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.backup.regionserver.LogRollRegionServerProcedureManager;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -39,7 +38,6 @@ import org.apache.hadoop.hbase.procedure.ZKProcedureUtil;
 import org.apache.hadoop.hbase.procedure.flush.RegionServerFlushTableProcedureManager;
 import org.apache.hadoop.hbase.procedure2.ProcedureExecutor;
 import org.apache.hadoop.hbase.procedure2.store.wal.WALProcedureStore;
-import org.apache.hadoop.hbase.quotas.RegionServerQuotaManager;
 import org.apache.hadoop.hbase.regionserver.*;
 import org.apache.hadoop.hbase.regionserver.compactions.CompactionConfiguration;
 import org.apache.hadoop.hbase.regionserver.snapshot.RegionServerSnapshotManager;
@@ -65,7 +63,6 @@ import org.apache.phoenix.hbase.index.covered.data.IndexMemStore;
 import org.apache.phoenix.hbase.index.parallel.BaseTaskRunner;
 import org.apache.phoenix.hbase.index.write.ParallelWriterIndexCommitter;
 import org.apache.phoenix.hbase.index.write.recovery.TrackingParallelWriterIndexCommitter;
-import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.schema.MetaDataClient;
 import org.apache.tools.ant.types.Commandline;
 import org.apache.zookeeper.ClientCnxn;
@@ -86,9 +83,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,12 +130,12 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 org.apache.log4j.Logger.getLogger(ServerManager.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(RegionServerSnapshotManager.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(SplitLogWorker.class).setLevel(Level.WARN);
-                org.apache.log4j.Logger.getLogger(LogRollRegionServerProcedureManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger("org.apache.hadoop.hbase.backup.regionserver.LogRollRegionServerProcedureManager").setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(HeapMemoryManager.class).setLevel(Level.WARN);
-                org.apache.log4j.Logger.getLogger(MasterMobCompactionThread.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger("org.apache.hadoop.hbase.master.MasterMobCompactionThread").setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(RegionServerFlushTableProcedureManager.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(ChoreService.class).setLevel(Level.WARN);
-                org.apache.log4j.Logger.getLogger(RegionServerQuotaManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger("org.apache.hadoop.hbase.quotas.RegionServerQuotaManager").setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(MetaMigrationConvertingToPB.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(TableNamespaceManager.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(ProcedureManagerHost.class).setLevel(Level.WARN);
@@ -231,7 +228,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 //                conf.set("hbase.coprocessor.regionserver.classes",
 //                        org.apache.hadoop.hbase.regionserver.LocalIndexMerger.class.getName());
 
-                conf.setBoolean(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, true);
+//                conf.setBoolean(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, true);
+                conf.setBoolean("phoenix.schema.isNamespaceMappingEnabled", true);
 
                 // Zookeeper always with the same clientPort.
 //                conf.setInt("test.hbase.zookeeper.property.clientPort", 55419);

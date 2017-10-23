@@ -287,8 +287,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
         AnnotationSet annotationSet = queryResult.first();
 
         // Get the variableSet
-        QueryResult<VariableSet> variableSetQR = studyDBAdaptor.getVariableSet(annotationSet.getVariableSetId(), null, resource.getUser(),
-                null);
+        QueryResult<VariableSet> variableSetQR = studyDBAdaptor.getVariableSet(annotationSet.getVariableSetId(), null, resource.getUser());
         if (variableSetQR.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resource.getUser() + " cannot create annotations over "

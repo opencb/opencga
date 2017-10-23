@@ -37,10 +37,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
             <version>${jersey.version}</version>
@@ -86,12 +82,12 @@
             <type>test-jar</type>
             <version>${opencga.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-analysis</artifactId>
-            <scope>test</scope>
-            <version>${opencga.version}</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.opencb.opencga</groupId>-->
+            <!--<artifactId>opencga-analysis</artifactId>-->
+            <!--<scope>test</scope>-->
+            <!--<version>${opencga.version}</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>

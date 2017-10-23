@@ -31,8 +31,7 @@ public class ToolAclEntry extends AbstractAclEntry<ToolAclEntry.ToolPermissions>
     public enum ToolPermissions {
         EXECUTE,
         UPDATE,
-        DELETE,
-        SHARE
+        DELETE
     }
 
     public ToolAclEntry() {

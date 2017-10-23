@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.StudyEntry;
