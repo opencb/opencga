@@ -31,7 +31,6 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
@@ -545,8 +544,16 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
                     throw new IllegalStateException(String.format(
                             "Study Entry for study %s of target variant is null: %s",  studyId, tar));
                 }
-                Variant tarNew = variantMerger.createFromTemplate(tar);
-                analysisNew.add(tarNew);
+                Variant var = new Variant(tar.getChromosome(), tar.getStart(), tar.getEnd(), tar.getReference(), tar.getAlternate());
+                var.setType(tar.getType());
+                for (StudyEntry tse : tar.getStudies()) {
+                    StudyEntry studyEntry = new StudyEntry(tse.getStudyId());
+                    studyEntry.setFormat(tse.getFormat());
+                    studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
+                    studyEntry.setSamplesData(new ArrayList<>());
+                    var.addStudyEntry(studyEntry);
+                }
+                analysisNew.add(var);
             }
         }
 
@@ -574,7 +581,6 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
                         tarNew.setType(type);
                         for (StudyEntry tse : tar.getStudies()) {
                             StudyEntry se = new StudyEntry(tse.getStudyId());
-                            se.setFiles(Collections.singletonList(new FileEntry("", "", new HashMap<>())));
                             se.setFormat(fixedFormat);
                             se.setSamplesPosition(new HashMap<>());
                             se.setSamplesData(new ArrayList<>());
