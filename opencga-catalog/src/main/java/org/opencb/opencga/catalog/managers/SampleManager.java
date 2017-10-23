@@ -666,13 +666,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = sampleDBAdaptor.groupBy(query, fields, options);
-        }
+        QueryResult queryResult = sampleDBAdaptor.groupBy(query, fields, options);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }

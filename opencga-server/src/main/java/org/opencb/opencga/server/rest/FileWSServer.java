@@ -1088,18 +1088,22 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupby")
-    @ApiOperation(value = "Group files by several fields", position = 24, response = QueryResponse.class)
+    @ApiOperation(value = "Group files by several fields", position = 24, response = QueryResponse.class,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                             @QueryParam("fields") String fields,
                             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId")
                                     String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
-                            @ApiParam(value = "Comma separated list of ids.", required = false) @DefaultValue("") @QueryParam("id")
-                                    String ids,
                             @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name")
                                     String names,
-                            @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
                             @ApiParam(value = "Comma separated Type values.", required = false) @DefaultValue("") @QueryParam("type")
                                     String type,
                             @ApiParam(value = "Comma separated Bioformat values.", required = false) @DefaultValue("")
@@ -1110,18 +1114,9 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
                             @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate")
                                     String creationDate,
-                            @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate")
-                                    String modificationDate,
-                            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description")
-                                    String description,
                             @ApiParam(value = "size", required = false) @DefaultValue("") @QueryParam("size") Long size,
                             @ApiParam(value = "Comma separated sampleIds", hidden = true) @QueryParam("sampleIds") String sampleIds,
-                            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
-                            @ApiParam(value = "(DEPRECATED) Job id", hidden = true) @QueryParam("jobId") String jobIdOld,
-                            @ApiParam(value = "Job id", required = false) @QueryParam("job.id") String jobId,
-                            @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
-                            @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes")
-                                    String nattributes) {
+                            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;

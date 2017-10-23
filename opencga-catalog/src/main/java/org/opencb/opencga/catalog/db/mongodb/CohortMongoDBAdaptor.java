@@ -40,10 +40,10 @@ import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -534,6 +534,26 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(cohortCollection, bsonQuery, fields, "name", options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS
+                .name(), CohortAclEntry.CohortPermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(cohortCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS
+                .name(), CohortAclEntry.CohortPermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(cohortCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }
 
     @Override

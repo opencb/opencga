@@ -396,16 +396,20 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupby")
-    @ApiOperation(value = "Group individuals by several fields", position = 10)
+    @ApiOperation(value = "Group individuals by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
                             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
                             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
-                            @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
-                            @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
-                            @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                             @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
                             @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,

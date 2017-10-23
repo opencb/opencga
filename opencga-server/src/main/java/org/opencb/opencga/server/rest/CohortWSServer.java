@@ -445,15 +445,20 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupby")
-    @ApiOperation(value = "Group cohorts by several fields", position = 24)
+    @ApiOperation(value = "Group cohorts by several fields", position = 24,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
                             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId")
                                     String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
-                            @ApiParam(value = "Comma separated list of ids.", required = false) @DefaultValue("") @QueryParam("id")
-                                        String ids,
                             @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name")
                                         String names,
                             @ApiParam(value = "Comma separated Type values.", required = false) @DefaultValue("") @QueryParam("type")
@@ -462,10 +467,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate")
                                         String creationDate,
                             @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds")
-                                        String sampleIds,
-                            @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
-                            @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes")
-                                        String nattributes) {
+                                        String sampleIds) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;

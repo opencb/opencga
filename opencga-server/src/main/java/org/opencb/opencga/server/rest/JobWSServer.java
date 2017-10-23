@@ -238,10 +238,16 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupby")
-    @ApiOperation(value = "Group jobs by several fields", position = 10)
+    @ApiOperation(value = "Group jobs by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
-                            @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @DefaultValue("") @QueryParam("studyId") String studyId,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
@@ -250,13 +256,7 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
                             @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
                             @ApiParam(value = "creationDate", required = false) @DefaultValue("")
-                                @QueryParam("creationDate") String creationDate,
-//                            @ApiParam(value = "modificationDate", required = false) @DefaultValue("")
-//                              @QueryParam("modificationDate") String modificationDate,
-                            @ApiParam(value = "description", required = false) @DefaultValue("")
-                                @QueryParam("description") String description,
-                            @ApiParam(value = "attributes", required = false) @DefaultValue("")
-                                @QueryParam("attributes") String attributes) {
+                                @QueryParam("creationDate") String creationDate) {
         try {
             if (StringUtils.isEmpty(fields)) {
                 throw new CatalogException("Empty fields parameter.");

@@ -482,14 +482,7 @@ public class JobManager extends ResourceManager<Job> {
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-//        query.append(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = jobDBAdaptor.groupBy(query, fields, options);
-        }
+        QueryResult queryResult = jobDBAdaptor.groupBy(query, fields, options);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }

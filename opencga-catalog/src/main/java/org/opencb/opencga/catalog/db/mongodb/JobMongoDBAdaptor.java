@@ -36,12 +36,12 @@ import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -501,6 +501,26 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(jobCollection, bsonQuery, fields, "name", options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(jobCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(jobCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }
 
     @Override

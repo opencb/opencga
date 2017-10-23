@@ -272,14 +272,20 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupby")
-    @ApiOperation(value = "Group samples by several fields", position = 10)
+    @ApiOperation(value = "Group samples by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                             @QueryParam("fields") String fields,
                             @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId")
                                     String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
-                            @ApiParam(value = "DEPRECATED: Comma separated list of ids.", hidden = true) @QueryParam("id") String id,
                             @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
                             @ApiParam(value = "source") @QueryParam("source") String source,
                             @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
