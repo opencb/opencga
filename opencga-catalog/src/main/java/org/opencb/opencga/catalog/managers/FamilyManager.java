@@ -840,7 +840,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     individual.getFather().setName(String.valueOf(individual.getFather().getId()));
                 }
                 if (!StringUtils.isEmpty(individual.getFather().getName())) {
-                    parentsKey += individual.getFather().getName() + "||M";
+                    if (parentsKey != null) {
+                        parentsKey += individual.getFather().getName() + "||M";
+                    } else {
+                        parentsKey = individual.getFather().getName() + "||M";
+                    }
                 }
             }
             if (parentsKey == null) {
