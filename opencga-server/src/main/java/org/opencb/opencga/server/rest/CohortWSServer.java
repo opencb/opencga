@@ -183,6 +183,9 @@ public class CohortWSServer extends OpenCGAWSServer {
                     example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query"),
     })
     public Response searchCohorts(@ApiParam(value = "Study [[user@]project:]study where study and project can be either "
             + "the id or alias") @QueryParam("study") String studyStr,
@@ -258,7 +261,9 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/delete")
-    @ApiOperation(value = "Delete cohort. [NOT TESTED]", position = 5)
+    @ApiOperation(value = "Delete cohort. [WARNING]", position = 5,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
     public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr) {
@@ -324,7 +329,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/annotationsets/info")
-    @ApiOperation(value = "Return all the annotation sets of the cohort [DEPRECATED]", position = 12,
+    @ApiOperation(value = "Return all the annotation sets of the cohort [DEPRECATED]", position = 12, hidden = true,
             notes = "Use /{cohort}/annotationsets instead")
     public Response infoAnnotationSetGET(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
@@ -343,7 +348,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, notes = "Use /{cohort}/annotationsets/info instead")
+    @ApiOperation(value = "Return the annotation set [DEPRECATED]", hidden = true, position = 16,
+            notes = "Use /{cohort}/annotationsets/info instead")
     public Response infoAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias") @QueryParam("study") String studyStr,
@@ -438,7 +444,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupBy")
+    @Path("/groupby")
     @ApiOperation(value = "Group cohorts by several fields", position = 24)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
@@ -492,7 +498,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{cohort}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21,
+    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAcl(

@@ -255,7 +255,9 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{samples}/delete")
-    @ApiOperation(value = "Delete a sample [NOT TESTED]", position = 9)
+    @ApiOperation(value = "Delete a sample [WARNING]", position = 9,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
     public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
                                        String sampleStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -269,7 +271,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupBy")
+    @Path("/groupby")
     @ApiOperation(value = "Group samples by several fields", position = 10)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                             @QueryParam("fields") String fields,
@@ -358,7 +360,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/annotationsets/info")
-    @ApiOperation(value = "Return the annotation sets of the sample [DEPRECATED]", position = 12,
+    @ApiOperation(value = "Return the annotation sets of the sample [DEPRECATED]", position = 12, hidden = true,
             notes = "Use /{sample}/annotationsets instead")
     public Response infoAnnotationSetGET(
             @ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleStr,
@@ -378,7 +380,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, notes = "Use /{sample}/annotationsets/info instead")
+    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, hidden = true,
+            notes = "Use /{sample}/annotationsets/info instead")
     public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                       @QueryParam("study") String studyStr,
@@ -482,7 +485,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{sample}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21,
+    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAclPOST(

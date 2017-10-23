@@ -457,7 +457,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/grep")
-    @ApiOperation(value = "Filter lines of the file containing a match of the pattern [TOCHECK]", position = 7, response = String.class)
+    @ApiOperation(value = "Filter lines of the file containing a match of the pattern [NOT TESTED]", position = 7, response = String.class)
     public Response downloadGrep(
             @ApiParam(value = "File id") @PathParam("file") String fileIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -482,7 +482,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @Deprecated
     @GET
-    @Path("/{file}/set-header")
+    @Path("/{file}/setheader")
     @ApiOperation(value = "Set file header [DEPRECATED]", position = 10, notes = "Deprecated method. Moved to update.", hidden = true)
     public Response setHeader(@PathParam(value = "file") @FormDataParam("fileId") String fileStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -1087,7 +1087,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupBy")
+    @Path("/groupby")
     @ApiOperation(value = "Group files by several fields", position = 24, response = QueryResponse.class)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                             @QueryParam("fields") String fields,
@@ -1190,7 +1190,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{file}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the permissions granted for the user or group [DEPRECATED]", position = 21, response = QueryResponse.class,
+    @ApiOperation(value = "Update the permissions granted for the user or group [DEPRECATED]", position = 21,
+            hidden = true, response = QueryResponse.class,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAclPOST(

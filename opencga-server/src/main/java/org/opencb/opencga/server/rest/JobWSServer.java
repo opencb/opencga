@@ -156,10 +156,9 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
-    // FIXME: Implement and change parameters
     @GET
     @Path("/search")
-    @ApiOperation(value = "Filter jobs [PENDING]", position = 12, response = Job[].class)
+    @ApiOperation(value = "Job search method", position = 12, response = Job[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -219,7 +218,9 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobIds}/delete")
-    @ApiOperation(value = "Delete job [NOT TESTED]", position = 4)
+    @ApiOperation(value = "Delete job [WARNING]", position = 4,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
     public Response delete(@ApiParam(value = "Comma separated list of job ids or names", required = true) @PathParam("jobIds")
                                        String jobIds,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -236,7 +237,7 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupBy")
+    @Path("/groupby")
     @ApiOperation(value = "Group jobs by several fields", position = 10)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
@@ -286,7 +287,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{jobId}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21,
+    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAclPOST(
