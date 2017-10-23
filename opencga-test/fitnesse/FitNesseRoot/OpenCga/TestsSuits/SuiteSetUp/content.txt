@@ -50,6 +50,11 @@
 | POST | /v1/studies/create?sid=$sessionId&projectId=$projectId |200|  Content-Type: application/json ||
 |let|studyId|js|response.jsonbody.response[0].result[0].id||
 
+!3 Increment Project Release 
+!|Table: Rest Fixture | $baseURL |
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/$projectId/increlease?sid=$sessionId |200|  Content-Type: application/json ||
+
 !3 Create Global Variable Set  
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  {  "unique": false, "confidential" : "false",  "name": "$gvsName",  "description": "string",  "variables": [{"name": "var_int", "type" : "INTEGER", "required" : true,"multiValue": false }, {"name": "var_double", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|

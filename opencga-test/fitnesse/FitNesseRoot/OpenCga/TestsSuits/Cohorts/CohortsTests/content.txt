@@ -1,7 +1,4 @@
 !define TEST_SYSTEM {slim}
-!define user {$user}
-!define file {4}
-!define study {$studyId}
 
 !3 Generate Random Variables 
 !|Table: Rest Fixture | $baseURL |
@@ -15,51 +12,51 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$CohortName1"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/create?sid=$sessionId&study=${study} |200|  Content-Type: application/json ||
+| POST | /v1/cohorts/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 |let|cohortId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Second Cohort 
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$CohortName2"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/create?sid=$sessionId&study=${study} |200|  Content-Type: application/json ||
+| POST | /v1/cohorts/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 |let|cohortId2|js|response.jsonbody.response[0].result[0].id||
 
 !3 Search Cohort 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
+| GET | /v1/cohorts/search?sid=$sessionId&study=$study&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
 
 !3 Find Info About A Cohort 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId/info?sid=$sessionId&study=${study}|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
+| GET | /v1/cohorts/$cohortId/info?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
 
 !3 Search A Cohort 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' |
+| GET | /v1/cohorts/search?sid=$sessionId&study=$study&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' |
 
 !3 Get cohorts as Groups
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/groupBy?sid=$sessionId&study=${study}&fields=toolName%2CcommandLine|200|  Content-Type: application/json |jsonbody.error == ''|
+| GET | /v1/cohorts/groupBy?sid=$sessionId&study=$study&fields=toolName%2CcommandLine|200|  Content-Type: application/json |jsonbody.error == ''|
 
 !3 Create Sample (POST)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$createPostName" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/create?sid=$sessionId&study=${study} |200|  Content-Type: application/json |jsonbody.error == ''|
+| POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json |jsonbody.error == ''|
 |let|sampleId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Second Sample (POST)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sName2" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/create?sid=$sessionId&study=${study} |200|  Content-Type: application/json |jsonbody.error == ''|
+| POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json |jsonbody.error == ''|
 |let|sampleId2|js|response.jsonbody.response[0].result[0].id||
 
 !3 Update Cohort (POST)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"samples" : "$sampleId,$sampleId2"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/$cohortId/update?sid=$sessionId&study=${study} |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == '2'|
+| POST | /v1/cohorts/$cohortId/update?sid=$sessionId&study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == '2'|
 
 !3 Get cohorts Sample
 !|Table: Rest Fixture | $baseURL |
@@ -75,11 +72,11 @@
 
 !3 Delete Sample 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/delete?sid=$sessionId&study=${study}|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].errorMsg == 'The sample $sampleId is part of 1 cohorts. Please, first update or delete the cohorts'|
+| GET | /v1/samples/$sampleId/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].errorMsg == 'The sample $sampleId is part of 1 cohorts. Please, first update or delete the cohorts'|
 
 !3 Delete Second Sample 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId2/delete?sid=$sessionId&study=${study}|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].errorMsg == 'The sample $sampleId2 is part of 1 cohorts. Please, first update or delete the cohorts'|
+| GET | /v1/samples/$sampleId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].errorMsg == 'The sample $sampleId2 is part of 1 cohorts. Please, first update or delete the cohorts'|
 
 !3 Update (Create) ACL For A Member 
 !|Table: Rest Fixture | $baseURL |
@@ -99,7 +96,7 @@
 
 !3 Get Updated ACL For The Member
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId/acl?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| GET | /v1/cohorts/$cohortId/acl?sid=$sessionId&study=$study&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
 
 !3 Delete ACL For A Member
 !|Table: Rest Fixture | $baseURL |
@@ -112,24 +109,38 @@
 
 !3 Get Deleted ACL For The Member
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId/acl?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/cohorts/$cohortId/acl?sid=$sessionId&study=$study&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
-!3 Delete a Cohort
+!3 Delete All Cohorts
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId/delete?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
+| GET | /v1/cohorts/$cohortId/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
+| GET | /v1/cohorts/$cohortId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId2'|
 
-!3 Search Deleted Cohort 
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
-
-!3 Search Second Cohort 
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$CohortName2'|
-
-!3 Delete Second Cohort
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId2/delete?sid=$sessionId&study=${study}&name=$CohortName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$CohortName2'|
+# this not working, test when deleted are fully implemented
+#| GET | /v1/cohorts/$cohortId,$cohortId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
 
 !3 Search Deleted Cohort 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/cohorts/search?sid=$sessionId&study=$study&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Search Second Deleted Cohort 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/cohorts/search?sid=$sessionId&study=$study&name=$CohortName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Delete First Sample
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+
+!3 Search Deleted Sample 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&name=$updatedName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Delete Second Sample
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+
+!3 Search Deleted Sample 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&name=$sName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+
