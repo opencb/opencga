@@ -174,6 +174,14 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         // stackTrace[1] = "newOutputUri"
         // stackTrace[2] =  caller method
         String testName = stackTrace[2 + extraCalls].getMethodName();
+        return newOutputUri(testName, outputUri);
+    }
+
+    protected URI newOutputUri(String testName) throws IOException {
+        return newOutputUri(testName, outputUri);
+    }
+
+    protected static URI newOutputUri(String testName, URI outputUri) throws IOException {
         int c = 0;
         URI finalOutputUri = outputUri.resolve("test_" + testName + "/");
         while (Paths.get(finalOutputUri).toFile().exists()) {

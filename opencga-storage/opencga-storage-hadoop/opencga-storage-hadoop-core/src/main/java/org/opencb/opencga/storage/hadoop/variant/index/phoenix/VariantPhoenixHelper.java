@@ -258,7 +258,7 @@ public class VariantPhoenixHelper {
 
     public void updateStatsColumns(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
         List<Column> columns = new ArrayList<>();
-        for (Integer cohortId : studyConfiguration.getCohortIds().values()) {
+        for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
             for (Column column : getStatsColumns(studyConfiguration.getStudyId(), cohortId)) {
                 columns.add(column);
             }
