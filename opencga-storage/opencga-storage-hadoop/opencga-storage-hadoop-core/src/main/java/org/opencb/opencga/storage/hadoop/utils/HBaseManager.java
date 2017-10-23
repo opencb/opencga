@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.hadoop.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
@@ -44,10 +43,14 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseManager extends Configured implements AutoCloseable {
+public class HBaseManager implements AutoCloseable {
     protected static final Logger LOGGER = LoggerFactory.getLogger(HBaseManager.class);
     //    public static final Set<Connection> CONNECTIONS = new ConcurrentHashSet<>();
     private static final AtomicInteger OPEN_CONNECTIONS = new AtomicInteger(0);
+    private final AtomicBoolean closeConnection = new AtomicBoolean(false);
+    private final AtomicReference<Connection> connection = new AtomicReference<>(null);
+    private final Configuration conf;
+
     @FunctionalInterface
     public interface HBaseTableConsumer {
         void accept(Table table) throws IOException;
@@ -63,27 +66,33 @@ public class HBaseManager extends Configured implements AutoCloseable {
         T function(Table table, Admin admin) throws IOException;
     }
 
-
-    @Override
-    public void setConf(Configuration conf) {
-        super.setConf(conf);
-    }
-
-    private final AtomicBoolean closeConnection = new AtomicBoolean(false);
-    private final AtomicReference<Connection> connection = new AtomicReference<>(null);
-
     public HBaseManager(Configuration configuration) {
         this(configuration, (Connection) null);
     }
 
+    /**
+     * HBaseManager connection delegate.
+     * Will share the same HBase connection, and won't close it at the end.
+     * @param hBaseManager Delegated hbase manager
+     */
     public HBaseManager(HBaseManager hBaseManager) {
         this(hBaseManager.getConf(), hBaseManager.getConnection());
     }
 
+    /**
+     * Constructor with an optional connection. If given, this Manager won't close the connection.
+     * Is responsibility of the caller to close that connection.
+     * @param configuration  Correct hbase configuration
+     * @param connection     Optional connection.
+     */
     public HBaseManager(Configuration configuration, Connection connection) {
-        super(configuration);
+        this.conf = configuration;
         this.closeConnection.set(connection == null);
         this.connection.set(connection);
+    }
+
+    public Configuration getConf() {
+        return conf;
     }
 
     public boolean getCloseConnection() {

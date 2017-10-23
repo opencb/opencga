@@ -431,7 +431,13 @@ public class DocumentToVariantAnnotationConverter
             if (cosmicDBList != null) {
                 List<Cosmic> cosmicList = new ArrayList<>(cosmicDBList.size());
                 for (Object object : cosmicDBList) {
-                    cosmicList.add(jsonObjectMapper.convertValue(object, Cosmic.class));
+                    Cosmic cosmic = jsonObjectMapper.convertValue(object, Cosmic.class);
+                    for (int i = 0; i < cosmic.getSchema().getFields().size(); i++) {
+                        if (cosmic.get(i) == null) {
+                            cosmic.put(i, "");
+                        }
+                    }
+                    cosmicList.add(cosmic);
                 }
                 size += cosmicList.size();
                 variantTraitAssociation.setCosmic(cosmicList);

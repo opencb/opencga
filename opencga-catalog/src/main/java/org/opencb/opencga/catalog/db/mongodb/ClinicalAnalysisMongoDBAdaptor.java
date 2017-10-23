@@ -135,14 +135,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
 
-        String[] acceptedObjectParams = {QueryParams.INTERPRETATIONS.key()};
+        String[] acceptedObjectParams = {QueryParams.INTERPRETATIONS.key(), QueryParams.FAMILY.key(), QueryParams.SUBJECTS.key()};
         filterObjectParams(parameters, analysisParams, acceptedObjectParams);
 
         if (!analysisParams.isEmpty()) {
             clinicalConverter.validateDocumentToUpdate(analysisParams);
-
-            System.out.println(parameters.safeToString());
-            System.out.println(analysisParams);
 
             Bson query = Filters.eq(PRIVATE_ID, id);
             Bson operation = new Document("$set", analysisParams);
