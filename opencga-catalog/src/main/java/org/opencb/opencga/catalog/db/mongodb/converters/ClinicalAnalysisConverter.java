@@ -84,7 +84,8 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
 
         Document family = (Document) document.get("family");
         if (family != null) {
-            long familyId = family.getInteger("id") <= 0 ? -1L : family.getInteger("id").longValue();
+            long familyId = getLongValue(family, "id");
+            familyId = familyId <= 0 ? -1L : familyId;
             document.put("family", new Document("id", familyId));
         }
 
@@ -93,13 +94,16 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
             List<Document> finalSubjects = new ArrayList<>(subjectList.size());
 
             for (Document individual : subjectList) {
-                long probandId = individual.getInteger("id") <= 0 ? -1L : individual.getInteger("id").longValue();
+                long probandId = getLongValue(individual, "id");
+                probandId = probandId <= 0 ? -1L : probandId;
 
                 List<Document> sampleDocList = (List) individual.get("samples");
                 List<Document> sampleList = new ArrayList<>(sampleDocList.size());
                 if (sampleDocList != null) {
                     for (Document sampleDocument : sampleDocList) {
-                        sampleList.add(new Document("id", sampleDocument.getInteger("id").longValue()));
+                        long sampleId = getLongValue(sampleDocument, "id");
+                        sampleId = sampleId <= 0 ? -1L : sampleId;
+                        sampleList.add(new Document("id", sampleId));
                     }
                 }
 
@@ -116,7 +120,8 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     public void validateInterpretation(Document interpretation) {
         if (interpretation != null) {
             Document file = (Document) interpretation.get("file");
-            long fileId = file != null ? (file.getInteger("id") == 0 ? -1L : file.getInteger("id").longValue()) : -1L;
+            long fileId = file != null ? getLongValue(file, "id") : -1L;
+            fileId = fileId <= 0 ? -1L : fileId;
             interpretation.put("file", fileId > 0 ? new Document("id", fileId) : new Document());
         }
     }
