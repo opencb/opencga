@@ -239,6 +239,18 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     @Test
+    public void createFamilyDuo() throws CatalogException {
+        Family family = new Family()
+                .setName("test")
+                .setPhenotypes(Arrays.asList(new OntologyTerm("E00", "blabla", "blabla")))
+                .setMembers(Arrays.asList(new Individual().setName("proband").setSex(Individual.Sex.MALE),
+                        new Individual().setFather(new Individual().setName("proband")).setName("child").setSex(Individual.Sex.FEMALE)));
+        QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+
+        assertEquals(2, familyQueryResult.first().getMembers().size());
+    }
+
+    @Test
     public void createFamilyMissingMember() throws CatalogException {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
