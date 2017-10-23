@@ -21,13 +21,7 @@
     <modelVersion>4.0.0</modelVersion>
     <properties>
         <opencga-storage-hadoop-deps.version>${opencga.version}-SNAPSHOT</opencga-storage-hadoop-deps.version>
-        <opencga-storage-hadoop-deps.classifier>hdp-2.5.0</opencga-storage-hadoop-deps.classifier>
         <module-opencga-storage-hadoop-deps>false</module-opencga-storage-hadoop-deps>
-        <!--Version values for the default profile hdp-2.5.0-->
-        <hadoop.version>2.7.1</hadoop.version>
-        <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
-        <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
-        <tephra.version>0.7.0</tephra.version>
     </properties>
     <parent>
         <groupId>org.opencb.opencga</groupId>
@@ -53,7 +47,23 @@
             </modules>
             <properties>
                 <module-opencga-storage-hadoop-deps>true</module-opencga-storage-hadoop-deps>
+                <!--Version values for the default profile hdp-2.5.0-->
+                <opencga-storage-hadoop-deps.classifier>hdp-2.5.0</opencga-storage-hadoop-deps.classifier>
+                <hadoop.version>2.7.1</hadoop.version>
+                <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
+                <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
+                <tephra.version>0.7.0</tephra.version>
             </properties>
+            <repositories>
+                <repository>
+                    <id>hortonworks-releases</id>
+                    <url>http://repo.hortonworks.com/content/repositories/releases/</url>
+                </repository>
+                <repository>
+                    <id>hortonworks-public</id>
+                    <url>http://repo.hortonworks.com/content/groups/public</url>
+                </repository>
+            </repositories>
         </profile>
 
         <!-- Each profile will modify the version of some hadoop dependencies and add some repositories, if needed. -->
@@ -67,9 +77,9 @@
                     <value>hdp-2.5.0</value>
                 </property>
             </activation>
+            <!--Default values copied copied in the opencga-storage-hadoop-deps profile-->
             <properties>
                 <opencga-storage-hadoop-deps.classifier>hdp-2.5.0</opencga-storage-hadoop-deps.classifier>
-                <!--Default values copied copied in the main properties section-->
                 <hadoop.version>2.7.1</hadoop.version>
                 <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
                 <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
