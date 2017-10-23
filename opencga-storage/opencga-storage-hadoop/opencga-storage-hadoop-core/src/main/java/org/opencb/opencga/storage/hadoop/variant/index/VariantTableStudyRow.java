@@ -755,7 +755,7 @@ public class VariantTableStudyRow {
 
     @Override
     public String toString() {
-        return chromosome + ':' + pos + ':' + ref + ':' + alt;
+        return chromosome + ':' + pos + ':' + (ref.isEmpty() ? "-" : ref) + ':' + (alt.isEmpty() ? "-" : alt);
     }
 
     public String toSummaryString() {

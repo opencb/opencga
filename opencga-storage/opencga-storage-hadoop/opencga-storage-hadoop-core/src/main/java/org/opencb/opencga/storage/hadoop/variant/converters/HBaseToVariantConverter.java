@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.hadoop.variant.converters;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -37,8 +36,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -96,10 +95,8 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             extraFields = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
         }
 
-        // TODO: Allow exclude genotypes! Read from configuration
-        boolean excludeGenotypes = false;
-//        boolean excludeGenotypes = getStudyConfiguration().getAttributes()
-//                .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean excludeGenotypes = studyConfiguration.getAttributes()
+                .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
 
         if (excludeGenotypes) {
             format = extraFields;
@@ -161,6 +158,15 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return this;
     }
 
+    public static boolean isFailOnWrongVariants() {
+        return failOnWrongVariants;
+    }
+
+    public static void setFailOnWrongVariants(boolean b) {
+        failOnWrongVariants = b;
+    }
+
+
     /**
      * Format of the converted variants. Discard other values.
      * @see org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils#getIncludeFormats
@@ -196,8 +202,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return new VariantTableStudyRowToVariantConverter(genomeHelper, scm);
     }
 
-    protected Variant convert(T object, Variant variant,
-                              Map<Integer, StudyEntry> studies, Map<Integer, Map<Integer, VariantStats>> stats,
+    protected Variant convert(Variant variant, Map<Integer, StudyEntry> studies, Map<Integer, Map<Integer, VariantStats>> stats,
                               VariantAnnotation annotation) {
         if (annotation == null) {
             annotation = new VariantAnnotation();
@@ -222,19 +227,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         }
         return variant;
     }
-
-//    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, VariantFileHeader variantMetadata,
-//                                                              List<String> format, Map<Integer, VariantTableStudyRow> rowsMap,
-//                                                              Map<Integer, Map<Integer, List<String>>> fullSamplesData) {
-//        List<AlternateCoordinate> secAltArr;
-//        if (rowsMap.containsKey(studyId)) {
-//            VariantTableStudyRow row = rowsMap.get(studyId);
-//            secAltArr = getAlternateCoordinates(variant, row);
-//        } else {
-//            secAltArr = samplesDataConverter.extractSecondaryAlternates(variant, variantMetadata, format, fullSamplesData.get(studyId));
-//        }
-//        return secAltArr;
-//    }
 
     protected List<AlternateCoordinate> getAlternateCoordinates(Variant variant, VariantTableStudyRow row) {
         List<AlternateCoordinate> secAltArr;
@@ -270,35 +262,12 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         attributesMap.put("NS", String.valueOf(loadedSamplesSize)); // Number of Samples
     }
 
-    private String getSimpleGenotype(String genotype) {
-        int idx = genotype.indexOf(',');
-        if (idx > 0) {
-            return genotype.substring(0, idx);
-        } else {
-            return genotype;
-        }
-    }
-
     private void wrongVariant(String message) {
         if (failOnWrongVariants) {
             throw new IllegalStateException(message);
         } else {
             logger.warn(message);
         }
-    }
-
-    private Integer getSamplePosition(LinkedHashMap<String, Integer> returnedSamplesPosition, BiMap<Integer, String> mapSampleIds,
-                                      Integer sampleId) {
-        String sampleName = mapSampleIds.get(sampleId);
-        return returnedSamplesPosition.get(sampleName);
-    }
-
-    public static boolean isFailOnWrongVariants() {
-        return failOnWrongVariants;
-    }
-
-    public static void setFailOnWrongVariants(boolean b) {
-        failOnWrongVariants = b;
     }
 
     private static class VariantTableStudyRowToVariantConverter extends HBaseToVariantConverter<VariantTableStudyRow> {
@@ -314,7 +283,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         public Variant convert(VariantTableStudyRow row) {
             Variant variant = new Variant(row.getChromosome(), row.getPos(), row.getRef(), row.getAlt());
             StudyEntry studyEntry = studyEntryConverter.convert(variant, row);
-            return convert(row, variant, Collections.singletonMap(row.getStudyId(), studyEntry), Collections.emptyMap(), null);
+            return convert(variant, Collections.singletonMap(row.getStudyId(), studyEntry), Collections.emptyMap(), null);
         }
     }
 
@@ -345,7 +314,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                 VariantAnnotation annotation = annotationConverter.convert(resultSet);
 
                 Map<Integer, StudyEntry> samplesData = studyEntryConverter.convert(resultSet);
-                return convert(resultSet, variant, samplesData, stats, annotation);
+                return convert(variant, samplesData, stats, annotation);
             } catch (RuntimeException | SQLException e) {
                 logger.error("Fail to parse variant: " + variant);
                 throw Throwables.propagate(e);
@@ -367,7 +336,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             VariantAnnotation annotation = annotationConverter.convert(result);
             Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(result);
             Map<Integer, StudyEntry> studies = studyEntryConverter.convert(result);
-            return convert(result, extractVariantFromVariantRowKey(result.getRow()), studies, stats, annotation);
+            return convert(extractVariantFromVariantRowKey(result.getRow()), studies, stats, annotation);
         }
     }
 }

@@ -59,6 +59,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexFilter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexVariant;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
@@ -167,6 +168,7 @@ public class VariantHbaseTestUtils {
                                 + column.getPDataType().toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)
                             || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.FILTER_OTHER)) {
+//                        ComplexFilter complexFilter = ComplexFilter.parseFrom(entry.getValue());
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));
                     } else if (key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.COMPLEX)) {
                         try {

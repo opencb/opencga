@@ -77,7 +77,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private boolean studyNameAsStudyId = false;
     private boolean simpleGenotypes = false;
-    private boolean failOnWrongVariants = false;
+    private boolean failOnWrongVariants = HBaseToVariantConverter.isFailOnWrongVariants();
     private static final String UNKNOWN_GENOTYPE = "?/?";
     private String unknownGenotype = UNKNOWN_GENOTYPE;
     private boolean mutableSamplesPosition = true;
@@ -409,12 +409,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         studyEntry.getSamplesData().replaceAll(strings -> {
             if (strings == null) {
                 return unmodifiableEmptyData;
-            } else if (strings.size() < unmodifiableEmptyData.size()) {
-                for (int i = strings.size(); i < unmodifiableEmptyData.size(); i++) {
-                    strings.add(unmodifiableEmptyData.get(i));
-                }
-                return strings;
             } else {
+                strings.replaceAll(s -> s == null ? UNKNOWN_SAMPLE_DATA : s);
+                if (strings.size() < unmodifiableEmptyData.size()) {
+                    for (int i = strings.size(); i < unmodifiableEmptyData.size(); i++) {
+                        strings.add(unmodifiableEmptyData.get(i));
+                    }
+                }
                 return strings;
             }
         });
@@ -509,11 +510,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
         }
 
-        Integer ftIdx = studyEntry.getFormatPositions().get("FT");
+        Integer ftIdx = studyEntry.getFormatPositions().get(VariantMerger.GENOTYPE_FILTER_KEY);
         if (ftIdx != null) {
             // Set pass field
             int passCount = loadedSamplesSize;
-            for (Map.Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPass().entrySet()) {
+            for (Map.Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPassMap().entrySet()) {
                 String filterString = entry.getKey();
                 passCount -= entry.getValue().getSampleIdsCount();
                 for (Integer sampleId : entry.getValue().getSampleIdsList()) {
@@ -528,7 +529,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
             // Check pass count
             if (passCount != row.getPassCount()) {
-                wrongVariant("Error parsing variant " + row.toString() + ". "
+                wrongVariant("Error parsing variant " + row.toString() + " . "
                         + "Pass count " + row.getPassCount() + " does not match filter "
                         + "fill count: " + passCount + " using " + loadedSamplesSize + " loaded samples.");
             }
