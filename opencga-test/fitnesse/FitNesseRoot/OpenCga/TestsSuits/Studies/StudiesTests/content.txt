@@ -86,12 +86,13 @@
 
 !3 Get Empty Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups/$emptyGroup/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '0.0'|
+| GET | /v1/studies/$studyId/groups?sid=$sessionId&name=$emptyGroup|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '0.0'|
 
 !3 Get Groups From A Study
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '4.0'|
-| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|  Content-Type: application/json ||
+| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|Content-Type: application/json ||
+|let||js|response.jsonbody.response[0].result.length|4.0|
+
 
 #@groupId in above line is exception to handle groups
 
@@ -103,7 +104,7 @@
 
 !3 Get Updated Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups/$groupId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds[0] == '$userA'|
+| GET | /v1/studies/$studyId/groups?sid=$sessionId&name=$groupId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds[0] == '$userA'|
 
 !3 Delete Group 
 !|Table: Rest Fixture | $baseURL |
@@ -111,7 +112,7 @@
 
 !3 Get Deleted Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups/$groupId/info?sid=$sessionId|200|  Content-Type: application/json ||
+| GET | /v1/studies/$studyId/groups?sid=$sessionId&name=$groupId|200|  Content-Type: application/json ||
 
 !3 Get Study Samples
 !|Table: Rest Fixture | $baseURL |

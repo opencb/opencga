@@ -33,12 +33,13 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"password" :"user_P@ssword","npassword" : "new_P@ssword"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/users/$user/change-password?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.response[0].id == 'changePassword'  && jsonbody.error === ''|
+| POST | /v1/users/$user/password?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.response[0].id == 'changePassword'  && jsonbody.error === ''|
 
 !3 Login User A
 !|Table: Rest Fixture | $baseURL |
+| setBody | {"password" : "p@ssword"}|
 | setHeader|Content-Type:application/json|
-| GET | /v1/users/$userA/login?password=p@ssword |  |  Content-Type: application/json ||
+| POST | /v1/users/$userA/login |200|  Content-Type: application/json ||
 |let|userASessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 (Negative) Use User expired SessionID 
@@ -48,15 +49,16 @@
 
 !3 Login User (GET)
 !|Table: Rest Fixture | $baseURL |
+| setBody | {"password" : "new_P@ssword"}|
 | setHeader|Content-Type:application/json|
-| GET | /v1/users/$user/login?password=new_P@ssword |  |  Content-Type: application/json ||
+| POST | /v1/users/$user/login |200|  Content-Type: application/json ||
 |let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 Change Back User Password
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"password" :"new_P@ssword","npassword" : "user_P@ssword"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/users/$user/change-password?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.response[0].id == 'changePassword'  && jsonbody.error === ''|
+| POST | /v1/users/$user/password?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.response[0].id == 'changePassword'  && jsonbody.error === ''|
 
 !3 Delete User 
 #!|Table: Rest Fixture | $baseURL |
