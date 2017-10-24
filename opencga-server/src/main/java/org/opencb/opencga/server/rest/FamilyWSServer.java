@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
@@ -169,6 +170,39 @@ public class FamilyWSServer extends OpenCGAWSServer {
             QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, params, queryOptions,
                     sessionId);
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/groupby")
+    @ApiOperation(value = "Group families by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
+    public Response groupBy(
+            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Family name") @QueryParam("name") String name,
+            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot) {
+        try {
+            QueryResult result = familyManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

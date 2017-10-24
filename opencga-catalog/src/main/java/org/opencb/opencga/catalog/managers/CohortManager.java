@@ -426,7 +426,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
 
         // Add study id to the query
         query.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);

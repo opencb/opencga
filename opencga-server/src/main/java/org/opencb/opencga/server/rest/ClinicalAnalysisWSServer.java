@@ -151,6 +151,37 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/groupby")
+    @ApiOperation(value = "Group clinical analysis by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
+    public Response groupBy(
+            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
+            @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
+            @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
+            @ApiParam(value = "Germline") @QueryParam("germline") String germline,
+            @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
+            @ApiParam(value = "Family") @QueryParam("family") String family,
+            @ApiParam(value = "Subject") @QueryParam("subject") String subject,
+            @ApiParam(value = "Sample") @QueryParam("sample") String sample,
+            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release) {
+        try {
+            QueryResult result = clinicalManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     private static class SampleParams {
         public String name;
     }

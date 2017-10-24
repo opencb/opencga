@@ -654,7 +654,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
 
         // Add study id to the query
         query.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);

@@ -477,12 +477,11 @@ public class JobManager extends ResourceManager<Job> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        QueryResult queryResult = jobDBAdaptor.groupBy(query, fields, options);
+        QueryResult queryResult = jobDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }

@@ -426,7 +426,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Variable set id or name", required = false) @QueryParam("variableSet") String variableSet,
                             @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
                                         String annotationsetName,
-                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
+                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+                            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
+                                @QueryParam("release") String release,
+                            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
+                                        int snapshot) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;

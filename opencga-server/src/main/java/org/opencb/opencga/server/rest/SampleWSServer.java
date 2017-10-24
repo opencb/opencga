@@ -293,7 +293,11 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                             @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
                             @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-                            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation) {
+                            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+                            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
+                                @QueryParam("release") String release,
+                            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
+                                        int snapshot) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
