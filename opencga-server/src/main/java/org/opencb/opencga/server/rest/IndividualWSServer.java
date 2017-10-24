@@ -246,7 +246,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/info")
-    @ApiOperation(value = "Return all the annotation sets of the individual [DEPRECATED]", position = 12,
+    @ApiOperation(value = "Return all the annotation sets of the individual [DEPRECATED]", position = 12, hidden = true,
             notes = "Use /{individual}/annotationsets instead")
     public Response infoAnnotationSetGET(
             @ApiParam(value = "Individual id or name", required = true) @PathParam("individual") String individualStr,
@@ -265,7 +265,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, notes = "Use /{individual}/annotationsets instead")
+    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, hidden = true,
+            notes = "Use /{individual}/annotationsets instead")
     public Response infoAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias") @QueryParam("study") String studyStr,
@@ -378,7 +379,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individuals}/delete")
-    @ApiOperation(value = "Delete individual information [NOT TESTED]", position = 7)
+    @ApiOperation(value = "Delete individual information [WARNING]", position = 7,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
     public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names", required = true)
                                          @PathParam ("individuals") String individualIds,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -392,17 +395,21 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupBy")
-    @ApiOperation(value = "Group individuals by several fields", position = 10)
+    @Path("/groupby")
+    @ApiOperation(value = "Group individuals by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
                             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
                             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
-                            @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
-                            @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
-                            @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                             @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
                             @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
@@ -419,7 +426,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Variable set id or name", required = false) @QueryParam("variableSet") String variableSet,
                             @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
                                         String annotationsetName,
-                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
+                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+                            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
+                                @QueryParam("release") String release,
+                            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
+                                        int snapshot) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -490,7 +501,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{individual}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21,
+    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAcl(

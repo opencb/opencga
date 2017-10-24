@@ -650,7 +650,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -666,13 +665,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = sampleDBAdaptor.groupBy(query, fields, options);
-        }
+        QueryResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }

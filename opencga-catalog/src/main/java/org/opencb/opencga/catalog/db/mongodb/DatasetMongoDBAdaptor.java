@@ -388,6 +388,18 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
         try (DBIterator<Dataset> catalogDBIterator = iterator(query, options)) {
