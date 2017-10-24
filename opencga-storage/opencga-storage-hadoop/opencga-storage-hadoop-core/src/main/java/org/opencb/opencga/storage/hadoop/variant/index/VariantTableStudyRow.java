@@ -68,7 +68,7 @@ public class VariantTableStudyRow {
     public static final String OTHER = "?";
     public static final String COMPLEX = "X";
     public static final String PASS_CNT = "P";
-    public static final String FILTER_OTHER = "F";
+    public static final String FILTER_OTHER = "FI";
     public static final String CALL_CNT = "C";
     private static final String MAIN_STUDY_COLUMN = CALL_CNT;
 
