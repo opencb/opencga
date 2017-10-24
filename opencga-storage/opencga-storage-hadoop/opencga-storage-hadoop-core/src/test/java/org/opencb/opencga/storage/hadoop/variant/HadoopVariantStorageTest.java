@@ -87,6 +87,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

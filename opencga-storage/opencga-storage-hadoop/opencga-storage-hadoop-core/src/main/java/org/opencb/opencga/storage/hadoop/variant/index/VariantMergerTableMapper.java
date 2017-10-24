@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
+import static org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**

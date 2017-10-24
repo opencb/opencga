@@ -66,6 +66,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
+import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
