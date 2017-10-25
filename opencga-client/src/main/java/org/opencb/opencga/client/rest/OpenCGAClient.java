@@ -148,15 +148,6 @@ public class OpenCGAClient {
         String sessionId;
         if (login.allResultsSize() == 1) {
             sessionId = login.firstResult().getString("token");
-
-            if (this.sessionId != null) { // If the latest sessionId is still active
-                try {
-                    userClient.logout();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-
             setSessionId(sessionId);
             setUserId(user);
         } else {
@@ -168,9 +159,6 @@ public class OpenCGAClient {
 
     public void logout() {
         if (this.sessionId != null) {
-            UserClient userClient = getUserClient();
-            userClient.logout();
-
             // Remove sessionId and userId for all clients
             setSessionId(null);
             setUserId(null);
