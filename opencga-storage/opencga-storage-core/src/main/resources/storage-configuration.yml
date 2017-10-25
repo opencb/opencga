@@ -96,7 +96,7 @@ storageEngines:
       collection.files: "files"
       include.stats: false
       annotator: cellbase_rest
-      annotator.cellbase.exclude: "expression"
+      annotator.cellbase.exclude: "expression,hgvs,repeats,cytoband"
       annotator.cellbase.use_cache: true
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
       assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
@@ -137,7 +137,7 @@ storageEngines:
       #Generic options
       database.name: "opencga"
       annotator: cellbase_rest
-      annotator.cellbase.exclude: "expression"
+      annotator.cellbase.exclude: "expression,hgvs,repeats,cytoband"
       annotator.cellbase.use_cache: true
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
       assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
