@@ -20,6 +20,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
@@ -79,6 +80,12 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                     ClinicalAnalysisParameters params) {
         try {
             ObjectMap parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(params.toClinicalAnalysis()));
+
+            // We remove the following parameters that are always going to appear because of Jackson
+            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.ID.key());
+            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key());
+
+            System.out.println(parameters.safeToString());
             return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -219,8 +226,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
         public ClinicalAnalysis toClinicalAnalysis() {
 
-            List<Individual> individuals = new ArrayList<>();
+            List<Individual> individuals = null;
             if (subjects != null && !subjects.isEmpty()) {
+                individuals = new ArrayList<>();
                 for (SubjectParams subject : subjects) {
                     Individual individual = new Individual().setName(subject.name);
                     if (subject.samples != null) {
