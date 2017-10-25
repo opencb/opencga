@@ -67,19 +67,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
     public QueryResponse<Study> search(Query query, QueryOptions options) throws IOException {
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.putAll(options);
-        if (myQuery.containsKey("method")) {
-            if (myQuery.get("method").equals("GET")) {
-                return execute(category, "search", myQuery, GET, clazz);
-            } else {
-                query.remove("method");
-            }
-        }
-        ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(query);
-//        System.out.println("Json: " + json);
-        ObjectMap p = new ObjectMap("body", json);
-        p.putAll(options);
-        return execute(category, "search", p, POST, clazz);
+        return execute(category, "search", myQuery, GET, clazz);
     }
     public QueryResponse<StudySummary> getSummary(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "summary", options, GET, StudySummary.class);

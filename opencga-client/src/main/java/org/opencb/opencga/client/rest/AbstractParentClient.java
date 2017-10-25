@@ -226,7 +226,7 @@ public abstract class AbstractParentClient {
                 }
             }
 
-            logger.debug("GET URL: " + path.getUri().toURL());
+            logger.debug("GET URL: {}", path.getUri().toURL());
             jsonString = path.request()
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
                     .get().readEntity(String.class);
@@ -240,8 +240,9 @@ public abstract class AbstractParentClient {
                 }
             }
 
-            logger.debug("POST URL: " + path.getUri().toURL());
+            logger.debug("POST URL: {}", path.getUri().toURL());
             Object paramBody = (params == null ? "" : params.get("body"));
+            logger.debug("Body {}", paramBody);
             Response body = path.request()
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
                     .post(Entity.json(paramBody));
