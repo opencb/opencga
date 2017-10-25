@@ -11,10 +11,9 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-category <- "analysis"
-subcategory <- "variant"
-
 setMethod("analysisVariantClient", "OpencgaR", function(OpencgaR, action, params=NULL) {
+    category <- "analysis"
+    subcategory <- "variant"
     switch(action,
            facet=fetchOpenCGA(object=OpencgaR, category=category, 
                               subcategory=subcategory, action=action, 

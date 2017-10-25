@@ -14,7 +14,7 @@
 #' @export
 fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL, 
                          subcategory=NULL, subcategoryId=NULL, action=NULL, 
-                         params=NULL, httpMethod="GET", batch_size=50, 
+                         params=NULL, httpMethod="GET", 
                          num_threads=NULL, as.queryParam=NULL){
     # Get connection info
     host <- object@host
@@ -62,27 +62,52 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         subcategoryId <- paste0(subcategoryId, "/")
     }
     
+    # Extract limit from params
+    if(is.null(params)){
+       limit <- 100000 
+    }else{
+        if(is.null(params$limit)){
+            limit <- 100000
+        }else{
+            limit <- params$limit
+        }
+    }
+    
     # Call server
     i <- 1
-    server_limit <- 1000
+    batch_size <- min(c(1000, limit))
     skip <- 0
-    num_results <- 1000
+    num_results <- batch_size
     container <- list()
+    count <- 0
     
-    while(unlist(num_results) == server_limit){
+    if (is.null(params)){
+        params <- list()
+    }
+    
+    while((unlist(num_results) == batch_size) && count <= limit){
         pathUrl <- paste0(host, version, category, categoryId, subcategory, 
                           subcategoryId, action)
         
-        content <- callREST(pathUrl=pathUrl, params=params, 
-                            httpMethod=httpMethod, skip=skip, token=token,
-                            as.queryParam=as.queryParam)
+        ## send batch size as limit to callrest
+        batch_size <- min(c(batch_size, limit-count))
+        if(batch_size == 0){
+            break()
+        }
+        params$limit <- batch_size
+        response <- callREST(pathUrl=pathUrl, params=params, 
+                             httpMethod=httpMethod, skip=skip, token=token,
+                             as.queryParam=as.queryParam)
         
-        skip <- skip+1000
-        res_list <- parseResponse(content=content)
+        skip <- skip+batch_size
+        res_list <- parseResponse(resp=response$resp, content=response$content)
         num_results <- res_list$num_results
         result <- res_list$result
         container[[i]] <- result
         i=i+1
+        count <- count + unlist(num_results)
+        
+        print(paste("Number of retrieved documents:", count))
     }
     if(class(container[[1]])=="data.frame"){
         ds <- rbind_pages(container)
@@ -119,10 +144,8 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam){
         }else{
             fullUrl <- paste0(pathUrl, skip)
         }
-        #resp <- GET(fullUrl, add_headers(`Accept-Encoding` = "gzip, deflate", 
-        #                                 `Authorization` = session), timeout(2))
         print(paste("URL:",fullUrl))
-        resp <- GET(fullUrl, add_headers(Accept="application/json", Authorization=session), timeout(2))
+        resp <- GET(fullUrl, add_headers(Accept="application/json", Authorization=session), timeout(30))
         
     }else if(httpMethod == "POST"){
     # Make POST call
@@ -160,27 +183,41 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam){
     }
     
     content <- content(resp, as="text", encoding = "utf-8")
-    return(content)
+    return(list(resp=resp, content=content))
 }
 
 ## A function to parse the json data into R dataframes
-parseResponse <- function(content){
+parseResponse <- function(resp, content){
     js <- lapply(content, function(x)fromJSON(x))
-    if (js[[1]]$warning != ""){
-        print(paste("WARNING:", js[[1]]$warning))
-        print()
-    }
-    if (js[[1]]$error != ""){
-        stop(paste("ERROR:", js[[1]]$error))
-    }
-    ares <- lapply(js, function(x)x$response$result)
-    
-    nums <- lapply(js, function(x)x$response$numResults)
-    
-    if (class(ares[[1]][[1]])=="data.frame"){
-        if(requireNamespace("pbapply", quietly = TRUE)){
-            ds <- pbapply::pblapply(ares,function(x)rbind_pages(x))
+    if (resp$status_code == 200){
+        if (js[[1]]$warning == ""){
+            print("Query successful!")
+        }else{
+            print("Query successful with warnings.")
+            print(paste("WARNING:", js[[1]]$warning))
         }
+    }else{
+        print("Query unsuccessful.")
+        print(paste("Category:", http_status(resp)$category))
+        print(paste("Reason:", http_status(resp)$reason))
+        if (js[[1]]$warning != ""){
+            print(paste("WARNING:", js[[1]]$warning))
+            print()
+        }
+        if (js[[1]]$error != ""){
+            stop(paste("ERROR:", js[[1]]$error))
+        }
+    }
+
+    ares <- lapply(js, function(x)x$response$result)
+    nums <- lapply(js, function(x)x$response$numResults)
+
+    if (class(ares[[1]][[1]])=="data.frame"){
+        ds <- lapply(ares, function(x)rbind_pages(x))
+        # if(requireNamespace("pbapply", quietly = TRUE)){
+        #     ds <- pbapply::pblapply(ares, function(x)rbind_pages(x))
+        # }
+        
         ### Important to get correct vertical binding of dataframes
         names(ds) <- NULL
         ds <- rbind_pages(ds)
@@ -191,161 +228,3 @@ parseResponse <- function(content){
     return(list(result=ds, num_results=nums))
 }
 ###############################################
-
-
-
-## a function to read the varinats from a vcf file
-readIds <- function(file=file,batch_size,num_threads)
-{
-    
-    ids<- list()
-    num_iter<- ceiling(countLines(file)[[1]]/(batch_size*num_threads))
-    #batchSize * numThreads
-    demo <- TabixFile(file,yieldSize = batch_size*num_threads)
-    tbx <- open(demo)
-    i <- 1
-    while (i <=num_iter) {
-        inter <- scanTabix(tbx)[[1]]
-        if(length(inter)==0)break
-        whim <- lapply(inter, function(x){
-            strsplit(x[1],split = "\t")[[1]][c(1,2,4,5)]})
-        whish <- sapply(whim, function(x){paste(x,collapse =":")})
-        hope <- split(whish, ceiling(seq_along(whish)/batch_size))
-        ids[[i]] <- hope
-        i <- i+1
-    }
-    ids <-foreach(k=1:length(ids))%do%{
-        foreach(j=1:length(ids[[k]]))%do%{
-            ids[[k]][[j]]
-        }
-    }
-    ids <- unlist(ids, recursive = FALSE)
-    return(ids)
-}
-
-## A function to create URLs
-## create a list of character vectors of urls
-createURL <- function(httpMethod=httpMethod, host=host, version=version, 
-                      category=category, categoryId=categoryId, 
-                      subcategory=subcategory, subcategoryId=subcategoryId, 
-                      action=action, params=params, skip=0){
-    
-    # if(is.null(file)){
-    skip=paste0("?","skip=",skip)
-    param <- paste(skip, param, sep = "&")
-    
-    if(nchar(species)>1){
-        grls <- paste0(host,version, meta, species,"/", categ, subcateg, ids, 
-                       resource,param,collapse = "")
-    }else{
-        grls <- paste0(host,version, meta, species, categ, subcateg, ids, 
-                       resource,param,collapse = "")
-    }
-    # }else{
-    #     grls <- list()
-    #     gcl <- paste0(host,version,species,categ,subcateg,collapse = "")
-    #     
-    #     for(i in seq_along(ids)){
-    #         hop <- paste(ids[[i]],collapse = ",")
-    #         tmp <- paste0(gcl,hop,resource,collapse = ",")
-    #         grls[[i]] <- gsub("chr","",tmp)
-    #     }
-    # }
-    return(grls)
-}
-
-
-callREST2 <- function(grls,async=FALSE,num_threads=num_threads)
-{
-    content <- list()
-    if(is.null(file)){
-        resp <- GET(grls, add_headers(`Accept-Encoding` = "gzip, deflate"), 
-                    timeout(2))
-        content <- content(resp, as="text", encoding = "utf-8")
-    }else{
-        resp <- GET(grls, add_headers(`Accept-Encoding` = "gzip, deflate"))
-        content <- content(resp, as="text", encoding = "utf-8")
-    }
-    return(content)
-}
-
-
-### Docs
-#' getCellBaseResourceHelp
-#' 
-#' A function to get help about available cellbase resources
-#' @details This function retrieves available resources for each generic method
-#' like getGene, getRegion, getprotein, etc. It help the user see all possible 
-#' resources to use with the getGeneric methods 
-#' @param object a cellBase class object
-#' @param subcategory a character the subcategory to be queried
-#' @return character vector of the available resources to that particular 
-#' subcategory 
-#' @examples 
-#' cb <- CellBaseR()
-#' # Get help about what resources are available to the getGene method
-#' getCellBaseResourceHelp(cb, subcategory="gene")
-#' # Get help about what resources are available to the getRegion method
-#' getCellBaseResourceHelp(cb, subcategory="region")
-#' # Get help about what resources are available to the getXref method
-#' getCellBaseResourceHelp(cb, subcategory="id")
-#' @export
-getCellBaseResourceHelp <- function(object, subcategory){
-    host <- object@host
-    if(exists('.api', .GlobalEnv)&exists('.tags', .GlobalEnv)){
-        getList <- get('.api',envir = .GlobalEnv)
-        tags <- get('.tags',envir = .GlobalEnv) 
-    }else {
-        cbDocsUrl <- paste0(host, "swagger.json")
-        Datp <- jsonlite::fromJSON(cbDocsUrl)
-        tags <- Datp$tags
-        paths <- Datp$paths 
-        getList<- lapply(paths, function(x)x$get)
-        assign('.api', getList, .GlobalEnv)
-        assign('.tags', tags, .GlobalEnv)
-    }
-    category <- switch (subcategory,
-                        gene= "feature",
-                        protein= "feature",
-                        tf="regulation",
-                        variation="feature",
-                        variant="genomic",
-                        clinical="feature",
-                        transcript="feature",
-                        id="feature")
-    
-    ## filtered
-    SUBCATEGORIES <- c('gene', 'protein', 'tf', 'variation', 'variant',
-                       'clinical', 'transcript', 'id', 'region')
-    if(!(subcategory %in% SUBCATEGORIES)){
-        cat("Please use one of CellBase Subcategories\n")
-        cat(SUBCATEGORIES,'\n')
-        stop("Error unknown subcategory")}
-    parts <- Filter(Negate(function(x) is.null(unlist(x))), getList)
-    cbGetParams <- lapply(parts, function(x)x$parameters)
-    catsub <- paste(category,subcategory, sep = "/")
-    index <- grep(catsub, names(cbGetParams))
-    narrowed <- names(parts)[index]
-    patt1 <- paste0(catsub,"/", ".*?/","(.*)" )
-    resMatch <- regexec(patt1,narrowed)
-    m <- regmatches(narrowed, resMatch)
-    res <- sapply(m, function(x)x[2])
-    res <- res[!is.na(res)]
-    
-    res
-}
-#
-# cbCheck <- function(object, category, subcategory, resource){
-#   CATEGORIES <- c("feature", "genomic", "regulation")
-#   if(!(category %in% CATEGORIES)){
-#     stop("Error Unknown category")
-#   } 
-#   SUBCATEGORIES <- tolower(unlist(tags[[1]]))
-#   if(!(subcategory %in% SUBCATEGORIES)){
-#     stop("Error Unknown subcategory")
-#   } 
-#   RESOURCES <- getCellBaseResourceHelp(object, subcategory)
-#   if(!(resource %in% RESOURCES)){
-#     stop("Error Unknown resource")
-#   } 
-# }

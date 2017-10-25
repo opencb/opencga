@@ -1,7 +1,7 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: 0.7.0
+Version: 1.3.0
 Author: Marta Bleda <martableda@gmail.com>
 Maintainer: Marta Bleda <martableda@gmail.com>
 Description: Classes and methods for working with Opencga data
@@ -9,8 +9,12 @@ License: GPL-3
 LazyData: TRUE
 Depends:
     R(>= 3.2.2),
-    jsonlite,methods,httr,configr,
-    pbapply
+    jsonlite,methods,httr
+Suggests:
+    configr,pbapply,
+    BiocStyle,
+    knitr,
+    rmarkdown
 Imports:
     stringi
 Enhances: shiny,miniUI
@@ -34,7 +38,3 @@ Collate:
     'login.R'
 RoxygenNote: 6.0.1
 VignetteBuilder: knitr
-Suggests:
-    BiocStyle,
-    knitr,
-    rmarkdown

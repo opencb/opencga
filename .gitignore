@@ -70,11 +70,16 @@ opencga-server/install.sh
 
 # Generated properties
 git.properties
+
+# R
 *.RData
 *.Rproj
 .Rproj.user
 *.Rhistory
 *.Rapp.history
+*.Rcheck*
+opencga-client/src/main/opencgaR_*.tar.gz
+
 /opencga-catalog/src/test/java/org/opencb/opencga/catalog/config/CatalogConfigurationTest.java
 
 opencga-test/fitnesse/FitNesseRoot/files

@@ -12,10 +12,10 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-category <- "clinical"
 
 setMethod("clinicalClient", "OpencgaR", function(OpencgaR, clinicalAnalysis,
                                                  action, params=NULL) {
+    category <- "clinical"
     switch(action,
            search=fetchOpenCGA(object=OpencgaR, category=category, 
                                 action=action, params=params, httpMethod="GET"),

@@ -17,13 +17,15 @@ a OpencgaR object
 Read OpenCGA configuration
 }
 \examples{
+con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
+con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+
 # Configuration in list format
-conf <- list(version="v1",
-             rest=list(host="http://localhost:8080/opencga/"))
-con <- OpencgaReadConfig(conf)
+conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
+con <- initOpencgaR(conf=conf)
+con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
 # Configuration in file format ("YAML" or "JSON")
 conf <- "/path/to/conf/client-configuration.yml"
-con <- OpencgaReadConfig(conf)
-
+con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 }

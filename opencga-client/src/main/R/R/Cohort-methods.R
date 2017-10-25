@@ -16,9 +16,9 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-category <- "cohorts"
 
 setMethod("cohortClient", "OpencgaR", function(OpencgaR, cohort, action, params=NULL) {
+    category <- "cohorts"
     switch(action,
            samples=fetchOpenCGA(object=OpencgaR, category=category, categoryId=cohort, 
                              action=action, params=params, httpMethod="GET"),
@@ -42,9 +42,10 @@ setMethod("cohortClient", "OpencgaR", function(OpencgaR, cohort, action, params=
     )
 })
 
-setMethod("cohortAnnotationClient", "OpencgaR", function(OpencgaR, cohort, 
+setMethod("cohortAnnotationsetClient", "OpencgaR", function(OpencgaR, cohort, 
                                                          annotationsetName, action, 
                                                          params=NULL) {
+    category <- "cohorts"
     switch(action,
            search=fetchOpenCGA(object=OpencgaR, category=category, categoryId=cohort, 
                                subcategory="annotationsets", action=action, 
@@ -62,6 +63,7 @@ setMethod("cohortAnnotationClient", "OpencgaR", function(OpencgaR, cohort,
 })
 
 setMethod("cohortAclClient", "OpencgaR", function(OpencgaR, memberIds, action, params=NULL) {
+    category <- "cohorts"
     switch(action,
            update=fetchOpenCGA(object=OpencgaR, category=category, subcategory="acl", 
                                subcategoryId=memberIds, action="update", params=params, 

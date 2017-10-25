@@ -15,20 +15,21 @@
 #' @export
 
 setMethod("projectClient", "OpencgaR", function(OpencgaR, project, action, params=NULL) {
+    category <- "projects"
     switch(action,
-           search=fetchOpenCGA(object=OpencgaR, category="projects", action="search", 
+           search=fetchOpenCGA(object=OpencgaR, category=category, action=action, 
                                params=params, httpMethod = "GET"),
-           info=fetchOpenCGA(object=OpencgaR, category="projects", categoryId=project, 
-                             action="info", params=params, httpMethod = "GET"),
-           studies=fetchOpenCGA(object=OpencgaR, category="projects", categoryId=project, 
-                             action="studies", params=params, httpMethod = "GET"),
-           delete=fetchOpenCGA(object=OpencgaR, category="projects", categoryId=project,
-                               action="delete", params=params, httpMethod = "GET"),
-           create=fetchOpenCGA(object=OpencgaR, category="projects", action="create", 
+           info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 
+                             action=action, params=params, httpMethod = "GET"),
+           studies=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 
+                             action=action, params=params, httpMethod = "GET"),
+           delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project,
+                               action=action, params=params, httpMethod = "GET"),
+           create=fetchOpenCGA(object=OpencgaR, category=category, action=action, 
                                params=params, httpMethod = "POST"),
-           increlease=fetchOpenCGA(object=OpencgaR, category="projects", categoryId=project, 
-                             action="increlease", params=params, httpMethod = "POST"),
-           update=fetchOpenCGA(object=OpencgaR, category="projects", categoryId=project, 
-                             action="update", params=params, httpMethod = "POST")
+           increlease=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 
+                             action=action, params=params, httpMethod = "POST"),
+           update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 
+                             action=action, params=params, httpMethod = "POST")
            )
 })

@@ -6,8 +6,8 @@
 \usage{
 fetchOpenCGA(object = object, category = NULL, categoryId = NULL,
   subcategory = NULL, subcategoryId = NULL, action = NULL,
-  params = NULL, httpMethod = "GET", batch_size = 50,
-  num_threads = NULL, as.queryParam = NULL)
+  params = NULL, httpMethod = "GET", num_threads = NULL,
+  as.queryParam = NULL)
 }
 \description{
 This is an S4 class which defines the OpencgaR object

@@ -16,9 +16,8 @@
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-category <- "samples"
-
 setMethod("sampleClient", "OpencgaR", function(OpencgaR, sample, action, params=NULL) {
+    category <- "samples"
     switch(action,
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=sample, 
                              action=action, params=params, httpMethod="GET"),
@@ -42,9 +41,10 @@ setMethod("sampleClient", "OpencgaR", function(OpencgaR, sample, action, params=
     )
 })
 
-setMethod("sampleAnnotationClient", "OpencgaR", function(OpencgaR, sample, 
+setMethod("sampleAnnotationsetClient", "OpencgaR", function(OpencgaR, sample, 
                                                          annotationsetName, action, 
                                                          params=NULL) {
+    category <- "samples"
     switch(action,
            search=fetchOpenCGA(object=OpencgaR, category=category, categoryId=sample, 
                                subcategory="annotationsets", action=action, 
@@ -62,6 +62,7 @@ setMethod("sampleAnnotationClient", "OpencgaR", function(OpencgaR, sample,
 })
 
 setMethod("sampleAclClient", "OpencgaR", function(OpencgaR, memberIds, action, params=NULL) {
+    category <- "samples"
     switch(action,
            update=fetchOpenCGA(object=OpencgaR, category=category, subcategory="acl", 
                                subcategoryId=memberIds, action="update", params=params, 

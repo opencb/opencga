@@ -4,7 +4,7 @@
 \alias{initOpencgaR}
 \title{initOpencgaR}
 \usage{
-initOpencgaR(host = NULL, version = "v1", user = "",
+initOpencgaR(host = NULL, version = "v1", user = NULL,
   opencgaConfig = NULL)
 }
 \arguments{
@@ -29,8 +29,17 @@ required by OpencgaR methods to connect to OpenCGA web services. By defult,
 it is configured to query HGVA (http://hgva.opencb.org/).
 }
 \examples{
-   ocga <- initOpencgaR()
-   print(ocga)
+con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
+con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+
+# Configuration in list format
+conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
+con <- initOpencgaR(conf=conf)
+con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+
+# Configuration in file format ("YAML" or "JSON")
+conf <- "/path/to/conf/client-configuration.yml"
+con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 }
 \seealso{
 \url{https://github.com/opencb/opencga/wiki} 
