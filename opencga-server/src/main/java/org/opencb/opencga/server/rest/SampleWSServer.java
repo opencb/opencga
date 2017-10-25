@@ -64,7 +64,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response infoSample(
-            @ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples") String sampleStr,
+            @ApiParam(value = "Comma separated list of sample IDs or names up to a maximum of 100", required = true) @PathParam("samples") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Sample version") @QueryParam("version") Integer version,
@@ -258,7 +258,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete a sample [WARNING]", position = 9,
             notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
                     "planned to be fully implemented and tested in version 1.4.0")
-    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
+    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names up to a maximum of 100", required = true) @PathParam("samples")
                                        String sampleStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr) {
@@ -271,7 +271,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupby")
+    @Path("/groupBy")
     @ApiOperation(value = "Group samples by several fields", position = 10,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
@@ -477,7 +477,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{samples}/acl")
     @ApiOperation(value = "Returns the acl of the samples. If member is provided, it will only return the acl for the member.", position = 18)
-    public Response getAcls(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
+    public Response getAcls(@ApiParam(value = "Comma separated list of sample IDs or names up to a maximum of 100", required = true) @PathParam("samples")
                                     String sampleIdsStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,

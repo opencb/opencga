@@ -82,7 +82,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response infoIndividual(@ApiParam(value = "Comma separated list of individual names or ids", required = true)
+    public Response infoIndividual(@ApiParam(value = "Comma separated list of individual names or ids up to a maximum of 100", required = true)
                                        @PathParam("individuals") String individualStr,
                                    @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
@@ -382,7 +382,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete individual information [WARNING]", position = 7,
             notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
                     "planned to be fully implemented and tested in version 1.4.0")
-    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names", required = true)
+    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names up to a maximum of 100", required = true)
                                          @PathParam ("individuals") String individualIds,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                             @QueryParam("study") String studyStr) {
@@ -395,7 +395,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupby")
+    @Path("/groupBy")
     @ApiOperation(value = "Group individuals by several fields", position = 10,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
@@ -445,7 +445,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{individuals}/acl")
     @ApiOperation(value = "Return the acl of the individual. If member is provided, it will only return the acl for the member.", position = 18)
-    public Response getAcls(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals")
+    public Response getAcls(@ApiParam(value = "Comma separated list of individual ids up to a maximum of 100", required = true) @PathParam("individuals")
                                         String individualIdsStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,

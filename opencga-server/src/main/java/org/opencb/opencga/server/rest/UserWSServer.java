@@ -148,7 +148,7 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{user}/resetpassword")
+    @Path("/{user}/reset-password")
     @ApiOperation(value = "Reset password", hidden = true,
             notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
     public Response resetPassword(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {

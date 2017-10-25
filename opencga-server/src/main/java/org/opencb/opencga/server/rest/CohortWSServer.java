@@ -152,7 +152,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response infoSample(@ApiParam(value = "Comma separated list of cohort names or ids", required = true) @PathParam("cohorts")
+    public Response infoSample(@ApiParam(value = "Comma separated list of cohort names or ids up to a maximum of 100", required = true) @PathParam("cohorts")
                                            String cohortStr,
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr) {
@@ -444,7 +444,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupby")
+    @Path("/groupBy")
     @ApiOperation(value = "Group cohorts by several fields", position = 24,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
@@ -483,7 +483,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohorts}/acl")
     @ApiOperation(value = "Return the acl of the cohort. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(
-            @ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohorts") String cohortIdsStr,
+            @ApiParam(value = "Comma separated list of cohort ids up to a maximum of 100", required = true) @PathParam("cohorts") String cohortIdsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
