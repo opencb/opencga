@@ -37,6 +37,10 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/files/$fileId/info?sid=$sessionId ||Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$fileId'|
 
+!3 Get Contents of File
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId/content?sid=$sessionId |200||data goes here|
+
 !3 Get ACL For Folder
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/files/$folderId/acl?sid=$sessionId ||Content-Type: application/json| jsonbody.error === ''  && jsonbody.response[0].id == '$folderId'|
@@ -47,7 +51,15 @@
 
 !3 Get File Tree
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$folderId/tree?sid=$sessionId&maxDepth=5 ||Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].numResults > '0' |
+| GET | /v1/files/$folderId/tree?sid=$sessionId&maxDepth=5 |200|Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].numResults > '0' |
+
+!3 List All Files in A Folder
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$folderId/list?sid=$sessionId|200|Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].id == '$fileId' |
+
+!3 Get File Formats
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/formats ||Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result.length == '23'|
 
 !3 Create Sample 1
 !|Table: Rest Fixture | $baseURL |
