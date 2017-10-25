@@ -289,7 +289,7 @@ public class VariantMatchers {
         return new FeatureMatcher<Variant, StudyEntry>(subMatcher, "with first study", "Study") {
             @Override
             protected StudyEntry featureValueOf(Variant actual) {
-                return actual.getStudies().get(0);
+                return actual.getStudies().isEmpty() ? null : actual.getStudies().get(0);
             }
         };
     }
@@ -497,7 +497,7 @@ public class VariantMatchers {
         };
     }
 
-    public static <T> long count(List<T> objects, Matcher<T> matcher) {
+    public static <T> long count(List<T> objects, Matcher<? super T> matcher) {
         long c = 0;
         for (T t: objects) {
             if (matcher.matches(t)) {
@@ -507,7 +507,7 @@ public class VariantMatchers {
         return c;
     }
 
-    public static <T> Set<T> filter(List<T> objects, Matcher<T> matcher) {
+    public static <T> Set<T> filter(List<T> objects, Matcher<? super T> matcher) {
         Set<T> l = new HashSet<>();
         for (T t: objects) {
             if (matcher.matches(t)) {

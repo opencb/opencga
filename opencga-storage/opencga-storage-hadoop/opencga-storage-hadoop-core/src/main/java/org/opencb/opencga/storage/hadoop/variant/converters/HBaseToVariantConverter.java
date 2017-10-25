@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -68,7 +69,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     protected static boolean failOnWrongVariants = false; //FIXME
     protected boolean failOnEmptyVariants = false;
-//    protected boolean readFullSamplesData = true;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new StudyConfigurationManager(
@@ -117,11 +117,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                 .collect(Collectors.toList());
     }
 
-    public HBaseToVariantConverter<T> setReturnedSamples(List<String> returnedSamples) {
-        studyEntryConverter.setReturnedSamples(returnedSamples);
-        return this;
-    }
-
     public HBaseToVariantConverter<T> setReturnedFields(Set<VariantField> fields) {
         annotationConverter.setReturnedFields(fields);
         return this;
@@ -147,14 +142,14 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return this;
     }
 
-    @Deprecated
-    public HBaseToVariantConverter<T> setReadFullSamplesData(boolean readFullSamplesData) {
-//        this.readFullSamplesData = readFullSamplesData;
+    public HBaseToVariantConverter<T> setUnknownGenotype(String unknownGenotype) {
+        studyEntryConverter.setUnknownGenotype(unknownGenotype);
         return this;
     }
 
-    public HBaseToVariantConverter<T> setUnknownGenotype(String unknownGenotype) {
-        studyEntryConverter.setUnknownGenotype(unknownGenotype);
+    public HBaseToVariantConverter<T> setSelectVariantElements(VariantQueryUtils.SelectVariantElements selectVariantElements) {
+        studyEntryConverter.setSelectVariantElements(selectVariantElements);
+        annotationConverter.setReturnedFields(selectVariantElements.getFields());
         return this;
     }
 

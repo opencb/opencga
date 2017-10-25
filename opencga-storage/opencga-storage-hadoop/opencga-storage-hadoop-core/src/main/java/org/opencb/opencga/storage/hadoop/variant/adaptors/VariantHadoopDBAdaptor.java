@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -232,15 +232,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 } else {
                     numTotalResults = count(query).first();
                 }
-                if (options.getBoolean("explain")) {
-                    String sql = queryParser.parse(query, options);
-                    try {
-                        warn = phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::warn);
-//                        logger.warn("EXPLANATION: \n" + warn);
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
             } else {
                 // There are no limit. Do not count.
                 numTotalResults = variants.size();
@@ -273,7 +264,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             query = new Query();
         }
         long startTime = System.currentTimeMillis();
-        String sql = queryParser.parse(query, new QueryOptions(QueryOptions.COUNT, true));
+        String sql = queryParser.parse(query, new QueryOptions(QueryOptions.COUNT, true)).getSql();
         logger.info(sql);
         try (Statement statement = getJdbcConnection().createStatement();
              ResultSet resultSet = statement.executeQuery(sql)) { // Cleans up Statement and RS
@@ -368,6 +359,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } else if (hbaseIterator) {
             logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
             Scan scan = hbaseQueryParser.parseQuery(query, options);
+            SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager.get());
             try {
                 Table table = getConnection().getTable(TableName.valueOf(variantTable));
                 ResultScanner resScan = table.getScanner(scan);
@@ -377,14 +369,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 }
                 List<String> formats = getIncludeFormats(query);
                 return new VariantHBaseScanIterator(resScan, genomeHelper, studyConfigurationManager.get(), options,
-                        getReturnedSamplesList(query, options), unknownGenotype, formats);
+                        unknownGenotype, formats, selectElements);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         } else {
 
             logger.debug("Table name = " + variantTable);
-            String sql = queryParser.parse(query, options);
+            VariantSqlQueryParser.VariantPhoenixSQLQuery phoenixQuery = queryParser.parse(query, options);
+            String sql = phoenixQuery.getSql();
             logger.info("Query : " + query.toJson());
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
@@ -397,16 +390,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 Statement statement = getJdbcConnection().createStatement(); // Statemnet closed by iterator
                 statement.setFetchSize(options.getInt("batchSize", -1));
                 ResultSet resultSet = statement.executeQuery(sql); // RS closed by iterator
-                Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
                 List<String> formats = getIncludeFormats(query);
-                List<String> returnedSamples = getReturnedSamplesList(query, returnedFields);
                 String unknownGenotype = null;
                 if (isValidParam(query, UNKNOWN_GENOTYPE)) {
                     unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
                 }
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
-                        resultSet, genomeHelper, getStudyConfigurationManager(), returnedSamples,
-                        returnedFields, formats, unknownGenotype, options);
+                        resultSet, genomeHelper, getStudyConfigurationManager(), phoenixQuery.getSelect(),
+                        formats, unknownGenotype, options);
 
                 if (clientSideSkip) {
                     // Client side skip!

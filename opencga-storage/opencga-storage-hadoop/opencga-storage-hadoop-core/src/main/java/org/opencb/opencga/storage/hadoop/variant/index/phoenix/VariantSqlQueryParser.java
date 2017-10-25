@@ -80,6 +80,18 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("!", "!=");
     }
 
+    public static class VariantPhoenixSQLQuery {
+        private String sql;
+        private SelectVariantElements select;
+
+        public String getSql() {
+            return sql;
+        }
+
+        public SelectVariantElements getSelect() {
+            return select;
+        }
+    }
 
     public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable,
                                  StudyConfigurationManager studyConfigurationManager, CellBaseUtils cellBaseUtils, boolean clientSideSkip) {
@@ -91,9 +103,10 @@ public class VariantSqlQueryParser {
         this.genotypesFromSampleColumns = true;
     }
 
-    public String parse(Query query, QueryOptions options) {
+    public VariantPhoenixSQLQuery parse(Query query, QueryOptions options) {
 
         StringBuilder sb = new StringBuilder("SELECT ");
+        VariantPhoenixSQLQuery phoenixSQLQuery = new VariantPhoenixSQLQuery();
 
         try {
 
@@ -106,7 +119,7 @@ public class VariantSqlQueryParser {
                 sb.append("/*+ ").append(HintNode.Hint.NO_INDEX.toString()).append(" */ ");
             }
 
-            appendProjectedColumns(sb, query, options);
+            appendProjectedColumns(sb, query, options, phoenixSQLQuery);
             appendFromStatement(sb, dynamicColumns);
             appendWhereStatement(sb, regionFilters, filters);
 
@@ -141,29 +154,32 @@ public class VariantSqlQueryParser {
             }
         }
 
-
-        return sb.toString();
+        phoenixSQLQuery.sql = sb.toString();
+        return phoenixSQLQuery;
     }
 
     /**
      * Select only the required columns.
-     *
+     * <p>
      * Uses the params:
      * {@link VariantQueryParam#RETURNED_STUDIES}
      * {@link VariantQueryParam#RETURNED_SAMPLES}
      * {@link VariantQueryParam#RETURNED_FILES}
      * {@link VariantQueryParam#UNKNOWN_GENOTYPE}
      *
-     * @param sb    SQLStringBuilder
-     * @param query Query to parse
-     * @param options   other options
+     * @param sb              SQLStringBuilder
+     * @param query           Query to parse
+     * @param options         other options
+     * @param phoenixSQLQuery VariantPhoenixSQLQuery
      * @return String builder
      */
-    protected StringBuilder appendProjectedColumns(StringBuilder sb, Query query, QueryOptions options) {
+    protected StringBuilder appendProjectedColumns(StringBuilder sb, Query query, QueryOptions options,
+                                                   VariantPhoenixSQLQuery phoenixSQLQuery) {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
             SelectVariantElements selectVariantElements = parseSelectElements(query, options, studyConfigurationManager);
+            phoenixSQLQuery.select = selectVariantElements;
             Set<VariantField> returnedFields = selectVariantElements.getFields();
             Map<Integer, List<Integer>> returnedSamples = selectVariantElements.getSamples();
             Collection<Integer> studyIds = selectVariantElements.getStudies();

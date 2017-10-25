@@ -36,6 +36,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -73,7 +74,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
             .append(StudyConfigurationManager.CACHED, true);
     private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
-    private List<String> returnedSamples = null;
 
     private boolean studyNameAsStudyId = false;
     private boolean simpleGenotypes = false;
@@ -84,20 +84,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private List<String> expectedFormat;
 
     protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
+    private VariantQueryUtils.SelectVariantElements selectVariantElements;
 
     public HBaseToStudyEntryConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
         super(genomeHelper.getColumnFamily());
         this.genomeHelper = genomeHelper;
         this.scm = scm;
-    }
-
-    public List<String> getReturnedSamples() {
-        return returnedSamples;
-    }
-
-    public HBaseToStudyEntryConverter setReturnedSamples(List<String> returnedSamples) {
-        this.returnedSamples = returnedSamples;
-        return this;
     }
 
     public boolean isStudyNameAsStudyId() {
@@ -160,12 +152,22 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return this;
     }
 
+    public void setSelectVariantElements(VariantQueryUtils.SelectVariantElements selectVariantElements) {
+        this.selectVariantElements = selectVariantElements;
+    }
+
     protected StudyConfiguration getStudyConfiguration(Integer studyId) {
-        QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
-        if (queryResult.getResult().isEmpty()) {
-            throw new IllegalStateException("No study found for study ID: " + studyId);
+        StudyConfiguration studyConfiguration = selectVariantElements == null ? null
+                : selectVariantElements.getStudyConfigurations().get(studyId);
+        if (studyConfiguration != null) {
+            return studyConfiguration;
+        } else {
+            QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
+            if (queryResult.getResult().isEmpty()) {
+                throw new IllegalStateException("No study found for study ID: " + studyId);
+            }
+            return queryResult.first();
         }
-        return queryResult.first();
     }
 
     public Map<Integer, StudyEntry> convert(ResultSet resultSet) {
@@ -199,7 +201,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     }
                 } else if (columnName.endsWith(VariantTableStudyRow.HOM_REF)) {
                     Integer studyId = VariantTableStudyRow.extractStudyId(columnName, true);
-                    studies.add(studyId);
+                    // Method GetInt will always return 0, even is null was stored.
+                    // Check if value was actually a null.
+                    resultSet.getInt(i);
+                    if (!resultSet.wasNull()) {
+                        studies.add(studyId);
+                    }
                 }
             }
 
@@ -275,12 +282,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                                  List<Pair<String, PhoenixArray>> filesMap,
                                  Variant variant, Integer studyId, VariantTableStudyRow row) {
         StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
-        List<String> fixedFormat;
-        if (sampleDataMap.isEmpty()) {
-            fixedFormat = Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY);
-        } else {
-            fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
-        }
+        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
         int[] formatsMap = getFormatsMap(fixedFormat);
@@ -573,11 +575,26 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
      */
     private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!returnedSamplesPositionMap.containsKey(studyConfiguration.getStudyId())) {
-            LinkedHashMap<String, Integer> samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
-                    returnedSamples == null ? null : new LinkedHashSet<>(returnedSamples), StudyConfiguration::getIndexedSamplesPosition);
-            returnedSamplesPositionMap.put(studyConfiguration.getStudyId(), samplesPosition);
+//            LinkedHashMap<String, Integer> samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
+//                    returnedSamples == null ? null : new LinkedHashSet<>(returnedSamples), StudyConfiguration::getIndexedSamplesPosition);
+//            returnedSamplesPositionMap.put(studyConfiguration.getStudyId(), samplesPosition);
+
+            LinkedHashMap<String, Integer> returnedSamples;
+            if (selectVariantElements == null) {
+                returnedSamples = StudyConfiguration.getSortedIndexedSamplesPosition(studyConfiguration);
+            } else {
+                List<Integer> sampleIds = selectVariantElements.getSamples().get(studyConfiguration.getStudyId());
+                returnedSamples = new LinkedHashMap<>(sampleIds.size());
+                BiMap<Integer, String> inverse = studyConfiguration.getSampleIds().inverse();
+                for (Integer sampleId : sampleIds) {
+                    returnedSamples.put(inverse.get(sampleId), returnedSamples.size());
+                }
+            }
+            returnedSamplesPositionMap.put(studyConfiguration.getStudyId(), returnedSamples);
+            return returnedSamples;
+        } else {
+            return returnedSamplesPositionMap.get(studyConfiguration.getStudyId());
         }
-        return returnedSamplesPositionMap.get(studyConfiguration.getStudyId());
     }
 
     /**

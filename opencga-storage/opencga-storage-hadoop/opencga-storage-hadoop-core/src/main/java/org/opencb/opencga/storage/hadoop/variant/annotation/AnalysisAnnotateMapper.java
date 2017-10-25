@@ -70,7 +70,6 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
         /* Annotation -> Phoenix converter */
         annotationConverter = new VariantAnnotationToHBaseConverter(getHelper());
         columnsOrdered = VariantPhoenixHelper.VariantColumn.values();
-        getHbaseToVariantConverter().setReadFullSamplesData(false);
 
         /* Annotator config */
         String configFile = "storage-configuration.yml";
