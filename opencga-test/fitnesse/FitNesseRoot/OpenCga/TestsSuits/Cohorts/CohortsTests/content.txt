@@ -58,9 +58,17 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/$cohortId/update?sid=$sessionId&study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == '2'|
 
-!3 Get cohorts Sample
+!3 Get cohort Sample
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId/samples?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].numResults == '2'|
+
+# return code changes after fix
+!3 (negative) Get cohort Sample With Multile Ids
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/cohorts/$cohortId.$sampleId2/samples?sid=$sessionId|200|  Content-Type: application/json ||
+| GET | /v1/cohorts/$cohortId,$cohortId/samples?sid=$sessionId |200|  Content-Type: application/json ||
+| GET | /v1/cohorts/$sampleId2-$cohortId/samples?sid=$sessionId|200|  Content-Type: application/json ||
+| GET | /v1/cohorts/$sampleId2:$cohortId/samples?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 Get cohorts Sample With Include
 !|Table: Rest Fixture | $baseURL |

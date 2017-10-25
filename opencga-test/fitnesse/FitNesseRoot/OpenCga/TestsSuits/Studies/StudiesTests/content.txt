@@ -34,6 +34,14 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$studyId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result ==''|
 
+#change response code after fixing
+!3 (Negative) Get Study ACL with Mulitple Ids
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId,$study/acl?sid=$sessionId|200|  Content-Type: application/json ||
+| GET | /v1/studies/$study,$studyId/acl?sid=$sessionId|200|  Content-Type: application/json ||
+| GET | /v1/studies/$studyId,$studyId/acl?sid=$sessionId|200|  Content-Type: application/json ||
+| GET | /v1/studies/$study,$study/acl?sid=$sessionId|200|  Content-Type: application/json ||
+
 !3 Create ACL For Study
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions" : "VIEW_FILES",  "action": "SET",  "study": "$studyId"}|

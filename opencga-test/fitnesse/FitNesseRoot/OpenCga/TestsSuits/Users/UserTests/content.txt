@@ -4,6 +4,7 @@
 !3 Get User
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/users/$user/info?sid=$sessionId&exclude=projects |  |  Content-Type: application/json | jsonbody.response[0].result[0].id == '$user'|
+| GET | /v1/users/$userB/info?sid=$sessionId&exclude=projects |  |  Content-Type: application/json ||
 
 !3 Get User With Invalid Sesssion ID
 !|Table: Rest Fixture | $baseURL |
@@ -12,6 +13,11 @@
 !3 Get Projects for User
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/users/$user/projects?sid=$sessionId&limit=5 | 200 |  Content-Type: application/json | jsonbody.response[0].result.length > 0 && jsonbody.error === ''|
+
+# Error message displayed is not correct and can be improved
+!3 (Negative) Get Projects for User With Multiple Ids
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/users/$userA,$userB/projects?sid=$sessionId&limit=5 |500|  Content-Type: application/json ||
 
 !3 Update User (POST)
 !|Table: Rest Fixture | $baseURL |
@@ -24,10 +30,6 @@
 | setBody | {"name" : "post-update_name", "email" : "new"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/$user/update?sid=$sessionId |  |  Content-Type: application/json | jsonbody.error == 'email not valid'|
-
-!3 Reset User Password
-#!|Table: Rest Fixture | $baseURL |
-#| GET | /v1/users/$user/reset-password?sid=$sessionId | 200 |  Content-Type: application/json | jsonbody.response[0].result[0].msg == 'The password for user {$user} successfully reset.'|
 
 !3 Change User Password
 !|Table: Rest Fixture | $baseURL |
