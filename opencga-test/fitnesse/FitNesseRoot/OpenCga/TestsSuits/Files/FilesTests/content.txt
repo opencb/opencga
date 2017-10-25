@@ -74,3 +74,19 @@
 | setBody |{ "samples" : "$sampleId,$sampleId"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/files/$fileId/update?sid=$sessionId&study=$study |500|Content-Type: application/json||
+
+!3 Get Samples Attached to File
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&id=$fileId&samples=$sampleId,$sampleId2 ||Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].sampleIds[0] == $sampleId && jsonbody.response[0].result[0].sampleIds[1] == $sampleId2|
+
+!3 Delete All Samples
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId,$sampleId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+
+!3 Search First Deleted Sample 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&name=sample1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Search Second Deleted Sample 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&name=sample2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
