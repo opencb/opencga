@@ -797,8 +797,12 @@ public class FileManager extends ResourceManager<File> {
             MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(sampleIdStr, Long.toString(resource.getStudyId()),
                     sessionId);
 
-            List<Sample> sampleList = new ArrayList<>(resourceIds.getResourceIds().size());
-            for (Long sampleId : resourceIds.getResourceIds()) {
+            // Avoid sample duplicates
+            Set<Long> sampleIdsSet = new HashSet<>();
+            sampleIdsSet.addAll(resourceIds.getResourceIds());
+
+            List<Sample> sampleList = new ArrayList<>(sampleIdsSet.size());
+            for (Long sampleId : sampleIdsSet) {
                 sampleList.add(new Sample().setId(sampleId));
             }
 //            fileDBAdaptor.addSamplesToFile(fileId, sampleList);
