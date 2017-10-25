@@ -301,35 +301,36 @@ public class StudyConfigurationManager implements AutoCloseable {
      *
      * @param study     Study reference (name or id)
      * @param defaultStudyConfiguration Default studyConfiguration
+     * @param options   Query options
      * @return          Assiciated StudyConfiguration
      * @throws    VariantQueryException is the study does not exists
      */
-    public StudyConfiguration getStudyConfiguration(String study, StudyConfiguration defaultStudyConfiguration)
+    public StudyConfiguration getStudyConfiguration(String study, StudyConfiguration defaultStudyConfiguration, QueryOptions options)
             throws VariantQueryException {
         StudyConfiguration studyConfiguration;
         if (StringUtils.isEmpty(study)) {
             studyConfiguration = defaultStudyConfiguration;
             if (studyConfiguration == null) {
-                throw VariantQueryException.studyNotFound(study, getStudyNames(null));
+                throw VariantQueryException.studyNotFound(study, getStudyNames(options));
             }
         } else if (StringUtils.isNumeric(study)) {
             int studyInt = Integer.parseInt(study);
             if (defaultStudyConfiguration != null && studyInt == defaultStudyConfiguration.getStudyId()) {
                 studyConfiguration = defaultStudyConfiguration;
             } else {
-                studyConfiguration = getStudyConfiguration(studyInt, null).first();
+                studyConfiguration = getStudyConfiguration(studyInt, options).first();
             }
             if (studyConfiguration == null) {
-                throw VariantQueryException.studyNotFound(studyInt, getStudyNames(null));
+                throw VariantQueryException.studyNotFound(studyInt, getStudyNames(options));
             }
         } else {
             if (defaultStudyConfiguration != null && defaultStudyConfiguration.getStudyName().equals(study)) {
                 studyConfiguration = defaultStudyConfiguration;
             } else {
-                studyConfiguration = getStudyConfiguration(study, new QueryOptions()).first();
+                studyConfiguration = getStudyConfiguration(study, options).first();
             }
             if (studyConfiguration == null) {
-                throw VariantQueryException.studyNotFound(study, getStudyNames(null));
+                throw VariantQueryException.studyNotFound(study, getStudyNames(options));
             }
         }
         return studyConfiguration;

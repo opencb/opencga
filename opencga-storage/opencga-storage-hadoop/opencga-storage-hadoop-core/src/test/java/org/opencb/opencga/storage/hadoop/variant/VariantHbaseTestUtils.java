@@ -45,6 +45,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -67,8 +68,7 @@ import java.io.*;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getTmpRootDir;
@@ -299,18 +299,30 @@ public class VariantHbaseTestUtils {
         }
     }
 
+    public static void printVariants(VariantHadoopDBAdaptor dbAdaptor, URI outDir) throws Exception {
+        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+        List<StudyConfiguration> studies = scm.getStudyNames(null).stream().map(studyName -> scm.getStudyConfiguration(studyName, null).first()).collect(Collectors.toList());
+        printVariants(studies, dbAdaptor, Paths.get(outDir));
+    }
+
     public static void printVariants(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, URI outDir) throws Exception {
         printVariants(studyConfiguration, dbAdaptor, Paths.get(outDir));
     }
 
     public static void printVariants(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws Exception {
+        printVariants(Collections.singleton(studyConfiguration), dbAdaptor, outDir);
+    }
+
+    public static void printVariants(Collection<StudyConfiguration> studyConfigurations, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws Exception {
         boolean old = HBaseToVariantConverter.isFailOnWrongVariants();
         HBaseToVariantConverter.setFailOnWrongVariants(false);
-        FileStudyConfigurationAdaptor.write(studyConfiguration, outDir.resolve("study_configuration.json"));
-        printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, outDir);
+        for (StudyConfiguration studyConfiguration : studyConfigurations) {
+            FileStudyConfigurationAdaptor.write(studyConfiguration, outDir.resolve("study_configuration_" + studyConfiguration.getStudyName() + ".json"));
+            printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, outDir);
+            printArchiveTable(studyConfiguration, dbAdaptor, outDir);
+        }
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);
-        printArchiveTable(studyConfiguration, dbAdaptor, outDir);
         HBaseToVariantConverter.setFailOnWrongVariants(old);
     }
 

@@ -723,7 +723,7 @@ public class VariantMongoDBQueryParser {
                                         study = s.substring(0, indexOf);
                                         cohort = s.substring(indexOf + 1);
                                         StudyConfiguration studyConfiguration =
-                                                studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration);
+                                                studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
                                         cohortId = studyConfigurationManager.getCohortId(cohort, studyConfiguration);
                                     }
                                     return cohortId;
@@ -1282,7 +1282,8 @@ public class VariantMongoDBQueryParser {
                 operator = cohortOpValue[1];
                 valueStr = cohortOpValue[2];
 
-                StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration);
+                StudyConfiguration studyConfiguration =
+                        studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
                 cohortId = studyConfigurationManager.getCohortId(cohort, studyConfiguration);
                 studyId = studyConfiguration.getStudyId();
             } else {

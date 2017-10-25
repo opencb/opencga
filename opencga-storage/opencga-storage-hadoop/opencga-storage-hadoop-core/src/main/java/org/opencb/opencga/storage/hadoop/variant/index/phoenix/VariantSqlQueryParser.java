@@ -601,7 +601,7 @@ public class VariantSqlQueryParser {
                 String[] studyCohort = cohort.split(":");
                 StudyConfiguration studyConfiguration;
                 if (studyCohort.length == 2) {
-                    studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyCohort[0], defaultStudyConfiguration);
+                    studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyCohort[0], defaultStudyConfiguration, null);
                     cohort = studyCohort[1];
                 } else if (studyCohort.length == 1) {
                     studyConfiguration = defaultStudyConfiguration;
@@ -905,7 +905,7 @@ public class VariantSqlQueryParser {
             if (indexOf > 0) {
                 String study = key.substring(0, indexOf);
                 cohort = key.substring(indexOf + 1);
-                sc = studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration);
+                sc = studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
             } else {
                 cohort = key;
                 sc = defaultStudyConfiguration;
