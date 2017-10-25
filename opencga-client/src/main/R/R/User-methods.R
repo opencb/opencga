@@ -29,7 +29,7 @@ setMethod("userClient", "OpencgaR", function(OpencgaR, user, action, params=NULL
                                params=params, httpMethod="POST"),
            login=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                               action="login", params=params, httpMethod="POST"),
-           `change-password`=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
+           password=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
                                           action="change-password", params=params, 
                                           httpMethod="POST"),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=user, 
