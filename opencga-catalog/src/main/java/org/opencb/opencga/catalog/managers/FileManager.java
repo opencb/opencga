@@ -797,8 +797,12 @@ public class FileManager extends ResourceManager<File> {
             MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(sampleIdStr, Long.toString(resource.getStudyId()),
                     sessionId);
 
-            List<Sample> sampleList = new ArrayList<>(resourceIds.getResourceIds().size());
-            for (Long sampleId : resourceIds.getResourceIds()) {
+            // Avoid sample duplicates
+            Set<Long> sampleIdsSet = new HashSet<>();
+            sampleIdsSet.addAll(resourceIds.getResourceIds());
+
+            List<Sample> sampleList = new ArrayList<>(sampleIdsSet.size());
+            for (Long sampleId : sampleIdsSet) {
                 sampleList.add(new Sample().setId(sampleId));
             }
 //            fileDBAdaptor.addSamplesToFile(fileId, sampleList);
@@ -1197,7 +1201,6 @@ public class FileManager extends ResourceManager<File> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
 
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
@@ -1209,13 +1212,8 @@ public class FileManager extends ResourceManager<File> {
         // Add study id to the query
         query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = fileDBAdaptor.groupBy(query, fields, options);
-        }
+        // We do not need to check for permissions when we show the count of files
+        QueryResult queryResult = fileDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }

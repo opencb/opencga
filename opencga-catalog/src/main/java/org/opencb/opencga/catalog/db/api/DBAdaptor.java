@@ -162,6 +162,12 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
 
+    QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
+
+    QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
+
 
     @Override
     default void forEach(Consumer action) {

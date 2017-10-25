@@ -234,7 +234,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         final String[] acceptedMapParams = {QueryParams.STATS.key(), QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key()};
         filterObjectParams(parameters, sampleParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.NAME.key())) {
@@ -633,6 +633,26 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(sampleCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(sampleCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
         try (DBIterator<Sample> catalogDBIterator = iterator(query, options)) {
@@ -687,9 +707,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case ONTOLOGIES:
-                    case ONTOLOGY_TERMS:
-                        addOntologyQueryFilter(QueryParams.ONTOLOGY_TERMS.key(), queryParam.key(), query, andBsonList);
+                    case PHENOTYPES:
+                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
                         break;
                     case VARIABLE_SET_ID:
                         addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
@@ -720,11 +739,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case STATUS_DATE:
                     case SOMATIC:
                     case TYPE:
-                    case ONTOLOGY_TERMS_ID:
-                    case ONTOLOGY_TERMS_NAME:
-                    case ONTOLOGY_TERMS_SOURCE:
-                    case ONTOLOGY_TERMS_AGE_OF_ONSET:
-                    case ONTOLOGY_TERMS_MODIFIERS:
+                    case PHENOTYPES_ID:
+                    case PHENOTYPES_NAME:
+                    case PHENOTYPES_SOURCE:
                     case ANNOTATION_SETS:
                     case CREATION_DATE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);

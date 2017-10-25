@@ -306,7 +306,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         Object studyAggregationObj = study.getAttributes().get(Options.AGGREGATED_TYPE.key());
         Aggregation studyAggregation = null;
         if (studyAggregationObj != null) {
-            studyAggregation = Aggregation.valueOf(studyAggregationObj.toString());
+            studyAggregation = AggregationUtils.valueOf(studyAggregationObj.toString());
         }
 
         final Aggregation aggregation;

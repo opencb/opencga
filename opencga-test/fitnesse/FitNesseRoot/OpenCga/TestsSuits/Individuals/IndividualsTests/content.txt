@@ -18,7 +18,7 @@
 
 !3 Create Second Individual
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$createPostName", "family": "family", "sex": "MALE", "ontologyTerms": [{"id": "ontologyTerms","name": "firstTerm","source": "firstSource"}]}}|
+| setBody | {"name" : "$createPostName", "family": "family", "sex": "MALE", "phenotypes": [{"id": "phenotypes","name": "firstTerm","source": "firstSource"}]}}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/individuals/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 
@@ -49,9 +49,9 @@
 
 !3 Update Individual 
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"family" : "4", "sex" : "MALE", "karyotypicSex" :"XY", "lifeStatus" : "ALIVE", "ontologyTerms": [{"id": "ontologyTerms","name": "firstTerm","source": "firstSource"}]}}|
+| setBody | {"family" : "4", "sex" : "MALE", "karyotypicSex" :"XY", "lifeStatus" : "ALIVE", "phenotypes": [{"id": "phenotypes","name": "firstTerm","source": "firstSource"}]}}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/individuals/$individualId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].family == '4' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' && jsonbody.response[0].result[0].ontologyTerms.length > 0|
+| POST | /v1/individuals/$individualId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].family == '4' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' && jsonbody.response[0].result[0].phenotypes.length > 0|
 
 !3 Get Individual 
 !|Table: Rest Fixture | $baseURL |

@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
@@ -135,14 +136,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
 
-        String[] acceptedObjectParams = {QueryParams.INTERPRETATIONS.key()};
+        String[] acceptedObjectParams = {QueryParams.INTERPRETATIONS.key(), QueryParams.FAMILY.key(), QueryParams.SUBJECTS.key()};
         filterObjectParams(parameters, analysisParams, acceptedObjectParams);
 
         if (!analysisParams.isEmpty()) {
             clinicalConverter.validateDocumentToUpdate(analysisParams);
-
-            System.out.println(parameters.safeToString());
-            System.out.println(analysisParams);
 
             Bson query = Filters.eq(PRIVATE_ID, id);
             Bson operation = new Document("$set", analysisParams);
@@ -355,12 +353,36 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        return null;
+        Bson bsonQuery = parseQuery(query, false);
+        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.NAME.key(), options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        return null;
+        Bson bsonQuery = parseQuery(query, false);
+        return groupBy(clinicalCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS.name(),
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS.name(),
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(clinicalCollection, bsonQuery, fields, SampleDBAdaptor.QueryParams.NAME.key(), options);
     }
 
     @Override

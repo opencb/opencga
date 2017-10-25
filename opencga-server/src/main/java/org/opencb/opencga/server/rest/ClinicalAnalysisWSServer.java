@@ -20,6 +20,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
@@ -79,6 +80,12 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                     ClinicalAnalysisParameters params) {
         try {
             ObjectMap parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(params.toClinicalAnalysis()));
+
+            // We remove the following parameters that are always going to appear because of Jackson
+            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.ID.key());
+            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key());
+
+            System.out.println(parameters.safeToString());
             return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -151,6 +158,37 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/groupby")
+    @ApiOperation(value = "Group clinical analysis by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
+    public Response groupBy(
+            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
+            @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
+            @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
+            @ApiParam(value = "Germline") @QueryParam("germline") String germline,
+            @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
+            @ApiParam(value = "Family") @QueryParam("family") String family,
+            @ApiParam(value = "Subject") @QueryParam("subject") String subject,
+            @ApiParam(value = "Sample") @QueryParam("sample") String sample,
+            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release) {
+        try {
+            QueryResult result = clinicalManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     private static class SampleParams {
         public String name;
     }
@@ -188,8 +226,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
         public ClinicalAnalysis toClinicalAnalysis() {
 
-            List<Individual> individuals = new ArrayList<>();
+            List<Individual> individuals = null;
             if (subjects != null && !subjects.isEmpty()) {
+                individuals = new ArrayList<>();
                 for (SubjectParams subject : subjects) {
                     Individual individual = new Individual().setName(subject.name);
                     if (subject.samples != null) {
@@ -205,13 +244,18 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             File germlineFile = StringUtils.isNotEmpty(germline) ? new File().setName(germline) : null;
             File somaticFile = StringUtils.isNotEmpty(somatic) ? new File().setName(somatic) : null;
 
+            Family f = null;
+            if (StringUtils.isNotEmpty(family)) {
+                f = new Family().setName(family);
+            }
+
             List<ClinicalAnalysis.ClinicalInterpretation> interpretationList =
                     interpretations != null
                             ? interpretations.stream()
                                 .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
-            return new ClinicalAnalysis(-1, name, description, type, disease, germlineFile, somaticFile, individuals,
-                    new Family().setName(family), interpretationList, null, null, 1, attributes);
+            return new ClinicalAnalysis(-1, name, description, type, disease, germlineFile, somaticFile, individuals, f, interpretationList,
+                    null, null, 1, attributes);
         }
     }
 

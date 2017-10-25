@@ -37,7 +37,7 @@
 {"collection": "sample", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
-{"collection": "sample", "fields": {"ontologyTerms.id": 1}, "options": {"background": true}}
+{"collection": "sample", "fields": {"phenotypes.id": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"_studyId": 1}, "options": {"background": true}}
 
 {"collection": "individual", "fields": {"name": 1, "_studyId": 1, "version": 1}, "options": {"unique": true, "background": true}}
@@ -47,7 +47,7 @@
 {"collection": "individual", "fields": {"father.id": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
-{"collection": "individual", "fields": {"ontologyTerms.id": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"phenotypes.id": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"annotationSets.name": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {"background": true}}

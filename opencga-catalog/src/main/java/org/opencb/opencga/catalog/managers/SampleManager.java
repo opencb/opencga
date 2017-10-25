@@ -80,7 +80,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setType(ParamUtils.defaultString(sample.getType(), ""));
-        sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
+        sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
         sample.setAnnotationSets(validateAnnotationSets(sample.getAnnotationSets()));
         sample.setStats(ParamUtils.defaultObject(sample.getStats(), Collections.emptyMap()));
@@ -464,7 +464,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 case TYPE:
                 case SOMATIC:
                 case DESCRIPTION:
-                case ONTOLOGY_TERMS:
+                case PHENOTYPES:
                 case STATS:
                 case ATTRIBUTES:
                     break;
@@ -650,7 +650,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -666,13 +665,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = sampleDBAdaptor.groupBy(query, fields, options);
-        }
+        QueryResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
@@ -1040,7 +1033,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Check that the samples are not being used in cohorts
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
-                .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds());
+                .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds())
+                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED);
         long count = cohortDBAdaptor.count(query).first();
         if (count > 0) {
             if (resources.getResourceIds().size() == 1) {

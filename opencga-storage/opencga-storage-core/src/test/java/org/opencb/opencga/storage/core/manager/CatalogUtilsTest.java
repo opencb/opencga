@@ -40,8 +40,8 @@ public class CatalogUtilsTest {
         assertTrue(query.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION.key()));
         assertEquals("annotation.age>20", query.getString(SampleDBAdaptor.QueryParams.ANNOTATION.key()));
 
-        assertTrue(query.containsKey(SampleDBAdaptor.QueryParams.ONTOLOGIES.key()));
-        assertEquals("=hpo:123,hpo:456", query.getString(SampleDBAdaptor.QueryParams.ONTOLOGIES.key()));
+        assertTrue(query.containsKey(SampleDBAdaptor.QueryParams.PHENOTYPES.key()));
+        assertEquals("=hpo:123,hpo:456", query.getString(SampleDBAdaptor.QueryParams.PHENOTYPES.key()));
     }
 
 }

@@ -285,7 +285,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, familyParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.DISEASES.key()};
+        final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.PHENOTYPES.key()};
         filterObjectParams(parameters, familyParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.NAME.key())) {
@@ -532,6 +532,26 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES
+                .name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(familyCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES
+                .name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        return groupBy(familyCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
         try (DBIterator<Family> catalogDBIterator = iterator(query, options)) {
@@ -633,6 +653,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case PHENOTYPES:
+                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
+                        break;
                     case VARIABLE_SET_ID:
                         addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
                         break;
@@ -659,6 +682,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case DESCRIPTION:
                     case RELEASE:
                     case VERSION:
+                    case PHENOTYPES_ID:
+                    case PHENOTYPES_NAME:
+                    case PHENOTYPES_SOURCE:
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
