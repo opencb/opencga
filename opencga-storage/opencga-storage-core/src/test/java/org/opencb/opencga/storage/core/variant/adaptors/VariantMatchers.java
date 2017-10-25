@@ -338,6 +338,15 @@ public class VariantMatchers {
         return matcher(studyEntry -> studyEntry.getFile(fileId) != null, "with fileId " + fileId);
     }
 
+    public static Matcher<StudyEntry> withFileId(String fileId, Matcher<? super FileEntry> subMatcher) {
+        return new FeatureMatcher<StudyEntry, FileEntry>(subMatcher, "with file " + fileId, "FileIds") {
+            @Override
+            protected FileEntry featureValueOf(StudyEntry actual) {
+                return actual.getFile(fileId);
+            }
+        };
+    }
+
     public static Matcher<StudyEntry> withFileId(Matcher<? super Iterable<? super String>> subMatcher) {
         return new FeatureMatcher<StudyEntry, List<String>>(subMatcher, "with fileIds ", "FileIds") {
             @Override

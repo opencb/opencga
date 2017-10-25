@@ -48,10 +48,13 @@ public class VariantQueryUtils {
     private static final Pattern GENOTYPE_FILTER_PATTERN = Pattern.compile("(?<sample>[^,;]+):(?<gts>([^:;,]+,?)+)(?<op>[;,.])");
 
     public static final String OR = ",";
+    public static final char OR_CHAR = ',';
     public static final String AND = ";";
+    public static final char AND_CHAR = ';';
     public static final String IS = ":";
     public static final String NOT = "!";
     public static final String STUDY_POP_FREQ_SEPARATOR = ":";
+    public static final char QUOTE_CHAR = '"';
 
     public static final String NONE = "none";
     public static final String ALL = "all";
@@ -757,8 +760,27 @@ public class VariantQueryUtils {
      * @throws VariantQueryException if the list contains different operators.
      */
     public static QueryOperation checkOperator(String value) throws VariantQueryException {
-        boolean containsOr = value.contains(OR);
-        boolean containsAnd = value.contains(AND);
+        boolean inQuotes = false;
+        boolean containsOr = false; //value.contains(OR);
+        boolean containsAnd = false; //value.contains(AND);
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == QUOTE_CHAR) {
+                inQuotes = !inQuotes;
+            } else if (!inQuotes) {
+                if (c == OR_CHAR) {
+                    containsOr = true;
+                    if (containsAnd) {
+                        break;
+                    }
+                } else if (c == AND_CHAR) {
+                    containsAnd = true;
+                    if (containsOr) {
+                        break;
+                    }
+                }
+            }
+        }
         if (containsAnd && containsOr) {
             throw new VariantQueryException("Can't merge in the same query filter, AND and OR operators");
         } else if (containsAnd) {   // && !containsOr  -> true
@@ -782,11 +804,43 @@ public class VariantQueryUtils {
         if (value == null || value.isEmpty()) {
             list = Collections.emptyList();
         } else if (operation == null) {
-            list = Collections.singletonList(value);
+            if (value.charAt(0) == QUOTE_CHAR && value.charAt(value.length() - 1) == QUOTE_CHAR) {
+                list = Collections.singletonList(value.substring(1, value.length() - 1));
+            } else {
+                list = Collections.singletonList(value);
+            }
         } else if (operation == QueryOperation.AND) {
-            list = Arrays.asList(value.split(QueryOperation.AND.separator()));
+            list = splitQuotes(value, AND_CHAR);
         } else {
-            list = Arrays.asList(value.split(QueryOperation.OR.separator()));
+            list = splitQuotes(value, OR_CHAR);
+        }
+        return list;
+    }
+
+    public static List<String> splitQuotes(String value, char separator) {
+        boolean inQuote = false;
+        List<String> list = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == QUOTE_CHAR) {
+                inQuote = !inQuote;
+            } else {
+                if (!inQuote && c == separator) {
+                    if (sb.length() > 0) {
+                        list.add(sb.toString());
+                    }
+                    sb.setLength(0);
+                } else {
+                    sb.append(c);
+                }
+            }
+        }
+        if (sb.length() > 0) {
+            list.add(sb.toString());
+        }
+        if (inQuote) {
+            throw new VariantQueryException("Malformed value. Unbalanced quotes : \"" + value + "\".");
         }
         return list;
     }

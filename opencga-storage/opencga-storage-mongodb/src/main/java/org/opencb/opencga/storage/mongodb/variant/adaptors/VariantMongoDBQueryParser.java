@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.bson.Document;
@@ -525,15 +526,47 @@ public class VariantMongoDBQueryParser {
             }
 
             if (isValidParam(query, FILTER)) {
-                String fileQueryPrefix;
+                String values = query.getString(FILTER.key());
+                QueryOperation operation = checkOperator(values);
+                List<String> filterValues = splitValue(values, operation);
                 if (fileIds.isEmpty()) {
-                    fileQueryPrefix = studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.';
-                    addQueryStringFilter(fileQueryPrefix + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.' + StudyEntry.FILTER,
-                            query.getString(FILTER.key()), studyBuilder, QueryOperation.AND);
+                    String key = studyQueryPrefix
+                            + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
+                            + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.'
+                            + StudyEntry.FILTER;
+
+                    DBObject[] regexList = new DBObject[filterValues.size()];
+                    for (int i = 0; i < filterValues.size(); i++) {
+                        String filter = filterValues.get(i);
+                        if (filter.contains(VCFConstants.FILTER_CODE_SEPARATOR) || filter.equals(VCFConstants.PASSES_FILTERS_v4)) {
+                            regexList[i] = new BasicDBObject(key, filter);
+                        } else {
+                            regexList[i] = new BasicDBObject(key, new BasicDBObject("$regex", filter));
+                        }
+                    }
+                    if (operation == QueryOperation.OR) {
+                        studyBuilder.or(regexList);
+                    } else {
+                        studyBuilder.and(regexList);
+                    }
                 } else {
                     QueryBuilder fileBuilder = QueryBuilder.start();
-                    addQueryStringFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.' + StudyEntry.FILTER,
-                            query.getString(FILTER.key()), fileBuilder, QueryOperation.AND);
+                    String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.' + StudyEntry.FILTER;
+
+                    DBObject[] regexList = new DBObject[filterValues.size()];
+                    for (int i = 0; i < filterValues.size(); i++) {
+                        String filter = filterValues.get(i);
+                        if (filter.contains(VCFConstants.FILTER_CODE_SEPARATOR) || filter.equals(VCFConstants.PASSES_FILTERS_v4)) {
+                            regexList[i] = new BasicDBObject(key, filter);
+                        } else {
+                            regexList[i] = new BasicDBObject(key, new BasicDBObject("$regex", filter));
+                        }
+                    }
+                    if (operation == QueryOperation.OR) {
+                        fileBuilder.or(regexList);
+                    } else {
+                        fileBuilder.and(regexList);
+                    }
                     fileBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).in(fileIds);
                     studyBuilder.and(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD).elemMatch(fileBuilder.get());
                 }

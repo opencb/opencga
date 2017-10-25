@@ -269,4 +269,75 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         assertThat(queryResult, everyResult(allVariants, anyOf(withStudy("S_1", withFileId("12877")), withStudy("S_2", withFileId("12882")))));
     }
 
+    @Test
+    public void testGetByFilter() {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.RETURNED_SAMPLES.key(), "NA12877")
+                .append(VariantQueryParam.RETURNED_FILES.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00")
+                .append(VariantQueryParam.FILES.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        queryResult = dbAdaptor.get(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877",
+                with("FILTER", fileEntry -> fileEntry.getAttributes().get("FILTER"), allOf(
+                        containsString("LowGQX"),
+                        containsString("LowMQ"),
+                        containsString("LowQD"),
+                        containsString("TruthSensitivityTranche99.90to100.00")
+                ))))));
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "LowGQX,LowMQ")
+                .append(VariantQueryParam.FILES.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        queryResult = dbAdaptor.get(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877",
+                with("FILTER", fileEntry -> fileEntry.getAttributes().get("FILTER"), anyOf(
+                        containsString("LowGQX"),
+                        containsString("LowMQ")
+                ))))));
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\"")
+                .append(VariantQueryParam.FILES.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        queryResult = dbAdaptor.get(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877",
+                with("FILTER", fileEntry -> fileEntry.getAttributes().get("FILTER"), is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00"))))));
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\",\"LowGQX;LowQD;SiteConflict\"")
+                .append(VariantQueryParam.FILES.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        queryResult = dbAdaptor.get(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877",
+                with("FILTER", fileEntry -> fileEntry.getAttributes().get("FILTER"), anyOf(
+                        is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00"),
+                        is("LowGQX;LowQD;SiteConflict")
+                ))))));
+    }
+
+    @Test
+    public void testGetByFilterMultiFile() {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.RETURNED_SAMPLES.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.RETURNED_FILES.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"), options);
+
+
+        query = new Query()
+                .append(VariantQueryParam.FILTER.key(), "LowGQX;LowMQ")
+                .append(VariantQueryParam.FILES.key(),
+                        "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"
+                                + VariantQueryUtils.OR +
+                        "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
+        queryResult = dbAdaptor.get(query, options);
+
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", anyOf(
+                withFileId("12877", with(StudyEntry.FILTER, fileEntry -> fileEntry.getAttributes().get(StudyEntry.FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))),
+                withFileId("12878", with(StudyEntry.FILTER, fileEntry -> fileEntry.getAttributes().get(StudyEntry.FILTER), allOf(containsString("LowGQX"), containsString("LowMQ"))))
+        ))));
+    }
+
 }
