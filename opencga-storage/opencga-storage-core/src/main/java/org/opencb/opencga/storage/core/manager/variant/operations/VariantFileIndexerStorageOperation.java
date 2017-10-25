@@ -230,12 +230,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             return Collections.emptyList();
         }
 
+        String prevDefaultCohortStatus = Cohort.CohortStatus.NONE;
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
-            for (File file : filesToIndex) {
-                updateDefaultCohort(file, study, options, sessionId);
-            }
+            // Default Cohort is managed by storage. Samples are added when the file is fully loaded.
+//            for (File file : filesToIndex) {
+//                updateDefaultCohort(file, study, options, sessionId);
+//            }
             if (calculateStats) {
-                updateDefaultCohortStatus(study, Cohort.CohortStatus.CALCULATING, sessionId);
+                prevDefaultCohortStatus = updateDefaultCohortStatus(study, Cohort.CohortStatus.CALCULATING, sessionId);
             }
         }
         // Only if we are not transforming or if a path has been passed, we will update catalog information
@@ -279,9 +281,10 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 copyResults(outdir, catalogOutDirId, sessionId);
             }
             updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, saveIntermediateFiles, options, sessionId);
-//            if (calculateStats) {
-//                updateDefaultCohortStatus(sessionId, study, exception);
-//            }
+            // Restore previous cohort status. Cohort status will be read from StudyConfiguration.
+            if (calculateStats && exception != null) {
+                updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
+            }
             updateStudyConfiguration(sessionId, study.getId(), dataStore);
         }
 
@@ -618,13 +621,15 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
     }
 
-    private void updateDefaultCohortStatus(Study study, String status, String sessionId) throws CatalogException {
-
+    private String updateDefaultCohortStatus(Study study, String status, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
         Cohort defaultCohort = catalogManager.getCohortManager().get(study.getId(), query, new QueryOptions(), sessionId).first();
+        String prevStatus = defaultCohort.getStatus().getName();
 
         catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), status, null,
                 sessionId);
+
+        return prevStatus;
     }
 
     /**
