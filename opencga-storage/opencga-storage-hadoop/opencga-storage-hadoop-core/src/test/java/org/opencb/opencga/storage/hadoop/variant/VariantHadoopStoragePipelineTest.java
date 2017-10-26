@@ -57,7 +57,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHadoopManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static StudyConfiguration studyConfiguration;

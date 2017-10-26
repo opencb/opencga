@@ -30,6 +30,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -40,6 +41,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
@@ -71,6 +73,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
+    private final HBaseToVariantStatsConverter statsConverter;
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
             .append(StudyConfigurationManager.CACHED, true);
     private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
@@ -86,10 +89,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
     private VariantQueryUtils.SelectVariantElements selectVariantElements;
 
-    public HBaseToStudyEntryConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
+    public HBaseToStudyEntryConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm,
+                                      HBaseToVariantStatsConverter statsConverter) {
         super(genomeHelper.getColumnFamily());
         this.genomeHelper = genomeHelper;
         this.scm = scm;
+        this.statsConverter = statsConverter;
     }
 
     public boolean isStudyNameAsStudyId() {
@@ -219,11 +224,19 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             Map<Integer, VariantTableStudyRow> rows = VariantTableStudyRow.parse(variant, resultSet, genomeHelper)
                     .stream().collect(Collectors.toMap(VariantTableStudyRow::getStudyId, r -> r));
 
+            Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
+
             HashMap<Integer, StudyEntry> map = new HashMap<>();
             for (Integer studyId : studies) {
-                map.put(studyId, convert(
+                StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
+                StudyEntry studyEntry = convert(
                         sampleDataMap.getOrDefault(studyId, Collections.emptyList()),
-                        filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyId, rows.get(studyId)));
+                        filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration, rows.get(studyId));
+                BiMap<Integer, String> cohortIdMap = studyConfiguration.getCohortIds().inverse();
+                for (Map.Entry<Integer, VariantStats> entry : stats.getOrDefault(studyId, Collections.emptyMap()).entrySet()) {
+                    studyEntry.setStats(cohortIdMap.get(entry.getKey()), entry.getValue());
+                }
+                map.put(studyId, studyEntry);
             }
 
             return map;
@@ -268,11 +281,19 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         Map<Integer, VariantTableStudyRow> rows = VariantTableStudyRow.parse(result, genomeHelper)
                 .stream().collect(Collectors.toMap(VariantTableStudyRow::getStudyId, r -> r));
 
+        Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(result);
+
         HashMap<Integer, StudyEntry> map = new HashMap<>();
         for (Integer studyId : studies) {
-            map.put(studyId, convert(
+            StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
+            StudyEntry studyEntry = convert(
                     sampleDataMap.getOrDefault(studyId, Collections.emptyList()),
-                    filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyId, rows.get(studyId)));
+                    filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration, rows.get(studyId));
+            BiMap<Integer, String> cohortIdMap = studyConfiguration.getCohortIds().inverse();
+            for (Map.Entry<Integer, VariantStats> entry : stats.getOrDefault(studyId, Collections.emptyMap()).entrySet()) {
+                studyEntry.setStats(cohortIdMap.get(entry.getKey()), entry.getValue());
+            }
+            map.put(studyId, studyEntry);
         }
 
         return map;
@@ -281,7 +302,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
                                  Variant variant, Integer studyId, VariantTableStudyRow row) {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
+        return convert(sampleDataMap, filesMap, variant, getStudyConfiguration(studyId), row);
+    }
+
+    protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
+                                 List<Pair<String, PhoenixArray>> filesMap,
+                                 Variant variant, StudyConfiguration studyConfiguration, VariantTableStudyRow row) {
         List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
@@ -377,7 +403,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private void addFileEntry(StudyConfiguration studyConfiguration, StudyEntry studyEntry, String fileId, PhoenixArray fileColumn,
                               Map<String, List<String>> alternateFileMap) {
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
-        attributes.put(StudyEntry.QUAL, (String) (fileColumn.getElement(FILE_QUAL_IDX)));
+        String qual = (String) (fileColumn.getElement(FILE_QUAL_IDX));
+        if (qual != null) {
+            attributes.put(StudyEntry.QUAL, qual);
+        }
         attributes.put(StudyEntry.FILTER, (String) (fileColumn.getElement(FILE_FILTER_IDX)));
         String alternate = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
         if (StringUtils.isNotEmpty(alternate)) {

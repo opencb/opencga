@@ -26,7 +26,6 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -62,7 +61,6 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
 public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant> {
 
     protected final HBaseToVariantAnnotationConverter annotationConverter;
-    protected final HBaseToVariantStatsConverter statsConverter;
     protected final HBaseToStudyEntryConverter studyEntryConverter;
     protected final GenomeHelper genomeHelper;
     protected final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
@@ -79,8 +77,8 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
         this.genomeHelper = genomeHelper;
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper);
-        this.statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
-        this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper, scm);
+        HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
+        this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper, scm, statsConverter);
     }
 
     /**
@@ -197,18 +195,14 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return new VariantTableStudyRowToVariantConverter(genomeHelper, scm);
     }
 
-    protected Variant convert(Variant variant, Map<Integer, StudyEntry> studies, Map<Integer, Map<Integer, VariantStats>> stats,
+    protected Variant convert(Variant variant, Map<Integer, StudyEntry> studies,
                               VariantAnnotation annotation) {
         if (annotation == null) {
             annotation = new VariantAnnotation();
             annotation.setConsequenceTypes(Collections.emptyList());
         }
 
-        for (Integer studyId : studies.keySet()) {
-            StudyEntry studyEntry = studies.get(studyId);
-            stats.getOrDefault(studyId, Collections.emptyMap()).forEach((cohortId, variantStats) -> {
-                studyEntry.setStats(cohortId.toString(), variantStats);
-            });
+        for (StudyEntry studyEntry : studies.values()) {
             variant.addStudyEntry(studyEntry);
         }
         variant.setAnnotation(annotation);
@@ -278,7 +272,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         public Variant convert(VariantTableStudyRow row) {
             Variant variant = new Variant(row.getChromosome(), row.getPos(), row.getRef(), row.getAlt());
             StudyEntry studyEntry = studyEntryConverter.convert(variant, row);
-            return convert(variant, Collections.singletonMap(row.getStudyId(), studyEntry), Collections.emptyMap(), null);
+            return convert(variant, Collections.singletonMap(row.getStudyId(), studyEntry), null);
         }
     }
 
@@ -305,11 +299,10 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                     variant.setType(VariantType.valueOf(type));
                 }
 
-                Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
                 VariantAnnotation annotation = annotationConverter.convert(resultSet);
 
                 Map<Integer, StudyEntry> samplesData = studyEntryConverter.convert(resultSet);
-                return convert(variant, samplesData, stats, annotation);
+                return convert(variant, samplesData, annotation);
             } catch (RuntimeException | SQLException e) {
                 logger.error("Fail to parse variant: " + variant);
                 throw Throwables.propagate(e);
@@ -329,9 +322,8 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         @Override
         public Variant convert(Result result) {
             VariantAnnotation annotation = annotationConverter.convert(result);
-            Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(result);
             Map<Integer, StudyEntry> studies = studyEntryConverter.convert(result);
-            return convert(extractVariantFromVariantRowKey(result.getRow()), studies, stats, annotation);
+            return convert(extractVariantFromVariantRowKey(result.getRow()), studies, annotation);
         }
     }
 }

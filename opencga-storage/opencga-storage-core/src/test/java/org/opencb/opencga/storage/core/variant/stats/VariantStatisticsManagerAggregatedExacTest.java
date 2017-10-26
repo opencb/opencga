@@ -23,7 +23,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
 
 import java.io.IOException;
 import java.net.URI;
@@ -46,7 +46,7 @@ public abstract class VariantStatisticsManagerAggregatedExacTest extends Variant
 
     @BeforeClass
     public static void beforeClass() throws IOException {
-        tagMap.load(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(MAPPING_FILE));
+        tagMap.load(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(MAPPING_FILE));
     }
 
     @Override
