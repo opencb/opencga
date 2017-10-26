@@ -111,9 +111,7 @@ public class FileWSServer extends OpenCGAWSServer {
                         params.description, queryOptions, sessionId);
             } else {
                 // Create a file
-                file = fileManager.create(studyStr, File.Type.FILE, File.Format.PLAIN, File.Bioformat.UNKNOWN, params.path, null,
-                        params.description, new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null,
-                        params.parents, params.content, queryOptions, sessionId);
+                file = fileManager.createFile(studyStr, params.path, params.description, params.parents, params.content, sessionId);
             }
             return createOkResponse(file);
         } catch (Exception e) {

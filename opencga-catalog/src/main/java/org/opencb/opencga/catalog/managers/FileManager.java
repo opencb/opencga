@@ -402,22 +402,49 @@ public class FileManager extends ResourceManager<File> {
             path = path + "/";
         }
 
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), path);
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options);
-
-        if (fileQueryResult.getNumResults() == 0) {
-            fileQueryResult = create(Long.toString(studyId), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null,
-                    description, status, 0, -1, null, -1, null, null, parents, null, options, sessionId);
-        } else {
-            // The folder already exists
-            authorizationManager.checkFilePermission(studyId, fileQueryResult.first().getId(), userId, FileAclEntry.FilePermissions.VIEW);
-            fileQueryResult.setWarningMsg("Folder was already created");
+        QueryResult<File> fileQueryResult;
+        switch (checkPathExists(path, studyId)) {
+            case FREE_PATH:
+                fileQueryResult = create(Long.toString(studyId), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null,
+                        description, status, 0, -1, null, -1, null, null, parents, null, options, sessionId);
+                break;
+            case DIRECTORY_EXISTS:
+                Query query = new Query()
+                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(FileDBAdaptor.QueryParams.PATH.key(), path);
+                fileQueryResult = fileDBAdaptor.get(query, options, userId);
+                fileQueryResult.setWarningMsg("Folder was already created");
+                break;
+            case FILE_EXISTS:
+            default:
+                throw new CatalogException("A file with the same name of the folder already exists in Catalog");
         }
 
         fileQueryResult.setId("Create folder");
         return fileQueryResult;
+    }
+
+    public QueryResult<File> createFile(String studyStr, String path, String description, boolean parents, String content,
+                                        String sessionId) throws CatalogException {
+        ParamUtils.checkPath(path, "filePath");
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+
+        switch (checkPathExists(path, studyId)) {
+            case FREE_PATH:
+                return create(studyStr, File.Type.FILE, File.Format.PLAIN, File.Bioformat.UNKNOWN, path, null, description,
+                        new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, parents, content, new QueryOptions(),
+                        sessionId);
+            case FILE_EXISTS:
+            case DIRECTORY_EXISTS:
+            default:
+                throw new CatalogException("A file or folder with the same name already exists in the path of Catalog");
+        }
     }
 
     public QueryResult<File> create(String studyStr, File.Type type, File.Format format, File.Bioformat bioformat, String path,
@@ -2706,4 +2733,30 @@ public class FileManager extends ResourceManager<File> {
         return studyDBAdaptor.get(studyId, INCLUDE_STUDY_URI).first().getUri();
     }
 
+    private enum CheckPath {
+        FREE_PATH, FILE_EXISTS, DIRECTORY_EXISTS
+    }
+
+    private CheckPath checkPathExists(String path, long studyId) throws CatalogDBException {
+        String myPath = path;
+        if (myPath.endsWith("/")) {
+            myPath = myPath.substring(0, myPath.length() - 1);
+        }
+
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), myPath);
+        QueryResult<Long> fileQueryResult = fileDBAdaptor.count(query);
+
+        if (fileQueryResult.first() > 0) {
+            return CheckPath.FILE_EXISTS;
+        }
+
+        query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), myPath + "/");
+        fileQueryResult = fileDBAdaptor.count(query);
+
+        return fileQueryResult.first() > 0 ? CheckPath.DIRECTORY_EXISTS : CheckPath.FREE_PATH;
+    }
 }
