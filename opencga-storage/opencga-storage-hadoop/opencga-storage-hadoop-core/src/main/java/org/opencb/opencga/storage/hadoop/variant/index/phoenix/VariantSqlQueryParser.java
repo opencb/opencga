@@ -588,28 +588,52 @@ public class VariantSqlQueryParser {
                         sb.append(" IS NOT NULL ");
                     }
                 } else {
-                    for (int i = 0; i < filterValues.size(); i++) {
-                        String filter = checkStringValue(filterValues.get(i));
-
-                        if (i > 0 && filtersOperation != null) {
-                            sb.append(' ').append(filtersOperation.name()).append(' ');
-                        }
-
+                    if (isNegated(file)) {
                         sb.append('"');
                         buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
                         sb.append('"');
+                        sb.append(" IS NULL ");
+                    } else {
+                        sb.append(" ( ");
+                        for (int i = 0; i < filterValues.size(); i++) {
+                            String filter = checkStringValue(filterValues.get(i));
+                            boolean negated = isNegated(filter);
+                            if (negated) {
+                                filter = removeNegation(filter);
+                            }
 
-                        // Arrays in SQL are 1-based.
-                        sb.append('[').append(HBaseToStudyEntryConverter.FILE_FILTER_IDX + 1).append(']');
-                        if (filter.equals(VCFConstants.PASSES_FILTERS_v4) || filter.contains(VCFConstants.FILTER_CODE_SEPARATOR)) {
-                            sb.append(" = '").append(filter).append('\'');
-                        } else {
-                            sb.append(" LIKE '%").append(filter).append("%'");
+                            if (i > 0 && filtersOperation != null) {
+                                sb.append(' ').append(filtersOperation.name()).append(' ');
+                            }
+
+                            sb.append('"');
+                            buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                            sb.append('"');
+
+                            // Arrays in SQL are 1-based.
+                            sb.append('[').append(HBaseToStudyEntryConverter.FILE_FILTER_IDX + 1).append(']');
+                            if (filter.equals(VCFConstants.PASSES_FILTERS_v4) || filter.contains(VCFConstants.FILTER_CODE_SEPARATOR)) {
+                                if (negated) {
+                                    sb.append(" != '");
+                                } else {
+                                    sb.append(" = '");
+                                }
+                                sb.append(filter).append('\'');
+                            } else {
+                                if (negated) {
+                                    sb.append(" NOT ");
+                                }
+                                sb.append(" LIKE '%").append(filter).append("%'");
+                            }
                         }
+                        sb.append(" ) ");
                     }
                 }
                 if (iterator.hasNext()) {
-                    if (operation == null || operation.equals(QueryOperation.AND)) {
+                    if (operation == null) {
+                        // This should never happen!
+                        throw new VariantQueryException("Unexpected error");
+                    } else if (operation.equals(QueryOperation.AND)) {
                         sb.append(" AND ");
                     } else {
                         sb.append(" OR ");

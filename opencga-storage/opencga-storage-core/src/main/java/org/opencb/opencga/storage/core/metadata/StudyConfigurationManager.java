@@ -481,6 +481,9 @@ public class StudyConfigurationManager implements AutoCloseable {
             }
         } else {
             String fileStr = fileObj.toString();
+            if (isNegated(fileStr)) {
+                fileStr = removeNegation(fileStr);
+            }
             if (StringUtils.isNumeric(fileStr)) {
                 fileId = Integer.parseInt(fileStr);
             } else {

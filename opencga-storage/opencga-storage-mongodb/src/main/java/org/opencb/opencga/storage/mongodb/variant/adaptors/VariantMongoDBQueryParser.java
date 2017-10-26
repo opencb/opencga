@@ -508,9 +508,10 @@ public class VariantMongoDBQueryParser {
             }
 
             List<Integer> fileIds = Collections.emptyList();
+            QueryOperation filesOperation = QueryOperation.OR;
             if (isValidParam(query, FILES)) {
                 String filesValue = query.getString(FILES.key());
-                QueryOperation filesOperation = checkOperator(filesValue);
+                filesOperation = checkOperator(filesValue);
                 List<String> fileNames = splitValue(filesValue, filesOperation);
 
                 fileIds = fileNames
@@ -535,40 +536,35 @@ public class VariantMongoDBQueryParser {
                             + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.'
                             + StudyEntry.FILTER;
 
-                    DBObject[] regexList = new DBObject[filterValues.size()];
-                    for (int i = 0; i < filterValues.size(); i++) {
-                        String filter = filterValues.get(i);
-                        if (filter.contains(VCFConstants.FILTER_CODE_SEPARATOR) || filter.equals(VCFConstants.PASSES_FILTERS_v4)) {
-                            regexList[i] = new BasicDBObject(key, filter);
-                        } else {
-                            regexList[i] = new BasicDBObject(key, new BasicDBObject("$regex", filter));
-                        }
-                    }
+                    DBObject[] regexList = getFileFilterDBObjects(key, filterValues);
                     if (operation == QueryOperation.OR) {
                         studyBuilder.or(regexList);
                     } else {
                         studyBuilder.and(regexList);
                     }
                 } else {
-                    QueryBuilder fileBuilder = QueryBuilder.start();
+                    DBObject[] fileElemMatch = new DBObject[fileIds.size()];
                     String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.' + StudyEntry.FILTER;
+                    DBObject[] regexList = getFileFilterDBObjects(key, filterValues);
 
-                    DBObject[] regexList = new DBObject[filterValues.size()];
-                    for (int i = 0; i < filterValues.size(); i++) {
-                        String filter = filterValues.get(i);
-                        if (filter.contains(VCFConstants.FILTER_CODE_SEPARATOR) || filter.equals(VCFConstants.PASSES_FILTERS_v4)) {
-                            regexList[i] = new BasicDBObject(key, filter);
+                    int i = 0;
+                    for (Integer fileId : fileIds) {
+                        QueryBuilder fileBuilder = QueryBuilder.start();
+                        if (operation == QueryOperation.OR) {
+                            fileBuilder.or(regexList);
                         } else {
-                            regexList[i] = new BasicDBObject(key, new BasicDBObject("$regex", filter));
+                            fileBuilder.and(regexList);
                         }
+                        fileBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).is(fileId);
+                        fileElemMatch[i++] = new BasicDBObject(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD,
+                                new BasicDBObject("$elemMatch", fileBuilder.get()));
                     }
-                    if (operation == QueryOperation.OR) {
-                        fileBuilder.or(regexList);
+                    if (filesOperation == QueryOperation.OR) {
+                        studyBuilder.or(fileElemMatch);
                     } else {
-                        fileBuilder.and(regexList);
+                        studyBuilder.and(fileElemMatch);
                     }
-                    fileBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).in(fileIds);
-                    studyBuilder.and(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD).elemMatch(fileBuilder.get());
+
                 }
             }
 
@@ -730,6 +726,31 @@ public class VariantMongoDBQueryParser {
         } else {
             return null;
         }
+    }
+
+    private DBObject[] getFileFilterDBObjects(String key, List<String> filterValues) {
+        DBObject[] regexList = new DBObject[filterValues.size()];
+        for (int i = 0; i < filterValues.size(); i++) {
+            String filter = filterValues.get(i);
+            boolean negated = isNegated(filter);
+            if (negated) {
+                filter = removeNegation(filter);
+            }
+            if (filter.contains(VCFConstants.FILTER_CODE_SEPARATOR) || filter.equals(VCFConstants.PASSES_FILTERS_v4)) {
+                if (!negated) {
+                    regexList[i] = new BasicDBObject(key, filter);
+                } else {
+                    regexList[i] = new BasicDBObject(key, new BasicDBObject("$ne", filter));
+                }
+            } else {
+                if (!negated) {
+                    regexList[i] = new BasicDBObject(key, new BasicDBObject("$regex", filter));
+                } else {
+                    regexList[i] = new BasicDBObject(key, new BasicDBObject("$not", Pattern.compile(filter)));
+                }
+            }
+        }
+        return regexList;
     }
 
     private void parseStatsQueryParams(Query query, QueryBuilder builder, StudyConfiguration defaultStudyConfiguration) {
