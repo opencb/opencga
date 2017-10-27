@@ -108,6 +108,47 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
                 catalogManager, dbName, sessionId);
     }
 
+    @Test
+    public void testIndexWithStatsLowerCaseAggregationType() throws Exception {
+
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), "none");
+
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.index(null, String.valueOf(getFile(0).getId()), newTmpOutdir(), queryOptions, sessionId);
+        assertEquals(500, getDefaultCohort(studyId).getSamples().size());
+        assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
+        assertNotNull(catalogManager.getFileManager().get(getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+
+    }
+
+    @Test
+    public void testIndexWithStatsWrongAggregationType() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), "wrong_type");
+
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        try {
+            variantManager.index(null, String.valueOf(getFile(0).getId()), newTmpOutdir(), queryOptions, sessionId);
+            fail("Expected StoragePipelineException exception");
+        } catch (StoragePipelineException e) {
+            assertEquals(0, getDefaultCohort(studyId).getSamples().size());
+            assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
+            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(getFile(0).getId(), null, sessionId).first().getIndex().getStatus().getName());
+            assertNotNull(catalogManager.getFileManager().get(getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+        }
+        queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), "none");
+        // File already transformed
+        queryOptions.put(VariantFileIndexerStorageOperation.LOAD, true);
+        variantManager.index(null, String.valueOf(getFile(0).getId()), newTmpOutdir(), queryOptions, sessionId);
+        assertEquals(500, getDefaultCohort(studyId).getSamples().size());
+        assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
+        assertNotNull(catalogManager.getFileManager().get(getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+
+    }
+
     String newTmpOutdir() throws CatalogException {
         return opencga.createTmpOutdir(studyId, "index", sessionId);
     }

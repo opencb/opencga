@@ -230,8 +230,15 @@ public class SolrQueryParser {
             filterList.add(parseScoreValue(query.getString(key)));
         }
 
-        // maf population frequency
-        // in the model: "popFreq__1kG_phase3__CLM":0.005319148767739534
+        // ALT population frequency
+        // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
+        key = VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parsePopValue("popFreq", query.getString(key)));
+        }
+
+        // MAF population frequency
+        // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopValue("popFreq", query.getString(key)));
