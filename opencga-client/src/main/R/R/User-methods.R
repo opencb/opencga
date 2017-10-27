@@ -37,6 +37,7 @@ setMethod("userClient", "OpencgaR", function(OpencgaR, user, action, params=NULL
     )
 })
 
+#' @export
 setMethod("userConfigClient", "OpencgaR", function(OpencgaR, user, name, action, params=NULL) {
     category <- "users"
     switch(action,
@@ -52,6 +53,7 @@ setMethod("userConfigClient", "OpencgaR", function(OpencgaR, user, name, action,
     )
 })
 
+#' @export
 setMethod("userFilterClient", "OpencgaR", function(OpencgaR, user, name, action, params=NULL) {
     category <- "users"
     switch(action,

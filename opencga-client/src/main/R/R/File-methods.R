@@ -57,6 +57,7 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, f, action, params=NULL) {
     )
 })
 
+#' @export
 setMethod("fileAclClient", "OpencgaR", function(OpencgaR, f, memberId, action, params=NULL) {
     category <- "files"
     switch(action,

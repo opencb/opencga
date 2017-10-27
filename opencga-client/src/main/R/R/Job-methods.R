@@ -34,6 +34,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, jobId, action, params=NULL
     )
 })
 
+#' @export
 setMethod("jobAclClient", "OpencgaR", function(OpencgaR, jobId, memberId, action, params=NULL){
     category <- "jobs"
     switch(action,
