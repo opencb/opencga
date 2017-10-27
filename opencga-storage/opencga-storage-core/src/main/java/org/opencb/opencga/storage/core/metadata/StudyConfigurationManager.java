@@ -709,12 +709,8 @@ public class StudyConfigurationManager implements AutoCloseable {
 
         } else {
             //Find the grader sample Id in the studyConfiguration, in order to add more sampleIds if necessary.
-            int maxId = 0;
-            for (Integer i : studyConfiguration.getSampleIds().values()) {
-                if (i > maxId) {
-                    maxId = i;
-                }
-            }
+            int maxId = studyConfiguration.getSampleIds().values().stream().max(Integer::compareTo).orElse(0);
+
             //Assign new sampleIds
             for (String sample : fileMetadata.getSampleIds()) {
                 if (!studyConfiguration.getSampleIds().containsKey(sample)) {
@@ -723,10 +719,10 @@ public class StudyConfigurationManager implements AutoCloseable {
                     int sampleId;
                     int samplesSize = studyConfiguration.getSampleIds().size();
                     Integer samplePosition = fileMetadata.getSamplesPosition().get(sample);
-                    if (!studyConfiguration.getSampleIds().containsValue(samplePosition)) {
+                    if (!studyConfiguration.getSampleIds().containsValue(samplePosition) && samplePosition != 0) {
                         //1- Use with the SamplePosition
                         sampleId = samplePosition;
-                    } else if (!studyConfiguration.getSampleIds().containsValue(samplesSize)) {
+                    } else if (!studyConfiguration.getSampleIds().containsValue(samplesSize) && samplesSize != 0) {
                         //2- Use the number of samples in the StudyConfiguration.
                         sampleId = samplesSize;
                     } else {

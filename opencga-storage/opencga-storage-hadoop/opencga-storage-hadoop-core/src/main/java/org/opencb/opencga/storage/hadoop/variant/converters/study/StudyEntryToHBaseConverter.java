@@ -42,7 +42,7 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
 
     private static final int UNKNOWN_FIELD = -1;
     private static final int FILTER_FIELD = -2;
-    private final Set<String> defaultGenotypes = new HashSet<>();
+    private final Set<String> defaultGenotypes;
     private final StudyConfiguration studyConfiguration;
     private final List<String> fixedFormat;
     private final Set<String> fixedFormatSet;
@@ -55,12 +55,16 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
     }
 
     public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates) {
+        this(columnFamily, studyConfiguration, addSecondaryAlternates, new HashSet<>(Arrays.asList("0/0", "0|0")));
+    }
+
+    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration,
+                                      boolean addSecondaryAlternates, Set<String> defaultGenotypes) {
         super(columnFamily);
         this.studyConfiguration = studyConfiguration;
         studyColumn = VariantPhoenixHelper.getStudyColumn(studyConfiguration.getStudyId());
         this.addSecondaryAlternates = addSecondaryAlternates;
-        defaultGenotypes.add("0/0");
-        defaultGenotypes.add("0|0");
+        this.defaultGenotypes = defaultGenotypes;
         fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         fixedFormatSet = new HashSet<>(fixedFormat);
         fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
@@ -130,6 +134,15 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         fileColumn.add(attributes.get(StudyEntry.FILTER));
         for (String fileAttribute : fileAttributes) {
             fileColumn.add(attributes.get(fileAttribute));
+        }
+
+        // Trim all leading null values
+        for (int i = fileColumn.size() - 1; i >= 0; i--) {
+            if (fileColumn.get(i) == null) {
+                fileColumn.remove(i);
+            } else {
+                break;
+            }
         }
 
         return fileColumn;
