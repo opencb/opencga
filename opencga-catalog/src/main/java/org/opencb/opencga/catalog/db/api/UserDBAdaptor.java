@@ -106,6 +106,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
+        ACCOUNT("account", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         QUOTA("quota", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

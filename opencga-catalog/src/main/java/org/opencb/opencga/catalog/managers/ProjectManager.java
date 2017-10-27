@@ -38,9 +38,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 
+import java.io.*;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -429,6 +428,123 @@ public class ProjectManager extends AbstractManager {
             throw new CatalogException("Internal error. Cannot retrieve current release from project");
         }
         return projectQueryResult.first().getCurrentRelease();
+    }
+
+    public void importReleases(String owner, String inputDirStr, String sessionId) throws CatalogException, IOException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        if (!"admin".equals(userId)) {
+            throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to import data");
+        }
+
+        QueryResult<User> userQueryResult = userDBAdaptor.get(owner, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(UserDBAdaptor.QueryParams.ACCOUNT.key(), UserDBAdaptor.QueryParams.PROJECTS.key())), null);
+        if (userQueryResult.getNumResults() == 0) {
+            throw new CatalogException("User " + owner + " not found");
+        }
+
+        Path inputDir = Paths.get(inputDirStr);
+        if (inputDir == null) {
+            throw new CatalogException("Missing directory containing the exported data");
+        }
+        if (inputDir.toFile().exists() && !inputDir.toFile().isDirectory()) {
+            throw new CatalogException("The output directory parameter seems not to be directory");
+        }
+
+        List<String> fileNames = Arrays.asList("projects.json", "studies.json", "samples.json", "individuals.json", "families.json",
+                "files.json", "clinical_analysis.json", "cohorts.json", "jobs.json");
+        for (String fileName : fileNames) {
+            if (!inputDir.resolve(fileName).toFile().exists()) {
+                throw new CatalogException(fileName + " file not found");
+            }
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Reading project
+        Map<String, Object> project = (Map<String, Object>) objectMapper.readValue(inputDir.resolve("projects.json").toFile(), Map.class)
+                .get("projects");
+        project.put(ProjectDBAdaptor.QueryParams.ID.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.ID.key())));
+        project.put(ProjectDBAdaptor.QueryParams.SIZE.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.SIZE.key())));
+
+        // Check the projectId
+        if (projectDBAdaptor.exists((Long) project.get(ProjectDBAdaptor.QueryParams.ID.key()))) {
+            throw new CatalogException("The database is not empty. Project " + project.get(ProjectDBAdaptor.QueryParams.NAME.key())
+                    + " already exists");
+        }
+        logger.info("Importing projects...");
+        projectDBAdaptor.nativeInsert(project, owner);
+
+        // Reading studies
+        try (BufferedReader br = new BufferedReader(new FileReader(inputDir.resolve("studies.json").toFile()))) {
+            logger.info("Importing studies...");
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                Map<String, Object> study = objectMapper.readValue(line, Map.class);
+                studyDBAdaptor.nativeInsert(study, owner);
+            }
+        }
+
+        // Reading files
+        try (BufferedReader br = new BufferedReader(new FileReader(inputDir.resolve("files.json").toFile()))) {
+            logger.info("Importing files...");
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                Map<String, Object> file = objectMapper.readValue(line, Map.class);
+                fileDBAdaptor.nativeInsert(file, owner);
+            }
+        }
+
+        // Reading samples
+        try (BufferedReader br = new BufferedReader(new FileReader(inputDir.resolve("samples.json").toFile()))) {
+            logger.info("Importing samples...");
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                Map<String, Object> sample = objectMapper.readValue(line, Map.class);
+                sampleDBAdaptor.nativeInsert(sample, owner);
+            }
+        }
+
+        // Reading individuals
+        try (BufferedReader br = new BufferedReader(new FileReader(inputDir.resolve("individuals.json").toFile()))) {
+            logger.info("Importing individuals...");
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                Map<String, Object> file = objectMapper.readValue(line, Map.class);
+                individualDBAdaptor.nativeInsert(file, owner);
+            }
+        }
+
+        // Reading families
+        try (BufferedReader br = new BufferedReader(new FileReader(inputDir.resolve("families.json").toFile()))) {
+            logger.info("Importing families...");
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                Map<String, Object> file = objectMapper.readValue(line, Map.class);
+                familyDBAdaptor.nativeInsert(file, owner);
+            }
+        }
+
+        // Reading clinical analysis
+        try (BufferedReader br = new BufferedReader(new FileReader(inputDir.resolve("clinical_analysis.json").toFile()))) {
+            logger.info("Importing clinical analysis...");
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                Map<String, Object> file = objectMapper.readValue(line, Map.class);
+                clinicalDBAdaptor.nativeInsert(file, owner);
+            }
+        }
+
+        // Reading cohorts
+        try (BufferedReader br = new BufferedReader(new FileReader(inputDir.resolve("cohorts.json").toFile()))) {
+            logger.info("Importing cohorts...");
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                Map<String, Object> file = objectMapper.readValue(line, Map.class);
+                cohortDBAdaptor.nativeInsert(file, owner);
+            }
+        }
+
+        // Reading jobs
+        try (BufferedReader br = new BufferedReader(new FileReader(inputDir.resolve("jobs.json").toFile()))) {
+            logger.info("Importing jobs...");
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                Map<String, Object> file = objectMapper.readValue(line, Map.class);
+                jobDBAdaptor.nativeInsert(file, owner);
+            }
+        }
     }
 
     public void exportReleases(String projectStr, int release, String outputDirStr, String sessionId) throws CatalogException {

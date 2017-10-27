@@ -73,6 +73,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             case "export":
                 export();
                 break;
+            case "import":
+                importDatabase();
+                break;
             case "daemon":
                 daemons();
                 break;
@@ -109,6 +112,16 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
         catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
+    }
+
+    private void importDatabase() throws CatalogException, IOException {
+        AdminCliOptionsParser.ImportCatalogCommandOptions commandOptions = catalogCommandOptions.importCatalogCommandOptions;
+        validateConfiguration(commandOptions, commandOptions.commonOptions);
+
+        CatalogManager catalogManager = new CatalogManager(configuration);
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+
+        catalogManager.getProjectManager().importReleases(commandOptions.owner, commandOptions.directory, token);
     }
 
     private void install() throws CatalogException {

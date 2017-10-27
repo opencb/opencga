@@ -74,6 +74,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
+    public void nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException {
+        Document document = getMongoDBDocument(job, "job");
+        jobCollection.insert(document, null);
+    }
+
+    @Override
     public QueryResult<Job> insert(Job job, long studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 

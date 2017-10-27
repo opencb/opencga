@@ -49,6 +49,8 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         }
     }
 
+    void nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
+
     QueryResult<Individual> insert(Individual individual, long studyId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;

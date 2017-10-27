@@ -391,6 +391,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
+    public void nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException {
+        Document document = getMongoDBDocument(clinicalAnalysis, "clinicalAnalysis");
+        clinicalCollection.insert(document, null);
+    }
+
+    @Override
     public QueryResult<ClinicalAnalysis> insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options)
             throws CatalogDBException {
         long startTime = startQuery();

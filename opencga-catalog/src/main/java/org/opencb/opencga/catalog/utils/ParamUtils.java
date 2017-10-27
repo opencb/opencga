@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 
 import java.nio.file.Path;
@@ -92,6 +93,18 @@ public class ParamUtils {
         if (StringUtils.isNumeric(alias) && Long.parseLong(alias) >= offset) {
             throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'. Alias cannot be a numeric value above "
                     + offset);
+        }
+    }
+
+    public static long getAsLong(Object value) throws CatalogException {
+        try {
+            return (Long) value;
+        } catch (ClassCastException e) {
+            try {
+                return Long.valueOf((Integer) value);
+            } catch (ClassCastException e1) {
+                throw new CatalogException(e);
+            }
         }
     }
 

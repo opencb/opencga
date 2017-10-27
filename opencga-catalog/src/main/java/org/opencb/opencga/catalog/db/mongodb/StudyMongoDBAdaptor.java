@@ -84,6 +84,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
+    public void nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException {
+        Document studyDocument = getMongoDBDocument(study, "study");
+        studyDocument.put(PRIVATE_OWNER_ID, userId);
+        studyCollection.insert(studyDocument, null);
+    }
+
+    @Override
     public QueryResult<Study> insert(long projectId, Study study, String ownerId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (projectId < 0) {

@@ -86,6 +86,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
+    public void nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException {
+        Document document = getMongoDBDocument(individual, "individual");
+        individualCollection.insert(document, null);
+    }
+
+    @Override
     public QueryResult<Individual> insert(Individual individual, long studyId, QueryOptions options) throws CatalogDBException {
         long startQuery = startQuery();
 

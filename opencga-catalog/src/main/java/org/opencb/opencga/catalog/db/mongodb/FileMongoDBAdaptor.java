@@ -86,6 +86,12 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
+    public void nativeInsert(Map<String, Object> file, String userId) throws CatalogDBException {
+        Document fileDocument = getMongoDBDocument(file, "sample");
+        fileCollection.insert(fileDocument, null);
+    }
+
+    @Override
     public QueryResult<File> insert(File file, long studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 

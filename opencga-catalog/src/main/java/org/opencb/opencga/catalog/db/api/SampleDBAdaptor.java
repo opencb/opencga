@@ -124,6 +124,8 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         }
     }
 
+    void nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
+
     QueryResult<Sample> insert(long studyId, Sample sample, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException;

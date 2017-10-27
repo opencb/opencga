@@ -74,6 +74,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
+    public void nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException {
+        Document document = getMongoDBDocument(family, "family");
+        familyCollection.insert(document, null);
+    }
+
+    @Override
     public QueryResult<Family> insert(Family family, long studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
