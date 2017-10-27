@@ -44,6 +44,7 @@ import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -122,6 +123,8 @@ public class OpenCGAWSServer {
 
     private static final int DEFAULT_LIMIT = 2000;
     private static final int MAX_LIMIT = 5000;
+
+    private static final int MAX_ID_SIZE = 100;
 
     static {
         initialized = new AtomicBoolean(false);
@@ -558,6 +561,19 @@ public class OpenCGAWSServer {
 
         if (StringUtils.isEmpty(this.sessionId)) {
             this.sessionId = this.params.getFirst("sid");
+        }
+    }
+
+    protected List<String> getIdList(String id) throws WebServiceException{
+        if (id != null) {
+            String[] idArray = id.split(",");
+            if (idArray.length <= MAX_ID_SIZE) {
+                return Arrays.asList(idArray);
+            } else {
+                throw new WebServiceException("More than " + MAX_ID_SIZE + " ID provided");
+            }
+        } else {
+            throw new WebServiceException("ID is null");
         }
     }
 }

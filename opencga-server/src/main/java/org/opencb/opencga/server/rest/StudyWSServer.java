@@ -137,7 +137,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{study}/info")
+    @Path("/{studies}/info")
     @ApiOperation(value = "Fetch study information", response = Study[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
@@ -146,30 +146,34 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query")
     })
     public Response info(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("study") String studyStr) {
+            required = true) @PathParam("studies") String studies, @QueryParam("silent") boolean silent) {
         try {
-            QueryResult<Study> studyQueryResult = studyManager.get(studyStr, queryOptions, sessionId);
-            // We parse the query result to create one queryresult per study
-            List<QueryResult<Study>> queryResultList = new ArrayList<>(studyQueryResult.getNumResults());
-            for (Study study : studyQueryResult.getResult()) {
-                queryResultList.add(new QueryResult<>(study.getName() + "-" + study.getId(), studyQueryResult.getDbTime(), 1, -1,
-                        studyQueryResult.getWarningMsg(), studyQueryResult.getErrorMsg(), Arrays.asList(study)));
-            }
+//            QueryResult<Study> studyQueryResult = studyManager.get(studies, queryOptions, sessionId);
+//            // We parse the query result to create one queryresult per study
+//            List<QueryResult<Study>> queryResultList = new ArrayList<>(studyQueryResult.getNumResults());
+//            for (Study study : studyQueryResult.getResult()) {
+//                queryResultList.add(new QueryResult<>(study.getName() + "-" + study.getId(), studyQueryResult.getDbTime(), 1, -1,
+//                        studyQueryResult.getWarningMsg(), studyQueryResult.getErrorMsg(), Arrays.asList(study)));
+//            }
 
-            return createOkResponse(queryResultList);
+            List<String> idList = getIdList(studies);
+            return createOkResponse(studyManager.get(idList, queryOptions, silent, sessionId));
+
+//            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{study}/summary")
+    @Path("/{studies}/summary")
     @ApiOperation(value = "Fetch study information plus some basic stats", notes = "Fetch study information plus some basic stats such as"
             + " the number of files, samples, cohorts...")
-    public Response summary(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("study") String studyStr) {
+    public Response summary(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                                @PathParam("studies") String studies, @QueryParam("silent") boolean silent) {
         try {
-            return createOkResponse(studyManager.getSummary(studyStr, queryOptions, sessionId));
+            List<String> idList = getIdList(studies);
+            return createOkResponse(studyManager.getSummary(idList, queryOptions, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

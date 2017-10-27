@@ -367,6 +367,23 @@ public class StudyManager extends AbstractManager {
         return studyQueryResult;
     }
 
+    public List<QueryResult<Study>> get(List<String> studyList, QueryOptions queryOptions, boolean silent, String sessionId) throws CatalogException {
+        List<QueryResult<Study>> results = new ArrayList<>(studyList.size());
+        for (String study: studyList) {
+            try {
+                QueryResult<Study> studyInfo = get(study, queryOptions, sessionId);
+                results.add(studyInfo);
+            } catch (CatalogException e) {
+                if (silent) {
+                    results.add(new QueryResult<>(study, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return results;
+    }
+
     /**
      * Fetch all the study objects matching the query.
      *
@@ -574,6 +591,24 @@ public class StudyManager extends AbstractManager {
 
         return new QueryResult<>("Study summary", (int) (System.currentTimeMillis() - startTime), 1, 1, "", "",
                 Collections.singletonList(studySummary));
+    }
+
+    public List<QueryResult<StudySummary>> getSummary(List<String> studyList, QueryOptions queryOptions, boolean silent, String sessionId)
+            throws CatalogException {
+        List<QueryResult<StudySummary>> results = new ArrayList<>(studyList.size());
+        for (String study: studyList) {
+            try {
+                QueryResult<StudySummary> summary = getSummary(study, queryOptions, sessionId);
+                results.add(summary);
+            } catch (CatalogException e) {
+                if (silent) {
+                    results.add(new QueryResult<>(study, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return results;
     }
 
     public QueryResult<Group> createGroup(String studyStr, String groupId, String users, String sessionId) throws CatalogException {
