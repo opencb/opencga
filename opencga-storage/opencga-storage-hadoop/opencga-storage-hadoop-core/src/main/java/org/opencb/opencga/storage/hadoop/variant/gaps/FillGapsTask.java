@@ -113,6 +113,7 @@ public class FillGapsTask implements Task<Variant, Put> {
     @Override
     public void post() {
         try {
+            variantsTable.close();
             archiveTable.close();
         } catch (IOException e) {
             throw new UncheckedIOException(e);

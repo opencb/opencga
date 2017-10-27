@@ -1,5 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.mapreduce.Job;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -16,6 +19,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 
@@ -55,6 +61,43 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         fillGapsTask.post();
     }
 
+    public static void fillGapsMR(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration,
+                                Collection<Integer> sampleIds)
+            throws StorageEngineException, IOException, ClassNotFoundException, InterruptedException {
+
+
+        Configuration conf = configuration.get();
+
+        /* JOB setup */
+        final Job job = Job.getInstance(conf, "FillGaps");
+        job.setJarByClass(FillGapsMapper.class);
+        conf = job.getConfiguration();
+        conf.set("mapreduce.job.user.classpath.first", "true");
+        conf.set("samples", sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+
+        String variantTableName = variantStorageEngine.getVariantTableName();
+        String archiveTableName = variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId());
+
+        VariantTableHelper.setStudyId(conf, studyConfiguration.getStudyId());
+        VariantTableHelper.setAnalysisTable(conf, variantTableName);
+        VariantTableHelper.setArchiveTable(conf, archiveTableName);
+
+        // input
+        VariantMapReduceUtil.setInputHBase(job, variantTableName);
+        job.setMapperClass(FillGapsMapper.class);
+        TableMapReduceUtil.initTableReducerJob(
+                variantTableName,      // output table
+                null,             // reducer class
+                job,
+                null, null, null, null,
+                false);
+        job.setNumReduceTasks(0);
+
+
+        job.waitForCompletion(true);
+
+    }
+
 
     @Test
     public void testFillGapsPlatinumFiles() throws Exception {
@@ -68,19 +111,19 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
         List<Integer> subSamples = sampleIds.subList(0, sampleIds.size() / 2);
         System.out.println("subSamples = " + subSamples);
-        fillGaps(variantStorageEngine, studyConfiguration, subSamples);
+        fillGapsMR(variantStorageEngine, studyConfiguration, subSamples);
         printVariants(studyConfiguration, dbAdaptor, newOutputUri());
         checkMissing(studyConfiguration, dbAdaptor, subSamples);
 
         subSamples = sampleIds.subList(sampleIds.size() / 2, sampleIds.size());
         System.out.println("subSamples = " + subSamples);
-        fillGaps(variantStorageEngine, studyConfiguration, subSamples);
+        fillGapsMR(variantStorageEngine, studyConfiguration, subSamples);
         printVariants(studyConfiguration, dbAdaptor, newOutputUri());
         checkMissing(studyConfiguration, dbAdaptor, subSamples);
 
         subSamples = sampleIds;
         System.out.println("subSamples = " + subSamples);
-        fillGaps(variantStorageEngine, studyConfiguration, subSamples);
+        fillGapsMR(variantStorageEngine, studyConfiguration, subSamples);
         printVariants(studyConfiguration, dbAdaptor, newOutputUri());
         checkMissing(studyConfiguration, dbAdaptor, subSamples);
     }
