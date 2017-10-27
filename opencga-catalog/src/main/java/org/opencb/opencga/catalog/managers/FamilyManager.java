@@ -243,27 +243,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // We change the FATHER, MOTHER and MEMBER parameters for FATHER_ID, MOTHER_ID and MEMBER_ID which is what the DBAdaptor
-        // understands
-        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()))) {
-            MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), Long.toString(studyId), sessionId);
-            query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
-            query.remove(FamilyDBAdaptor.QueryParams.FATHER.key());
-        }
-        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()))) {
-            MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), Long.toString(studyId), sessionId);
-            query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
-            query.remove(FamilyDBAdaptor.QueryParams.MOTHER.key());
-        }
-        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBER.key()))) {
-            MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.MEMBER.key()), Long.toString(studyId), sessionId);
-            query.put(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), resourceIds.getResourceIds());
-            query.remove(FamilyDBAdaptor.QueryParams.MEMBER.key());
-        }
+        fixQueryObject(query, studyId, sessionId);
 
         query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
@@ -273,34 +253,35 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return queryResult;
     }
 
-    public QueryResult<Family> count(String studyStr, Query query, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-
+    private void fixQueryObject(Query query, long studyId, String sessionId) throws CatalogException {
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         // We change the FATHER, MOTHER and MEMBER parameters for FATHER_ID, MOTHER_ID and MEMBER_ID which is what the DBAdaptor
         // understands
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()))) {
-//            String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
             MyResourceIds resourceIds = catalogManager.getIndividualManager()
                     .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), Long.toString(studyId), sessionId);
             query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.FATHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()))) {
-//            String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
             MyResourceIds resourceIds = catalogManager.getIndividualManager()
                     .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), Long.toString(studyId), sessionId);
             query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.MOTHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBER.key()))) {
-//            String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
             MyResourceIds resourceIds = catalogManager.getIndividualManager()
                     .getIds(query.getString(FamilyDBAdaptor.QueryParams.MEMBER.key()), Long.toString(studyId), sessionId);
             query.put(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.MEMBER.key());
         }
+    }
+
+    public QueryResult<Family> count(String studyStr, Query query, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        fixQueryObject(query, studyId, sessionId);
 
         query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Long> queryResultAux = familyDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
@@ -323,7 +304,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     @Override
     public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        if (fields == null || fields.size() == 0) {
+            throw new CatalogException("Empty fields parameter.");
+        }
+
+        String userId = userManager.getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        fixQueryObject(query, studyId, sessionId);
+
+        // Add study id to the query
+        query.put(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        QueryResult queryResult = familyDBAdaptor.groupBy(query, fields, options, userId);
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
@@ -840,7 +837,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     individual.getFather().setName(String.valueOf(individual.getFather().getId()));
                 }
                 if (!StringUtils.isEmpty(individual.getFather().getName())) {
-                    parentsKey += individual.getFather().getName() + "||M";
+                    if (parentsKey != null) {
+                        parentsKey += individual.getFather().getName() + "||M";
+                    } else {
+                        parentsKey = individual.getFather().getName() + "||M";
+                    }
                 }
             }
             if (parentsKey == null) {

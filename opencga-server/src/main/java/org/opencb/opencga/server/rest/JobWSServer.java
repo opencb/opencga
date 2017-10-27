@@ -140,7 +140,7 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{jobId}/info")
+    @Path("/{jobIds}/info")
     @ApiOperation(value = "Get job information", position = 2, response = Job[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
@@ -148,7 +148,8 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response info(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId) {
+    public Response info(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true)
+                             @PathParam("jobIds") long jobId) {
         try {
             return createOkResponse(catalogManager.getJobManager().get(jobId, queryOptions, sessionId));
         } catch (CatalogException e) {
@@ -156,10 +157,9 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
-    // FIXME: Implement and change parameters
     @GET
     @Path("/search")
-    @ApiOperation(value = "Filter jobs [PENDING]", position = 12, response = Job[].class)
+    @ApiOperation(value = "Job search method", position = 12, response = Job[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -219,8 +219,10 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobIds}/delete")
-    @ApiOperation(value = "Delete job [NOT TESTED]", position = 4)
-    public Response delete(@ApiParam(value = "Comma separated list of job ids or names", required = true) @PathParam("jobIds")
+    @ApiOperation(value = "Delete job [WARNING]", position = 4,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
+    public Response delete(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true) @PathParam("jobIds")
                                        String jobIds,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr) {
@@ -237,10 +239,16 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupBy")
-    @ApiOperation(value = "Group jobs by several fields", position = 10)
+    @ApiOperation(value = "Group jobs by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
-                            @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @DefaultValue("") @QueryParam("studyId") String studyId,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
@@ -249,13 +257,7 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
                             @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
                             @ApiParam(value = "creationDate", required = false) @DefaultValue("")
-                                @QueryParam("creationDate") String creationDate,
-//                            @ApiParam(value = "modificationDate", required = false) @DefaultValue("")
-//                              @QueryParam("modificationDate") String modificationDate,
-                            @ApiParam(value = "description", required = false) @DefaultValue("")
-                                @QueryParam("description") String description,
-                            @ApiParam(value = "attributes", required = false) @DefaultValue("")
-                                @QueryParam("attributes") String attributes) {
+                                @QueryParam("creationDate") String creationDate) {
         try {
             if (StringUtils.isEmpty(fields)) {
                 throw new CatalogException("Empty fields parameter.");
@@ -271,7 +273,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{jobIds}/acl")
     @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", position = 18)
-    public Response getAcls(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
+    public Response getAcls(@ApiParam(value = "Comma separated list of job ids up to a maximum of 100", required = true) @PathParam("jobIds") String jobIdsStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
@@ -286,7 +288,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{jobId}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21,
+    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAclPOST(

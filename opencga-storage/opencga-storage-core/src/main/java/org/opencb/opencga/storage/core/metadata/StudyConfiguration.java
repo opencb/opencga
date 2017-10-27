@@ -296,7 +296,7 @@ public class StudyConfiguration {
     }
 
     public void setAggregationStr(String aggregation) {
-        this.aggregation = Aggregation.valueOf(aggregation);
+        this.aggregation = AggregationUtils.valueOf(aggregation);
     }
 
     @JsonIgnore

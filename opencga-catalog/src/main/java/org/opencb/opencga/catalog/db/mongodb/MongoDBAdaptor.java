@@ -299,10 +299,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             id.append(s, "$" + s);
         }
         Bson group;
-        if (options.getBoolean("count", false)) {
-            group = Aggregates.group(id, Accumulators.sum("count", 1));
+        if (options.getBoolean(QueryOptions.COUNT, false)) {
+            group = Aggregates.group(id, Accumulators.sum(QueryOptions.COUNT, 1));
         } else {
-            group = Aggregates.group(id, Accumulators.addToSet("features", "$" + idField));
+            group = Aggregates.group(id, Accumulators.addToSet("items", "$" + idField));
         }
         return collection.aggregate(Arrays.asList(match, project, group), options);
 //        }

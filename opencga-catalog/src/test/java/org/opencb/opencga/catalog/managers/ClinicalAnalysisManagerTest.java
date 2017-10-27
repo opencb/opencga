@@ -1,13 +1,16 @@
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
 
@@ -97,20 +100,23 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
-    private QueryResult<ClinicalAnalysis> createDummyEnvironment() throws CatalogException {
+    private QueryResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily) throws CatalogException {
 
         createDummyFamily();
-
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setName("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
-                .setFamily(new Family().setName("family"))
                 .setSubjects(Arrays.asList(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2")))));
+
+        if (createFamily) {
+            clinicalAnalysis.setFamily(new Family().setName("family"));
+        }
+
         return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
     public void createClinicalAnalysisTest() throws CatalogException {
-        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment();
+        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
 
         assertEquals(1, dummyEnvironment.getNumResults());
         assertEquals(0, dummyEnvironment.first().getInterpretations().size());
@@ -122,6 +128,62 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, dummyEnvironment.first().getSubjects().get(0).getSamples().size());
         assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
                 dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getId());
+    }
+
+    @Test
+    public void createClinicalAnalysisNoFamilyTest() throws CatalogException {
+        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(false);
+
+        assertEquals(1, dummyEnvironment.getNumResults());
+        assertEquals(0, dummyEnvironment.first().getInterpretations().size());
+
+        assertEquals(catalogManager.getIndividualManager().getId("child1", STUDY, sessionIdUser).getResourceId(),
+                dummyEnvironment.first().getSubjects().get(0).getId());
+        assertEquals(1, dummyEnvironment.first().getSubjects().get(0).getSamples().size());
+        assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
+                dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getId());
+    }
+
+    @Test
+    public void updateSubjectsNoFamilyTest() throws CatalogException {
+        createDummyEnvironment(false);
+
+        ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key(),
+                Arrays.asList(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2")))));
+        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", params,
+                QueryOptions.empty(), sessionIdUser);
+
+        assertEquals(1, updateResult.getNumResults());
+        assertEquals(0, updateResult.first().getInterpretations().size());
+
+        assertEquals(catalogManager.getIndividualManager().getId("child1", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getSubjects().get(0).getId());
+        assertEquals(1, updateResult.first().getSubjects().get(0).getSamples().size());
+        assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getSubjects().get(0).getSamples().get(0).getId());
+    }
+
+    @Test
+    public void updateSubjectsAdnFamilyTest() throws CatalogException {
+        createDummyEnvironment(false);
+
+        ObjectMap params = new ObjectMap()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key(),
+                        Arrays.asList(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2")))))
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), new Family().setName("family"));
+        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", params,
+                QueryOptions.empty(), sessionIdUser);
+
+        assertEquals(1, updateResult.getNumResults());
+        assertEquals(0, updateResult.first().getInterpretations().size());
+
+        assertEquals(catalogManager.getFamilyManager().getId("family", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getFamily().getId());
+        assertEquals(catalogManager.getIndividualManager().getId("child1", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getSubjects().get(0).getId());
+        assertEquals(1, updateResult.first().getSubjects().get(0).getSamples().size());
+        assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getSubjects().get(0).getSamples().get(0).getId());
     }
 
 }

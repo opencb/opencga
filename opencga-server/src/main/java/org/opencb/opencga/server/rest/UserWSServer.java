@@ -91,36 +91,14 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @Deprecated
-    @GET
-    @Path("/{user}/login")
-    @ApiOperation(value = "Get identified and gain access to the system [DEPRECATED]" , hidden = true)
-    public Response login(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                          @ApiParam(value = "User password", required = true) @QueryParam("password") String password) {
-//        sessionIp = httpServletRequest.getRemoteAddr();
-        try {
-            queryOptions.remove("password"); //Remove password from query options
-
-            String token = catalogManager.getUserManager().login(userId, password);
-            ObjectMap sessionMap = new ObjectMap()
-                    .append("sessionId", token)
-                    .append("id", token)
-                    .append("token", token);
-
-            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", 0, 1, 1, "", "", Arrays.asList(sessionMap));
-
-            return createOkResponse(login);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/{user}/login")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get identified and gain access to the system",
-            notes = "If password is provided it will attempt to login the user. If no password is provided and a valid token is given, "
-                    + "a new token will be provided extending the expiration time.")
+            notes = "Login method is implemented using JSON Web Tokens that use the standard RFC 7519. The provided tokens are not " +
+                    "stored by OpenCGA so there is not a logout method anymore. Tokens are provided with an expiration time that, once " +
+                    "finished, will no longer be valid.\nIf password is provided it will attempt to login the user. If no password is " +
+                    "provided and a valid token is given, a new token will be provided extending the expiration time.")
     public Response loginPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                               @ApiParam(value = "JSON containing the parameter 'password'") Map<String, String> map) {
 //        sessionIp = httpServletRequest.getRemoteAddr();
@@ -148,23 +126,10 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @Deprecated
-    @GET
-    @Path("/{user}/logout")
-    @ApiOperation(value = "End user session [DEPRECATED]")
-    public Response logout(@ApiParam(value = "userId", required = true) @PathParam("user") String userId) {
-        try {
-            QueryResult result = new QueryResult("OpenCGA does not support logging out anymore");
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
-    @Path("/{user}/change-password")
+    @Path("/{user}/password")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Change the password of a user")
+    @ApiOperation(value = "Change the password of a user", notes = "It doesn't work if the user is authenticated against LDAP.")
     public Response changePasswordPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                        @ApiParam(value = "JSON containing the params 'password' (old password) and 'npassword' (new "
                                                + "password)", required = true) ObjectMap params) {
@@ -235,28 +200,13 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/delete")
-    @ApiOperation(value = "Delete a user [NOT TESTED]")
+    @ApiOperation(value = "Delete a user [WARNING]",
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
     public Response delete(@ApiParam(value = "Comma separated list of user ids", required = true) @PathParam("user") String userId) {
         try {
             List<QueryResult<User>> deletedUsers = catalogManager.getUserManager().delete(userId, queryOptions, sessionId);
             return createOkResponse(deletedUsers);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{user}/configs/create")
-    @ApiOperation(value = "Store a user configuration", notes = "Some applications might want to store some configuration parameters "
-            + "containing the preferences of the user. The intention of this is to provide a place to store this things for every user.",
-            response = Map.class, hidden = true)
-    public Response setConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                         @ApiParam(value = "Unique name (typically the name of the application)", required = true)
-                                         @QueryParam("name") String name,
-                                         @ApiParam(name = "params", value = "JSON string containing anything useful for the application "
-                                                 + "such as user or default preferences", required = true) String parameters) {
-        try {
-            return createOkResponse(catalogManager.getUserManager().setConfig(userId, name, new ObjectMap(parameters), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -294,7 +244,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/configs/{name}/info")
-    @ApiOperation(value = "Fetch a user configuration", response = Map.class)
+    @ApiOperation(value = "Fetch a user configuration [WARNING]", response = Map.class,
+            notes = "This webservice is deprecated. Users should use /{user}/configs webservice instead.")
     public Response getConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                      @ApiParam(value = "Unique name (typically the name of the application)", required = true)
                                      @PathParam("name") String name) {
@@ -306,46 +257,13 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{user}/configs/filters/create")
-    @ApiOperation(value = "Store a custom filter", notes = "Users normally try to query the data using the same filters most of "
-            + "the times. The aim of this WS is to allow storing as many different filters as the user might want in order not to type "
-            + "the same filters.", response = User.Filter.class, hidden = true)
-    public Response addFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                              @ApiParam(value = "Name of the filter", required = true) @QueryParam("name") String name,
-                              @ApiParam(value = "Bioformat for which the filters will make sense (generally VARIANT or ALIGNMENT). The "
-                                      + "whole list of allowed bioformats can be checked in the files webservice /files/bioformats")
-                                  @QueryParam("bioformat") String bioformatStr,
-                              @ApiParam(value = "Description of the filter") @QueryParam("description") String description,
-                              @ApiParam(value = "JSON string containing the query to be stored") @QueryParam("query") String queryStr,
-                              @ApiParam(value = "JSON string containing modifiers of the result") @QueryParam("queryOptions")
-                                          String queryOptionsStr) {
-
-        File.Bioformat bioformat = File.Bioformat.UNKNOWN;
-        if (StringUtils.isNotEmpty(bioformatStr)) {
-            try {
-                bioformat = File.Bioformat.valueOf(bioformatStr.toUpperCase());
-            } catch (Exception e) {
-                return createErrorResponse(new CatalogException("Bioformat " + bioformatStr + " is not a valid bioformat."));
-            }
-        }
-
+    @Path("/{user}/configs")
+    @ApiOperation(value = "Fetch a user configuration", response = Map.class)
+    public Response getConfigurations(
+            @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+            @ApiParam(value = "Unique name (typically the name of the application).", required = true) @QueryParam("name") String name) {
         try {
-            Query myQuery;
-            QueryOptions myOptions;
-
-            if (StringUtils.isNotEmpty(queryStr)) {
-                myQuery = new Query(queryStr);
-            } else {
-                myQuery = new Query();
-            }
-
-            if (StringUtils.isNotEmpty(queryOptionsStr)) {
-                myOptions = new QueryOptions(queryOptionsStr);
-            } else {
-                myOptions = new QueryOptions();
-            }
-
-            return createOkResponse(catalogManager.getUserManager().addFilter(userId, name, description, bioformat, myQuery, myOptions, sessionId));
+            return createOkResponse(catalogManager.getUserManager().getConfig(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -359,7 +277,8 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response addFilterPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                            @ApiParam(name = "params", value = "Filter parameters", required = true) User.Filter params) {
         try {
-            return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(), params.getBioformat(), params.getQuery(), params.getOptions(), sessionId));
+            return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
+                    params.getBioformat(), params.getQuery(), params.getOptions(), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -372,35 +291,6 @@ public class UserWSServer extends OpenCGAWSServer {
         public QueryOptions options;
     }
 
-    @GET
-    @Path("/{user}/configs/filters/{name}/update")
-    @ApiOperation(value = "Update a custom filter", response = User.Filter.class, hidden = true)
-    public Response updateFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                 @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
-                                 @ApiParam(value = "Bioformat for which the filters will make sense (generally VARIANT or ALIGNMENT). The "
-                                         + "whole list of allowed bioformats can be checked in the files webservice /files/bioformats")
-                                     @QueryParam("bioformat") String bioformatStr,
-                                 @ApiParam(value = "Description of the filter") @QueryParam("description") String description,
-                                 @ApiParam(value = "JSON string containing the query to be stored") @QueryParam("query") String queryStr,
-                                 @ApiParam(value = "JSON string containing modifiers of the result") @QueryParam("queryOptions")
-                                             String queryOptionsStr) {
-        try {
-            ObjectMap params = new ObjectMap();
-            params.putIfNotEmpty("bioformat", bioformatStr);
-            params.putIfNotEmpty("description", description);
-            if (StringUtils.isNotEmpty(queryStr)) {
-                params.put("query", new Query(queryStr));
-            }
-            if (StringUtils.isNotEmpty(queryOptionsStr)) {
-                params.put("options", new QueryOptions(queryOptionsStr));
-            }
-
-            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name, params, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/{user}/configs/filters/{name}/update")
     @ApiOperation(value = "Update a custom filter", response = User.Filter.class)
@@ -408,7 +298,8 @@ public class UserWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
                               @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
         try {
-            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name, new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId));
+            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name,
+                    new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -428,7 +319,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/configs/filters/{name}/info")
-    @ApiOperation(value = "Fetch a filter", response = User.Filter.class)
+    @ApiOperation(value = "Fetch a filter [WARNING]", response = User.Filter.class,
+            notes = "This webservice is deprecated. Users should use /{user}/configs/filters webservice instead.")
     public Response getFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                  @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
         try {
@@ -440,10 +332,28 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/configs/filters/list")
-    @ApiOperation(value = "Fetch all the filters of a user", response = User.Filter.class)
+    @ApiOperation(value = "Fetch all the filters of a user [WARNING]", response = User.Filter.class,
+            notes = "This webservice is deprecated. Users should use /{user}/configs/filters webservice instead.")
     public Response getFilters(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
             return createOkResponse(catalogManager.getUserManager().getAllFilters(userId, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{user}/configs/filters")
+    @ApiOperation(value = "Fetch user filters", response = User.Filter.class)
+    public Response getFilterConfig(
+            @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+            @ApiParam(value = "Filter name. If provided, it will only fetch the specified filter") @QueryParam("name") String name) {
+        try {
+            if (StringUtils.isNotEmpty(name)) {
+                return createOkResponse(catalogManager.getUserManager().getFilter(userId, name, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getUserManager().getAllFilters(userId, sessionId));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }

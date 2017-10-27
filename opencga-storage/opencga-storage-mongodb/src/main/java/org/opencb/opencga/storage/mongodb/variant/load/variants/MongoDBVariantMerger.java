@@ -277,6 +277,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         variantMerger = new VariantMerger();
         variantMerger.configure(studyConfiguration.getVariantHeader());
+        variantMerger.setExpectedFormats(format);
         this.resume = resume;
     }
 
