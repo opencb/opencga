@@ -1076,23 +1076,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     }
 
     @Test
-    @Override
-    public void indexWithOtherFieldsExcludeGT() throws Exception {
-        super.indexWithOtherFieldsExcludeGT();
-
-        try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
-            MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
-
-            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
-                assertFalse(((Document) document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class).get(0))
-                        .containsKey(GENOTYPES_FIELD));
-                System.out.println("dbObject = " + document);
-            }
-        }
-
-    }
-
-    @Test
     public void removeFileMergeBasicTest() throws Exception {
         removeFileTest(new QueryOptions(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC));
     }
