@@ -830,7 +830,7 @@ public class FileManager extends ResourceManager<File> {
                 FileAclEntry.FilePermissions.WRITE);
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             FileDBAdaptor.QueryParams queryParam = FileDBAdaptor.QueryParams.getParam(param.getKey());
-            switch(queryParam) {
+            switch (queryParam) {
                 case NAME:
                 case FORMAT:
                 case BIOFORMAT:
@@ -1648,6 +1648,30 @@ public class FileManager extends ResourceManager<File> {
         return fileAclList;
     }
 
+    public List<QueryResult<FileAclEntry>> getAcls(String studyStr, List<String> fileList, boolean silent, String sessionId)
+            throws CatalogException {
+        MyResourceIds resource = getIds(fileList, studyStr, sessionId);
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
+
+        for (Long fileId : resource.getResourceIds()) {
+            try {
+                QueryResult<FileAclEntry> allFileAcls =
+                        authorizationManager.getAllFileAcls(resource.getStudyId(), fileId, resource.getUser(), true);
+                allFileAcls.setId(String.valueOf(fileId));
+                fileAclList.add(allFileAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    //TODO: check
+                    fileAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(),
+                            new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return fileAclList;
+    }
+
     public List<QueryResult<FileAclEntry>> getAcl(String studyStr, String fileStr, String member, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(member, "member");
@@ -1663,6 +1687,31 @@ public class FileManager extends ResourceManager<File> {
             fileAclList.add(allFileAcls);
         }
 
+        return fileAclList;
+    }
+
+    public List<QueryResult<FileAclEntry>> getAcl(String studyStr, List<String> fileList, String member, boolean silent, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(fileList, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
+
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long fileId : resource.getResourceIds()) {
+            try {
+                QueryResult<FileAclEntry> allFileAcls =
+                        authorizationManager.getFileAcl(resource.getStudyId(), fileId, resource.getUser(), member);
+                allFileAcls.setId(String.valueOf(fileId));
+                fileAclList.add(allFileAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    fileAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
         return fileAclList;
     }
 
@@ -1929,10 +1978,11 @@ public class FileManager extends ResourceManager<File> {
 
     /**
      * Get the URI where a file should be in Catalog, given a study and a path.
-     * @param studyId       Study identifier
-     * @param path          Path to locate
-     * @param directory     Boolean indicating if the file is a directory
-     * @return              URI where the file should be placed
+     *
+     * @param studyId   Study identifier
+     * @param path      Path to locate
+     * @param directory Boolean indicating if the file is a directory
+     * @return URI where the file should be placed
      * @throws CatalogException CatalogException
      */
     private URI getFileUri(long studyId, String path, boolean directory) throws CatalogException, URISyntaxException {
@@ -2284,10 +2334,11 @@ public class FileManager extends ResourceManager<File> {
     /**
      * Create the parent directories that are needed.
      *
-     * @param studyId study id where they will be created.
-     * @param userId user that is creating the parents.
-     * @param studyURI Base URI where the created folders will be pointing to. (base physical location)
-     * @param path Path used in catalog as a virtual location. (whole bunch of directories inside the virtual location in catalog)
+     * @param studyId          study id where they will be created.
+     * @param userId           user that is creating the parents.
+     * @param studyURI         Base URI where the created folders will be pointing to. (base physical location)
+     * @param path             Path used in catalog as a virtual location. (whole bunch of directories inside the virtual
+     *                         location in catalog)
      * @param checkPermissions Boolean indicating whether to check if the user has permissions to create a folder in the first directory
      *                         that is available in catalog.
      * @throws CatalogDBException
@@ -2443,7 +2494,7 @@ public class FileManager extends ResourceManager<File> {
 
         boolean parents = params.getBoolean("parents", false);
         // FIXME: Implement resync
-        boolean resync  = params.getBoolean("resync", false);
+        boolean resync = params.getBoolean("resync", false);
         String description = params.getString("description", "");
 
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.
@@ -2684,7 +2735,7 @@ public class FileManager extends ResourceManager<File> {
      * Check if the file or files inside the folder can be deleted / unlinked if they are being used in storage.
      *
      * @param studyId study id.
-     * @param file File or folder to be deleted / unlinked.
+     * @param file    File or folder to be deleted / unlinked.
      */
     private void checkUsedInStorage(long studyId, File file) throws CatalogException {
         // We cannot delete/unlink a file or folder containing files that are indexed or being processed in storage

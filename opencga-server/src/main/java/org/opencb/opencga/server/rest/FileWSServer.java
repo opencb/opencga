@@ -132,10 +132,10 @@ public class FileWSServer extends OpenCGAWSServer {
     })
     public Response info(@ApiParam(value = "Comma separated list of file ids up to a maximum of 100") @PathParam(value = "files") String fileStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                         @QueryParam("study") String studyStr) {
+                         @QueryParam("study") String studyStr, @QueryParam("silent") boolean silent) {
         try {
-            List<String> fileList = Arrays.asList(StringUtils.split(fileStr, ","));
-            List<QueryResult<File>> fileQueryResult = fileManager.get(studyStr, fileList, query, queryOptions, sessionId);
+            List<String> idList = getIdList(fileStr);
+            List<QueryResult<File>> fileQueryResult = fileManager.get(studyStr, idList, query, queryOptions, sessionId);
             for (QueryResult<File> queryResult : fileQueryResult) {
                 populateOldDeprecatedSampleIdsField(queryResult);
             }
@@ -563,9 +563,9 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response search(
             @ApiParam(value = "Comma separated list of file ids", required = false) @DefaultValue("") @QueryParam("id") String id,
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
-                   String studyIdStr,
+                    String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]{study}  where study and project can be either the id or alias.")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of file names") @DefaultValue("") @QueryParam("name") String name,
             @ApiParam(value = "Comma separated list of paths", required = false) @DefaultValue("") @QueryParam("path") String path,
             @ApiParam(value = "Available types (FILE, DIRECTORY)", required = false) @DefaultValue("") @QueryParam("type") String type,
@@ -583,7 +583,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
-                @QueryParam("nattributes") String nattributes,
+            @QueryParam("nattributes") String nattributes,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
@@ -1130,15 +1130,16 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{files}/acl")
     @ApiOperation(value = "Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.", position = 18, response = QueryResponse.class)
     public Response getAcls(@ApiParam(value = "Comma separated list of file ids up to a maximum of 100", required = true)
-                                @PathParam("files") String fileIdStr,
+                            @PathParam("files") String fileIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
-                            @ApiParam(value = "User or group id") @QueryParam("member") String member) {
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
         try {
+            List<String> idList = getIdList(fileIdStr);
             if (StringUtils.isEmpty(member)) {
-                return createOkResponse(fileManager.getAcls(studyStr, fileIdStr, sessionId));
+                return createOkResponse(fileManager.getAcls(studyStr, idList, silent, sessionId));
             } else {
-                return createOkResponse(fileManager.getAcl(studyStr, fileIdStr, member, sessionId));
+                return createOkResponse(fileManager.getAcl(studyStr, idList, member, silent, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

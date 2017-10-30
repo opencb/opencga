@@ -60,12 +60,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response infoFamily(
             @ApiParam(value = "Comma separated list of family IDs or names up to a maximum of 100", required = true) @PathParam("families") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Family version") @QueryParam("version") Integer version,
-            @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions) {
+            @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
+            @QueryParam("silent") boolean silent) {
         try {
-            List<String> familyList = Arrays.asList(StringUtils.split(familyStr, ","));
-            List<QueryResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, sessionId);
+            List<String> familyList = getIdList(familyStr);
+            List<QueryResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, sessionId);
             return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -84,7 +85,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     })
     public Response search(
             @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or alias.")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Family name") @QueryParam("name") String name,
             @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
@@ -97,7 +98,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)")
-                @QueryParam("release") String release,
+            @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
@@ -120,7 +121,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response createFamilyPOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value="JSON containing family information", required = true) CreateFamilyPOST family) {
+            @ApiParam(value = "JSON containing family information", required = true) CreateFamilyPOST family) {
         try {
             QueryResult<Family> queryResult = familyManager.create(studyStr,
                     family.toFamily(studyStr, catalogManager.getStudyManager(), sessionId), queryOptions, sessionId);
@@ -137,9 +138,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response updateByPost(
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Create a new version of family", defaultValue = "false")
-                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the individual references from the family to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
             @ApiParam(value = "params", required = true) FamilyPOST parameters) {
@@ -219,10 +220,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @Path("/{family}/annotationsets")
     @ApiOperation(value = "Return the annotation sets of the family", position = 12)
     public Response getAnnotationSet(
-            @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+            @ApiParam(value = "Comma separated list of family IDs or names up to a maximum of 100", required = true) @PathParam("families") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
-            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName) {
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
+            @QueryParam("silent") boolean silent) {
         try {
             if (asMap) {
                 if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -252,7 +254,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
-            @ApiParam(value="JSON containing the annotation set name and the array of annotations. The name should be unique for the "
+            @ApiParam(value = "JSON containing the annotation set name and the array of annotations. The name should be unique for the "
                     + "family", required = true) CohortWSServer.AnnotationsetParameters params) {
         try {
             if (StringUtils.isNotEmpty(variableSetId)) {
@@ -295,7 +297,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-            @ApiParam(value="JSON containing key:value annotations to update", required = true) Map<String, Object> annotations) {
+            @ApiParam(value = "JSON containing key:value annotations to update", required = true) Map<String, Object> annotations) {
         try {
             QueryResult<AnnotationSet> queryResult = familyManager.updateAnnotationSet(familyIdStr, studyStr, annotationsetName,
                     annotations, sessionId);
@@ -312,12 +314,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
                                     String familyIdsStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
-                            @ApiParam(value = "User or group id") @QueryParam("member") String member) {
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
         try {
+            List<String> idList = getIdList(familyIdsStr);
             if (StringUtils.isEmpty(member)) {
-                return createOkResponse(familyManager.getAcls(studyStr, familyIdsStr, sessionId));
+                return createOkResponse(familyManager.getAcls(studyStr, idList, silent, sessionId));
             } else {
-                return createOkResponse(familyManager.getAcl(studyStr, familyIdsStr, member, sessionId));
+                return createOkResponse(familyManager.getAcl(studyStr, idList, member, silent, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -335,7 +338,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
-            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) FamilyWSServer.FamilyAcl params) {
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyWSServer.FamilyAcl params) {
         try {
             AclParams familyAclParams = new AclParams(params.getPermissions(), params.getAction());
             return createOkResponse(familyManager.updateAcl(studyStr, params.family, memberId, familyAclParams, sessionId));

@@ -61,8 +61,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     private StudyManager studyManager;
 
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                         DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                         Configuration configuration) {
+                  DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                  Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
@@ -140,9 +140,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     /**
      * Fetch all the samples from a cohort.
      *
-     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param cohortStr Cohort id or name.
-     * @param options QueryOptions object.
+     * @param options   QueryOptions object.
      * @param sessionId Token of the user logged in.
      * @return a QueryResult containing all the samples belonging to the cohort.
      * @throws CatalogException if there is any kind of error (permissions or invalid ids).
@@ -489,11 +489,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         for (Long cohortId : resource.getResourceIds()) {
             QueryResult<Cohort> queryResult = null;
             try {
-            authorizationManager.checkCohortPermission(resource.getStudyId(), cohortId, resource.getUser(),
-                    CohortAclEntry.CohortPermissions.DELETE);
-            queryResult = cohortDBAdaptor.restore(cohortId, options);
-            auditManager.recordRestore(AuditRecord.Resource.cohort, cohortId, resource.getUser(), Status.DELETED,
-                    Cohort.CohortStatus.INVALID, "Cohort restore", null);
+                authorizationManager.checkCohortPermission(resource.getStudyId(), cohortId, resource.getUser(),
+                        CohortAclEntry.CohortPermissions.DELETE);
+                queryResult = cohortDBAdaptor.restore(cohortId, options);
+                auditManager.recordRestore(AuditRecord.Resource.cohort, cohortId, resource.getUser(), Status.DELETED,
+                        Cohort.CohortStatus.INVALID, "Cohort restore", null);
             } catch (CatalogAuthorizationException e) {
                 auditManager.recordRestore(AuditRecord.Resource.cohort, cohortId, resource.getUser(), null, null, e.getMessage(), null);
 
@@ -632,7 +632,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .WRITE_ANNOTATIONS);
 
         // Update the annotation
-        QueryResult<AnnotationSet> queryResult =  updateAnnotationSet(resource, annotationSetName, newAnnotations, cohortDBAdaptor);
+        QueryResult<AnnotationSet> queryResult = updateAnnotationSet(resource, annotationSetName, newAnnotations, cohortDBAdaptor);
 
         if (queryResult == null || queryResult.getNumResults() == 0) {
             throw new CatalogException("There was an error with the update");
@@ -751,6 +751,28 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return cohortAclList;
     }
 
+    public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, List<String> cohortList, boolean silent,
+                                                     String sessionId) throws CatalogException {
+        MyResourceIds resource = getIds(cohortList, studyStr, sessionId);
+
+        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long cohortId : resource.getResourceIds()) {
+            try {
+                QueryResult<CohortAclEntry> allCohortAcls =
+                        authorizationManager.getAllCohortAcls(resource.getStudyId(), cohortId, resource.getUser());
+                allCohortAcls.setId(String.valueOf(cohortId));
+                cohortAclList.add(allCohortAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    cohortAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return cohortAclList;
+    }
+
     public List<QueryResult<CohortAclEntry>> getAcl(String studyStr, String cohortStr, String member, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(member, "member");
@@ -766,6 +788,32 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             cohortAclList.add(allCohortAcls);
         }
 
+        return cohortAclList;
+    }
+
+    public List<QueryResult<CohortAclEntry>> getAcl(String studyStr, List<String> cohortList, String member,
+                                                    boolean silent, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(cohortList, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
+
+        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long cohortId : resource.getResourceIds()) {
+            try {
+                QueryResult<CohortAclEntry> allCohortAcls =
+                        authorizationManager.getCohortAcl(resource.getStudyId(), cohortId, resource.getUser(), member);
+                allCohortAcls.setId(String.valueOf(cohortId));
+                cohortAclList.add(allCohortAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    cohortAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
         return cohortAclList;
     }
 
