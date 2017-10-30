@@ -170,6 +170,7 @@ public class FileManager extends ResourceManager<File> {
         return new MyResourceId(userId, studyId, fileId);
     }
 
+    @Deprecated
     @Override
     public MyResourceIds getIds(String fileStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(fileStr)) {
@@ -192,6 +193,34 @@ public class FileManager extends ResourceManager<File> {
             String[] fileSplit = fileStr.split(",");
             fileIds = new ArrayList<>(fileSplit.length);
             for (String fileStrAux : fileSplit) {
+                fileIds.add(smartResolutor(fileStrAux, studyId));
+            }
+        }
+
+        return new MyResourceIds(userId, studyId, fileIds);
+    }
+
+    @Override
+    MyResourceIds getIds(List<String> fileList, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (fileList == null || fileList.isEmpty()) {
+            throw new CatalogException("Missing file parameter");
+        }
+
+        String userId;
+        long studyId;
+        List<Long> fileIds = new ArrayList<>();
+
+        if (fileList.size() == 1 && StringUtils.isNumeric(fileList.get(0))
+                && Long.parseLong(fileList.get(0)) > configuration.getCatalog().getOffset()) {
+            fileIds.add(Long.parseLong(fileList.get(0)));
+            fileDBAdaptor.exists(fileIds.get(0));
+            studyId = fileDBAdaptor.getStudyIdByFileId(fileIds.get(0));
+            userId = userManager.getUserId(sessionId);
+        } else {
+            userId = userManager.getUserId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            for (String fileStrAux : fileList) {
                 fileIds.add(smartResolutor(fileStrAux, studyId));
             }
         }

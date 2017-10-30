@@ -16,6 +16,7 @@ import org.opencb.opencga.core.config.Configuration;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -50,7 +51,20 @@ public abstract class ResourceManager<R> extends AbstractManager {
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
      */
+    @Deprecated
     abstract AbstractManager.MyResourceIds getIds(String entryStr, @Nullable String studyStr, String sessionId)
+            throws CatalogException;
+
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param entryStr List of entry ids in string format. Could be either the id or name generally.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException CatalogException.
+     */
+    abstract AbstractManager.MyResourceIds getIds(List<String> entryStr, @Nullable String studyStr, String sessionId)
             throws CatalogException;
 
     /**
@@ -123,6 +137,36 @@ public abstract class ResourceManager<R> extends AbstractManager {
 
         QueryResult<R> queryResult = get(String.valueOf(resources.getStudyId()), queryCopy, options, sessionId);
         return queryResult;
+    }
+
+    /**
+     * Fetch all the R objects matching the query.
+     *
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param entryList Comma separated list of entries to be fetched.
+     * @param query Query object.
+     * @param options QueryOptions object, like "include", "exclude", "limit" and "skip".
+     * @param sessionId sessionId
+     * @return All matching elements.
+     * @throws CatalogException CatalogException.
+     */
+    public List<QueryResult<R>> get(String studyStr, List<String> entryList, Query query, QueryOptions options, String sessionId)
+            throws CatalogException {
+        List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        MyResourceIds resources = getIds(entryList, studyStr, sessionId);
+        List<Long> resourceIds = resources.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long entityId = resourceIds.get(i);
+            Query queryCopy = new Query(query);
+            queryCopy.put("id", entityId);
+            QueryResult<R> rQueryResult = get(String.valueOf(resources.getStudyId()), queryCopy, options, sessionId);
+            rQueryResult.setId(entryList.get(i));
+            resultList.add(rQueryResult);
+        }
+
+        return resultList;
     }
 
     /**

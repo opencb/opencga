@@ -223,6 +223,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
+    @Deprecated
     public MyResourceIds getIds(String sampleStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(sampleStr)) {
             throw new CatalogException("Missing sample parameter");
@@ -262,6 +263,53 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             if (sampleIds.size() < sampleSplit.size()) {
                 throw new CatalogException("Found only " + sampleIds.size() + " out of the " + sampleSplit.size()
+                        + " samples looked for in study " + studyStr);
+            }
+        }
+
+        return new MyResourceIds(userId, studyId, sampleIds);
+    }
+
+    @Override
+    MyResourceIds getIds(List<String> sampleList, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (sampleList == null || sampleList.isEmpty()) {
+            throw new CatalogException("Missing sample parameter");
+        }
+
+        String userId;
+        long studyId;
+        List<Long> sampleIds = new ArrayList<>();
+
+        if (sampleList.size() == 1 && StringUtils.isNumeric(sampleList.get(0))
+                && Long.parseLong(sampleList.get(0)) > configuration.getCatalog().getOffset()) {
+            sampleIds.add(Long.parseLong(sampleList.get(0)));
+            sampleDBAdaptor.exists(sampleIds.get(0));
+            studyId = sampleDBAdaptor.getStudyId(sampleIds.get(0));
+            userId = userManager.getUserId(sessionId);
+        } else {
+            userId = userManager.getUserId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            for (String sampleStrAux : sampleList) {
+                if (StringUtils.isNumeric(sampleStrAux)) {
+                    long sampleId = Long.parseLong(sampleStrAux);
+                    sampleDBAdaptor.exists(sampleId);
+                    sampleIds.add(sampleId);
+                }
+            }
+
+            Query query = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(SampleDBAdaptor.QueryParams.NAME.key(), sampleList);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
+            QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+
+            if (sampleQueryResult.getNumResults() > 0) {
+                sampleIds.addAll(sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
+            }
+
+            if (sampleIds.size() < sampleList.size()) {
+                throw new CatalogException("Found only " + sampleIds.size() + " out of the " + sampleList.size()
                         + " samples looked for in study " + studyStr);
             }
         }

@@ -137,6 +137,35 @@ public class JobManager extends ResourceManager<Job> {
         return new MyResourceIds(userId, studyId, jobIds);
     }
 
+    @Override
+    MyResourceIds getIds(List<String> jobList, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (jobList == null || jobList.isEmpty()) {
+            throw new CatalogException("Missing job parameter");
+        }
+
+        String userId;
+        long studyId;
+        List<Long> jobIds = new ArrayList<>();
+
+        if (jobList.size() == 1 && StringUtils.isNumeric(jobList.get(0))
+                && Long.parseLong(jobList.get(0)) > configuration.getCatalog().getOffset()) {
+            jobIds.add(Long.parseLong(jobList.get(0)));
+            jobDBAdaptor.exists(jobIds.get(0));
+            studyId = jobDBAdaptor.getStudyId(jobIds.get(0));
+            userId = userManager.getUserId(sessionId);
+        } else {
+            userId = userManager.getUserId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            jobIds = new ArrayList<>(jobList.size());
+            for (String jobStrAux : jobList) {
+                jobIds.add(smartResolutor(jobStrAux, studyId));
+            }
+        }
+
+        return new MyResourceIds(userId, studyId, jobIds);
+    }
+
     public QueryResult<Job> visit(long jobId, String sessionId) throws CatalogException {
         MyResourceId resource = getId(Long.toString(jobId), null, sessionId);
 

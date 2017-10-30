@@ -388,6 +388,42 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
+    MyResourceIds getIds(List<String> individualList, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (individualList == null || individualList.isEmpty()) {
+            throw new CatalogException("Missing individual parameter");
+        }
+
+        String userId;
+        long studyId;
+        List<Long> individualIds = new ArrayList<>();
+
+        if (individualList.size() == 1 && StringUtils.isNumeric(individualList.get(0))
+                && Long.parseLong(individualList.get(0)) > configuration.getCatalog().getOffset()) {
+            individualIds.add(Long.parseLong(individualList.get(0)));
+            individualDBAdaptor.exists(individualIds.get(0));
+            studyId = individualDBAdaptor.getStudyId(individualIds.get(0));
+            userId = userManager.getUserId(sessionId);
+        } else {
+            userId = userManager.getUserId(sessionId);
+            studyId = studyManager.getId(userId, studyStr);
+
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), individualList);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+            if (individualQueryResult.getNumResults() == individualList.size()) {
+                individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
+            } else {
+                throw new CatalogException("Found only " + individualQueryResult.getNumResults() + " out of the " + individualList.size()
+                        + " individuals looked for in study " + studyStr);
+            }
+        }
+
+        return new MyResourceIds(userId, studyId, individualIds);
+    }
+
+    @Override
     public QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);

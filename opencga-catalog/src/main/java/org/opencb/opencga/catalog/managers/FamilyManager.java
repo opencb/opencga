@@ -128,6 +128,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
      */
+    @Deprecated
     public MyResourceIds getIds(String familyStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(familyStr)) {
             throw new CatalogException("Missing family parameter");
@@ -167,6 +168,62 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             if (familyIds.size() < familySplit.size()) {
                 throw new CatalogException("Found only " + familyIds.size() + " out of the " + familySplit.size()
+                        + " families looked for in study " + studyStr);
+            }
+        }
+
+        return new MyResourceIds(userId, studyId, familyIds);
+    }
+
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param familyList List of family id in string format. Could be either the id or name.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException CatalogException.
+     */
+    @Override
+    MyResourceIds getIds(List<String> familyList, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (familyList == null || familyList.isEmpty()) {
+            throw new CatalogException("Missing family parameter");
+        }
+
+        String userId;
+        long studyId;
+        List<Long> familyIds = new ArrayList<>();
+
+        if (familyList.size() == 1 && StringUtils.isNumeric(familyList.get(0))
+                && Long.parseLong(familyList.get(0)) > configuration.getCatalog().getOffset()) {
+            familyIds.add(Long.parseLong(familyList.get(0)));
+            familyDBAdaptor.checkId(familyIds.get(0));
+            studyId = familyDBAdaptor.getStudyId(familyIds.get(0));
+            userId = catalogManager.getUserManager().getUserId(sessionId);
+        } else {
+            userId = catalogManager.getUserManager().getUserId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            for (String familyStrAux : familyList) {
+                if (StringUtils.isNumeric(familyStrAux)) {
+                    long familyId = Long.parseLong(familyStrAux);
+                    familyDBAdaptor.exists(familyId);
+                    familyIds.add(familyId);
+                }
+            }
+
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FamilyDBAdaptor.QueryParams.NAME.key(), familyList);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.ID.key());
+            QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
+
+            if (familyQueryResult.getNumResults() > 0) {
+                familyIds.addAll(familyQueryResult.getResult().stream().map(Family::getId).collect(Collectors.toList()));
+            }
+
+            if (familyIds.size() < familyList.size()) {
+                throw new CatalogException("Found only " + familyIds.size() + " out of the " + familyList.size()
                         + " families looked for in study " + studyStr);
             }
         }

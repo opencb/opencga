@@ -293,6 +293,42 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
+    MyResourceIds getIds(List<String> cohortList, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (cohortList == null || cohortList.isEmpty()) {
+            throw new CatalogException("Missing cohort parameter");
+        }
+
+        String userId;
+        long studyId;
+        List<Long> cohortIds = new ArrayList<>();
+
+        if (cohortList.size() == 1 && StringUtils.isNumeric(cohortList.get(0))
+                && Long.parseLong(cohortList.get(0)) > configuration.getCatalog().getOffset()) {
+            cohortIds.add(Long.parseLong(cohortList.get(0)));
+            cohortDBAdaptor.exists(cohortIds.get(0));
+            studyId = cohortDBAdaptor.getStudyId(cohortIds.get(0));
+            userId = userManager.getUserId(sessionId);
+        } else {
+            userId = userManager.getUserId(sessionId);
+            studyId = studyManager.getId(userId, studyStr);
+
+            Query query = new Query()
+                    .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(CohortDBAdaptor.QueryParams.NAME.key(), cohortList);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ID.key());
+            QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
+            if (cohortQueryResult.getNumResults() == cohortList.size()) {
+                cohortIds = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
+            } else {
+                throw new CatalogException("Found only " + cohortQueryResult.getNumResults() + " out of the " + cohortList.size()
+                        + " cohorts looked for in study " + studyStr);
+            }
+        }
+
+        return new MyResourceIds(userId, studyId, cohortIds);
+    }
+
+    @Override
     public QueryResult<Cohort> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);

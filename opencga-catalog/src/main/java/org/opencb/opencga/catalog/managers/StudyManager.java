@@ -367,7 +367,8 @@ public class StudyManager extends AbstractManager {
         return studyQueryResult;
     }
 
-    public List<QueryResult<Study>> get(List<String> studyList, QueryOptions queryOptions, boolean silent, String sessionId) throws CatalogException {
+    public List<QueryResult<Study>> get(List<String> studyList, QueryOptions queryOptions, boolean silent, String sessionId)
+            throws CatalogException {
         List<QueryResult<Study>> results = new ArrayList<>(studyList.size());
         for (String study: studyList) {
             try {
