@@ -35,7 +35,7 @@ public class Family extends Annotable {
     private List<Individual> members;
 
     private String creationDate;
-    private Status status;
+    private FamilyStatus status;
     private String description;
 
     private int release;
@@ -47,21 +47,52 @@ public class Family extends Annotable {
 
     public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(name, phenotypes, members, TimeUtils.getTime(), new Status(Status.READY), description, -1, 1, annotationSets, attributes);
+        this(name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, -1, 1, annotationSets, attributes);
     }
 
-    public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate, Status status,
+    public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate, FamilyStatus status,
                   String description, int release, int version, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.name = name;
         this.phenotypes = defaultObject(phenotypes, Collections::emptyList);
         this.members = defaultObject(members, Collections::emptyList);
         this.creationDate = defaultObject(creationDate, TimeUtils::getTime);
-        this.status = defaultObject(status, new Status());
+        this.status = defaultObject(status, new FamilyStatus());
         this.description = description;
         this.release = release;
         this.version = version;
         this.annotationSets = defaultObject(annotationSets, Collections::emptyList);
         this.attributes = defaultObject(attributes, Collections::emptyMap);
+    }
+
+    public static class FamilyStatus extends Status {
+
+        public static final String INCOMPLETE = "INCOMPLETE";
+
+        public FamilyStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public FamilyStatus(String status) {
+            this(status, "");
+        }
+
+        public FamilyStatus() {
+            this(READY, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(INCOMPLETE))) {
+                return true;
+            }
+            return false;
+        }
     }
 
     @Override
@@ -127,11 +158,11 @@ public class Family extends Annotable {
         return this;
     }
 
-    public Status getStatus() {
+    public FamilyStatus getStatus() {
         return status;
     }
 
-    public Family setStatus(Status status) {
+    public Family setStatus(FamilyStatus status) {
         this.status = status;
         return this;
     }
