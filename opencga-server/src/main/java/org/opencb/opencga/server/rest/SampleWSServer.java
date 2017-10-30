@@ -71,25 +71,9 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Fetch all sample versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
                     boolean allVersions) {
         try {
-            QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, query, queryOptions, sessionId);
-
-            // We make a map of sample id - samples to put in the same queryResult all the samples coming from the same version
-            Map<Long, List<Sample>> sampleMap = new HashMap<>();
-            for (Sample sample : sampleQueryResult.getResult()) {
-                if (!sampleMap.containsKey(sample.getId())) {
-                    sampleMap.put(sample.getId(), new ArrayList<>());
-                }
-                sampleMap.get(sample.getId()).add(sample);
-            }
-
-            List<QueryResult<Sample>> queryResultList = new ArrayList<>(sampleMap.size());
-            for (Map.Entry<Long, List<Sample>> entry : sampleMap.entrySet()) {
-                queryResultList.add(new QueryResult<>(String.valueOf(entry.getValue().get(0).getId()), sampleQueryResult.getDbTime(),
-                        entry.getValue().size(), -1, sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(),
-                        entry.getValue()));
-            }
-
-            return createOkResponse(queryResultList);
+            List<String> sampleList = Arrays.asList(StringUtils.split(sampleStr, ","));
+            List<QueryResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, sessionId);
+            return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

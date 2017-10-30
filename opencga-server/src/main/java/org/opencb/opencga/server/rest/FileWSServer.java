@@ -134,16 +134,12 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr) {
         try {
-            QueryResult<File> fileQueryResult = fileManager.get(studyStr, fileStr, queryOptions, sessionId);
-            populateOldDeprecatedSampleIdsField(fileQueryResult);
-            // We parse the query result to create one queryresult per file
-            List<QueryResult<File>> queryResultList = new ArrayList<>(fileQueryResult.getNumResults());
-            for (File file : fileQueryResult.getResult()) {
-                queryResultList.add(new QueryResult<>(file.getName() + "-" + file.getId(), fileQueryResult.getDbTime(), 1, -1,
-                        fileQueryResult.getWarningMsg(), fileQueryResult.getErrorMsg(), Arrays.asList(file)));
+            List<String> fileList = Arrays.asList(StringUtils.split(fileStr, ","));
+            List<QueryResult<File>> fileQueryResult = fileManager.get(studyStr, fileList, query, queryOptions, sessionId);
+            for (QueryResult<File> queryResult : fileQueryResult) {
+                populateOldDeprecatedSampleIdsField(queryResult);
             }
-
-            return createOkResponse(queryResultList);
+            return createOkResponse(fileQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

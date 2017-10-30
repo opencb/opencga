@@ -104,39 +104,20 @@ public abstract class ResourceManager<R> extends AbstractManager {
             throws CatalogException;
 
     /**
-     * Fetch all the R objects matching the query.
+     * Fetch the R object.
      *
      * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param entryStr Comma separated list of entries to be fetched.
+     * @param entryStr Entry id to be fetched.
      * @param options QueryOptions object, like "include", "exclude", "limit" and "skip".
      * @param sessionId sessionId
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
     public QueryResult<R> get(String studyStr, String entryStr, QueryOptions options, String sessionId) throws CatalogException {
-        return get(studyStr, entryStr, new Query(), options, sessionId);
-    }
-
-    /**
-     * Fetch all the R objects matching the query.
-     *
-     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param entryStr Comma separated list of entries to be fetched.
-     * @param query Query object.
-     * @param options QueryOptions object, like "include", "exclude", "limit" and "skip".
-     * @param sessionId sessionId
-     * @return All matching elements.
-     * @throws CatalogException CatalogException.
-     */
-    public QueryResult<R> get(String studyStr, String entryStr, Query query, QueryOptions options, String sessionId) throws
-            CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        Query queryCopy = new Query(query);
-        MyResourceIds resources = getIds(entryStr, studyStr, sessionId);
-        queryCopy.put("id", resources.getResourceIds());
-
-        QueryResult<R> queryResult = get(String.valueOf(resources.getStudyId()), queryCopy, options, sessionId);
-        return queryResult;
+        Query query = new Query();
+        MyResourceId resources = getId(entryStr, studyStr, sessionId);
+        query.put("id", resources.getResourceId());
+        return get(String.valueOf(resources.getStudyId()), query, options, sessionId);
     }
 
     /**

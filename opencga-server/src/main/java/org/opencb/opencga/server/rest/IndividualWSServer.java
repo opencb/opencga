@@ -90,25 +90,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                    @ApiParam(value = "Fetch all individual versions", defaultValue = "false")
                                        @QueryParam(Constants.ALL_VERSIONS) boolean allVersions) {
         try {
-            QueryResult<Individual> individualQueryResult = individualManager.get(studyStr, individualStr, query, queryOptions, sessionId);
-
-            // We make a map of sample id - samples to put in the same queryResult all the samples coming from the same version
-            Map<Long, List<Individual>> individualMap = new HashMap<>();
-            for (Individual individual : individualQueryResult.getResult()) {
-                if (!individualMap.containsKey(individual.getId())) {
-                    individualMap.put(individual.getId(), new ArrayList<>());
-                }
-                individualMap.get(individual.getId()).add(individual);
-            }
-
-            List<QueryResult<Individual>> queryResultList = new ArrayList<>(individualMap.size());
-            for (Map.Entry<Long, List<Individual>> entry : individualMap.entrySet()) {
-                queryResultList.add(new QueryResult<>(String.valueOf(entry.getValue().get(0).getId()), individualQueryResult.getDbTime(),
-                        entry.getValue().size(), -1, individualQueryResult.getWarningMsg(), individualQueryResult.getErrorMsg(),
-                        entry.getValue()));
-            }
-
-            return createOkResponse(queryResultList);
+            List<String> individualList = Arrays.asList(StringUtils.split(individualStr, ","));
+            List<QueryResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions,
+                    sessionId);
+            return createOkResponse(individualQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

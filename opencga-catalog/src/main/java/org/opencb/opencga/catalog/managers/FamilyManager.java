@@ -477,42 +477,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return queryResult;
     }
 
-    private List<Individual> autoCompleteMembers(List<Individual> membersUpdate, List<Individual> membersFromDatabase, long studyId,
-                                                 String sessionId) throws CatalogException {
-        if (membersUpdate == null || membersUpdate.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Map<String, Individual> membersFromDatabaseMap = new HashMap<>();
-        if (membersFromDatabase != null && !membersFromDatabase.isEmpty()) {
-            for (Individual individual : membersFromDatabase) {
-                membersFromDatabaseMap.put(individual.getName(), individual);
-                membersFromDatabaseMap.put(String.valueOf(individual.getId()), individual);
-            }
-        }
-
-        List<Individual> completedMembers = new ArrayList<>();
-        List<String> incompleteMembers = new ArrayList<>();
-
-        for (Individual individual : membersUpdate) {
-            if (membersFromDatabaseMap.containsKey(individual.getName())) {
-                completedMembers.add(individual);
-            } else {
-                incompleteMembers.add(individual.getName());
-            }
-        }
-
-        if (incompleteMembers.size() > 0) {
-            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
-                    StringUtils.join(incompleteMembers, ","), new Query(), QueryOptions.empty(), sessionId);
-            if (individualQueryResult.getNumResults() < incompleteMembers.size()) {
-                throw new CatalogException("Some individuals were not found. Do they all exist?");
-            }
-            completedMembers.addAll(individualQueryResult.getResult());
-        }
-
-        return completedMembers;
-    }
-
     @Override
     public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           String annotationSetName, Map<String, Object> annotations,

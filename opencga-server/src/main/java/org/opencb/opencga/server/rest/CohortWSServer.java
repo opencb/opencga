@@ -157,19 +157,9 @@ public class CohortWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr) {
         try {
-            try {
-                QueryResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortStr, queryOptions, sessionId);
-                // We parse the query result to create one queryresult per cohort
-                List<QueryResult<Cohort>> queryResultList = new ArrayList<>(cohortQueryResult.getNumResults());
-                for (Cohort cohort : cohortQueryResult.getResult()) {
-                    queryResultList.add(new QueryResult<>(cohort.getName() + "-" + cohort.getId(), cohortQueryResult.getDbTime(), 1, -1,
-                            cohortQueryResult.getWarningMsg(), cohortQueryResult.getErrorMsg(), Arrays.asList(cohort)));
-                }
-
-                return createOkResponse(queryResultList);
-            } catch (Exception e) {
-                return createErrorResponse(e);
-            }
+            List<String> cohortList = Arrays.asList(StringUtils.split(cohortStr, ","));
+            List<QueryResult<Cohort>> cohortQueryResult = cohortManager.get(studyStr, cohortList, query, queryOptions, sessionId);
+            return createOkResponse(cohortQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

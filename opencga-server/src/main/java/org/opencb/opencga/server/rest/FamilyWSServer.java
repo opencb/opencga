@@ -21,7 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
@@ -65,25 +64,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Family version") @QueryParam("version") Integer version,
             @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions) {
         try {
-            QueryResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, query, queryOptions, sessionId);
-
-            // We make a map of sample id - samples to put in the same queryResult all the samples coming from the same version
-            Map<Long, List<Family>> familyMap = new HashMap<>();
-            for (Family family : familyQueryResult.getResult()) {
-                if (!familyMap.containsKey(family.getId())) {
-                    familyMap.put(family.getId(), new ArrayList<>());
-                }
-                familyMap.get(family.getId()).add(family);
-            }
-
-            List<QueryResult<Family>> queryResultList = new ArrayList<>(familyMap.size());
-            for (Map.Entry<Long, List<Family>> entry : familyMap.entrySet()) {
-                queryResultList.add(new QueryResult<>(String.valueOf(entry.getValue().get(0).getId()), familyQueryResult.getDbTime(),
-                        entry.getValue().size(), -1, familyQueryResult.getWarningMsg(), familyQueryResult.getErrorMsg(),
-                        entry.getValue()));
-            }
-
-            return createOkResponse(queryResultList);
+            List<String> familyList = Arrays.asList(StringUtils.split(familyStr, ","));
+            List<QueryResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, sessionId);
+            return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

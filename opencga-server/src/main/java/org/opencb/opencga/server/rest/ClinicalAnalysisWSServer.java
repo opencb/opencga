@@ -106,15 +106,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr) {
         try {
-            QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalManager.get(studyStr, clinicalAnalysisStr, queryOptions, sessionId);
-            // We parse the query result to create one queryresult per sample
-            List<QueryResult<ClinicalAnalysis>> queryResultList = new ArrayList<>(analysisQueryResult.getNumResults());
-            for (ClinicalAnalysis analysis : analysisQueryResult.getResult()) {
-                queryResultList.add(new QueryResult<>(analysis.getName() + "-" + analysis.getId(), analysisQueryResult.getDbTime(), 1, -1,
-                        analysisQueryResult.getWarningMsg(), analysisQueryResult.getErrorMsg(), Arrays.asList(analysis)));
-            }
-
-            return createOkResponse(queryResultList);
+            List<String> analysisList = Arrays.asList(StringUtils.split(clinicalAnalysisStr, ","));
+            List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, sessionId);
+            return createOkResponse(analysisResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
