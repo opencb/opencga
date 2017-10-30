@@ -53,6 +53,7 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, study, action, params=NU
     )
 })
 
+#' @export
 setMethod("studyGroupClient", "OpencgaR", function(OpencgaR, study, group=NULL, 
                                                    action, params=NULL) {
     category <- "studies"
@@ -76,6 +77,7 @@ setMethod("studyGroupClient", "OpencgaR", function(OpencgaR, study, group=NULL,
     )
 })
 
+#' @export
 setMethod("studyAclClient", "OpencgaR", function(OpencgaR, study, memberId, action, params=NULL) {
     category <- "studies"
     switch(action,
@@ -85,6 +87,7 @@ setMethod("studyAclClient", "OpencgaR", function(OpencgaR, study, memberId, acti
     )
 })
 
+#' @export
 setMethod("studyVariablesetClient", "OpencgaR", function(OpencgaR, variableSet, action, params=NULL) {
     category <- "studies"
     switch(action,
@@ -107,6 +110,7 @@ setMethod("studyVariablesetClient", "OpencgaR", function(OpencgaR, variableSet, 
     )
 })
 
+#' @export
 setMethod("studyVariablesetFieldClient", "OpencgaR", function(OpencgaR, variableSet, action, params=NULL) {
     category <- "studies"
     switch(action,

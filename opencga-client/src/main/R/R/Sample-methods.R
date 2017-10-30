@@ -41,6 +41,7 @@ setMethod("sampleClient", "OpencgaR", function(OpencgaR, sample, action, params=
     )
 })
 
+#' @export
 setMethod("sampleAnnotationsetClient", "OpencgaR", function(OpencgaR, sample, 
                                                          annotationsetName, action, 
                                                          params=NULL) {
@@ -61,6 +62,7 @@ setMethod("sampleAnnotationsetClient", "OpencgaR", function(OpencgaR, sample,
     )
 })
 
+#' @export
 setMethod("sampleAclClient", "OpencgaR", function(OpencgaR, memberIds, action, params=NULL) {
     category <- "samples"
     switch(action,

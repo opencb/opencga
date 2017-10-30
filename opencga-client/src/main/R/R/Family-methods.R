@@ -35,6 +35,7 @@ setMethod("familyClient", "OpencgaR", function(OpencgaR, family, action, params=
     )
 })
 
+#' @export
 setMethod("familyAnnotationsetClient", "OpencgaR", function(OpencgaR, family, annotationsetName, 
                                                          action, params=NULL) {
     category <- "families"
@@ -54,6 +55,7 @@ setMethod("familyAnnotationsetClient", "OpencgaR", function(OpencgaR, family, an
     )
 })
 
+#' @export
 setMethod("familyAclClient", "OpencgaR", function(OpencgaR, memberIds, action, params=NULL) {
     category <- "families"
     switch(action,

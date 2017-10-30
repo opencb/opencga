@@ -39,6 +39,7 @@ setMethod("individualClient", "OpencgaR", function(OpencgaR, individual, action,
     )
 })
 
+#' @export
 setMethod("individualAnnotationsetClient", "OpencgaR", function(OpencgaR, individual, 
                                                              annotationsetName, action, 
                                                              params=NULL) {
@@ -59,6 +60,7 @@ setMethod("individualAnnotationsetClient", "OpencgaR", function(OpencgaR, indivi
     )
 })
 
+#' @export
 setMethod("individualAclClient", "OpencgaR", function(OpencgaR, memberIds, action, params=NULL) {
     category <- "individuals"
     switch(action,
