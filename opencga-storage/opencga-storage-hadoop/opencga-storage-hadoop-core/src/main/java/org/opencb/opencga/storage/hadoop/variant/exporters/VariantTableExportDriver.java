@@ -33,6 +33,7 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -91,7 +92,7 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
         // QUERY design
         Scan scan = createVariantsTableScan();
 
-        initMapReduceJob(job, getMapperClass(), variantTable, scan);
+        VariantMapReduceUtil.initTableMapperJob(job, variantTable, scan, getMapperClass());
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
         FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression

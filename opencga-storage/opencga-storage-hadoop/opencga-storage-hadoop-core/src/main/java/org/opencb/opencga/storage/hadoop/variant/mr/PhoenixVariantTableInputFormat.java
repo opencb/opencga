@@ -23,11 +23,11 @@ import java.sql.SQLException;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class PhoenixVariantTableInputFormat
-        extends AbstractVariantsTableInputFormat<NullWritable, PhoenixVariantTableInputFormat.VariantDBWritable, ResultSet> {
+        extends AbstractVariantsTableInputFormat<NullWritable, PhoenixVariantTableInputFormat.ResultSetDBWritable, ResultSet> {
 
     @Override
     protected void init(Configuration configuration) throws IOException {
-        PhoenixConfigurationUtil.setInputClass(configuration, VariantDBWritable.class);
+        PhoenixConfigurationUtil.setInputClass(configuration, ResultSetDBWritable.class);
         inputFormat = new PhoenixInputFormat<>();
         converter = HBaseToVariantConverter.fromResultSet(new VariantTableHelper(configuration));
     }
@@ -38,13 +38,13 @@ public class PhoenixVariantTableInputFormat
         if (inputFormat == null) {
             init(context.getConfiguration());
         }
-        RecordReader<NullWritable, VariantDBWritable> recordReader = inputFormat.createRecordReader(split, context);
+        RecordReader<NullWritable, ResultSetDBWritable> recordReader = inputFormat.createRecordReader(split, context);
 
-        return new RecordReaderTransform<>(recordReader, VariantDBWritable::getVariant);
+        return new RecordReaderTransform<>(recordReader, resultSetDBWritable -> converter.convert(resultSetDBWritable.getResultSet()));
     }
 
-    public class VariantDBWritable implements DBWritable {
-        private Variant variant;
+    public static class ResultSetDBWritable implements DBWritable {
+        private ResultSet resultSet;
 
         @Override
         public void write(PreparedStatement statement) throws SQLException {
@@ -53,16 +53,11 @@ public class PhoenixVariantTableInputFormat
 
         @Override
         public void readFields(ResultSet resultSet) throws SQLException {
-            variant = converter.convert(resultSet);
+            this.resultSet = resultSet;
         }
 
-        public Variant getVariant() {
-            return variant;
-        }
-
-        public VariantDBWritable setVariant(Variant variant) {
-            this.variant = variant;
-            return this;
+        public ResultSet getResultSet() {
+            return resultSet;
         }
     }
 

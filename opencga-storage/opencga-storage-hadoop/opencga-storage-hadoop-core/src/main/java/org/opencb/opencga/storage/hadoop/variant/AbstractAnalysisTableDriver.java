@@ -26,7 +26,6 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
 import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
@@ -43,6 +42,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,32 +173,11 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
 
-    protected final void initMapReduceJob(Job job, Class<? extends TableMapper> mapperClass, String inTable, Scan scan)
-            throws IOException {
-        boolean addDependencyJar = getConf().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
-        logger.info("Use table {} as input", inTable);
-        TableMapReduceUtil.initTableMapperJob(
-                inTable,      // input table
-                scan,             // Scan instance to control CF and attribute selection
-                mapperClass,   // mapper class
-                null,             // mapper output key
-                null,             // mapper output value
-                job,
-                addDependencyJar);
-    }
-
     protected final void initMapReduceJob(Job job, Class<? extends TableMapper> mapperClass, String inTable, String outTable, Scan scan)
             throws IOException {
-        boolean addDependencyJar = getConf().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
-        initMapReduceJob(job, mapperClass, inTable, scan);
-        logger.info("Use table {} as output", outTable);
-        TableMapReduceUtil.initTableReducerJob(
-                outTable,      // output table
-                null,             // reducer class
-                job,
-                null, null, null, null,
-                addDependencyJar);
-        job.setNumReduceTasks(0);
+        VariantMapReduceUtil.initTableMapperJob(job, inTable, scan, mapperClass);
+        VariantMapReduceUtil.setOutputHBaseTable(job, outTable);
+        VariantMapReduceUtil.setNoneReduce(job);
     }
 
     protected final Scan createArchiveTableScan(List<Integer> files) {

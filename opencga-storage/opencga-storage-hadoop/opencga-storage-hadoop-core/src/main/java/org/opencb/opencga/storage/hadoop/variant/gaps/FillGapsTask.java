@@ -15,7 +15,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.run.ParallelTaskRunner.Task;
+import org.opencb.commons.run.ParallelTaskRunner.TaskWithException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -35,15 +35,13 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillGapsTask implements Task<Variant, Put> {
+public class FillGapsTask implements TaskWithException<Variant, Put, IOException> {
 
     private final HBaseManager hBaseManager;
-    private final String variantsTableName;
     private final String archiveTableName;
     private final StudyConfiguration studyConfiguration;
     private final GenomeHelper helper;
     private Table archiveTable;
-    private Table variantsTable;
     private final ArchiveRowKeyFactory archiveRowKeyFactory;
     private final Collection<Integer> samples;
     private final Map<Integer, Integer> samplesFileMap;
@@ -54,13 +52,11 @@ public class FillGapsTask implements Task<Variant, Put> {
     private final VariantMerger variantMerger;
 
     public FillGapsTask(HBaseManager hBaseManager,
-                        String variantsTableName,
                         String archiveTableName,
                         StudyConfiguration studyConfiguration,
                         GenomeHelper helper,
                         Collection<Integer> samples) throws IOException {
         this.hBaseManager = hBaseManager;
-        this.variantsTableName = variantsTableName;
         this.archiveTableName = archiveTableName;
         this.studyConfiguration = studyConfiguration;
         this.helper = helper;
@@ -92,14 +88,13 @@ public class FillGapsTask implements Task<Variant, Put> {
     public void pre() {
         try {
             archiveTable = hBaseManager.getConnection().getTable(TableName.valueOf(archiveTableName));
-            variantsTable = hBaseManager.getConnection().getTable(TableName.valueOf(variantsTableName));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public List<Put> apply(List<Variant> list) throws RuntimeException {
+    public List<Put> apply(List<Variant> list) throws IOException {
         List<Put> puts = new ArrayList<>(list.size());
         for (Variant variant : list) {
             Put put = fillGaps(variant);
@@ -113,7 +108,6 @@ public class FillGapsTask implements Task<Variant, Put> {
     @Override
     public void post() {
         try {
-            variantsTable.close();
             archiveTable.close();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -121,43 +115,30 @@ public class FillGapsTask implements Task<Variant, Put> {
     }
 
     /**
-     * @param variant        Variant to fill
-     * @throws IOException if writing results fails
-     */
-    public void fillGapsAndPut(Variant variant) throws IOException {
-        Put put = fillGaps(variant);
-
-        if (put != null && !put.isEmpty()) {
-            variantsTable.put(put);
-        }
-    }
-
-    /**
      * @param variant Variant to fill
      * @return Put with required changes
+     * @throws IOException if fails reading from HBAse
      */
-    public Put fillGaps(Variant variant) {
+    public Put fillGaps(Variant variant) throws IOException {
         HashSet<Integer> missingSamples = new HashSet<>();
         for (Integer sampleId : samples) {
             if (variant.getStudies().get(0).getSampleData(studyConfiguration.getSampleIds().inverse().get(sampleId)).get(0).equals("?/?")) {
                 missingSamples.add(sampleId);
             }
         }
-        Put put = fillGaps(variant, missingSamples);
-        return put;
+        return fillGaps(variant, missingSamples);
     }
     /**
      * @param variant        Variant to fill
      * @param missingSamples Missing samples in this variant
      * @return Put with required changes
+     * @throws IOException if fails reading from HBAse
      */
-    public Put fillGaps(Variant variant, Set<Integer> missingSamples) {
+    public Put fillGaps(Variant variant, Set<Integer> missingSamples) throws IOException {
         if (samples.size() == missingSamples.size() || missingSamples.isEmpty()) {
             // Nothing to do!
             return null;
         }
-
-        logger.info("== Fill gaps for variant " + variant + " missing samples " + missingSamples + " -> " + variant.toJson());
 
         Set<Integer> fileIds = new HashSet<>();
         for (Integer missingSample : missingSamples) {
@@ -168,73 +149,65 @@ public class FillGapsTask implements Task<Variant, Put> {
             get.addColumn(helper.getColumnFamily(), fileToColumnMap.get(fileId));
         }
 
-        try {
-            Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
-            Result result = archiveTable.get(get);
-            for (Integer fileId : fileIds) {
-                byte[] bytes = result.getValue(helper.getColumnFamily(), fileToColumnMap.get(fileId));
-                if (bytes != null) {
-                    VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(bytes);
-                    String chromosome = vcfSlice.getChromosome();
-                    int position = vcfSlice.getPosition();
+        Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
+        Result result = archiveTable.get(get);
+        for (Integer fileId : fileIds) {
+            byte[] bytes = result.getValue(helper.getColumnFamily(), fileToColumnMap.get(fileId));
+            if (bytes != null) {
+                VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(bytes);
+                String chromosome = vcfSlice.getChromosome();
+                int position = vcfSlice.getPosition();
 
-                    // Three scenarios:
-                    //  Overlap with NO_VARIATION,
-                    //  Overlap with another variant
-                    //  No overlap
-                    // TODO: What if multiple overlapps?
-                    boolean found = false;
-                    for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
-                        int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
-                        int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, position);
-                        if (variant.overlapWith(chromosome, start, end, true)) {
-                            VcfRecordProtoToVariantConverter converter = new VcfRecordProtoToVariantConverter(vcfSlice.getFields(),
-                                    fileToSamplePositions.get(fileId), fileId.toString(), studyConfiguration.getStudyName());
-                            Variant archiveVariant = converter.convert(vcfRecord, chromosome, position);
-                            if (archiveVariant.getType().equals(VariantType.NO_VARIATION)) {
-                                FileEntry fileEntry = archiveVariant.getStudies().get(0).getFiles().get(0);
-                                fileEntry.getAttributes().remove(VCFConstants.END_KEY);
-                                if (StringUtils.isEmpty(fileEntry.getCall())) {
-                                    fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":.:0");
-                                }
-                                studyConverter.convert(archiveVariant, put, missingSamples);
-                                logger.info("Ref_Block Overlap! " + variant + " " + archiveVariant);
-                                found = true;
-                            } else {
-                                Variant mergedVariant = new Variant(
-                                        variant.getChromosome(),
-                                        variant.getStart(),
-                                        variant.getEnd(),
-                                        variant.getReference(),
-                                        variant.getAlternate());
-                                StudyEntry studyEntry = new StudyEntry();
-                                studyEntry.setFormat(archiveVariant.getStudies().get(0).getFormat());
-                                studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
-                                studyEntry.setSamplesData(new ArrayList<>());
-
-                                mergedVariant.addStudyEntry(studyEntry);
-                                mergedVariant.setType(variant.getType());
-
-                                mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
-                                studyConverter.convert(mergedVariant, put, missingSamples);
-
-                                logger.info("Variant Overlap! " + variant + " " + archiveVariant);
-                                found = true;
+                // Three scenarios:
+                //  Overlap with NO_VARIATION,
+                //  Overlap with another variant
+                //  No overlap
+                // TODO: What if multiple overlapps?
+                boolean found = false;
+                for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
+                    int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
+                    int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, position);
+                    if (variant.overlapWith(chromosome, start, end, true)) {
+                        VcfRecordProtoToVariantConverter converter = new VcfRecordProtoToVariantConverter(vcfSlice.getFields(),
+                                fileToSamplePositions.get(fileId), fileId.toString(), studyConfiguration.getStudyName());
+                        Variant archiveVariant = converter.convert(vcfRecord, chromosome, position);
+                        if (archiveVariant.getType().equals(VariantType.NO_VARIATION)) {
+                            FileEntry fileEntry = archiveVariant.getStudies().get(0).getFiles().get(0);
+                            fileEntry.getAttributes().remove(VCFConstants.END_KEY);
+                            if (StringUtils.isEmpty(fileEntry.getCall())) {
+                                fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":.:0");
                             }
+                            studyConverter.convert(archiveVariant, put, missingSamples);
+                            found = true;
+                        } else {
+                            Variant mergedVariant = new Variant(
+                                    variant.getChromosome(),
+                                    variant.getStart(),
+                                    variant.getEnd(),
+                                    variant.getReference(),
+                                    variant.getAlternate());
+                            StudyEntry studyEntry = new StudyEntry();
+                            studyEntry.setFormat(archiveVariant.getStudies().get(0).getFormat());
+                            studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
+                            studyEntry.setSamplesData(new ArrayList<>());
+
+                            mergedVariant.addStudyEntry(studyEntry);
+                            mergedVariant.setType(variant.getType());
+
+                            mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
+                            studyConverter.convert(mergedVariant, put, missingSamples);
+                            found = true;
                         }
                     }
-                    if (!found) {
-                        logger.info("Not overlap for fileId " + fileId + " in variant " + variant);
-                    }
-                } else {
-                    logger.info("Missing fileId " + fileId + " in variant " + variant);
                 }
+                if (!found) {
+                    logger.debug("Not overlap for fileId " + fileId + " in variant " + variant);
+                }
+            } else {
+                logger.debug("Missing fileId " + fileId + " in variant " + variant);
             }
-            return put;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
-
+        return put;
     }
 
 }
