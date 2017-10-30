@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -77,6 +78,8 @@ public class CatalogManager implements AutoCloseable {
     private AuthorizationManager authorizationManager;
 
     private Configuration configuration;
+
+    private static final String ADMIN = "admin";
 
     public CatalogManager(Configuration configuration) throws CatalogException {
         this.configuration = configuration;
@@ -176,8 +179,10 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.installCatalogDB(configuration);
     }
 
-    public void installIndexes() throws CatalogException {
-        userManager.validatePassword("admin", configuration.getAdmin().getPassword(), true);
+    public void installIndexes(String token) throws CatalogException {
+        if (!ADMIN.equals(userManager.getUserId(token))) {
+            throw new CatalogAuthorizationException("Only the admin can install new indexes");
+        }
         catalogDBAdaptorFactory.createIndexes();
     }
 

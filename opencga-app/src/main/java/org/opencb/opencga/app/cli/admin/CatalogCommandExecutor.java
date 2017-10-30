@@ -164,7 +164,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         catalogManager.deleteCatalogDB(false);
     }
 
-    private void index() throws CatalogException {
+    private void index() throws CatalogException, IOException {
         setCatalogDatabaseCredentials(catalogCommandOptions.indexCatalogCommandOptions.databaseHost,
                 catalogCommandOptions.indexCatalogCommandOptions.prefix, catalogCommandOptions.indexCatalogCommandOptions.databaseUser,
                 catalogCommandOptions.indexCatalogCommandOptions.databasePassword,
@@ -175,11 +175,11 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
         }
 
-        logger.info("\nChecking and installing non-existent indexes in {} in {}\n",
+        logger.info("\nChecking and installing non-existing indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
-        catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
-        catalogManager.installIndexes();
+        catalogManager.installIndexes(token);
     }
 
     private void daemons() throws Exception {

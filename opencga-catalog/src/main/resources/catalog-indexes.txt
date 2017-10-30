@@ -1,12 +1,11 @@
 {"collection": "user", "fields": {"id": 1}, "options": {"background": true}}
-{"collection": "user", "fields": {"sessions.id": 1}, "options": {"background": true}}
 {"collection": "user", "fields": {"projects.id": 1}, "options": {"background": true}}
 {"collection": "user", "fields": {"projects.alias": 1, "id": 1}, "options": {"background": true}}
 
 {"collection": "study", "fields": {"name": 1, "_projectId": 1}, "options": {"background": true}}
 {"collection": "study", "fields": {"alias": 1, "_projectId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "study", "fields": {"status.name": 1}, "options": {"background": true}}
-{"collection": "study", "fields": {"acl.member": 1}, "options": {"background": true}}
+{"collection": "study", "fields": {"_acl": 1}, "options": {"background": true}}
 {"collection": "study", "fields": {"_projectId": 1}, "options": {"background": true}}
 
 {"collection": "job", "fields": {"name": 1, "_studyId": 1}, "options": {"background": true}}
@@ -15,7 +14,7 @@
 {"collection": "job", "fields": {"input": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"output": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"tags": 1, "_studyId": 1}, "options": {"background": true}}
-{"collection": "job", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "job", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 
 {"collection": "file", "fields": {"name": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"type": 1, "_studyId": 1}, "options": {"background": true}}
@@ -26,12 +25,12 @@
 {"collection": "file", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"samples.id": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"job.id": 1}, "options": {"background": true}}
-{"collection": "file", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_studyId": 1}, "options": {"background": true}}
 
 {"collection": "sample", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "sample", "fields": {"individual.id": 1}, "options": {"background": true}}
-{"collection": "sample", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "sample", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"annotationSets.name": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {"background": true}}
@@ -41,7 +40,7 @@
 
 {"collection": "individual", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "individual", "fields": {"family": 1, "_studyId": 1}, "options": {"background": true}}
-{"collection": "individual", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"ontologyTerms.id": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"annotationSets.name": 1}, "options": {"background": true}}
@@ -52,21 +51,21 @@
 {"collection": "cohort", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "cohort", "fields": {"type": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
-{"collection": "cohort", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "cohort", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"annotationSets.name": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {"background": true}}
 
 {"collection": "dataset", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "dataset", "fields": {"files": 1}, "options": {"background": true}}
-{"collection": "dataset", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "dataset", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "dataset", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
 
 {"collection": "family", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "family", "fields": {"mother.id": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"father.id": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"children.id": 1}, "options": {"background": true}}
-{"collection": "family", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "family", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"annotationSets.name": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}
