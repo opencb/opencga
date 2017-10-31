@@ -78,7 +78,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            QueryResult queryResult = catalogManager.getFileManager().index(fileIdStr, studyStr, "BAM", params, sessionId);
+            List<String> idList = getIdList(fileIdStr);
+            QueryResult queryResult = catalogManager.getFileManager().index(idList, studyStr, "BAM", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);

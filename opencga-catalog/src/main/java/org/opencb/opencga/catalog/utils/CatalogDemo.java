@@ -27,10 +27,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by pfurio on 08/06/16.
@@ -114,10 +111,10 @@ public final class CatalogDemo {
         catalogManager.getStudyManager().createGroup(Long.toString(studyId), "analyst", "user2,user3,user4", sessionId);
         //        // @members will have the role "analyst"
         Study.StudyAclParams aclParams1 = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
-        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@analyst", aclParams1, sessionId).get(0);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@analyst", aclParams1, sessionId).get(0);
         //        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "locked");
-        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "*", aclParams, sessionId).get(0);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "*", aclParams, sessionId).get(0);
     }
 
 }

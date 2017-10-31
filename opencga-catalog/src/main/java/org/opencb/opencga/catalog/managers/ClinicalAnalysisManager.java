@@ -108,61 +108,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     /**
      * Obtains the resource java bean containing the requested ids.
      *
-     * @param clinicalStr Clinical analysis id in string format. Could be either the id or name.
-     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sessionId Session id of the user logged.
-     * @return the resource java bean containing the requested ids.
-     * @throws CatalogException CatalogException.
-     */
-    public MyResourceIds getIds(String clinicalStr, @Nullable String studyStr, String sessionId) throws CatalogException {
-        if (StringUtils.isEmpty(clinicalStr)) {
-            throw new CatalogException("Missing clinical analysis parameter");
-        }
-
-        String userId;
-        long studyId;
-        List<Long> clinicalIds = new ArrayList<>();
-
-        if (StringUtils.isNumeric(clinicalStr) && Long.parseLong(clinicalStr) > configuration.getCatalog().getOffset()) {
-            clinicalIds = Arrays.asList(Long.parseLong(clinicalStr));
-            clinicalDBAdaptor.checkId(clinicalIds.get(0));
-            studyId = clinicalDBAdaptor.getStudyId(clinicalIds.get(0));
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-        } else {
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-
-            List<String> clinicalSplit = Arrays.asList(clinicalStr.split(","));
-            for (String clinicalStrAux : clinicalSplit) {
-                if (StringUtils.isNumeric(clinicalStrAux)) {
-                    long clinicalId = Long.parseLong(clinicalStrAux);
-                    clinicalDBAdaptor.exists(clinicalId);
-                    clinicalIds.add(clinicalId);
-                }
-            }
-
-            Query query = new Query()
-                    .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(ClinicalAnalysisDBAdaptor.QueryParams.NAME.key(), clinicalSplit);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.ID.key());
-            QueryResult<ClinicalAnalysis> clinicalQueryResult = clinicalDBAdaptor.get(query, queryOptions);
-
-            if (clinicalQueryResult.getNumResults() > 0) {
-                clinicalIds.addAll(clinicalQueryResult.getResult().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList()));
-            }
-
-            if (clinicalIds.size() < clinicalSplit.size()) {
-                throw new CatalogException("Found only " + clinicalIds.size() + " out of the " + clinicalSplit.size()
-                        + " clinical analysis looked for in study " + studyStr);
-            }
-        }
-
-        return new MyResourceIds(userId, studyId, clinicalIds);
-    }
-
-    /**
-     * Obtains the resource java bean containing the requested ids.
-     *
      * @param clinicalList Clinical analysis id in string format. Could be either the id or name.
      * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param sessionId Session id of the user logged.
@@ -339,7 +284,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     sessionId);
             subject.setId(probandResources.getResourceId());
 
-            String sampleNames = subject.getSamples().stream().map(Sample::getName).collect(Collectors.joining(","));
+            List<String> sampleNames = subject.getSamples().stream().map(Sample::getName).collect(Collectors.toList());
             MyResourceIds sampleResources = catalogManager.getSampleManager().getIds(sampleNames, Long.toString(studyId), sessionId);
             if (sampleResources.getResourceIds().size() < subject.getSamples().size()) {
                 throw new CatalogException("Missing some samples. Found " + sampleResources.getResourceIds().size() + " out of "

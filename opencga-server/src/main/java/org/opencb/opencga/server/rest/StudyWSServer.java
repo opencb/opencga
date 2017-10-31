@@ -532,7 +532,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) MemberAclUpdateOld params) {
         try {
             Study.StudyAclParams aclParams = getAclParams(params.add, params.remove, params.set, null);
-            return createOkResponse(studyManager.updateAcl(studyStr, memberId, aclParams, sessionId));
+            List<String> idList = getIdList(studyStr);
+            return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -547,7 +548,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                     required = true) StudyAcl params) {
         try {
             Study.StudyAclParams aclParams = new Study.StudyAclParams(params.getPermissions(), params.getAction(), params.template);
-            return createOkResponse(studyManager.updateAcl(params.study, memberId, aclParams, sessionId));
+            List<String> idList = getIdList(params.study);
+            return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

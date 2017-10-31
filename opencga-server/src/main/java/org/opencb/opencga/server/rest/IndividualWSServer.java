@@ -490,7 +490,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     MemberAclUpdate params) {
         try {
             Individual.IndividualAclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            return createOkResponse(individualManager.updateAcl(studyStr, individualIdStr, memberId, aclParams, sessionId));
+            List<String> idList = getIdList(individualIdStr);
+            return createOkResponse(individualManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -516,7 +517,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(params.getPermissions(), params.getAction(),
                     params.sample, params.propagate);
-            return createOkResponse(individualManager.updateAcl(studyStr, params.individual, memberId, aclParams, sessionId));
+            List<String> idList = getIdList(params.individual);
+            return createOkResponse(individualManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

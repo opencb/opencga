@@ -77,121 +77,6 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getProjectIdByStudyId(studyId);
     }
 
-    @Deprecated
-    public List<Long> getIds(String userId, String studyStr) throws CatalogException {
-        if (StringUtils.isNumeric(studyStr)) {
-            long studyId = Long.parseLong(studyStr);
-            if (studyId > configuration.getCatalog().getOffset()) {
-                studyDBAdaptor.checkId(studyId);
-                return Arrays.asList(studyId);
-            }
-        }
-
-        Query query = new Query();
-        final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key());
-
-        if (StringUtils.isEmpty(studyStr)) {
-            if (!userId.equals(ANONYMOUS)) {
-                // Obtain the projects of the user
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
-                QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
-                if (projectQueryResult.getNumResults() == 1) {
-                    projectDBAdaptor.checkId(projectQueryResult.first().getId());
-                    query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectQueryResult.first().getId());
-                } else {
-                    if (projectQueryResult.getNumResults() == 0) {
-                        throw new CatalogException("No projects found for user " + userId);
-                    } else {
-                        throw new CatalogException("More than one project found for user " + userId);
-                    }
-                }
-            }
-
-            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
-            if (studyQueryResult.getNumResults() == 0) {
-                throw new CatalogException("No studies found for user " + userId);
-            } else {
-                return studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList());
-            }
-
-        } else {
-
-            String[] split = studyStr.split(":");
-            List<Long> projectIds;
-            if (split.length > 2) {
-                throw new CatalogException("More than one : separator found. Format: [[user@]project:]study");
-            }
-
-            String aliasStudy;
-            String aliasProject = null;
-            if (split.length == 2) {
-                aliasStudy = split[1];
-                aliasProject = split[0];
-            } else {
-                aliasStudy = studyStr;
-            }
-
-            List<Long> retStudies = new ArrayList<>();
-            List<String> aliasList = new ArrayList<>();
-            if (!aliasStudy.equals("*")) {
-                // Check if there is more than one study listed in aliasStudy
-                String[] split1 = aliasStudy.split(",");
-                for (String studyStrAux : split1) {
-                    if (StringUtils.isNumeric(studyStrAux)) {
-                        retStudies.add(Long.parseLong(studyStrAux));
-                    } else {
-                        aliasList.add(studyStrAux);
-                    }
-                }
-            }
-
-            if (aliasList.size() == 0 && retStudies.size() > 0) { // The list of provided studies were all long ids
-                return retStudies;
-            }
-
-            if (!userId.equals(ANONYMOUS)) {
-                if (aliasProject != null) {
-                    projectIds = Arrays.asList(catalogManager.getProjectManager().getId(userId, aliasProject));
-                } else {
-                    // Obtain the projects of the user
-                    QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
-                    QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
-                    if (projectQueryResult.getNumResults() == 0) {
-                        throw new CatalogException("No projects found for user " + userId);
-                    } else {
-                        projectIds = projectQueryResult.getResult().stream().map(project -> project.getId()).collect(Collectors.toList());
-                    }
-                }
-                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
-            } else {
-                // Anonymous user
-                if (aliasProject != null) {
-                    projectIds = catalogManager.getProjectManager().getIds(userId, aliasProject);
-                    query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
-                }
-            }
-
-            if (aliasList.size() > 0) {
-                // This if is justified by the fact that we might not have any alias or id but an *
-                query.put(StudyDBAdaptor.QueryParams.ALIAS.key(), aliasList);
-            }
-
-            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
-            if (studyQueryResult.getNumResults() == 0) {
-                throw new CatalogException("No studies found for user " + userId);
-            } else {
-                if (aliasList.size() > 0 && studyQueryResult.getNumResults() != aliasList.size()) {
-                    throw new CatalogException("Not all the studies were found. Found " + studyQueryResult.getNumResults() + " out of "
-                            + aliasList.size());
-
-                } else {
-                    retStudies.addAll(studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList()));
-                    return retStudies;
-                }
-            }
-        }
-    }
-
     public List<Long> getIds(String userId, List<String> studyList) throws CatalogException {
         if (studyList != null && studyList.size() == 1 && StringUtils.isNumeric(studyList.get(0))) {
             long studyId = Long.parseLong(studyList.get(0));
@@ -952,7 +837,7 @@ public class StudyManager extends AbstractManager {
 
         // Remove the permissions the group might have had
         Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
-        updateAcl(Long.toString(studyId), groupId, aclParams, sessionId);
+        updateAcl(Arrays.asList(Long.toString(studyId)), groupId, aclParams, sessionId);
 
         studyDBAdaptor.deleteGroup(studyId, groupId);
 
@@ -1204,21 +1089,6 @@ public class StudyManager extends AbstractManager {
 
 
     // **************************   ACLs  ******************************** //
-    @Deprecated
-    public List<QueryResult<StudyAclEntry>> getAcls(String studyStr, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        List<Long> studyIds = getIds(userId, studyStr);
-
-        List<QueryResult<StudyAclEntry>> studyAclList = new ArrayList<>(studyIds.size());
-        for (Long studyId : studyIds) {
-            QueryResult<StudyAclEntry> allStudyAcls = authorizationManager.getAllStudyAcls(userId, studyId);
-            allStudyAcls.setId(String.valueOf(studyId));
-            studyAclList.add(allStudyAcls);
-        }
-
-        return studyAclList;
-    }
-
     public List<QueryResult<StudyAclEntry>> getAcls(List<String> studyList, String member, boolean silent, String sessionId)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
@@ -1247,27 +1117,9 @@ public class StudyManager extends AbstractManager {
         return studyAclList;
     }
 
-    @Deprecated
-    public List<QueryResult<StudyAclEntry>> getAcl(String studyStr, String member, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(member, "member");
-
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        List<Long> studyIds = getIds(userId, studyStr);
-
-        List<QueryResult<StudyAclEntry>> studyAclList = new ArrayList<>(studyIds.size());
-        for (Long studyId : studyIds) {
-            checkMembers(studyId, Arrays.asList(member));
-            QueryResult<StudyAclEntry> allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
-            allStudyAcls.setId(String.valueOf(studyId));
-            studyAclList.add(allStudyAcls);
-        }
-
-        return studyAclList;
-    }
-
-    public List<QueryResult<StudyAclEntry>> updateAcl(String studyStr, String memberIds, Study.StudyAclParams aclParams, String sessionId)
-            throws CatalogException {
-        if (StringUtils.isEmpty(studyStr)) {
+    public List<QueryResult<StudyAclEntry>> updateAcl(List<String> studyList, String memberIds, Study.StudyAclParams aclParams,
+                                                      String sessionId) throws CatalogException {
+        if (studyList == null || studyList.isEmpty()) {
             throw new CatalogException("Missing study parameter");
         }
 
@@ -1306,7 +1158,7 @@ public class StudyManager extends AbstractManager {
         }
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        List<Long> studyIds = getIds(userId, studyStr);
+        List<Long> studyIds = getIds(userId, studyList);
 
         // Check the user has the permissions needed to change permissions
         for (Long studyId : studyIds) {
