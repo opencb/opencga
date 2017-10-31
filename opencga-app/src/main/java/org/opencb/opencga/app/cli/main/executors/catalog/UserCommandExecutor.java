@@ -91,9 +91,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             case "logout":
                 logout();
                 break;
-            case "reset-password":
-                resetPasword();
-                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -206,14 +203,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getUserClient().getProjects(queryOptions);
-    }
-
-    private void resetPasword() throws ClientException, IOException {
-        logger.debug("Resetting the user password and sending a new one to the e-mail stored in catalog.");
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull("userId", usersCommandOptions.resetPasswordCommandOptions.user);
-        openCGAClient.getUserClient().resetPassword(params);
     }
 
     private void delete() throws CatalogException, IOException {
