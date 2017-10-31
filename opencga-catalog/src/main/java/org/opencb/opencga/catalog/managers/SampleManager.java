@@ -898,7 +898,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
 
     // **************************   ACLs  ******************************** //
-
+    @Deprecated
     public List<QueryResult<SampleAclEntry>> getAcls(String studyStr, String sampleStr, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(sampleStr, studyStr, sessionId);
 
@@ -918,7 +918,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         MyResourceIds resource = getIds(sampleList, studyStr, sessionId);
 
         List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long sampleId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long sampleId = resourceIds.get(i);
             try {
                 QueryResult<SampleAclEntry> allSampleAcls =
                         authorizationManager.getAllSampleAcls(resource.getStudyId(), sampleId, resource.getUser());
@@ -926,7 +928,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 sampleAclList.add(allSampleAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    sampleAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    sampleAclList.add(new QueryResult<>(sampleList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }
@@ -935,6 +937,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return sampleAclList;
     }
 
+    @Deprecated
     public List<QueryResult<SampleAclEntry>> getAcl(String studyStr, String sampleStr, String member, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(member, "member");
@@ -961,7 +964,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long sampleId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long sampleId = resourceIds.get(i);
             try {
                 QueryResult<SampleAclEntry> allSampleAcls =
                         authorizationManager.getSampleAcl(resource.getStudyId(), sampleId, resource.getUser(), member);
@@ -969,7 +974,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 sampleAclList.add(allSampleAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    sampleAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "",
+                    sampleAclList.add(new QueryResult<>(sampleList.get(i), 0, 0, 0, "",
                             e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;

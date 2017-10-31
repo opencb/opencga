@@ -655,7 +655,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
 
     // **************************   ACLs  ******************************** //
-
+    @Deprecated
     public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, String familyStr, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(familyStr, studyStr, sessionId);
 
@@ -675,7 +675,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         MyResourceIds resource = getIds(familyList, studyStr, sessionId);
 
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long familyId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long familyId = resourceIds.get(i);
             try {
                 QueryResult<FamilyAclEntry> allFamilyAcls =
                         authorizationManager.getAllFamilyAcls(resource.getStudyId(), familyId, resource.getUser());
@@ -683,7 +685,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 familyAclList.add(allFamilyAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    familyAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    familyAclList.add(new QueryResult<>(familyList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }
@@ -692,6 +694,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return familyAclList;
     }
 
+    @Deprecated
     public List<QueryResult<FamilyAclEntry>> getAcl(String studyStr, String familyStr, String member, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(member, "member");
@@ -719,7 +722,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long familyId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long familyId = resourceIds.get(i);
             try {
                 QueryResult<FamilyAclEntry> allFamilyAcls =
                         authorizationManager.getFamilyAcl(resource.getStudyId(), familyId, resource.getUser(), member);
@@ -727,7 +732,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 familyAclList.add(allFamilyAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    familyAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    familyAclList.add(new QueryResult<>(familyList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

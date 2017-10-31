@@ -150,11 +150,10 @@ public class JobWSServer extends OpenCGAWSServer {
                     example = "id,status", dataType = "string", paramType = "query"),
     })
     public Response info(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true)
-                         @PathParam("jobIds") long jobIds, @QueryParam("silent") boolean silent) {
+                         @PathParam("jobIds") String jobIds, @QueryParam("silent") boolean silent) {
         try {
-            //List<String> idList = getIdList(jobIds);
-            //TODO : LONG to String???
-            return createOkResponse(catalogManager.getJobManager().get(jobIds, queryOptions, sessionId));
+            List<String> idList = getIdList(jobIds);
+            return createOkResponse(catalogManager.getJobManager().get(idList, queryOptions, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

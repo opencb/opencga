@@ -878,7 +878,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
 
     // **************************   ACLs  ******************************** //
-
+    @Deprecated
     public List<QueryResult<IndividualAclEntry>> getAcls(String studyStr, String individualStr, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(individualStr, studyStr, sessionId);
 
@@ -898,7 +898,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         MyResourceIds resource = getIds(individualList, studyStr, sessionId);
 
         List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long individualId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long individualId = resourceIds.get(i);
             try {
                 QueryResult<IndividualAclEntry> allIndividualAcls =
                         authorizationManager.getAllIndividualAcls(resource.getStudyId(), individualId, resource.getUser());
@@ -906,7 +908,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 individualAclList.add(allIndividualAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    individualAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    individualAclList.add(new QueryResult<>(individualList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }
@@ -915,6 +917,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return individualAclList;
     }
 
+    @Deprecated
     public List<QueryResult<IndividualAclEntry>> getAcl(String studyStr, String individualStr, String member, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(member, "member");
@@ -941,7 +944,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long individualId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long individualId = resourceIds.get(i);
             try {
                 QueryResult<IndividualAclEntry> allIndividualAcls =
                         authorizationManager.getIndividualAcl(resource.getStudyId(), individualId, resource.getUser(), member);
@@ -949,7 +954,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 individualAclList.add(allIndividualAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    individualAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    individualAclList.add(new QueryResult<>(individualList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

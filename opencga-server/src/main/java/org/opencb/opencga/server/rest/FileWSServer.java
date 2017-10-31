@@ -135,7 +135,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @QueryParam("study") String studyStr, @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(fileStr);
-            List<QueryResult<File>> fileQueryResult = fileManager.get(studyStr, idList, query, queryOptions, sessionId);
+            List<QueryResult<File>> fileQueryResult = fileManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
             for (QueryResult<File> queryResult : fileQueryResult) {
                 populateOldDeprecatedSampleIdsField(queryResult);
             }

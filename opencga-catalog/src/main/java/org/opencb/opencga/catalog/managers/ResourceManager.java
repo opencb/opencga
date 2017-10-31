@@ -190,7 +190,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
                 resultList.add(rQueryResult);
             } catch (CatalogException e) {
                 if (silent) {
-                    resultList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    resultList.add(new QueryResult<>(entryList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

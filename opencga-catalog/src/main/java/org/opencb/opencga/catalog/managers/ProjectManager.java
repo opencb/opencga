@@ -247,13 +247,14 @@ public class ProjectManager extends AbstractManager {
             throws CatalogException {
         List<QueryResult<Project>> results = new ArrayList<>(projectList.size());
 
-        for (String project : projectList) {
+        for (int i = 0; i < projectList.size(); i++) {
+            String project = projectList.get(i);
             try {
                 QueryResult<Project> projectResult = get(project, options, sessionId);
                 results.add(projectResult);
             } catch (CatalogException e) {
                 if (silent) {
-                    results.add(new QueryResult<>(project, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    results.add(new QueryResult<>(projectList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

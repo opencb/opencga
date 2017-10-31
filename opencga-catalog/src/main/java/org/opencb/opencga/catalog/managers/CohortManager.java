@@ -736,7 +736,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
 
     // **************************   ACLs  ******************************** //
-
+    @Deprecated
     public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, String cohortStr, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(cohortStr, studyStr, sessionId);
 
@@ -756,7 +756,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         MyResourceIds resource = getIds(cohortList, studyStr, sessionId);
 
         List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long cohortId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long cohortId = resourceIds.get(i);
             try {
                 QueryResult<CohortAclEntry> allCohortAcls =
                         authorizationManager.getAllCohortAcls(resource.getStudyId(), cohortId, resource.getUser());
@@ -764,7 +766,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 cohortAclList.add(allCohortAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    cohortAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    cohortAclList.add(new QueryResult<>(cohortList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }
@@ -773,6 +775,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return cohortAclList;
     }
 
+    @Deprecated
     public List<QueryResult<CohortAclEntry>> getAcl(String studyStr, String cohortStr, String member, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(member, "member");
@@ -800,7 +803,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long cohortId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long cohortId = resourceIds.get(i);
             try {
                 QueryResult<CohortAclEntry> allCohortAcls =
                         authorizationManager.getCohortAcl(resource.getStudyId(), cohortId, resource.getUser(), member);
@@ -808,7 +813,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 cohortAclList.add(allCohortAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    cohortAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    cohortAclList.add(new QueryResult<>(cohortList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

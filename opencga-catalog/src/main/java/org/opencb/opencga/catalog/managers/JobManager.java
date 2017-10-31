@@ -251,6 +251,10 @@ public class JobManager extends ResourceManager<Job> {
         return get(null, String.valueOf(jobId), options, sessionId);
     }
 
+    public List<QueryResult<Job>> get(List<String> jobIds, QueryOptions options, boolean silent, String sessionId) throws CatalogException {
+        return get(null, jobIds, new Query(), options, silent, sessionId);
+    }
+
     @Override
     public QueryResult<Job> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -546,7 +550,7 @@ public class JobManager extends ResourceManager<Job> {
 
 
     // **************************   ACLs  ******************************** //
-
+    @Deprecated
     public List<QueryResult<JobAclEntry>> getAcls(String studyStr, String jobStr, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(jobStr, studyStr, sessionId);
 
@@ -565,14 +569,16 @@ public class JobManager extends ResourceManager<Job> {
         MyResourceIds resource = getIds(jobList, studyStr, sessionId);
 
         List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long jobId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long jobId = resourceIds.get(i);
             try {
                 QueryResult<JobAclEntry> allJobAcls = authorizationManager.getAllJobAcls(resource.getStudyId(), jobId, resource.getUser());
                 allJobAcls.setId(String.valueOf(jobId));
                 jobAclList.add(allJobAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    jobAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    jobAclList.add(new QueryResult<>(jobList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }
@@ -606,7 +612,9 @@ public class JobManager extends ResourceManager<Job> {
         checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long jobId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long jobId = resourceIds.get(i);
             try {
                 QueryResult<JobAclEntry> allJobAcls = authorizationManager.getJobAcl(resource.getStudyId(), jobId, resource.getUser(),
                         member);
@@ -614,7 +622,7 @@ public class JobManager extends ResourceManager<Job> {
                 jobAclList.add(allJobAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    jobAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    jobAclList.add(new QueryResult<>(jobList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

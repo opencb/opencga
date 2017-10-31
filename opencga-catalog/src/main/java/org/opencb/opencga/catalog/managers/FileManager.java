@@ -1633,7 +1633,7 @@ public class FileManager extends ResourceManager<File> {
 
 
     // **************************   ACLs  ******************************** //
-
+    @Deprecated
     public List<QueryResult<FileAclEntry>> getAcls(String studyStr, String fileStr, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(fileStr, studyStr, sessionId);
 
@@ -1653,7 +1653,9 @@ public class FileManager extends ResourceManager<File> {
         MyResourceIds resource = getIds(fileList, studyStr, sessionId);
         List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
 
-        for (Long fileId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long fileId = resourceIds.get(i);
             try {
                 QueryResult<FileAclEntry> allFileAcls =
                         authorizationManager.getAllFileAcls(resource.getStudyId(), fileId, resource.getUser(), true);
@@ -1661,8 +1663,7 @@ public class FileManager extends ResourceManager<File> {
                 fileAclList.add(allFileAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    //TODO: check
-                    fileAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(),
+                    fileAclList.add(new QueryResult<>(fileList.get(i), 0, 0, 0, "", e.toString(),
                             new ArrayList<>(0)));
                 } else {
                     throw e;
@@ -1672,6 +1673,7 @@ public class FileManager extends ResourceManager<File> {
         return fileAclList;
     }
 
+    @Deprecated
     public List<QueryResult<FileAclEntry>> getAcl(String studyStr, String fileStr, String member, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(member, "member");
@@ -1698,7 +1700,9 @@ public class FileManager extends ResourceManager<File> {
         checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long fileId : resource.getResourceIds()) {
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long fileId = resourceIds.get(i);
             try {
                 QueryResult<FileAclEntry> allFileAcls =
                         authorizationManager.getFileAcl(resource.getStudyId(), fileId, resource.getUser(), member);
@@ -1706,7 +1710,7 @@ public class FileManager extends ResourceManager<File> {
                 fileAclList.add(allFileAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    fileAclList.add(new QueryResult<>(studyStr, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    fileAclList.add(new QueryResult<>(fileList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }
