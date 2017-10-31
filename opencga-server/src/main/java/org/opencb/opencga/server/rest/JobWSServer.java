@@ -279,11 +279,7 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIdsStr);
-            if (StringUtils.isEmpty(member)) {
-                return createOkResponse(jobManager.getAcls(null, idList, silent, sessionId));
-            } else {
-                return createOkResponse(jobManager.getAcl(null, idList, member, silent, sessionId));
-            }
+                return createOkResponse(jobManager.getAcls(null, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

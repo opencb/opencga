@@ -1136,11 +1136,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(fileIdStr);
-            if (StringUtils.isEmpty(member)) {
-                return createOkResponse(fileManager.getAcls(studyStr, idList, silent, sessionId));
-            } else {
-                return createOkResponse(fileManager.getAcl(studyStr, idList, member, silent, sessionId));
-            }
+            return createOkResponse(fileManager.getAcls(studyStr, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

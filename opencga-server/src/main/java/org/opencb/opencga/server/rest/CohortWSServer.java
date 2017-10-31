@@ -475,11 +475,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(cohortIdsStr);
-            if (StringUtils.isEmpty(member)) {
-                return createOkResponse(cohortManager.getAcls(studyStr, idList, silent, sessionId));
-            } else {
-                return createOkResponse(cohortManager.getAcl(studyStr, idList, member, silent, sessionId));
-            }
+                return createOkResponse(cohortManager.getAcls(studyStr, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -688,8 +688,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return familyAclList;
     }
 
-    public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, boolean silent, String sessionId)
-            throws CatalogException {
+    public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, String member, boolean silent,
+                                                     String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(familyList, studyStr, sessionId);
 
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
@@ -697,8 +697,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         for (int i = 0; i < resourceIds.size(); i++) {
             Long familyId = resourceIds.get(i);
             try {
-                QueryResult<FamilyAclEntry> allFamilyAcls =
-                        authorizationManager.getAllFamilyAcls(resource.getStudyId(), familyId, resource.getUser());
+                QueryResult<FamilyAclEntry> allFamilyAcls;
+                if (StringUtils.isNotEmpty(member)) {
+                    allFamilyAcls = authorizationManager.getFamilyAcl(resource.getStudyId(), familyId, resource.getUser(), member);
+                } else {
+                    allFamilyAcls = authorizationManager.getAllFamilyAcls(resource.getStudyId(), familyId, resource.getUser());
+                }
                 allFamilyAcls.setId(String.valueOf(familyId));
                 familyAclList.add(allFamilyAcls);
             } catch (CatalogException e) {
@@ -728,34 +732,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             familyAclList.add(allFamilyAcls);
         }
 
-        return familyAclList;
-    }
-
-    public List<QueryResult<FamilyAclEntry>> getAcl(String studyStr, List<String> familyList, String member, boolean silent,
-                                                    String sessionId)
-            throws CatalogException {
-        ParamUtils.checkObj(member, "member");
-
-        MyResourceIds resource = getIds(familyList, studyStr, sessionId);
-        checkMembers(resource.getStudyId(), Arrays.asList(member));
-
-        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
-        List<Long> resourceIds = resource.getResourceIds();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Long familyId = resourceIds.get(i);
-            try {
-                QueryResult<FamilyAclEntry> allFamilyAcls =
-                        authorizationManager.getFamilyAcl(resource.getStudyId(), familyId, resource.getUser(), member);
-                allFamilyAcls.setId(String.valueOf(familyId));
-                familyAclList.add(allFamilyAcls);
-            } catch (CatalogException e) {
-                if (silent) {
-                    familyAclList.add(new QueryResult<>(familyList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
-                } else {
-                    throw e;
-                }
-            }
-        }
         return familyAclList;
     }
 

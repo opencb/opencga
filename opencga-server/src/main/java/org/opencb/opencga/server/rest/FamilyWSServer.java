@@ -229,7 +229,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         try {
             List<String> idList = getIdList(familyStr);
             if (asMap) {
-                return createOkResponse(familyManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName,silent, sessionId));
+                return createOkResponse(familyManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName, silent, sessionId));
             } else {
                 return createOkResponse(familyManager.getAnnotationSet(idList, studyStr, annotationsetName, silent, sessionId));
             }
@@ -311,11 +311,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(familyIdsStr);
-            if (StringUtils.isEmpty(member)) {
-                return createOkResponse(familyManager.getAcls(studyStr, idList, silent, sessionId));
-            } else {
-                return createOkResponse(familyManager.getAcl(studyStr, idList, member, silent, sessionId));
-            }
+            return createOkResponse(familyManager.getAcls(studyStr, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

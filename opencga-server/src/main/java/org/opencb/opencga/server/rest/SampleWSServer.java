@@ -463,11 +463,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
-            if (StringUtils.isEmpty(member)) {
-                return createOkResponse(sampleManager.getAcls(studyStr, idList, silent, sessionId));
-            } else {
-                return createOkResponse(sampleManager.getAcl(studyStr, idList, member, silent, sessionId));
-            }
+                return createOkResponse(sampleManager.getAcls(studyStr, idList, member,silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

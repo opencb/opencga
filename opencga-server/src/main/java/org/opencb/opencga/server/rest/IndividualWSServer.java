@@ -432,11 +432,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(individualIdsStr);
-            if (StringUtils.isEmpty(member)) {
-                return createOkResponse(individualManager.getAcls(studyStr, idList, silent, sessionId));
-            } else {
-                return createOkResponse(individualManager.getAcl(studyStr, idList, member, silent, sessionId));
-            }
+            return createOkResponse(individualManager.getAcls(studyStr, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
