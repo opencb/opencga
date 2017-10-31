@@ -67,8 +67,8 @@ public class JobManager extends ResourceManager<Job> {
     private StudyManager studyManager;
 
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                      DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                      Configuration configuration) {
+               DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+               Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
@@ -249,6 +249,10 @@ public class JobManager extends ResourceManager<Job> {
 
     public QueryResult<Job> get(long jobId, QueryOptions options, String sessionId) throws CatalogException {
         return get(null, String.valueOf(jobId), options, sessionId);
+    }
+
+    public List<QueryResult<Job>> get(List<String> jobIds, QueryOptions options, boolean silent, String sessionId) throws CatalogException {
+        return get(null, jobIds, new Query(), options, silent, sessionId);
     }
 
     @Override
@@ -546,7 +550,7 @@ public class JobManager extends ResourceManager<Job> {
 
 
     // **************************   ACLs  ******************************** //
-
+    @Deprecated
     public List<QueryResult<JobAclEntry>> getAcls(String studyStr, String jobStr, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(jobStr, studyStr, sessionId);
 
@@ -557,6 +561,29 @@ public class JobManager extends ResourceManager<Job> {
             jobAclList.add(allJobAcls);
         }
 
+        return jobAclList;
+    }
+
+    public List<QueryResult<JobAclEntry>> getAcls(String studyStr, List<String> jobList, boolean silent, String sessionId)
+            throws CatalogException {
+        MyResourceIds resource = getIds(jobList, studyStr, sessionId);
+
+        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long jobId = resourceIds.get(i);
+            try {
+                QueryResult<JobAclEntry> allJobAcls = authorizationManager.getAllJobAcls(resource.getStudyId(), jobId, resource.getUser());
+                allJobAcls.setId(String.valueOf(jobId));
+                jobAclList.add(allJobAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    jobAclList.add(new QueryResult<>(jobList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
         return jobAclList;
     }
 
@@ -574,6 +601,33 @@ public class JobManager extends ResourceManager<Job> {
             jobAclList.add(allJobAcls);
         }
 
+        return jobAclList;
+    }
+
+    public List<QueryResult<JobAclEntry>> getAcl(String studyStr, List<String> jobList, String member, boolean silent, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(jobList, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
+
+        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long jobId = resourceIds.get(i);
+            try {
+                QueryResult<JobAclEntry> allJobAcls = authorizationManager.getJobAcl(resource.getStudyId(), jobId, resource.getUser(),
+                        member);
+                allJobAcls.setId(String.valueOf(jobId));
+                jobAclList.add(allJobAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    jobAclList.add(new QueryResult<>(jobList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
         return jobAclList;
     }
 

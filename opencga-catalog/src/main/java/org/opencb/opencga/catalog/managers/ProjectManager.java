@@ -49,8 +49,8 @@ import java.util.stream.Collectors;
 public class ProjectManager extends AbstractManager {
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                          Configuration configuration) {
+                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                   Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
                 configuration);
     }
@@ -151,9 +151,9 @@ public class ProjectManager extends AbstractManager {
     /**
      * Obtain the list of projects and studies that are shared with the user.
      *
-     * @param userId user whose projects and studies are being shared with.
+     * @param userId       user whose projects and studies are being shared with.
      * @param queryOptions QueryOptions object.
-     * @param sessionId Session id which should correspond to userId.
+     * @param sessionId    Session id which should correspond to userId.
      * @return A QueryResult object containing the list of projects and studies that are shared with the user.
      * @throws CatalogException CatalogException
      */
@@ -226,8 +226,8 @@ public class ProjectManager extends AbstractManager {
      * Reads a project from Catalog given a project id or alias.
      *
      * @param projectStr Project id or alias.
-     * @param options   Read options
-     * @param sessionId sessionId
+     * @param options    Read options
+     * @param sessionId  sessionId
      * @return The specified object
      * @throws CatalogException CatalogException
      */
@@ -241,6 +241,26 @@ public class ProjectManager extends AbstractManager {
             throw CatalogAuthorizationException.deny(userId, "view", "project", projectId, "");
         }
         return projectQueryResult;
+    }
+
+    public List<QueryResult<Project>> get(List<String> projectList, QueryOptions options, boolean silent, String sessionId)
+            throws CatalogException {
+        List<QueryResult<Project>> results = new ArrayList<>(projectList.size());
+
+        for (int i = 0; i < projectList.size(); i++) {
+            String project = projectList.get(i);
+            try {
+                QueryResult<Project> projectResult = get(project, options, sessionId);
+                results.add(projectResult);
+            } catch (CatalogException e) {
+                if (silent) {
+                    results.add(new QueryResult<>(projectList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return results;
     }
 
     /**

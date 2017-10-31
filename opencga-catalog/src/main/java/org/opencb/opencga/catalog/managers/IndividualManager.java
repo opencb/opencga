@@ -62,6 +62,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private StudyManager studyManager;
 
     private static final Map<Individual.KaryotypicSex, Individual.Sex> KARYOTYPIC_SEX_SEX_MAP;
+
     static {
         KARYOTYPIC_SEX_SEX_MAP = new HashMap<>();
         KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.UNKNOWN, Individual.Sex.UNKNOWN);
@@ -78,8 +79,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     IndividualManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                             DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                             Configuration configuration) {
+                      DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                      Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
@@ -877,7 +878,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
 
     // **************************   ACLs  ******************************** //
-
+    @Deprecated
     public List<QueryResult<IndividualAclEntry>> getAcls(String studyStr, String individualStr, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(individualStr, studyStr, sessionId);
 
@@ -892,6 +893,31 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return individualAclList;
     }
 
+    public List<QueryResult<IndividualAclEntry>> getAcls(String studyStr, List<String> individualList, boolean silent,
+                                                         String sessionId) throws CatalogException {
+        MyResourceIds resource = getIds(individualList, studyStr, sessionId);
+
+        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(resource.getResourceIds().size());
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long individualId = resourceIds.get(i);
+            try {
+                QueryResult<IndividualAclEntry> allIndividualAcls =
+                        authorizationManager.getAllIndividualAcls(resource.getStudyId(), individualId, resource.getUser());
+                allIndividualAcls.setId(String.valueOf(individualId));
+                individualAclList.add(allIndividualAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    individualAclList.add(new QueryResult<>(individualList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return individualAclList;
+    }
+
+    @Deprecated
     public List<QueryResult<IndividualAclEntry>> getAcl(String studyStr, String individualStr, String member, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(member, "member");
@@ -909,6 +935,34 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         return individualAclList;
     }
+
+    public List<QueryResult<IndividualAclEntry>> getAcl(String studyStr, List<String> individualList, String member,
+                                                        boolean silent, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(individualList, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
+
+        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(resource.getResourceIds().size());
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long individualId = resourceIds.get(i);
+            try {
+                QueryResult<IndividualAclEntry> allIndividualAcls =
+                        authorizationManager.getIndividualAcl(resource.getStudyId(), individualId, resource.getUser(), member);
+                allIndividualAcls.setId(String.valueOf(individualId));
+                individualAclList.add(allIndividualAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    individualAclList.add(new QueryResult<>(individualList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return individualAclList;
+    }
+
 
     public List<QueryResult<IndividualAclEntry>> updateAcl(String studyStr, String individualStr, String memberIds,
                                                            Individual.IndividualAclParams aclParams, String sessionId)

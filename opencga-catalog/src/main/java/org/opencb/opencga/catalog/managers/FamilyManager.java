@@ -62,7 +62,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     private StudyManager studyManager;
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                         DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
+                  DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
@@ -73,7 +73,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * Obtains the resource java bean containing the requested ids.
      *
      * @param familyStr Family id in string format. Could be either the id or name.
-     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param sessionId Session id of the user logged.
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException when more than one family id is found.
@@ -123,7 +123,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * Obtains the resource java bean containing the requested ids.
      *
      * @param familyStr Family id in string format. Could be either the id or name.
-     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param sessionId Session id of the user logged.
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
@@ -179,8 +179,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * Obtains the resource java bean containing the requested ids.
      *
      * @param familyList List of family id in string format. Could be either the id or name.
-     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sessionId Session id of the user logged.
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId  Session id of the user logged.
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
      */
@@ -655,7 +655,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
 
     // **************************   ACLs  ******************************** //
-
+    @Deprecated
     public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, String familyStr, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(familyStr, studyStr, sessionId);
 
@@ -670,6 +670,31 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return familyAclList;
     }
 
+    public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, boolean silent, String sessionId)
+            throws CatalogException {
+        MyResourceIds resource = getIds(familyList, studyStr, sessionId);
+
+        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long familyId = resourceIds.get(i);
+            try {
+                QueryResult<FamilyAclEntry> allFamilyAcls =
+                        authorizationManager.getAllFamilyAcls(resource.getStudyId(), familyId, resource.getUser());
+                allFamilyAcls.setId(String.valueOf(familyId));
+                familyAclList.add(allFamilyAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    familyAclList.add(new QueryResult<>(familyList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return familyAclList;
+    }
+
+    @Deprecated
     public List<QueryResult<FamilyAclEntry>> getAcl(String studyStr, String familyStr, String member, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(member, "member");
@@ -685,6 +710,34 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             familyAclList.add(allFamilyAcls);
         }
 
+        return familyAclList;
+    }
+
+    public List<QueryResult<FamilyAclEntry>> getAcl(String studyStr, List<String> familyList, String member, boolean silent,
+                                                    String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(familyList, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
+
+        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
+        List<Long> resourceIds = resource.getResourceIds();
+        for (int i = 0; i < resourceIds.size(); i++) {
+            Long familyId = resourceIds.get(i);
+            try {
+                QueryResult<FamilyAclEntry> allFamilyAcls =
+                        authorizationManager.getFamilyAcl(resource.getStudyId(), familyId, resource.getUser(), member);
+                allFamilyAcls.setId(String.valueOf(familyId));
+                familyAclList.add(allFamilyAcls);
+            } catch (CatalogException e) {
+                if (silent) {
+                    familyAclList.add(new QueryResult<>(familyList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                } else {
+                    throw e;
+                }
+            }
+        }
         return familyAclList;
     }
 
@@ -790,8 +843,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * Looks for all the members in the database. If they exist, the data will be overriden. It also fetches the parents individuals if they
      * haven't been provided.
      *
-     * @param family family object.
-     * @param studyId study id.
+     * @param family    family object.
+     * @param studyId   study id.
      * @param sessionId session id.
      * @throws CatalogException if there is any kind of error.
      */
