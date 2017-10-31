@@ -204,16 +204,16 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individual}/annotationsets")
+    @Path("/{individuals}/annotationsets")
     @ApiOperation(value = "Return all the annotation sets of the individual", position = 12)
     public Response getAnnotationSet(
-            @ApiParam(value = "Comma separated list of individual IDs or name", required = true) @PathParam("individuals") String individualStr,
+            @ApiParam(value = "Comma separated list of individual IDs or name", required = true) @PathParam("individuals") String individualsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<String> idList = getIdList(individualStr);
+            List<String> idList = getIdList(individualsStr);
             if (asMap) {
                 return createOkResponse(individualManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName, silent, sessionId));
             } else {

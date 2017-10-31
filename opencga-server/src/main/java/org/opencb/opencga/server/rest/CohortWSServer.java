@@ -154,11 +154,11 @@ public class CohortWSServer extends OpenCGAWSServer {
                     example = "id,status", dataType = "string", paramType = "query"),
     })
     public Response infoSample(@ApiParam(value = "Comma separated list of cohort names or ids up to a maximum of 100", required = true) @PathParam("cohorts")
-                                       String cohortStr,
+                                       String cohortsStr,
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr, @QueryParam("silent") boolean silent) {
         try {
-            List<String> cohortList = getIdList(cohortStr);
+            List<String> cohortList = getIdList(cohortsStr);
             List<QueryResult<Cohort>> cohortQueryResult = cohortManager.get(studyStr, cohortList, query, queryOptions, silent, sessionId);
             return createOkResponse(cohortQueryResult);
         } catch (Exception e) {
@@ -293,15 +293,15 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{cohort}/annotationsets")
+    @Path("/{cohorts}/annotationsets")
     @ApiOperation(value = "Return all the annotation sets of the cohort", position = 12)
     public Response getAnnotationSet(
-            @ApiParam(value = "Comma separated list of cohort Ids", required = true) @PathParam("cohorts") String cohortStr,
+            @ApiParam(value = "Comma separated list of cohort Ids", required = true) @PathParam("cohorts") String cohortsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName, @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<String> idList = getIdList(cohortStr);
+            List<String> idList = getIdList(cohortsStr);
             if (asMap) {
                 return createOkResponse(cohortManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName,silent, sessionId));
             } else {
