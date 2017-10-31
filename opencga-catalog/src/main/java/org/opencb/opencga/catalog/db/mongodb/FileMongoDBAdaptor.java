@@ -387,10 +387,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key()) && !query.containsKey(QueryParams.ID.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!=" + File.FileStatus.REMOVED
-                    + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.DELETING);
-        }
+        filterOutDeleted(query);
 
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_FILES : studyPermissions);
@@ -537,10 +534,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name());
         }
 
-        if (!query.containsKey(QueryParams.STATUS_NAME.key()) && !query.containsKey(QueryParams.ID.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!=" + File.FileStatus.REMOVED
-                    + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.DELETING);
-        }
+        filterOutDeleted(query);
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
@@ -562,6 +556,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
     }
 
+    private void filterOutDeleted(Query query) {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key()) && !query.containsKey(QueryParams.ID.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!=" + File.FileStatus.REMOVED
+                    + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.DELETING);
+        }
+    }
+
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
@@ -574,18 +575,21 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return rank(fileCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(fileCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(fileCollection, bsonQuery, fields, "name", options);
     }
@@ -596,6 +600,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FILES
                 .name(), FileAclEntry.FilePermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(fileCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }
@@ -606,6 +611,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FILES
                 .name(), FileAclEntry.FilePermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(fileCollection, bsonQuery, field, QueryParams.NAME.key(), options);
     }

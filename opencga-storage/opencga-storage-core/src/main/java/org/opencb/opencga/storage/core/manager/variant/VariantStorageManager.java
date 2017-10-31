@@ -223,7 +223,7 @@ public class VariantStorageManager extends StorageManager {
         } else if (StringUtils.isEmpty(studies) && StringUtils.isEmpty(project)) {
             // If non study or project is given, read all the studies from the user
             String userId = catalogManager.getUserManager().getUserId(sessionId);
-            studyIds = catalogManager.getStudyManager().getIds(userId, null).stream()
+            studyIds = catalogManager.getStudyManager().getIds(userId, Collections.emptyList()).stream()
                     .map(Object::toString)
                     .collect(Collectors.toList());
         } else {

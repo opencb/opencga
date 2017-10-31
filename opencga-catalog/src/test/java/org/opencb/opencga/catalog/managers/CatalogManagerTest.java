@@ -569,25 +569,28 @@ public class CatalogManagerTest extends GenericTest {
                 null, null, null, null, null, null, null, sessionIdUser2);
 
         String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
-        List<Long> ids = catalogManager.getStudyManager().getIds(userId, "*");
+        List<Long> ids = catalogManager.getStudyManager().getIds(userId, Arrays.asList("*"));
         assertTrue(ids.contains(studyId) && ids.contains(studyId2));
 
-        ids = catalogManager.getStudyManager().getIds(userId, "");
+        ids = catalogManager.getStudyManager().getIds(userId, Collections.emptyList());
         assertTrue(ids.contains(studyId) && ids.contains(studyId2));
 
-        ids = catalogManager.getStudyManager().getIds(userId, null);
+        ids = catalogManager.getStudyManager().getIds(userId, Collections.emptyList());
         assertTrue(ids.contains(studyId) && ids.contains(studyId2));
 
-        ids = catalogManager.getStudyManager().getIds(userId, "1000G:*");
+        ids = catalogManager.getStudyManager().getIds(userId, Arrays.asList("1000G:*"));
         assertTrue(ids.contains(studyId) && ids.contains(studyId2));
 
-        ids = catalogManager.getStudyManager().getIds(userId, userId + "@1000G:*");
+        ids = catalogManager.getStudyManager().getIds(userId, Arrays.asList(userId + "@1000G:*"));
         assertTrue(ids.contains(studyId) && ids.contains(studyId2));
 
-        ids = catalogManager.getStudyManager().getIds(userId, userId + "@1000G:phase1,phase3");
+        ids = catalogManager.getStudyManager().getIds(userId, Arrays.asList(userId + "@1000G:phase1", userId + "@1000G:phase3"));
         assertTrue(ids.contains(studyId) && ids.contains(studyId2));
 
-        ids = catalogManager.getStudyManager().getIds(userId, userId + "@1000G:phase3," + Long.toString(studyId));
+        ids = catalogManager.getStudyManager().getIds(userId, Arrays.asList(userId + "@1000G:phase1", "phase3"));
+        assertTrue(ids.contains(studyId) && ids.contains(studyId2));
+
+        ids = catalogManager.getStudyManager().getIds(userId, Arrays.asList(userId + "@1000G:phase3", Long.toString(studyId)));
         assertTrue(ids.contains(studyId) && ids.contains(studyId2));
 
         try {
@@ -606,7 +609,7 @@ public class CatalogManagerTest extends GenericTest {
         StudyManager studyManager = catalogManager.getStudyManager();
 
         try {
-            studyManager.getIds("*", null);
+            studyManager.getIds("*", Collections.emptyList());
             fail("This should throw an exception. No studies should be found for user anonymous");
         } catch (CatalogException e) {
         }
@@ -615,14 +618,14 @@ public class CatalogManagerTest extends GenericTest {
         QueryResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "Phase 3", "phase3", Study.Type
         .CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
         try {
-            studyManager.getIds("*", null);
+            studyManager.getIds("*", Collections.emptyList());
             fail("This should throw an exception. No studies should be found for user anonymous");
         } catch (CatalogException e) {
         }
 
         catalogManager.getStudyManager().updateGroup("phase3", "@members", new GroupParams("*", GroupParams.Action.ADD), sessionIdUser2);
 
-        List<Long> ids = studyManager.getIds("*", null);
+        List<Long> ids = studyManager.getIds("*", Collections.emptyList());
         assertEquals(1, ids.size());
         assertEquals(study.first().getId(), (long) ids.get(0));
     }
@@ -632,7 +635,7 @@ public class CatalogManagerTest extends GenericTest {
         StudyManager studyManager = catalogManager.getStudyManager();
 
         try {
-            studyManager.getIds("*", "phase3");
+            studyManager.getIds("*", Arrays.asList("phase3"));
             fail("This should throw an exception. No studies should be found for user anonymous");
         } catch (CatalogException e) {
         }
@@ -642,7 +645,7 @@ public class CatalogManagerTest extends GenericTest {
                 Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
         catalogManager.getStudyManager().updateGroup("phase3", "@members", new GroupParams("*", GroupParams.Action.ADD), sessionIdUser2);
 
-        List<Long> ids = studyManager.getIds("*", "phase3");
+        List<Long> ids = studyManager.getIds("*", Arrays.asList("phase3"));
         assertEquals(1, ids.size());
         assertEquals(study.first().getId(), (long) ids.get(0));
     }
