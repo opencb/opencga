@@ -296,7 +296,8 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             AclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            return createOkResponse(jobManager.updateAcl(null, jobIdStr, memberId, aclParams, sessionId));
+            List<String> idList = getIdList(jobIdStr);
+            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -314,7 +315,8 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) JobAcl params) {
         try {
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
-            return createOkResponse(jobManager.updateAcl(null, params.job, memberId, aclParams, sessionId));
+            List<String> idList = getIdList(params.job);
+            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

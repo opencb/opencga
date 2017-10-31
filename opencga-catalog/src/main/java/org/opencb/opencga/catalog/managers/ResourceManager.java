@@ -45,19 +45,6 @@ public abstract class ResourceManager<R> extends AbstractManager {
     /**
      * Obtains the resource java bean containing the requested ids.
      *
-     * @param entryStr  Entry id in string format. Could be either the id or name generally.
-     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sessionId Session id of the user logged.
-     * @return the resource java bean containing the requested ids.
-     * @throws CatalogException CatalogException.
-     */
-    @Deprecated
-    abstract AbstractManager.MyResourceIds getIds(String entryStr, @Nullable String studyStr, String sessionId)
-            throws CatalogException;
-
-    /**
-     * Obtains the resource java bean containing the requested ids.
-     *
      * @param entryStr  List of entry ids in string format. Could be either the id or name generally.
      * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param sessionId Session id of the user logged.
@@ -118,28 +105,6 @@ public abstract class ResourceManager<R> extends AbstractManager {
         MyResourceId resources = getId(entryStr, studyStr, sessionId);
         query.put("id", resources.getResourceId());
         return get(String.valueOf(resources.getStudyId()), query, options, sessionId);
-    }
-
-    /**
-     * Fetch all the R objects matching the query.
-     *
-     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param entryStr  Comma separated list of entries to be fetched.
-     * @param query     Query object.
-     * @param options   QueryOptions object, like "include", "exclude", "limit" and "skip".
-     * @param sessionId sessionId
-     * @return All matching elements.
-     * @throws CatalogException CatalogException.
-     */
-    public QueryResult<R> get(String studyStr, String entryStr, Query query, QueryOptions options, String sessionId) throws
-            CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        Query queryCopy = new Query(query);
-        MyResourceIds resources = getIds(entryStr, studyStr, sessionId);
-        queryCopy.put("id", resources.getResourceIds());
-
-        QueryResult<R> queryResult = get(String.valueOf(resources.getStudyId()), queryCopy, options, sessionId);
-        return queryResult;
     }
 
     /**

@@ -384,7 +384,7 @@ public class CatalogManagerTest extends GenericTest {
         // Action only for admins
         catalogManager.getStudyManager().createGroup(Long.toString(studyId), "ldap", "", sessionIdUser);
         catalogManager.getStudyManager().syncGroupWith(Long.toString(studyId), "ldap", new Group.Sync("ldap", "bio"), sessionIdUser);
-        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@ldap", new Study.StudyAclParams("",
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@ldap", new Study.StudyAclParams("",
                 AclParams.Action.SET, "view_only"), sessionIdUser);
         String token = catalogManager.getUserManager().login("user", "password");
 
@@ -393,7 +393,7 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(1, studyQueryResult.getNumResults());
 
         // We remove the permissions for group ldap
-        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@ldap", new Study.StudyAclParams("",
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@ldap", new Study.StudyAclParams("",
                 AclParams.Action.RESET, ""), sessionIdUser);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getStudyManager().get(String.valueOf((Long) studyId), QueryOptions.empty(), token);
@@ -683,9 +683,10 @@ public class CatalogManagerTest extends GenericTest {
 
         // Assign permissions to all the samples
         Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
-        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        List<QueryResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(Long.toString(studyId), org.apache.commons.lang3.StringUtils.join(sampleIds, ","), "user2,user3",
-                sampleAclParams, sessionIdUser);
+        List<String> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).map(String::valueOf)
+                .collect(Collectors.toList());
+        List<QueryResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(Long.toString(studyId),
+                sampleIds, "user2,user3", sampleAclParams, sessionIdUser);
         assertEquals(sampleIds.size(), sampleAclResult.size());
         for (QueryResult<SampleAclEntry> sampleAclEntryQueryResult : sampleAclResult) {
             assertEquals(2, sampleAclEntryQueryResult.getNumResults());
@@ -702,7 +703,8 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(0, groupQueryResult.first().getUserIds().size());
 
         // Get sample permissions for those members
-        for (Long sampleId : sampleIds) {
+        for (String sampleStr : sampleIds) {
+            long sampleId = Long.parseLong(sampleStr);
             QueryResult<SampleAclEntry> sampleAcl =
                     catalogManager.getAuthorizationManager().getSampleAcl(studyId, sampleId, "user", "user2");
             assertEquals(0, sampleAcl.getNumResults());
@@ -728,9 +730,10 @@ public class CatalogManagerTest extends GenericTest {
 
         // Assign permissions to all the samples
         Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
-        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        List<QueryResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(Long.toString(studyId), org.apache.commons.lang3.StringUtils.join(sampleIds, ","), "user2,user3",
-                sampleAclParams, sessionIdUser);
+        List<String> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).map(String::valueOf)
+                .collect(Collectors.toList());
+        List<QueryResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(Long.toString(studyId),
+                sampleIds, "user2,user3", sampleAclParams, sessionIdUser);
         assertEquals(sampleIds.size(), sampleAclResult.size());
         for (QueryResult<SampleAclEntry> sampleAclEntryQueryResult : sampleAclResult) {
             assertEquals(2, sampleAclEntryQueryResult.getNumResults());
@@ -759,7 +762,8 @@ public class CatalogManagerTest extends GenericTest {
             assertTrue(!group.getUserIds().contains("user3"));
         }
 
-        for (Long sampleId : sampleIds) {
+        for (String sampleStr : sampleIds) {
+            long sampleId = Long.parseLong(sampleStr);
             QueryResult<SampleAclEntry> sampleAcl =
                     catalogManager.getAuthorizationManager().getSampleAcl(studyId, sampleId, "user", "user2");
             assertEquals(0, sampleAcl.getNumResults());
@@ -1066,10 +1070,9 @@ public class CatalogManagerTest extends GenericTest {
 
         catalogManager.getStudyManager().createGroup(Long.toString(studyId), "myGroup", "user2,user3", sessionIdUser);
         catalogManager.getStudyManager().createGroup(Long.toString(studyId), "myGroup2", "user2,user3", sessionIdUser);
-        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@myGroup",
-                new Study.StudyAclParams("", AclParams.Action.SET, null), sessionIdUser);
-        catalogManager.getSampleManager().updateAcl(Long.toString(studyId), "s_1", "@myGroup",
-                new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null), sessionIdUser);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@myGroup", new Study.StudyAclParams("", AclParams.Action.SET, null), sessionIdUser);
+
+        catalogManager.getSampleManager().updateAcl(Long.toString(studyId), Arrays.asList("s_1"), "@myGroup", new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null), sessionIdUser);
 
         QueryResult<Sample> search = catalogManager.getSampleManager().search(Long.toString(studyId), new Query(), new QueryOptions(),
                 sessionIdUser2);

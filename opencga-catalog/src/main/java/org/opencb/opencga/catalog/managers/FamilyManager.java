@@ -122,62 +122,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     /**
      * Obtains the resource java bean containing the requested ids.
      *
-     * @param familyStr Family id in string format. Could be either the id or name.
-     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sessionId Session id of the user logged.
-     * @return the resource java bean containing the requested ids.
-     * @throws CatalogException CatalogException.
-     */
-    @Deprecated
-    public MyResourceIds getIds(String familyStr, @Nullable String studyStr, String sessionId) throws CatalogException {
-        if (StringUtils.isEmpty(familyStr)) {
-            throw new CatalogException("Missing family parameter");
-        }
-
-        String userId;
-        long studyId;
-        List<Long> familyIds = new ArrayList<>();
-
-        if (StringUtils.isNumeric(familyStr) && Long.parseLong(familyStr) > configuration.getCatalog().getOffset()) {
-            familyIds = Arrays.asList(Long.parseLong(familyStr));
-            familyDBAdaptor.checkId(familyIds.get(0));
-            studyId = familyDBAdaptor.getStudyId(familyIds.get(0));
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-        } else {
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-
-            List<String> familySplit = Arrays.asList(familyStr.split(","));
-            for (String familyStrAux : familySplit) {
-                if (StringUtils.isNumeric(familyStrAux)) {
-                    long familyId = Long.parseLong(familyStrAux);
-                    familyDBAdaptor.exists(familyId);
-                    familyIds.add(familyId);
-                }
-            }
-
-            Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FamilyDBAdaptor.QueryParams.NAME.key(), familySplit);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.ID.key());
-            QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
-
-            if (familyQueryResult.getNumResults() > 0) {
-                familyIds.addAll(familyQueryResult.getResult().stream().map(Family::getId).collect(Collectors.toList()));
-            }
-
-            if (familyIds.size() < familySplit.size()) {
-                throw new CatalogException("Found only " + familyIds.size() + " out of the " + familySplit.size()
-                        + " families looked for in study " + studyStr);
-            }
-        }
-
-        return new MyResourceIds(userId, studyId, familyIds);
-    }
-
-    /**
-     * Obtains the resource java bean containing the requested ids.
-     *
      * @param familyList List of family id in string format. Could be either the id or name.
      * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param sessionId  Session id of the user logged.
@@ -316,19 +260,19 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // understands
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()))) {
             MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), Long.toString(studyId), sessionId);
+                    .getIds(query.getAsStringList(FamilyDBAdaptor.QueryParams.FATHER.key()), Long.toString(studyId), sessionId);
             query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.FATHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()))) {
             MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), Long.toString(studyId), sessionId);
+                    .getIds(query.getAsStringList(FamilyDBAdaptor.QueryParams.MOTHER.key()), Long.toString(studyId), sessionId);
             query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.MOTHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBER.key()))) {
             MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.MEMBER.key()), Long.toString(studyId), sessionId);
+                    .getIds(query.getAsStringList(FamilyDBAdaptor.QueryParams.MEMBER.key()), Long.toString(studyId), sessionId);
             query.put(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.MEMBER.key());
         }
@@ -673,21 +617,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
 
     // **************************   ACLs  ******************************** //
-    @Deprecated
-    public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, String familyStr, String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(familyStr, studyStr, sessionId);
-
-        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long familyId : resource.getResourceIds()) {
-            QueryResult<FamilyAclEntry> allFamilyAcls =
-                    authorizationManager.getAllFamilyAcls(resource.getStudyId(), familyId, resource.getUser());
-            allFamilyAcls.setId(String.valueOf(familyId));
-            familyAclList.add(allFamilyAcls);
-        }
-
-        return familyAclList;
-    }
-
     public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(familyList, studyStr, sessionId);
@@ -716,28 +645,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return familyAclList;
     }
 
-    @Deprecated
-    public List<QueryResult<FamilyAclEntry>> getAcl(String studyStr, String familyStr, String member, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkObj(member, "member");
-
-        MyResourceIds resource = getIds(familyStr, studyStr, sessionId);
-        checkMembers(resource.getStudyId(), Arrays.asList(member));
-
-        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (Long familyId : resource.getResourceIds()) {
-            QueryResult<FamilyAclEntry> allFamilyAcls =
-                    authorizationManager.getFamilyAcl(resource.getStudyId(), familyId, resource.getUser(), member);
-            allFamilyAcls.setId(String.valueOf(familyId));
-            familyAclList.add(allFamilyAcls);
-        }
-
-        return familyAclList;
-    }
-
-    public List<QueryResult<FamilyAclEntry>> updateAcl(String studyStr, String familyStr, String memberIds, AclParams familyAclParams,
-                                                       String sessionId) throws CatalogException {
-        if (StringUtils.isEmpty(familyStr)) {
+    public List<QueryResult<FamilyAclEntry>> updateAcl(String studyStr, List<String> familyList, String memberIds,
+                                                       AclParams familyAclParams, String sessionId) throws CatalogException {
+        if (familyList == null || familyList.isEmpty()) {
             throw new CatalogException("Update ACL: Missing family parameter");
         }
 
@@ -751,7 +661,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             checkPermissions(permissions, FamilyAclEntry.FamilyPermissions::valueOf);
         }
 
-        MyResourceIds resourceIds = getIds(familyStr, studyStr, sessionId);
+        MyResourceIds resourceIds = getIds(familyList, studyStr, sessionId);
         authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         String collectionName = MongoDBAdaptorFactory.FAMILY_COLLECTION;
@@ -782,56 +692,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
     }
-
-//    /**
-//     * Validates that the family contains all the members needed to build a valid family.
-//     *
-//     * @param studyId
-//     * @param family
-//     * @throws CatalogException
-//     */
-//    private void validateFamily(long studyId, Family family) throws CatalogException {
-//        if (family.getMembers() == null || family.getMembers().size() == 0) {
-//            throw new CatalogException("Missing members in family");
-//        }
-//
-//        // Store all the phenotype ids in a set
-//        Set<String> phenotypeSet = new HashSet<>();
-//        if (family.getPhenotypes() != null) {
-//            phenotypeSet = family.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.toSet());
-//        }
-//
-//        Set<String> familyMembers = new HashSet<>(family.getMembers().size());
-//        for (Relatives relatives : family.getMembers()) {
-//            // Check if the individual is correct or can be created
-//            validateIndividual(studyId, relatives.getIndividual());
-//            if (familyMembers.contains(relatives.getIndividual().getName())) {
-//                throw new CatalogException("Multiple members with same name " + relatives.getIndividual().getName() + " found");
-//            }
-//            familyMembers.add(relatives.getIndividual().getName());
-//        }
-//
-//        // We iterate again to check that all the references to father and mother are already in the familyMembers set. Otherwise, that
-//        // individual information is missing.
-//        for (Relatives relatives : family.getMembers()) {
-//            // We are assuming that we are always going to have the relative name and not the id
-//            if (relatives.getFather() != null && !familyMembers.contains(relatives.getFather().getName())) {
-//                throw new CatalogException("Missing family member " + relatives.getFather().getName());
-//            }
-//            if (relatives.getMother() != null && !familyMembers.contains(relatives.getMother().getName())) {
-//                throw new CatalogException("Missing family member " + relatives.getMother().getName());
-//            }
-//
-//            // Check all the phenotypes are contained in the main array of phenotypes of the family
-//            if (relatives.getPhenotypes() != null) {
-//                if (!phenotypeSet.containsAll(relatives.getPhenotypes())) {
-//                    throw new CatalogException("Missing phenotypes that some family members have from the main phenotype list: "
-//                            + StringUtils.join(relatives.getPhenotypes(), ","));
-//                }
-//            }
-//        }
-//
-//    }
 
     /**
      * Looks for all the members in the database. If they exist, the data will be overriden. It also fetches the parents individuals if they

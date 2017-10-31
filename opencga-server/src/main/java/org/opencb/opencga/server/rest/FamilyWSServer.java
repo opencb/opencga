@@ -331,7 +331,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyWSServer.FamilyAcl params) {
         try {
             AclParams familyAclParams = new AclParams(params.getPermissions(), params.getAction());
-            return createOkResponse(familyManager.updateAcl(studyStr, params.family, memberId, familyAclParams, sessionId));
+            List<String> idList = getIdList(params.family);
+            return createOkResponse(familyManager.updateAcl(studyStr, idList, memberId, familyAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
