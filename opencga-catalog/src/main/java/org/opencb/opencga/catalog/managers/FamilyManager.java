@@ -529,7 +529,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        if (annotationSetName.isEmpty()) {
+        if (StringUtils.isEmpty(annotationSetName)) {
             MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
             return familyDBAdaptor.getAnnotationSet(resource, null,
                     StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
@@ -543,7 +543,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        if (annotationSetName.isEmpty()) {
+        if (StringUtils.isEmpty(annotationSetName)) {
             MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
             return familyDBAdaptor.getAnnotationSetAsMap(resource, null,
                     StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());

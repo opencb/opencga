@@ -752,7 +752,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        if (annotationSetName.isEmpty()) {
+        if (StringUtils.isEmpty(annotationSetName)) {
             MyResourceId resource = commonGetAllInvidualSets(id, studyStr, sessionId);
             return individualDBAdaptor.getAnnotationSet(resource, null,
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.toString());
@@ -767,7 +767,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
 
-        if (annotationSetName.isEmpty()) {
+        if (StringUtils.isEmpty(annotationSetName)) {
             MyResourceId resource = commonGetAllInvidualSets(id, studyStr, sessionId);
             return individualDBAdaptor.getAnnotationSetAsMap(resource, null,
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.toString());

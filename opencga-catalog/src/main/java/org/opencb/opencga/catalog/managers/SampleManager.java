@@ -769,7 +769,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        if (annotationSetName.isEmpty()) {
+        if (StringUtils.isEmpty(annotationSetName)) {
             MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
             return sampleDBAdaptor.getAnnotationSet(resource, null,
                     StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
@@ -783,7 +783,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        if (annotationSetName.isEmpty()) {
+        if (StringUtils.isEmpty(annotationSetName)) {
             MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
             return sampleDBAdaptor.getAnnotationSetAsMap(resource, null,
                     StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());

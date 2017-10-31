@@ -608,7 +608,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        if (annotationSetName.isEmpty()) {
+        if (StringUtils.isEmpty(annotationSetName)) {
             MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
             return cohortDBAdaptor.getAnnotationSet(resource, null,
                     StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
@@ -622,7 +622,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        if (annotationSetName.isEmpty()) {
+        if (StringUtils.isEmpty(annotationSetName)) {
             MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
             return cohortDBAdaptor.getAnnotationSetAsMap(resource, null,
                     StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
