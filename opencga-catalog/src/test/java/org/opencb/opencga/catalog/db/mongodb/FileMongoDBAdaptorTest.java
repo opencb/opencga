@@ -261,20 +261,20 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
         assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("features"));
+        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("items"));
 
         assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/")
-                .containsAll((Collection<?>) groupByBioformat.get(1).get("features")));
+                .containsAll((Collection<?>) groupByBioformat.get(1).get("items")));
 
         groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), 14), // MINECO study
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
         assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_alignment.bam"), groupByBioformat.get(0).get("features"));
+        assertEquals(Arrays.asList("m_alignment.bam"), groupByBioformat.get(0).get("items"));
 
         assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_file1.txt", "data/"), groupByBioformat.get(1).get("features"));
+        assertEquals(Arrays.asList("m_file1.txt", "data/"), groupByBioformat.get(1).get("items"));
 
     }
 
@@ -290,13 +290,13 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(3, groupByBioformat.size());
 
         assertEquals(2, ((Document) groupByBioformat.get(0).get("_id")).size()); // Alignment - File
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("features"));
+        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("items"));
 
         assertEquals(2, ((Document) groupByBioformat.get(1).get("_id")).size()); // None - File
-        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(1).get("features"));
+        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(1).get("items"));
 
         assertEquals(2, ((Document) groupByBioformat.get(2).get("_id")).size()); // None - Folder
-        assertEquals(Arrays.asList("data/"), groupByBioformat.get(2).get("features"));
+        assertEquals(Arrays.asList("data/"), groupByBioformat.get(2).get("items"));
 
     }
 
@@ -355,17 +355,17 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                     switch (type) {
                         case "FILE":
                             assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - File
-                            assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(i).get("features"));
+                            assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(i).get("items"));
                             break;
                         default:
                             assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - Folder
-                            assertEquals(Arrays.asList("data/"), groupByBioformat.get(i).get("features"));
+                            assertEquals(Arrays.asList("data/"), groupByBioformat.get(i).get("items"));
                             break;
                     }
                     break;
                 case "ALIGNMENT":
                     assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size());
-                    assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(i).get("features"));
+                    assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(i).get("items"));
                     break;
                 default:
                     fail("This case should not happen.");

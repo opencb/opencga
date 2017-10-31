@@ -33,6 +33,7 @@ public class FamilyCommandOptions {
 //    public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
+    public GroupByCommandOptions groupByCommandOptions;
 //    public UpdateCommandOptions updateCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
@@ -60,6 +61,7 @@ public class FamilyCommandOptions {
 //        this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
+        this.groupByCommandOptions = new GroupByCommandOptions();
 //        this.updateCommandOptions = new UpdateCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
@@ -150,6 +152,28 @@ public class FamilyCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", arity = 1)
         public String annotation;
 
+    }
+
+    @Parameters(commandNames = {"group-by"}, commandDescription = "Group samples")
+    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-f", "--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        public String fields;
+
+        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 0)
+        public String name;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", required = false, arity = 1)
+        public String annotation;
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variable-set"}, description = "Variable set ids", required = false, arity = 1)
+        public String variableSetId;
     }
 
 //    @Parameters(commandNames = {"update"}, commandDescription = "Update family information")

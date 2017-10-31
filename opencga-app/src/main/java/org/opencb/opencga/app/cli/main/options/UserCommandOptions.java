@@ -39,7 +39,6 @@ public class UserCommandOptions {
     public ProjectsCommandOptions projectsCommandOptions;
     public LoginCommandOptions loginCommandOptions;
     public LogoutCommandOptions logoutCommandOptions;
-    public ResetPasswordCommandOptions resetPasswordCommandOptions;
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
@@ -62,7 +61,6 @@ public class UserCommandOptions {
         this.projectsCommandOptions = new ProjectsCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.logoutCommandOptions = new LogoutCommandOptions();
-        this.resetPasswordCommandOptions = new ResetPasswordCommandOptions();
     }
 
     public JCommander getjCommander() {
@@ -183,11 +181,6 @@ public class UserCommandOptions {
 
         @Parameter(names = {"-S", "--session-id"}, description = "SessionId", required = false, arity = 1, hidden = true)
         public String sessionId;
-
-    }
-
-    @Parameters(commandNames = {"reset-password"}, commandDescription = "Reset password")
-    public class ResetPasswordCommandOptions extends BaseUserCommand {
 
     }
 

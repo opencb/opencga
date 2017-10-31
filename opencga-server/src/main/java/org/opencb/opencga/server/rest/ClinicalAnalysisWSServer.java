@@ -101,7 +101,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value="Comma separated list of clinical analysis ids") @PathParam(value = "clinicalAnalysis")
+    public Response info(@ApiParam(value="Comma separated list of clinical analysis ids up to a maximum of 100") @PathParam(value = "clinicalAnalysis")
                                      String clinicalAnalysisStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr) {
@@ -159,7 +159,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupby")
+    @Path("/groupBy")
     @ApiOperation(value = "Group clinical analysis by several fields", position = 10,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({

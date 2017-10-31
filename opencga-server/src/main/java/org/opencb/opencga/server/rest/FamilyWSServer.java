@@ -59,7 +59,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
     })
     public Response infoFamily(
-            @ApiParam(value = "Comma separated list of family IDs or names", required = true) @PathParam("families") String familyStr,
+            @ApiParam(value = "Comma separated list of family IDs or names up to a maximum of 100", required = true) @PathParam("families") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Family version") @QueryParam("version") Integer version,
@@ -176,7 +176,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupby")
+    @Path("/groupBy")
     @ApiOperation(value = "Group families by several fields", position = 10,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
@@ -325,7 +325,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{families}/acl")
     @ApiOperation(value = "Returns the acl of the families. If member is provided, it will only return the acl for the member.", position = 18)
-    public Response getAcls(@ApiParam(value = "Comma separated list of family IDs or names", required = true) @PathParam("families")
+    public Response getAcls(@ApiParam(value = "Comma separated list of family IDs or names up to a maximum of 100", required = true) @PathParam("families")
                                     String familyIdsStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,

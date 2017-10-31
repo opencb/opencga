@@ -287,7 +287,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{study}/scanfiles")
+    @Path("/{study}/scanFiles")
     @ApiOperation(value = "Scan the study folder to find untracked or missing files", position = 12)
     public Response scanFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
@@ -346,7 +346,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{study}/resyncfiles")
+    @Path("/{study}/resyncFiles")
     @ApiOperation(value = "Scan the study folder to find untracked or missing files.", notes = "This method is intended to keep the "
             + "consistency between the database and the file system. It will check all the files and folders belonging to the study and "
             + "will keep track of those new files and/or folders found in the file system as well as update the status of those "

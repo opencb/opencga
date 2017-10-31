@@ -294,7 +294,7 @@
                                         <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
                                         <!--Compile if file is not available-->
                                         <not>
-                                            <available file="${settings.localRepository}/org/opencb/opencga/opencga-storage-hadoop-deps/${opencga-storage-hadoop-deps.version}/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.version}-${opencga-storage-hadoop-deps.classifier}.jar"/>
+                                            <available file="${settings.localRepository}/org/opencb/opencga/opencga-storage-hadoop-deps/${opencga-storage-hadoop-deps.version}/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.version}-${opencga-storage-hadoop-deps.classifier}-shaded.jar"/>
                                         </not>
                                         <!--Compile if opencga-storage-hadoop-deps has not been included as a module-->
                                         <!--See profile opencga-storage-hadoop-deps-->
