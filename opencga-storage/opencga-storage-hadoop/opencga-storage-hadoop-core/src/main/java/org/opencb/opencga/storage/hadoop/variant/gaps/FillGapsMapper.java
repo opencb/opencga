@@ -31,6 +31,14 @@ public class FillGapsMapper extends VariantMapper<ImmutableBytesWritable, Mutati
         job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
     }
 
+    public static Collection<Integer> getSamples(Configuration configuration) {
+        Collection<Integer> samples = new ArrayList<>();
+        for (String sample : configuration.get(FillGapsMapper.SAMPLES, "").split(",")) {
+            samples.add(Integer.valueOf(sample));
+        }
+        return samples;
+    }
+
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
@@ -39,10 +47,7 @@ public class FillGapsMapper extends VariantMapper<ImmutableBytesWritable, Mutati
         VariantTableHelper helper = new VariantTableHelper(configuration);
 
         String archiveTableName = Bytes.toString(helper.getArchiveTable());
-        Collection<Integer> samples = new ArrayList<>();
-        for (String sample : configuration.get(FillGapsMapper.SAMPLES, "").split(",")) {
-            samples.add(Integer.valueOf(sample));
-        }
+        Collection<Integer> samples = getSamples(configuration);
 
         StudyConfiguration studyConfiguration = helper.readStudyConfiguration();
 

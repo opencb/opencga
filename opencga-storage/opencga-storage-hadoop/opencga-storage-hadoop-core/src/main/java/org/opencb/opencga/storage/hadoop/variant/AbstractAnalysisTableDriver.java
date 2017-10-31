@@ -63,6 +63,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     private final Logger logger = LoggerFactory.getLogger(AbstractAnalysisTableDriver.class);
     private VariantTableHelper variantTablehelper;
     private StudyConfigurationManager scm;
+    private List<Integer> fileIds;
 
     public AbstractAnalysisTableDriver() {
         super(HBaseConfiguration.create());
@@ -99,7 +100,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             throw new IllegalArgumentException("No Study id specified!!!");
         }
 
-        VariantTableHelper helper = initVariantTableHelper(studyId, archiveTable, variantTable);
+        initVariantTableHelper(studyId, archiveTable, variantTable);
 
         // Other validations
         parseAndValidateParameters();
@@ -110,13 +111,10 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             checkTablesExist(hBaseManager, archiveTable, variantTable);
         }
 
-        // Check File(s) or Study is specified
-        List<Integer> fileIds = getFiles();
-
         /* -------------------------------*/
         // JOB setup
-        Job job = newJob(variantTable, fileIds);
-        setupJob(job, archiveTable, variantTable, fileIds);
+        Job job = newJob(variantTable);
+        setupJob(job, archiveTable, variantTable);
 
         preExecution(variantTable);
 
@@ -142,7 +140,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     protected abstract Class<?> getMapperClass();
 
-    protected abstract Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException;
+    protected abstract Job setupJob(Job job, String archiveTable, String variantTable) throws IOException;
 
     /**
      * Give the name of the action that the job is doing.
@@ -213,8 +211,9 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return scan;
     }
 
-    private Job newJob(String variantTable, List<Integer> files) throws IOException {
-        Job job = Job.getInstance(getConf(), "opencga: " + getJobOperationName() + " files " + files
+    private Job newJob(String variantTable) throws IOException {
+        List<Integer> files = getFiles();
+        Job job = Job.getInstance(getConf(), "opencga: " + getJobOperationName() + (files.isEmpty() ? " " : " files " + files)
                 + " from VariantTable '" + variantTable + '\'');
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
         job.setJarByClass(getMapperClass());    // class that contains mapper
@@ -250,10 +249,14 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     protected List<Integer> getFiles() {
-        String[] fileArr = getConf().getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
-        return Arrays.stream(fileArr)
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
+        if (fileIds == null) {
+            String[] fileArr = getConf().getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
+            fileIds = Arrays.stream(fileArr)
+                    .filter(s -> StringUtils.isNotEmpty(s) && !s.equals("."))
+                    .map(Integer::parseInt)
+                    .collect(Collectors.toList());
+        }
+        return fileIds;
     }
 
     protected int getStudyId() {
@@ -311,13 +314,11 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     private void configFromArgs(String[] args) {
-        // TODO ?? Do we need this??
-//        setConf(HBaseManager.addHBaseSettings(getConf(), args[0]));
-        int fixedSizeArgs = 5;
+        int fixedSizeArgs = 4;
 
         if (args.length < fixedSizeArgs || (args.length - fixedSizeArgs) % 2 != 0) {
             System.err.println("Usage: " + getClass().getSimpleName()
-                    + " [generic options] <server> <input-table> <output-table> <studyId> <fileIds> [<key> <value>]*");
+                    + " [generic options] <archive-table> <variants-table> <studyId> <fileIds> [<key> <value>]*");
             System.err.println("Found " + Arrays.toString(args));
             ToolRunner.printGenericCommandUsage(System.err);
             throw new IllegalArgumentException("Wrong number of arguments!");
@@ -328,10 +329,14 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             getConf().set(args[i], args[i + 1]);
         }
 
-        getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[1]);
-        getConf().set(CONFIG_VARIANT_TABLE_NAME, args[2]);
-        getConf().set(VariantStorageEngine.Options.STUDY_ID.key(), args[3]);
-        getConf().setStrings(VariantStorageEngine.Options.FILE_ID.key(), args[4].split(","));
+        getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[0]);
+        getConf().set(CONFIG_VARIANT_TABLE_NAME, args[1]);
+        getConf().set(VariantStorageEngine.Options.STUDY_ID.key(), args[2]);
+        if (args[4].equals(".") || args[3].isEmpty()) {
+            getConf().unset(VariantStorageEngine.Options.FILE_ID.key());
+        } else {
+            getConf().setStrings(VariantStorageEngine.Options.FILE_ID.key(), args[3].split(","));
+        }
 
     }
 
@@ -349,12 +354,19 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
 
-    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId,
+    public static String buildCommandLineArgs(String server, String archiveTable, String variantsTable, int studyId,
                                               List<Integer> fileIds, Map<String, Object> other) {
-        StringBuilder stringBuilder = new StringBuilder().append(server).append(' ').append(inputTable).append(' ')
-                .append(outputTable).append(' ').append(studyId).append(' ');
+        StringBuilder stringBuilder = new StringBuilder()
+//                .append(server).append(' ')
+                .append(archiveTable).append(' ')
+                .append(variantsTable).append(' ')
+                .append(studyId).append(' ');
 
-        stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+        if (fileIds.isEmpty()) {
+            stringBuilder.append('.');
+        } else {
+            stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+        }
         addOtherParams(other, stringBuilder);
         return stringBuilder.toString();
     }

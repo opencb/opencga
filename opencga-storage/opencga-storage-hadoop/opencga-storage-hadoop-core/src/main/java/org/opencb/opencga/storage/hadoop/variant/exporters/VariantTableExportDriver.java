@@ -36,7 +36,6 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -88,7 +87,7 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+    protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         // QUERY design
         Scan scan = createVariantsTableScan();
 

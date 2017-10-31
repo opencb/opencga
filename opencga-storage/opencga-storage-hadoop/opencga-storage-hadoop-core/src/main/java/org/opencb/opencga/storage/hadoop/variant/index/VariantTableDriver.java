@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -74,9 +73,9 @@ public class VariantTableDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+    protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         // QUERY design
-        Scan scan = createArchiveTableScan(files);
+        Scan scan = createArchiveTableScan(getFiles());
 
         // set other scan attrs
         initMapReduceJob(job, getMapperClass(), archiveTable, variantTable, scan);
