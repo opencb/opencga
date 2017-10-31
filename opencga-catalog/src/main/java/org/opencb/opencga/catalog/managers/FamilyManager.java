@@ -509,6 +509,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return annotationSet;
     }
 
+    @Deprecated
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
@@ -516,6 +517,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
+    @Deprecated
     @Override
     public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId) throws
             CatalogException {
@@ -527,21 +529,34 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return familyDBAdaptor.getAnnotationSet(resource, annotationSetName,
-                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        if (StringUtils.isEmpty(annotationSetName)) {
+            MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+            return familyDBAdaptor.getAnnotationSet(resource, null,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        } else {
+            MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+            return familyDBAdaptor.getAnnotationSet(resource, annotationSetName,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        }
     }
 
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return familyDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
-                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        if (StringUtils.isEmpty(annotationSetName)) {
+            MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+            return familyDBAdaptor.getAnnotationSetAsMap(resource, null,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        } else {
+            MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+            return familyDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        }
     }
 
     @Override
-    public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, Map<String,
+    public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String
+            annotationSetName, Map<String,
             Object> newAnnotations, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
@@ -572,8 +587,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String
-            sessionId) throws CatalogException {
+    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String
+            annotationSetName, String
+                                                                  sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
 
@@ -598,7 +614,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetStr,
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String
+            variableSetStr,
                                                            @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
 
@@ -617,7 +634,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String
+            variableSetStr,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
 
@@ -670,8 +688,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return familyAclList;
     }
 
-    public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, boolean silent, String sessionId)
-            throws CatalogException {
+    public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, String member, boolean silent,
+                                                     String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(familyList, studyStr, sessionId);
 
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
@@ -679,8 +697,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         for (int i = 0; i < resourceIds.size(); i++) {
             Long familyId = resourceIds.get(i);
             try {
-                QueryResult<FamilyAclEntry> allFamilyAcls =
-                        authorizationManager.getAllFamilyAcls(resource.getStudyId(), familyId, resource.getUser());
+                QueryResult<FamilyAclEntry> allFamilyAcls;
+                if (StringUtils.isNotEmpty(member)) {
+                    allFamilyAcls = authorizationManager.getFamilyAcl(resource.getStudyId(), familyId, resource.getUser(), member);
+                } else {
+                    allFamilyAcls = authorizationManager.getAllFamilyAcls(resource.getStudyId(), familyId, resource.getUser());
+                }
                 allFamilyAcls.setId(String.valueOf(familyId));
                 familyAclList.add(allFamilyAcls);
             } catch (CatalogException e) {
@@ -710,34 +732,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             familyAclList.add(allFamilyAcls);
         }
 
-        return familyAclList;
-    }
-
-    public List<QueryResult<FamilyAclEntry>> getAcl(String studyStr, List<String> familyList, String member, boolean silent,
-                                                    String sessionId)
-            throws CatalogException {
-        ParamUtils.checkObj(member, "member");
-
-        MyResourceIds resource = getIds(familyList, studyStr, sessionId);
-        checkMembers(resource.getStudyId(), Arrays.asList(member));
-
-        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
-        List<Long> resourceIds = resource.getResourceIds();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Long familyId = resourceIds.get(i);
-            try {
-                QueryResult<FamilyAclEntry> allFamilyAcls =
-                        authorizationManager.getFamilyAcl(resource.getStudyId(), familyId, resource.getUser(), member);
-                allFamilyAcls.setId(String.valueOf(familyId));
-                familyAclList.add(allFamilyAcls);
-            } catch (CatalogException e) {
-                if (silent) {
-                    familyAclList.add(new QueryResult<>(familyList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
-                } else {
-                    throw e;
-                }
-            }
-        }
         return familyAclList;
     }
 

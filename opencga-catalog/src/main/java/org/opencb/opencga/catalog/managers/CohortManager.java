@@ -588,6 +588,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return annotationSet;
     }
 
+    @Deprecated
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
@@ -595,6 +596,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
     }
 
+    @Deprecated
     @Override
     public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId) throws
             CatalogException {
@@ -606,17 +608,29 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return cohortDBAdaptor.getAnnotationSet(resource, annotationSetName,
-                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
+        if (StringUtils.isEmpty(annotationSetName)) {
+            MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+            return cohortDBAdaptor.getAnnotationSet(resource, null,
+                    StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
+        } else {
+            MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+            return cohortDBAdaptor.getAnnotationSet(resource, annotationSetName,
+                    StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
+        }
     }
 
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return cohortDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
-                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
+        if (StringUtils.isEmpty(annotationSetName)) {
+            MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+            return cohortDBAdaptor.getAnnotationSetAsMap(resource, null,
+                    StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
+        } else {
+            MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+            return cohortDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
+                    StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
+        }
     }
 
     @Override
@@ -751,8 +765,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return cohortAclList;
     }
 
-    public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, List<String> cohortList, boolean silent,
-                                                     String sessionId) throws CatalogException {
+    public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, List<String> cohortList, String member,
+                                                     boolean silent, String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(cohortList, studyStr, sessionId);
 
         List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
@@ -760,8 +774,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         for (int i = 0; i < resourceIds.size(); i++) {
             Long cohortId = resourceIds.get(i);
             try {
-                QueryResult<CohortAclEntry> allCohortAcls =
-                        authorizationManager.getAllCohortAcls(resource.getStudyId(), cohortId, resource.getUser());
+                QueryResult<CohortAclEntry> allCohortAcls;
+                if (StringUtils.isNotEmpty(member)) {
+                    allCohortAcls =
+                            authorizationManager.getCohortAcl(resource.getStudyId(), cohortId, resource.getUser(), member);
+                } else {
+                    allCohortAcls = authorizationManager.getAllCohortAcls(resource.getStudyId(), cohortId, resource.getUser());
+                }
                 allCohortAcls.setId(String.valueOf(cohortId));
                 cohortAclList.add(allCohortAcls);
             } catch (CatalogException e) {
@@ -791,34 +810,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             cohortAclList.add(allCohortAcls);
         }
 
-        return cohortAclList;
-    }
-
-    public List<QueryResult<CohortAclEntry>> getAcl(String studyStr, List<String> cohortList, String member,
-                                                    boolean silent, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkObj(member, "member");
-
-        MyResourceIds resource = getIds(cohortList, studyStr, sessionId);
-        checkMembers(resource.getStudyId(), Arrays.asList(member));
-
-        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
-        List<Long> resourceIds = resource.getResourceIds();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Long cohortId = resourceIds.get(i);
-            try {
-                QueryResult<CohortAclEntry> allCohortAcls =
-                        authorizationManager.getCohortAcl(resource.getStudyId(), cohortId, resource.getUser(), member);
-                allCohortAcls.setId(String.valueOf(cohortId));
-                cohortAclList.add(allCohortAcls);
-            } catch (CatalogException e) {
-                if (silent) {
-                    cohortAclList.add(new QueryResult<>(cohortList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
-                } else {
-                    throw e;
-                }
-            }
-        }
         return cohortAclList;
     }
 

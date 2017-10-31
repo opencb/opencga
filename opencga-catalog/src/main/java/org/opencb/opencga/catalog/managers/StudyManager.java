@@ -32,6 +32,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
@@ -39,10 +43,6 @@ import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
-import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1219,18 +1219,21 @@ public class StudyManager extends AbstractManager {
         return studyAclList;
     }
 
-    public List<QueryResult<StudyAclEntry>> getAcls(List<String> studyList, boolean silent, String sessionId) throws CatalogException {
+    public List<QueryResult<StudyAclEntry>> getAcls(List<String> studyList, String member, boolean silent, String sessionId)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        //TODO : Replace next line with new implemnetaion of getIds
-        //List<Long> studyIds = getIds(userId, studyList);
-        List<Long> studyIds = getIds(userId, studyList.get(0));
-        //////
-
+        List<Long> studyIds = getIds(userId, studyList);
         List<QueryResult<StudyAclEntry>> studyAclList = new ArrayList<>(studyIds.size());
+
         for (int i = 0; i < studyIds.size(); i++) {
             Long studyId = studyIds.get(i);
             try {
-                QueryResult<StudyAclEntry> allStudyAcls = authorizationManager.getAllStudyAcls(userId, studyId);
+                QueryResult<StudyAclEntry> allStudyAcls;
+                if (StringUtils.isNotEmpty(member)) {
+                    allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
+                } else {
+                    allStudyAcls = authorizationManager.getAllStudyAcls(userId, studyId);
+                }
                 allStudyAcls.setId(String.valueOf(studyId));
                 studyAclList.add(allStudyAcls);
             } catch (CatalogException e) {
@@ -1241,7 +1244,6 @@ public class StudyManager extends AbstractManager {
                 }
             }
         }
-
         return studyAclList;
     }
 
@@ -1258,36 +1260,6 @@ public class StudyManager extends AbstractManager {
             QueryResult<StudyAclEntry> allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
             allStudyAcls.setId(String.valueOf(studyId));
             studyAclList.add(allStudyAcls);
-        }
-
-        return studyAclList;
-    }
-
-    public List<QueryResult<StudyAclEntry>> getAcl(List<String> studyList, String member, boolean silent, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkObj(member, "member");
-
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        //TODO : Replace next line with new implemnetaion of getIds
-        //List<Long> studyIds = getIds(userId, studyList);
-        List<Long> studyIds = getIds(userId, studyList.get(0));
-        //////
-
-        List<QueryResult<StudyAclEntry>> studyAclList = new ArrayList<>(studyIds.size());
-        for (int i = 0; i < studyIds.size(); i++) {
-            Long studyId = studyIds.get(i);
-            try {
-                checkMembers(studyId, Arrays.asList(member));
-                QueryResult<StudyAclEntry> allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
-                allStudyAcls.setId(String.valueOf(studyId));
-                studyAclList.add(allStudyAcls);
-            } catch (CatalogException e) {
-                if (silent) {
-                    studyAclList.add(new QueryResult<>(studyList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
-                } else {
-                    throw e;
-                }
-            }
         }
 
         return studyAclList;

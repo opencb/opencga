@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -92,7 +93,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             List<String> individualList = getIdList(individualStr);
             List<QueryResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions,
-                    silent,sessionId);
+                    silent, sessionId);
             return createOkResponse(individualQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -210,20 +211,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
-            @QueryParam("silent") boolean silent) {
+            @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
+            List<String> idList = getIdList(individualStr);
             if (asMap) {
-                if (StringUtils.isNotEmpty(annotationsetName)) {
-                    return createOkResponse(individualManager.getAnnotationSetAsMap(individualStr, studyStr, annotationsetName, sessionId));
-                } else {
-                    return createOkResponse(individualManager.getAllAnnotationSetsAsMap(individualStr, studyStr, sessionId));
-                }
+                return createOkResponse(individualManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName, silent, sessionId));
             } else {
-                if (StringUtils.isNotEmpty(annotationsetName)) {
-                    return createOkResponse(individualManager.getAnnotationSet(individualStr, studyStr, annotationsetName, sessionId));
-                } else {
-                    return createOkResponse(individualManager.getAllAnnotationSets(individualStr, studyStr, sessionId));
-                }
+                return createOkResponse(individualManager.getAnnotationSet(idList, studyStr, annotationsetName, silent, sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -438,11 +432,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(individualIdsStr);
-            if (StringUtils.isEmpty(member)) {
-                return createOkResponse(individualManager.getAcls(studyStr, idList, silent,sessionId));
-            } else {
-                return createOkResponse(individualManager.getAcl(studyStr, idList, member, silent, sessionId));
-            }
+            return createOkResponse(individualManager.getAcls(studyStr, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

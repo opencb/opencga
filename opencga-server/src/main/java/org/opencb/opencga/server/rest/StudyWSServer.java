@@ -31,6 +31,7 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -372,7 +373,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     String groupId, @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studyStr);
-            return createOkResponse(catalogManager.getStudyManager().getGroup(idList, groupId,silent, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().getGroup(idList, groupId, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -467,16 +468,12 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("studies") String studies,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-            @QueryParam("silent") boolean silent) {
+            @QueryParam("silent") boolean silent) throws WebServiceException {
 
         try {
             List<String> idList = getIdList(studies);
-            if (StringUtils.isEmpty(member)) {
-                return createOkResponse(studyManager.getAcls(idList, silent, sessionId));
-            } else {
-                return createOkResponse(studyManager.getAcl(idList, member, silent, sessionId));
-            }
-        } catch (Exception e) {
+            return createOkResponse(studyManager.getAcls(idList, member, silent, sessionId));
+        } catch (CatalogException e) {
             return createErrorResponse(e);
         }
     }

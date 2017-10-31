@@ -749,6 +749,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return annotationSet;
     }
 
+    @Deprecated
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
@@ -756,6 +757,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
     }
 
+    @Deprecated
     @Override
     public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId)
             throws CatalogException {
@@ -767,17 +769,29 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return sampleDBAdaptor.getAnnotationSet(resource, annotationSetName,
-                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
+        if (StringUtils.isEmpty(annotationSetName)) {
+            MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+            return sampleDBAdaptor.getAnnotationSet(resource, null,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
+        } else {
+            MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+            return sampleDBAdaptor.getAnnotationSet(resource, annotationSetName,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
+        }
     }
 
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return sampleDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
-                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
+        if (StringUtils.isEmpty(annotationSetName)) {
+            MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+            return sampleDBAdaptor.getAnnotationSetAsMap(resource, null,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
+        } else {
+            MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+            return sampleDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
+        }
     }
 
     @Override
@@ -913,7 +927,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return sampleAclList;
     }
 
-    public List<QueryResult<SampleAclEntry>> getAcls(String studyStr, List<String> sampleList, boolean silent,
+    public List<QueryResult<SampleAclEntry>> getAcls(String studyStr, List<String> sampleList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
         MyResourceIds resource = getIds(sampleList, studyStr, sessionId);
 
@@ -922,8 +936,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         for (int i = 0; i < resourceIds.size(); i++) {
             Long sampleId = resourceIds.get(i);
             try {
-                QueryResult<SampleAclEntry> allSampleAcls =
-                        authorizationManager.getAllSampleAcls(resource.getStudyId(), sampleId, resource.getUser());
+                QueryResult<SampleAclEntry> allSampleAcls;
+                if (StringUtils.isNotEmpty(member)) {
+                    allSampleAcls =
+                            authorizationManager.getSampleAcl(resource.getStudyId(), sampleId, resource.getUser(), member);
+                } else {
+                    allSampleAcls = authorizationManager.getAllSampleAcls(resource.getStudyId(), sampleId, resource.getUser());
+                }
                 allSampleAcls.setId(String.valueOf(sampleId));
                 sampleAclList.add(allSampleAcls);
             } catch (CatalogException e) {
@@ -953,34 +972,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sampleAclList.add(allSampleAcls);
         }
 
-        return sampleAclList;
-    }
-
-    public List<QueryResult<SampleAclEntry>> getAcl(String studyStr, List<String> sampleList, String member, boolean silent,
-                                                    String sessionId) throws CatalogException {
-        ParamUtils.checkObj(member, "member");
-
-        MyResourceIds resource = getIds(sampleList, studyStr, sessionId);
-        checkMembers(resource.getStudyId(), Arrays.asList(member));
-
-        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resource.getResourceIds().size());
-        List<Long> resourceIds = resource.getResourceIds();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Long sampleId = resourceIds.get(i);
-            try {
-                QueryResult<SampleAclEntry> allSampleAcls =
-                        authorizationManager.getSampleAcl(resource.getStudyId(), sampleId, resource.getUser(), member);
-                allSampleAcls.setId(String.valueOf(sampleId));
-                sampleAclList.add(allSampleAcls);
-            } catch (CatalogException e) {
-                if (silent) {
-                    sampleAclList.add(new QueryResult<>(sampleList.get(i), 0, 0, 0, "",
-                            e.toString(), new ArrayList<>(0)));
-                } else {
-                    throw e;
-                }
-            }
-        }
         return sampleAclList;
     }
 
