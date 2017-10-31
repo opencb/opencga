@@ -324,7 +324,8 @@ public class StudyManager extends AbstractManager {
         if (studyStr != null && studyStr.contains(",")) {
             throw new CatalogException("Only one study is allowed. More than one study found in " + studyStr);
         }
-        List<Long> ids = getIds(userId, Arrays.asList(studyStr));
+        List<String> studyList = StringUtils.isEmpty(studyStr) ? Collections.emptyList() : Arrays.asList(studyStr);
+        List<Long> ids = getIds(userId, studyList);
         if (ids.size() > 1) {
             throw new CatalogException("More than one study was found for study '" + studyStr + '\'');
         } else {
