@@ -38,7 +38,6 @@ public class CohortCommandOptions {
     public SamplesCommandOptions samplesCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    public StatsCommandOptions statsCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
@@ -71,7 +70,6 @@ public class CohortCommandOptions {
         this.samplesCommandOptions = new SamplesCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.statsCommandOptions = new StatsCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
 
         this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
@@ -164,23 +162,6 @@ public class CohortCommandOptions {
 
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
-
-    }
-
-    @Parameters(commandNames = {"stats"}, commandDescription = "Calculate variant stats for a set of cohorts.")
-    public class StatsCommandOptions extends BaseCohortsCommand {
-
-        @Parameter(names = {"--calculate"}, description = "Calculate cohort stats", arity = 0)
-        public boolean calculate;
-
-        @Parameter(names = {"--delete"}, description = "Delete stats [PENDING]", arity = 0)
-        public boolean delete;
-
-        @Parameter(names = {"--log"}, description = "Log level", required = false, arity = 1)
-        public String log = "";
-
-        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
-        public String outdirId = "";
 
     }
 

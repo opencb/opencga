@@ -74,9 +74,6 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
             case "delete":
                 queryResponse = delete();
                 break;
-            case "stats":
-                queryResponse = stats();
-                break;
             case "search":
                 queryResponse = search();
                 break;
@@ -200,20 +197,6 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), resolveStudy(cohortsCommandOptions.deleteCommandOptions.study));
 
         return openCGAClient.getCohortClient().delete(cohortsCommandOptions.deleteCommandOptions.cohort, params);
-    }
-
-    private QueryResponse<Object> stats() throws CatalogException, IOException {
-        logger.debug("Calculating variant stats for a set of cohorts");
-
-        Query query = new Query();
-        query.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), resolveStudy(cohortsCommandOptions.statsCommandOptions.study));
-
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put("calculate", cohortsCommandOptions.statsCommandOptions.calculate);
-        queryOptions.put("delete", cohortsCommandOptions.statsCommandOptions.delete);
-        queryOptions.putIfNotEmpty("log", cohortsCommandOptions.statsCommandOptions.log);
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
-        return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.cohort, query, queryOptions);
     }
 
     private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
