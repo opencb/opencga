@@ -49,26 +49,12 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
 
     public QueryResponse<Study> create(String projectId, String studyName, String studyAlias, ObjectMap params)
             throws IOException {
-        if (params.containsKey("method")) {
-            if (params.get("method").equals("GET")) {
-                params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
-                params.remove("method");
-                return execute(STUDY_URL, "create", params, GET, Study.class);
-            } else {
-                params.remove("method");
-            }
-        }
         params = addParamsToObjectMap(params, "name", studyName, "alias", studyAlias);
         ObjectMap p = new ObjectMap("body", params);
         p = addParamsToObjectMap(p, "projectId", projectId);
         return execute(STUDY_URL, "create", p, POST, Study.class);
     }
 
-    public QueryResponse<Study> search(Query query, QueryOptions options) throws IOException {
-        ObjectMap myQuery = new ObjectMap(query);
-        myQuery.putAll(options);
-        return execute(category, "search", myQuery, GET, clazz);
-    }
     public QueryResponse<StudySummary> getSummary(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "summary", options, GET, StudySummary.class);
     }
@@ -149,13 +135,6 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
     }
 
     public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws IOException {
-        if (params.containsKey("method")) {
-            if (params.get("method").equals("GET")) {
-                params.remove("method");
-                return execute(STUDY_URL, studyId, "update", params, GET, Study.class);
-            }
-            params.remove("method");
-        }
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);

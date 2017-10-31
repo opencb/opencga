@@ -854,7 +854,7 @@ public class FileManager extends ResourceManager<File> {
                     sessionId);
 
             // Avoid sample duplicates
-            Set<Long> sampleIdsSet = new HashSet<>();
+            Set<Long> sampleIdsSet = new LinkedHashSet<>();
             sampleIdsSet.addAll(resourceIds.getResourceIds());
 
             List<Sample> sampleList = new ArrayList<>(sampleIdsSet.size());
