@@ -115,9 +115,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     @Override
     public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+        filterOutDeleted(query);
 
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_FAMILIES : studyPermissions);
@@ -135,6 +133,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         logger.debug("Family count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return familyCollection.count(bson);
+    }
+
+    private void filterOutDeleted(Query query) {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
     }
 
     @Override
@@ -488,9 +492,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
         }
 
-        if (!query.containsKey(CohortDBAdaptor.QueryParams.STATUS_NAME.key())) {
-            query.append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+        filterOutDeleted(query);
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
@@ -515,18 +517,21 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return rank(familyCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(familyCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(familyCollection, bsonQuery, fields, "name", options);
     }
@@ -537,6 +542,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES
                 .name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(familyCollection, bsonQuery, field, QueryParams.NAME.key(), options);
     }
@@ -547,6 +553,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES
                 .name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(familyCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }

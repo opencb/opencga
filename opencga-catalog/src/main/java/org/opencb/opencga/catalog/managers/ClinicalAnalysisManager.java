@@ -408,6 +408,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     break;
                 case FAMILY:
                 case SUBJECTS:
+                    break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
             }
