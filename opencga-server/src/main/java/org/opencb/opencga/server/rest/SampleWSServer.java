@@ -245,8 +245,9 @@ public class SampleWSServer extends OpenCGAWSServer {
                     "planned to be fully implemented and tested in version 1.4.0")
     public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names up to a maximum of 100", required = true) @PathParam("samples")
                                    String sampleStr,
-                           @ApiParam(value = "comma separated list of study [[user@]project:]study where study and project can be either the id or alias")
-                           @QueryParam("studies") String studyStr, @QueryParam("silent") boolean silent) {
+                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                           @QueryParam("study") String studyStr,
+                           @QueryParam("silent") boolean silent) {
         try {
             List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(studyStr, sampleStr, queryOptions, sessionId);
             return createOkResponse(delete);
