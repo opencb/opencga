@@ -188,7 +188,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         long numResults;
 
         // Check for input
-        Query query = new Query(QueryParams.INPUT.key(), fileIds);
+        Query query = new Query(QueryParams.INPUT_ID.key(), fileIds);
         Bson bsonQuery = parseQuery(query, false);
         Bson update = new Document("$pull", new Document(QueryParams.INPUT.key(), new Document("$in", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
@@ -692,9 +692,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case INPUT:
                     case INPUT_ID:
+                        addQueryFilter(QueryParams.INPUT_ID.key(), queryParam.key(), query, queryParam.type(),
+                                MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+                    case OUTPUT:
                     case OUTPUT_ID:
-                        addQueryFilter(queryParam.key(), queryParam.key(), query, queryParam.type(),
+                        addQueryFilter(QueryParams.OUTPUT_ID.key(), queryParam.key(), query, queryParam.type(),
                             MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
                         break;
                     case NAME:

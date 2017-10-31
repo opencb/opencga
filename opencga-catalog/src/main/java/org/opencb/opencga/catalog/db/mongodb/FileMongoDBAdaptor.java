@@ -722,7 +722,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     private void checkCanDelete(long fileId) throws CatalogDBException {
 
         // Check if the file is being used as input of any job
-        Query query = new Query(JobDBAdaptor.QueryParams.INPUT.key(), fileId);
+        Query query = new Query(JobDBAdaptor.QueryParams.INPUT_ID.key(), fileId);
         Long count = dbAdaptorFactory.getCatalogJobDBAdaptor().count(query).first();
         if ((count > 0)) {
             throw new CatalogDBException("The file " + fileId + " cannot be deleted/removed because it is being used as input of "

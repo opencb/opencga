@@ -1345,7 +1345,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogException("Nothing to delete");
         }
 
-        Query jobQuery = new Query(JobDBAdaptor.QueryParams.INPUT.key(), fileIds);
+        Query jobQuery = new Query(JobDBAdaptor.QueryParams.INPUT_ID.key(), fileIds);
         long jobCount = jobDBAdaptor.count(jobQuery).first();
         if (jobCount > 0) {
             throw new CatalogException("The file(s) cannot be deleted because there is at least one being used as input of " + jobCount
