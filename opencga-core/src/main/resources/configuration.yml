@@ -8,7 +8,7 @@ userDefaultQuota: 200000
 databasePrefix: ${OPENCGA.DB.PREFIX}
 dataDir: ${OPENCGA.USER.WORKSPACE}
 tempJobsDir: ${OPENCGA.JOBS.DIR}
-toolDir: "tools"
+toolDir: ${OPENCGA.TOOLS.DIR}
 
 admin:
   password: ""
