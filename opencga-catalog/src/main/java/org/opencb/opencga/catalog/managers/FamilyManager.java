@@ -509,6 +509,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return annotationSet;
     }
 
+    @Deprecated
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
@@ -516,6 +517,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
+    @Deprecated
     @Override
     public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId) throws
             CatalogException {
@@ -527,21 +529,34 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return familyDBAdaptor.getAnnotationSet(resource, annotationSetName,
-                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        if (annotationSetName.isEmpty()) {
+            MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+            return familyDBAdaptor.getAnnotationSet(resource, null,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        } else {
+            MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+            return familyDBAdaptor.getAnnotationSet(resource, annotationSetName,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        }
     }
 
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return familyDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
-                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        if (annotationSetName.isEmpty()) {
+            MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+            return familyDBAdaptor.getAnnotationSetAsMap(resource, null,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        } else {
+            MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+            return familyDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
+        }
     }
 
     @Override
-    public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, Map<String,
+    public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String
+            annotationSetName, Map<String,
             Object> newAnnotations, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
@@ -572,8 +587,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String
-            sessionId) throws CatalogException {
+    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String
+            annotationSetName, String
+                                                                  sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
 
@@ -598,7 +614,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetStr,
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String
+            variableSetStr,
                                                            @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
 
@@ -617,7 +634,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String
+            variableSetStr,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
 

@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.managers.CohortManager;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -298,20 +299,13 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of cohort Ids", required = true) @PathParam("cohorts") String cohortStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
-            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName, @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName, @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
+            List<String> idList = getIdList(cohortStr);
             if (asMap) {
-                if (StringUtils.isNotEmpty(annotationsetName)) {
-                    return createOkResponse(cohortManager.getAnnotationSetAsMap(cohortStr, studyStr, annotationsetName, sessionId));
-                } else {
-                    return createOkResponse(cohortManager.getAllAnnotationSetsAsMap(cohortStr, studyStr, sessionId));
-                }
+                return createOkResponse(cohortManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName,silent, sessionId));
             } else {
-                if (StringUtils.isNotEmpty(annotationsetName)) {
-                    return createOkResponse(cohortManager.getAnnotationSet(cohortStr, studyStr, annotationsetName, sessionId));
-                } else {
-                    return createOkResponse(cohortManager.getAllAnnotationSets(cohortStr, studyStr, sessionId));
-                }
+                return createOkResponse(cohortManager.getAnnotationSet(idList, studyStr, annotationsetName, silent, sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
