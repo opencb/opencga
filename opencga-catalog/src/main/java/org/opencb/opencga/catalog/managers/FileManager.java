@@ -196,7 +196,7 @@ public class FileManager extends ResourceManager<File> {
                     fileIds.add(smartResolutor(fileStrAux, studyId));
                 } catch (CatalogException e) {
                     if (silent) {
-                        fileIds.add(Long.getLong("-1"));
+                        fileIds.add(-1L);
                     } else {
                         throw e;
                     }
@@ -1787,7 +1787,7 @@ public class FileManager extends ResourceManager<File> {
     private Long smartResolutor(String fileName, long studyId) throws CatalogException {
         if (StringUtils.isNumeric(fileName) && Long.parseLong(fileName) > configuration.getCatalog().getOffset()) {
             long fileId = Long.parseLong(fileName);
-            fileDBAdaptor.exists(fileId);
+            fileDBAdaptor.checkId(fileId);
             return fileId;
         }
 

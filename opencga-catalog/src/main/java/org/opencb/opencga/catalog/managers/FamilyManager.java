@@ -151,7 +151,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             for (String familyStrAux : familyList) {
                 if (StringUtils.isNumeric(familyStrAux)) {
                     long familyId = Long.parseLong(familyStrAux);
-                    familyDBAdaptor.exists(familyId);
+                    familyDBAdaptor.checkId(familyId);
                     familyIds.add(familyId);
                 }
             }

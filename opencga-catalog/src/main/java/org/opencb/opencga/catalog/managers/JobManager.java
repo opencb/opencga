@@ -613,7 +613,7 @@ public class JobManager extends ResourceManager<Job> {
         if (StringUtils.isNumeric(jobName)) {
             long jobId = Long.parseLong(jobName);
             if (jobId > configuration.getCatalog().getOffset()) {
-                jobDBAdaptor.exists(jobId);
+                jobDBAdaptor.checkId(jobId);
                 return jobId;
             }
         }

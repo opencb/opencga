@@ -269,7 +269,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         if (cohortList.size() == 1 && StringUtils.isNumeric(cohortList.get(0))
                 && Long.parseLong(cohortList.get(0)) > configuration.getCatalog().getOffset()) {
             cohortIds.add(Long.parseLong(cohortList.get(0)));
-            cohortDBAdaptor.exists(cohortIds.get(0));
+            cohortDBAdaptor.checkId(cohortIds.get(0));
             studyId = cohortDBAdaptor.getStudyId(cohortIds.get(0));
             userId = userManager.getUserId(sessionId);
         } else {

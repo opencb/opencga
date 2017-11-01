@@ -365,7 +365,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         if (individualList.size() == 1 && StringUtils.isNumeric(individualList.get(0))
                 && Long.parseLong(individualList.get(0)) > configuration.getCatalog().getOffset()) {
             individualIds.add(Long.parseLong(individualList.get(0)));
-            individualDBAdaptor.exists(individualIds.get(0));
+            individualDBAdaptor.checkId(individualIds.get(0));
             studyId = individualDBAdaptor.getStudyId(individualIds.get(0));
             userId = userManager.getUserId(sessionId);
         } else {

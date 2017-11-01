@@ -236,7 +236,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         if (sampleList.size() == 1 && StringUtils.isNumeric(sampleList.get(0))
                 && Long.parseLong(sampleList.get(0)) > configuration.getCatalog().getOffset()) {
             sampleIds.add(Long.parseLong(sampleList.get(0)));
-            sampleDBAdaptor.exists(sampleIds.get(0));
+            sampleDBAdaptor.checkId(sampleIds.get(0));
             studyId = sampleDBAdaptor.getStudyId(sampleIds.get(0));
             userId = userManager.getUserId(sessionId);
         } else {
