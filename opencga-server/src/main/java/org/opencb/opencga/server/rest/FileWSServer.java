@@ -131,7 +131,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response info(@ApiParam(value = "Comma separated list of file ids or names up to a maximum of 100")
-                             @PathParam(value = "files") String fileStr,
+                         @PathParam(value = "files") String fileStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr, @QueryParam("silent") boolean silent) {
         try {

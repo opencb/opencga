@@ -109,7 +109,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    MyResourceIds getIds(List<String> jobList, @Nullable String studyStr, String sessionId) throws CatalogException {
+    MyResourceIds getIds(List<String> jobList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
         if (jobList == null || jobList.isEmpty()) {
             throw new CatalogException("Missing job parameter");
         }
@@ -130,10 +130,17 @@ public class JobManager extends ResourceManager<Job> {
 
             jobIds = new ArrayList<>(jobList.size());
             for (String jobStrAux : jobList) {
-                jobIds.add(smartResolutor(jobStrAux, studyId));
+                try {
+                    jobIds.add(smartResolutor(jobStrAux, studyId));
+                } catch (CatalogException e) {
+                    if (silent) {
+                        jobIds.add(Long.valueOf("-1"));
+                    } else {
+                        throw e;
+                    }
+                }
             }
         }
-
         return new MyResourceIds(userId, studyId, jobIds);
     }
 
@@ -523,7 +530,7 @@ public class JobManager extends ResourceManager<Job> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<JobAclEntry>> getAcls(String studyStr, List<String> jobList, String member, boolean silent, String sessionId)
             throws CatalogException {
-        MyResourceIds resource = getIds(jobList, studyStr, sessionId);
+        MyResourceIds resource = getIds(jobList, studyStr, silent, sessionId);
 
         List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();

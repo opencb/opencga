@@ -110,11 +110,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
      *
      * @param clinicalList Clinical analysis id in string format. Could be either the id or name.
      * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param silent boolean to accept either partial or only complete results
      * @param sessionId Session id of the user logged.
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
      */
-    public MyResourceIds getIds(List<String> clinicalList, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceIds getIds(List<String> clinicalList, @Nullable String studyStr, boolean silent, String sessionId)
+            throws CatalogException {
         if (clinicalList == null || clinicalList.isEmpty()) {
             throw new CatalogException("Missing clinical analysis parameter");
         }
@@ -151,7 +153,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 clinicalIds.addAll(clinicalQueryResult.getResult().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList()));
             }
 
-            if (clinicalIds.size() < clinicalList.size()) {
+            if (clinicalIds.size() < clinicalList.size() && !silent) {
                 throw new CatalogException("Found only " + clinicalIds.size() + " out of the " + clinicalList.size()
                         + " clinical analysis looked for in study " + studyStr);
             }

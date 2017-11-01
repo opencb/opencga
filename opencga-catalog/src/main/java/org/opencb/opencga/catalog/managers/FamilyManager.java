@@ -129,7 +129,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * @throws CatalogException CatalogException.
      */
     @Override
-    MyResourceIds getIds(List<String> familyList, @Nullable String studyStr, String sessionId) throws CatalogException {
+    MyResourceIds getIds(List<String> familyList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
         if (familyList == null || familyList.isEmpty()) {
             throw new CatalogException("Missing family parameter");
         }
@@ -166,7 +166,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 familyIds.addAll(familyQueryResult.getResult().stream().map(Family::getId).collect(Collectors.toList()));
             }
 
-            if (familyIds.size() < familyList.size()) {
+            if (familyIds.size() < familyList.size() && !silent) {
                 throw new CatalogException("Found only " + familyIds.size() + " out of the " + familyList.size()
                         + " families looked for in study " + studyStr);
             }
@@ -619,7 +619,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(familyList, studyStr, sessionId);
+        MyResourceIds resource = getIds(familyList, studyStr, silent, sessionId);
 
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();

@@ -353,7 +353,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    MyResourceIds getIds(List<String> individualList, @Nullable String studyStr, String sessionId) throws CatalogException {
+    MyResourceIds getIds(List<String> individualList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
         if (individualList == null || individualList.isEmpty()) {
             throw new CatalogException("Missing individual parameter");
         }
@@ -377,7 +377,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     .append(IndividualDBAdaptor.QueryParams.NAME.key(), individualList);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
             QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
-            if (individualQueryResult.getNumResults() == individualList.size()) {
+            if (individualQueryResult.getNumResults() == individualList.size() || silent) {
                 individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
             } else {
                 throw new CatalogException("Found only " + individualQueryResult.getNumResults() + " out of the " + individualList.size()
@@ -858,7 +858,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<IndividualAclEntry>> getAcls(String studyStr, List<String> individualList, String member,
                                                          boolean silent, String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(individualList, studyStr, sessionId);
+        MyResourceIds resource = getIds(individualList, studyStr, silent, sessionId);
 
         List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();

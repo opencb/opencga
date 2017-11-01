@@ -171,7 +171,8 @@ public class FileManager extends ResourceManager<File> {
     }
 
     @Override
-    public MyResourceIds getIds(List<String> fileList, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceIds getIds(List<String> fileList, @Nullable String studyStr, boolean silent, String sessionId)
+            throws CatalogException {
         if (fileList == null || fileList.isEmpty()) {
             throw new CatalogException("Missing file parameter");
         }
@@ -191,10 +192,17 @@ public class FileManager extends ResourceManager<File> {
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             for (String fileStrAux : fileList) {
-                fileIds.add(smartResolutor(fileStrAux, studyId));
+                try {
+                    fileIds.add(smartResolutor(fileStrAux, studyId));
+                } catch (CatalogException e) {
+                    if (silent) {
+                        fileIds.add(Long.getLong("-1"));
+                    } else {
+                        throw e;
+                    }
+                }
             }
         }
-
         return new MyResourceIds(userId, studyId, fileIds);
     }
 
@@ -1608,7 +1616,7 @@ public class FileManager extends ResourceManager<File> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<FileAclEntry>> getAcls(String studyStr, List<String> fileList, String member, boolean silent, String sessionId)
             throws CatalogException {
-        MyResourceIds resource = getIds(fileList, studyStr, sessionId);
+        MyResourceIds resource = getIds(fileList, studyStr, silent, sessionId);
         List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
 
         List<Long> resourceIds = resource.getResourceIds();

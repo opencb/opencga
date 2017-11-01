@@ -305,7 +305,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             List<String> idList = getIdList(cohortsStr);
             if (asMap) {
-                return createOkResponse(cohortManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName,silent, sessionId));
+                return createOkResponse(cohortManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName, silent, sessionId));
             } else {
                 return createOkResponse(cohortManager.getAnnotationSet(idList, studyStr, annotationsetName, silent, sessionId));
             }
@@ -477,7 +477,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(cohortIdsStr);
-                return createOkResponse(cohortManager.getAcls(studyStr, idList, member, silent, sessionId));
+            return createOkResponse(cohortManager.getAcls(studyStr, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

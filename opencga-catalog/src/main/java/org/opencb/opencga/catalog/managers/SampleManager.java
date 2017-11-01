@@ -223,7 +223,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public MyResourceIds getIds(List<String> sampleList, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceIds getIds(List<String> sampleList, @Nullable String studyStr, boolean silent, String sessionId)
+            throws CatalogException {
         if (sampleList == null || sampleList.isEmpty()) {
             throw new CatalogException("Missing sample parameter");
         }
@@ -260,7 +261,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 sampleIds.addAll(sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
             }
 
-            if (sampleIds.size() < sampleList.size()) {
+            if (sampleIds.size() < sampleList.size() && !silent) {
                 throw new CatalogException("Found only " + sampleIds.size() + " out of the " + sampleList.size()
                         + " samples looked for in study " + studyStr);
             }
@@ -866,7 +867,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<SampleAclEntry>> getAcls(String studyStr, List<String> sampleList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(sampleList, studyStr, sessionId);
+        MyResourceIds resource = getIds(sampleList, studyStr, silent, sessionId);
 
         List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();
