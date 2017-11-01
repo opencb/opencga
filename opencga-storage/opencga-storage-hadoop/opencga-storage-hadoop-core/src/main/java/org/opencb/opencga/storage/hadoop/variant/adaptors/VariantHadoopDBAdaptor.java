@@ -153,6 +153,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return configuration;
     }
 
+    public Connection getConnection() {
+        return hBaseManager.getConnection();
+    }
+
+    public String getVariantTable() {
+        return variantTable;
+    }
+
     public static Configuration getHbaseConfiguration(Configuration configuration, HBaseCredentials credentials) {
 
         // HBase configuration
@@ -509,10 +517,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             throw new RuntimeException(e);
         }
         return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
-    }
-
-    public Connection getConnection() {
-        return hBaseManager.getConnection();
     }
 
     @Override

@@ -445,6 +445,17 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new DefaultVariantStatisticsManager(getDBAdaptor());
     }
 
+    /**
+     *
+     * @param study     Study
+     * @param samples   Samples to fill gaps
+     * @param options   Other options
+     * @throws StorageEngineException if there is any error
+     */
+    public void fillGaps(String study, List<String> samples, ObjectMap options)
+            throws StorageEngineException {
+        throw new UnsupportedOperationException();
+    }
 
     public void searchIndex() throws StorageEngineException, IOException, VariantSearchException {
         searchIndex(new Query(), new QueryOptions());

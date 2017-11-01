@@ -415,6 +415,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
         int i = FILE_INFO_START_IDX;
         for (String attribute : fixedAttributes) {
+            if (i >= fileColumn.getDimensions()) {
+                break;
+            }
             String value = (String) (fileColumn.getElement(i));
             if (value != null) {
                 attributes.put(attribute, value);

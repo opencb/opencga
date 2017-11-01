@@ -53,6 +53,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTaskTest;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
@@ -280,6 +281,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         }
 
         URI outputUri = newOutputUri(1);
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         printVariants(studyConfiguration, dbAdaptor, outputUri);
 
 //        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
@@ -503,13 +505,29 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Test
     public void testPlatinumFilesOneByOne_MergeBasic() throws Exception {
-        testPlatinumFilesOneByOne(new ObjectMap()
+        StudyConfiguration studyConfiguration = testPlatinumFilesOneByOne(new ObjectMap()
                 .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 17);
+                /*.append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ")*/, 4);
+
+
+        HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        List<Integer> sampleIds = new ArrayList<>(studyConfiguration.getSampleIds().values());
+
+        FillGapsTaskTest.fillGaps(variantStorageEngine, studyConfiguration, sampleIds.subList(0, sampleIds.size()/2));
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+
+        FillGapsTaskTest.fillGaps(variantStorageEngine, studyConfiguration, sampleIds.subList(sampleIds.size()/2, sampleIds.size()));
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+
+        FillGapsTaskTest.fillGaps(variantStorageEngine, studyConfiguration, sampleIds);
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+
+
     }
 
-    public void testPlatinumFilesOneByOne(ObjectMap otherParams, int maxFilesLoaded) throws Exception {
+    public StudyConfiguration testPlatinumFilesOneByOne(ObjectMap otherParams, int maxFilesLoaded) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         List<VariantFileMetadata> filesMetadata = new LinkedList<>();
@@ -551,6 +569,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
 
+        return studyConfiguration;
     }
 
     @Test
