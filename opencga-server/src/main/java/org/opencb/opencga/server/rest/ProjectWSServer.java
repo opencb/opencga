@@ -75,7 +75,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response info(@ApiParam(value = "Comma separated list of project IDs or aliases up to a maximum of 100", required = true) @PathParam("projects")
                                  String projects,
-                         @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
 
         try {
             List<String> idList = getIdList(projects);
@@ -145,7 +145,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias up to a maximum of 100", required = true)
                                   @PathParam("projects") String projects,
-                                  @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                                  @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(projects);
             return createOkResponse(catalogManager.getStudyManager().get(idList, new Query(), queryOptions, silent, sessionId));

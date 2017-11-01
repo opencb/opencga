@@ -134,7 +134,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @PathParam(value = "files") String fileStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(fileStr);
             List<QueryResult<File>> fileQueryResult = fileManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
@@ -1138,7 +1138,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100")
                             @QueryParam("study") String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-                            @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(fileIdStr);
             return createOkResponse(fileManager.getAcls(studyStr, idList, member, silent, sessionId));
