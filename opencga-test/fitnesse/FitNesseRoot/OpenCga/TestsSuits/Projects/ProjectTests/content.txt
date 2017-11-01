@@ -15,9 +15,13 @@
 | POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
 |let|lProjectId|js|response.jsonbody.response[0].result[0].id||
 
-!3 Get Project 
+!3 Get Project Info
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/projects/$lProjectId/info?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$lProjectId'|
+
+!3 Get Multiple Projects Info
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/projects/$lProjectId,$projectId/info?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$lProjectId' && jsonbody.response[1].result[0].id == '$projectId'|
 
 !3 (Negative) Create Project With Existing Name
 !|Table: Rest Fixture | $baseURL |
@@ -32,6 +36,14 @@
 !3 Get Studies from Project (Suite Set UP)
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/projects/$projectId/studies?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$studyId'|
+
+!3 Get Studies from Multiple Projects 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/projects/$lProjectId,$projectId/studies?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '0.0' && jsonbody.response[1].result[0].id == '$studyId'|
+
+!3 Get Studies from Multiple Projects with Reverse Order
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/projects/$projectId,$lProjectId/studies?sid=$sessionId |200|  Content-Type: application/json | jsonbody.response[0].result[0].id == '$studyId' && jsonbody.response[1].numTotalResults == '0.0'|
 
 !3 Update Project
 !|Table: Rest Fixture | $baseURL |

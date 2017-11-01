@@ -1,6 +1,4 @@
 !define TEST_SYSTEM {slim}
-!define file {4}
-#!define projectId {$project}
 
 !3 Generate Random Variables 
 !|Table: Rest Fixture | $baseURL |
@@ -14,33 +12,49 @@
 | setBody | {"name" : "$sName",  "alias" : "$sAlias", "type" : "CASE_CONTROL"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/create?sid=$sessionId&projectId=$projectId |200|  Content-Type: application/json ||
-|let|studyId|js|response.jsonbody.response[0].result[0].id||
+|let|lStudyId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Get Study 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$studyId'|
+| GET | /v1/studies/$lStudyId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$lStudyId'|
 
 !3 Update Study 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "newName"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].name == 'newName'|
+| POST | /v1/studies/$lStudyId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].name == 'newName'|
 
 !3 Get Study 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName'|
+| GET | /v1/studies/$lStudyId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName'|
+
+!3 Get Studies Info
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$lStudyId,$studyId/info?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName' && jsonbody.response[1].result[0].id == '$studyId'|
+
+!3 Get Studies Info In Reverse Order
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$lStudyId,$studyId/info?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName' && jsonbody.response[1].result[0].id == '$studyId'|
+
+!3 Get Studies Info With One Invalid Entry And Silent False
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId|403|Content-Type: application/json |jsonbody.error == "Permission denied. User '$user' cannot view study { id: 0 }"|
+
+!3 Get Studies Info With One Invalid Entry And Silent True
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/11111,$lStudyId,$studyId/info?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogDBException: Study id '11111' does not exist" && jsonbody.response[1].result[0].name == 'newName' && jsonbody.response[2].result[0].id == '$studyId'|
 
 !3 Get Study ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result ==''|
+| GET | /v1/studies/$lStudyId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result ==''|
 
-!3 Get Study ACL with Mulitple Ids
+!3 Get Studies ACL 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId,$study/acl?sid=$sessionId|200|  Content-Type: application/json ||
+| GET | /v1/studies/$lStudyId,$study/acl?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 Create ACL For Study
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions" : "VIEW_FILES",  "action": "SET",  "study": "$studyId"}|
+| setBody | {  "permissions" : "VIEW_FILES",  "action": "SET",  "study": "$lStudyId"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json ||
 
@@ -48,53 +62,53 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"add" : "WRITE_FILES" }|
 | setHeader|Content-Type:application/json|
-| POST |/v1/studies/$studyId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2'|
+| POST |/v1/studies/$lStudyId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2'|
 
 !3 Update Study ACL (remove)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"remove" : "WRITE_FILES" }|
 | setHeader|Content-Type:application/json|
-| POST |/v1/studies/$studyId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_FILES'|
+| POST |/v1/studies/$lStudyId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_FILES'|
 
 !3 Update Study ACL (set)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"set" : "VIEW_FILES,WRITE_FILES" }|
 | setHeader|Content-Type:application/json|
-| POST |/v1/studies/$studyId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| POST |/v1/studies/$lStudyId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
 
 !3 Get Member ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/acl?sid=$sessionId&$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| GET | /v1/studies/$lStudyId/acl?sid=$sessionId&$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
 
 !3 Delete Member ACL
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions" : "",  "action": "REMOVE",  "study": "$studyId"}|
+| setBody | {  "permissions" : "",  "action": "REMOVE",  "study": "$lStudyId"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 Get Member ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/acl?sid=$sessionId&$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/studies/$lStudyId/acl?sid=$sessionId&$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Create Group
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$groupId",  "users" : "$userA,$userB"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyId/groups/create?sid=$sessionId |200|  Content-Type: application/json ||
+| POST | /v1/studies/$lStudyId/groups/create?sid=$sessionId |200|  Content-Type: application/json ||
 
 !3 Create Empty Group
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$emptyGroup"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyId/groups/create?sid=$sessionId |200|  Content-Type: application/json ||
+| POST | /v1/studies/$lStudyId/groups/create?sid=$sessionId |200|  Content-Type: application/json ||
 
 !3 Get Empty Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups?sid=$sessionId&name=$emptyGroup|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '0.0'|
+| GET | /v1/studies/$lStudyId/groups?sid=$sessionId&name=$emptyGroup|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '0.0'|
 
 !3 Get Groups From A Study
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|Content-Type: application/json ||
+| GET | /v1/studies/$lStudyId/groups?sid=$sessionId|200|Content-Type: application/json ||
 |let||js|response.jsonbody.response[0].result.length|4.0|
 
 
@@ -104,38 +118,62 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"users" : "$userB", "action" : "REMOVE" }|
 | setHeader|Content-Type:application/json|
-| POST |/v1/studies/$studyId/groups/$groupId/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
+| POST |/v1/studies/$lStudyId/groups/$groupId/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
 
 !3 Get Updated Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups?sid=$sessionId&name=$groupId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds[0] == '$userA'|
+| GET | /v1/studies/$lStudyId/groups?sid=$sessionId&name=$groupId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds[0] == '$userA'|
+
+!3 Get Groups From Studies
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$lStudyId,$studyId/groups?sid=$sessionId|200|Content-Type: application/json |jsonbody.response[0].numResults == '4' && jsonbody.response[1].numResults == '2'|
+
+!3 Get Groups From Studies In Reverser Order
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId,$lStudyId/groups?sid=$sessionId|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].numResults == '4'|
+
+!3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent False
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].errorMsg == 'org.opencb.opencga.catalog.exceptions.CatalogDBException: Study { id: 0 } not found.' && jsonbody.response[2].numResults == '4'|
+
+!3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent True
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].numResults == '0.0' && jsonbody.response[2].numResults == '4'|
 
 !3 Delete Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups/$groupId/delete?sid=$sessionId|200|  Content-Type: application/json ||
+| GET | /v1/studies/$lStudyId/groups/$groupId/delete?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 Get Deleted Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups?sid=$sessionId&name=$groupId|200|  Content-Type: application/json ||
+| GET | /v1/studies/$lStudyId/groups?sid=$sessionId&name=$groupId|200|  Content-Type: application/json ||
 
 !3 Get Study Samples
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/samples/?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0'|
+| GET | /v1/studies/$lStudyId/samples/?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0'|
 
 !3 Create Sample 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "sample" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/create?sid=$sessionId&study=$studyId |200|  Content-Type: application/json ||
+| POST | /v1/samples/create?sid=$sessionId&study=$lStudyId |200|  Content-Type: application/json ||
 |let|sId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Get Study Samples
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/samples/?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '1'|
+| GET | /v1/studies/$lStudyId/samples/?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '1'|
 
 !3 Get Study Summary
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/summary?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].samples == '1'|
+| GET | /v1/studies/$lStudyId/summary?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].samples == '1'|
+
+!3 Get Studies Summary
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId,$lStudyId/summary?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].samples == '0' && jsonbody.response[1].result[0].samples == '1'|
+
+!3 Get Studies Summary Reverse Order
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$lStudyId,$studyId/summary?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].samples == '1' && jsonbody.response[1].result[0].samples == '0'|
 
 !3 Search Study
 !|Table: Rest Fixture | $baseURL |

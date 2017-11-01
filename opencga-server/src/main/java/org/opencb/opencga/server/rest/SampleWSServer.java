@@ -107,7 +107,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Individual id or name to whom the sample will correspond.") @QueryParam("individual") String individual,
-            @ApiParam(value="JSON containing sample information", required = true) CreateSamplePOST params) {
+            @ApiParam(value="JSON containing sample information", required = true) CreateSamplePOST params){
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
