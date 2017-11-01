@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -58,7 +58,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     public static void beforeClass() throws IOException {
         Path rootDir = getTmpRootDir();
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
+        Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
                 StandardCopyOption.REPLACE_EXISTING);
         inputUri = inputPath.toUri();
     }

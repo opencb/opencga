@@ -73,6 +73,8 @@ import org.apache.zookeeper.server.PrepRequestProcessor;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
@@ -85,6 +87,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,7 +220,6 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                         org.apache.hadoop.hbase.ipc.PhoenixRpcSchedulerFactory.class.getName());
                 conf.set("hbase.rpc.controllerfactory.class",
                         org.apache.hadoop.hbase.ipc.controller.ServerRpcControllerFactory.class.getName());
-
 
                 // Not required in Phoenix 4.8
 //                conf.set("hbase.master.loadbalancer.class",
@@ -403,6 +405,14 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         if (manager.get() != null) {
             manager.get().close();
         }
+    }
+
+    default int getExpectedNumLoadedVariants(VariantFileMetadata fileMetadata) {
+        int numRecords = 0;
+        for (VariantType variantType : VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET) {
+            numRecords += fileMetadata.getStats().getVariantTypeCount(variantType);
+        }
+        return numRecords;
     }
 
     class TestMRExecutor implements MRExecutor {

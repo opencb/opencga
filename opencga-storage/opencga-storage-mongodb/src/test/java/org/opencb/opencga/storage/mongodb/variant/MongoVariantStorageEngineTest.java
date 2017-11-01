@@ -40,7 +40,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -74,7 +74,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSt
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoVariantStorageEngineTest extends VariantStorageManagerTest implements MongoDBVariantStorageTest {
+public class MongoVariantStorageEngineTest extends VariantStorageEngineTest implements MongoDBVariantStorageTest {
 
     @Before
     public void setUp() throws Exception {
@@ -1073,23 +1073,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
                 }
             }
         }
-    }
-
-    @Test
-    @Override
-    public void indexWithOtherFieldsExcludeGT() throws Exception {
-        super.indexWithOtherFieldsExcludeGT();
-
-        try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
-            MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
-
-            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
-                assertFalse(((Document) document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class).get(0))
-                        .containsKey(GENOTYPES_FIELD));
-                System.out.println("dbObject = " + document);
-            }
-        }
-
     }
 
     @Test

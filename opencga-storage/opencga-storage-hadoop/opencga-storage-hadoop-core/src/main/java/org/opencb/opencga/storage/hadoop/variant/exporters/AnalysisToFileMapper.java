@@ -22,20 +22,16 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseVariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
-import static org.opencb.opencga.storage.hadoop.variant.exporters.VariantTableExportDriver
-        .CONFIG_VARIANT_TABLE_EXPORT_TYPE;
+import static org.opencb.opencga.storage.hadoop.variant.exporters.VariantTableExportDriver.CONFIG_VARIANT_TABLE_EXPORT_TYPE;
 
 /**
  * Created by mh719 on 06/12/2016.
@@ -52,16 +48,15 @@ public class AnalysisToFileMapper extends AbstractHBaseVariantMapper<Object, Obj
         super.setup(context);
         studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
 
-        List<String> returnedSamples = Collections.emptyList(); // No GT data by default
-        boolean withGenotype = context.getConfiguration().getBoolean(VariantTableExportDriver
-                .CONFIG_VARIANT_TABLE_EXPORT_AVRO_GENOTYPE, false);
-        withGenotype = context.getConfiguration().getBoolean(VariantTableExportDriver
-                .CONFIG_VARIANT_TABLE_EXPORT_GENOTYPE, withGenotype);
-        if (withGenotype) {
-            returnedSamples = new ArrayList<>(this.getIndexedSamples().keySet());
-        }
-        logger.info("Export Genotype [{}] of {} samples ... ", withGenotype, returnedSamples.size());
-        getHbaseToVariantConverter().setReturnedSamples(returnedSamples);
+//        List<String> returnedSamples = Collections.emptyList(); // No GT data by default
+//        boolean withGenotype = context.getConfiguration().getBoolean(VariantTableExportDriver
+//                .CONFIG_VARIANT_TABLE_EXPORT_AVRO_GENOTYPE, false);
+//        withGenotype = context.getConfiguration().getBoolean(VariantTableExportDriver
+//                .CONFIG_VARIANT_TABLE_EXPORT_GENOTYPE, withGenotype);
+//        if (withGenotype) {
+//            returnedSamples = new ArrayList<>(this.getIndexedSamples().keySet());
+//        }
+//        logger.info("Export Genotype [{}] of {} samples ... ", withGenotype, returnedSamples.size());
         getHbaseToVariantConverter().setStudyNameAsStudyId(true);
 
         String typeString = context.getConfiguration()

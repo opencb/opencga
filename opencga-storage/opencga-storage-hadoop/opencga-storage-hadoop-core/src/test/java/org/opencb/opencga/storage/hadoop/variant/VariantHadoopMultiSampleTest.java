@@ -243,6 +243,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testMultipleFilesConcurrentFullPut() throws Exception {
         testMultipleFilesConcurrent(new ObjectMap(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, false));
     }
+
     @Test
     public void testMultipleFilesConcurrentMergeBasic() throws Exception {
         testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
@@ -505,11 +506,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         testPlatinumFilesOneByOne(new ObjectMap()
                 .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"));
-    }
-
-    public void testPlatinumFilesOneByOne(ObjectMap otherParams) throws Exception {
-        testPlatinumFilesOneByOne(otherParams, 17);
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 17);
     }
 
     public void testPlatinumFilesOneByOne(ObjectMap otherParams, int maxFilesLoaded) throws Exception {
@@ -544,7 +541,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             }
         }
 
-        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri(1));
 
         for (Variant variant : dbAdaptor) {
             System.out.println("variant = " + variant);

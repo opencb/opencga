@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.slf4j.Logger;
@@ -48,7 +49,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     private long count = 0;
 
     public VariantHBaseScanIterator(ResultScanner resultScanner, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-                                    QueryOptions options, List<String> returnedSamplesList, String unknownGenotype, List<String> formats)
+                                    QueryOptions options, String unknownGenotype, List<String> formats,
+                                    VariantQueryUtils.SelectVariantElements selectElements)
             throws IOException {
         this.resultScanner = resultScanner;
         this.genomeHelper = genomeHelper;
@@ -57,9 +59,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(true)
                 .setSimpleGenotypes(true)
-                .setReadFullSamplesData(true)
                 .setUnknownGenotype(unknownGenotype)
-                .setReturnedSamples(returnedSamplesList)
+                .setSelectVariantElements(selectElements)
                 .setFormats(formats);
         setLimit(options.getLong(QueryOptions.LIMIT));
     }

@@ -184,8 +184,8 @@ public class DocumentToStudyVariantEntryConverterTest {
         List<String> sampleNames = null;
 
         // Test with no stats converter provided
-        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, fileId, new
-                DocumentToSamplesConverter(studyId, sampleNames, "0/0"));
+        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, studyId, fileId,
+                new DocumentToSamplesConverter(studyId, sampleNames, "0/0"));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
     }
@@ -195,7 +195,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         studyEntry.getSamplesData().clear(); // TODO Samples can't be tested easily, needs a running Mongo instance
         List<String> sampleNames = null;
         // Test with a stats converter provided but no stats object
-        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, fileId, new
+        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, studyId, fileId, new
                 DocumentToSamplesConverter(studyId, sampleNames, "0/0"));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
@@ -204,8 +204,8 @@ public class DocumentToStudyVariantEntryConverterTest {
     @Test
     public void testConvertToStorageTypeWithoutStats() {
         // Test with no stats converter provided
-        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, fileId,
-                new DocumentToSamplesConverter(studyId, fileId, sampleNames, "0/0"));
+        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true,
+                studyId, fileId, new DocumentToSamplesConverter(studyId, fileId, sampleNames, "0/0"));
         Document converted = converter.convertToStorageType(variant, studyEntry);
         assertEquals(mongoStudy, converted);
     }
@@ -220,9 +220,9 @@ public class DocumentToStudyVariantEntryConverterTest {
         // Test with no stats converter provided
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(studyConfiguration);
         converter = new DocumentToStudyVariantEntryConverter(
-                true, fileId,
-                samplesConverter
-        );
+                true,
+                studyId, fileId,
+                samplesConverter);
         convertedMongo = converter.convertToStorageType(variant, studyEntry);
         assertEquals(mongoFileWithIds, convertedMongo);
         convertedFile = converter.convertToDataModelType(convertedMongo);
@@ -240,9 +240,9 @@ public class DocumentToStudyVariantEntryConverterTest {
         // Test with no stats converter provided
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(studyConfiguration);
         converter = new DocumentToStudyVariantEntryConverter(
-                true, fileId,
-                samplesConverter
-        );
+                true,
+                studyId, fileId,
+                samplesConverter);
         convertedFile = converter.convertToDataModelType(mongoFileWithIds);
         convertedMongo = converter.convertToStorageType(variant, convertedFile);
         assertEquals(studyEntry, convertedFile);

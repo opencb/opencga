@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant;
+package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import com.google.common.collect.BiMap;
 import org.apache.hadoop.hbase.client.Result;
