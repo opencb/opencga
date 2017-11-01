@@ -685,16 +685,18 @@ public class FileManager extends ResourceManager<File> {
         return new QueryResult<>("File tree", dbTime, numResults, numResults, "", "", Arrays.asList(fileTree));
     }
 
-    public QueryResult<File> getFilesFromFolder(long folderId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkId(folderId, "folderId");
+    public QueryResult<File> getFilesFromFolder(String folderStr, String studyStr, QueryOptions options, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(folderStr, "folder");
+        MyResourceId resource = getId(folderStr, studyStr, sessionId);
+
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        long studyId = getStudyId(folderId);
-        File folder = get(folderId, null, sessionId).first();
+        File folder = get(resource.getResourceId(), null, sessionId).first();
         if (!folder.getType().equals(File.Type.DIRECTORY)) {
-            throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
+            throw new CatalogDBException("File {id:" + resource.getResourceId() + ", path:'" + folder.getPath() + "'} is not a folder.");
         }
         Query query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());
-        return get(studyId, query, options, sessionId);
+        return get(resource.getStudyId(), query, options, sessionId);
     }
 
     public QueryResult<File> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {

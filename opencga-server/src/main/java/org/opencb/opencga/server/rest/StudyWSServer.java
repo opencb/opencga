@@ -261,7 +261,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
                     paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response getAllJobs(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr,
@@ -540,10 +540,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/acl/{memberIds}/update")
+    @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(
-            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to modify ACLs. 'template' could be either 'admin', 'analyst' or 'view_only'",
                     required = true) StudyAcl params) {
         try {

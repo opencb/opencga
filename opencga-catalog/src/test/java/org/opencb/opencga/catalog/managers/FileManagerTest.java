@@ -1543,8 +1543,8 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void getAllFilesInFolder() throws CatalogException {
-        long fileId = catalogManager.getFileManager().getId("/data/test/folder/", "user@1000G:phase1", sessionIdUser).getResourceId();
-        List<File> allFilesInFolder = catalogManager.getFileManager().getFilesFromFolder(fileId, null, sessionIdUser).getResult();
+        List<File> allFilesInFolder = catalogManager.getFileManager().getFilesFromFolder("/data/test/folder/", "user@1000G:phase1", null,
+                sessionIdUser).getResult();
         assertEquals(3, allFilesInFolder.size());
     }
 

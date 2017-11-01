@@ -76,7 +76,7 @@ public class ToolWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response search(@ApiParam(value = "id", required = false) @QueryParam(value = "id") @DefaultValue("") String toolId,
                            @ApiParam(value = "userId", required = false) @QueryParam(value = "userId") @DefaultValue("") String userId,
