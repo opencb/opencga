@@ -79,7 +79,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         userSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         userSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         userSubCommands.addCommand("update", usersCommandOptions.updateCommandOptions);
-        userSubCommands.addCommand("change-password", usersCommandOptions.changePasswordCommandOptions);
+        userSubCommands.addCommand("password", usersCommandOptions.changePasswordCommandOptions);
         userSubCommands.addCommand("delete", usersCommandOptions.deleteCommandOptions);
         userSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
         userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
@@ -115,6 +115,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         studySubCommands.addCommand("groups-delete", studyCommandOptions.groupsDeleteCommandOptions);
         studySubCommands.addCommand("groups-update", studyCommandOptions.groupsUpdateCommandOptions);
         studySubCommands.addCommand("members-update", studyCommandOptions.memberGroupUpdateCommandOptions);
+        studySubCommands.addCommand("admins-update", studyCommandOptions.adminsGroupUpdateCommandOptions);
         studySubCommands.addCommand("acl", studyCommandOptions.aclsCommandOptions);
         studySubCommands.addCommand("acl-update", studyCommandOptions.aclsUpdateCommandOptions);
 

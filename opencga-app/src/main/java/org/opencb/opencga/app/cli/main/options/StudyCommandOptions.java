@@ -51,6 +51,7 @@ public class StudyCommandOptions {
     public GroupsDeleteCommandOptions groupsDeleteCommandOptions;
     public GroupsUpdateCommandOptions groupsUpdateCommandOptions;
     public MemberGroupUpdateCommandOptions memberGroupUpdateCommandOptions;
+    public AdminsGroupUpdateCommandOptions adminsGroupUpdateCommandOptions;
 
     public AclsCommandOptions aclsCommandOptions;
     public AclsUpdateCommandOptions aclsUpdateCommandOptions;
@@ -87,6 +88,7 @@ public class StudyCommandOptions {
         this.groupsDeleteCommandOptions = new GroupsDeleteCommandOptions();
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
         this.memberGroupUpdateCommandOptions = new MemberGroupUpdateCommandOptions();
+        this.adminsGroupUpdateCommandOptions = new AdminsGroupUpdateCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
         this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
@@ -399,6 +401,16 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"members-update"}, commandDescription = "Add/Remove users to access the study")
     public class MemberGroupUpdateCommandOptions extends BaseStudyCommand {
+
+        @Parameter(names = {"--users"}, description = "Comma separated list of users", required = true, arity = 1)
+        public String users;
+
+        @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, REMOVE)", required = true, arity = 1)
+        public MemberParams.Action action;
+    }
+
+    @Parameters(commandNames = {"admins-update"}, commandDescription = "Add/Remove administrative users to the study")
+    public class AdminsGroupUpdateCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--users"}, description = "Comma separated list of users", required = true, arity = 1)
         public String users;
