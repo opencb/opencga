@@ -176,7 +176,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query"),
     })
     public Response searchCohorts(@ApiParam(value = "Study [[user@]project:]study where study and project can be either "
             + "the id or alias") @QueryParam("study") String studyStr,
@@ -202,7 +202,9 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/samples")
-    @ApiOperation(value = "Get samples from cohort", position = 3, response = Sample[].class)
+    @ApiOperation(value = "Get samples from cohort [WARNING]", position = 3, response = Sample[].class,
+            notes = "The usage of this webservice is discouraged. /{cohorts}/info is expected to be used with &include=samples query"
+                    + " parameter to approximately simulate this same behaviour.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -211,7 +213,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
                     paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response getSamples(@ApiParam(value = "Cohort id or name", required = true) @PathParam("cohort") String cohortStr,
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -506,12 +508,12 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/acl/{memberIds}/update")
+    @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) CohortAcl params) {
         try {
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());

@@ -244,7 +244,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/configs/{name}/info")
-    @ApiOperation(value = "Fetch a user configuration [WARNING]", response = Map.class,
+    @ApiOperation(value = "Fetch a user configuration [DEPRECATED]", response = Map.class,
             notes = "This webservice is deprecated. Users should use /{user}/configs webservice instead.")
     public Response getConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                      @ApiParam(value = "Unique name (typically the name of the application)", required = true)
@@ -319,7 +319,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/configs/filters/{name}/info")
-    @ApiOperation(value = "Fetch a filter [WARNING]", response = User.Filter.class,
+    @ApiOperation(value = "Fetch a filter [DEPRECATED]", response = User.Filter.class,
             notes = "This webservice is deprecated. Users should use /{user}/configs/filters webservice instead.")
     public Response getFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                  @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
@@ -332,7 +332,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/configs/filters/list")
-    @ApiOperation(value = "Fetch all the filters of a user [WARNING]", response = User.Filter.class,
+    @ApiOperation(value = "Fetch all the filters of a user [DEPRECATED]", response = User.Filter.class,
             notes = "This webservice is deprecated. Users should use /{user}/configs/filters webservice instead.")
     public Response getFilters(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
