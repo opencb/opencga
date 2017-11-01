@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -137,8 +138,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             for (String clinicalStrAux : clinicalList) {
                 if (StringUtils.isNumeric(clinicalStrAux)) {
-                    long clinicalId = Long.parseLong(clinicalStrAux);
-                    clinicalDBAdaptor.exists(clinicalId);
+                    long clinicalId = getClinicalId(silent, clinicalStrAux);
                     clinicalIds.add(clinicalId);
                 }
             }
@@ -642,4 +642,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
     }
 
+    private long getClinicalId(boolean silent, String clinicalStrAux) throws CatalogDBException {
+        long clinicalId = Long.parseLong(clinicalStrAux);
+        try {
+            clinicalDBAdaptor.checkId(clinicalId);
+        } catch (CatalogException e) {
+            if (silent) {
+                return -1L;
+            } else {
+                throw e;
+            }
+        }
+        return clinicalId;
+    }
 }

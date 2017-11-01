@@ -245,8 +245,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             for (String sampleStrAux : sampleList) {
                 if (StringUtils.isNumeric(sampleStrAux)) {
-                    long sampleId = Long.parseLong(sampleStrAux);
-                    sampleDBAdaptor.exists(sampleId);
+                    long sampleId = getSampleId(silent, sampleStrAux);
                     sampleIds.add(sampleId);
                 }
             }
@@ -1101,5 +1100,17 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 //        }
 //    }
 
-
+    private long getSampleId(boolean silent, String sampleStrAux) throws CatalogDBException {
+        long sampleId = Long.parseLong(sampleStrAux);
+        try {
+            sampleDBAdaptor.checkId(sampleId);
+        } catch (CatalogException e) {
+            if (silent) {
+                return -1L;
+            } else {
+                throw e;
+            }
+        }
+        return sampleId;
+    }
 }
