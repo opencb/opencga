@@ -70,7 +70,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Sample version") @QueryParam("version") Integer version,
             @ApiParam(value = "Fetch all sample versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
-                    boolean allVersions, @QueryParam("silent") boolean silent) {
+                    boolean allVersions,
+            @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> sampleList = getIdList(samplesStr);
             List<QueryResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, sessionId);
@@ -331,11 +332,11 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{samples}/annotationsets")
     @ApiOperation(value = "Return the annotation sets of the sample", position = 12)
     public Response getAnnotationSet(
-            @ApiParam(value = "Comma separated list sample IDs or names", required = true) @PathParam("samples") String samplesStr,
+            @ApiParam(value = "Comma separated list sample IDs or names up to a maximum of 100", required = true) @PathParam("samples") String samplesStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
-            @QueryParam("silent") boolean silent) throws WebServiceException {
+            @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
             List<String> idList = getIdList(samplesStr);
             if (asMap) {
@@ -461,7 +462,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                                     String sampleIdsStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
-                            @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member,
+                            @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
                 return createOkResponse(sampleManager.getAcls(studyStr, idList, member,silent, sessionId));

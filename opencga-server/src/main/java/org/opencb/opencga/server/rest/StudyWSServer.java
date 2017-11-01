@@ -146,8 +146,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("studies") String studies, @QueryParam("silent") boolean silent) {
+    public Response info(@ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100",
+            required = true) @PathParam("studies") String studies,
+                         @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studies);
             return createOkResponse(studyManager.get(idList, queryOptions, silent, sessionId));
@@ -160,8 +161,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studies}/summary")
     @ApiOperation(value = "Fetch study information plus some basic stats", notes = "Fetch study information plus some basic stats such as"
             + " the number of files, samples, cohorts...")
-    public Response summary(@ApiParam(value = "Comma separated list of Studies [[user@]project:]study where study and project can be either the id or alias", required = true)
-                            @PathParam("studies") String studies, @QueryParam("silent") boolean silent) {
+    public Response summary(@ApiParam(value = "Comma separated list of Studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
+                            @PathParam("studies") String studies,
+                            @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studies);
             return createOkResponse(studyManager.getSummary(idList, queryOptions, silent, sessionId));
@@ -367,10 +369,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studies}/groups")
     @ApiOperation(value = "Return the groups present in the studies", position = 13, response = Group[].class)
     public Response getGroups(
-            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias", required = true)
+            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
             @PathParam("studies") String studiesStr,
-            @ApiParam(value = "Group name. If provided, it will only fetch information for the provided group.") @QueryParam("name")
-                    String groupId, @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Group name. If provided, it will only fetch information for the provided group.") @QueryParam("name") String groupId,
+            @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studiesStr);
             return createOkResponse(catalogManager.getStudyManager().getGroup(idList, groupId, silent, sessionId));
@@ -465,10 +467,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studies}/acl")
     @ApiOperation(value = "Return the acl of the study. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(
-            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias", required = true)
+            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
             @PathParam("studies") String studiesStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-            @QueryParam("silent") boolean silent) throws WebServiceException {
+            @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
 
         try {
             List<String> idList = getIdList(studiesStr);

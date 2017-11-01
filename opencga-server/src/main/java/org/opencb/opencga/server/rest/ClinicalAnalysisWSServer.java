@@ -104,7 +104,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
     public Response info(@ApiParam(value = "Comma separated list of clinical analysis ids up to a maximum of 100") @PathParam(value = "clinicalAnalysis")
                                  String clinicalAnalysisStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                         @QueryParam("study") String studyStr, @QueryParam("silent") boolean silent) {
+                         @QueryParam("study") String studyStr,
+                         @ApiParam(value = "Boolean to accept either only complete(false) or partial(true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> analysisList = getIdList(clinicalAnalysisStr);
             List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);
