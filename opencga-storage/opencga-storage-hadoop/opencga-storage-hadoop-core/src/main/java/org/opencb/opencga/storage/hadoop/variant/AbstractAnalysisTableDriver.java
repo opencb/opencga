@@ -31,6 +31,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -354,8 +355,8 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
 
-    public static String buildCommandLineArgs(String server, String archiveTable, String variantsTable, int studyId,
-                                              List<Integer> fileIds, Map<String, Object> other) {
+    public static String buildCommandLineArgs(String archiveTable, String variantsTable, int studyId,
+                                              List<Integer> fileIds, ObjectMap other) {
         StringBuilder stringBuilder = new StringBuilder()
 //                .append(server).append(' ')
                 .append(archiveTable).append(' ')
@@ -371,13 +372,19 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return stringBuilder.toString();
     }
 
-    public static void addOtherParams(Map<String, Object> other, StringBuilder stringBuilder) {
+    public static void addOtherParams(ObjectMap other, StringBuilder stringBuilder) {
         for (Map.Entry<String, Object> entry : other.entrySet()) {
+            String key = entry.getKey();
             Object value = entry.getValue();
-            if (value != null && (value instanceof Number
-                    || value instanceof Boolean
-                    || value instanceof String && !((String) value).contains(" ") && !((String) value).isEmpty())) {
-                stringBuilder.append(' ').append(entry.getKey()).append(' ').append(value);
+            if (value != null) {
+                if (value instanceof Number || value instanceof Boolean) {
+                    stringBuilder.append(' ').append(key).append(' ').append(value);
+                } else {
+                    String valueStr = other.getString(key);
+                    if (valueStr != null && !valueStr.contains(" ") && !valueStr.isEmpty()) {
+                        stringBuilder.append(' ').append(key).append(' ').append(valueStr);
+                    }
+                }
             }
         }
     }

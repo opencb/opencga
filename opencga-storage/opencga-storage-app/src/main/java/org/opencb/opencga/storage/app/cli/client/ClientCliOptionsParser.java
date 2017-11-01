@@ -25,7 +25,8 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 
 import java.util.Map;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
@@ -61,6 +62,7 @@ public class ClientCliOptionsParser extends GeneralCliOptions {
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantsCommandOptions);
 //        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
+        variantSubCommands.addCommand(FILL_GAPS_COMMAND, variantCommandOptions.fillGapsCommandOptions);
         variantSubCommands.addCommand("export", variantCommandOptions.exportVariantsCommandOptions);
         variantSubCommands.addCommand("search", variantCommandOptions.searchVariantsCommandOptions);
     }

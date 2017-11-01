@@ -19,6 +19,7 @@ import java.util.Collection;
  */
 public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
+    public static final String FILL_GAPS_OPERATION_NAME = "fill_gaps";
     private Collection<Integer> samples;
 
     public FillGapsDriver() {
@@ -58,7 +59,7 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected String getJobOperationName() {
-        return "fill-gaps";
+        return FILL_GAPS_OPERATION_NAME;
     }
 
     public static void main(String[] args) throws Exception {

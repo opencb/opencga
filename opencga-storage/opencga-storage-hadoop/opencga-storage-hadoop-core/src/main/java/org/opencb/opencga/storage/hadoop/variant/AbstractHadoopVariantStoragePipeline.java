@@ -560,7 +560,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
 
         Class execClass = VariantTableDriver.class;
-        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.toString(),
+        String args = VariantTableDriver.buildCommandLineArgs(
                 archiveTableCredentials.getTable(),
                 variantsTableCredentials.getTable(), studyId, pendingFiles, options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
@@ -593,18 +593,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     public String getJarWithDependencies() throws StorageEngineException {
-        return getJarWithDependencies(options);
-    }
-
-    public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
-        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
-        if (jar == null) {
-            throw new StorageEngineException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
-        }
-        if (!Paths.get(jar).isAbsolute()) {
-            jar = System.getProperty("app.home", "") + "/" + jar;
-        }
-        return jar;
+        return HadoopVariantStorageEngine.getJarWithDependencies(options);
     }
 
     @Override

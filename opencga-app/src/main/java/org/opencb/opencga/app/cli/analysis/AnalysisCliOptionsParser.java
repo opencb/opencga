@@ -32,7 +32,8 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
@@ -79,6 +80,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(VARIANT_REMOVE_COMMAND, variantCommandOptions.variantRemoveCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
+        variantSubCommands.addCommand(FILL_GAPS_COMMAND, variantCommandOptions.fillGapsVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
         variantSubCommands.addCommand("export-frequencies", variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantCommandOptions);

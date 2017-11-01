@@ -51,15 +51,17 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 //        fillGapsMR(variantStorageEngine, studyConfiguration, sampleIds, true);
 //        fillGapsMR(variantStorageEngine, studyConfiguration, sampleIds, false);
 //        fillGapsLocal(variantStorageEngine, studyConfiguration, sampleIds);
-        fillLocalMRDriver(variantStorageEngine, studyConfiguration, sampleIds);
+//        fillLocalMRDriver(variantStorageEngine, studyConfiguration, sampleIds);
+//        fillGapsLocalFromArchive(variantStorageEngine, studyConfiguration, sampleIds);
+//        variantStorageEngine.fillGaps(studyConfiguration.getStudyName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", false));
+        variantStorageEngine.fillGaps(studyConfiguration.getStudyName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", true));
     }
 
     protected static void fillLocalMRDriver(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration, Collection<Integer> sampleIds) throws Exception {
-        Map<String, Object> other = new HashMap<>();
+        ObjectMap other = new ObjectMap();
 //        other.putAll(variantStorageEngine.getOptions());
         other.put(FillGapsMapper.SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        String cli = AbstractAnalysisTableDriver.buildCommandLineArgs(dbAdaptor.getCredentials().toString(),
+        String cli = AbstractAnalysisTableDriver.buildCommandLineArgs(
                 variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId()), variantStorageEngine.getVariantTableName(),
                 studyConfiguration.getStudyId(), Collections.emptyList(), other);
         System.out.println("cli = " + cli);
@@ -131,7 +133,6 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
     }
 
-
     @Test
     public void testFillGapsPlatinumFiles() throws Exception {
         StudyConfiguration studyConfiguration = loadPlatinum(new ObjectMap()
@@ -145,19 +146,19 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         List<Integer> subSamples = sampleIds.subList(0, sampleIds.size() / 2);
         System.out.println("subSamples = " + subSamples);
         fillGaps(variantStorageEngine, studyConfiguration, subSamples);
-        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+        printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
         checkMissing(studyConfiguration, dbAdaptor, subSamples);
 
         subSamples = sampleIds.subList(sampleIds.size() / 2, sampleIds.size());
         System.out.println("subSamples = " + subSamples);
         fillGaps(variantStorageEngine, studyConfiguration, subSamples);
-        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+        printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
         checkMissing(studyConfiguration, dbAdaptor, subSamples);
 
         subSamples = sampleIds;
         System.out.println("subSamples = " + subSamples);
         fillGaps(variantStorageEngine, studyConfiguration, subSamples);
-        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+        printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
         checkMissing(studyConfiguration, dbAdaptor, subSamples);
     }
 
@@ -206,7 +207,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
                 allUnknown &= unknown;
             }
             // Fail if any, but not all samples are unknown
-            Assert.assertFalse(anyUnknown && !allUnknown);
+            Assert.assertFalse(variant.toString(), anyUnknown && !allUnknown);
 //            Assert.assertTrue(allUnknown || !anyUnknown);
         }
     }

@@ -45,8 +45,8 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
     private final ArchiveRowKeyFactory archiveRowKeyFactory;
     private final Collection<Integer> samples;
     private final Map<Integer, Integer> samplesFileMap;
-    private Map<Integer, byte[]> fileToColumnMap = new HashMap<>();
-    private Map<Integer, LinkedHashMap<String, Integer>> fileToSamplePositions = new HashMap<>();
+    private final Map<Integer, byte[]> fileToColumnMap = new HashMap<>();
+    private final Map<Integer, LinkedHashMap<String, Integer>> fileToSamplePositions = new HashMap<>();
     private final StudyEntryToHBaseConverter studyConverter;
     private final Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
     private final VariantMerger variantMerger;
@@ -55,7 +55,7 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
                         String archiveTableName,
                         StudyConfiguration studyConfiguration,
                         GenomeHelper helper,
-                        Collection<Integer> samples) throws IOException {
+                        Collection<Integer> samples) {
         this.hBaseManager = hBaseManager;
         this.archiveTableName = archiveTableName;
         this.studyConfiguration = studyConfiguration;
