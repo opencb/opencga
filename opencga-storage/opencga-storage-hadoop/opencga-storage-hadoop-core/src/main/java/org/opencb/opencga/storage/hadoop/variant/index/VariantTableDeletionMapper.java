@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
+import static org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
 
 /**
  * Removes Sample data for a provided file from the Analysis (Variant) and the

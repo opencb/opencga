@@ -136,7 +136,7 @@ public class UserCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"change-password"}, commandDescription = "Change the user's password")
+    @Parameters(commandNames = {"password"}, commandDescription = "Change the user's password")
     public class ChangePasswordCommandOptions {
 
         @Parameter(names = {"--password"}, description = "Old password", arity = 1, required = true)

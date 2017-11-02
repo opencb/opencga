@@ -29,9 +29,11 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
+import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -64,6 +66,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
+import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +83,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
@@ -353,7 +358,11 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     @Override
     protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
+        // Provided Extra fields
+        List<String> providedExtraFields = getOptions().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
+
         super.securePreLoad(studyConfiguration, fileMetadata);
+
         if (!studyConfiguration.getAttributes().containsKey(MERGE_LOAD_SAMPLE_COLUMNS)) {
             boolean loadSampleColumns = getOptions().getBoolean(MERGE_LOAD_SAMPLE_COLUMNS, DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS);
             studyConfiguration.getAttributes().put(MERGE_LOAD_SAMPLE_COLUMNS, loadSampleColumns);
@@ -363,6 +372,27 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             mergeMode = MergeMode.from(options);
             studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
         }
+
+        Stream<String> stream;
+        // If ExtraGenotypeFields are provided by command line, check that those fields are going to be loaded.
+        if (!providedExtraFields.isEmpty()) {
+            stream = providedExtraFields.stream();
+        } else {
+            // Otherwise, add all format fields
+            stream = fileMetadata.getHeader().getComplexLines()
+                    .stream()
+                    .filter(line -> line.getKey().equals("FORMAT"))
+                    .map(VariantFileHeaderComplexLine::getId);
+        }
+        List<String> extraGenotypeFields = studyConfiguration.getAttributes().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
+        stream.forEach(format -> {
+            if (!extraGenotypeFields.contains(format) && !format.equals(VariantMerger.GT_KEY)) {
+                extraGenotypeFields.add(format);
+            }
+        });
+        studyConfiguration.getAttributes().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
+        getOptions().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
+
     }
 
     protected void preMerge(URI input) throws StorageEngineException {
@@ -530,7 +560,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
 
         Class execClass = VariantTableDriver.class;
-        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.toString(),
+        String args = VariantTableDriver.buildCommandLineArgs(
                 archiveTableCredentials.getTable(),
                 variantsTableCredentials.getTable(), studyId, pendingFiles, options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
@@ -563,18 +593,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     public String getJarWithDependencies() throws StorageEngineException {
-        return getJarWithDependencies(options);
-    }
-
-    public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
-        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
-        if (jar == null) {
-            throw new StorageEngineException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
-        }
-        if (!Paths.get(jar).isAbsolute()) {
-            jar = System.getProperty("app.home", "") + "/" + jar;
-        }
-        return jar;
+        return HadoopVariantStorageEngine.getJarWithDependencies(options);
     }
 
     @Override
@@ -660,7 +679,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                             }
                         }
                     }
-                    phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
+                    phoenixHelper.registerNewFiles(jdbcConnection, tableName, studyConfiguration.getStudyId(), fileIds, newSamples);
 
                 } catch (SQLException e) {
                     throw new StorageEngineException("Unable to register samples in Phoenix", e);

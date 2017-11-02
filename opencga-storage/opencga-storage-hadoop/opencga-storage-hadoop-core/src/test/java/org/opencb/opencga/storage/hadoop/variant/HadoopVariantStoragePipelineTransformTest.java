@@ -22,7 +22,7 @@ import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTransformTest;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipelineTransformTest;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -35,7 +35,7 @@ import static org.opencb.opencga.storage.core.variant.io.VariantReaderUtils.MALF
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantStorageEngineTransformTest extends VariantStorageManagerTransformTest implements HadoopVariantStorageTest {
+public class HadoopVariantStoragePipelineTransformTest extends VariantStoragePipelineTransformTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();

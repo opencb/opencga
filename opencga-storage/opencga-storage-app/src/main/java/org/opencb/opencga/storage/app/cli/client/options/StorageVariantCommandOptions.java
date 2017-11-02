@@ -35,15 +35,13 @@ import java.util.Map;
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
 public class StorageVariantCommandOptions {
 
-    public static final String VARIANT_REMOVE_COMMAND = "remove";
-    public static final String VARIANT_REMOVE_COMMAND_DESCRIPTION = "Remove variants from storage";
-
     public VariantIndexCommandOptions indexVariantsCommandOptions;
     public VariantRemoveCommandOptions variantRemoveCommandOptions;
     public VariantQueryCommandOptions variantQueryCommandOptions;
     public ImportVariantsCommandOptions importVariantsCommandOptions;
     public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
     public VariantStatsCommandOptions statsVariantsCommandOptions;
+    public FillGapsCommandOptions fillGapsCommandOptions;
     public VariantExportCommandOptions exportVariantsCommandOptions;
     public VariantSearchCommandOptions searchVariantsCommandOptions;
 
@@ -65,6 +63,7 @@ public class StorageVariantCommandOptions {
         this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
+        this.fillGapsCommandOptions = new FillGapsCommandOptions();
         this.exportVariantsCommandOptions = new VariantExportCommandOptions();
         this.searchVariantsCommandOptions = new VariantSearchCommandOptions();
     }
@@ -180,8 +179,11 @@ public class StorageVariantCommandOptions {
         public boolean resume;
     }
 
-    @Parameters(commandNames = {VARIANT_REMOVE_COMMAND}, commandDescription = VARIANT_REMOVE_COMMAND_DESCRIPTION)
+    @Parameters(commandNames = {VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND}, commandDescription = VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION)
     public class VariantRemoveCommandOptions extends GenericVariantRemoveOptions {
+
+        public static final String VARIANT_REMOVE_COMMAND = "remove";
+        public static final String VARIANT_REMOVE_COMMAND_DESCRIPTION = "Remove variants from storage";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
@@ -495,6 +497,34 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
         public String outdir;
+    }
+
+    /**
+     *  annotate: generic and specific options
+     */
+    public static class GenericFillGapsOptions {
+
+        @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
+        public List<String> samples;
+
+//        @Parameter(names = {"--exclude-hom-ref"}, description = "Do not fill gaps of samples with HOM-REF genotype (0/0)", arity = 0)
+//        public boolean excludeHomRef;
+    }
+
+    @Parameters(commandNames = {FillGapsCommandOptions.FILL_GAPS_COMMAND}, commandDescription = FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION)
+    public class FillGapsCommandOptions extends GenericFillGapsOptions {
+
+        public static final String FILL_GAPS_COMMAND = "fill-gaps";
+        public static final String FILL_GAPS_COMMAND_DESCRIPTION = "";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study", arity = 1)
+        public String study;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
     }
 
     /**

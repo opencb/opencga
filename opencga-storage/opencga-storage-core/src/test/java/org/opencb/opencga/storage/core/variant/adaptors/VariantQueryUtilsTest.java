@@ -60,6 +60,28 @@ public class VariantQueryUtilsTest extends GenericTest {
     }
 
     @Test
+    public void testCheckOperatorMixQuotesOr() throws Exception {
+        assertEquals(VariantQueryUtils.QueryOperation.OR, VariantQueryUtils.checkOperator("a,\"b;c\""));
+    }
+
+    @Test
+    public void testCheckOperatorMixQuotesAnd() throws Exception {
+        assertEquals(VariantQueryUtils.QueryOperation.AND, VariantQueryUtils.checkOperator("a;\"b,c\""));
+    }
+
+    @Test
+    public void testSplitQuotes() throws Exception {
+        assertEquals(Arrays.asList("a", "b,c", "d"), VariantQueryUtils.splitQuotes("a;\"b,c\";d", ';'));
+        assertEquals(Arrays.asList("a", "b;c", "d"), VariantQueryUtils.splitQuotes("a,\"b;c\",d", ','));
+    }
+
+    @Test
+    public void testSplitQuotesUnbalanced() throws Exception {
+        thrown.expect(VariantQueryException.class);
+        VariantQueryUtils.splitQuotes("a,\"b;c\",\"d", ',');
+    }
+
+    @Test
     public void testSplitOperator() throws Exception {
         assertArrayEquals(new String[]{"key", "=", "value"}, VariantQueryUtils.splitOperator("key=value"));
     }

@@ -99,8 +99,13 @@ public class VariantQueryException extends IllegalArgumentException {
                 + (availableCohortsList.isEmpty() ? "" : " Available cohorts: " + availableCohortsList));
     }
 
-    public static VariantQueryException missingStudyForSample(String sample, List<String> availableStudies) {
+    public static VariantQueryException missingStudyForSample(String sample, Collection<String> availableStudies) {
         return new VariantQueryException("Unknown sample \"" + sample + "\". Please, specify the study belonging."
+                + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
+    }
+
+    public static VariantQueryException missingStudyForFile(String file, Collection<String> availableStudies) {
+        return new VariantQueryException("Unknown file \"" + file + "\". Please, specify the study belonging."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }
 
@@ -110,6 +115,10 @@ public class VariantQueryException extends IllegalArgumentException {
 
     public static VariantQueryException sampleNotFound(Object sample, Object study) {
         return new VariantQueryException("Sample " + sample + " not found in study " + study);
+    }
+
+    public static VariantQueryException fileNotFound(Object sample, Object study) {
+        return new VariantQueryException("File " + sample + " not found in study " + study);
     }
 
     public static VariantQueryException unknownVariantField(String projectionOp, String field) {
