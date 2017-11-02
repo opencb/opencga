@@ -175,10 +175,10 @@ public class OpenCGAWSServer {
         }
 
         query = new
-        Query();
+                Query();
 
         queryOptions = new
-        QueryOptions();
+                QueryOptions();
 
         parseParams();
         // take the time for calculating the whole duration of the call
@@ -564,16 +564,48 @@ public class OpenCGAWSServer {
         }
     }
 
-    protected List<String> getIdList(String id) throws WebServiceException{
-        if (id != null) {
-            String[] idArray = id.split(",");
-            if (idArray.length <= MAX_ID_SIZE) {
-                return Arrays.asList(idArray);
+    protected List<String> getIdList(String id) throws WebServiceException {
+        if (StringUtils.isNotEmpty(id)) {
+            List<String> ids = checkUniqueList(id);
+            if (ids.size() <= MAX_ID_SIZE) {
+                return ids;
             } else {
-                throw new WebServiceException("More than " + MAX_ID_SIZE + " ID provided");
+                throw new WebServiceException("More than " + MAX_ID_SIZE + " IDs are provided");
             }
         } else {
-            throw new WebServiceException("ID is null");
+            throw new WebServiceException("ID is null or Empty");
+        }
+    }
+
+    protected List<String> checkUniqueList(String ids) throws WebServiceException {
+        if (StringUtils.isNotEmpty(ids)) {
+            List<String> idsList = Arrays.asList(ids.split(","));
+            Set<String> hashSet = new HashSet<>(idsList);
+            if (hashSet.size() == idsList.size()) {
+                return idsList;
+            } else {
+                throw new WebServiceException("Provided IDs are not unique. Only unique IDs are accepted.");
+            }
+        } else {
+            throw new WebServiceException("ID is null or Empty");
+        }
+    }
+
+    protected boolean isSingleId(String id) throws WebServiceException {
+        if (StringUtils.isNotEmpty(id)) {
+            if (id.contains(",")) {
+                throw new WebServiceException("More than one id is provided. Only one ID is allowed!");
+            } else {
+                return true;
+            }
+        } else {
+            throw new WebServiceException("ID is null or Empty");
+        }
+    }
+
+    protected void areSingleIds(String... ids) throws WebServiceException {
+        for (String id : ids) {
+            isSingleId(id);
         }
     }
 }

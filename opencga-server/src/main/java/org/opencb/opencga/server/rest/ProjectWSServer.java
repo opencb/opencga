@@ -26,13 +26,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -125,8 +124,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response incrementRelease(
             @ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectStr) {
         try {
+            isSingleId(projectStr);
             return createOkResponse(catalogManager.getProjectManager().incrementRelease(projectStr, sessionId));
-        } catch (CatalogException e) {
+        } catch (CatalogException | WebServiceException e) {
             e.printStackTrace();
             return createErrorResponse(e);
         }
@@ -163,6 +163,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                                          + "fields not previously defined.", required = true) ProjectUpdateParams updateParams)
             throws IOException {
         try {
+            isSingleId(projectStr);
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams));
             if (updateParams.organism != null) {
                 if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {

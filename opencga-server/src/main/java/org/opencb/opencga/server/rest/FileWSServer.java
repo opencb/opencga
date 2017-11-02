@@ -419,6 +419,7 @@ public class FileWSServer extends OpenCGAWSServer {
                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                              @QueryParam("study") String studyStr) {
         try {
+            isSingleId(fileIdStr);
             DataInputStream stream;
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
@@ -442,6 +443,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "start", required = false) @QueryParam("start") @DefaultValue("-1") int start,
                             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit) {
         try {
+            isSingleId(fileIdStr);
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
@@ -466,6 +468,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     Boolean ignoreCase,
             @ApiParam(value = "Return multiple matches", required = false) @DefaultValue("true") @QueryParam("multi") Boolean multi) {
         try {
+            isSingleId(fileIdStr);
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
@@ -492,6 +495,7 @@ public class FileWSServer extends OpenCGAWSServer {
         QueryResult<File> fileQueryResult;
         InputStream streamBody = null;
         try {
+            isSingleId(fileStr);
             AbstractManager.MyResourceId resource = fileManager.getId(fileStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.WRITE);
@@ -640,6 +644,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr) {
         try {
+            isSingleId(folder);
             QueryResult<File> result = catalogManager.getFileManager().getFilesFromFolder(folder, studyStr, queryOptions, sessionId);
             populateOldDeprecatedSampleIdsField(result);
             return createOkResponse(result);
@@ -750,6 +755,7 @@ public class FileWSServer extends OpenCGAWSServer {
                              @QueryParam("study") String studyStr,
                              @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
         try {
+            isSingleId(folderId);
             query.remove("maxDepth");
             QueryResult result = fileManager
                     .getTree(folderId.replace(":", "/"), studyStr, query, queryOptions, maxDepth, sessionId);
@@ -1031,6 +1037,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr) {
         try {
+            isSingleId(fileIdStr);
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
 
             File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
@@ -1234,6 +1241,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false")
                                  boolean calculateChecksum) {
         try {
+            isSingleId(folderIdStr);
             AbstractManager.MyResourceId resource = fileManager.getId(folderIdStr, studyStr, sessionId);
 
             File directory = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
