@@ -4,6 +4,8 @@ import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMi
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 
+import java.nio.file.Paths;
+
 /**
  * Created on 08/09/17.
  *
@@ -38,11 +40,18 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         logger.info("MIGRATING v1.3.0");
         MigrationCommandOptions.MigrateV1_3_0CommandOptions options = migrationCommandOptions.getMigrateV130CommandOptions();
 
-        setCatalogDatabaseCredentials(options, options.commonOptions);
-
-        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String sessionId = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
-            new NewVariantMetadataMigration(storageConfiguration, catalogManager, options).migrate(sessionId);
+        if (options.files != null && !options.files.isEmpty()) {
+            // Just migrate files. Do not even connect to Catalog!
+            NewVariantMetadataMigration migration = new NewVariantMetadataMigration(storageConfiguration, null, options);
+            for (String file : options.files) {
+                migration.migrateVariantFileMetadataFile(Paths.get(file));
+            }
+        } else {
+            setCatalogDatabaseCredentials(options, options.commonOptions);
+            try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+                String sessionId = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
+                new NewVariantMetadataMigration(storageConfiguration, catalogManager, options).migrate(sessionId);
+            }
         }
     }
 
