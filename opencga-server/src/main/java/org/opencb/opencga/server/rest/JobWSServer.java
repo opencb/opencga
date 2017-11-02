@@ -150,7 +150,8 @@ public class JobWSServer extends OpenCGAWSServer {
                     example = "id,status", dataType = "string", paramType = "query"),
     })
     public Response info(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true)
-                         @PathParam("jobIds") String jobIds, @QueryParam("silent") boolean silent) {
+                         @PathParam("jobIds") String jobIds,
+                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIds);
             return createOkResponse(catalogManager.getJobManager().get(idList, queryOptions, silent, sessionId));
@@ -276,7 +277,8 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/{jobIds}/acl")
     @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of job ids up to a maximum of 100", required = true) @PathParam("jobIds") String jobIdsStr,
-                            @ApiParam(value = "User or group id") @QueryParam("member") String member, @QueryParam("silent") boolean silent) {
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member,
+                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIdsStr);
                 return createOkResponse(jobManager.getAcls(null, idList, member, silent, sessionId));

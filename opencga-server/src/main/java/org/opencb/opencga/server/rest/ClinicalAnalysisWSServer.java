@@ -93,7 +93,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{clinicalAnalysis}/info")
+    @Path("/{clinicalAnalyses}/info")
     @ApiOperation(value = "Clinical analysis info", position = 3, response = ClinicalAnalysis[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
@@ -101,10 +101,11 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of clinical analysis ids up to a maximum of 100") @PathParam(value = "clinicalAnalysis")
+    public Response info(@ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100") @PathParam(value = "clinicalAnalysis")
                                  String clinicalAnalysisStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                         @QueryParam("study") String studyStr, @QueryParam("silent") boolean silent) {
+                         @QueryParam("study") String studyStr,
+                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> analysisList = getIdList(clinicalAnalysisStr);
             List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);

@@ -142,7 +142,7 @@ public abstract class StorageManager {
 //                Arrays.asList(StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
 //                        StudyDBAdaptor.QueryParams.DATASTORES.key()));
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(String.valueOf(studyId), studyOptions, sessionId);
-        if (studyQueryResult .getNumResults() != 1) {
+        if (studyQueryResult.getNumResults() != 1) {
             logger.error("Critical error: Study {} not found in catalog.", studyId);
             throw new CatalogException("Critical error: Study " + studyId + " not found in catalog");
         }

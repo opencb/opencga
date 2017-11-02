@@ -82,8 +82,9 @@ public class UserWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "This parameter shows the last time the user information was modified. When "
                                     + "the value passed corresponds with the user's last activity registered, an empty result will be "
                                     + "returned meaning that the client already has the most up to date user information.", hidden = true)
-                            @QueryParam ("lastModified") String lastModified) {
+                            @QueryParam("lastModified") String lastModified) {
         try {
+            isSingleId(userId);
             QueryResult result = catalogManager.getUserManager().get(userId, lastModified, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -101,7 +102,6 @@ public class UserWSServer extends OpenCGAWSServer {
                     "provided and a valid token is given, a new token will be provided extending the expiration time.")
     public Response loginPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                               @ApiParam(value = "JSON containing the parameter 'password'") Map<String, String> map) {
-//        sessionIp = httpServletRequest.getRemoteAddr();
         try {
             String token;
             if (map.containsKey("password")) {
@@ -174,6 +174,7 @@ public class UserWSServer extends OpenCGAWSServer {
     })
     public Response getAllProjects(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
+            isSingleId(userId);
             query.remove("user");
             query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
             return createOkResponse(catalogManager.getProjectManager().get(query, queryOptions, sessionId));
@@ -218,10 +219,10 @@ public class UserWSServer extends OpenCGAWSServer {
             + "containing the preferences of the user. The aim of this is to provide a place to store this things for every user.",
             response = Map.class)
     public Response setConfigurationPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                    @ApiParam(value = "Unique name (typically the name of the application)", required = true) @QueryParam("name")
-                            String name,
-                    @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default "
-                            + "preferences", required = true) ObjectMap params) {
+                                         @ApiParam(value = "Unique name (typically the name of the application)", required = true) @QueryParam("name")
+                                                 String name,
+                                         @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default "
+                                                 + "preferences", required = true) ObjectMap params) {
         try {
             return createOkResponse(catalogManager.getUserManager().setConfig(userId, name, params, sessionId));
         } catch (Exception e) {
@@ -233,8 +234,8 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{user}/configs/{name}/delete")
     @ApiOperation(value = "Delete a user configuration", response = Map.class)
     public Response deleteConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                     @ApiParam(value = "Unique name (typically the name of the application)", required = true)
-                                     @PathParam("name") String name) {
+                                        @ApiParam(value = "Unique name (typically the name of the application)", required = true)
+                                        @PathParam("name") String name) {
         try {
             return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, name, sessionId));
         } catch (Exception e) {
@@ -250,6 +251,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "Unique name (typically the name of the application)", required = true)
                                      @PathParam("name") String name) {
         try {
+            areSingleIds(userId, name);
             return createOkResponse(catalogManager.getUserManager().getConfig(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -263,6 +265,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
             @ApiParam(value = "Unique name (typically the name of the application).", required = true) @QueryParam("name") String name) {
         try {
+            areSingleIds(userId, name);
             return createOkResponse(catalogManager.getUserManager().getConfig(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -275,7 +278,7 @@ public class UserWSServer extends OpenCGAWSServer {
             + "the times. The aim of this WS is to allow storing as many different filters as the user might want in order not to type "
             + "the same filters.", response = User.Filter.class)
     public Response addFilterPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                           @ApiParam(name = "params", value = "Filter parameters", required = true) User.Filter params) {
+                                  @ApiParam(name = "params", value = "Filter parameters", required = true) User.Filter params) {
         try {
             return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
                     params.getBioformat(), params.getQuery(), params.getOptions(), sessionId));
@@ -295,8 +298,8 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{user}/configs/filters/{name}/update")
     @ApiOperation(value = "Update a custom filter", response = User.Filter.class)
     public Response updateFilterPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                              @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
-                              @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
+                                     @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
+                                     @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
         try {
             return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name,
                     new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId));
@@ -322,7 +325,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch a filter [DEPRECATED]", response = User.Filter.class,
             notes = "This webservice is deprecated. Users should use /{user}/configs/filters webservice instead.")
     public Response getFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                 @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
+                              @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
         try {
             return createOkResponse(catalogManager.getUserManager().getFilter(userId, name, sessionId));
         } catch (Exception e) {
@@ -349,6 +352,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
             @ApiParam(value = "Filter name. If provided, it will only fetch the specified filter") @QueryParam("name") String name) {
         try {
+            isSingleId(userId);
             if (StringUtils.isNotEmpty(name)) {
                 return createOkResponse(catalogManager.getUserManager().getFilter(userId, name, sessionId));
             } else {

@@ -257,7 +257,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    MyResourceIds getIds(List<String> cohortList, @Nullable String studyStr, String sessionId) throws CatalogException {
+    MyResourceIds getIds(List<String> cohortList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
         if (cohortList == null || cohortList.isEmpty()) {
             throw new CatalogException("Missing cohort parameter");
         }
@@ -269,7 +269,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         if (cohortList.size() == 1 && StringUtils.isNumeric(cohortList.get(0))
                 && Long.parseLong(cohortList.get(0)) > configuration.getCatalog().getOffset()) {
             cohortIds.add(Long.parseLong(cohortList.get(0)));
-            cohortDBAdaptor.exists(cohortIds.get(0));
+            cohortDBAdaptor.checkId(cohortIds.get(0));
             studyId = cohortDBAdaptor.getStudyId(cohortIds.get(0));
             userId = userManager.getUserId(sessionId);
         } else {
@@ -281,7 +281,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     .append(CohortDBAdaptor.QueryParams.NAME.key(), cohortList);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ID.key());
             QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
-            if (cohortQueryResult.getNumResults() == cohortList.size()) {
+            if (cohortQueryResult.getNumResults() == cohortList.size() || silent) {
                 cohortIds = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
             } else {
                 throw new CatalogException("Found only " + cohortQueryResult.getNumResults() + " out of the " + cohortList.size()
@@ -716,7 +716,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, List<String> cohortList, String member,
                                                      boolean silent, String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(cohortList, studyStr, sessionId);
+        MyResourceIds resource = getIds(cohortList, studyStr, silent, sessionId);
 
         List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();

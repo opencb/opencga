@@ -45,13 +45,40 @@ public abstract class ResourceManager<R> extends AbstractManager {
     /**
      * Obtains the resource java bean containing the requested ids.
      *
+     * @param entryStr  Comma seperated list of Ids. Could be either the id or name generally.
+     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException CatalogException.
+     */
+    public AbstractManager.MyResourceIds getIds(String entryStr, @Nullable String studyStr, String sessionId)
+            throws CatalogException {
+        return getIds(Arrays.asList(entryStr.split(",")), studyStr, false, sessionId);
+    }
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
      * @param entryStr  List of entry ids in string format. Could be either the id or name generally.
      * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param sessionId Session id of the user logged.
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
      */
-    abstract AbstractManager.MyResourceIds getIds(List<String> entryStr, @Nullable String studyStr, String sessionId)
+    public AbstractManager.MyResourceIds getIds(List<String> entryStr, @Nullable String studyStr, String sessionId)
+            throws CatalogException {
+        return getIds(entryStr, studyStr, false, sessionId);
+    }
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param entryStr  List of entry ids in string format. Could be either the id or name generally.
+     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @param silent boolean to accept partial or complete results
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException CatalogException.
+     */
+    abstract AbstractManager.MyResourceIds getIds(List<String> entryStr, @Nullable String studyStr, boolean silent, String sessionId)
             throws CatalogException;
 
     /**
@@ -143,7 +170,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
         List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
         query = ParamUtils.defaultObject(query, Query::new);
 
-        MyResourceIds resources = getIds(entryList, studyStr, sessionId);
+        MyResourceIds resources = getIds(entryList, studyStr, silent, sessionId);
         List<Long> resourceIds = resources.getResourceIds();
         for (int i = 0; i < resourceIds.size(); i++) {
             Long entityId = resourceIds.get(i);

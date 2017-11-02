@@ -146,8 +146,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("studies") String studies, @QueryParam("silent") boolean silent) {
+    public Response info(@ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100",
+            required = true) @PathParam("studies") String studies,
+                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studies);
             return createOkResponse(studyManager.get(idList, queryOptions, silent, sessionId));
@@ -160,8 +161,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studies}/summary")
     @ApiOperation(value = "Fetch study information plus some basic stats", notes = "Fetch study information plus some basic stats such as"
             + " the number of files, samples, cohorts...")
-    public Response summary(@ApiParam(value = "Comma separated list of Studies [[user@]project:]study where study and project can be either the id or alias", required = true)
-                            @PathParam("studies") String studies, @QueryParam("silent") boolean silent) {
+    public Response summary(@ApiParam(value = "Comma separated list of Studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
+                            @PathParam("studies") String studies,
+                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studies);
             return createOkResponse(studyManager.getSummary(idList, queryOptions, silent, sessionId));
@@ -206,6 +208,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
                                 @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes) {
         try {
+            isSingleId(studyStr);
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             QueryResult queryResult = catalogManager.getFileManager().get(studyId, query, queryOptions, sessionId);
@@ -287,6 +290,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response scanFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
+            isSingleId(studyStr);
             Study study = catalogManager.getStudyManager().get(studyStr, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
@@ -349,6 +353,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response resyncFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
+            isSingleId(studyStr);
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
@@ -367,10 +372,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studies}/groups")
     @ApiOperation(value = "Return the groups present in the studies", position = 13, response = Group[].class)
     public Response getGroups(
-            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias", required = true)
+            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
             @PathParam("studies") String studiesStr,
-            @ApiParam(value = "Group name. If provided, it will only fetch information for the provided group.") @QueryParam("name")
-                    String groupId, @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Group name. If provided, it will only fetch information for the provided group.") @QueryParam("name") String groupId,
+            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studiesStr);
             return createOkResponse(catalogManager.getStudyManager().getGroup(idList, groupId, silent, sessionId));
@@ -409,6 +414,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Group name", required = true) @PathParam("group") String groupId,
             @ApiParam(value = "JSON containing the action to be performed", required = true) GroupParams params) {
         try {
+            isSingleId(studyStr);
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, groupId, params, sessionId));
         } catch (Exception e) {
@@ -424,6 +430,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @PathParam("study") String studyStr,
             @ApiParam(value = "JSON containing the action to be performed", required = true) MemberParams params) {
         try {
+            isSingleId(studyStr);
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, "@members", params.toGroupParams(), sessionId));
         } catch (Exception e) {
@@ -440,6 +447,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @PathParam("study") String studyStr,
             @ApiParam(value = "JSON containing the action to be performed", required = true) MemberParams params) {
         try {
+            isSingleId(studyStr);
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, "@admins", params.toGroupParams(), sessionId));
         } catch (Exception e) {
@@ -455,6 +463,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @PathParam("study") String studyStr,
             @ApiParam(value = "Group name", required = true) @PathParam("group") String groupId) {
         try {
+            isSingleId(studyStr);
             return createOkResponse(catalogManager.getStudyManager().deleteGroup(studyStr, groupId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -465,10 +474,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studies}/acl")
     @ApiOperation(value = "Return the acl of the study. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(
-            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias", required = true)
+            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
             @PathParam("studies") String studiesStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-            @QueryParam("silent") boolean silent) throws WebServiceException {
+            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
 
         try {
             List<String> idList = getIdList(studiesStr);
@@ -531,6 +540,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
             @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) MemberAclUpdateOld params) {
         try {
+            isSingleId(studyStr);
+            isSingleId(memberId);
             Study.StudyAclParams aclParams = getAclParams(params.add, params.remove, params.set, null);
             List<String> idList = getIdList(studyStr);
             return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, sessionId));

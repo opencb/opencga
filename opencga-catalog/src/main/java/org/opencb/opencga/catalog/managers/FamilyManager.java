@@ -129,7 +129,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * @throws CatalogException CatalogException.
      */
     @Override
-    MyResourceIds getIds(List<String> familyList, @Nullable String studyStr, String sessionId) throws CatalogException {
+    MyResourceIds getIds(List<String> familyList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
         if (familyList == null || familyList.isEmpty()) {
             throw new CatalogException("Missing family parameter");
         }
@@ -150,29 +150,45 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             for (String familyStrAux : familyList) {
                 if (StringUtils.isNumeric(familyStrAux)) {
-                    long familyId = Long.parseLong(familyStrAux);
-                    familyDBAdaptor.exists(familyId);
-                    familyIds.add(familyId);
-                }
-            }
-
-            Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FamilyDBAdaptor.QueryParams.NAME.key(), familyList);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.ID.key());
-            QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
-
-            if (familyQueryResult.getNumResults() > 0) {
-                familyIds.addAll(familyQueryResult.getResult().stream().map(Family::getId).collect(Collectors.toList()));
-            }
-
-            if (familyIds.size() < familyList.size()) {
-                throw new CatalogException("Found only " + familyIds.size() + " out of the " + familyList.size()
-                        + " families looked for in study " + studyStr);
+                    long familyId = getFamilyId(silent, familyStrAux);
+                familyIds.add(familyId);
             }
         }
 
-        return new MyResourceIds(userId, studyId, familyIds);
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FamilyDBAdaptor.QueryParams.NAME.key(), familyList);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.ID.key());
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
+
+        if (familyQueryResult.getNumResults() > 0) {
+            familyIds.addAll(familyQueryResult.getResult().stream().map(Family::getId).collect(Collectors.toList()));
+        }
+
+        if (familyIds.size() < familyList.size() && !silent) {
+            throw new CatalogException("Found only " + familyIds.size() + " out of the " + familyList.size()
+                    + " families looked for in study " + studyStr);
+        }
+    }
+
+        return new
+
+    MyResourceIds(userId, studyId, familyIds);
+
+}
+
+    private long getFamilyId(boolean silent, String familyStrAux) throws CatalogException {
+        long familyId = Long.parseLong(familyStrAux);
+        try {
+            familyDBAdaptor.checkId(familyId);
+        } catch (CatalogException e) {
+            if (silent) {
+                return -1L;
+            } else {
+                throw e;
+            }
+        }
+        return familyId;
     }
 
     @Override
@@ -619,7 +635,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(familyList, studyStr, sessionId);
+        MyResourceIds resource = getIds(familyList, studyStr, silent, sessionId);
 
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();

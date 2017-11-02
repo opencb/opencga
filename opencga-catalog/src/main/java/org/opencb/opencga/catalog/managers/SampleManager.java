@@ -223,7 +223,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public MyResourceIds getIds(List<String> sampleList, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceIds getIds(List<String> sampleList, @Nullable String studyStr, boolean silent, String sessionId)
+            throws CatalogException {
         if (sampleList == null || sampleList.isEmpty()) {
             throw new CatalogException("Missing sample parameter");
         }
@@ -235,7 +236,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         if (sampleList.size() == 1 && StringUtils.isNumeric(sampleList.get(0))
                 && Long.parseLong(sampleList.get(0)) > configuration.getCatalog().getOffset()) {
             sampleIds.add(Long.parseLong(sampleList.get(0)));
-            sampleDBAdaptor.exists(sampleIds.get(0));
+            sampleDBAdaptor.checkId(sampleIds.get(0));
             studyId = sampleDBAdaptor.getStudyId(sampleIds.get(0));
             userId = userManager.getUserId(sessionId);
         } else {
@@ -244,8 +245,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             for (String sampleStrAux : sampleList) {
                 if (StringUtils.isNumeric(sampleStrAux)) {
-                    long sampleId = Long.parseLong(sampleStrAux);
-                    sampleDBAdaptor.exists(sampleId);
+                    long sampleId = getSampleId(silent, sampleStrAux);
                     sampleIds.add(sampleId);
                 }
             }
@@ -260,7 +260,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 sampleIds.addAll(sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
             }
 
-            if (sampleIds.size() < sampleList.size()) {
+            if (sampleIds.size() < sampleList.size() && !silent) {
                 throw new CatalogException("Found only " + sampleIds.size() + " out of the " + sampleList.size()
                         + " samples looked for in study " + studyStr);
             }
@@ -866,7 +866,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<SampleAclEntry>> getAcls(String studyStr, List<String> sampleList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(sampleList, studyStr, sessionId);
+        MyResourceIds resource = getIds(sampleList, studyStr, silent, sessionId);
 
         List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();
@@ -1100,5 +1100,17 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 //        }
 //    }
 
-
+    private long getSampleId(boolean silent, String sampleStrAux) throws CatalogException {
+        long sampleId = Long.parseLong(sampleStrAux);
+        try {
+            sampleDBAdaptor.checkId(sampleId);
+        } catch (CatalogException e) {
+            if (silent) {
+                return -1L;
+            } else {
+                throw e;
+            }
+        }
+        return sampleId;
+    }
 }
