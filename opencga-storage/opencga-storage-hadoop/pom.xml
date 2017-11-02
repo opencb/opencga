@@ -136,6 +136,7 @@
                 <hbase.version>1.3.1</hbase.version>
                 <phoenix.version>4.11.0-HBase-1.3</phoenix.version>
                 <apache.tephra.version>0.12.0-incubating</apache.tephra.version>
+                <tephra.version>0.7.0</tephra.version>
             </properties>
             <dependencyManagement>
                 <dependencies>
