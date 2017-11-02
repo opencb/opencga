@@ -515,7 +515,7 @@ public class StorageVariantCommandOptions {
     public class FillGapsCommandOptions extends GenericFillGapsOptions {
 
         public static final String FILL_GAPS_COMMAND = "fill-gaps";
-        public static final String FILL_GAPS_COMMAND_DESCRIPTION = "";
+        public static final String FILL_GAPS_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values.";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;

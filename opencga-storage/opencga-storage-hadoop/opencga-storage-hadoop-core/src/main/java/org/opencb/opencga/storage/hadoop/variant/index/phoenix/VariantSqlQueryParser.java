@@ -94,6 +94,10 @@ public class VariantSqlQueryParser {
         }
     }
 
+    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, StudyConfigurationManager studyConfigurationManager) {
+        this(genomeHelper, variantTable, studyConfigurationManager, null, false);
+    }
+
     public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable,
                                  StudyConfigurationManager studyConfigurationManager, CellBaseUtils cellBaseUtils, boolean clientSideSkip) {
         this.genomeHelper = genomeHelper;
