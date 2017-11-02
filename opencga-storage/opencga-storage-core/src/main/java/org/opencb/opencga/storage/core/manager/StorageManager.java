@@ -16,14 +16,13 @@
 
 package org.opencb.opencga.storage.core.manager;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Project;
@@ -105,8 +104,7 @@ public abstract class StorageManager {
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyIdStr);
         } else {
-            AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(StringUtils.join(fileIdStrs, ","), studyIdStr,
-                    sessionId);
+            AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(fileIdStrs, studyIdStr, sessionId);
             fileIds = resource.getResourceIds();
             studyId = resource.getStudyId();
         }
@@ -144,7 +142,7 @@ public abstract class StorageManager {
 //                Arrays.asList(StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
 //                        StudyDBAdaptor.QueryParams.DATASTORES.key()));
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(String.valueOf(studyId), studyOptions, sessionId);
-        if (studyQueryResult .getNumResults() != 1) {
+        if (studyQueryResult.getNumResults() != 1) {
             logger.error("Critical error: Study {} not found in catalog.", studyId);
             throw new CatalogException("Critical error: Study " + studyId + " not found in catalog");
         }

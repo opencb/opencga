@@ -130,20 +130,18 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "lazy", value = "False to return entire job and experiment object", defaultValue = "true",
                     dataType = "boolean", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of file ids up to a maximum of 100") @PathParam(value = "files") String fileStr,
+    public Response info(@ApiParam(value = "Comma separated list of file ids or names up to a maximum of 100")
+                         @PathParam(value = "files") String fileStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                         @QueryParam("study") String studyStr) {
+                         @QueryParam("study") String studyStr,
+                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
-            QueryResult<File> fileQueryResult = fileManager.get(studyStr, fileStr, queryOptions, sessionId);
-            populateOldDeprecatedSampleIdsField(fileQueryResult);
-            // We parse the query result to create one queryresult per file
-            List<QueryResult<File>> queryResultList = new ArrayList<>(fileQueryResult.getNumResults());
-            for (File file : fileQueryResult.getResult()) {
-                queryResultList.add(new QueryResult<>(file.getName() + "-" + file.getId(), fileQueryResult.getDbTime(), 1, -1,
-                        fileQueryResult.getWarningMsg(), fileQueryResult.getErrorMsg(), Arrays.asList(file)));
+            List<String> idList = getIdList(fileStr);
+            List<QueryResult<File>> fileQueryResult = fileManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
+            for (QueryResult<File> queryResult : fileQueryResult) {
+                populateOldDeprecatedSampleIdsField(queryResult);
             }
-
-            return createOkResponse(queryResultList);
+            return createOkResponse(fileQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -413,11 +411,15 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/download")
-    @ApiOperation(value = "Download file", position = 5, response = QueryResponse.class)
-    public Response download(@ApiParam(value = "File id") @PathParam("file") String fileIdStr,
+    @ApiOperation(value = "Download file", position = 5, response = QueryResponse.class,
+            notes = "The usage of /{file}/download webservice through Swagger is <b>discouraged</b>. Please, don't click the 'Try it "
+                    + "out' button here as it may hang this web page. Instead, build the final URL in a different tab.<br>"
+                    + "An special <b>DOWNLOAD</b> permission is needed to download files from OpenCGA.")
+    public Response download(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam("file") String fileIdStr,
                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                              @QueryParam("study") String studyStr) {
         try {
+            isSingleId(fileIdStr);
             DataInputStream stream;
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
@@ -435,12 +437,13 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{file}/content")
     @ApiOperation(value = "Show the content of a file (up to a limit)", position = 6, response = String.class)
-    public Response content(@ApiParam(value = "File id") @PathParam("file") String fileIdStr,
+    public Response content(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam("file") String fileIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
                             @ApiParam(value = "start", required = false) @QueryParam("start") @DefaultValue("-1") int start,
                             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit) {
         try {
+            isSingleId(fileIdStr);
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
@@ -457,7 +460,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{file}/grep")
     @ApiOperation(value = "Filter lines of the file containing a match of the pattern [NOT TESTED]", position = 7, response = String.class)
     public Response downloadGrep(
-            @ApiParam(value = "File id") @PathParam("file") String fileIdStr,
+            @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam("file") String fileIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Pattern", required = false) @QueryParam("pattern") @DefaultValue(".*") String pattern,
@@ -465,6 +468,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     Boolean ignoreCase,
             @ApiParam(value = "Return multiple matches", required = false) @DefaultValue("true") @QueryParam("multi") Boolean multi) {
         try {
+            isSingleId(fileIdStr);
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
@@ -491,6 +495,7 @@ public class FileWSServer extends OpenCGAWSServer {
         QueryResult<File> fileQueryResult;
         InputStream streamBody = null;
         try {
+            isSingleId(fileStr);
             AbstractManager.MyResourceId resource = fileManager.getId(fileStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.WRITE);
@@ -544,8 +549,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                                 + "alias") @QueryParam("study") String studyStr) {
         QueryResult<File> results;
         try {
-            long folderId = catalogManager.getFileManager().getId(folderStr, studyStr, sessionId).getResourceId();
-            results = catalogManager.getFileManager().getFilesFromFolder(folderId, queryOptions, sessionId);
+            results = catalogManager.getFileManager().getFilesFromFolder(folderStr, studyStr, queryOptions, sessionId);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -560,16 +564,15 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "lazy", value = "False to return entire job and experiment object", defaultValue = "true",
                     dataType = "boolean", paramType = "query")
     })
     public Response search(
-            @ApiParam(value = "Comma separated list of file ids", required = false) @DefaultValue("") @QueryParam("id") String id,
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
-                   String studyIdStr,
+                    String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]{study}  where study and project can be either the id or alias.")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of file names") @DefaultValue("") @QueryParam("name") String name,
             @ApiParam(value = "Comma separated list of paths", required = false) @DefaultValue("") @QueryParam("path") String path,
             @ApiParam(value = "Available types (FILE, DIRECTORY)", required = false) @DefaultValue("") @QueryParam("type") String type,
@@ -587,7 +590,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
-                @QueryParam("nattributes") String nattributes,
+            @QueryParam("nattributes") String nattributes,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
@@ -634,14 +637,15 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean",
+                    paramType = "query")
     })
-    public Response list(@ApiParam(value = "Folder id") @PathParam("folder") String folder,
+    public Response list(@ApiParam(value = "Folder id, name or path") @PathParam("folder") String folder,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr) {
         try {
-            AbstractManager.MyResourceId resource = fileManager.getId(folder, studyStr, sessionId);
-            QueryResult<File> result = catalogManager.getFileManager().getFilesFromFolder(resource.getResourceId(), queryOptions, sessionId);
+            isSingleId(folder);
+            QueryResult<File> result = catalogManager.getFileManager().getFilesFromFolder(folder, studyStr, queryOptions, sessionId);
             populateOldDeprecatedSampleIdsField(result);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -711,9 +715,8 @@ public class FileWSServer extends OpenCGAWSServer {
         logger.info("ObjectMap: {}", params);
 
         try {
-            AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdStr, studyStr, sessionId);
-            QueryResult queryResult = fileManager.index(StringUtils.join(resource.getResourceIds(), ","),
-                    Long.toString(resource.getStudyId()), "VCF", params, sessionId);
+            List<String> idList = getIdList(fileIdStr);
+            QueryResult queryResult = fileManager.index(idList, studyStr, "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -746,12 +749,13 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
     })
-    public Response treeView(@ApiParam(value = "Folder id or path. Paths must be separated by : instead of /") @DefaultValue(":")
+    public Response treeView(@ApiParam(value = "Folder id, name or path. Paths must be separated by : instead of /") @DefaultValue(":")
                              @PathParam("folder") String folderId,
                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                              @QueryParam("study") String studyStr,
                              @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
         try {
+            isSingleId(folderId);
             query.remove("maxDepth");
             QueryResult result = fileManager
                     .getTree(folderId.replace(":", "/"), studyStr, query, queryOptions, maxDepth, sessionId);
@@ -831,7 +835,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
         List<QueryResult> queryResults = new LinkedList<>();
         try {
-            AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdCsv, studyStr, sessionId);
+            List<String> idList = getIdList(fileIdCsv);
+            AbstractManager.MyResourceIds resource = fileManager.getIds(idList, studyStr, sessionId);
 //            String[] splitFileId = fileIdCsv.split(",");
             for (long fileId : resource.getResourceIds()) {
                 QueryResult queryResult;
@@ -894,7 +899,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{file}/update")
     @ApiOperation(value = "Update some file attributes", position = 16, response = File.class)
-    public Response updatePOST(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
+    public Response updatePOST(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr,
                                @ApiParam(name = "params", value = "Parameters to modify", required = true) ObjectMap params) {
@@ -1028,10 +1033,11 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{file}/refresh")
     @ApiOperation(value = "Refresh metadata from the selected file or folder. Return updated files.", position = 22,
             response = QueryResponse.class)
-    public Response refresh(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
+    public Response refresh(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr) {
         try {
+            isSingleId(fileIdStr);
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
 
             File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
@@ -1048,7 +1054,8 @@ public class FileWSServer extends OpenCGAWSServer {
                     files = Collections.singletonList(file);
                 }
             } else {
-                List<File> result = catalogManager.getFileManager().getFilesFromFolder(file.getId(), null, sessionId).getResult();
+                List<File> result = catalogManager.getFileManager().getFilesFromFolder(String.valueOf(file.getId()),
+                        String.valueOf(resource.getStudyId()), null, sessionId).getResult();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
                     File file1 = fileMetadataReader.setMetadataInformation(f, null, new QueryOptions(queryOptions), sessionId, false);
@@ -1066,7 +1073,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{file}/delete")
     @ApiOperation(value = "Delete file [NOT TESTED]", position = 23, response = QueryResponse.class)
-    public Response deleteGET(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
+    public Response deleteGET(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                               @QueryParam("study") String studyStr,
                               @ApiParam(value = "Delete files and folders from disk (only applicable for linked files/folders)",
@@ -1133,17 +1140,15 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{files}/acl")
     @ApiOperation(value = "Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.", position = 18, response = QueryResponse.class)
-    public Response getAcls(@ApiParam(value = "Comma separated list of file ids up to a maximum of 100", required = true)
-                                @PathParam("files") String fileIdStr,
-                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+    public Response getAcls(@ApiParam(value = "Comma separated list of file ids or names up to a maximum of 100.", required = true)
+                            @PathParam("files") String fileIdStr,
+                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100")
                             @QueryParam("study") String studyStr,
-                            @ApiParam(value = "User or group id") @QueryParam("member") String member) {
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member,
+                            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
-            if (StringUtils.isEmpty(member)) {
-                return createOkResponse(fileManager.getAcls(studyStr, fileIdStr, sessionId));
-            } else {
-                return createOkResponse(fileManager.getAcl(studyStr, fileIdStr, member, sessionId));
-            }
+            List<String> idList = getIdList(fileIdStr);
+            return createOkResponse(fileManager.getAcls(studyStr, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1190,14 +1195,15 @@ public class FileWSServer extends OpenCGAWSServer {
             notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAclPOST(
-            @ApiParam(value = "File id", required = true) @PathParam("file") String fileIdStr,
+            @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /", required = true) @PathParam("file") String fileIdStr,
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             File.FileAclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            return createOkResponse(fileManager.updateAcl(studyStr, fileIdStr, memberId, aclParams, sessionId));
+            List<String> idList = getIdList(fileIdStr);
+            return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1209,17 +1215,18 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/acl/{memberIds}/update")
+    @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FileAcl params) {
         try {
             File.FileAclParams aclParams = new File.FileAclParams(
                     params.getPermissions(), params.getAction(), params.sample);
-            return createOkResponse(fileManager.updateAcl(studyStr, params.file, memberId, aclParams, sessionId));
+            List<String> idList = getIdList(params.file);
+            return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1228,12 +1235,13 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{folder}/scan")
     @ApiOperation(value = "Scans a folder", position = 6)
-    public Response scan(@ApiParam(value = "Folder id") @PathParam("folder") String folderIdStr,
+    public Response scan(@ApiParam(value = "Folder id, name or path. Paths must be separated by : instead of /") @PathParam("folder") String folderIdStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr,
                          @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false")
                                  boolean calculateChecksum) {
         try {
+            isSingleId(folderIdStr);
             AbstractManager.MyResourceId resource = fileManager.getId(folderIdStr, studyStr, sessionId);
 
             File directory = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
