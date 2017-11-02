@@ -64,7 +64,7 @@ public class VariantStatsToHBaseConverterTest {
     public void test() throws IOException {
         VariantStatsWrapper statsWrapper = new VariantStatsWrapper();
         statsWrapper.setChromosome("1");
-        statsWrapper.setPosition(100);
+        statsWrapper.setStart(100);
         HashMap<String, VariantStats> map = new HashMap<>();
         VariantStats expected = new VariantStats("A", "C", VariantType.SNV);
         expected.setAltAlleleCount(1);

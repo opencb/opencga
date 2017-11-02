@@ -61,7 +61,7 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
 
         VariantStats firstStats = variantStatsWrapper.getCohortStats().entrySet().iterator().next().getValue();
         byte[] row = generateVariantRowKey(
-                variantStatsWrapper.getChromosome(), variantStatsWrapper.getPosition(),
+                variantStatsWrapper.getChromosome(), variantStatsWrapper.getStart(),
                 firstStats.getRefAllele(), firstStats.getAltAllele());
         Put put = new Put(row);
         for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {

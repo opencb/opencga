@@ -71,6 +71,8 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_KEY;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_VARIANT_ID;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 
@@ -813,8 +815,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // )
 
             if (!cohorts.isEmpty()) {
-                String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
-                        variantStats.getRefAllele(), variantStats.getAltAllele());
+                String id = variantConverter.buildStorageId(new Variant(wrapper.getChromosome(), wrapper.getStart(), wrapper.getEnd(),
+                        variantStats.getRefAllele(), variantStats.getAltAllele()).setSv(wrapper.getSv()));
 
 
                 Document find = new Document("_id", id);
@@ -847,6 +849,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             variantsCollection.update(pullQueriesBulkList, pullUpdatesBulkList, new QueryOptions());
         }
         BulkWriteResult writeResult = variantsCollection.update(pushQueriesBulkList, pushUpdatesBulkList, new QueryOptions()).first();
+        if (writeResult.getMatchedCount() != pushQueriesBulkList.size()) {
+            logger.warn("Could not update stats from some variants: "
+                    + writeResult.getMatchedCount() + " != " + pushQueriesBulkList.size() + " , "
+                    + (pushQueriesBulkList.size() - writeResult.getMatchedCount()) + " non loaded stats");
+        }
         int writes = writeResult.getModifiedCount();
 
 
@@ -886,8 +893,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         long start = System.nanoTime();
         DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), queryOptions);
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
-            String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                    variantAnnotation.getReference(), variantAnnotation.getAlternate());
+            String id;
+            if (variantAnnotation.getAdditionalAttributes() != null
+                    && variantAnnotation.getAdditionalAttributes().containsKey(ADDITIONAL_ATTRIBUTES_KEY)) {
+                String variantString = variantAnnotation.getAdditionalAttributes()
+                        .get(ADDITIONAL_ATTRIBUTES_KEY)
+                        .getAttribute()
+                        .get(ADDITIONAL_ATTRIBUTES_VARIANT_ID);
+                id = variantConverter.buildStorageId(new Variant(variantString));
+            } else {
+                id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+                        variantAnnotation.getReference(), variantAnnotation.getAlternate());
+            }
             Document find = new Document("_id", id);
             DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter();
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);

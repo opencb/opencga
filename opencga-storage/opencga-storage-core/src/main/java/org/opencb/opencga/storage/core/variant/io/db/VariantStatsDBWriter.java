@@ -63,8 +63,8 @@ public class VariantStatsDBWriter implements DataWriter<VariantStatsWrapper> {
 
         if (progressLogger != null) {
             progressLogger.increment(batch.size(), () -> ", up to position "
-                    + batch.get(batch.size() - 1).getChromosome() + ":"
-                    + batch.get(batch.size() - 1).getPosition());
+                    + batch.get(batch.size() - 1).getChromosome() + ':'
+                    + batch.get(batch.size() - 1).getStart());
         }
 
         return true;

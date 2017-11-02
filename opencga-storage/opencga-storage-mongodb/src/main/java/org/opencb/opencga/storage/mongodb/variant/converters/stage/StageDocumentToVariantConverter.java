@@ -46,7 +46,8 @@ public class StageDocumentToVariantConverter implements ComplexTypeConverter<Var
     public Document convertToStorageType(Variant variant) {
         return new Document(ID_FIELD, idConverter.buildId(variant))
                 .append(REF_FIELD, variant.getReference())
-                .append(ALT_FIELD, variant.getAlternate())
+                // Add left and right SvInsSeq to the alternate
+                .append(ALT_FIELD, idConverter.buildSVAlternate(variant.getAlternate(), variant.getSv()))
                 .append(END_FIELD, variant.getEnd());
     }
 

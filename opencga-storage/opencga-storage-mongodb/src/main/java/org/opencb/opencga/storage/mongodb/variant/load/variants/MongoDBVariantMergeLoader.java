@@ -329,10 +329,10 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
                 + "(ModifiedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
         logger.info("QueryIDs: {}", queryIds);
         List<QueryResult<Document>> queryResults = collection.find(queries, null);
-        logger.info("Results: ", queryResults.size());
+        logger.info("Results: {}", queryResults.size());
 
         for (QueryResult<Document> r : queryResults) {
-            logger.info("result: ", r);
+            logger.info("result: '{}'", r);
             if (!r.getResult().isEmpty()) {
                 String id = r.first().get("_id", String.class);
                 boolean remove = queryIds.remove(id);
@@ -341,8 +341,8 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         }
         StringBuilder sb = new StringBuilder("Missing Variant for update : ");
         for (String id : queryIds) {
-            logger.error("Missing Variant " + id);
-            sb.append(id).append(", ");
+            logger.error("Missing Variant '" + id + '\'');
+            sb.append('\'').append(id).append("', ");
         }
         throw new RuntimeException(sb.toString());
     }
