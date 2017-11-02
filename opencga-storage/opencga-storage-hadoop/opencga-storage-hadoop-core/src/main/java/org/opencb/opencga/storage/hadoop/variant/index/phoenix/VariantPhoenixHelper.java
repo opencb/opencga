@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CONSERVATION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_FUNCTIONAL_SCORE;
@@ -57,6 +56,8 @@ public class VariantPhoenixHelper {
     public static final String STATS_PROTOBUF_SUFIX = "_PB";
     public static final String SAMPLE_DATA_SUFIX = "_S";
     public static final byte[] SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(SAMPLE_DATA_SUFIX);
+    public static final String FILE_SUFIX = "_F";
+    public static final byte[] FILE_SUFIX_BYTES = Bytes.toBytes(FILE_SUFIX);
     public static final byte[] STATS_PROTOBUF_SUFIX_BYTES = Bytes.toBytes(STATS_PROTOBUF_SUFIX);
     public static final String MAF_SUFIX = "_MAF";
     public static final String MGF_SUFIX = "_MGF";
@@ -98,7 +99,7 @@ public class VariantPhoenixHelper {
         GERP(ANNOTATION_PREFIX + "GERP", PFloat.INSTANCE),
 
         //Functional Scores
-        CADD_SCALLED(FUNCTIONAL_SCORE_PREFIX + "CADD_S", PFloat.INSTANCE),
+        CADD_SCALED(FUNCTIONAL_SCORE_PREFIX + "CADD_SC", PFloat.INSTANCE),
         CADD_RAW(FUNCTIONAL_SCORE_PREFIX + "CADD_R", PFloat.INSTANCE),
 
         FULL_ANNOTATION(ANNOTATION_PREFIX + "FULL", PVarchar.INSTANCE);
@@ -257,7 +258,7 @@ public class VariantPhoenixHelper {
 
     public void updateStatsColumns(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
         List<Column> columns = new ArrayList<>();
-        for (Integer cohortId : studyConfiguration.getCohortIds().values()) {
+        for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
             for (Column column : getStatsColumns(studyConfiguration.getStudyId(), cohortId)) {
                 columns.add(column);
             }
@@ -275,9 +276,16 @@ public class VariantPhoenixHelper {
         con.commit();
     }
 
-    public void registerNewSamples(Connection con, String table, Integer studyId, Collection<Integer> sampleIds) throws SQLException {
+    public void registerNewFiles(Connection con, String table, Integer studyId, Collection<Integer> fileIds, Collection<Integer> sampleIds)
+            throws SQLException {
         createTableIfNeeded(con, table);
-        List<Column> columns = sampleIds.stream().map(sampleId -> getSampleColumn(studyId, sampleId)).collect(Collectors.toList());
+        List<Column> columns = new ArrayList<>(fileIds.size() + sampleIds.size() + 1);
+        for (Integer fileId : fileIds) {
+            columns.add(getFileColumn(studyId, fileId));
+        }
+        for (Integer sampleId : sampleIds) {
+            columns.add(getSampleColumn(studyId, sampleId));
+        }
         columns.add(getStudyColumn(studyId));
         phoenixHelper.addMissingColumns(con, table, columns, true);
         con.commit();
@@ -398,7 +406,7 @@ public class VariantPhoenixHelper {
                 new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(PHYLOP), defaultInclude),
                 new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(GERP), defaultInclude),
                 new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(CADD_RAW), defaultInclude),
-                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(CADD_SCALLED), defaultInclude),
+                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(CADD_SCALED), defaultInclude),
                 // Index the min value
                 new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList("\"" + POLYPHEN + "\"[1]"), defaultInclude),
                 // Index the max value
@@ -427,7 +435,7 @@ public class VariantPhoenixHelper {
             case "CADD_RAW":
                 return CADD_RAW;
             case "CADD_SCALED":
-                return CADD_SCALLED;
+                return CADD_SCALED;
             default:
                 if (throwException) {
 //                    throw VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, rawValue, "Unknown functional score.");
@@ -512,6 +520,18 @@ public class VariantPhoenixHelper {
 
     public static Column getSampleColumn(int studyId, int sampleId) {
         return Column.build(buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
+    }
+
+    public static byte[] buildFileColumnKey(int studyId, int fileId) {
+        return Bytes.toBytes(buildFileColumnKey(studyId, fileId, new StringBuilder()).toString());
+    }
+
+    public static StringBuilder buildFileColumnKey(int studyId, int fileId, StringBuilder stringBuilder) {
+        return stringBuilder.append(studyId).append(COLUMN_KEY_SEPARATOR).append(fileId).append(FILE_SUFIX);
+    }
+
+    public static Column getFileColumn(int studyId, int sampleId) {
+        return Column.build(buildFileColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
 }

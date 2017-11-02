@@ -110,11 +110,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
         Path smallInputPath = rootDir.resolve(SMALL_VCF_TEST_FILE_NAME);
         Path corruptedInputPath = rootDir.resolve(VCF_CORRUPTED_FILE_NAME);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
+        Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
                 StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath,
+        Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath,
                 StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath,
+        Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath,
                 StandardCopyOption.REPLACE_EXISTING);
 
         inputUri = inputPath.toUri();
@@ -136,7 +136,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             Files.createDirectories(resourcePath.getParent());
         }
         if (!resourcePath.toFile().exists()) {
-            Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption
+            Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption
                     .REPLACE_EXISTING);
         }
         return resourcePath.toUri();
@@ -174,6 +174,14 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         // stackTrace[1] = "newOutputUri"
         // stackTrace[2] =  caller method
         String testName = stackTrace[2 + extraCalls].getMethodName();
+        return newOutputUri(testName, outputUri);
+    }
+
+    protected URI newOutputUri(String testName) throws IOException {
+        return newOutputUri(testName, outputUri);
+    }
+
+    protected static URI newOutputUri(String testName, URI outputUri) throws IOException {
         int c = 0;
         URI finalOutputUri = outputUri.resolve("test_" + testName + "/");
         while (Paths.get(finalOutputUri).toFile().exists()) {

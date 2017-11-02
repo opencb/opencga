@@ -254,6 +254,19 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
+    public void fillGaps(String study, List<String> samples, ObjectMap config, String sessionId)
+            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, study);
+        DataStore dataStore = getDataStore(studyId, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        catalogManager.getSampleManager().getIds(String.join(",", samples), study, sessionId);
+
+        variantStorageEngine.fillGaps(study, samples, config);
+    }
+
     // ---------------------//
     //   Query methods      //
     // ---------------------//

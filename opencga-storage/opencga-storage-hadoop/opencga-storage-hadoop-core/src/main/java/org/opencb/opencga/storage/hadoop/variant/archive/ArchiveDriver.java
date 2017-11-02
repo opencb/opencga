@@ -37,6 +37,7 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -176,7 +177,7 @@ public class ArchiveDriver extends Configured implements Tool {
     }
 
     public static String buildCommandLineArgs(URI input, URI inputMeta, String server, String outputTable,
-                                              int studyId, int fileId, Map<String, Object> other) {
+                                              int studyId, int fileId, ObjectMap other) {
         StringBuilder stringBuilder = new StringBuilder()
                 .append(input).append(' ')
                 .append(inputMeta).append(' ')

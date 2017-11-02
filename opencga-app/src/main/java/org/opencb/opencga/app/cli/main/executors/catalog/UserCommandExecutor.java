@@ -79,7 +79,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             case "update":
                 queryResponse = update();
                 break;
-            case "change-password":
+            case "password":
                 queryResponse = changePassword();
                 break;
             case "projects":

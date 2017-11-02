@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
@@ -28,13 +30,15 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
@@ -44,8 +48,6 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -79,6 +81,22 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("!", "!=");
     }
 
+    public static class VariantPhoenixSQLQuery {
+        private String sql;
+        private SelectVariantElements select;
+
+        public String getSql() {
+            return sql;
+        }
+
+        public SelectVariantElements getSelect() {
+            return select;
+        }
+    }
+
+    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, StudyConfigurationManager studyConfigurationManager) {
+        this(genomeHelper, variantTable, studyConfigurationManager, null, false);
+    }
 
     public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable,
                                  StudyConfigurationManager studyConfigurationManager, CellBaseUtils cellBaseUtils, boolean clientSideSkip) {
@@ -90,9 +108,10 @@ public class VariantSqlQueryParser {
         this.genotypesFromSampleColumns = true;
     }
 
-    public String parse(Query query, QueryOptions options) {
+    public VariantPhoenixSQLQuery parse(Query query, QueryOptions options) {
 
         StringBuilder sb = new StringBuilder("SELECT ");
+        VariantPhoenixSQLQuery phoenixSQLQuery = new VariantPhoenixSQLQuery();
 
         try {
 
@@ -105,7 +124,7 @@ public class VariantSqlQueryParser {
                 sb.append("/*+ ").append(HintNode.Hint.NO_INDEX.toString()).append(" */ ");
             }
 
-            appendProjectedColumns(sb, query, options);
+            appendProjectedColumns(sb, query, options, phoenixSQLQuery);
             appendFromStatement(sb, dynamicColumns);
             appendWhereStatement(sb, regionFilters, filters);
 
@@ -140,33 +159,35 @@ public class VariantSqlQueryParser {
             }
         }
 
-
-        return sb.toString();
+        phoenixSQLQuery.sql = sb.toString();
+        return phoenixSQLQuery;
     }
 
     /**
      * Select only the required columns.
-     *
+     * <p>
      * Uses the params:
      * {@link VariantQueryParam#RETURNED_STUDIES}
      * {@link VariantQueryParam#RETURNED_SAMPLES}
      * {@link VariantQueryParam#RETURNED_FILES}
      * {@link VariantQueryParam#UNKNOWN_GENOTYPE}
      *
-     * @param sb    SQLStringBuilder
-     * @param query Query to parse
-     * @param options   other options
+     * @param sb              SQLStringBuilder
+     * @param query           Query to parse
+     * @param options         other options
+     * @param phoenixSQLQuery VariantPhoenixSQLQuery
      * @return String builder
      */
-    protected StringBuilder appendProjectedColumns(StringBuilder sb, Query query, QueryOptions options) {
+    protected StringBuilder appendProjectedColumns(StringBuilder sb, Query query, QueryOptions options,
+                                                   VariantPhoenixSQLQuery phoenixSQLQuery) {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
-
-            Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-
-            Map<Integer, List<Integer>> returnedSamples = VariantQueryUtils.getReturnedSamples(query, options, studyConfigurationManager);
-            Collection<Integer> studyIds = returnedSamples.keySet();
+            SelectVariantElements selectVariantElements = parseSelectElements(query, options, studyConfigurationManager);
+            phoenixSQLQuery.select = selectVariantElements;
+            Set<VariantField> returnedFields = selectVariantElements.getFields();
+            Map<Integer, List<Integer>> returnedSamples = selectVariantElements.getSamples();
+            Collection<Integer> studyIds = selectVariantElements.getStudies();
 
             sb.append(VariantColumn.CHROMOSOME).append(',')
                     .append(VariantColumn.POSITION).append(',')
@@ -201,6 +222,15 @@ public class VariantSqlQueryParser {
                     }
                 }
             }
+            if (returnedFields.contains(VariantField.STUDIES_FILES)) {
+                selectVariantElements.getFiles().forEach((studyId, fileIds) -> {
+                    for (Integer fileId : fileIds) {
+                        sb.append(",\"");
+                        VariantPhoenixHelper.buildFileColumnKey(studyId, fileId, sb);
+                        sb.append('"');
+                    }
+                });
+            }
             if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
                 returnedSamples.forEach((studyId, sampleIds) -> {
                     for (Integer sampleId : sampleIds) {
@@ -210,7 +240,6 @@ public class VariantSqlQueryParser {
                     }
                 });
             }
-
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
             }
@@ -360,15 +389,15 @@ public class VariantSqlQueryParser {
         Iterator<Variant> iterator = variants.iterator();
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
-            sb.append("('").append(variant.getChromosome()).append("', ")
+            sb.append("('").append(checkStringValue(variant.getChromosome())).append("', ")
                     .append(variant.getStart()).append(", ")
-                    .append("'").append(variant.getReference()).append("', ")
-                    .append("'").append(variant.getAlternate()).append("') ");
+                    .append('\'').append(checkStringValue(variant.getReference())).append("', ")
+                    .append('\'').append(checkStringValue(variant.getAlternate())).append("') ");
             if (iterator.hasNext()) {
-                sb.append(",");
+                sb.append(',');
             }
         }
-        sb.append(")");
+        sb.append(')');
         return sb.toString();
     }
 
@@ -410,6 +439,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#TYPE}
      * {@link VariantQueryParam#STUDIES}
      * {@link VariantQueryParam#FILES}
+     * {@link VariantQueryParam#FILTER}
      * {@link VariantQueryParam#COHORTS}
      * {@link VariantQueryParam#GENOTYPE}
      *
@@ -486,7 +516,7 @@ public class VariantSqlQueryParser {
             while (iterator.hasNext()) {
                 String study = iterator.next();
                 Integer studyId = studyConfigurationManager.getStudyId(study, false, studies);
-                if (study.startsWith("!")) {
+                if (isNegated(study)) {
                     sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NULL ");
                 } else {
                     notNullStudies.add(studyId);
@@ -528,7 +558,94 @@ public class VariantSqlQueryParser {
 //            filters.add(sb.toString());
         }
 
-        unsupportedFilter(query, FILES);
+        QueryOperation filtersOperation = null;
+        List<String> filterValues = null;
+        if (isValidParam(query, FILTER)) {
+            String value = query.getString(FILTER.key());
+            filtersOperation = checkOperator(value);
+            filterValues = splitValue(value, filtersOperation);
+            if (!filterValues.isEmpty()) {
+                if (!isValidParam(query, FILES)) {
+                    throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILES.key() + "\" filter");
+                }
+            }
+        }
+
+        if (isValidParam(query, FILES)) {
+            String value = query.getString(FILES.key());
+            QueryOperation operation = checkOperator(value);
+            List<String> values = splitValue(value, operation);
+
+
+            StringBuilder sb = new StringBuilder();
+            for (Iterator<String> iterator = values.iterator(); iterator.hasNext();) {
+                String file = iterator.next();
+                Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration);
+
+                if (filterValues == null || filterValues.isEmpty()) {
+                    sb.append('"');
+                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append('"');
+                    if (isNegated(file)) {
+                        sb.append(" IS NULL ");
+                    } else {
+                        sb.append(" IS NOT NULL ");
+                    }
+                } else {
+                    if (isNegated(file)) {
+                        sb.append('"');
+                        buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                        sb.append('"');
+                        sb.append(" IS NULL ");
+                    } else {
+                        sb.append(" ( ");
+                        for (int i = 0; i < filterValues.size(); i++) {
+                            String filter = checkStringValue(filterValues.get(i));
+                            boolean negated = isNegated(filter);
+                            if (negated) {
+                                filter = removeNegation(filter);
+                            }
+
+                            if (i > 0 && filtersOperation != null) {
+                                sb.append(' ').append(filtersOperation.name()).append(' ');
+                            }
+
+                            sb.append('"');
+                            buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                            sb.append('"');
+
+                            // Arrays in SQL are 1-based.
+                            sb.append('[').append(HBaseToStudyEntryConverter.FILE_FILTER_IDX + 1).append(']');
+                            if (filter.equals(VCFConstants.PASSES_FILTERS_v4) || filter.contains(VCFConstants.FILTER_CODE_SEPARATOR)) {
+                                if (negated) {
+                                    sb.append(" != '");
+                                } else {
+                                    sb.append(" = '");
+                                }
+                                sb.append(filter).append('\'');
+                            } else {
+                                if (negated) {
+                                    sb.append(" NOT ");
+                                }
+                                sb.append(" LIKE '%").append(filter).append("%'");
+                            }
+                        }
+                        sb.append(" ) ");
+                    }
+                }
+                if (iterator.hasNext()) {
+                    if (operation == null) {
+                        // This should never happen!
+                        throw new VariantQueryException("Unexpected error");
+                    } else if (operation.equals(QueryOperation.AND)) {
+                        sb.append(" AND ");
+                    } else {
+                        sb.append(" OR ");
+                    }
+                }
+            }
+            filters.add(sb.toString());
+        }
 
         if (isValidParam(query, COHORTS)) {
             for (String cohort : query.getAsStringList(COHORTS.key())) {
@@ -540,7 +657,7 @@ public class VariantSqlQueryParser {
                 String[] studyCohort = cohort.split(":");
                 StudyConfiguration studyConfiguration;
                 if (studyCohort.length == 2) {
-                    studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyCohort[0], defaultStudyConfiguration);
+                    studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyCohort[0], defaultStudyConfiguration, null);
                     cohort = studyCohort[1];
                 } else if (studyCohort.length == 1) {
                     studyConfiguration = defaultStudyConfiguration;
@@ -844,7 +961,7 @@ public class VariantSqlQueryParser {
             if (indexOf > 0) {
                 String study = key.substring(0, indexOf);
                 cohort = key.substring(indexOf + 1);
-                sc = studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration);
+                sc = studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
             } else {
                 cohort = key;
                 sc = defaultStudyConfiguration;
@@ -1012,8 +1129,7 @@ public class VariantSqlQueryParser {
         }
         switch (sqlType) {
             case "VARCHAR":
-                parsedValue = value;
-                checkStringValue((String) parsedValue);
+                parsedValue = checkStringValue((String) value);
                 sb.append(negated)
                         .append('"').append(column).append('"').append(arrayPosition).append(' ');
                 if (((String) parsedValue).isEmpty()) {
@@ -1024,7 +1140,7 @@ public class VariantSqlQueryParser {
                 }
                 break;
             case "VARCHAR ARRAY":
-                parsedValue = value;
+                parsedValue = checkStringValue((String) value);
                 checkStringValue((String) parsedValue);
                 sb.append(negated)
                         .append('\'').append(parsedValue).append("' ")
@@ -1106,10 +1222,11 @@ public class VariantSqlQueryParser {
         }
     }
 
-    private void checkStringValue(String parsedValue) {
-        if (parsedValue.contains("'")) {
+    private String checkStringValue(String value) {
+        if (value.contains("'")) {
             throw new VariantQueryException("Unable to query text field using \"'\"");
         }
+        return value;
     }
 
     /**

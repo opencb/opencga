@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -445,6 +446,17 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new DefaultVariantStatisticsManager(getDBAdaptor());
     }
 
+    /**
+     *
+     * @param study     Study
+     * @param samples   Samples to fill gaps
+     * @param options   Other options
+     * @throws StorageEngineException if there is any error
+     */
+    public void fillGaps(String study, List<String> samples, ObjectMap options)
+            throws StorageEngineException {
+        throw new UnsupportedOperationException();
+    }
 
     public void searchIndex() throws StorageEngineException, IOException, VariantSearchException {
         searchIndex(new Query(), new QueryOptions());
@@ -465,7 +477,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             queryOptions = new QueryOptions();
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
-            variantSearchManager.load(dbName, iterator);
+            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
+            variantSearchManager.load(dbName, iterator, progressLogger);
         } else {
             throw new StorageEngineException("Solr is not alive!");
         }
@@ -503,7 +516,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected List<Integer> preRemoveFiles(String study, List<String> files) throws StorageEngineException {
         List<Integer> fileIds = new ArrayList<>();
         getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
-            fileIds.addAll(getStudyConfigurationManager().getFileIds(files, false, studyConfiguration));
+            fileIds.addAll(getStudyConfigurationManager().getFileIdsFromStudy(files, studyConfiguration));
 
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, fileIds, resume,

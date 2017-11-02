@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHadoopDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
+import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -35,6 +35,7 @@ import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
@@ -294,15 +295,19 @@ public class VariantSearchManager {
      *
      * @param collection        Collection name
      * @param variantDBIterator Iterator to retrieve the variants to load
+     * @param progressLogger    Progress logger
      * @throws IOException            IOException
      * @throws VariantSearchException VariantSearchException
      */
-    public void load(String collection, VariantDBIterator variantDBIterator) throws IOException, VariantSearchException {
+    public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
+            throws IOException, VariantSearchException {
         if (variantDBIterator != null) {
             int count = 0;
             List<Variant> variantList = new ArrayList<>(DEFAULT_INSERT_SIZE);
             while (variantDBIterator.hasNext()) {
-                variantList.add(variantDBIterator.next());
+                Variant variant = variantDBIterator.next();
+                progressLogger.increment(1, () -> "up to position " + variant.toString());
+                variantList.add(variant);
                 count++;
                 if (count % DEFAULT_INSERT_SIZE == 0) {
                     insert(collection, variantList);
