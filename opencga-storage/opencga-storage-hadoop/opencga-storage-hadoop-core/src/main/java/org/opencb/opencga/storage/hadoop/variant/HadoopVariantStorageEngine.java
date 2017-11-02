@@ -47,7 +47,6 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -84,6 +83,8 @@ import java.util.zip.GZIPInputStream;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_GAPS_OPERATION_NAME;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQuery;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQueryOptions;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -385,23 +386,19 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
 
-            if (options.getBoolean("local")) {
-                // Get files
-                Set<String> fileIds = new HashSet<>();
-                for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-                    if (!Collections.disjoint(entry.getValue(), sampleIds)) {
-                        fileIds.add(entry.getKey().toString());
-                    }
+            // Get files
+            Set<String> fileIds = new HashSet<>();
+            for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+                if (!Collections.disjoint(entry.getValue(), sampleIds)) {
+                    fileIds.add(entry.getKey().toString());
                 }
-
+            }
+            if (options.getBoolean("local")) {
                 ProgressLogger progressLogger = new ProgressLogger("Process");
                 VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
                 VariantDBReader dbReader = new VariantDBReader(dbAdaptor,
-                        new Query()
-                                .append(VariantQueryParam.STUDIES.key(), study)
-                                .append(VariantQueryParam.FILES.key(), String.join(OR, fileIds))
-                                .append(VariantQueryParam.RETURNED_SAMPLES.key(), sampleIds),
-                        new QueryOptions(QueryOptions.EXCLUDE, VariantField.ANNOTATION));
+                        buildQuery(study, sampleIds, fileIds),
+                        buildQueryOptions());
                 DataWriter<Put> writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), getVariantTableName());
                 ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(4).setBatchSize(10).build();
                 ParallelTaskRunner<Variant, Put> ptr = new ParallelTaskRunner<>(
@@ -427,7 +424,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 String args = FillGapsDriver.buildCommandLineArgs(
                         getArchiveTableName(studyId),
                         getVariantTableName(),
-                        studyId, Collections.emptyList(), options);
+                        studyId, fileIds, options);
 
                 long startTime = System.currentTimeMillis();
                 logger.info("------------------------------------------------------");

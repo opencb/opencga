@@ -15,8 +15,12 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner.TaskWithException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -217,6 +221,17 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
         } else {
             return variant.getStart() <= end && variant.getEnd() >= start;
         }
+    }
+
+    public static Query buildQuery(Object study, Collection<?> sampleIds, Collection<?> fileIds) {
+        return new Query()
+                .append(VariantQueryParam.STUDIES.key(), study)
+                .append(VariantQueryParam.FILES.key(), fileIds)
+                .append(VariantQueryParam.RETURNED_SAMPLES.key(), sampleIds);
+    }
+
+    public static QueryOptions buildQueryOptions() {
+        return new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS));
     }
 
 }

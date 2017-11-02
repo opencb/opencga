@@ -355,8 +355,8 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
 
-    public static String buildCommandLineArgs(String archiveTable, String variantsTable, int studyId,
-                                              List<Integer> fileIds, ObjectMap other) {
+    public static String buildCommandLineArgs(String archiveTable, String variantsTable, int studyId, Collection<?> fileIds,
+                                              ObjectMap other) {
         StringBuilder stringBuilder = new StringBuilder()
 //                .append(server).append(' ')
                 .append(archiveTable).append(' ')

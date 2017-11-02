@@ -183,6 +183,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         options.put(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
+        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 1);
         options.putAll(extraParams);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
