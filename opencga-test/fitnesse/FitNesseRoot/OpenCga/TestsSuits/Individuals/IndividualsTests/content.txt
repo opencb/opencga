@@ -1,163 +1,296 @@
 !define TEST_SYSTEM {slim}
-!define file {4}
 
-!3 Generate Random Variables 
-!|Table: Rest Fixture | $baseURL |
-|let|iName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|createPostName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|sName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|sName2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|updatedName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+!3 Generate Random Variables
+!| Table: Rest Fixture | $baseURL |
+| let | iName | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
+| let | iName2 | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
+| let | sName | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
+| let | sName2 | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
+| let | updatedName | js | Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5) | |
 
-!3 Create First Individual 
+!3 Create First Individual
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "$iName"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
+| let | individualId | js | response.jsonbody.response[0].result[0].id ||
+
+!3 Create First Sample
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "$sName"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/samples/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
+| let | sampleId | js | response.jsonbody.response[0].result[0].id ||
+
+!3 Get Project Release 
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$iName"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/individuals/create?sid=$sessionId&study=$studyId |200|  Content-Type: application/json ||
-|let|individualId|js|response.jsonbody.response[0].result[0].id||
+| GET | /v1/projects/$projectId/info?sid=$sessionId |200|  Content-Type: application/json ||
+| let | releaseNumber | js | response.jsonbody.response[0].result[0].currentRelease||
+
+!3 Increment Project Release 
+!|Table: Rest Fixture | $baseURL |
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/$projectId/increlease?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0] > "$releaseNumber"|
+| let | currentRelease | js | $releaseNumber + 1||
 
 !3 Create Second Individual
-!|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$createPostName", "family": "family", "sex": "MALE", "phenotypes": [{"id": "phenotypes","name": "firstTerm","source": "firstSource"}]}}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/individuals/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "$iName2", "sex": "MALE", "phenotypes": [{"id": "phenotypes","name": "firstTerm","source": "firstSource"}]}} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json | |
+| let | individualId2 | js | response.jsonbody.response[0].result[0].id ||
 
-!3 Create Sample (POST)
-!|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$createPostName", "individual" : {"name" : "sName2"} }|
-| setHeader|Content-Type:application/json|
-| POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
-|let|sampleId|js|response.jsonbody.response[0].result[0].id||
-|let|sampleIndividualId|js|response.jsonbody.response[0].result[0].individual.id||
+!3 Create Second Sample
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "$sName2" } |
+| setHeader | Content-Type:application/json |
+| POST | /v1/samples/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
+| let | sampleId2 | js | response.jsonbody.response[0].result[0].id ||
 
-!3 Create Second Sample (POST)
-!|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$sName2" }|
-| setHeader|Content-Type:application/json|
-| POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
-|let|sampleId2|js|response.jsonbody.response[0].result[0].id||
+!3 Get Individual
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/info?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$individualId' |
 
-!3 Get Individual 
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$individualId'|
+!3 Update Individual
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"sex" : "MALE" ,"karyotypicSex" : "XY" , "lifeStatus" : "ALIVE" } |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/$individualId/update?sid=$sessionId&incVersion=true | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' |
 
-!3 Update Individual 
-!|Table: Rest Fixture | $baseURL |
-| setBody | { "family" : "4", "sex" : "MALE" ,"karyotypicSex" : "XY" , "lifeStatus" : "ALIVE" }|
-| setHeader|Content-Type:application/json|
-| POST | /v1/individuals/$individualId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].family == '4' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE'|
+!3 Update Individual With Samples (1,2)
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"samples" :["$sName", "$sName2"]} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/$individualId/update?sid=$sessionId&incVersion=true | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == 2 |
 
-!3 Update Individual 
-!|Table: Rest Fixture | $baseURL |
-| setBody | {"family" : "4", "sex" : "MALE", "karyotypicSex" :"XY", "lifeStatus" : "ALIVE", "phenotypes": [{"id": "phenotypes","name": "firstTerm","source": "firstSource"}]}}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/individuals/$individualId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].family == '4' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' && jsonbody.response[0].result[0].phenotypes.length > 0|
+!3 Get Individual 2
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&name=$iName2 | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == 0 |
 
-!3 Get Individual 
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].family == '4' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE'|
+!3 Update Only Sample Version
+!| Table: Rest Fixture | $baseURL |
+| setBody | {} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/samples/$sampleId/update?sid=$sessionId&incVersion=true | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].version == '2' |
+
+!3 Get Individual 1
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&name=$iName | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == 2 |
+
+!3 Update Individual
+!| Table: Rest Fixture | $baseURL |
+| setBody | { "sex" : "MALE", "karyotypicSex" :"XY", "lifeStatus" : "ALIVE", "phenotypes": [{"id": "phenotypes","name": "firstTerm","source": "firstSource"}]}} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/$individualId/update?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' && jsonbody.response[0].result[0].phenotypes.length > 0 |
+
+!3 Get Individual
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/info?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' |
 
 !3 Get Individual ACL
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result ==''|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/acl?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result =='' |
 
 !3 Create Individual ACL
-!|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "VIEW", "action": "ADD", "individual":"$individualId"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/individuals/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
-
+!| Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions": "VIEW", "action": "ADD", "individual":"$individualId"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/acl/$userA/update?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW' |
 
 !3 Update Individual ACL (add)
-!|Table: Rest Fixture | $baseURL |
-| setBody | {"add" : "DELETE" }|
-| setHeader|Content-Type:application/json|
-| POST |/v1/individuals/$individualId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[1] == 'DELETE'|
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"add" : "DELETE" } |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/$individualId/acl/$userA/update?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[1] == 'DELETE' |
 
 !3 Update Individual ACL (remove)
-!|Table: Rest Fixture | $baseURL |
-| setBody | {"remove" : "DELETE" }|
-| setHeader|Content-Type:application/json|
-| POST |/v1/individuals/$individualId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0'|
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"remove" : "DELETE" } |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/$individualId/acl/$userA/update?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' |
 
 !3 Update Individual ACL (set)
-!|Table: Rest Fixture | $baseURL |
-| setBody | {"set" : "DELETE,VIEW" }|
-| setHeader|Content-Type:application/json|
-| POST |/v1/individuals/$individualId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"set" : "DELETE,VIEW" } |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/$individualId/acl/$userA/update?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' |
 
 !3 Get Member ACL
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' |
 
 !3 Search Individual (ALL)
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/search?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length > '0.0'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result.length > '0.0' |
 
 !3 Search Individual (one)
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/search?sid=$sessionId&study=$study&name=$iName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '1.0' && jsonbody.response[0].result[0].name == '$iName'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&name=$iName | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result.length == '1.0' && jsonbody.response[0].result[0].name == '$iName' |
 
 ## Propagate Tests
 
 !3 Update (SET) ACL Individual And Propagate (True)
+!| Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions": "DELETE", "action": "SET", "individual" : "$individualId" , "propagate" : "true"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
+
+!3 Get Sample 1,2 ACL
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "SHARE", "action": "SET", "individual" : "$sampleIndividualId" , "propagate" : "true"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+| GET | /v1/samples/$sampleId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions =='DELETE'|
+| GET | /v1/samples/$sampleId2/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions =='DELETE'|
 
 !3 Get Member ACL (Individual)
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$sampleIndividualId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'SHARE'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'DELETE' |
 
 !3 Get Member ACL (Sample)
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'SHARE'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'DELETE' |
 
 !3 Update (ADD) ACL Individual And Propagate (True)
-!|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "VIEW", "action": "ADD", "individual" : "$sampleIndividualId" , "propagate" : "true"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+!| Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions": "VIEW", "action": "ADD", "individual" : "$individualId" , "propagate" : "true"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 
 !3 Get Member ACL (Individual)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' && jsonbody.response[0].result[0].permissions[0] == 'VIEW' |
+
+!3 Get Sample 1,2 ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$sampleIndividualId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+| GET | /v1/samples/$sampleId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length =='2'|
+| GET | /v1/samples/$sampleId2/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length =='2'|
 
 !3 Get Member ACL (Sample)
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' |
 
 !3 Update (REMOVE) ACL Individual And Propagate (False)
-!|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "SHARE", "action": "REMOVE", "individual" : "$sampleIndividualId" , "propagate" : "false"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+!| Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions": "DELETE", "action": "REMOVE", "individual" : "$individualId" , "propagate" : "false"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 
 !3 Get Member ACL (Individual)
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$sampleIndividualId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' && jsonbody.response[0].result[0].permissions[0] == 'VIEW' |
 
 !3 Get Member ACL (Sample)
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0' |
 
 !3 Update (REMOVE) ACL Individual And Propagate (True)
-!|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "SHARE,VIEW", "action": "REMOVE", "individual" : "$sampleIndividualId" , "propagate" : "true"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+!| Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions": "DELETE,VIEW", "action": "REMOVE", "individual" : "$individualId" , "propagate" : "true"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 
 !3 Get Member ACL (Individual)
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$sampleIndividualId/acl?sid=$sessionId&member=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '0.0'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/acl?sid=$sessionId&member=$userA | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '0.0' |
 
 !3 Get Member ACL (Sample)
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '0.0'|
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId/acl?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '0.0' |
 
 !3 Update (ADD) ACL Individual And Propagate (True) While Not Connected to Any Sample
+!| Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions": "DELETE", "action": "ADD", "individual" : "$individualId2" , "propagate" : "true"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0' |
+
+!3 Get Sample 1,2 ACL
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "SHARE", "action": "ADD", "individual" : "$individualId" , "propagate" : "true"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '3.0'|
+| GET | /v1/samples/$sampleId/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length =='0'|
+| GET | /v1/samples/$sampleId2/acl?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length =='0'|
+
+
+#       -------------------- 
+#      | Release1 |Release2 | 
+#	   |--------------------|
+#      |  Sa1,Ia1 |         |Snapshot1
+#      |--------------------|
+#      | Sa2,Ia2  |Sb1,Ib1  |Snapshot2
+#      |          |         | 
+#       --------------------     
+
+!3 Get First Snap Shot (Individual)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&snapshot=$releaseNumber  | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id =='$individualId' && jsonbody.response[0].result[0].version =='1'|
+
+!3 Get Second Snap Shot (Individual)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&snapshot=$currentRelease | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length =='2'|
+
+!3 Get First Release (Individual)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&release=$releaseNumber | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id =='$individualId' && jsonbody.response[0].result.length =='1'&& jsonbody.response[0].result[0].version =='3'||
+
+!3 Get Second Release (Individual) 
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&release=$currentRelease | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id =='$individualId2' && jsonbody.response[0].result.length =='1' && jsonbody.response[0].result[0].version =='1'|
+
+!3 Get First Snap Shot (Sample)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&snapshot=$releaseNumber | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id =='$sampleId'|
+
+!3 Get Second Snap Shot (Sample)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&snapshot=$currentRelease | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length =='2'|
+
+#should fail as operator not supported
+!3 (Negative) Get Snap Shot > 2 (Sample) 
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&snapshot=%3E$currentRelease |404|||
+
+!3 Get First Release (Sample)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&release=$releaseNumber | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id  =='$sampleId' && jsonbody.response[0].result.length == '1'&& jsonbody.response[0].result[0].version =='2'|
+
+!3 Get Second Release (Sample)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&release=$currentRelease | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id  =='$sampleId2' && jsonbody.response[0].result.length == '1'  && jsonbody.response[0].result[0].version =='1'|
+
+!3 Get Release > Current Release (Individual)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&release=%3E$currentRelease | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length =='0'|
+
+!3 Get Release < Current Release (Individual)
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&release=%3C$currentRelease | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id =='$individualId' && jsonbody.response[0].result.length =='1'&& jsonbody.response[0].result[0].version =='3'||
+
+!3 Delete First Individual
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+
+!3 Search Deleted Individual 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&name=$iName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Delete Second Individual
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+
+!3 Search Deleted Individual 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/search?sid=$sessionId&study=$study&name=$iName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Delete First Sample
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+
+!3 Search Deleted Sample 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&name=$sName|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Delete Second Sample
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+
+!3 Search Deleted Sample 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&name=$sName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+

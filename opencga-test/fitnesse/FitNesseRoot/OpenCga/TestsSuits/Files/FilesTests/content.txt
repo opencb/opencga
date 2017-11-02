@@ -1,22 +1,142 @@
 !define TEST_SYSTEM {slim}
-!define path {path}
+!define pathName {dummyPath}
 
 !3 Create Folder
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "directory": "true", "path" : "${path}", "parents" : "true"}|
+| setBody | {  "directory": "true", "path" : "${pathName}", "parents" : "true"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/files/create?sid=$sessionId&study=$study |  |  Content-Type: application/json | jsonbody.error === '' && jsonbody.response[0].result[0].path =='${path}/' |
+| POST | /v1/files/create?sid=$sessionId&study=$study ||Content-Type: application/json||
+|let|folderId|js|response.jsonbody.response[0].result[0].id||
+|let|directoryPath|js|response.jsonbody.response[0].result[0].uri||
+
+!3 Get Directory Info
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$folderId/info?sid=$sessionId ||Content-Type: application/json | jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$folderId'|
+
+!3 (Negative) Create File With Same Name as Directory
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "directory": "false", "path" : "${pathName}", "parents" : "false", "description" : "testing file", "content" :"data goes here"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/files/create?sid=$sessionId&study=$study |500|  Content-Type: application/json |  |
+
+!3 Create File 
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "directory": "false", "path" : "${pathName}/file", "parents" : "false", "description" : "testing file", "content" :"data goes here"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/files/create?sid=$sessionId&study=$study |200|Content-Type: application/json||
 |let|fileId|js|response.jsonbody.response[0].result[0].id||
 
-!3 Get File(Directory) Info
+#error message is correct but not the return code, sending 200 as of now
+!3 (Negative) Create Folder with Existing Name
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$fileId/info?sid=$sessionId |  |  Content-Type: application/json | jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$fileId'|
+| setBody | {  "directory": "true", "path" : "${pathName}", "parents" : "true"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/files/create?sid=$sessionId&study=$study ||  Content-Type: application/json ||
+
+!3 Get File Info
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId/info?sid=$sessionId |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$fileId'|
+
+!3 Get File & Folder Info
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId,$folderId/info?sid=$sessionId |200|Content-Type: application/json|jsonbody.error === ''&& jsonbody.response[0].result[0].id == '$fileId' && jsonbody.response[1].result[0].id == '$folderId'|
+
+!3 Get File & Folder Info In Reverse Order 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$folderId,$fileId/info?sid=$sessionId |200|Content-Type: application/json|jsonbody.error === ''&& jsonbody.response[0].result[0].id == '$folderId' && jsonbody.response[1].result[0].id == '$fileId'|
+
+!3 Get File & Folder Info With Invalid Entry
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId,0000,$folderId/info?sid=$sessionId |500|Content-Type: application/json|jsonbody.error === "File 0000 not found in study $studyId"|
+
+!3 Get File & Folder Info With Invalid Entry And Silent True
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId,0000,$folderId/info?sid=$sessionId&silent=true |200|Content-Type: application/json||
+
+!3 Get Contents of File
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId/content?sid=$sessionId |200||data goes here|
+
+!3 Get ACL For Folder
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$folderId/acl?sid=$sessionId |200|Content-Type: application/json| jsonbody.error === ''  && jsonbody.response[0].id == '$folderId'|
 
 !3 Get ACL For File
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$fileId/acl?sid=$sessionId |  |  Content-Type: application/json | jsonbody.error === ''  && jsonbody.response[0].id == '$fileId'|
+| GET | /v1/files/$fileId/acl?sid=$sessionId |200|Content-Type: application/json| jsonbody.error === ''  && jsonbody.response[0].id == '$fileId'|
+
+!3 Get ACL For File & Folder
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId,$folderId/acl?sid=$sessionId |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].id == '$fileId' && jsonbody.response[1].id == '$folderId'|
+
+!3 Get ACL For File & Folder In Reverse Order
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$folderId,$fileId/acl?sid=$sessionId |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].id == '$folderId' && jsonbody.response[1].id == '$fileId'|
+
+!3 Get ACL For File & Folder With One Invalid Entry
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId,$folderId,99999/acl?sid=$sessionId&silent=false |403|Content-Type: application/json||
+
+!3 Get ACL For File & Folder With One Invalid Entry And Silent True
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId,$folderId,99999/acl?sid=$sessionId&silent=true |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].id == '$fileId' && jsonbody.response[1].id == '$folderId'|
 
 !3 Get File Tree
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$fileId/tree?sid=$sessionId&maxDepth=5 |  |  Content-Type: application/json |jsonbody.error === '' && jsonbody.response[0].numResults > '0' |
+| GET | /v1/files/$folderId/tree?sid=$sessionId&maxDepth=5 |200|Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].numResults > '0' |
 
+!3 List All Files in A Folder
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$folderId/list?sid=$sessionId|200|Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].id == '$fileId' |
+
+!3 Get File Formats
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/formats ||Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result.length == '23'|
+
+!3 Create Sample 1
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "sample1" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/create?sid=$sessionId&study=$study |200|Content-Type: application/json||
+|let|sampleId|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Sample 2
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "sample2" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+|let|sampleId2|js|response.jsonbody.response[0].result[0].id||
+
+!3 Update File 
+!|Table: Rest Fixture | $baseURL |
+| setBody |{ "samples" : "$sampleId,$sampleId2"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/files/$fileId/update?sid=$sessionId&study=$study |200|Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].sampleIds[0] == $sampleId && jsonbody.response[0].result[0].sampleIds[1] == $sampleId2|
+
+!3 Get Samples Attached to File
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&id=$fileId&samples=$sampleId,$sampleId2 ||Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].sampleIds[0] == $sampleId && jsonbody.response[0].result[0].sampleIds[1] == $sampleId2|
+
+#(Smart Resolution, Sample is Attached Only Once)
+
+!3 Update File With Same Sample Twice 
+!|Table: Rest Fixture | $baseURL |
+| setBody |{ "samples" : "$sampleId,$sampleId"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/files/$fileId/update?sid=$sessionId&study=$study ||Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].sampleIds[0] == $sampleId|
+
+!3 Get Samples Attached to File
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/search?sid=$sessionId&id=$fileId&samples=$sampleId ||Content-Type: application/json|jsonbody.error === '' && jsonbody.response[0].result[0].sampleIds[0] == $sampleId && jsonbody.response[0].result[0].sampleIds.length == '1'|
+
+!3 Delete All Samples
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId,$sampleId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+
+!3 Search First Deleted Sample 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&name=sample1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Search Second Deleted Sample 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&name=sample2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
