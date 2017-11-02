@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -178,7 +177,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
 }
 
-    private long getFamilyId(boolean silent, String familyStrAux) throws CatalogDBException {
+    private long getFamilyId(boolean silent, String familyStrAux) throws CatalogException {
         long familyId = Long.parseLong(familyStrAux);
         try {
             familyDBAdaptor.checkId(familyId);

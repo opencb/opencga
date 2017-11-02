@@ -1100,7 +1100,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 //        }
 //    }
 
-    private long getSampleId(boolean silent, String sampleStrAux) throws CatalogDBException {
+    private long getSampleId(boolean silent, String sampleStrAux) throws CatalogException {
         long sampleId = Long.parseLong(sampleStrAux);
         try {
             sampleDBAdaptor.checkId(sampleId);
