@@ -248,7 +248,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
-        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "user2", aclParams, sessionIdUser).get(0);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "user2", aclParams, sessionIdUser).get(0);
         catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", null, "My description", null, 0, -1, null, (long) -1, null, null, true, null, null, sessionIdUser2);
         assertEquals(1, catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), null, sessionIdUser).getNumResults());
@@ -814,7 +814,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void getFileIdByString() throws CatalogException {
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
-        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "user2", aclParams, sessionIdUser).get(0);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "user2", aclParams, sessionIdUser).get(0);
         File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat
                 .NONE, "data/test/folder/file.txt", null, "My description", null, 0, -1, null, (long) -1, null, null, true, null, null, sessionIdUser2).first();
         long fileId = catalogManager.getFileManager().getId(file.getPath(), Long.toString(studyId), sessionIdUser).getResourceId();
@@ -1543,8 +1543,8 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void getAllFilesInFolder() throws CatalogException {
-        long fileId = catalogManager.getFileManager().getId("/data/test/folder/", "user@1000G:phase1", sessionIdUser).getResourceId();
-        List<File> allFilesInFolder = catalogManager.getFileManager().getFilesFromFolder(fileId, null, sessionIdUser).getResult();
+        List<File> allFilesInFolder = catalogManager.getFileManager().getFilesFromFolder("/data/test/folder/", "user@1000G:phase1", null,
+                sessionIdUser).getResult();
         assertEquals(3, allFilesInFolder.size());
     }
 
@@ -1584,9 +1584,9 @@ public class FileManagerTest extends GenericTest {
                 "", "", new File.FileStatus(), 10, -1, null, -1, null, null, true, "My content", null, sessionIdUser);
 
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, null);
-        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "user2", aclParams, sessionIdUser).get(0);
-        List<QueryResult<FileAclEntry>> queryResults = fileManager.updateAcl(Long.toString(studyId), "data/new/," + filePath.toString(),
-                "user2", new File.FileAclParams("VIEW", AclParams.Action.SET, null), sessionIdUser);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "user2", aclParams, sessionIdUser).get(0);
+        List<QueryResult<FileAclEntry>> queryResults = fileManager.updateAcl(Long.toString(studyId), Arrays.asList("data/new/",
+                filePath.toString()), "user2", new File.FileAclParams("VIEW", AclParams.Action.SET, null), sessionIdUser);
 
         assertEquals(3, queryResults.size());
         for (QueryResult<FileAclEntry> queryResult : queryResults) {

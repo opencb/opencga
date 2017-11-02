@@ -135,7 +135,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            QueryResult queryResult = catalogManager.getFileManager().index(fileIdStr, studyStr, "VCF", params, sessionId);
+            List<String> idList = getIdList(fileIdStr);
+            QueryResult queryResult = catalogManager.getFileManager().index(idList, studyStr, "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);

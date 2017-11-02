@@ -59,8 +59,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
     public Response create(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(name = "params", value="JSON containing clinical analysis information", required = true)
-                ClinicalAnalysisParameters params) {
+            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
+                    ClinicalAnalysisParameters params) {
         try {
             return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), queryOptions, sessionId));
         } catch (Exception e) {
@@ -73,10 +73,10 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update a clinical analysis", position = 1, response = ClinicalAnalysis.class)
     public Response update(
-            @ApiParam(value="Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
+            @ApiParam(value = "Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(name = "params", value="JSON containing clinical analysis information", required = true)
+            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalAnalysisParameters params) {
         try {
             ObjectMap parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(params.toClinicalAnalysis()));
@@ -93,7 +93,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{clinicalAnalysis}/info")
+    @Path("/{clinicalAnalyses}/info")
     @ApiOperation(value = "Clinical analysis info", position = 3, response = ClinicalAnalysis[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
@@ -101,20 +101,15 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value="Comma separated list of clinical analysis ids up to a maximum of 100") @PathParam(value = "clinicalAnalysis")
-                                     String clinicalAnalysisStr,
+    public Response info(@ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100") @PathParam(value = "clinicalAnalysis")
+                                 String clinicalAnalysisStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                         @QueryParam("study") String studyStr) {
+                         @QueryParam("study") String studyStr,
+                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
-            QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalManager.get(studyStr, clinicalAnalysisStr, queryOptions, sessionId);
-            // We parse the query result to create one queryresult per sample
-            List<QueryResult<ClinicalAnalysis>> queryResultList = new ArrayList<>(analysisQueryResult.getNumResults());
-            for (ClinicalAnalysis analysis : analysisQueryResult.getResult()) {
-                queryResultList.add(new QueryResult<>(analysis.getName() + "-" + analysis.getId(), analysisQueryResult.getDbTime(), 1, -1,
-                        analysisQueryResult.getWarningMsg(), analysisQueryResult.getErrorMsg(), Arrays.asList(analysis)));
-            }
-
-            return createOkResponse(queryResultList);
+            List<String> analysisList = getIdList(clinicalAnalysisStr);
+            List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);
+            return createOkResponse(analysisResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -128,11 +123,11 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response search(
             @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
@@ -252,7 +247,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             List<ClinicalAnalysis.ClinicalInterpretation> interpretationList =
                     interpretations != null
                             ? interpretations.stream()
-                                .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
+                            .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
             return new ClinicalAnalysis(-1, name, description, type, disease, germlineFile, somaticFile, individuals, f, interpretationList,
                     null, null, 1, attributes);

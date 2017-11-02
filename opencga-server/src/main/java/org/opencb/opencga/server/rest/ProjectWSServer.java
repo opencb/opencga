@@ -26,13 +26,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -73,18 +72,13 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of project ids or aliases", required = true) @PathParam("projects")
-                                     String projectsStr) {
-        try {
-            QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(projectsStr, queryOptions, sessionId);
-            // We parse the query result to create one queryresult per project
-            List<QueryResult<Project>> queryResultList = new ArrayList<>(projectQueryResult.getNumResults());
-            for (Project project : projectQueryResult.getResult()) {
-                queryResultList.add(new QueryResult<>(project.getName() + "-" + project.getId(), projectQueryResult.getDbTime(), 1, -1,
-                        projectQueryResult.getWarningMsg(), projectQueryResult.getErrorMsg(), Arrays.asList(project)));
-            }
+    public Response info(@ApiParam(value = "Comma separated list of project IDs or aliases up to a maximum of 100", required = true) @PathParam("projects")
+                                 String projects,
+                         @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
 
-            return createOkResponse(queryResultList);
+        try {
+            List<String> idList = getIdList(projects);
+            return createOkResponse(catalogManager.getProjectManager().get(idList, queryOptions, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -130,8 +124,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response incrementRelease(
             @ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectStr) {
         try {
+            isSingleId(projectStr);
             return createOkResponse(catalogManager.getProjectManager().incrementRelease(projectStr, sessionId));
-        } catch (CatalogException e) {
+        } catch (CatalogException | WebServiceException e) {
             e.printStackTrace();
             return createErrorResponse(e);
         }
@@ -148,18 +143,12 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query")
     })
-    public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias", required = true)
-                                      @PathParam("projects") String projectsStr) {
+    public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias up to a maximum of 100", required = true)
+                                  @PathParam("projects") String projects,
+                                  @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
-            String[] splittedProjectNames = projectsStr.split(",");
-            List<QueryResult<Study>> results = new ArrayList<>(splittedProjectNames.length);
-            for (String projectStr : splittedProjectNames) {
-                QueryResult<Study> studyQueryResult =
-                        catalogManager.getStudyManager().get(projectStr, new Query(), queryOptions, sessionId);
-                studyQueryResult.setId(projectsStr);
-                results.add(studyQueryResult);
-            }
-            return createOkResponse(results);
+            List<String> idList = getIdList(projects);
+            return createOkResponse(catalogManager.getStudyManager().get(idList, new Query(), queryOptions, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -174,6 +163,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                                          + "fields not previously defined.", required = true) ProjectUpdateParams updateParams)
             throws IOException {
         try {
+            isSingleId(projectStr);
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams));
             if (updateParams.organism != null) {
                 if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {
