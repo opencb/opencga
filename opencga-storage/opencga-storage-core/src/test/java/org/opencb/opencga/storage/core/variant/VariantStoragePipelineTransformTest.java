@@ -33,7 +33,7 @@ import static org.opencb.opencga.storage.core.variant.io.VariantReaderUtils.MALF
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class VariantStorageManagerTransformTest extends VariantStorageBaseTest {
+public abstract class VariantStoragePipelineTransformTest extends VariantStorageBaseTest {
 
     @Test
     public void transformIsolated() throws Exception {

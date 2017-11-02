@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant;
+package org.opencb.opencga.storage.hadoop.variant.transform;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.opencb.biodata.models.variant.Variant;

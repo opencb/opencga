@@ -199,7 +199,7 @@ public class PhoenixHelper {
         return connection;
     }
 
-    public static byte[] toBytes(Collection collection, PArrayDataType arrayType) {
+    public static byte[] toBytes(Collection<?> collection, PArrayDataType arrayType) {
         PDataType pDataType = PDataType.arrayBaseType(arrayType);
         Object[] elements = collection.toArray();
         PhoenixArray phoenixArray = new PhoenixArray(pDataType, elements);

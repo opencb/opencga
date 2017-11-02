@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTransformTest;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipelineTransformTest;
 
 /**
  * Created on 01/04/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoVariantStorageEngineTransformTest extends VariantStorageManagerTransformTest implements MongoDBVariantStorageTest {
+public class MongoVariantStoragePipelineTransformTest extends VariantStoragePipelineTransformTest implements MongoDBVariantStorageTest {
 }

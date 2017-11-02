@@ -57,7 +57,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHadoopManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static StudyConfiguration studyConfiguration;
@@ -283,5 +283,12 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
             assertEquals(Collections.singleton(FILE_ID), sc.getIndexedFiles());
             System.out.println("sc = " + sc);
         }
+    }
+
+    @Test
+    public void printVariants() throws Exception {
+        URI outDir = newOutputUri();
+        System.out.println("print variants at = " + outDir);
+        VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, outDir);
     }
 }
