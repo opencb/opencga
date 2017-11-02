@@ -167,7 +167,7 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
                 for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
                     int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
                     int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, position);
-                    if (variant.overlapWith(chromosome, start, end, true)) {
+                    if (overlapsWith(variant, chromosome, start, end)) {
                         VcfRecordProtoToVariantConverter converter = new VcfRecordProtoToVariantConverter(vcfSlice.getFields(),
                                 fileToSamplePositions.get(fileId), fileId.toString(), studyConfiguration.getStudyName());
                         Variant archiveVariant = converter.convert(vcfRecord, chromosome, position);
@@ -208,6 +208,15 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
             }
         }
         return put;
+    }
+
+    public static boolean overlapsWith(Variant variant, String chromosome, int start, int end) {
+//        return variant.overlapWith(chromosome, start, end, true);
+        if (!StringUtils.equals(variant.getChromosome(), chromosome)) {
+            return false; // Different Chromosome
+        } else {
+            return variant.getStart() <= end && variant.getEnd() >= start;
+        }
     }
 
 }
