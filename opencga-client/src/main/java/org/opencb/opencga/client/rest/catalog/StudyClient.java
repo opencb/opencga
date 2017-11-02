@@ -49,38 +49,12 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
 
     public QueryResponse<Study> create(String projectId, String studyName, String studyAlias, ObjectMap params)
             throws IOException {
-        if (params.containsKey("method")) {
-            if (params.get("method").equals("GET")) {
-                params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
-                params.remove("method");
-                return execute(STUDY_URL, "create", params, GET, Study.class);
-            } else {
-                params.remove("method");
-            }
-        }
         params = addParamsToObjectMap(params, "name", studyName, "alias", studyAlias);
         ObjectMap p = new ObjectMap("body", params);
         p = addParamsToObjectMap(p, "projectId", projectId);
         return execute(STUDY_URL, "create", p, POST, Study.class);
     }
 
-    public QueryResponse<Study> search(Query query, QueryOptions options) throws IOException {
-        ObjectMap myQuery = new ObjectMap(query);
-        myQuery.putAll(options);
-        if (myQuery.containsKey("method")) {
-            if (myQuery.get("method").equals("GET")) {
-                return execute(category, "search", myQuery, GET, clazz);
-            } else {
-                query.remove("method");
-            }
-        }
-        ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(query);
-//        System.out.println("Json: " + json);
-        ObjectMap p = new ObjectMap("body", json);
-        p.putAll(options);
-        return execute(category, "search", p, POST, clazz);
-    }
     public QueryResponse<StudySummary> getSummary(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "summary", options, GET, StudySummary.class);
     }
@@ -155,19 +129,17 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", "members", "update", bodyParams, POST, ObjectMap.class);
     }
 
+    public QueryResponse<ObjectMap> updateGroupAdmins(String studyId, ObjectMap objectMap) throws IOException {
+        ObjectMap bodyParams = new ObjectMap("body", objectMap);
+        return execute(STUDY_URL, studyId, "groups", "admins", "update", bodyParams, POST, ObjectMap.class);
+    }
+
     public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws IOException {
         ObjectMap params = new ObjectMap(objectMap);
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 
     public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws IOException {
-        if (params.containsKey("method")) {
-            if (params.get("method").equals("GET")) {
-                params.remove("method");
-                return execute(STUDY_URL, studyId, "update", params, GET, Study.class);
-            }
-            params.remove("method");
-        }
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);

@@ -40,7 +40,7 @@ import java.util.Map;
 /**
  * Created by pfurio on 05/05/17.
  */
-@Path("/{version}/meta")
+@Path("/{apiVersion}/meta")
 @Produces("application/json")
 @Api(value = "Meta", description = "Meta RESTful Web Services API")
 public class MetaWSServer extends OpenCGAWSServer {

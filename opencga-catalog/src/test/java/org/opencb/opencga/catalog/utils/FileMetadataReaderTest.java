@@ -43,14 +43,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_METADATA;
 
 public class FileMetadataReaderTest {
 
@@ -102,7 +100,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
-        assertNotNull(file.getAttributes().get("variantSource"));
+        assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(4, file.getSamples().size());
         assertEquals(21499, file.getSize());
 
@@ -112,7 +110,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
-        assertNotNull(file.getAttributes().get("variantSource"));
+        assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(4, file.getSamples().size());
         assertEquals(21499, file.getSize());
     }
@@ -163,7 +161,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
         assertEquals(File.Format.PLAIN, file.getFormat());
         assertEquals(File.Bioformat.NONE, file.getBioformat());
-        assertNull(file.getAttributes().get("variantSource"));
+        assertNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(0, file.getSamples().size());
         assertEquals(0, file.getSize());
 
@@ -179,9 +177,9 @@ public class FileMetadataReaderTest {
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
-        assertNotNull(file.getAttributes().get("variantSource"));
+        assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(4, file.getSamples().size());
-        assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get("variantSource")).get("samples"));
+        assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds"));
         List<Sample> samples = catalogManager.getSampleManager().get(study.getId(), new Query(SampleDBAdaptor.QueryParams.ID.key(), file
                 .getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(), sessionIdUser).getResult();
         Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getId, Function.identity()));
@@ -197,7 +195,7 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException {
         //Create the samples in the same order than in the file
         for (String sampleName : expectedSampleNames) {
-            catalogManager.getSampleManager().create(Long.toString(study.getId()), sampleName, "", "", null, false, null, Collections
+            catalogManager.getSampleManager().create(Long.toString(study.getId()), sampleName, "", "", null, false, null, new HashMap<>(), Collections
                     .emptyMap(), new QueryOptions(), sessionIdUser);
         }
         testGetMetadataFromVcf();
@@ -206,19 +204,20 @@ public class FileMetadataReaderTest {
     @Test
     public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException {
         //Create samples in a different order than the file order
-        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(2), "", "", null, false, null, Collections.emptyMap(), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(2), "", "", null, false, null, new
+                HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
 
-        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(0), "", "", null, false, null, Collections.emptyMap(), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(3), "", "", null, false, null, Collections.emptyMap(), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(1), "", "", null, false, null, Collections.emptyMap(), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(0), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(3), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(1), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
 
         testGetMetadataFromVcf();
     }
 
     @Test
     public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException {
-        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(2), "", "", null, false, null, Collections.emptyMap(), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(0), "", "", null, false, null, Collections.emptyMap(), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(2), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(Long.toString(study.getId()), expectedSampleNames.get(0), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
 
         testGetMetadataFromVcf();
     }
@@ -234,7 +233,7 @@ public class FileMetadataReaderTest {
 
         //Add a sampleId
         long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "Bad_Sample", "Air", "", null, false,
-                null, null, null, sessionIdUser).first().getId();
+                null, new HashMap<>(), null, null, sessionIdUser).first().getId();
         catalogManager.getFileManager().update(file.getId(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
                         Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
 
@@ -248,7 +247,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
-        assertNotNull(file.getAttributes().get("variantSource"));
+        assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(1, file.getSamples().size());
         assertTrue(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()).contains(sampleId));
     }
@@ -263,7 +262,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
         assertEquals(File.Format.PLAIN, file.getFormat());
         assertEquals(File.Bioformat.NONE, file.getBioformat());
-        assertNull(file.getAttributes().get("variantSource"));
+        assertNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(0, file.getSamples().size());
         assertEquals(0, file.getSize());
 

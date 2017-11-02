@@ -37,7 +37,6 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         ID("id", INTEGER, ""),
         NAME("name", TEXT, ""),
         MEMBERS("members", TEXT_ARRAY, ""),
-        DISEASES("diseases", TEXT_ARRAY, ""),
         FATHER("father", TEXT, ""), // This is for the WS
         MOTHER("mother", TEXT, ""), // This is for the WS
         MEMBER("member", TEXT, ""), // This is for the WS
@@ -58,6 +57,13 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         RELEASE("release", INTEGER, ""),
+        SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
+        VERSION("version", INTEGER, ""), // Version of the individual
+
+        PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
+        PHENOTYPES_ID("phenotypes.id", TEXT, ""),
+        PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
+        PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
@@ -129,4 +135,5 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     long getStudyId(long familyId) throws CatalogDBException;
 
+    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
 }

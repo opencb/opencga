@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -68,6 +69,8 @@ public class CatalogManager implements AutoCloseable {
     private AuthorizationManager authorizationManager;
 
     private Configuration configuration;
+
+    private static final String ADMIN = "admin";
 
     public CatalogManager(Configuration configuration) throws CatalogException {
         this.configuration = configuration;
@@ -166,8 +169,10 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.installCatalogDB(configuration);
     }
 
-    public void installIndexes() throws CatalogException {
-        userManager.validatePassword("admin", configuration.getAdmin().getPassword(), true);
+    public void installIndexes(String token) throws CatalogException {
+        if (!ADMIN.equals(userManager.getUserId(token))) {
+            throw new CatalogAuthorizationException("Only the admin can install new indexes");
+        }
         catalogDBAdaptorFactory.createIndexes();
     }
 
@@ -235,6 +240,8 @@ public class CatalogManager implements AutoCloseable {
                 .add("username", configuration.getCatalog().getDatabase().getUser())
                 .add("password", configuration.getCatalog().getDatabase().getPassword())
                 .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
+                .setConnectionsPerHost(Integer.parseInt(configuration.getCatalog().getDatabase().getOptions()
+                        .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();

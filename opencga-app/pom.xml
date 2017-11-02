@@ -67,41 +67,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
             <version>${jersey.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
-            <version>${opencga.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -110,7 +78,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
         <!--Uncomment if hadoop dependencies are provided-->
         <!--<dependency>-->
             <!--<groupId>org.apache.hadoop</groupId>-->
@@ -130,14 +97,6 @@
             <!--<version>${hbase.version}</version>-->
             <!--<scope>test</scope>-->
         <!--</dependency>-->
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-client</artifactId>
-            <version>${opencga.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -212,6 +171,13 @@
                                 <maxMemorySize>4096m</maxMemorySize>
                             </jvmSettings>
                         </program>
+                        <program>
+                            <id>opencga-clicompletion.sh</id>
+                            <mainClass>org.opencb.opencga.app.cli.utils.CliCompletionMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
@@ -245,8 +211,10 @@
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
+
                                 <exec executable="mkdir">
                                     <arg value="-p"/>
+                                    <arg value="${build.dir}/bin/utils"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
                                 </exec>
@@ -255,10 +223,11 @@
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${app.dir}/bin"/>
-                                    <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
                                     <arg value="${project.basedir}/target/conf"/>
+                                    <arg value="${app.dir}/completion"/>
                                     <arg value="${app.dir}/examples"/>
+                                    <arg value="${app.dir}/migration"/>
                                     <arg value="${app.dir}/tools"/>
                                     <!--<arg value="${project.basedir}/../opencga-storage/build/bin"/>-->
                                     <arg value="${project.basedir}/../LICENSE"/>
@@ -266,7 +235,24 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Coping configuration files</echo>
+                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-analysis.sh"/>
+                                    <arg value="${build.dir}/bin"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
+                                    <arg value="${build.dir}/bin/utils"/>
+                                </exec>
+
+                                <exec executable="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh">
+                                    <arg value="${build.dir}/completion"/>
+                                </exec>
+
+                                <echo>Copying configuration files</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-core/target/classes/log4j.properties"/>
@@ -275,13 +261,13 @@
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
 
-                                <echo>Coping war file</echo>
+                                <echo>Copying war file</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-server/target/${opencga.war.name}.war"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Coping Acceptance testing files</echo>
+                                <echo>Copying Acceptance testing files</echo>
                                 <exec executable="mvn">
                                     <arg value="-f"/>
                                     <arg value="${project.basedir}/../opencga-test/pom.xml"/>
@@ -295,7 +281,7 @@
                                     <arg value="${project.basedir}/../opencga-test/fitnesse"/>
                                     <arg value="${build.dir}/test"/>
                                 </exec>
-				<exec executable="sed">
+                                <exec executable="sed">
                                     <arg value="-i"/>
                                     <arg value="s/target\/appassembler\/dependencies/dependencies/"/>
                                     <arg value="${build.dir}/test/fitnesse/FitNesseRoot/OpenCga/TestsSuits/SuiteSetUp/content.txt"/>
@@ -358,6 +344,9 @@
             <id>storage-mongodb</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>storage-mongodb</name>
+                </property>
             </activation>
             <dependencies>
                 <dependency>

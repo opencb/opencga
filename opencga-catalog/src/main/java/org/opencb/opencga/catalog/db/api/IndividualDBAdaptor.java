@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Individual;
@@ -52,6 +53,9 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
     QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
+            throws CatalogDBException, CatalogAuthorizationException;
+
 //    @Deprecated
 //    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
 
@@ -67,13 +71,20 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
     long getStudyId(long individualId) throws CatalogDBException;
 
+    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+
     enum QueryParams implements QueryParam {
-        ID("id", DECIMAL, ""),
+        ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT, ""),
-        FATHER_ID("fatherId", DECIMAL, ""),
-        MOTHER_ID("motherId", DECIMAL, ""),
+        FATHER("father", TEXT, ""),
+        MOTHER("mother", TEXT, ""),
+        FATHER_ID("father.id", DECIMAL, ""),
+        MOTHER_ID("mother.id", DECIMAL, ""),
+        MULTIPLES("multiples", TEXT, ""),
         FAMILY("family", TEXT, ""),
         SEX("sex", TEXT, ""),
+        SAMPLES("samples", TEXT_ARRAY, ""),
+        SAMPLES_ID("samples.id", INTEGER_ARRAY, ""),
         ETHNICITY("ethnicity", TEXT, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
@@ -83,15 +94,14 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
         DATE_OF_BIRTH("dateOfBirth", TEXT, ""),
         CREATION_DATE("creationDate", TEXT, ""),
-        RELEASE("release", INTEGER, ""),
+        RELEASE("release", INTEGER, ""), //  Release where the individual was created
+        SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
+        VERSION("version", INTEGER, ""), // Version of the individual
 
-        ONTOLOGIES("ontologies", TEXT_ARRAY, ""), // Alias in the webservice to ONTOLOGY_TERMS
-        ONTOLOGY_TERMS("ontologyTerms", TEXT_ARRAY, ""),
-        ONTOLOGY_TERMS_ID("ontologyTerms.id", TEXT, ""),
-        ONTOLOGY_TERMS_NAME("ontologyTerms.name", TEXT, ""),
-        ONTOLOGY_TERMS_SOURCE("ontologyTerms.source", TEXT, ""),
-        ONTOLOGY_TERMS_AGE_OF_ONSET("ontologyTerms.ageOfOnset", TEXT, ""),
-        ONTOLOGY_TERMS_MODIFIERS("ontologyTerms.modifiers", TEXT_ARRAY, ""),
+        PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
+        PHENOTYPES_ID("phenotypes.id", TEXT, ""),
+        PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
+        PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
         KARYOTYPIC_SEX("karyotypicSex", TEXT, ""),
         LIFE_STATUS("lifeStatus", TEXT, ""),
@@ -100,7 +110,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
-        STUDY_ID("studyId", DECIMAL, ""),
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),

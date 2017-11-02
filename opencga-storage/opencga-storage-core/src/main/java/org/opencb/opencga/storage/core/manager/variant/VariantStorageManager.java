@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.storage.core.manager.variant;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
@@ -44,12 +46,13 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
+import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.storage.core.manager.variant.operations.*;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.IOException;
@@ -59,8 +62,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ALTERNATE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.TYPE;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -253,6 +254,19 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
+    public void fillGaps(String study, List<String> samples, ObjectMap config, String sessionId)
+            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, study);
+        DataStore dataStore = getDataStore(studyId, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        catalogManager.getSampleManager().getIds(String.join(",", samples), study, sessionId);
+
+        variantStorageEngine.fillGaps(study, samples, config);
+    }
+
     // ---------------------//
     //   Query methods      //
     // ---------------------//
@@ -294,6 +308,16 @@ public class VariantStorageManager extends StorageManager {
                 variants,
                 result.getSamples());
 
+    }
+
+    public QueryResult<VariantMetadata> getMetadata(Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, IOException, StorageEngineException {
+        return secure(query, queryOptions, sessionId, engine -> {
+            StopWatch watch = StopWatch.createStarted();
+            VariantMetadataFactory metadataFactory = new CatalogVariantMetadataFactory(catalogManager, engine.getDBAdaptor(), sessionId);
+            VariantMetadata metadata = metadataFactory.makeVariantMetadata(query, queryOptions);
+            return new QueryResult<>("getMetadata", ((int) watch.getTime()), 1, 1, "", "", Collections.singletonList(metadata));
+        });
     }
 
     //TODO: GroupByFieldEnum

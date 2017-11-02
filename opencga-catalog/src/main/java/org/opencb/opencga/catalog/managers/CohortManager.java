@@ -33,13 +33,13 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +125,16 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        return cohortDBAdaptor.get(query, options, userId);
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, options, userId);
+
+        if (cohortQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> idList = query.getAsLongList("id");
+            for (Long myId : idList) {
+                authorizationManager.checkCohortPermission(studyId, myId, userId, CohortAclEntry.CohortPermissions.VIEW);
+            }
+        }
+
+        return cohortQueryResult;
     }
 
     /**
@@ -417,19 +426,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
 
         // Add study id to the query
         query.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = cohortDBAdaptor.groupBy(query, fields, options);
-        }
+        QueryResult queryResult = cohortDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
@@ -535,7 +536,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         MyResourceId variableSetResource = studyManager.getVariableSetId(variableSetId,
                 Long.toString(resource.getStudyId()), sessionId);
         QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
-                resource.getUser(), null);
+                resource.getUser());
         if (variableSet.getNumResults() == 0) {
             // Variable set must be confidential and the user does not have those permissions
             throw new CatalogAuthorizationException("Permission denied: User " + resource.getUser() + " cannot create annotations over "
@@ -631,7 +632,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     + "be found in the database.");
         }
         // We make this query because it will check the proper permissions in case the variable set is confidential
-        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resource.getUser(), null);
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resource.getUser());
 
         cohortDBAdaptor.deleteAnnotationSet(cohortId, annotationSetName);
 
@@ -751,11 +752,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         // Obtain the resource ids
         MyResourceIds resourceIds = getIds(cohortStr, studyStr, sessionId);
 
-        // Check the user has the permissions needed to change permissions
-        for (Long cohortId : resourceIds.getResourceIds()) {
-            authorizationManager.checkCohortPermission(resourceIds.getStudyId(), cohortId, resourceIds.getUser(),
-                    CohortAclEntry.CohortPermissions.SHARE);
-        }
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -765,6 +762,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             members = Collections.emptyList();
         }
         checkMembers(resourceIds.getStudyId(), members);
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.COHORT_COLLECTION;

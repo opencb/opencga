@@ -23,10 +23,12 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.metadata.SampleSetType;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -41,9 +43,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.*;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIterator;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -54,8 +53,12 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
@@ -69,11 +72,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.QUERY_INTERSECT;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SKIP_SEARCH;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils.*;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
 
 /**
  * Created by imedina on 13/08/14.
@@ -109,8 +112,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         STUDY_CONFIGURATION("studyConfiguration", ""),      //
 
-        STUDY_TYPE("studyType", VariantStudy.StudyType.CASE_CONTROL),
-        AGGREGATED_TYPE("aggregatedType", VariantSource.Aggregation.NONE),
+        STUDY_TYPE("studyType", SampleSetType.CASE_CONTROL),
+        AGGREGATED_TYPE("aggregatedType", Aggregation.NONE),
         STUDY_NAME("studyName", "default"),
         STUDY_ID("studyId", -1),
         FILE_ID("fileId", -1),
@@ -199,16 +202,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param inputFile     Variants input file in avro format.
      * @param metadata      Metadata related with the data to be loaded.
-     * @param studiesOldNewMap  Map from old to new StudyConfiguration, in case of name remapping
-     * @param params       Other options
+     * @param studies       Already processed StudyConfigurations
+     * @param params        Other options
      * @throws IOException      if there is any I/O error
      * @throws StorageEngineException  if there si any error loading the variants
      * */
-    public void importData(URI inputFile, ExportMetadata metadata, Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap,
-                           ObjectMap params)
+    public void importData(URI inputFile, VariantMetadata metadata, List<StudyConfiguration> studies, ObjectMap params)
             throws StorageEngineException, IOException {
         VariantImporter variantImporter = newVariantImporter();
-        variantImporter.importData(inputFile, metadata, studiesOldNewMap);
+        variantImporter.importData(inputFile, metadata, studies);
     }
 
     /**
@@ -234,7 +236,24 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void exportData(URI outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        VariantExporter exporter = newVariantExporter();
+        exportData(outputFile, outputFormat, new VariantMetadataFactory(getStudyConfigurationManager(),
+                getDBAdaptor().getVariantFileMetadataDBAdaptor()), query, queryOptions);
+    }
+
+    /**
+     * Exports the result of the given query and the associated metadata.
+     * @param outputFile       Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat     Variant output format
+     * @param metadataFactory  Metadata factory. Metadata will only be generated if the outputFile is defined.
+     * @param query            Query with the variants to export
+     * @param queryOptions     Query options
+     * @throws IOException  If there is any IO error
+     * @throws StorageEngineException  If there is any error exporting variants
+     */
+    public void exportData(URI outputFile, VariantOutputFormat outputFormat, VariantMetadataFactory metadataFactory,
+                           Query query, QueryOptions queryOptions)
+            throws IOException, StorageEngineException {
+        VariantExporter exporter = newVariantExporter(metadataFactory);
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
@@ -242,11 +261,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Creates a new {@link VariantExporter} for the current backend.
      * The default implementation iterates locally through the database.
      *
+     * @param metadataFactory metadataFactory
      * @return              new VariantExporter
      * @throws StorageEngineException  if there is an error creating the VariantExporter
      */
-    protected VariantExporter newVariantExporter() throws StorageEngineException {
-        return new VariantExporter(this);
+    protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
+        return new VariantExporter(this, metadataFactory);
     }
 
     /**
@@ -426,6 +446,17 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new DefaultVariantStatisticsManager(getDBAdaptor());
     }
 
+    /**
+     *
+     * @param study     Study
+     * @param samples   Samples to fill gaps
+     * @param options   Other options
+     * @throws StorageEngineException if there is any error
+     */
+    public void fillGaps(String study, List<String> samples, ObjectMap options)
+            throws StorageEngineException {
+        throw new UnsupportedOperationException();
+    }
 
     public void searchIndex() throws StorageEngineException, IOException, VariantSearchException {
         searchIndex(new Query(), new QueryOptions());
@@ -446,7 +477,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             queryOptions = new QueryOptions();
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
-            variantSearchManager.load(dbName, iterator);
+            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
+            variantSearchManager.load(dbName, iterator, progressLogger);
         } else {
             throw new StorageEngineException("Solr is not alive!");
         }
@@ -484,7 +516,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected List<Integer> preRemoveFiles(String study, List<String> files) throws StorageEngineException {
         List<Integer> fileIds = new ArrayList<>();
         getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
-            fileIds.addAll(getStudyConfigurationManager().getFileIds(files, false, studyConfiguration));
+            fileIds.addAll(getStudyConfigurationManager().getFileIdsFromStudy(files, studyConfiguration));
 
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, fileIds, resume,
@@ -525,9 +557,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             } else {
                 for (Integer fileId : fileIds) {
                     try {
-                        getDBAdaptor().getVariantSourceDBAdaptor().delete(studyConfiguration.getStudyId(), fileId);
+                        getDBAdaptor().getVariantFileMetadataDBAdaptor().delete(studyConfiguration.getStudyId(), fileId);
                     } catch (IOException e) {
-                        throw new StorageEngineException("Unable to remove VariantSource from file " + fileId, e);
+                        throw new StorageEngineException("Unable to remove VariantFileMetadata from file " + fileId, e);
                     }
                 }
 
@@ -617,7 +649,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (variantSearchManager.get() == null) {
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
-                    variantSearchManager.set(new VariantSearchManager(getStudyConfigurationManager(), getCellBaseUtils(), configuration));
+                    variantSearchManager.set(new VariantSearchManager(getStudyConfigurationManager(), configuration));
                 }
             }
         }

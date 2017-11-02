@@ -25,7 +25,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -40,7 +40,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -74,7 +74,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSt
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoVariantStorageEngineTest extends VariantStorageManagerTest implements MongoDBVariantStorageTest {
+public class MongoVariantStorageEngineTest extends VariantStorageEngineTest implements MongoDBVariantStorageTest {
 
     @Before
     public void setUp() throws Exception {
@@ -1076,23 +1076,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
     }
 
     @Test
-    @Override
-    public void indexWithOtherFieldsExcludeGT() throws Exception {
-        super.indexWithOtherFieldsExcludeGT();
-
-        try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
-            MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
-
-            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
-                assertFalse(((Document) document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class).get(0))
-                        .containsKey(GENOTYPES_FIELD));
-                System.out.println("dbObject = " + document);
-            }
-        }
-
-    }
-
-    @Test
     public void removeFileMergeBasicTest() throws Exception {
         removeFileTest(new QueryOptions(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC));
     }
@@ -1105,7 +1088,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
         StudyConfiguration studyConfiguration2 = new StudyConfiguration(2, "Study2");
 
         ObjectMap options = new ObjectMap(params)
-                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
         //Study1

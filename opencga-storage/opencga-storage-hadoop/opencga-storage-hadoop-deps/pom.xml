@@ -79,7 +79,7 @@
         <commons-math.version>2.2</commons-math.version>
         <netty.version>4.0.23.Final</netty.version>
         <jamon-runtime.version>2.4.1</jamon-runtime.version>
-        <jackson.version>1.9.13</jackson.version>
+        <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
 
         <!--Read from main phoenix pom.xml-->
         <commons-configuration.version>1.6</commons-configuration.version>
@@ -92,7 +92,8 @@
         <sqlline.version>1.1.9</sqlline.version>
         <jline.version>2.11</jline.version>
         <antlr.version>3.5</antlr.version>
-        <tephra.version>0.7.0</tephra.version>
+        <!--Do not specify tephra version here, so it can be overwritten-->
+        <!--<tephra.version>0.7.0</tephra.version>-->
         <snappy.version>0.3</snappy.version>
 
     </properties>
@@ -436,22 +437,22 @@
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-core-asl</artifactId>
-            <version>${jackson.version}</version>
+            <version>${codehaus.jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-mapper-asl</artifactId>
-            <version>${jackson.version}</version>
+            <version>${codehaus.jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-jaxrs</artifactId>
-            <version>${jackson.version}</version>
+            <version>${codehaus.jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-xc</artifactId>
-            <version>${jackson.version}</version>
+            <version>${codehaus.jackson.version}</version>
         </dependency>
 
         <!-- Needed by phoenix -->
@@ -558,8 +559,50 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
+                <executions>
+                    <execution>
+                        <id>my_install</id>
+                        <goals>
+                            <goal>install</goal>
+                        </goals>
+                        <configuration>
+                            <!--<generatePom>false</generatePom>-->
+                            <!--<pomFile></pomFile>-->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jar</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${opencga-storage-hadoop-deps.classifier}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${opencga-storage-hadoop-deps.classifier}-tests</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.3</version>
                 <executions>
                     <execution>
                         <id>shade-main-jar</id>
@@ -568,10 +611,12 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <shadedClassifierName>${opencga-storage-hadoop-deps.classifier}-shaded</shadedClassifierName>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <!--<generateUniqueDependencyReducedPom>true</generateUniqueDependencyReducedPom>-->
                             <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <!--<shadedClassifierName>jar-with-dependencies</shadedClassifierName>-->
-                            <!--<shadedClassifierName>shaded</shadedClassifierName>-->
                             <createSourcesJar>true</createSourcesJar>
+                            <shadeSourcesContent>true</shadeSourcesContent>
 
                             <filters>
                                 <filter>
@@ -681,7 +726,8 @@
                         </goals>
                         <configuration>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedClassifierName>tests</shadedClassifierName>
+                            <!--<shadedClassifierName>tests</shadedClassifierName>-->
+                            <shadedClassifierName>${opencga-storage-hadoop-deps.classifier}-tests</shadedClassifierName>
                             <createSourcesJar>true</createSourcesJar>
 
                             <relocations>

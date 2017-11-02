@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-@Path("/{version}/studies")
+@Path("/{apiVersion}/studies")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Studies", position = 3, description = "Methods for working with 'studies' endpoint")
 public class StudyWSServer extends OpenCGAWSServer {
@@ -81,7 +81,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response getAllStudies(
-            @Deprecated @ApiParam(value = "Project id or alias") @QueryParam("projectId") String projectId,
+            @Deprecated @ApiParam(value = "Project id or alias", hidden = true) @QueryParam("projectId") String projectId,
             @ApiParam(value = "Project id or alias", required = true) @QueryParam("project") String projectStr,
             @ApiParam(value = "Study name") @QueryParam("name") String name,
             @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
@@ -128,7 +128,9 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/delete")
-    @ApiOperation(value = "Delete a study [PENDING]", response = Study.class)
+    @ApiOperation(value = "Delete a study [WARNING]", response = Study.class,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
     public Response delete(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         return createOkResponse("PENDING");
@@ -175,7 +177,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/files")
-    @ApiOperation(value = "Fetch files in study", response = File[].class)
+    @ApiOperation(value = "Fetch files in study [WARNING]", response = File[].class,
+            notes = "The use of this webservice is discouraged. The whole functionality is replicated in the files/search endpoint.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query"),
@@ -219,7 +222,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/samples")
-    @ApiOperation(value = "Fetch samples in study", response = Sample[].class)
+    @ApiOperation(value = "Fetch samples in study [WARNING]", response = Sample[].class,
+            notes = "The use of this webservice is discouraged. The whole functionality is replicated in the samples/search endpoint.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query"),
@@ -251,8 +255,9 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/jobs")
-    @ApiOperation(value = "Return filtered jobs in study [PENDING]", position = 9, notes = "Currently it returns all the jobs in the study."
-            + " No filters are being used yet.", response = Job[].class)
+    @ApiOperation(value = "Return filtered jobs in study [WARNING]", position = 9,
+            notes = "The use of this webservice is discouraged. The whole functionality is replicated in the jobs/search endpoint.",
+            response = Job[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -379,22 +384,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{study}/groups/create")
-    @ApiOperation(value = "Create a group", position = 14, hidden = true)
-    public Response createGroup(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
-                @PathParam("study") String studyStr,
-            @ApiParam(value = "Id of the new group to be created", required = true) @QueryParam("groupId") String groupId,
-            @ApiParam(value = "Comma separated list of users to take part of the group") @QueryParam ("users") String users) {
-        try {
-            QueryResult group = catalogManager.getStudyManager().createGroup(studyStr, groupId, users, sessionId);
-            return createOkResponse(group);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/{study}/groups/create")
     @ApiOperation(value = "Create a group", position = 14)
@@ -410,22 +399,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
         try {
             QueryResult group = catalogManager.getStudyManager().createGroup(studyStr, params.name, params.users, sessionId);
-            return createOkResponse(group);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{study}/groups/{group}/info")
-    @ApiOperation(value = "Return the group [DEPRECATED]", position = 15,
-            notes = "This webservice has been replaced by /{study}/groups")
-    public Response getGroup(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
-                @PathParam("study") String studyStr,
-            @ApiParam(value = "groupId", required = true) @PathParam("group") String groupId) {
-        try {
-            QueryResult<Group> group = catalogManager.getStudyManager().getGroup(studyStr, groupId, sessionId);
             return createOkResponse(group);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -458,6 +431,22 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, "@members", params.toGroupParams(), sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/groups/admins/update")
+    @ApiOperation(value = "Add/Remove users with administrative permissions to the study.",
+            notes = "Only the owner of the study will be able to run this webservice")
+    public Response registerAdministrativeUsersToStudy(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
+            @ApiParam(value="JSON containing the action to be performed", required = true) MemberParams params) {
+        try {
+            return createOkResponse(
+                    catalogManager.getStudyManager().updateGroup(studyStr, "@admins", params.toGroupParams(), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -539,7 +528,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{study}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the user or group [DEPRECATED]", position = 21,
+    @ApiOperation(value = "Update the set of permissions granted for the user or group [DEPRECATED]", position = 21, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAcl(

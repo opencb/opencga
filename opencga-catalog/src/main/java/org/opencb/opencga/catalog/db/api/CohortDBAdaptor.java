@@ -126,8 +126,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     QueryResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> update(long cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException;
-
     @Deprecated
     QueryResult<AnnotationSet> annotate(long cohortId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
 

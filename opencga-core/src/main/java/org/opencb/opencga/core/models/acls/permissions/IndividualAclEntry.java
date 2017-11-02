@@ -32,7 +32,6 @@ public class IndividualAclEntry extends AbstractAclEntry<IndividualAclEntry.Indi
         VIEW,
         UPDATE,
         DELETE,
-        SHARE,
         WRITE_ANNOTATIONS,
         VIEW_ANNOTATIONS,
         DELETE_ANNOTATIONS

@@ -21,16 +21,21 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.*;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceEntryJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.FileOutputStream;
@@ -42,8 +47,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -51,7 +54,7 @@ import java.util.zip.GZIPOutputStream;
  */
 public class VariantJsonWriter implements VariantWriter {
 
-    private final VariantSource source;
+    private final VariantFileMetadata fileMetadata;
     // Null if OutputStreams were directly provided
     private final Path outdir;
 
@@ -64,15 +67,17 @@ public class VariantJsonWriter implements VariantWriter {
     private OutputStream variantsStream;
     private OutputStream fileStream;
 
+    private Logger logger = LoggerFactory.getLogger(VariantJsonWriter.class);
+
     private long numVariantsWritten;
     private boolean includeSrc = false;
     private boolean includeStats = true;
     private boolean includeSamples = true;
     private boolean closeStreams;
 
-    public VariantJsonWriter(VariantSource source, @Nullable Path outdir) {
-        Objects.requireNonNull(source, "VariantSource can not be null");
-        this.source = source;
+    public VariantJsonWriter(VariantFileMetadata fileMetadata, @Nullable Path outdir) {
+        Objects.requireNonNull(fileMetadata, "VariantFileMetadata can not be null");
+        this.fileMetadata = fileMetadata;
         this.outdir = (outdir != null) ? outdir : Paths.get("").toAbsolutePath();
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);
@@ -84,8 +89,8 @@ public class VariantJsonWriter implements VariantWriter {
         this(null, variantsStream, null);
     }
 
-    public VariantJsonWriter(VariantSource source, OutputStream variantsStream, OutputStream fileStream) {
-        this.source = source;
+    public VariantJsonWriter(VariantFileMetadata fileMetadata, OutputStream variantsStream, OutputStream fileStream) {
+        this.fileMetadata = fileMetadata;
         this.outdir = null;
         this.variantsStream = variantsStream;
         this.fileStream = fileStream;
@@ -99,7 +104,7 @@ public class VariantJsonWriter implements VariantWriter {
     public boolean open() {
         try {
             if (outdir != null) {
-                String output = Paths.get(outdir.toString(), source.getFileName()).toAbsolutePath().toString()
+                String output = Paths.get(outdir.toString(), fileMetadata.getPath()).toAbsolutePath().toString()
                         + "." + VariantReaderUtils.VARIANTS_FILE + ".json.gz";
                 variantsStream = new GZIPOutputStream(new FileOutputStream(output));
                 fileStream = new GZIPOutputStream(new FileOutputStream(VariantReaderUtils.getMetaFromTransformedFile(output)));
@@ -116,12 +121,11 @@ public class VariantJsonWriter implements VariantWriter {
         jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
 
         try {
             variantsGenerator = factory.createGenerator(variantsStream);
-            if (fileStream != null || source != null) {
+            if (fileStream != null || fileMetadata != null) {
                 fileGenerator = factory.createGenerator(fileStream);
             }
         } catch (IOException ex) {
@@ -138,7 +142,7 @@ public class VariantJsonWriter implements VariantWriter {
             variantsGenerator.writeObject(variant);
             variantsGenerator.writeRaw('\n');
         } catch (IOException ex) {
-            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(), ex);
+            logger.error(variant.toString(), ex);
             close();
             throw new UncheckedIOException(ex);
         }
@@ -167,18 +171,18 @@ public class VariantJsonWriter implements VariantWriter {
                 variantsGenerator.writeObject(variant);
                 variantsGenerator.writeRaw('\n');
             } catch (IOException ex) {
-                Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(),
-                        ex);
+                logger.error(variant.toString(), ex);
                 close();
                 throw new UncheckedIOException(ex);
             }
         }
 
         numVariantsWritten += batch.size();
+        // TODO: Use ProgressLogger here
         if (numVariantsWritten % 1000 == 0) {
             Variant lastVariantInBatch = batch.get(batch.size() - 1);
-            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}",
-                    new Object[]{numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart()});
+            logger.info("{}\tvariants written upto position {}:{}",
+                    numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart());
         }
 
         return true;
@@ -191,12 +195,11 @@ public class VariantJsonWriter implements VariantWriter {
             variantsGenerator.flush();
 
             if (fileGenerator != null) {
-                fileGenerator.writeObject(source);
+                fileGenerator.writeObject(fileMetadata);
                 fileStream.flush();
                 fileGenerator.flush();
             }
         } catch (IOException ex) {
-            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             close();
             throw new UncheckedIOException(ex);
         }
@@ -211,7 +214,7 @@ public class VariantJsonWriter implements VariantWriter {
                 fileGenerator.close();
             }
         } catch (IOException ex) {
-            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error("", ex);
             return false;
         }
         return true;

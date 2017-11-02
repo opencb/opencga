@@ -26,7 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
+import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -45,17 +45,20 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.*;
@@ -67,7 +70,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
@@ -150,6 +154,11 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions,
                         variantCommandOptions.statsVariantsCommandOptions.dbName);
                 stats();
+                break;
+            case FILL_GAPS_COMMAND:
+                configure(variantCommandOptions.fillGapsCommandOptions.commonOptions,
+                        variantCommandOptions.fillGapsCommandOptions.dbName);
+                fillGaps();
                 break;
             case "export":
                 configure(variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonOptions,
@@ -431,6 +440,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
             options.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
         }
+        options.put(VariantQueryParam.REGION.key(), statsVariantsCommandOptions.region);
         options.put(VariantStorageEngine.Options.RESUME.key(), statsVariantsCommandOptions.resume);
 
         if (statsVariantsCommandOptions.commonOptions.params != null) {
@@ -516,6 +526,15 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
+    private void fillGaps() throws StorageEngineException {
+        StorageVariantCommandOptions.FillGapsCommandOptions fillGapsCommandOptions = variantCommandOptions.fillGapsCommandOptions;
+
+        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.putAll(fillGapsCommandOptions.commonOptions.params);
+
+        variantStorageEngine.fillGaps(fillGapsCommandOptions.study, fillGapsCommandOptions.samples, options);
+    }
+
     private void export() throws URISyntaxException, StorageEngineException, IOException {
         StorageVariantCommandOptions.VariantExportCommandOptions exportVariantsCommandOptions = variantCommandOptions.exportVariantsCommandOptions;
 //
@@ -593,12 +612,12 @@ public class VariantCommandExecutor extends CommandExecutor {
                 writer.writeHeader(vcfHeader);
 
                 // TODO: get study id/name
-                VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
-                        new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
+                VariantAvroToVariantContextConverter variantContextToAvroVariantConverter =
+                        new VariantAvroToVariantContextConverter(0, Collections.emptyList(), Collections.emptyList());
                 VariantDBIterator iterator = variantStorageEngine.iterator(query, options);
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
-                    VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+                    VariantContext variantContext = variantContextToAvroVariantConverter.convert(variant);
                     System.out.println(variantContext.toString());
                     writer.add(variantContext);
                 }
@@ -628,7 +647,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
 //                variantStorageEngine.getCellBaseUtils(), variantStorageEngine.getConfiguration());
         VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
-                null, variantStorageEngine.getConfiguration());
+                variantStorageEngine.getConfiguration());
         boolean querying = true;
 
         // create the database, this method checks if it exists and the solrConfig name

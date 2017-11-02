@@ -74,11 +74,6 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
     }
 
     public QueryResponse<T> update(String id, @Nullable String study, ObjectMap params) throws IOException {
-        //TODO Check that everything is correct
-        if (params.containsKey("method") && params.get("method").equals("GET")) {
-            params.remove("method");
-            return execute(category, id, "update", params, GET, clazz);
-        }
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);

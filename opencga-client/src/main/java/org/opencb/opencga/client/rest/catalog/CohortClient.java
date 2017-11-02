@@ -53,21 +53,10 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
         return execute(COHORT_URL, "create", params, POST, Cohort.class);
     }
 
-    public QueryResponse<Object> getStats(String cohortId, Query query, QueryOptions options) throws IOException {
-        ObjectMap params = new ObjectMap(query);
-        params.putAll(options);
-        return execute(COHORT_URL, cohortId, "stats", params, GET, Object.class);
-    }
-
     public QueryResponse<Sample> getSamples(String cohortId, Query query, QueryOptions options) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(options);
         return execute(COHORT_URL, cohortId, "samples", params, GET, Sample.class);
-    }
-
-    public QueryResponse<Cohort> annotate(String cohortId, String annotateSetName, ObjectMap params) throws IOException {
-        params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
-        return execute(COHORT_URL, cohortId, "annotate", params, GET, Cohort.class);
     }
 
     public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {

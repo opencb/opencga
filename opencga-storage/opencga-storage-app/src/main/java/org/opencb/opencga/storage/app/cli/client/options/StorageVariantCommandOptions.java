@@ -18,8 +18,8 @@ package org.opencb.opencga.storage.app.cli.client.options;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.metadata.SampleSetType;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -35,15 +35,13 @@ import java.util.Map;
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
 public class StorageVariantCommandOptions {
 
-    public static final String VARIANT_REMOVE_COMMAND = "remove";
-    public static final String VARIANT_REMOVE_COMMAND_DESCRIPTION = "Remove variants from storage";
-
     public VariantIndexCommandOptions indexVariantsCommandOptions;
     public VariantRemoveCommandOptions variantRemoveCommandOptions;
     public VariantQueryCommandOptions variantQueryCommandOptions;
     public ImportVariantsCommandOptions importVariantsCommandOptions;
     public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
     public VariantStatsCommandOptions statsVariantsCommandOptions;
+    public FillGapsCommandOptions fillGapsCommandOptions;
     public VariantExportCommandOptions exportVariantsCommandOptions;
     public VariantSearchCommandOptions searchVariantsCommandOptions;
 
@@ -65,6 +63,7 @@ public class StorageVariantCommandOptions {
         this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
+        this.fillGapsCommandOptions = new FillGapsCommandOptions();
         this.exportVariantsCommandOptions = new VariantExportCommandOptions();
         this.searchVariantsCommandOptions = new VariantSearchCommandOptions();
     }
@@ -94,7 +93,7 @@ public class StorageVariantCommandOptions {
         public String extraFields;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
-        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+        public Aggregation aggregated = Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;
@@ -162,7 +161,7 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
                 "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1, hidden = true)
-        public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
+        public SampleSetType studyType = SampleSetType.CASE_CONTROL;
 
         @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
                 ".core.StudyConfiguration", arity = 1)
@@ -180,8 +179,11 @@ public class StorageVariantCommandOptions {
         public boolean resume;
     }
 
-    @Parameters(commandNames = {VARIANT_REMOVE_COMMAND}, commandDescription = VARIANT_REMOVE_COMMAND_DESCRIPTION)
+    @Parameters(commandNames = {VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND}, commandDescription = VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION)
     public class VariantRemoveCommandOptions extends GenericVariantRemoveOptions {
+
+        public static final String VARIANT_REMOVE_COMMAND = "remove";
+        public static final String VARIANT_REMOVE_COMMAND_DESCRIPTION = "Remove variants from storage";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
@@ -498,6 +500,34 @@ public class StorageVariantCommandOptions {
     }
 
     /**
+     *  annotate: generic and specific options
+     */
+    public static class GenericFillGapsOptions {
+
+        @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
+        public List<String> samples;
+
+//        @Parameter(names = {"--exclude-hom-ref"}, description = "Do not fill gaps of samples with HOM-REF genotype (0/0)", arity = 0)
+//        public boolean excludeHomRef;
+    }
+
+    @Parameters(commandNames = {FillGapsCommandOptions.FILL_GAPS_COMMAND}, commandDescription = FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION)
+    public class FillGapsCommandOptions extends GenericFillGapsOptions {
+
+        public static final String FILL_GAPS_COMMAND = "fill-gaps";
+        public static final String FILL_GAPS_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study", arity = 1)
+        public String study;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+    }
+
+    /**
      *  benchmark: specific options
      */
     @Parameters(commandNames = {"benchmark"}, commandDescription = "[PENDING] Benchmark load and fetch variants with different databases")
@@ -563,7 +593,7 @@ public class StorageVariantCommandOptions {
         public String fileName;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
-        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+        public Aggregation aggregated = Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;

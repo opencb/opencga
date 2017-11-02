@@ -221,7 +221,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         Bson projectParameters = new Document();
@@ -272,10 +272,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult<Project> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         checkId(id);
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, QueryOptions.empty());
         if (update.getNumTotalResults() != 1) {
             throw new CatalogDBException("Could not update project with id " + id);
         }
@@ -345,11 +345,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     private QueryResult<Project>  setStatus(long projectId, String status) throws CatalogDBException {
-        return update(projectId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(projectId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override
@@ -558,12 +558,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 if (!StringUtils.isEmpty(query.getString(QueryParams.USER_ID.key()))
                         && !user.equals(query.getString(QueryParams.USER_ID.key()))) {
                     // User does not have proper permissions
-                    throw CatalogAuthorizationException.deny(user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), "project", -1, "");
+                    throw CatalogAuthorizationException.deny(user, "view", "project", -1, "");
                 }
                 query.put(QueryParams.USER_ID.key(), user);
             } else {
                 // User does not have proper permissions
-                throw CatalogAuthorizationException.deny(user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), "project", -1, "");
+                throw CatalogAuthorizationException.deny(user, "view", "project", -1, "");
             }
         } else {
             // We get all the projects the user can see
@@ -626,6 +626,18 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
         throw new NotImplementedException("GroupBy in project is not implemented");
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
     }
 
     @Override

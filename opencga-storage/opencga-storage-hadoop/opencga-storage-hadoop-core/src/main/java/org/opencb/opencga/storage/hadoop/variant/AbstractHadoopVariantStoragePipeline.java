@@ -28,13 +28,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
-import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.biodata.tools.variant.merge.VariantMerger;
+import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
@@ -47,17 +47,15 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
@@ -68,6 +66,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
+import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +83,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
@@ -153,50 +154,46 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     @Override
-    protected Pair<Long, Long> processProto(Path input, String fileName, Path output, VariantSource source, Path outputVariantsFile,
+    protected Pair<Long, Long> processProto(Path input, String fileName, Path output,
+                                            VariantFileMetadata fileMetadata, Path outputVariantsFile,
                                             Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
                                             int batchSize, String extension, String compression,
                                             BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
             throws StorageEngineException {
-        VariantStudyMetadata variantMetadata = new VariantStudyMetadata().addVariantSource(source);
 
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<>(outputVariantsFile, compression);
 
         // Normalizer
         VariantNormalizer normalizer = new VariantNormalizer(true, true, false);
-        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
-            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
-        }
-        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
-            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
-        }
+        normalizer.configure(fileMetadata.getHeader());
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
 
         // Stats calculator
-        VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
+        VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(String.valueOf(getStudyId()), fileMetadata);
 
         final VariantReader dataReader;
         try {
+            String studyId = String.valueOf(getStudyId());
             if (VariantReaderUtils.isVcf(input.toString())) {
                 InputStream inputStream = FileUtils.newInputStream(input);
 
-                VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, source, normalizer);
+                VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, fileMetadata.toVariantStudyMetadata(studyId),
+                        normalizer);
                 if (null != malformatedHandler) {
                     reader.registerMalformatedVcfHandler(malformatedHandler);
                     reader.setFailOnError(failOnError);
                 }
                 dataReader = reader;
             } else {
-                dataReader = VariantReaderUtils.getVariantReader(input, source);
+                dataReader = VariantReaderUtils.getVariantReader(input, fileMetadata.toVariantStudyMetadata(studyId));
             }
         } catch (IOException e) {
             throw new StorageEngineException("Unable to read from " + input, e);
         }
 
         // Transformer
-        VcfMeta meta = new VcfMeta(source);
-        ArchiveTableHelper helper = new ArchiveTableHelper(conf, meta);
+        ArchiveTableHelper helper = new ArchiveTableHelper(conf, getStudyId(), fileMetadata);
         ProgressLogger progressLogger = new ProgressLogger("Transform proto:").setBatchSize(100000);
 
         logger.info("Generating output file {}", outputVariantsFile);
@@ -268,7 +265,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
                 end = System.currentTimeMillis();
 
-                source.getMetadata().put(VariantFileUtils.VARIANT_FILE_HEADER, dataReader.getHeader());
+//                fileMetadata.getMetadata().put(VariantFileUtils.VARIANT_FILE_HEADER, dataReader.getHeader());
                 statsCalculator.post();
                 transformTask.post();
                 dataReader.post();
@@ -288,12 +285,11 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         }
 
         ObjectMapper jsonObjectMapper = new ObjectMapper();
-        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
 
-        ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantSource.class);
+        ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantFileMetadata.class);
         try {
-            String sourceJsonString = variantSourceObjectWriter.writeValueAsString(source);
+            String sourceJsonString = variantSourceObjectWriter.writeValueAsString(fileMetadata);
             StringDataWriter.write(outputMetaFile, Collections.singletonList(sourceJsonString));
         } catch (IOException e) {
             throw new StorageEngineException("Error writing meta file", e);
@@ -361,8 +357,12 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     @Override
-    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
-        super.securePreLoad(studyConfiguration, source);
+    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
+        // Provided Extra fields
+        List<String> providedExtraFields = getOptions().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
+
+        super.securePreLoad(studyConfiguration, fileMetadata);
+
         if (!studyConfiguration.getAttributes().containsKey(MERGE_LOAD_SAMPLE_COLUMNS)) {
             boolean loadSampleColumns = getOptions().getBoolean(MERGE_LOAD_SAMPLE_COLUMNS, DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS);
             studyConfiguration.getAttributes().put(MERGE_LOAD_SAMPLE_COLUMNS, loadSampleColumns);
@@ -372,6 +372,27 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             mergeMode = MergeMode.from(options);
             studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
         }
+
+        Stream<String> stream;
+        // If ExtraGenotypeFields are provided by command line, check that those fields are going to be loaded.
+        if (!providedExtraFields.isEmpty()) {
+            stream = providedExtraFields.stream();
+        } else {
+            // Otherwise, add all format fields
+            stream = fileMetadata.getHeader().getComplexLines()
+                    .stream()
+                    .filter(line -> line.getKey().equals("FORMAT"))
+                    .map(VariantFileHeaderComplexLine::getId);
+        }
+        List<String> extraGenotypeFields = studyConfiguration.getAttributes().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
+        stream.forEach(format -> {
+            if (!extraGenotypeFields.contains(format) && !format.equals(VariantMerger.GT_KEY)) {
+                extraGenotypeFields.add(format);
+            }
+        });
+        studyConfiguration.getAttributes().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
+        getOptions().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
+
     }
 
     protected void preMerge(URI input) throws StorageEngineException {
@@ -382,8 +403,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         try {
             StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration(true);
-            VariantSource source = readVariantSource(input, options);
-            securePreMerge(studyConfiguration, source);
+            VariantFileMetadata fileMetadata = readVariantFileMetadata(input, options);
+            securePreMerge(studyConfiguration, fileMetadata);
             dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
         } finally {
             dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
@@ -391,7 +412,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     }
 
-    protected void securePreMerge(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
+    protected void securePreMerge(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
 
         if (loadVar) {
             // Load into variant table
@@ -404,7 +425,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             boolean missingFilesDetected = false;
 
 
-            HadoopVariantSourceDBAdaptor fileMetadataManager = dbAdaptor.getVariantSourceDBAdaptor();
+            HadoopVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
             Set<Integer> files = null;
             try {
                 files = fileMetadataManager.getLoadedFiles(studyId);
@@ -418,21 +439,21 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             List<Integer> pendingFiles = new LinkedList<>();
             logger.info("Found registered indexed files: {}", studyConfiguration.getIndexedFiles());
             for (Integer loadedFileId : files) {
-                VariantSource readSource;
+                VariantFileMetadata readFileMetadata;
                 try {
-                    readSource = fileMetadataManager.getVariantSource(studyId, loadedFileId, null);
+                    readFileMetadata = fileMetadataManager.getVariantFileMetadata(studyId, loadedFileId, null);
                 } catch (IOException e) {
                     throw new StorageHadoopException("Unable to read file VcfMeta for file : " + loadedFileId, e);
                 }
 
-                Integer readFileId = Integer.parseInt(readSource.getFileId());
-                logger.debug("Found source for file id {} with registered id {} ", loadedFileId, readFileId);
+                Integer readFileId = Integer.parseInt(readFileMetadata.getId());
+                logger.debug("Found fileMetadata for file id {} with registered id {} ", loadedFileId, readFileId);
                 if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
-                    StudyConfigurationManager.checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
-                    studyConfiguration.getFileIds().put(readSource.getFileName(), readFileId);
-//                    studyConfiguration.getHeaders().put(readFileId, readSource.getMetadata()
+                    StudyConfigurationManager.checkNewFile(studyConfiguration, readFileId, readFileMetadata.getPath());
+                    studyConfiguration.getFileIds().put(readFileMetadata.getPath(), readFileId);
+//                    studyConfiguration.getHeaders().put(readFileId, readFileMetadata.getMetadata()
 //                            .get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
-                    StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readSource, options);
+                    StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readFileMetadata, options);
                     missingFilesDetected = true;
                 }
                 if (!studyConfiguration.getIndexedFiles().contains(readFileId)) {
@@ -441,7 +462,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             }
             logger.info("Found pending in DB: " + pendingFiles);
 
-            fileId = StudyConfigurationManager.checkNewFile(studyConfiguration, fileId, source.getFileName());
+            fileId = StudyConfigurationManager.checkNewFile(studyConfiguration, fileId, fileMetadata.getPath());
 
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
@@ -507,7 +528,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         ArchiveTableHelper.setStudyId(conf, studyId);
 
         if (loadArch) {
-            Set<Integer> loadedFiles = dbAdaptor.getVariantSourceDBAdaptor().getLoadedFiles(studyId);
+            Set<Integer> loadedFiles = dbAdaptor.getVariantFileMetadataDBAdaptor().getLoadedFiles(studyId);
             if (!loadedFiles.contains(fileId)) {
                 loadArch(input);
             } else {
@@ -539,7 +560,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
 
         Class execClass = VariantTableDriver.class;
-        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.toString(),
+        String args = VariantTableDriver.buildCommandLineArgs(
                 archiveTableCredentials.getTable(),
                 variantsTableCredentials.getTable(), studyId, pendingFiles, options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
@@ -572,18 +593,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     public String getJarWithDependencies() throws StorageEngineException {
-        return getJarWithDependencies(options);
-    }
-
-    public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
-        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
-        if (jar == null) {
-            throw new StorageEngineException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
-        }
-        if (!Paths.get(jar).isAbsolute()) {
-            jar = System.getProperty("app.home", "") + "/" + jar;
-        }
-        return jar;
+        return HadoopVariantStorageEngine.getJarWithDependencies(options);
     }
 
     @Override
@@ -669,7 +679,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                             }
                         }
                     }
-                    phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
+                    phoenixHelper.registerNewFiles(jdbcConnection, tableName, studyConfiguration.getStudyId(), fileIds, newSamples);
 
                 } catch (SQLException e) {
                     throw new StorageEngineException("Unable to register samples in Phoenix", e);

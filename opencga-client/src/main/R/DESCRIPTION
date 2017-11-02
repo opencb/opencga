@@ -1,25 +1,40 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: 0.7.0
-Author: Mohammed <melsiddieg@gmail.com>
-Maintainer: Mohammed OE Abdallah <melsiddieg@gmail.com>
+Version: 1.3.0
+Author: Marta Bleda <martableda@gmail.com>
+Maintainer: Marta Bleda <martableda@gmail.com>
 Description: Classes and methods for working with Opencga data
 License: GPL-3
 LazyData: TRUE
 Depends:
     R(>= 3.2.2),
-    jsonlite,methods
-Imports:
-    stringi
-Enhances: shiny,miniUI
-Collate:
-    'OpencgaFunctions.R'
-    'OpencgaClasses.R'
-    'login.R'
-RoxygenNote: 5.0.1.9000
-VignetteBuilder: knitr
+    jsonlite,methods,httr
 Suggests:
+    configr,pbapply,
     BiocStyle,
     knitr,
     rmarkdown
+Imports:
+    stringi
+Enhances: shiny,miniUI
+Collate: 
+    'AllClasses.R'
+    'AllGenerics.R'
+    'commons.R'
+    'AnalysisVariant-methods.R'
+    'Clinical-methods.R'
+    'Cohort-methods.R'
+    'Family-methods.R'
+    'File-methods.R'
+    'Individual-methods.R'
+    'Job-methods.R'
+    'OpencgaR-methods.R'
+    'Project-methods.R'
+    'Sample-methods.R'
+    'Study-methods.R'
+    'User-methods.R'
+    'VariableSet-methods.R'
+    'login.R'
+RoxygenNote: 6.0.1
+VignetteBuilder: knitr

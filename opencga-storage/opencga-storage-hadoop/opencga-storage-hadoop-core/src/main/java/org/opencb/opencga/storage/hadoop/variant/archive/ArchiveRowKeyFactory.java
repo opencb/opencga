@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.DEFAULT_ROWKEY_SEPARATOR;
@@ -56,6 +57,10 @@ public class ArchiveRowKeyFactory {
         return chunkSize > 0
                 ? position / (long) chunkSize
                 : position;
+    }
+
+    public String generateBlockId(Variant variant) {
+        return generateBlockIdFromSlice(variant.getChromosome(), getSliceId(variant.getStart()));
     }
 
     /**

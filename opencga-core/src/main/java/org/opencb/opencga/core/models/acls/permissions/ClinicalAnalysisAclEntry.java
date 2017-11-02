@@ -32,8 +32,7 @@ public class ClinicalAnalysisAclEntry extends AbstractAclEntry<ClinicalAnalysisA
     public enum ClinicalAnalysisPermissions {
         VIEW,
         UPDATE,
-        DELETE,
-        SHARE
+        DELETE
     }
 
     public ClinicalAnalysisAclEntry() {

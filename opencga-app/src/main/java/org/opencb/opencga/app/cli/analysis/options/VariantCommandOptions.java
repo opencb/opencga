@@ -21,8 +21,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import com.beust.jcommander.converters.CommaParameterSplitter;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
@@ -31,8 +31,10 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_FILTER_DESC;
 
 /**
@@ -48,6 +50,7 @@ public class VariantCommandOptions {
     public VariantQueryCommandOptions queryVariantCommandOptions;
     public VariantStatsCommandOptions statsVariantCommandOptions;
     public VariantAnnotateCommandOptions annotateVariantCommandOptions;
+    public FillGapsCommandOptions fillGapsVariantCommandOptions;
     public VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
     public VariantImportCommandOptions importVariantCommandOptions;
     public VariantIbsCommandOptions ibsVariantCommandOptions;
@@ -73,6 +76,7 @@ public class VariantCommandOptions {
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
+        this.fillGapsVariantCommandOptions = new FillGapsCommandOptions();
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
@@ -169,7 +173,7 @@ public class VariantCommandOptions {
         public String extraFields = "";
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
-        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+        public Aggregation aggregated = Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
                 "file")
@@ -476,7 +480,7 @@ public class VariantCommandOptions {
         public String catalogPath = null;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
-        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+        public Aggregation aggregated = Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;
@@ -571,6 +575,16 @@ public class VariantCommandOptions {
                 splitter = CommaParameterSplitter.class)
         public List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
 
+    }
+
+    @Parameters(commandNames = {FILL_GAPS_COMMAND}, commandDescription = FILL_GAPS_COMMAND_DESCRIPTION)
+    public class FillGapsCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.GenericFillGapsOptions genericFillGapsOptions = new StorageVariantCommandOptions.GenericFillGapsOptions();
     }
 
     @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")

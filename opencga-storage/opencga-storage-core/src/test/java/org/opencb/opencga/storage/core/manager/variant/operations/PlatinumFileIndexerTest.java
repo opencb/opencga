@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -41,8 +41,8 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
     private Logger logger = LoggerFactory.getLogger(AbstractVariantStorageOperationTest.class);
 
     @Override
-    protected VariantSource.Aggregation getAggregation() {
-        return VariantSource.Aggregation.NONE;
+    protected Aggregation getAggregation() {
+        return Aggregation.NONE;
     }
 
     @Before

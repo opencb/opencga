@@ -24,22 +24,23 @@ import org.opencb.biodata.formats.feature.gff.io.GffReader;
 import org.opencb.biodata.formats.io.FormatReaderWrapper;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.io.avro.AvroDataReader;
+import org.opencb.commons.io.avro.AvroDataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.commons.io.avro.AvroDataReader;
-import org.opencb.commons.io.avro.AvroDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -83,6 +84,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
     private VariantDBAdaptor dbAdaptor;
     private VariantAnnotator variantAnnotator;
+    private long numAnnotationsToLoad = 0;
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
@@ -168,8 +170,11 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
         try {
             DataReader<Variant> variantDataReader = new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
-
-            ProgressLogger progressLogger = new ProgressLogger("Annotated variants:", () -> dbAdaptor.count(query).first(), 200);
+            ProgressLogger progressLogger = new ProgressLogger("Annotated variants:", () -> {
+                Long count = dbAdaptor.count(query).first();
+                numAnnotationsToLoad = count;
+                return count;
+            }, 200);
             ParallelTaskRunner.TaskWithException<Variant, VariantAnnotation, VariantAnnotatorException> annotationTask = variantList -> {
                 List<VariantAnnotation> variantAnnotationList;
                 long start = System.currentTimeMillis();
@@ -238,13 +243,13 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
         reader = newVariantAnnotationDataReader(uri);
         try {
-            ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ");
+            ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ", numAnnotationsToLoad);
             ParallelTaskRunner<VariantAnnotation, Object> ptr = new ParallelTaskRunner<>(reader,
                     () -> newVariantAnnotationDBWriter(dbAdaptor, new QueryOptions(params))
                             .setProgressLogger(progressLogger), null, config);
             ptr.run();
         } catch (ExecutionException e) {
-            throw new StorageEngineException("Error loading variant annotation");
+            throw new StorageEngineException("Error loading variant annotation", e);
         }
 
     }
@@ -346,9 +351,9 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
             if (fileName.endsWith(".gz")) {
                 is = new GZIPInputStream(is);
             }
-            VariantSource source = new VariantSource(fileName, "f", "s", "s");
+            VariantStudyMetadata metadata = new VariantFileMetadata(fileName, fileName).toVariantStudyMetadata("s");
             ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<>(
-                    new VariantVcfHtsjdkReader(is, source),
+                    new VariantVcfHtsjdkReader(is, metadata),
                     variantList -> {
                         for (Variant variant : variantList) {
                             Region region = new Region(normalizeChromosome(variant.getChromosome()), variant.getStart(), variant.getEnd());

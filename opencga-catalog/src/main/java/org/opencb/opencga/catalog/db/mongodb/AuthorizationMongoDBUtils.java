@@ -21,15 +21,37 @@ public class AuthorizationMongoDBUtils {
     private static final String VARIABLE_SETS = "variableSets";
     private static final String ANNOTATION_SETS = "annotationSets";
     private static final String ANONYMOUS = "*";
-    private static final Pattern MEMBERS_PATTERN = Pattern.compile("^@members");
+
+    private static final String MEMBERS = "@members";
+    private static final String ADMINS = "@admins";
+
+    private static final Pattern MEMBERS_PATTERN = Pattern.compile("^" + MEMBERS);
     private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^\\" + ANONYMOUS);
+
+    public static boolean checkCanViewStudy(Document study, String user) {
+        // 0. If the user corresponds with the owner, we don't have to check anything else
+        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+            return true;
+        }
+        if (ADMIN.equals(user)) {
+            return true;
+        }
+        // If user does not exist in the members group, the user will not have any permission
+        if (isUserInMembers(study, user)) {
+            return true;
+        }
+        return false;
+    }
 
     public static boolean checkStudyPermission(Document study, String user, String studyPermission) {
         // 0. If the user corresponds with the owner, we don't have to check anything else
-        if (ADMIN.equals(user) || study.getString(PRIVATE_OWNER_ID).equals(user)) {
+        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return true;
         }
         if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
+            return true;
+        }
+        if (getAdminUsers(study).contains(user)) {
             return true;
         }
 
@@ -70,6 +92,9 @@ public class AuthorizationMongoDBUtils {
             return entry;
         }
         if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
+            return entry;
+        }
+        if (getAdminUsers(study).contains(user)) {
             return entry;
         }
 
@@ -116,10 +141,13 @@ public class AuthorizationMongoDBUtils {
     public static Document getQueryForAuthorisedEntries(Document study, String user, String studyPermission, String entryPermission)
             throws CatalogAuthorizationException {
         // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
-        if (ADMIN.equals(user) || study.getString(PRIVATE_OWNER_ID).equals(user)) {
+        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return new Document();
         }
         if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
+            return new Document();
+        }
+        if (getAdminUsers(study).contains(user)) {
             return new Document();
         }
 
@@ -165,7 +193,7 @@ public class AuthorizationMongoDBUtils {
         List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
         if (groupDocumentList != null && !groupDocumentList.isEmpty()) {
             for (Document group : groupDocumentList) {
-                if (("@members").equals(group.getString("name"))) {
+                if ((MEMBERS).equals(group.getString("name"))) {
                     List<String> userIds = group.get("userIds", ArrayList.class);
                     for (String userId : userIds) {
                         if (userId.equals(user)) {
@@ -209,16 +237,29 @@ public class AuthorizationMongoDBUtils {
         return hasPermission;
     }
 
+    public static List<String> getAdminUsers(Document study) {
+        List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
+        if (groupDocumentList != null && !groupDocumentList.isEmpty()) {
+            for (Document group : groupDocumentList) {
+                if ((ADMINS).equals(group.getString("name"))) {
+                    return (List<String>) group.get("userIds", ArrayList.class);
+                }
+            }
+        }
+        return Collections.emptyList();
+    }
+
     public static List<String> getGroups(Document study, String user) {
         List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
         List<String> groups = new ArrayList<>();
         if (groupDocumentList != null && !groupDocumentList.isEmpty()) {
             for (Document group : groupDocumentList) {
-                if (!("@members").equals(group.getString("name"))) {
+                String groupName = group.getString("name");
+                if (!groupName.equals(MEMBERS) && !groupName.equals(ADMINS)) {
                     List<String> userIds = group.get("userIds", ArrayList.class);
                     for (String userId : userIds) {
                         if (user.equals(userId)) {
-                            groups.add(group.getString("name"));
+                            groups.add(groupName);
                             break;
                         }
                     }
@@ -240,7 +281,7 @@ public class AuthorizationMongoDBUtils {
                     member = "user";
                 } else if (groupList.contains(split[0])) {
                     member = "group";
-                } else if ("@members".equals(split[0])) {
+                } else if (MEMBERS.equals(split[0])) {
                     member = "members";
                 } else if ("*".equals(split[0])) {
                     member = "*";

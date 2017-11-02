@@ -168,7 +168,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", configuration.getCatalog().getDatabase().getUser())
                 .add("password", configuration.getCatalog().getDatabase().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
+                .setAuthenticationDatabase(configuration.getCatalog().getDatabase().getOptions()
+                        .get(MongoDBConfiguration.AUTHENTICATION_DATABASE))
+                .setConnectionsPerHost(Integer.parseInt(configuration.getCatalog().getDatabase().getOptions()
+                        .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
@@ -422,7 +425,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                     update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-            collection.update(queryDocument, update, QueryOptions.empty());
+            collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
     }
 
@@ -524,7 +527,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                     update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-            collection.update(queryDocument, update, QueryOptions.empty());
+            collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
     }
 

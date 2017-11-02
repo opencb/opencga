@@ -22,6 +22,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
@@ -39,9 +40,10 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
         this.aclClass = SampleAclEntry.class;
     }
 
-    public QueryResponse<Sample> create(String studyId, ObjectMap bodyParams) throws IOException {
+    public QueryResponse<Sample> create(String studyId, @Nullable String individual, ObjectMap bodyParams) throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(STUDY, studyId);
+        params.putIfNotNull("individual", individual);
         params.putIfNotNull("body", bodyParams);
         return execute(SAMPLES_URL, "create", params, POST, Sample.class);
     }

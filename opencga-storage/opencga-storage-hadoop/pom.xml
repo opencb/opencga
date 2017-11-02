@@ -21,6 +21,7 @@
     <modelVersion>4.0.0</modelVersion>
     <properties>
         <opencga-storage-hadoop-deps.version>${opencga.version}-SNAPSHOT</opencga-storage-hadoop-deps.version>
+        <module-opencga-storage-hadoop-deps>false</module-opencga-storage-hadoop-deps>
     </properties>
     <parent>
         <groupId>org.opencb.opencga</groupId>
@@ -35,21 +36,300 @@
 
     <modules>
         <module>opencga-storage-hadoop-core</module>
-        <!--<module>opencga-storage-hadoop-deps</module>-->
     </modules>
 
     <profiles>
+        <!-- Add opencga-storage-hadoop-deps as an extra module. Force to recompile the opencga-storage-hadoop-deps -->
         <profile>
             <id>opencga-storage-hadoop-deps</id>
-            <activation>
-                <file>
-                    <missing>${user.home}/.m2/repository/org/opencb/opencga/opencga-storage-hadoop-deps/1.3.0-dev-SNAPSHOT/opencga-storage-hadoop-deps-1.3.0-dev-SNAPSHOT.jar</missing>
-                </file>
-            </activation>
             <modules>
                 <module>opencga-storage-hadoop-deps</module>
             </modules>
+            <properties>
+                <module-opencga-storage-hadoop-deps>true</module-opencga-storage-hadoop-deps>
+                <!--Version values for the default profile hdp-2.5.0-->
+                <opencga-storage-hadoop-deps.classifier>hdp-2.5.0</opencga-storage-hadoop-deps.classifier>
+                <hadoop.version>2.7.1</hadoop.version>
+                <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
+                <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
+                <tephra.version>0.7.0</tephra.version>
+            </properties>
+            <repositories>
+                <repository>
+                    <id>hortonworks-releases</id>
+                    <url>http://repo.hortonworks.com/content/repositories/releases/</url>
+                </repository>
+                <repository>
+                    <id>hortonworks-public</id>
+                    <url>http://repo.hortonworks.com/content/groups/public</url>
+                </repository>
+            </repositories>
+        </profile>
+
+        <!-- Each profile will modify the version of some hadoop dependencies and add some repositories, if needed. -->
+        <profile>
+            <!--Highly tested-->
+            <id>hdp-2.5.0</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>opencga-storage-hadoop-deps.classifier</name>
+                    <value>hdp-2.5.0</value>
+                </property>
+            </activation>
+            <!--Default values copied copied in the opencga-storage-hadoop-deps profile-->
+            <properties>
+                <opencga-storage-hadoop-deps.classifier>hdp-2.5.0</opencga-storage-hadoop-deps.classifier>
+                <hadoop.version>2.7.1</hadoop.version>
+                <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
+                <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
+                <tephra.version>0.7.0</tephra.version>
+            </properties>
+            <repositories>
+                <repository>
+                    <id>hortonworks-releases</id>
+                    <url>http://repo.hortonworks.com/content/repositories/releases/</url>
+                </repository>
+                <repository>
+                    <id>hortonworks-public</id>
+                    <url>http://repo.hortonworks.com/content/groups/public</url>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
+            <id>hdp-2.6.0</id>
+            <activation>
+                <property>
+                    <name>opencga-storage-hadoop-deps.classifier</name>
+                    <value>hdp-2.6.0</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-storage-hadoop-deps.classifier>hdp-2.6.0</opencga-storage-hadoop-deps.classifier>
+                <hadoop.version>2.7.3.2.6.0.3-8</hadoop.version>
+                <hbase.version>1.1.2.2.6.0.3-8</hbase.version>
+                <phoenix.version>4.7.0.2.6.0.3-8</phoenix.version>
+            </properties>
+            <repositories>
+                <repository>
+                    <id>hortonworks-releases</id>
+                    <url>http://repo.hortonworks.com/content/repositories/releases/</url>
+                </repository>
+                <repository>
+                    <id>hortonworks-public</id>
+                    <url>http://repo.hortonworks.com/content/groups/public</url>
+                </repository>
+            </repositories>
+        </profile>
+
+        <profile>
+            <id>emr-5.8.0</id>
+            <activation>
+                <property>
+                    <name>opencga-storage-hadoop-deps.classifier</name>
+                    <value>emr-5.8.0</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-storage-hadoop-deps.classifier>emr-5.8.0</opencga-storage-hadoop-deps.classifier>
+                <hadoop.version>2.7.3</hadoop.version>
+                <hbase.version>1.3.1</hbase.version>
+                <phoenix.version>4.11.0-HBase-1.3</phoenix.version>
+                <apache.tephra.version>0.12.0-incubating</apache.tephra.version>
+            </properties>
+            <dependencyManagement>
+                <dependencies>
+                    <!--Tephra changes groupId after version 0.7.1.
+                        co.cask.tephra >>> org.apache.tephra
+                        To modify the dependency groupId, the old one has to be excluded, and the newer, added.
+
+                        Another possible solution could be to include tephra into the shaded uber jar.
+                        This will require to add explicitly all the sub-dependencies, and will make the jar bigger.
+                        -->
+                    <dependency>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>opencga-storage-hadoop-deps</artifactId>
+                        <version>${opencga-storage-hadoop-deps.version}</version>
+                        <classifier>${opencga-storage-hadoop-deps.classifier}-shaded</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-api</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-core</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-hbase-compat-1.1</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>opencga-storage-hadoop-deps</artifactId>
+                        <version>${opencga-storage-hadoop-deps.version}</version>
+                        <classifier>${opencga-storage-hadoop-deps.classifier}-tests</classifier>
+                        <type>test-jar</type>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-api</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-core</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>co.cask.tephra</groupId>
+                                <artifactId>tephra-hbase-compat-1.1</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.tephra</groupId>
+                    <artifactId>tephra-api</artifactId>
+                    <version>${apache.tephra.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.tephra</groupId>
+                    <artifactId>tephra-core</artifactId>
+                    <version>${apache.tephra.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>logback-core</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>logback-classic</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.tephra</groupId>
+                    <artifactId>tephra-hbase-compat-1.1</artifactId>
+                    <version>${apache.tephra.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>emr-5.3.0</id>
+            <activation>
+                <property>
+                    <name>opencga-storage-hadoop-deps.classifier</name>
+                    <value>emr-5.3.0</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-storage-hadoop-deps.classifier>emr-5.3.0</opencga-storage-hadoop-deps.classifier>
+                <hadoop.version>2.7.1</hadoop.version>
+                <hbase.version>1.1.12</hbase.version>
+                <phoenix.version>4.7.0-HBase-1.1</phoenix.version>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>cdh-5.13.0</id>
+            <activation>
+                <property>
+                    <name>opencga-storage-hadoop-deps.classifier</name>
+                    <value>cdh-5.13.0</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-storage-hadoop-deps.classifier>cdh-5.13.0</opencga-storage-hadoop-deps.classifier>
+                <hadoop.version>2.6.0-cdh5.13.0</hadoop.version>
+                <hbase.version>1.2.0-cdh5.13.0</hbase.version>
+                <phoenix.version>4.7.0-clabs-phoenix1.3.0</phoenix.version>
+            </properties>
+            <repositories>
+                <repository>
+                    <id>cloudera</id>
+                    <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
+            <id>cdh-5.7.0</id>
+            <activation>
+                <property>
+                    <name>opencga-storage-hadoop-deps.classifier</name>
+                    <value>cdh-5.7.0</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-storage-hadoop-deps.classifier>cdh-5.7.0</opencga-storage-hadoop-deps.classifier>
+                <hadoop.version>2.6.0-cdh5.7.0</hadoop.version>
+                <hbase.version>1.2.0-cdh5.7.0</hbase.version>
+                <phoenix.version>4.7.0-clabs-phoenix1.3.0</phoenix.version>
+            </properties>
+            <repositories>
+                <repository>
+                    <id>cloudera</id>
+                    <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+                </repository>
+            </repositories>
         </profile>
     </profiles>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>compile-hadoop-deps</id>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <target>
+                                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpathref="maven.plugin.classpath" />
+                                <if>
+                                    <and>
+                                        <!--Only compile from parent opencga-storage-hadoop-->
+                                        <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
+                                        <!--Compile if file is not available-->
+                                        <not>
+                                            <available file="${settings.localRepository}/org/opencb/opencga/opencga-storage-hadoop-deps/${opencga-storage-hadoop-deps.version}/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.version}-${opencga-storage-hadoop-deps.classifier}-shaded.jar"/>
+                                        </not>
+                                        <!--Compile if opencga-storage-hadoop-deps has not been included as a module-->
+                                        <!--See profile opencga-storage-hadoop-deps-->
+                                        <not>
+                                            <equals arg1="${module-opencga-storage-hadoop-deps}" arg2="true"/>
+                                        </not>
+                                    </and>
+                                    <then>
+                                        <echo>Compile opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.version}-${opencga-storage-hadoop-deps.classifier}</echo>
+                                        <exec executable="mvn">
+                                            <arg value="-f"/>
+                                            <arg value="${project.basedir}/opencga-storage-hadoop-deps/pom.xml"/>
+                                            <arg value="-P${opencga-storage-hadoop-deps.classifier}"/>
+                                            <arg value="install"/>
+                                        </exec>
+                                    </then>
+                                </if>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+
+                </executions>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>ant-contrib</groupId>
+                        <artifactId>ant-contrib</artifactId>
+                        <version>20020829</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

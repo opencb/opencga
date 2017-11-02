@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.common.networks;
 
-import org.apache.commons.codec.binary.Base64;
 import org.opencb.opencga.core.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +70,8 @@ public class Layout {
     public LayoutResp layout(String layoutAlgorithm, String outputFormat, String dotData, String filename, String base64, String jsonpCallback) {
         LayoutResp resp = new LayoutResp();
 
+
+
         logger.debug("LayoutWSServer: layout() method");
         if (graphvizLayoutAlgorithms.contains(layoutAlgorithm)) {
             if (graphvizOutputFormats.containsKey(outputFormat)) {
@@ -98,7 +99,8 @@ public class Layout {
                             if (base64 != null && base64.trim().equalsIgnoreCase("true")) {
                                 logger.debug("Encoding in Base64 the dot output file...");
                                 byte[] binaryBytes = toByteArray(new FileInputStream(outputFile));
-                                byte[] base64Bytes = Base64.encodeBase64(binaryBytes);
+//                                byte[] base64Bytes = Base64.encodeBase64(binaryBytes);
+                                byte[] base64Bytes = Base64.getEncoder().encode(binaryBytes);
                                 String encodedString = new String(base64Bytes);
 
                                 if (jsonpCallback != null && !jsonpCallback.equals("")) {

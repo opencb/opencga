@@ -68,12 +68,16 @@ public class UserClient extends CatalogClient<User, User> {
         return response;
     }
 
-    public QueryResponse<ObjectMap> logout() {
+    public QueryResponse<ObjectMap> refresh() {
         QueryResponse<ObjectMap> response = null;
+        ObjectMap p = new ObjectMap();
+        ObjectMapper mapper = new ObjectMapper();
         try {
-            response = execute(USERS_URL, getUserId(null), "logout", null, GET, ObjectMap.class);
-        } catch (IOException | ClientException e) {
-            logger.error("{}", e.getMessage(), e);
+            String json = mapper.writeValueAsString(p);
+            ObjectMap objectMap = new ObjectMap("body", json);
+            response = execute(USERS_URL, this.getUserId(null), "login", objectMap, POST, ObjectMap.class);
+        } catch (ClientException | IOException e) {
+            e.printStackTrace();
         }
         return response;
     }
@@ -93,8 +97,9 @@ public class UserClient extends CatalogClient<User, User> {
         params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
         String json = mapper.writeValueAsString(params);
         ObjectMap objectMap = new ObjectMap("body", json);
-        return execute(USERS_URL, getUserId(params), "change-password", objectMap, POST, User.class);
+        return execute(USERS_URL, getUserId(params), "password", objectMap, POST, User.class);
     }
+
     public QueryResponse<User> resetPassword(ObjectMap params) throws ClientException, IOException {
         return execute(USERS_URL, getUserId(params), "change-password", params, GET, User.class);
     }

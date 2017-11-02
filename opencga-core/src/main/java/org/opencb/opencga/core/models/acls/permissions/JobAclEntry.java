@@ -31,8 +31,7 @@ public class JobAclEntry extends AbstractAclEntry<JobAclEntry.JobPermissions> {
     public enum JobPermissions {
         VIEW,
         UPDATE,
-        DELETE,
-        SHARE
+        DELETE
     }
 
     public JobAclEntry() {

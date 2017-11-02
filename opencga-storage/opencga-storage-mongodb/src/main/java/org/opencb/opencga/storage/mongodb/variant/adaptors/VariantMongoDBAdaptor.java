@@ -50,8 +50,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
@@ -89,7 +88,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final String collectionName;
     private final MongoDBCollection variantsCollection;
-    private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
+    private final VariantFileMetadataMongoDBAdaptor variantFileMetadataMongoDBAdaptor;
     private final StorageConfiguration storageConfiguration;
     private final MongoCredentials credentials;
     private final VariantMongoDBQueryParser queryParser;
@@ -122,7 +121,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.credentials = credentials;
         this.mongoManager = mongoManager;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(db, filesCollectionName);
+        variantFileMetadataMongoDBAdaptor = new VariantFileMetadataMongoDBAdaptor(db, filesCollectionName);
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
@@ -184,7 +183,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Integer studyId = studyConfigurationManager.getStudyId(study, null, false);
         StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-        List<Integer> fileIds = studyConfigurationManager.getFileIds(files, false, sc);
+        List<Integer> fileIds = studyConfigurationManager.getFileIdsFromStudy(files, sc);
 
         ArrayList<Integer> otherIndexedFiles = new ArrayList<>(sc.getIndexedFiles());
         otherIndexedFiles.removeAll(fileIds);
@@ -948,33 +947,28 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, QueryOptions options) {
-        List<Integer> returnedStudies = getReturnedStudies(query, options);
+        return getDocumentToVariantConverter(query, VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager));
+    }
+
+    private DocumentToVariantConverter getDocumentToVariantConverter(Query query, SelectVariantElements selectVariantElements) {
+
+        List<Integer> returnedStudies = selectVariantElements.getStudies();
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
         samplesConverter.setFormat(getIncludeFormats(query));
         // Fetch some StudyConfigurations that will be needed
-        if (returnedStudies != null) {
-            for (Integer studyId : returnedStudies) {
-                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, options);
-                if (queryResult.getResult().isEmpty()) {
-                    throw VariantQueryException.studyNotFound(studyId);
-//                    throw new IllegalArgumentException("Couldn't find studyConfiguration for StudyId '" + studyId + "'");
-                } else {
-                    samplesConverter.addStudyConfiguration(queryResult.first());
-                }
-            }
+        for (StudyConfiguration studyConfiguration : selectVariantElements.getStudyConfigurations().values()) {
+            samplesConverter.addStudyConfiguration(studyConfiguration);
         }
         if (query.containsKey(UNKNOWN_GENOTYPE.key())) {
             samplesConverter.setReturnedUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
         }
 
-        Set<VariantField> fields = VariantField.getReturnedFields(options);
-        samplesConverter.setReturnedSamples(getReturnedSamples(query, options));
+        samplesConverter.setReturnedSamples(selectVariantElements.getSamples());
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
-        Collection<Integer> returnedFiles = getReturnedFiles(query, options, fields, studyConfigurationManager);
 
-        studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, returnedFiles, samplesConverter);
+        studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
         return new DocumentToVariantConverter(studyEntryConverter,
                 new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies);
@@ -1167,8 +1161,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantSourceMongoDBAdaptor getVariantSourceDBAdaptor() {
-        return variantSourceMongoDBAdaptor;
+    public VariantFileMetadataMongoDBAdaptor getVariantFileMetadataDBAdaptor() {
+        return variantFileMetadataMongoDBAdaptor;
     }
 
     @Override

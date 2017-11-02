@@ -63,7 +63,15 @@ public class GenomeHelper {
         this(other.getConf());
     }
 
+    protected GenomeHelper(GenomeHelper other, int studyId) {
+        this(other.getConf(), studyId);
+    }
+
     public GenomeHelper(Configuration conf) {
+        this(conf, conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1));
+    }
+
+    protected GenomeHelper(Configuration conf, int studyId) {
         this.conf = conf;
         this.separator = conf.get(HadoopVariantStorageEngine.ARCHIVE_ROW_KEY_SEPARATOR, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
         // TODO: Check if columnFamily is upper case
@@ -73,7 +81,7 @@ public class GenomeHelper {
         this.metaRowKeyString = DEFAULT_METADATA_ROW_KEY;
         this.metaRowKey = Bytes.toBytes(metaRowKeyString);
         this.chunkSize = conf.getInt(HadoopVariantStorageEngine.ARCHIVE_CHUNK_SIZE, HadoopVariantStorageEngine.DEFAULT_ARCHIVE_CHUNK_SIZE);
-        this.studyId = conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
+        this.studyId = studyId > 0 ? studyId : conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
     }
 
     public Configuration getConf() {

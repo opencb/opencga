@@ -168,14 +168,14 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
-    public QueryResult<Dataset> update(long id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Dataset> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        update(new Query(QueryParams.ID.key(), id), parameters);
+        update(new Query(QueryParams.ID.key(), id), parameters, QueryOptions.empty());
         return endQuery("Update dataset", startTime, get(id, new QueryOptions()));
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> datasetParams = new HashMap<>();
 
@@ -258,11 +258,11 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     QueryResult<Dataset> setStatus(long datasetId, String status) throws CatalogDBException {
-        return update(datasetId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(datasetId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override
@@ -385,6 +385,18 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(datasetCollection, bsonQuery, fields, "name", options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
     }
 
     @Override

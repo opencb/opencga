@@ -21,6 +21,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.jdbc.PhoenixDatabaseMetaData;
+import org.apache.phoenix.jdbc.PhoenixDriver;
 import org.apache.phoenix.schema.ConcurrentTableMutationException;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
@@ -187,13 +188,18 @@ public class PhoenixHelper {
     }
 
     public Connection newJdbcConnection(Configuration conf) throws SQLException, ClassNotFoundException {
+        // Ensure PhoenixDriver is registered
+        if (PhoenixDriver.INSTANCE == null) {
+            throw new SQLException("Error registering PhoenixDriver");
+        }
+        logger.info("Opening connection to PhoenixDriver " + PhoenixDriver.INSTANCE);
         Connection connection = QueryUtil.getConnection(conf);
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         logger.info("Opened Phoenix DB connection {} called from {}", connection, Arrays.toString(stackTrace));
         return connection;
     }
 
-    public static byte[] toBytes(Collection collection, PArrayDataType arrayType) {
+    public static byte[] toBytes(Collection<?> collection, PArrayDataType arrayType) {
         PDataType pDataType = PDataType.arrayBaseType(arrayType);
         Object[] elements = collection.toArray();
         PhoenixArray phoenixArray = new PhoenixArray(pDataType, elements);

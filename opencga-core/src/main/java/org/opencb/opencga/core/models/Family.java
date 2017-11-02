@@ -31,35 +31,86 @@ public class Family extends Annotable {
     private long id;
     private String name;
 
-    private List<OntologyTerm> diseases;
+    private List<OntologyTerm> phenotypes;
     private List<Individual> members;
 
     private String creationDate;
-    private Status status;
+    private FamilyStatus status;
     private String description;
 
     private int release;
+    private int version;
     private Map<String, Object> attributes;
 
     public Family() {
     }
 
-    public Family(String name, List<OntologyTerm> diseases, List<Individual> members, String description, List<AnnotationSet> annotationSets,
-                  Map<String, Object> attributes) {
-        this(name, diseases, members, TimeUtils.getTime(), new Status(Status.READY), description, -1, annotationSets, attributes);
+    public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, -1, 1, annotationSets, attributes);
     }
 
-    public Family(String name, List<OntologyTerm> diseases, List<Individual> members, String creationDate, Status status, String description,
-                  int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate, FamilyStatus status,
+                  String description, int release, int version, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.name = name;
-        this.diseases = defaultObject(diseases, Collections::emptyList);
+        this.phenotypes = defaultObject(phenotypes, Collections::emptyList);
         this.members = defaultObject(members, Collections::emptyList);
         this.creationDate = defaultObject(creationDate, TimeUtils::getTime);
-        this.status = defaultObject(status, new Status());
+        this.status = defaultObject(status, new FamilyStatus());
         this.description = description;
         this.release = release;
+        this.version = version;
         this.annotationSets = defaultObject(annotationSets, Collections::emptyList);
         this.attributes = defaultObject(attributes, Collections::emptyMap);
+    }
+
+    public static class FamilyStatus extends Status {
+
+        public static final String INCOMPLETE = "INCOMPLETE";
+
+        public FamilyStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public FamilyStatus(String status) {
+            this(status, "");
+        }
+
+        public FamilyStatus() {
+            this(READY, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(INCOMPLETE))) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Family{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", members=").append(members);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", release=").append(release);
+        sb.append(", version=").append(version);
+        sb.append(", attributes=").append(attributes);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append('}');
+        return sb.toString();
     }
 
     public long getId() {
@@ -80,12 +131,12 @@ public class Family extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getDiseases() {
-        return diseases;
+    public List<OntologyTerm> getPhenotypes() {
+        return phenotypes;
     }
 
-    public Family setDiseases(List<OntologyTerm> diseases) {
-        this.diseases = diseases;
+    public Family setPhenotypes(List<OntologyTerm> phenotypes) {
+        this.phenotypes = phenotypes;
         return this;
     }
 
@@ -107,11 +158,11 @@ public class Family extends Annotable {
         return this;
     }
 
-    public Status getStatus() {
+    public FamilyStatus getStatus() {
         return status;
     }
 
-    public Family setStatus(Status status) {
+    public Family setStatus(FamilyStatus status) {
         this.status = status;
         return this;
     }
@@ -131,6 +182,15 @@ public class Family extends Annotable {
 
     public Family setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public Family setVersion(int version) {
+        this.version = version;
         return this;
     }
 

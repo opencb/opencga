@@ -78,6 +78,12 @@ public class VariableSetWSServerTest {
 
     }
 
+    @After
+    public void after() throws Exception {
+        // It is here to avoid restarting the server again and again
+        serverTestUtils.setUp();
+    }
+
     @Test
     public void addFieldToVariableSet() throws Exception {
         objectMapper = new ObjectMapper();

@@ -33,9 +33,9 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -50,6 +50,7 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
 
     public static final String CONFIG_VARIANT_TABLE_EXPORT_PATH = "opencga.variant.table.export.path";
     public static final String CONFIG_VARIANT_TABLE_EXPORT_TYPE = "opencga.variant.table.export.type";
+    @Deprecated
     public static final String CONFIG_VARIANT_TABLE_EXPORT_GENOTYPE = "opencga.variant.table.export.genotype";
     private String outFile;
     private ExportType type;
@@ -86,11 +87,11 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+    protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         // QUERY design
         Scan scan = createVariantsTableScan();
 
-        initMapReduceJob(job, getMapperClass(), variantTable, scan);
+        VariantMapReduceUtil.initTableMapperJob(job, variantTable, scan, getMapperClass());
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
         FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression

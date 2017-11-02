@@ -24,9 +24,10 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -39,8 +40,8 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
@@ -106,7 +107,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
+    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata source) throws StorageEngineException {
         super.securePreLoad(studyConfiguration, source);
         int fileId = options.getInt(Options.FILE_ID.key());
 
@@ -144,13 +145,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             if (options.containsKey(DEFAULT_GENOTYPE.key())) {
                 defaultGenotype = new HashSet<>(options.getAsStringList(DEFAULT_GENOTYPE.key()));
             } else {
-                VariantStudy.StudyType studyType = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class, Options.STUDY_TYPE
+                SampleSetType studyType = options.get(Options.STUDY_TYPE.key(), SampleSetType.class, Options.STUDY_TYPE
                         .defaultValue());
                 switch (studyType) {
                     case FAMILY:
                     case TRIO:
                     case PAIRED:
-                    case PAIRED_TUMOR:
                         defaultGenotype = Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
                         logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
                         break;
@@ -256,8 +256,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         Path input = Paths.get(inputUri.getPath());
 
-        VariantSource source = readVariantSource(inputUri, null);
-        int numRecords = source.getStats().getNumRecords();
+        VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri, null);
+        VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(getStudyId()));
+        int numRecords = fileMetadata.getStats().getNumVariants();
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
         int bulkSize = options.getInt(BULK_SIZE.key(), batchSize);
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
@@ -271,7 +272,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             //Reader
             VariantReader variantReader;
-            variantReader = VariantReaderUtils.getVariantReader(input, source);
+            variantReader = VariantReaderUtils.getVariantReader(input, metadata);
 
             //Remapping ids task
             String fileIdStr = options.getString(Options.FILE_ID.key());
@@ -318,7 +319,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             try {
                 Runtime.getRuntime().addShutdownHook(hook);
                 ptr.run();
-                stageSuccess(source);
+                stageSuccess(fileMetadata);
             } finally {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
@@ -363,11 +364,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
 
         Query query = new Query()
-                .append(VariantSourceDBAdaptor.VariantSourceQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId())
-                .append(VariantSourceDBAdaptor.VariantSourceQueryParam.FILE_ID.key(), fileId);
+                .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId())
+                .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileId);
 
         BatchFileOperation operation;
-        if (dbAdaptor.getVariantSourceDBAdaptor().count(query).first() == 1) {
+        if (dbAdaptor.getVariantFileMetadataDBAdaptor().count(query).first() == 1) {
             // Already staged!
             logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
 
@@ -403,15 +404,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 .atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, STAGE.key(), Collections.singletonList(fileId));
     }
 
-    public void stageSuccess(VariantSource source) throws StorageEngineException {
+    public void stageSuccess(VariantFileMetadata metadata) throws StorageEngineException {
         // Stage loading finished. Save VariantSource and update BatchOperation
         int fileId = options.getInt(Options.FILE_ID.key());
-        source.setFileId(String.valueOf(fileId));
-        source.setStudyId(String.valueOf(getStudyId()));
+        metadata.setId(String.valueOf(fileId));
 
         getStudyConfigurationManager()
                 .atomicSetStatus(getStudyId(), BatchFileOperation.Status.READY, STAGE.key(), Collections.singletonList(fileId));
-        dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(source);
+        dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(getStudyId()), metadata);
 
     }
 
@@ -455,8 +455,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
 
         //Iterate over all the files
-        Query query = new Query(VariantSourceDBAdaptor.VariantSourceQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId());
-        Iterator<VariantSource> iterator = dbAdaptor.getVariantSourceDBAdaptor().iterator(query, null);
+        Query query = new Query(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId());
+        Iterator<VariantFileMetadata> iterator = dbAdaptor.getVariantFileMetadataDBAdaptor().iterator(query, null);
 
         // List of chromosomes to be loaded
         Set<String> chromosomesToLoad = new HashSet<>();
@@ -468,20 +468,20 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         Set<String> wholeGenomeFiles = new HashSet<>();
         Set<String> byChromosomeFiles = new HashSet<>();
         while (iterator.hasNext()) {
-            VariantSource variantSource = iterator.next();
-            int fileId = Integer.parseInt(variantSource.getFileId());
+            VariantFileMetadata fileMetadata = iterator.next();
+            int fileId = Integer.parseInt(fileMetadata.getId());
 
             // If the file is going to be loaded, check if covers just one chromosome
             if (fileIds.contains(fileId)) {
-                if (variantSource.getStats().getChromosomeCounts().size() == 1) {
-                    chromosomesToLoad.addAll(variantSource.getStats().getChromosomeCounts().keySet());
-                    byChromosomeFiles.add(variantSource.getFileName());
+                if (fileMetadata.getStats().getChromosomeCounts().size() == 1) {
+                    chromosomesToLoad.addAll(fileMetadata.getStats().getChromosomeCounts().keySet());
+                    byChromosomeFiles.add(fileMetadata.getPath());
                 } else {
-                    wholeGenomeFiles.add(variantSource.getFileName());
+                    wholeGenomeFiles.add(fileMetadata.getPath());
                 }
             }
             // If the file is indexed, add to the map of chromosome->fileId
-            for (String chromosome : variantSource.getStats().getChromosomeCounts().keySet()) {
+            for (String chromosome : fileMetadata.getStats().getChromosomeCounts().keySet()) {
                 if (studyConfiguration.getIndexedFiles().contains(fileId)) {
                     chromosomeInLoadedFiles.put(chromosome, fileId);
                 } else if (fileIds.contains(fileId)) {
@@ -674,7 +674,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
-        VariantSource variantSource = dbAdaptor.getVariantSourceDBAdaptor().get(String.valueOf(fileId), null).first();
+        VariantFileMetadata fileMetadata = dbAdaptor.getVariantFileMetadataDBAdaptor().get(String.valueOf(fileId), null).first();
 
         Long count = dbAdaptor.count(new Query()
                 .append(VariantQueryParam.FILES.key(), fileId)
@@ -687,7 +687,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         long expectedSkippedVariants = 0;
         long alreadyLoadedVariants = options.getLong(ALREADY_LOADED_VARIANTS.key(), 0L);
 
-        for (Map.Entry<String, Integer> entry : variantSource.getStats().getVariantTypeCounts().entrySet()) {
+        for (Map.Entry<String, Integer> entry : fileMetadata.getStats().getVariantTypeCounts().entrySet()) {
             if (SKIPPED_VARIANTS.contains(VariantType.valueOf(entry.getKey()))) {
                 expectedSkippedVariants += entry.getValue();
             } else {
@@ -707,14 +707,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
 
         logger.info("============================================================");
-        logger.info("Check loaded file '" + variantSource.getFileName() + "' (" + fileId + ')');
+        logger.info("Check loaded file '" + fileMetadata.getPath() + "' (" + fileId + ')');
         if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
             logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult
                     .getSkippedVariants());
         } else if (writeResult.getSkippedVariants() > 0) {
             logger.warn("There were " + writeResult.getSkippedVariants() + " skipped variants.");
             for (VariantType type : SKIPPED_VARIANTS) {
-                Integer countByType = variantSource.getStats().getVariantTypeCounts().get(type.toString());
+                Integer countByType = fileMetadata.getStats().getVariantTypeCounts().get(type.toString());
                 if (countByType != null && countByType > 0) {
                     logger.info("  * Of which " + countByType + " are " + type.toString() + " variants.");
                 }

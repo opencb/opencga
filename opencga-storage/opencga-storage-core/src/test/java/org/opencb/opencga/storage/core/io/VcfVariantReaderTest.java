@@ -26,7 +26,7 @@ import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
-import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.io.DataReader;
 import org.opencb.opencga.storage.core.io.VcfVariantReader;
 
@@ -53,7 +53,7 @@ public class VcfVariantReaderTest {
 
     public static VcfVariantReader createReader(final int size) {
         VariantNormalizer normalizer = new VariantNormalizer();
-        VariantGlobalStatsCalculator stats = Mockito.mock(VariantGlobalStatsCalculator.class);
+        VariantSetStatsCalculator stats = Mockito.mock(VariantSetStatsCalculator.class);
 
         VariantContextToVariantConverter converter = new VariantContextToVariantConverter("1","1", Arrays.asList(
                 "ABC"));

@@ -23,7 +23,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
@@ -87,7 +87,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             studyConfiguration3 = new StudyConfiguration(3, "Study3");
 
             ObjectMap options = getExtraOptions()
-                    .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                    .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
                     .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
             //Study1

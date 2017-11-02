@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -47,8 +47,8 @@ import static org.junit.Assert.assertTrue;
 public abstract class VariantStatisticsManagerAggregatedTest extends VariantStorageBaseTest {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-aggregated-file.vcf.gz";
-    private StudyConfiguration studyConfiguration;
-    private VariantDBAdaptor dbAdaptor;
+    protected StudyConfiguration studyConfiguration;
+    protected VariantDBAdaptor dbAdaptor;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -70,8 +70,8 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         return getResourceUri(VCF_TEST_FILE_NAME);
     }
 
-    protected VariantSource.Aggregation getAggregationType() {
-        return VariantSource.Aggregation.BASIC;
+    protected Aggregation getAggregationType() {
+        return Aggregation.BASIC;
     }
 
     protected Properties getAggregationMappingFile() {
@@ -81,24 +81,22 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
     @Test
     public void calculateAggregatedStatsTest() throws Exception {
         //Calculate stats for 2 cohorts at one time
-        DefaultVariantStatisticsManager vsm = new DefaultVariantStatisticsManager(dbAdaptor);
+        VariantStatisticsManager vsm = variantStorageEngine.newVariantStatisticsManager();
 
         checkAggregatedCohorts(dbAdaptor, studyConfiguration);
 
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
         QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
+        options.put(DefaultVariantStatisticsManager.OUTPUT, outputUri.resolve("aggregated.stats").getPath());
         if (getAggregationMappingFile() != null) {
             options.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), getAggregationMappingFile());
         }
 
 
         //Calculate stats
-        Map<String, Set<String>> cohorts = new HashMap<>(Collections.singletonMap(StudyEntry.DEFAULT_COHORT, Collections.emptySet()));
-        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("aggregated.stats"), cohorts, Collections.emptyMap(),
-                studyConfiguration, options);
-        vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
-
+        List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
+        vsm.calculateStatistics(studyConfiguration.getStudyName(), cohorts, options);
 
         checkAggregatedCohorts(dbAdaptor, studyConfiguration);
     }

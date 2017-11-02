@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 
-@Path("/{version}/projects")
+@Path("/{apiVersion}/projects")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Projects", position = 2, description = "Methods for working with 'projects' endpoint")
 public class ProjectWSServer extends OpenCGAWSServer {
@@ -200,7 +200,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{project}/delete")
-    @ApiOperation(value = "Delete a project [PENDING]", position = 5)
+    @ApiOperation(value = "Delete a project [WARNING]", position = 5,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
     public Response delete(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectId) {
         return createErrorResponse("delete", "PENDING");
     }

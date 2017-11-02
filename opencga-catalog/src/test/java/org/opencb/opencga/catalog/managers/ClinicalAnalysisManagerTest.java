@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -9,14 +10,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -61,28 +61,34 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
         OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
 
-        Individual father = new Individual().setName("father").setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setOntologyTerms(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setOntologyTerms(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         Individual relChild1 = new Individual().setName("child1")
-                .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
+                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
+                .setSamples(Arrays.asList(
+                        new Sample().setName("sample1"),
+                        new Sample().setName("sample2"),
+                        new Sample().setName("sample3"),
+                        new Sample().setName("sample4")
+                ))
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setName("child2")
-                .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setName("child3")
-                .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
@@ -94,36 +100,23 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
-    private QueryResult<ClinicalAnalysis> createDummyEnvironment() throws CatalogException {
-
-        List<Sample> sampleList = Arrays.asList(
-                new Sample().setName("sample1"),
-                new Sample().setName("sample2"),
-                new Sample().setName("sample3"),
-                new Sample().setName("sample4")
-        );
-        for (Sample sample : sampleList) {
-            catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
-        }
+    private QueryResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily) throws CatalogException {
 
         createDummyFamily();
-
-        // Update individual to contain the samples
-        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "child1");
-        for (Sample sample : sampleList) {
-            catalogManager.getSampleManager().update(STUDY, sample.getName(), params, QueryOptions.empty(), sessionIdUser);
-        }
-
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setName("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
-                .setFamily(new Family().setName("family"))
-                .setSubject(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2"))));
+                .setSubjects(Arrays.asList(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2")))));
+
+        if (createFamily) {
+            clinicalAnalysis.setFamily(new Family().setName("family"));
+        }
+
         return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
     public void createClinicalAnalysisTest() throws CatalogException {
-        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment();
+        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
 
         assertEquals(1, dummyEnvironment.getNumResults());
         assertEquals(0, dummyEnvironment.first().getInterpretations().size());
@@ -131,10 +124,66 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(catalogManager.getFamilyManager().getId("family", STUDY, sessionIdUser).getResourceId(),
                 dummyEnvironment.first().getFamily().getId());
         assertEquals(catalogManager.getIndividualManager().getId("child1", STUDY, sessionIdUser).getResourceId(),
-                dummyEnvironment.first().getSubject().getId());
-        assertEquals(1, dummyEnvironment.first().getSubject().getSamples().size());
+                dummyEnvironment.first().getSubjects().get(0).getId());
+        assertEquals(1, dummyEnvironment.first().getSubjects().get(0).getSamples().size());
         assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
-                dummyEnvironment.first().getSubject().getSamples().get(0).getId());
+                dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getId());
+    }
+
+    @Test
+    public void createClinicalAnalysisNoFamilyTest() throws CatalogException {
+        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(false);
+
+        assertEquals(1, dummyEnvironment.getNumResults());
+        assertEquals(0, dummyEnvironment.first().getInterpretations().size());
+
+        assertEquals(catalogManager.getIndividualManager().getId("child1", STUDY, sessionIdUser).getResourceId(),
+                dummyEnvironment.first().getSubjects().get(0).getId());
+        assertEquals(1, dummyEnvironment.first().getSubjects().get(0).getSamples().size());
+        assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
+                dummyEnvironment.first().getSubjects().get(0).getSamples().get(0).getId());
+    }
+
+    @Test
+    public void updateSubjectsNoFamilyTest() throws CatalogException {
+        createDummyEnvironment(false);
+
+        ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key(),
+                Arrays.asList(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2")))));
+        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", params,
+                QueryOptions.empty(), sessionIdUser);
+
+        assertEquals(1, updateResult.getNumResults());
+        assertEquals(0, updateResult.first().getInterpretations().size());
+
+        assertEquals(catalogManager.getIndividualManager().getId("child1", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getSubjects().get(0).getId());
+        assertEquals(1, updateResult.first().getSubjects().get(0).getSamples().size());
+        assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getSubjects().get(0).getSamples().get(0).getId());
+    }
+
+    @Test
+    public void updateSubjectsAndFamilyTest() throws CatalogException {
+        createDummyEnvironment(false);
+
+        ObjectMap params = new ObjectMap()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECTS.key(),
+                        Arrays.asList(new Individual().setName("child1").setSamples(Arrays.asList(new Sample().setName("sample2")))))
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), new Family().setName("family"));
+        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", params,
+                QueryOptions.empty(), sessionIdUser);
+
+        assertEquals(1, updateResult.getNumResults());
+        assertEquals(0, updateResult.first().getInterpretations().size());
+
+        assertEquals(catalogManager.getFamilyManager().getId("family", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getFamily().getId());
+        assertEquals(catalogManager.getIndividualManager().getId("child1", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getSubjects().get(0).getId());
+        assertEquals(1, updateResult.first().getSubjects().get(0).getSamples().size());
+        assertEquals(catalogManager.getSampleManager().getId("sample2", STUDY, sessionIdUser).getResourceId(),
+                updateResult.first().getSubjects().get(0).getSamples().get(0).getId());
     }
 
 }

@@ -2,12 +2,12 @@ from distutils.core import setup
 
 setup(
     name='pyCGA',
-    version='1.2.0',
+    version='1.2.1',
     packages=['pyCGA', 'pyCGA.Utils'],
     url='https://github.com/genomicsengland/opencga/tree/pycga-1.0/opencga-client/src/main/python',
     license='',
     author='antonior,dapregi,ernesto-ocampo',
-    author_email='antonio.rueda-martin@genomicsengland.co.uk,daniel.perez-gil@genomicsengland.co.uk,ernesto.ocampo@genomicsengland.co.uk',
+    author_email='antonio.rueda-martin@genomicsengland.co.uk,daniel.perez-gil@genomicsengland.co.uk,kenan.mcgrath@genomicsengland.co.uk',
     description='Version 1.0.10: Changes in the AvroSchema module',
     install_requires=[
         'pip >= 7.1.2',

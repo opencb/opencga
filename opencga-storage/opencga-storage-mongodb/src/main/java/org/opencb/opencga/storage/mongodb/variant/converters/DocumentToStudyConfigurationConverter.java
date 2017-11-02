@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 
@@ -26,5 +27,6 @@ public class DocumentToStudyConfigurationConverter extends GenericDocumentComple
 
     public DocumentToStudyConfigurationConverter() {
         super(StudyConfiguration.class);
+        getObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
     }
 }

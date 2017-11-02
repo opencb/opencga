@@ -76,9 +76,9 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             return Collections.emptyList();
         }
         try {
+            // FIXME getAnnotations has been renamed to getAnnotationByVariantIds
             QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient()
-                    .getAnnotations(variants.stream().map(variantSerializer).collect(Collectors.toList()),
-                            queryOptions, true);
+                    .getAnnotations(variants.stream().map(variantSerializer).collect(Collectors.toList()), queryOptions, true);
             return getVariantAnnotationList(variants, queryResponse.getResponse());
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error fetching variants from Client");

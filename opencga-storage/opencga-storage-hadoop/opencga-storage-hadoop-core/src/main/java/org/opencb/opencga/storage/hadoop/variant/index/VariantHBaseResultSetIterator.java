@@ -20,7 +20,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.slf4j.Logger;
@@ -30,7 +30,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created on 16/12/15.
@@ -50,7 +49,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
 
     public VariantHBaseResultSetIterator(
             Statement statement, ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-            List<String> returnedSamples, Set<VariantField> returnedFields, List<String> formats,
+            VariantQueryUtils.SelectVariantElements select, List<String> formats,
             String unknownGenotype, QueryOptions options)
             throws SQLException {
         this.statement = statement;
@@ -61,10 +60,9 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
             options = QueryOptions.empty();
         }
         converter = HBaseToVariantConverter.fromResultSet(this.genomeHelper, this.scm)
-                .setReturnedFields(returnedFields)
-                .setReturnedSamples(returnedSamples)
+                .setSelectVariantElements(select)
                 .setMutableSamplesPosition(false)
-                .setStudyNameAsStudyId(true)
+                .setStudyNameAsStudyId(options.getBoolean("studyNameAsStudyId", true))
                 .setUnknownGenotype(unknownGenotype)
                 .setSimpleGenotypes(options.getBoolean("simpleGenotypes", true))
                 .setFormats(formats);

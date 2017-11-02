@@ -153,7 +153,7 @@ public class DocumentToVariantConverterTest {
         genotypeCodes.append("0/1", Collections.singletonList(1));
         mongoStudy.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, genotypeCodes);
 
-        LinkedList studies = new LinkedList();
+        List<Document> studies = new LinkedList<>();
         studies.add(mongoStudy);
         mongoVariant.append(DocumentToVariantConverter.STUDIES_FIELD, studies);
 

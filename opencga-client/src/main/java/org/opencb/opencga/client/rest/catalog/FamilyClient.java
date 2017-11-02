@@ -46,4 +46,9 @@ public class FamilyClient extends AnnotationClient<Family, FamilyAclEntry> {
         return execute(FAMILY_URL, "create", params, POST, Family.class);
     }
 
+    public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
+        params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
+        return execute(FAMILY_URL, "groupBy", params, GET, ObjectMap.class);
+    }
+
 }

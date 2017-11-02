@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -39,15 +39,15 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +65,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
+import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -98,8 +98,8 @@ public class FileManager extends ResourceManager<File> {
     }
 
     FileManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                       DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                       Configuration configuration) {
+                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
                 configuration);
         fileMetadataReader = new FileMetadataReader(this.catalogManager);
@@ -276,7 +276,7 @@ public class FileManager extends ResourceManager<File> {
             }
             relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
             ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
-            fileDBAdaptor.update(json.getId(), params);
+            fileDBAdaptor.update(json.getId(), params, QueryOptions.empty());
 
             // Update transformed file
             logger.debug("Updating transformed relation");
@@ -286,7 +286,7 @@ public class FileManager extends ResourceManager<File> {
             }
             relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
             params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
-            fileDBAdaptor.update(transformedFile.getId(), params);
+            fileDBAdaptor.update(transformedFile.getId(), params, QueryOptions.empty());
 
             // Update vcf file
             logger.debug("Updating vcf relation");
@@ -303,14 +303,14 @@ public class FileManager extends ResourceManager<File> {
                 index.setStatus(new FileIndex.IndexStatus(FileIndex.IndexStatus.TRANSFORMED));
             }
             params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
-            fileDBAdaptor.update(vcf.getId(), params);
+            fileDBAdaptor.update(vcf.getId(), params, QueryOptions.empty());
 
             // Update variant stats
             Path statsFile = Paths.get(json.getUri().getRawPath());
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
-                VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
-                VariantGlobalStats stats = variantSource.getStats();
-                params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
+                VariantFileMetadata fileMetadata = new ObjectMapper().readValue(is, VariantFileMetadata.class);
+                VariantSetStats stats = fileMetadata.getStats();
+                params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_FILE_STATS, stats));
                 update(vcf.getId(), params, new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
@@ -333,7 +333,7 @@ public class FileManager extends ResourceManager<File> {
         parameters.putIfNotNull(FileDBAdaptor.QueryParams.STATUS_NAME.key(), status);
         parameters.putIfNotNull(FileDBAdaptor.QueryParams.STATUS_MSG.key(), message);
 
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
 
@@ -354,7 +354,7 @@ public class FileManager extends ResourceManager<File> {
             index = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(newStatus), -1, new ObjectMap());
         }
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
-        fileDBAdaptor.update(file.getId(), params);
+        fileDBAdaptor.update(file.getId(), params, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.file, file.getId(), userId, params, null, null);
 
         return new QueryResult<>("Update file index", 0, 1, 1, "", "", Arrays.asList(index));
@@ -402,22 +402,49 @@ public class FileManager extends ResourceManager<File> {
             path = path + "/";
         }
 
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), path);
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options);
-
-        if (fileQueryResult.getNumResults() == 0) {
-            fileQueryResult = create(Long.toString(studyId), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null,
-                    description, status, 0, -1, null, -1, null, null, parents, null, options, sessionId);
-        } else {
-            // The folder already exists
-            authorizationManager.checkFilePermission(studyId, fileQueryResult.first().getId(), userId, FileAclEntry.FilePermissions.VIEW);
-            fileQueryResult.setWarningMsg("Folder was already created");
+        QueryResult<File> fileQueryResult;
+        switch (checkPathExists(path, studyId)) {
+            case FREE_PATH:
+                fileQueryResult = create(Long.toString(studyId), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null,
+                        description, status, 0, -1, null, -1, null, null, parents, null, options, sessionId);
+                break;
+            case DIRECTORY_EXISTS:
+                Query query = new Query()
+                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(FileDBAdaptor.QueryParams.PATH.key(), path);
+                fileQueryResult = fileDBAdaptor.get(query, options, userId);
+                fileQueryResult.setWarningMsg("Folder was already created");
+                break;
+            case FILE_EXISTS:
+            default:
+                throw new CatalogException("A file with the same name of the folder already exists in Catalog");
         }
 
         fileQueryResult.setId("Create folder");
         return fileQueryResult;
+    }
+
+    public QueryResult<File> createFile(String studyStr, String path, String description, boolean parents, String content,
+                                        String sessionId) throws CatalogException {
+        ParamUtils.checkPath(path, "filePath");
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+
+        switch (checkPathExists(path, studyId)) {
+            case FREE_PATH:
+                return create(studyStr, File.Type.FILE, File.Format.PLAIN, File.Bioformat.UNKNOWN, path, null, description,
+                        new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, parents, content, new QueryOptions(),
+                        sessionId);
+            case FILE_EXISTS:
+            case DIRECTORY_EXISTS:
+            default:
+                throw new CatalogException("A file or folder with the same name already exists in the path of Catalog");
+        }
     }
 
     public QueryResult<File> create(String studyStr, File.Type type, File.Format format, File.Bioformat bioformat, String path,
@@ -584,6 +611,13 @@ public class FileManager extends ResourceManager<File> {
         query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, userId);
+
+        if (fileQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> idList = query.getAsLongList("id");
+            for (Long myId : idList) {
+                authorizationManager.checkFilePermission(studyId, myId, userId, FileAclEntry.FilePermissions.VIEW);
+            }
+        }
 
         return fileQueryResult;
     }
@@ -790,8 +824,12 @@ public class FileManager extends ResourceManager<File> {
             MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(sampleIdStr, Long.toString(resource.getStudyId()),
                     sessionId);
 
-            List<Sample> sampleList = new ArrayList<>(resourceIds.getResourceIds().size());
-            for (Long sampleId : resourceIds.getResourceIds()) {
+            // Avoid sample duplicates
+            Set<Long> sampleIdsSet = new LinkedHashSet<>();
+            sampleIdsSet.addAll(resourceIds.getResourceIds());
+
+            List<Sample> sampleList = new ArrayList<>(sampleIdsSet.size());
+            for (Long sampleId : sampleIdsSet) {
                 sampleList.add(new Sample().setId(sampleId));
             }
 //            fileDBAdaptor.addSamplesToFile(fileId, sampleList);
@@ -805,7 +843,7 @@ public class FileManager extends ResourceManager<File> {
         }
 
         String ownerId = studyDBAdaptor.getOwnerId(resource.getStudyId());
-        fileDBAdaptor.update(resource.getResourceId(), parameters);
+        fileDBAdaptor.update(resource.getResourceId(), parameters, QueryOptions.empty());
         QueryResult<File> queryResult = fileDBAdaptor.get(resource.getResourceId(), options);
         auditManager.recordUpdate(AuditRecord.Resource.file, resource.getResourceId(), userId, parameters, null, null);
         userDBAdaptor.updateUserLastModified(ownerId);
@@ -924,7 +962,7 @@ public class FileManager extends ResourceManager<File> {
                     ObjectMap updateParams = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
                     if (file.getType().equals(File.Type.FILE)) {
                         checkCanDelete(Arrays.asList(fileId));
-                        fileDBAdaptor.update(fileId, updateParams);
+                        fileDBAdaptor.update(fileId, updateParams, QueryOptions.empty());
                         Query query = new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                         jobDBAdaptor.extractFilesFromJobs(query, Arrays.asList(fileId));
                     } else {
@@ -938,7 +976,7 @@ public class FileManager extends ResourceManager<File> {
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
                         checkCanDelete(query);
-                        fileDBAdaptor.update(query, updateParams);
+                        fileDBAdaptor.update(query, updateParams, QueryOptions.empty());
 
                         // Remove any reference to the file ids recently sent to the trash bin
                         query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
@@ -1005,13 +1043,19 @@ public class FileManager extends ResourceManager<File> {
         String basePath = Paths.get(file.getPath()).toString();
         String suffixedPath = basePath + suffixName;
         if (file.getType().equals(File.Type.FILE)) {
+            if (fileQueryResult.first().getStatus().getName().equals(File.FileStatus.REMOVED)) {
+                return fileQueryResult;
+            }
+            if (!fileQueryResult.first().getStatus().getName().equals(File.FileStatus.READY)) {
+                throw new CatalogException("Cannot unlink. Unexpected file status: " + fileQueryResult.first().getStatus().getName());
+            }
             logger.debug("Unlinking file {}", file.getUri().toString());
 
             ObjectMap update = new ObjectMap()
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), suffixedPath);
 
-            QueryResult<File> retFile = fileDBAdaptor.update(file.getId(), update);
+            QueryResult<File> retFile = fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
 
             // Remove any reference to the file ids recently sent to the trash bin
             jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId), Arrays.asList(file.getId()));
@@ -1044,12 +1088,16 @@ public class FileManager extends ResourceManager<File> {
                         }
 
                         File file = fileQueryResult.first();
+                        if (!file.getStatus().getName().equals(File.FileStatus.READY)) {
+                            logger.warn("Not unlinking file {}, file status: {}", file.getPath(), file.getStatus().getName());
+                            return FileVisitResult.CONTINUE;
+                        }
 
                         ObjectMap update = new ObjectMap()
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath().replaceFirst(basePath, suffixedPath));
 
-                        fileDBAdaptor.update(file.getId(), update);
+                        fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
 
                         logger.debug("{} unlinked", file.toString());
 
@@ -1109,13 +1157,17 @@ public class FileManager extends ResourceManager<File> {
                             }
 
                             File file = fileQueryResult.first();
+                            if (!file.getStatus().getName().equals(File.FileStatus.READY)) {
+                                logger.warn("Not unlinking folder {}, folder status: {}", file.getPath(), file.getStatus().getName());
+                                return FileVisitResult.CONTINUE;
+                            }
 
                             ObjectMap update = new ObjectMap()
                                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                                     .append(FileDBAdaptor.QueryParams.PATH.key(),
                                             file.getPath().replaceFirst(basePath, suffixedPath));
 
-                            fileDBAdaptor.update(file.getId(), update);
+                            fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
 
                             logger.debug("{} unlinked", dir.toString());
 
@@ -1176,7 +1228,6 @@ public class FileManager extends ResourceManager<File> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
 
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
@@ -1188,13 +1239,8 @@ public class FileManager extends ResourceManager<File> {
         // Add study id to the query
         query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = fileDBAdaptor.groupBy(query, fields, options);
-        }
+        // We do not need to check for permissions when we show the count of files
+        QueryResult queryResult = fileDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
@@ -1518,7 +1564,7 @@ public class FileManager extends ResourceManager<File> {
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
 
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
@@ -1529,7 +1575,7 @@ public class FileManager extends ResourceManager<File> {
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.SIZE.key(), size);
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
 
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
@@ -1540,7 +1586,7 @@ public class FileManager extends ResourceManager<File> {
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(), date);
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
 
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
@@ -1551,7 +1597,7 @@ public class FileManager extends ResourceManager<File> {
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.URI.key(), uri);
-        fileDBAdaptor.update(fileId, parameters);
+        fileDBAdaptor.update(fileId, parameters, QueryOptions.empty());
 
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
@@ -1629,14 +1675,10 @@ public class FileManager extends ResourceManager<File> {
 
         // Obtain the resource ids
         MyResourceIds resourceIds = getIds(fileStr, studyStr, sessionId);
+        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
+
         // Increase the list with the files/folders within the list of ids that correspond with folders
         resourceIds = getRecursiveFilesAndFolders(resourceIds);
-
-        // Check the user has the permissions needed to change permissions over those files
-        for (Long fileId : resourceIds.getResourceIds()) {
-            authorizationManager.checkFilePermission(resourceIds.getStudyId(), fileId, resourceIds.getUser(),
-                    FileAclEntry.FilePermissions.SHARE);
-        }
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -1645,6 +1687,7 @@ public class FileManager extends ResourceManager<File> {
         } else {
             members = Collections.emptyList();
         }
+        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
@@ -1999,7 +2042,7 @@ public class FileManager extends ResourceManager<File> {
             // 1. Set the file status to deleting
             ObjectMap update = new ObjectMap()
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING);
-            fileDBAdaptor.update(fileOrDirectory.getId(), update);
+            fileDBAdaptor.update(fileOrDirectory.getId(), update, QueryOptions.empty());
 
             // 2. Delete the file from disk
             ioManager.deleteFile(fileUri);
@@ -2008,7 +2051,7 @@ public class FileManager extends ResourceManager<File> {
             update = new ObjectMap()
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), fileOrDirectory.getPath() + suffixName);
-            removedFileResult = fileDBAdaptor.update(fileOrDirectory.getId(), update);
+            removedFileResult = fileDBAdaptor.update(fileOrDirectory.getId(), update, QueryOptions.empty());
 
             if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
                 // Remove any reference to the file ids recently sent to the trash bin
@@ -2066,7 +2109,7 @@ public class FileManager extends ResourceManager<File> {
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE)
                                 .append(FileDBAdaptor.QueryParams.URI.key(), newUri)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
-                        fileDBAdaptor.update(file.getId(), update);
+                        fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
                     }
 
                     if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
@@ -2088,7 +2131,8 @@ public class FileManager extends ResourceManager<File> {
                             // Look for the file in catalog
                             Query query = new Query()
                                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                                    .append(FileDBAdaptor.QueryParams.URI.key(), path.toUri().toString());
+                                    .append(FileDBAdaptor.QueryParams.URI.key(), path.toUri().toString())
+                                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
                             QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -2107,7 +2151,7 @@ public class FileManager extends ResourceManager<File> {
 
                             // 1. Set the file status to deleting
                             ObjectMap update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING);
-                            fileDBAdaptor.update(file.getId(), update);
+                            fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
 
                             logger.debug("Deleting file '" + path.toString() + "' from filesystem and Catalog");
 
@@ -2119,7 +2163,7 @@ public class FileManager extends ResourceManager<File> {
                                     .append(FileDBAdaptor.QueryParams.PATH.key(), newPath)
                                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
 
-                            fileDBAdaptor.update(file.getId(), update);
+                            fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
                             logger.debug("DELETE: {} successfully removed from the filesystem and catalog", path.toString());
 
                             if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
@@ -2151,7 +2195,8 @@ public class FileManager extends ResourceManager<File> {
 //                                    }
                                     Query query = new Query()
                                             .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                                            .append(FileDBAdaptor.QueryParams.URI.key(), folderUri);
+                                            .append(FileDBAdaptor.QueryParams.URI.key(), folderUri)
+                                            .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
                                     QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
 
@@ -2176,7 +2221,7 @@ public class FileManager extends ResourceManager<File> {
                                             .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED)
                                             .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
 
-                                    fileDBAdaptor.update(file.getId(), update);
+                                    fileDBAdaptor.update(file.getId(), update, QueryOptions.empty());
                                     logger.debug("REMOVE: {} successfully removed from the filesystem and catalog", dir.toString());
 
                                     if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
@@ -2678,7 +2723,8 @@ public class FileManager extends ResourceManager<File> {
             }
 
             for (Map.Entry<Long, FileIndex> indexEntry : filesToUpdate.entrySet()) {
-                fileDBAdaptor.update(indexEntry.getKey(), new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), indexEntry.getValue()));
+                fileDBAdaptor.update(indexEntry.getKey(), new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), indexEntry.getValue()),
+                        QueryOptions.empty());
             }
         }
     }
@@ -2687,4 +2733,30 @@ public class FileManager extends ResourceManager<File> {
         return studyDBAdaptor.get(studyId, INCLUDE_STUDY_URI).first().getUri();
     }
 
+    private enum CheckPath {
+        FREE_PATH, FILE_EXISTS, DIRECTORY_EXISTS
+    }
+
+    private CheckPath checkPathExists(String path, long studyId) throws CatalogDBException {
+        String myPath = path;
+        if (myPath.endsWith("/")) {
+            myPath = myPath.substring(0, myPath.length() - 1);
+        }
+
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), myPath);
+        QueryResult<Long> fileQueryResult = fileDBAdaptor.count(query);
+
+        if (fileQueryResult.first() > 0) {
+            return CheckPath.FILE_EXISTS;
+        }
+
+        query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), myPath + "/");
+        fileQueryResult = fileDBAdaptor.count(query);
+
+        return fileQueryResult.first() > 0 ? CheckPath.DIRECTORY_EXISTS : CheckPath.FREE_PATH;
+    }
 }

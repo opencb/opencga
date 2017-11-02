@@ -21,9 +21,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -37,9 +39,9 @@ import java.util.*;
 /**
  * Created by pfurio on 03/05/17.
  */
-@Path("/{version}/families")
+@Path("/{apiVersion}/families")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Families (BETA)", position = 8, description = "Methods for working with 'families' endpoint")
+@Api(value = "Families", position = 8, description = "Methods for working with 'families' endpoint")
 public class FamilyWSServer extends OpenCGAWSServer {
 
     private FamilyManager familyManager;
@@ -56,17 +58,29 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response infoFamily(@ApiParam(value = "Comma separated list of family IDs or names", required = true)
-                               @PathParam("families") String familyStr,
-                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                               @QueryParam("study") String studyStr) {
+    public Response infoFamily(
+            @ApiParam(value = "Comma separated list of family IDs or names up to a maximum of 100", required = true) @PathParam("families") String familyStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Family version") @QueryParam("version") Integer version,
+            @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions) {
         try {
-            QueryResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, queryOptions, sessionId);
-            // We parse the query result to create one queryresult per family
-            List<QueryResult<Family>> queryResultList = new ArrayList<>(familyQueryResult.getNumResults());
+            QueryResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, query, queryOptions, sessionId);
+
+            // We make a map of sample id - samples to put in the same queryResult all the samples coming from the same version
+            Map<Long, List<Family>> familyMap = new HashMap<>();
             for (Family family : familyQueryResult.getResult()) {
-                queryResultList.add(new QueryResult<>(family.getName() + "-" + family.getId(), familyQueryResult.getDbTime(), 1, -1,
-                        familyQueryResult.getWarningMsg(), familyQueryResult.getErrorMsg(), Arrays.asList(family)));
+                if (!familyMap.containsKey(family.getId())) {
+                    familyMap.put(family.getId(), new ArrayList<>());
+                }
+                familyMap.get(family.getId()).add(family);
+            }
+
+            List<QueryResult<Family>> queryResultList = new ArrayList<>(familyMap.size());
+            for (Map.Entry<Long, List<Family>> entry : familyMap.entrySet()) {
+                queryResultList.add(new QueryResult<>(String.valueOf(entry.getValue().get(0).getId()), familyQueryResult.getDbTime(),
+                        entry.getValue().size(), -1, familyQueryResult.getWarningMsg(), familyQueryResult.getErrorMsg(),
+                        entry.getValue()));
             }
 
             return createOkResponse(queryResultList);
@@ -77,8 +91,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Multi-study search that allows the user to look for families from from different studies of the same project "
-            + "applying filters.", position = 4, response = Sample[].class)
+    @ApiOperation(value = "Search families", position = 4, response = Family[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -86,20 +99,24 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response search(@ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
-                                   + " alias.") @QueryParam("study") String studyStr,
-                           @ApiParam(value = "Family name") @QueryParam("name") String name,
-                           @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
-                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
-                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
-                           @ApiParam(value = "Comma separated list of disease ids") @QueryParam("diseases") String diseases,
-                           @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-                           @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
-                           @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-                           @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
-                           @ApiParam(value = "Release value") @QueryParam("release") String release,
-                           @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
+    public Response search(
+            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or alias.")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Family name") @QueryParam("name") String name,
+            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
+                @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
+                    int snapshot) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             QueryResult<Family> queryResult;
@@ -116,7 +133,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/create")
-    @ApiOperation(value = "Create family", position = 2, response = Family.class)
+    @ApiOperation(value = "Create family and the individual objects if they do not exist", position = 2, response = Family.class)
     public Response createFamilyPOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
@@ -133,21 +150,59 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{family}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some family attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
-                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                 @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "params", required = true) FamilyPOST parameters) {
+    @ApiOperation(value = "Update some family attributes", position = 6)
+    public Response updateByPost(
+            @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Create a new version of family", defaultValue = "false")
+                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = "Update all the individual references from the family to point to their latest versions",
+                    defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
+            @ApiParam(value = "params", required = true) FamilyPOST parameters) {
         try {
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            queryOptions.put(Constants.REFRESH, refresh);
+            queryOptions.remove("updateIndividualVersion");
+            query.remove("updateIndividualVersion");
 
-            if (params.size() == 0) {
-                throw new CatalogException("Missing parameters to update.");
-            }
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
 
             QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, params, queryOptions,
                     sessionId);
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/groupBy")
+    @ApiOperation(value = "Group families by several fields", position = 10,
+            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
+    public Response groupBy(
+            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Family name") @QueryParam("name") String name,
+            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot) {
+        try {
+            QueryResult result = familyManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -270,7 +325,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{families}/acl")
     @ApiOperation(value = "Returns the acl of the families. If member is provided, it will only return the acl for the member.", position = 18)
-    public Response getAcls(@ApiParam(value = "Comma separated list of family IDs or names", required = true) @PathParam("families")
+    public Response getAcls(@ApiParam(value = "Comma separated list of family IDs or names up to a maximum of 100", required = true) @PathParam("families")
                                     String familyIdsStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
@@ -331,7 +386,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
         public List<CommonModels.AnnotationSetParams> annotationSets;
-        public List<OntologyTerm> ontologyTerms;
+        public List<OntologyTerm> phenotypes;
         public Map<String, Object> attributes;
 
 
@@ -347,8 +402,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
                     mother != null ? new Individual().setName(mother) : null, multiples != null ? multiples.toMultiples() : null, sex,
-                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
+                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
         }
     }
 
@@ -356,7 +411,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
 
-        public List<OntologyTerm> diseases;
+        public List<OntologyTerm> phenotypes;
         public List<IndividualPOST> members;
 
         public Map<String, Object> attributes;
@@ -381,7 +436,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 relatives.add(member.toIndividual(studyStr, studyManager, sessionId));
             }
 
-            return new Family(name, diseases, relatives, description, annotationSetList, attributes);
+            return new Family(name, phenotypes, relatives, description, annotationSetList, attributes);
         }
     }
 

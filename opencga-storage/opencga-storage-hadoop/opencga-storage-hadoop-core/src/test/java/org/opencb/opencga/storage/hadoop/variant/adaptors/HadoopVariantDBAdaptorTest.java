@@ -50,11 +50,13 @@ import static org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements HadoopVariantStorageTest {
 
-
-    private static final boolean FILES = false;
+    private static final boolean FILES = true;
     private static final boolean GROUP_BY = false;
     private static final boolean CT_GENES = false;
     protected static final boolean MISSING_ALLELE = false;
+
+    @ClassRule
+    public static ExternalResource externalResource = new HadoopExternalResource();
 
     @Parameter
     public ObjectMap indexParams;
@@ -115,9 +117,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 //    public Map<String, ?> getOtherStorageConfigurationOptions() {
 //        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
 //    }
-
-    @ClassRule
-    public static ExternalResource externalResource = new HadoopExternalResource();
 
 //    @Override
 //    protected String getHetGT() {
@@ -190,9 +189,9 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
-    public void testGetAllVariants_filter() {
-        Assume.assumeTrue(FILES);
-        super.testGetAllVariants_filter();
+    public void testGetAllVariants_filterNoFile() {
+        thrown.expect(VariantQueryException.class);
+        super.testGetAllVariants_filterNoFile();
     }
 
     @Override
@@ -241,7 +240,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 //            System.out.println(variant.toJson());
             count++;
         }
-        Assert.assertEquals(source.getStats().getNumRecords(), count);
+        Assert.assertEquals(fileMetadata.getStats().getNumVariants(), count);
     }
 
 }
