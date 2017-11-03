@@ -132,9 +132,6 @@ public class AlignmentStorageManager extends StorageManager {
 
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
         checkAlignmentBioformat(studyInfo.getFileInfos());
-//        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
-//        long fileId = fileAndStudyId.getLong("fileId");
-//        Path filePath = getFilePath(fileId, sessionId);
 
         return alignmentStorageManager.getDBAdaptor().get(studyInfo.getFileInfo().getPath(), query, options);
     }

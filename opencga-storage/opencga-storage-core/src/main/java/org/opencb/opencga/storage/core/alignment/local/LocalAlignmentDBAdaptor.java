@@ -110,9 +110,10 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             FileUtils.checkFile(path);
             BamManager alignmentManager = new BamManager(path);
 
-            AlignmentOptions alignmentOptions = parseQueryOptions(options);
             AlignmentFilters<SAMRecord> alignmentFilters = parseQuery(query);
             Region region = parseRegion(query);
+
+            AlignmentOptions alignmentOptions = parseQueryOptions(options);
 
             String queryResultId;
             List<ReadAlignment> readAlignmentList;
@@ -345,10 +346,34 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     private AlignmentFilters<SAMRecord> parseQuery(Query query) {
         AlignmentFilters<SAMRecord> alignmentFilters = SamRecordFilters.create();
+
         int minMapQ = query.getInt(QueryParams.MIN_MAPQ.key());
         if (minMapQ > 0) {
             alignmentFilters.addMappingQualityFilter(minMapQ);
         }
+
+        int numMismatches = query.getInt(QueryParams.MAX_NM.key());
+        if (numMismatches > 0) {
+            alignmentFilters.addMaxNumberMismatchesFilter(numMismatches);
+        }
+
+        int numHits = query.getInt(QueryParams.MAX_NH.key());
+        if (numHits > 0) {
+            alignmentFilters.addMaxNumberHitsFilter(numHits);
+        }
+
+        if (query.getBoolean(QueryParams.PROPERLY_PAIRED.key())) {
+            alignmentFilters.addProperlyPairedFilter();
+        }
+
+        if (query.getBoolean(QueryParams.SKIP_UNMAPPED.key())) {
+            alignmentFilters.addUnmappedFilter();
+        }
+
+        if (query.getBoolean(QueryParams.SKIP_DUPLICATED.key())) {
+            alignmentFilters.addDuplicatedFilter();
+        }
+
         return  alignmentFilters;
     }
 
@@ -359,7 +384,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         if (windowSize > 0) {
             alignmentOptions.setWindowSize(windowSize);
         }
-        int limit = options.getInt(QueryParams.LIMIT.key());
+        int limit = options.getInt(QueryOptions.LIMIT);
         if (limit > 0) {
             alignmentOptions.setLimit(limit);
         }

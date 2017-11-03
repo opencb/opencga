@@ -2,8 +2,13 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
 import java.nio.file.Paths;
 
 /**
@@ -48,8 +53,30 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
         } else {
             setCatalogDatabaseCredentials(options, options.commonOptions);
+
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
                 String sessionId = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
+
+                // Catalog
+                String line;
+                String basePath = appHome + "/migration/v1.3.0/";
+                String catalogCli = "mongo " + configuration.getCatalog().getDatabase().getHosts().get(0) + "/"
+                        + catalogManager.getCatalogDatabase() + " opencga_catalog_v1.2.x_to_1.3.0.js";
+
+                logger.info("Migrating Catalog. Running {} from {}", catalogCli, basePath);
+                ProcessBuilder processBuilder = new ProcessBuilder(catalogCli.split(" "));
+                processBuilder.directory(new File(basePath));
+                Process p = processBuilder.start();
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                while ((line = input.readLine()) != null) {
+                    logger.info(line);
+                }
+                input.close();
+
+
+                // Storage
+
                 new NewVariantMetadataMigration(storageConfiguration, catalogManager, options).migrate(sessionId);
             }
         }
