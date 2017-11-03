@@ -264,7 +264,7 @@ public class VariantStorageManager extends StorageManager {
 
         catalogManager.getSampleManager().getIds(String.join(",", samples), study, sessionId);
 
-        variantStorageEngine.fillGaps(study, samples, config);
+        variantStorageEngine.fillGaps(String.valueOf(studyId), samples, config);
     }
 
     // ---------------------//

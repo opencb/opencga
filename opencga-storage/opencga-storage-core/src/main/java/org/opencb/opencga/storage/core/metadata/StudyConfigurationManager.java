@@ -100,6 +100,9 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {
+        if (StringUtils.isNumeric(studyName)) {
+            return getStudyConfiguration(Integer.valueOf(studyName), options);
+        }
         QueryResult<StudyConfiguration> result;
         final boolean cached = options != null && options.getBoolean(CACHED, false);
         final boolean readOnly = options != null && options.getBoolean(READ_ONLY, false);
