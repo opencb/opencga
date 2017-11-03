@@ -135,26 +135,34 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
+            Map<String, Long> myIds = new HashMap<>();
             for (String clinicalStrAux : clinicalList) {
                 if (StringUtils.isNumeric(clinicalStrAux)) {
                     long clinicalId = getClinicalId(silent, clinicalStrAux);
-                    clinicalIds.add(clinicalId);
+                    myIds.put(clinicalStrAux, clinicalId);
                 }
             }
 
-            Query query = new Query()
-                    .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(ClinicalAnalysisDBAdaptor.QueryParams.NAME.key(), clinicalList);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.ID.key());
-            QueryResult<ClinicalAnalysis> clinicalQueryResult = clinicalDBAdaptor.get(query, queryOptions);
+            if (myIds.size() < clinicalList.size()) {
+                Query query = new Query()
+                        .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(ClinicalAnalysisDBAdaptor.QueryParams.NAME.key(), clinicalList);
 
-            if (clinicalQueryResult.getNumResults() > 0) {
-                clinicalIds.addAll(clinicalQueryResult.getResult().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList()));
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.NAME.key()));
+                QueryResult<ClinicalAnalysis> clinicalQueryResult = clinicalDBAdaptor.get(query, queryOptions);
+
+                if (clinicalQueryResult.getNumResults() > 0) {
+                    myIds.putAll(clinicalQueryResult.getResult().stream()
+                            .collect(Collectors.toMap(ClinicalAnalysis::getName, ClinicalAnalysis::getId)));
+                }
             }
-
-            if (clinicalIds.size() < clinicalList.size() && !silent) {
-                throw new CatalogException("Found only " + clinicalIds.size() + " out of the " + clinicalList.size()
+            if (myIds.size() < clinicalList.size() && !silent) {
+                throw new CatalogException("Found only " + myIds.size() + " out of the " + clinicalList.size()
                         + " clinical analysis looked for in study " + studyStr);
+            }
+            for (String clinicalStrAux : clinicalList) {
+                clinicalIds.add(myIds.getOrDefault(clinicalStrAux, -1L));
             }
         }
 

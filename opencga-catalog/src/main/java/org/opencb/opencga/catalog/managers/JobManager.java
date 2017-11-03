@@ -102,7 +102,21 @@ public class JobManager extends ResourceManager<Job> {
 
             userId = userManager.getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            jobId = smartResolutor(jobStr, studyId);
+
+            Query query = new Query()
+                    .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(JobDBAdaptor.QueryParams.NAME.key(), jobStr);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key());
+            QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, queryOptions);
+            if (jobQueryResult.getNumResults() == 1) {
+                jobId = jobQueryResult.first().getId();
+            } else {
+                if (jobQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Job " + jobStr + " not found in study " + studyStr);
+                } else {
+                    throw new CatalogException("More than one job found under " + jobStr + " in study " + studyStr);
+                }
+            }
         }
 
         return new MyResourceId(userId, studyId, jobId);
@@ -121,26 +135,43 @@ public class JobManager extends ResourceManager<Job> {
         if (jobList.size() == 1 && StringUtils.isNumeric(jobList.get(0))
                 && Long.parseLong(jobList.get(0)) > configuration.getCatalog().getOffset()) {
             jobIds.add(Long.parseLong(jobList.get(0)));
-            jobDBAdaptor.exists(jobIds.get(0));
+            jobDBAdaptor.checkId(jobIds.get(0));
             studyId = jobDBAdaptor.getStudyId(jobIds.get(0));
             userId = userManager.getUserId(sessionId);
         } else {
             userId = userManager.getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-            jobIds = new ArrayList<>(jobList.size());
-            for (String jobStrAux : jobList) {
-                try {
-                    jobIds.add(smartResolutor(jobStrAux, studyId));
-                } catch (CatalogException e) {
-                    if (silent) {
-                        jobIds.add(Long.valueOf("-1"));
-                    } else {
-                        throw e;
-                    }
+            Map<String, Long> myIds = new HashMap<>();
+            for (String jobstrAux : jobList) {
+                if (StringUtils.isNumeric(jobstrAux)) {
+                    long jobId = getJobId(silent, jobstrAux);
+                    myIds.put(jobstrAux, jobId);
                 }
             }
+
+            if (myIds.size() < jobList.size()) {
+                Query query = new Query()
+                        .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(JobDBAdaptor.QueryParams.NAME.key(), jobList);
+
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.NAME.key()));
+                QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, queryOptions);
+
+                if (jobQueryResult.getNumResults() > 0) {
+                    myIds.putAll(jobQueryResult.getResult().stream().collect(Collectors.toMap(Job::getName, Job::getId)));
+                }
+            }
+            if (myIds.size() < jobList.size() && !silent) {
+                throw new CatalogException("Found only " + myIds.size() + " out of the " + jobList.size()
+                        + " jobs looked for in study " + studyStr);
+            }
+            for (String jobstrAux : jobList) {
+                jobIds.add(myIds.getOrDefault(jobstrAux, -1L));
+            }
         }
+
         return new MyResourceIds(userId, studyId, jobIds);
     }
 
@@ -609,28 +640,18 @@ public class JobManager extends ResourceManager<Job> {
 
     // **************************   Private methods  ******************************** //
 
-    private Long smartResolutor(String jobName, long studyId) throws CatalogException {
-        if (StringUtils.isNumeric(jobName)) {
-            long jobId = Long.parseLong(jobName);
-            if (jobId > configuration.getCatalog().getOffset()) {
-                jobDBAdaptor.checkId(jobId);
-                return jobId;
+    private long getJobId(boolean silent, String jobStr) throws CatalogException {
+        long jobId = Long.parseLong(jobStr);
+        try {
+            jobDBAdaptor.checkId(jobId);
+        } catch (CatalogException e) {
+            if (silent) {
+                return -1L;
+            } else {
+                throw e;
             }
         }
-
-        Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(JobDBAdaptor.QueryParams.NAME.key(), jobName);
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key());
-        QueryResult<Job> queryResult = jobDBAdaptor.get(query, qOptions);
-
-        if (queryResult.getNumResults() > 1) {
-            throw new CatalogException("Error: More than one job id found based on " + jobName);
-        } else if (queryResult.getNumResults() == 0) {
-            throw new CatalogException("Error: No job found based on " + jobName);
-        } else {
-            return queryResult.first().getId();
-        }
+        return jobId;
     }
 
 }

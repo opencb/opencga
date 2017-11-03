@@ -143,39 +143,43 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             familyIds.add(Long.parseLong(familyList.get(0)));
             familyDBAdaptor.checkId(familyIds.get(0));
             studyId = familyDBAdaptor.getStudyId(familyIds.get(0));
-            userId = catalogManager.getUserManager().getUserId(sessionId);
+            userId = userManager.getUserId(sessionId);
         } else {
-            userId = catalogManager.getUserManager().getUserId(sessionId);
+            userId = userManager.getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-            for (String familyStrAux : familyList) {
-                if (StringUtils.isNumeric(familyStrAux)) {
-                    long familyId = getFamilyId(silent, familyStrAux);
-                familyIds.add(familyId);
+            Map<String, Long> myIds = new HashMap<>();
+            for (String familiestrAux : familyList) {
+                if (StringUtils.isNumeric(familiestrAux)) {
+                    long familyId = getFamilyId(silent, familiestrAux);
+                    myIds.put(familiestrAux, familyId);
+                }
+            }
+
+            if (myIds.size() < familyList.size()) {
+                Query query = new Query()
+                        .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(FamilyDBAdaptor.QueryParams.NAME.key(), familyList);
+
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.NAME.key()));
+                QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
+
+                if (familyQueryResult.getNumResults() > 0) {
+                    myIds.putAll(familyQueryResult.getResult().stream().collect(Collectors.toMap(Family::getName, Family::getId)));
+                }
+            }
+            if (myIds.size() < familyList.size() && !silent) {
+                throw new CatalogException("Found only " + myIds.size() + " out of the " + familyList.size()
+                        + " families looked for in study " + studyStr);
+            }
+            for (String familiestrAux : familyList) {
+                familyIds.add(myIds.getOrDefault(familiestrAux, -1L));
             }
         }
 
-        Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FamilyDBAdaptor.QueryParams.NAME.key(), familyList);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.ID.key());
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
-
-        if (familyQueryResult.getNumResults() > 0) {
-            familyIds.addAll(familyQueryResult.getResult().stream().map(Family::getId).collect(Collectors.toList()));
-        }
-
-        if (familyIds.size() < familyList.size() && !silent) {
-            throw new CatalogException("Found only " + familyIds.size() + " out of the " + familyList.size()
-                    + " families looked for in study " + studyStr);
-        }
+        return new MyResourceIds(userId, studyId, familyIds);
     }
-
-        return new
-
-    MyResourceIds(userId, studyId, familyIds);
-
-}
 
     private long getFamilyId(boolean silent, String familyStrAux) throws CatalogException {
         long familyId = Long.parseLong(familyStrAux);
