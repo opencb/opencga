@@ -41,13 +41,15 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface AlignmentDBAdaptor {
 
     enum QueryParams implements QueryParam {
-//        SESSION_ID("sid", TEXT, ""),
 //        FILE_ID("fileId", TEXT, ""),
         REGION("region", TEXT, ""),
         WINDOW_SIZE("windowSize", INTEGER, ""),
         MIN_MAPQ("minMapQ", INTEGER, ""),
-        LIMIT("limit", INTEGER, ""),
-        SKIP("skip", INTEGER, ""),
+        MAX_NM("maxNM", INTEGER, ""),
+        MAX_NH("maxNH", INTEGER, ""),
+        PROPERLY_PAIRED("properlyPaired", BOOLEAN, ""),
+        SKIP_UNMAPPED("skipUnmapped", BOOLEAN, ""),
+        SKIP_DUPLICATED("skipDuplicated", BOOLEAN, ""),
         CONTAINED("contained", BOOLEAN, ""),
         MD_FIELD("mdField", BOOLEAN, ""),
         BIN_QUALITIES("binQualities", BOOLEAN, "");

@@ -199,17 +199,17 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             this.queryOptions.put(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), true);
 
             if (request.getPageSize() == null || request.getPageSize() <= 0 || request.getPageSize() > 4000) {
-                this.queryOptions.put(AlignmentDBAdaptor.QueryParams.LIMIT.key(), 1000);
+                this.queryOptions.put(QueryOptions.LIMIT, 1000);
             } else {
-                this.queryOptions.put(AlignmentDBAdaptor.QueryParams.LIMIT.key(), request.getPageSize());
+                this.queryOptions.put(QueryOptions.LIMIT, request.getPageSize());
             }
 
             int page = 0;
             if (request.getPageToken() != null) {
                 try {
                     page = Integer.parseInt(request.getPageToken().toString());
-                    this.queryOptions.put(AlignmentDBAdaptor.QueryParams.SKIP.key(),
-                            this.queryOptions.getInt(AlignmentDBAdaptor.QueryParams.LIMIT.key()) * page);
+                    this.queryOptions.put(QueryOptions.SKIP,
+                            this.queryOptions.getInt(QueryOptions.LIMIT) * page);
                 } catch (Exception e) {
                     return createErrorResponse(method, "Invalid page token \"" + request.getPageToken() + "\"");
                 }
