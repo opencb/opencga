@@ -539,6 +539,9 @@ public class VariantStorageManager extends StorageManager {
         if (queryOptions.containsKey(VariantCatalogQueryUtils.SAMPLE_FILTER.key())) {
             query.put(VariantCatalogQueryUtils.SAMPLE_FILTER.key(), queryOptions.get(VariantCatalogQueryUtils.SAMPLE_FILTER.key()));
         }
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.PROJECT.key())) {
+            query.put(VariantCatalogQueryUtils.PROJECT.key(), queryOptions.get(VariantCatalogQueryUtils.PROJECT.key()));
+        }
 
         return query;
     }

@@ -35,6 +35,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.PROJECT_DESC;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_FILTER_DESC;
 
 /**
@@ -114,8 +115,12 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-p", "--project-id"}, description = "Project to index.", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
         public String project;
+
+        @Deprecated
+        @Parameter(names = {"--project-id"}, description = "Project to index. DEPRECATED: Use --project", arity = 1)
+        public String projectId;
 
     }
 
@@ -408,6 +413,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
         public String output;
+
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
+        public String project;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
@@ -612,8 +620,11 @@ public class VariantCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes")
         public String gene;
 
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
+        public String project;
+
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned")
-        public String studies;
+        public String study;
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
         public String output;

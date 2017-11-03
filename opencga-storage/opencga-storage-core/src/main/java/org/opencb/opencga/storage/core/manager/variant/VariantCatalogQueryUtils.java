@@ -41,8 +41,10 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
 public class VariantCatalogQueryUtils extends CatalogUtils {
 
     public static final String SAMPLE_FILTER_DESC =
-            "Selects some samples using metadata information from Catalog. e.g. age>20;ontologies=hpo:123,hpo:456;name=smith";
+            "Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith";
     public static final QueryParam SAMPLE_FILTER = QueryParam.create("sampleFilter", SAMPLE_FILTER_DESC, QueryParam.Type.TEXT_ARRAY);
+    public static final String PROJECT_DESC = "Project [user@]project where project can be either the id or the alias.";
+    public static final QueryParam PROJECT = QueryParam.create("project", PROJECT_DESC, QueryParam.Type.TEXT_ARRAY);
 //    public static final QueryParam SAMPLE_FILTER_GENOTYPE = QueryParam.create("sampleFilterGenotype", "", QueryParam.Type.TEXT_ARRAY);
 
     public VariantCatalogQueryUtils(CatalogManager catalogManager) {

@@ -18,9 +18,13 @@ package org.opencb.opencga.storage.core.manager;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
@@ -43,7 +47,7 @@ public class CatalogUtils {
     }
 
     /**
-     * @see {@link org.opencb.opencga.catalog.db.mongodb.MongoDBUtils#ANNOTATION_PATTERN}
+     * @see org.opencb.opencga.catalog.db.mongodb.MongoDBUtils#ANNOTATION_PATTERN
      */
     public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([a-zA-Z\\\\.]+)([\\^=<>~!$]+.*)$");
 
@@ -182,6 +186,15 @@ public class CatalogUtils {
      * @throws CatalogException if there is a catalog error or the study is missing
      */
     public long getAnyStudyId(Query query, String sessionId) throws CatalogException {
+        if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
+            String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
+            QueryResult<Study> queryResult = catalogManager.getStudyManager()
+                    .get(project, new Query(), new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId);
+            if (queryResult.getResult().isEmpty()) {
+                throw new CatalogException("No studies found for project \"" + project + '"');
+            }
+            return queryResult.first().getId();
+        }
         Long id = getAnyStudyId(query, VariantQueryParam.STUDIES, sessionId);
         if (id == null) {
             id = getAnyStudyId(query, VariantQueryParam.RETURNED_STUDIES, sessionId);

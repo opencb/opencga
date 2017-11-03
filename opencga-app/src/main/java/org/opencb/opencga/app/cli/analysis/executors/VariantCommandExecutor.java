@@ -150,8 +150,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantCommandOptions.VariantQueryCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
         queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
-        queryCliOptions.study = exportCliOptions.studies;
-        queryCliOptions.genericVariantQueryOptions.returnStudy = exportCliOptions.studies;
+        queryCliOptions.project = exportCliOptions.project;
+        queryCliOptions.study = exportCliOptions.study;
+        queryCliOptions.genericVariantQueryOptions.returnStudy = exportCliOptions.study;
         queryCliOptions.numericOptions.limit = exportCliOptions.numericOptions.limit;
 //        queryCliOptions.sort = true;
         queryCliOptions.numericOptions.skip = exportCliOptions.numericOptions.skip;
@@ -278,8 +279,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         String study = cliOptions.study;
-        if (StringUtils.isEmpty(study) && StringUtils.isNotEmpty(cliOptions.project)) {
-            QueryResult<Study> result = catalogManager.getStudyManager().get(cliOptions.project, new Query(), new QueryOptions(), sessionId);
+        String project = StringUtils.isEmpty(cliOptions.project) ? cliOptions.projectId : cliOptions.project;
+        if (StringUtils.isEmpty(study) && StringUtils.isNotEmpty(project)) {
+            QueryResult<Study> result = catalogManager.getStudyManager().get(project, new Query(), new QueryOptions(), sessionId);
             if (!result.getResult().isEmpty()) {
                 study = String.valueOf(result.first().getId());
             }

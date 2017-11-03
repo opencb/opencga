@@ -59,6 +59,7 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
                 queryVariantsOptions.numericOptions.count, of);
 
         addParam(query, VariantCatalogQueryUtils.SAMPLE_FILTER, queryVariantsOptions.sampleFilter);
+        addParam(query, VariantCatalogQueryUtils.PROJECT, queryVariantsOptions.project);
 
         return query;
     }
