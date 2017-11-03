@@ -276,16 +276,33 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             userId = userManager.getUserId(sessionId);
             studyId = studyManager.getId(userId, studyStr);
 
-            Query query = new Query()
-                    .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(CohortDBAdaptor.QueryParams.NAME.key(), cohortList);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ID.key());
-            QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
-            if (cohortQueryResult.getNumResults() == cohortList.size() || silent) {
-                cohortIds = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
-            } else {
-                throw new CatalogException("Found only " + cohortQueryResult.getNumResults() + " out of the " + cohortList.size()
+            Map<String, Long> myIds = new HashMap<>();
+            for (String cohortStrAux : cohortList) {
+                if (StringUtils.isNumeric(cohortStrAux)) {
+                    long cohortId = getCohortId(silent, cohortStrAux);
+                    myIds.put(cohortStrAux, cohortId);
+                }
+            }
+
+            if (myIds.size() < cohortList.size()) {
+                Query query = new Query()
+                        .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(CohortDBAdaptor.QueryParams.NAME.key(), cohortList);
+
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key()));
+                QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
+
+                if (cohortQueryResult.getNumResults() > 0) {
+                    myIds.putAll(cohortQueryResult.getResult().stream().collect(Collectors.toMap(Cohort::getName, Cohort::getId)));
+                }
+            }
+            if (myIds.size() < cohortList.size() && !silent) {
+                throw new CatalogException("Found only " + myIds.size() + " out of the " + cohortList.size()
                         + " cohorts looked for in study " + studyStr);
+            }
+            for (String cohortStrAux : cohortList) {
+                cohortIds.add(myIds.getOrDefault(cohortStrAux, -1L));
             }
         }
 
@@ -791,6 +808,20 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
+    }
+
+    private long getCohortId(boolean silent, String cohortStr) throws CatalogException {
+        long cohortId = Long.parseLong(cohortStr);
+        try {
+            cohortDBAdaptor.checkId(cohortId);
+        } catch (CatalogException e) {
+            if (silent) {
+                return -1L;
+            } else {
+                throw e;
+            }
+        }
+        return cohortId;
     }
 
 }

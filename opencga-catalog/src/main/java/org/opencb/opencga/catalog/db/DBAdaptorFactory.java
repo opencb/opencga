@@ -60,6 +60,8 @@ public interface DBAdaptorFactory {
      */
     void createIndexes() throws CatalogDBException;
 
+    String getCatalogDatabase(String prefix);
+
     ObjectMap getDatabaseStatus();
 
     /**

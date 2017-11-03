@@ -243,26 +243,33 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             userId = userManager.getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
+            Map<String, Long> myIds = new HashMap<>();
             for (String sampleStrAux : sampleList) {
                 if (StringUtils.isNumeric(sampleStrAux)) {
                     long sampleId = getSampleId(silent, sampleStrAux);
-                    sampleIds.add(sampleId);
+                    myIds.put(sampleStrAux, sampleId);
                 }
             }
 
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(SampleDBAdaptor.QueryParams.NAME.key(), sampleList);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
-            QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+            if (myIds.size() < sampleList.size()) {
+                Query query = new Query()
+                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(SampleDBAdaptor.QueryParams.NAME.key(), sampleList);
 
-            if (sampleQueryResult.getNumResults() > 0) {
-                sampleIds.addAll(sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.NAME.key()));
+                QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+
+                if (sampleQueryResult.getNumResults() > 0) {
+                    myIds.putAll(sampleQueryResult.getResult().stream().collect(Collectors.toMap(Sample::getName, Sample::getId)));
+                }
             }
-
-            if (sampleIds.size() < sampleList.size() && !silent) {
-                throw new CatalogException("Found only " + sampleIds.size() + " out of the " + sampleList.size()
+            if (myIds.size() < sampleList.size() && !silent) {
+                throw new CatalogException("Found only " + myIds.size() + " out of the " + sampleList.size()
                         + " samples looked for in study " + studyStr);
+            }
+            for (String sampleStrAux : sampleList) {
+                sampleIds.add(myIds.getOrDefault(sampleStrAux, -1L));
             }
         }
 
