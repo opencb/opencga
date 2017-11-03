@@ -183,7 +183,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
 
         Map<Long, String> studyIds = getStudyIds(sessionId);
-        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds);
+        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds, clientConfiguration);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 

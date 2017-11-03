@@ -23,6 +23,7 @@ import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
