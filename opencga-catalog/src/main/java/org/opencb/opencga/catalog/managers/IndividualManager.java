@@ -372,16 +372,34 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             userId = userManager.getUserId(sessionId);
             studyId = studyManager.getId(userId, studyStr);
 
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), individualList);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
-            if (individualQueryResult.getNumResults() == individualList.size() || silent) {
-                individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
-            } else {
-                throw new CatalogException("Found only " + individualQueryResult.getNumResults() + " out of the " + individualList.size()
+            Map<String, Long> myIds = new HashMap<>();
+            for (String individualstrAux : individualList) {
+                if (StringUtils.isNumeric(individualstrAux)) {
+                    long individualId = getIndividualId(silent, individualstrAux);
+                    myIds.put(individualstrAux, individualId);
+                }
+            }
+
+            if (myIds.size() < individualList.size()) {
+                Query query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), individualList);
+
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.NAME.key()));
+                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+
+                if (individualQueryResult.getNumResults() > 0) {
+                    myIds.putAll(individualQueryResult.getResult().stream()
+                            .collect(Collectors.toMap(Individual::getName, Individual::getId)));
+                }
+            }
+            if (myIds.size() < individualList.size() && !silent) {
+                throw new CatalogException("Found only " + myIds.size() + " out of the " + individualList.size()
                         + " individuals looked for in study " + studyStr);
+            }
+            for (String individualstrAux : individualList) {
+                individualIds.add(myIds.getOrDefault(individualstrAux, -1L));
             }
         }
 
@@ -1069,6 +1087,20 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         if (errorMessages.size() > 0) {
             individualQueryResult.setWarningMsg(StringUtils.join(errorMessages, "\n"));
         }
+    }
+
+    private long getIndividualId(boolean silent, String individualStr) throws CatalogException {
+        long individualId = Long.parseLong(individualStr);
+        try {
+            individualDBAdaptor.checkId(individualId);
+        } catch (CatalogException e) {
+            if (silent) {
+                return -1L;
+            } else {
+                throw e;
+            }
+        }
+        return individualId;
     }
 
 }

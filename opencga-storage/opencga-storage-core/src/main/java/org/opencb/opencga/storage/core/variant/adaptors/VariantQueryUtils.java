@@ -368,9 +368,21 @@ public class VariantQueryUtils {
     private static Map<Integer, List<Integer>> getReturnedFiles(
             Query query, Collection<Integer> studyIds, Set<VariantField> fields, Function<Integer, StudyConfiguration> studyProvider) {
 
-        List<String> sampleNames = query.getAsStringList(VariantQueryParam.SAMPLES.key()).stream()
-                .filter(s -> !isNegated(s))
-                .collect(Collectors.toList());
+        List<String> sampleNames = Collections.emptyList();
+        if (isValidParam(query, SAMPLES)) {
+            String value = query.getString(SAMPLES.key());
+            sampleNames = splitValue(value, checkOperator(value))
+                    .stream()
+                    .filter((v) -> !isNegated(v)) // Discard negated
+                    .collect(Collectors.toList());
+        }
+        if (sampleNames.isEmpty() && isValidParam(query, RETURNED_SAMPLES)) {
+            String value = query.getString(RETURNED_SAMPLES.key());
+            sampleNames = splitValue(value, checkOperator(value))
+                    .stream()
+                    .filter((v) -> !isNegated(v)) // Discard negated
+                    .collect(Collectors.toList());
+        }
         List<String> returnedFilesList = getReturnedFilesList(query, fields);
 
         Map<Integer, List<Integer>> files = new HashMap<>(studyIds.size());
@@ -521,15 +533,20 @@ public class VariantQueryUtils {
             Function<Integer, StudyConfiguration> studyProvider,
             BiFunction<StudyConfiguration, String, T> getSample, Function<StudyConfiguration, T> getStudyId) {
 
-        List<String> files;
+        List<String> files = Collections.emptyList();
         if (isValidParam(query, FILES)) {
             String value = query.getString(FILES.key());
             files = splitValue(value, checkOperator(value))
                     .stream()
                     .filter((v) -> !isNegated(v)) // Discard negated
                     .collect(Collectors.toList());
-        } else {
-            files = Collections.emptyList();
+        }
+        if (files.isEmpty() && isValidParam(query, RETURNED_FILES)) {
+            String value = query.getString(FILES.key());
+            files = splitValue(value, checkOperator(value))
+                    .stream()
+                    .filter((v) -> !isNegated(v)) // Discard negated
+                    .collect(Collectors.toList());
         }
 
         List<String> returnedSamples = getReturnedSamplesList(query, options);

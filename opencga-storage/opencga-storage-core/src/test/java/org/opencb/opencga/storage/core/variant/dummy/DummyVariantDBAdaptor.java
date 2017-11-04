@@ -73,6 +73,10 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+        logger.info("Query " + query.toJson());
+        logger.info("QueryOptions " + options.toJson());
+        logger.info("dbName " + dbName);
+
         List<Variant> variants = new ArrayList<>();
         iterator(query, options).forEachRemaining(variants::add);
 

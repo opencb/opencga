@@ -47,6 +47,10 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseObject;
  */
 public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor {
 
+    private static final String OLD_ID = "_id";
+    public static final Bson METADATA_QUERY = Filters.or(
+            Filters.eq(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID),
+            Filters.eq(OLD_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID));
     private final MongoDBCollection metaCollection;
     private static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
@@ -61,7 +65,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     public long getNewAutoIncrementId(String field) { //, MongoDBCollection metaCollection
-        Bson query = Filters.eq(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        Bson query = METADATA_QUERY;
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1L);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
@@ -158,7 +162,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         Metadata metadata = new Metadata().setIdCounter(configuration.getCatalog().getOffset()).setVersion(VERSION);
 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
-        metadataObject.put(PRIVATE_ID, "METADATA");
+        metadataObject.put(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document adminDocument = getMongoDBDocument(admin, "Admin");
         metadataObject.put("admin", adminDocument);
 
@@ -167,28 +171,28 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
     @Override
     public String getAdminPassword() throws CatalogDBException {
-        Bson query = Filters.eq(PRIVATE_ID, "METADATA");
+        Bson query = METADATA_QUERY;
         QueryResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));
         return parseObject((Document) queryResult.first().get("admin"), Admin.class).getPassword();
     }
 
     @Override
     public String readSecretKey() throws CatalogDBException {
-        Bson query = Filters.eq(PRIVATE_ID, "METADATA");
+        Bson query = METADATA_QUERY;
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
         return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
     }
 
     @Override
     public String readAlgorithm() throws CatalogDBException {
-        Bson query = Filters.eq(PRIVATE_ID, "METADATA");
+        Bson query = METADATA_QUERY;
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
         return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
     }
 
     @Override
     public void updateAdmin(Admin admin) throws CatalogDBException {
-        Bson query = Filters.eq(PRIVATE_ID, "METADATA");
+        Bson query = METADATA_QUERY;
 
         Document adminDocument = new Document();
         if (admin.getSecretKey() != null) {
