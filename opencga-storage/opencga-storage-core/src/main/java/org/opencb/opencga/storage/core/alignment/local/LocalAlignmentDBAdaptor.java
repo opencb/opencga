@@ -104,31 +104,24 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     @Override
     public QueryResult<ReadAlignment> get(Path path, Query query, QueryOptions options) {
         try {
-            StopWatch watch = new StopWatch();
-            watch.start();
-
             FileUtils.checkFile(path);
-            BamManager alignmentManager = new BamManager(path);
 
-            AlignmentFilters<SAMRecord> alignmentFilters = parseQuery(query);
+            StopWatch watch = StopWatch.createStarted();
+
+            BamManager bamManager = new BamManager(path);
             Region region = parseRegion(query);
-
+            AlignmentFilters<SAMRecord> alignmentFilters = parseQuery(query);
             AlignmentOptions alignmentOptions = parseQueryOptions(options);
 
             String queryResultId;
             List<ReadAlignment> readAlignmentList;
             if (region != null) {
-                readAlignmentList = alignmentManager.query(region, alignmentFilters, alignmentOptions, ReadAlignment.class);
+                readAlignmentList = bamManager.query(region, alignmentFilters, alignmentOptions, ReadAlignment.class);
                 queryResultId = region.toString();
             } else {
-                readAlignmentList = alignmentManager.query(alignmentFilters, alignmentOptions, ReadAlignment.class);
+                readAlignmentList = bamManager.query(alignmentFilters, alignmentOptions, ReadAlignment.class);
                 queryResultId = "Get alignments";
             }
-//            List<String> stringFormatList = new ArrayList<>(readAlignmentList.size());
-//            for (Reads.ReadAlignment readAlignment : readAlignmentList) {
-//                stringFormatList.add(readAlignment());
-//            }
-//            List<JsonFormat> list = alignmentManager.query(region, alignmentOptions, alignmentFilters, Reads.ReadAlignment.class);
             watch.stop();
             return new QueryResult(queryResultId, ((int) watch.getTime()), readAlignmentList.size(), readAlignmentList.size(), null, null,
                     readAlignmentList);
@@ -161,25 +154,25 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 options = new QueryOptions();
             }
 
-            BamManager alignmentManager = new BamManager(path);
+            BamManager bamManager = new BamManager(path);
             AlignmentFilters<SAMRecord> alignmentFilters = parseQuery(query);
             AlignmentOptions alignmentOptions = parseQueryOptions(options);
 
             Region region = parseRegion(query);
             if (region != null) {
                 if (Reads.ReadAlignment.class == clazz) {
-                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(region,
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(bamManager.iterator(region,
                             alignmentFilters, alignmentOptions, Reads.ReadAlignment.class));
                 } else if (SAMRecord.class == clazz) {
-                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(region,
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(bamManager.iterator(region,
                             alignmentFilters, alignmentOptions, SAMRecord.class));
                 }
             } else {
                 if (Reads.ReadAlignment.class == clazz) {
-                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(alignmentFilters,
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(bamManager.iterator(alignmentFilters,
                             alignmentOptions, Reads.ReadAlignment.class));
                 } else if (SAMRecord.class == clazz) {
-                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(alignmentFilters,
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(bamManager.iterator(alignmentFilters,
                             alignmentOptions, SAMRecord.class));
                 }
             }
@@ -347,33 +340,35 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     private AlignmentFilters<SAMRecord> parseQuery(Query query) {
         AlignmentFilters<SAMRecord> alignmentFilters = SamRecordFilters.create();
 
-        int minMapQ = query.getInt(QueryParams.MIN_MAPQ.key());
-        if (minMapQ > 0) {
-            alignmentFilters.addMappingQualityFilter(minMapQ);
-        }
+        if (query != null) {
+            int minMapQ = query.getInt(QueryParams.MIN_MAPQ.key());
+            if (minMapQ > 0) {
+                alignmentFilters.addMappingQualityFilter(minMapQ);
+            }
 
-        int numMismatches = query.getInt(QueryParams.MAX_NM.key());
-        if (numMismatches > 0) {
-            alignmentFilters.addMaxNumberMismatchesFilter(numMismatches);
-        }
+            int numMismatches = query.getInt(QueryParams.MAX_NM.key());
+            if (numMismatches > 0) {
+                alignmentFilters.addMaxNumberMismatchesFilter(numMismatches);
+            }
 
-        int numHits = query.getInt(QueryParams.MAX_NH.key());
-        if (numHits > 0) {
-            alignmentFilters.addMaxNumberHitsFilter(numHits);
-        }
+            int numHits = query.getInt(QueryParams.MAX_NH.key());
+            if (numHits > 0) {
+                alignmentFilters.addMaxNumberHitsFilter(numHits);
+            }
 
-        if (query.getBoolean(QueryParams.PROPERLY_PAIRED.key())) {
-            alignmentFilters.addProperlyPairedFilter();
-        }
+            if (query.getBoolean(QueryParams.PROPERLY_PAIRED.key())) {
+                alignmentFilters.addProperlyPairedFilter();
+            }
 
-        if (query.getBoolean(QueryParams.SKIP_UNMAPPED.key())) {
-            alignmentFilters.addUnmappedFilter();
-        }
+            if (query.getBoolean(QueryParams.SKIP_UNMAPPED.key())) {
+                alignmentFilters.addUnmappedFilter();
+            }
 
-        if (query.getBoolean(QueryParams.SKIP_DUPLICATED.key())) {
-            alignmentFilters.addDuplicatedFilter();
+            if (query.getBoolean(QueryParams.SKIP_DUPLICATED.key())) {
+                alignmentFilters.addDuplicatedFilter();
+            }
         }
-
+        
         return  alignmentFilters;
     }
 

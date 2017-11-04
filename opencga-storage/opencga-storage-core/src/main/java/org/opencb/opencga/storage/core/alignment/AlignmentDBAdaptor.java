@@ -33,17 +33,12 @@ import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
-/**
- * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
- *
- *     TODO: Implement {@link AutoCloseable}
- */
+
 public interface AlignmentDBAdaptor {
 
     enum QueryParams implements QueryParam {
 //        FILE_ID("fileId", TEXT, ""),
         REGION("region", TEXT, ""),
-        WINDOW_SIZE("windowSize", INTEGER, ""),
         MIN_MAPQ("minMapQ", INTEGER, ""),
         MAX_NM("maxNM", INTEGER, ""),
         MAX_NH("maxNH", INTEGER, ""),
@@ -52,17 +47,15 @@ public interface AlignmentDBAdaptor {
         SKIP_DUPLICATED("skipDuplicated", BOOLEAN, ""),
         CONTAINED("contained", BOOLEAN, ""),
         MD_FIELD("mdField", BOOLEAN, ""),
-        BIN_QUALITIES("binQualities", BOOLEAN, "");
+        BIN_QUALITIES("binQualities", BOOLEAN, ""),
+        WINDOW_SIZE("windowSize", INTEGER, "");
 
-        // Fixme: Index attributes
         private static Map<String, QueryParams> map = new HashMap<>();
         static {
             for (QueryParams param : QueryParams.values()) {
                 map.put(param.key(), param);
             }
         }
-
-        // TOCHECK: Pedro. Add annotation support?
 
         private final String key;
         private Type type;
@@ -111,13 +104,6 @@ public interface AlignmentDBAdaptor {
     String QO_COVERAGE_CHUNK_SIZE = "chunk_size";
 
     QueryResult getAllAlignmentsByRegion(List<Region> regions, QueryOptions options);
-
-//    List<QueryResult> getAllAlignmentsByRegionList(List<Region> region, QueryOptions options);
-
-
-//    QueryResult getAllAlignmentBlocksByRegion(Region region, QueryOptions options);
-//
-//    List<QueryResult> getAllAlignmentBlocksByRegionList(List<Region> region, QueryOptions options);
 
     QueryResult getAllAlignmentsByGene(String gene, QueryOptions options);
 

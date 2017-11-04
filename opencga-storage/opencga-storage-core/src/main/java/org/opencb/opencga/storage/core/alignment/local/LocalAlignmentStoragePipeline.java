@@ -57,7 +57,7 @@ public class LocalAlignmentStoragePipeline implements StoragePipeline {
     }
 
     @Override
-    public URI extract(URI input, URI ouput) throws StorageEngineException {
+    public URI extract(URI input, URI output) throws StorageEngineException {
         return input;
     }
 

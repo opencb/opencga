@@ -57,15 +57,15 @@ import java.util.Map;
  */
 public class AlignmentStorageManager extends StorageManager {
 
-    private AlignmentStorageEngine alignmentStorageManager;
+    private AlignmentStorageEngine alignmentStorageEngine;
 
     private static final String GLOBAL_STATS = "globalStats";
 
     public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         super(catalogManager, storageEngineFactory);
 
-        // TODO: Create this alignmentStorageManager by reflection
-        this.alignmentStorageManager = new LocalAlignmentStorageEngine();
+        // TODO: Create this alignmentStorageEngine by reflection
+        this.alignmentStorageEngine = new LocalAlignmentStorageEngine();
     }
 
 
@@ -87,7 +87,7 @@ public class AlignmentStorageManager extends StorageManager {
         // TODO: Check if index is already created and link bai file
         logger.info("Creating index...");
         watch.start();
-        alignmentStorageManager
+        alignmentStorageEngine
                 .index(fileUris, studyInfo.getWorkspace().toUri(), false, options.getBoolean("transform"), options.getBoolean("load"));
         watch.stop();
         logger.info("Indexing took {} seconds", watch.getTime() / 1000.0);
@@ -96,8 +96,7 @@ public class AlignmentStorageManager extends StorageManager {
         logger.info("Calculating the stats...");
         watch.reset();
         watch.start();
-        QueryResult<AlignmentGlobalStats> stats = alignmentStorageManager.getDBAdaptor()
-                .stats(fileInfo.getPath(), studyInfo.getWorkspace());
+        QueryResult<AlignmentGlobalStats> stats = alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPath(), studyInfo.getWorkspace());
 
         if (stats != null && stats.getNumResults() == 1) {
             // Store the stats in catalog
@@ -120,7 +119,7 @@ public class AlignmentStorageManager extends StorageManager {
         logger.info("Calculating the coverage...");
         watch.reset();
         watch.start();
-        alignmentStorageManager.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace());
+        alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace());
         watch.stop();
         logger.info("Coverage calculation took {} seconds", watch.getTime() / 1000.0);
     }
@@ -133,7 +132,7 @@ public class AlignmentStorageManager extends StorageManager {
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
         checkAlignmentBioformat(studyInfo.getFileInfos());
 
-        return alignmentStorageManager.getDBAdaptor().get(studyInfo.getFileInfo().getPath(), query, options);
+        return alignmentStorageEngine.getDBAdaptor().get(studyInfo.getFileInfo().getPath(), query, options);
     }
 
     public AlignmentIterator<Reads.ReadAlignment> iterator(String studyId, String fileId, Query query, QueryOptions options,
@@ -152,7 +151,7 @@ public class AlignmentStorageManager extends StorageManager {
 //        long fileId = fileAndStudyId.getLong("fileId");
 //        Path filePath = getFilePath(fileId, sessionId);
 
-        return alignmentStorageManager.getDBAdaptor().iterator(studyInfo.getFileInfo().getPath(), query, options, clazz);
+        return alignmentStorageEngine.getDBAdaptor().iterator(studyInfo.getFileInfo().getPath(), query, options, clazz);
 //        return alignmentDBAdaptor.iterator((Path) fileInfo.get("filePath"), query, options, clazz);
     }
 
@@ -191,7 +190,7 @@ public class AlignmentStorageManager extends StorageManager {
         logger.info("Calculating the stats...");
 //        Path filePath = getFilePath(fileId, sessionId);
 //        Path workspace = getWorkspace(studyId, sessionId);
-        return alignmentStorageManager.getDBAdaptor().stats(fileInfo.getPath(), studyInfo.getWorkspace(), query, options);
+        return alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPath(), studyInfo.getWorkspace(), query, options);
 
 //        return alignmentDBAdaptor.stats((Path) fileInfo.get("filePath"), (Path) fileInfo.get("workspace"), query, options);
     }
@@ -210,7 +209,7 @@ public class AlignmentStorageManager extends StorageManager {
 //        Path filePath = getFilePath(fileId, sessionId);
 //        Path workspace = getWorkspace(studyId, sessionId);
 
-        return alignmentStorageManager.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace(), query, options);
+        return alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace(), query, options);
 //        return alignmentDBAdaptor.coverage((Path) fileInfo.get("filePath"), (Path) fileInfo.get("workspace"), query, options);
     }
 
@@ -225,7 +224,7 @@ public class AlignmentStorageManager extends StorageManager {
 //        long fileId = fileAndStudyId.getLong("fileId");
 //        Path filePath = getFilePath(fileId, sessionId);
 
-        return alignmentStorageManager.getDBAdaptor().count(studyInfo.getFileInfo().getPath(), query, options);
+        return alignmentStorageEngine.getDBAdaptor().count(studyInfo.getFileInfo().getPath(), query, options);
     }
 
     private void checkAlignmentBioformat(List<FileInfo> fileInfo) throws CatalogException {
