@@ -361,7 +361,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId;
         long studyId;
         List<Long> individualIds = new ArrayList<>();
-        System.out.println();
 
         if (individualList.size() == 1 && StringUtils.isNumeric(individualList.get(0))
                 && Long.parseLong(individualList.get(0)) > configuration.getCatalog().getOffset()) {
