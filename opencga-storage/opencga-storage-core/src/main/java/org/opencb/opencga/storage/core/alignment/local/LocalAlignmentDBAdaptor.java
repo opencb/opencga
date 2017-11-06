@@ -368,8 +368,8 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 alignmentFilters.addDuplicatedFilter();
             }
         }
-        
-        return  alignmentFilters;
+
+        return alignmentFilters;
     }
 
     private AlignmentOptions parseQueryOptions(QueryOptions options) {
