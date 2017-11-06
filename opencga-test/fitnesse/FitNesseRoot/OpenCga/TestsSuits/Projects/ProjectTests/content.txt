@@ -69,6 +69,12 @@
 | GET | /v1/projects/$projectId/info?sid=$sessionId |200|  Content-Type: application/json ||
 | let | releaseNumber | js | response.jsonbody.response[0].result[0].currentRelease||
 
+!3 Create Study 
+!|Table: Rest Fixture | $baseURL |
+| setBody |{  "name": "dummyStudyName", "alias": "dummYStudyAlias", "type": "CASE_CONTROL"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/create?sid=$sessionId&projectId=$projectId |200|  Content-Type: application/json ||
+
 !3 Increment Project Release (Suite Set UP)
 !|Table: Rest Fixture | $baseURL |
 | setHeader|Content-Type:application/json|

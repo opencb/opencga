@@ -26,6 +26,10 @@
 !|Table: Rest Fixture  | $baseURL |
 | GET | /v1/variableset/$gVariableSetId/delete?sid=$sessionId&projectId=$projectId |200| Content-Type : application/json|jsonbody.error === ''|
 
+#!3 Delete Project
+#!|Table: Rest Fixture  | $baseURL |
+#| GET | /v1/projects/$projectId/delete?sid=$sessionId |200| Content-Type : application/json|jsonbody.error === 'pending'|
+
 #uncomment after delete is implemented
 #!3 Delete User
 #!|Table: Rest Fixture | $baseURL  |
