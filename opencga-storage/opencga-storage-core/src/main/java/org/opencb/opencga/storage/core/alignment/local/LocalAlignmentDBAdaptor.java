@@ -17,9 +17,7 @@
 package org.opencb.opencga.storage.core.alignment.local;
 
 import ga4gh.Reads;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
 import org.apache.commons.lang3.time.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
@@ -28,11 +26,9 @@ import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentOptions;
 import org.opencb.biodata.tools.alignment.BamManager;
-import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.filters.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.filters.SamRecordFilters;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
-import org.opencb.biodata.tools.commons.ChunkFrequencyManager;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -42,10 +38,9 @@ import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.SamRecordAlignmentIterator;
 
-import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -255,78 +250,88 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public QueryResult<RegionCoverage> coverage(Path path, Path workspace) throws Exception {
-        QueryOptions options = new QueryOptions();
-        options.put(QueryParams.WINDOW_SIZE.key(), DEFAULT_WINDOW_SIZE);
-        options.put(QueryParams.CONTAINED.key(), false);
-        return coverage(path, workspace, new Query(), options);
-    }
+    public QueryResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception {
+//        QueryOptions options = new QueryOptions();
+//        options.put(QueryParams.WINDOW_SIZE.key(), DEFAULT_WINDOW_SIZE);
+//        options.put(QueryParams.CONTAINED.key(), false);
+//        return coverage(path, workspace, new Query(), options);
 
-    @Override
-    public QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception {
-        StopWatch watch = new StopWatch();
-        watch.start();
-
-        FileUtils.checkFile(path);
-
-        if (query == null) {
-            query = new Query();
-        }
-
-        if (options == null) {
-            options = new QueryOptions();
-        }
-
-        AlignmentOptions alignmentOptions = parseQueryOptions(options);
-        AlignmentFilters alignmentFilters = parseQuery(query);
-        Region region = parseRegion(query);
-
-        String queryResultId;
-        int windowSize;
-        RegionCoverage coverage = null;
-
-        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
-        if (!coverageDBPath.toFile().exists()
-                && (region == null || (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE))) {
-            createDBCoverage(path, workspace);
-        }
-
-        ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath, chunkSize);
-        ChunkFrequencyManager.ChunkFrequency chunkFrequency = null;
-        if (region != null) {
-            if (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE) {
-                // if region is too big then we calculate the mean. We need to protect this code!
-                // and query SQLite database
-                windowSize = options.getInt(QueryParams.WINDOW_SIZE.key(), DEFAULT_WINDOW_SIZE);
-                chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
-            } else {
-                // if region is small enough we calculate all coverage for all positions dynamically
-                // calling the biodata alignment manager
-                BamManager alignmentManager = new BamManager(path);
-                coverage = alignmentManager.coverage(region, alignmentFilters, alignmentOptions);
-            }
-            queryResultId = region.toString();
+        StopWatch watch = StopWatch.createStarted();
+        BamManager bamManager = new BamManager(path);
+        RegionCoverage coverage;
+        if (path.toFile().getName().endsWith(".bam")) {
+            coverage = bamManager.coverage(region, windowSize);
         } else {
-            // if no region is given we set up the windowSize to default value,
-            // we should return a few thousands mean values
-            // and query SQLite database
-            windowSize = DEFAULT_WINDOW_SIZE;
-            SAMFileHeader fileHeader = BamUtils.getFileHeader(path);
-            SAMSequenceRecord seq = fileHeader.getSequenceDictionary().getSequences().get(0);
-            int arraySize = Math.min(50 * MINOR_CHUNK_SIZE, seq.getSequenceLength());
-
-            region = new Region(seq.getSequenceName(), 1, arraySize * MINOR_CHUNK_SIZE);
-            queryResultId = "Get coverage";
-            chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
+            coverage = bamManager.coverage(region, windowSize, path);
         }
-
-        if (coverage == null && chunkFrequency != null) {
-            coverage = new RegionCoverage(region, chunkFrequency.getWindowSize(), chunkFrequency.getValues());
-        }
-
-        watch.stop();
-        return new QueryResult(queryResultId, ((int) watch.getTime()), 1, 1, null, null, Arrays.asList(coverage));
+        return new QueryResult<>(region.toString(), ((int) watch.getTime()), 1, 1, null, null, Collections.singletonList(coverage));
     }
+
+//    @Override
+//    public QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception {
+//        StopWatch watch = new StopWatch();
+//        watch.start();
+//
+//        FileUtils.checkFile(path);
+//
+//        if (query == null) {
+//            query = new Query();
+//        }
+//
+//        if (options == null) {
+//            options = new QueryOptions();
+//        }
+//
+//        AlignmentOptions alignmentOptions = parseQueryOptions(options);
+//        AlignmentFilters alignmentFilters = parseQuery(query);
+//        Region region = parseRegion(query);
+//
+//        String queryResultId;
+//        int windowSize;
+//        RegionCoverage coverage = null;
+//
+//        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
+//        if (!coverageDBPath.toFile().exists()
+//                && (region == null || (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE))) {
+//            createDBCoverage(path, workspace);
+//        }
+//
+//        ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath, chunkSize);
+//        ChunkFrequencyManager.ChunkFrequency chunkFrequency = null;
+//        if (region != null) {
+//            if (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE) {
+//                // if region is too big then we calculate the mean. We need to protect this code!
+//                // and query SQLite database
+//                windowSize = options.getInt(QueryParams.WINDOW_SIZE.key(), DEFAULT_WINDOW_SIZE);
+//                chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
+//            } else {
+//                // if region is small enough we calculate all coverage for all positions dynamically
+//                // calling the biodata alignment manager
+//                BamManager alignmentManager = new BamManager(path);
+//                coverage = alignmentManager.coverage(region, alignmentFilters, alignmentOptions);
+//            }
+//            queryResultId = region.toString();
+//        } else {
+//            // if no region is given we set up the windowSize to default value,
+//            // we should return a few thousands mean values
+//            // and query SQLite database
+//            windowSize = DEFAULT_WINDOW_SIZE;
+//            SAMFileHeader fileHeader = BamUtils.getFileHeader(path);
+//            SAMSequenceRecord seq = fileHeader.getSequenceDictionary().getSequences().get(0);
+//            int arraySize = Math.min(50 * MINOR_CHUNK_SIZE, seq.getSequenceLength());
+//
+//            region = new Region(seq.getSequenceName(), 1, arraySize * MINOR_CHUNK_SIZE);
+//            queryResultId = "Get coverage";
+//            chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
+//        }
+//
+//        if (coverage == null && chunkFrequency != null) {
+//            coverage = new RegionCoverage(region, chunkFrequency.getWindowSize(), chunkFrequency.getValues());
+//        }
+//
+//        watch.stop();
+//        return new QueryResult(queryResultId, ((int) watch.getTime()), 1, 1, null, null, Arrays.asList(coverage));
+//    }
 
     private Region parseRegion(Query query) {
         Region region = null;
@@ -368,45 +373,47 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 alignmentFilters.addDuplicatedFilter();
             }
         }
-        
+
         return  alignmentFilters;
     }
 
     private AlignmentOptions parseQueryOptions(QueryOptions options) {
-        AlignmentOptions alignmentOptions = new AlignmentOptions()
-                .setContained(options.getBoolean(QueryParams.CONTAINED.key()));
+        AlignmentOptions alignmentOptions = new AlignmentOptions().setContained(options.getBoolean(QueryParams.CONTAINED.key()));
+
         int windowSize = options.getInt(QueryParams.WINDOW_SIZE.key());
         if (windowSize > 0) {
             alignmentOptions.setWindowSize(windowSize);
         }
+
         int limit = options.getInt(QueryOptions.LIMIT);
         if (limit > 0) {
             alignmentOptions.setLimit(limit);
         }
+
         return alignmentOptions;
     }
 
-    private void createDBCoverage(Path filePath, Path workspace) throws IOException {
-        SAMFileHeader fileHeader = BamUtils.getFileHeader(filePath);
-
-        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
-        ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath);
-        List<String> chromosomeNames = new ArrayList<>();
-        List<Integer> chromosomeLengths = new ArrayList<>();
-        fileHeader.getSequenceDictionary().getSequences().forEach(
-                seq -> {
-                    chromosomeNames.add(seq.getSequenceName());
-                    chromosomeLengths.add(seq.getSequenceLength());
-                });
-        chunkFrequencyManager.init(chromosomeNames, chromosomeLengths);
-
-        Path coveragePath = workspace.toAbsolutePath().resolve(filePath.getFileName() + COVERAGE_SUFFIX);
-
-        AlignmentOptions options = new AlignmentOptions();
-        options.setContained(false);
-
-        BamUtils.createCoverageWigFile(filePath, coveragePath, 200);
-        chunkFrequencyManager.loadWigFile(coveragePath, filePath);
-    }
+//    private void createDBCoverage(Path filePath, Path workspace) throws IOException {
+//        SAMFileHeader fileHeader = BamUtils.getFileHeader(filePath);
+//
+//        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
+//        ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath);
+//        List<String> chromosomeNames = new ArrayList<>();
+//        List<Integer> chromosomeLengths = new ArrayList<>();
+//        fileHeader.getSequenceDictionary().getSequences().forEach(
+//                seq -> {
+//                    chromosomeNames.add(seq.getSequenceName());
+//                    chromosomeLengths.add(seq.getSequenceLength());
+//                });
+//        chunkFrequencyManager.init(chromosomeNames, chromosomeLengths);
+//
+//        Path coveragePath = workspace.toAbsolutePath().resolve(filePath.getFileName() + COVERAGE_SUFFIX);
+//
+//        AlignmentOptions options = new AlignmentOptions();
+//        options.setContained(false);
+//
+//        BamUtils.createCoverageWigFile(filePath, coveragePath, 200);
+//        chunkFrequencyManager.loadWigFile(coveragePath, filePath);
+//    }
 
 }

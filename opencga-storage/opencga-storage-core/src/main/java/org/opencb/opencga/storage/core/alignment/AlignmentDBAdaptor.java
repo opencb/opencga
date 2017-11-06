@@ -130,7 +130,7 @@ public interface AlignmentDBAdaptor {
 
     QueryResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
 
-    QueryResult<RegionCoverage> coverage(Path path, Path workspace) throws Exception;
+    QueryResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception;
 
-    QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
+//    QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
 }

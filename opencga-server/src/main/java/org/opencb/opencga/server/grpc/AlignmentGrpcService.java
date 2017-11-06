@@ -83,7 +83,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         String sessionId = query.getString("sid");
 
         try (AlignmentIterator<Reads.ReadAlignment> iterator =
-                     alignmentStorageManager.iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId)) {
+                     alignmentStorageManager.iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId, Reads.ReadAlignment.class)) {
             while (iterator.hasNext()) {
                 responseObserver.onNext(iterator.next());
             }
@@ -104,8 +104,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         String sessionId = query.getString("sid");
 
         try (AlignmentIterator<SAMRecord> iterator =
-                     alignmentStorageManager.iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId,
-                             SAMRecord.class)) {
+                     alignmentStorageManager.iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId, SAMRecord.class)) {
             while (iterator.hasNext()) {
                 ServiceTypesModel.StringResponse response =
                         ServiceTypesModel.StringResponse.newBuilder().setValue(iterator.next().getSAMString()).build();
