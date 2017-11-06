@@ -9,7 +9,8 @@
 
 !3 Get User With A Valid JWT Token
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/users/$user/info?sid=$sessionId&exclude=projects |  |  Content-Type: application/json | jsonbody.response[0].result[0].id == '$user'|
+| setHeader | Authorization : Bearer $sessionId |
+| GET | /v1/users/$user/info?exclude=projects |  |  Content-Type: application/json | jsonbody.response[0].result[0].id == '$user'|
 
 
 !3 (Negative) Get User With An Invalid JWT Token
