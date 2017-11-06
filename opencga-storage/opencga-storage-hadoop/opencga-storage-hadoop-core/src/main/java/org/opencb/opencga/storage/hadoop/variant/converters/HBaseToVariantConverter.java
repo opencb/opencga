@@ -238,19 +238,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return secAltArr;
     }
 
-    private void calculatePassCallRates(VariantTableStudyRow row, Map<String, String> attributesMap, int
-            loadedSamplesSize) {
-        attributesMap.put("PASS", row.getPassCount().toString());
-        attributesMap.put("CALL", row.getCallCount().toString());
-        double passRate = row.getPassCount().doubleValue() / loadedSamplesSize;
-        double callRate = row.getCallCount().doubleValue() / loadedSamplesSize;
-        double opr = passRate * callRate;
-        attributesMap.put("PR", String.valueOf(passRate));
-        attributesMap.put("CR", String.valueOf(callRate));
-        attributesMap.put("OPR", String.valueOf(opr)); // OVERALL pass rate
-        attributesMap.put("NS", String.valueOf(loadedSamplesSize)); // Number of Samples
-    }
-
     private void wrongVariant(String message) {
         if (failOnWrongVariants) {
             throw new IllegalStateException(message);

@@ -299,7 +299,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         Query query = new Query(STUDIES.key(), study)
                 .append(RETURNED_STUDIES.key(), ALL)
                 .append(UNKNOWN_GENOTYPE.key(), "./.")
-                .append(RETURNED_SAMPLES.key(), ALL);
+                .append(RETURNED_SAMPLES.key(), ALL)
+                .append(RETURNED_FILES.key(), ALL);
         QueryResult<Variant> allVariants = dbAdaptor.get(new Query(UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
 
         query.put(GENOTYPE.key(), f1_s1 + IS + "1|1" + AND + f2_s1 + IS + "0|1");
@@ -336,7 +337,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         Query query = new Query(STUDIES.key(), study)
                 .append(RETURNED_STUDIES.key(), ALL)
                 .append(UNKNOWN_GENOTYPE.key(), "./.")
-                .append(RETURNED_SAMPLES.key(), ALL);
+                .append(RETURNED_SAMPLES.key(), ALL)
+                .append(RETURNED_FILES.key(), ALL);
         QueryResult<Variant> allVariants = dbAdaptor.get(new Query(UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
 
         //Get all variants with not 1|1 for s1

@@ -384,6 +384,7 @@ public class VariantQueryUtils {
                     .collect(Collectors.toList());
         }
         List<String> returnedFilesList = getReturnedFilesList(query, fields);
+        boolean returnAllFiles = ALL.equals(query.getString(RETURNED_FILES.key()));
 
         Map<Integer, List<Integer>> files = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -401,6 +402,8 @@ public class VariantQueryUtils {
                         fileIds.add(fileId);
                     }
                 }
+            } else if (returnAllFiles) {
+                fileIds = new ArrayList<>(sc.getIndexedFiles());
             } else if (!sampleNames.isEmpty()) {
                 Set<Integer> fileSet = new LinkedHashSet<>();
                 for (String sample : sampleNames) {

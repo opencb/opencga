@@ -19,10 +19,14 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
+import org.opencb.biodata.models.variant.avro.StructuralVariantType;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.utils.CryptoUtils;
 
 import java.util.function.Supplier;
+
+import static org.opencb.biodata.models.variant.avro.StructuralVariantType.COPY_NUMBER_GAIN;
+import static org.opencb.biodata.models.variant.avro.StructuralVariantType.COPY_NUMBER_LOSS;
 
 /**
  * Creates a sorted key for MongoDB.
@@ -50,11 +54,18 @@ public class VariantStringIdConverter {
     protected static final int CI_POS_R = 5;
     protected static final int CI_END_L = 6;
     protected static final int CI_END_R = 7;
+    protected static final int SV_SPLIT_LENGTH = CI_END_R + 1;
     protected static final char INS_SEQ_SEPARATOR = '_';
 
+    @Deprecated
     public Variant convertToDataModelType(String object) {
         String[] split = object.split(SEPARATOR, -1);
-        return new Variant(split[CHR].trim(), Integer.parseInt(split[POS].trim()), split[REF], split[ALT]).setSv(buildSv(split));
+        Variant variant = new Variant(split[CHR].trim(), Integer.parseInt(split[POS].trim()), split[REF], split[ALT]);
+        StructuralVariation sv = buildSv(split);
+        if (sv != null) {
+            variant.setSv(sv);
+        }
+        return variant;
     }
 
     public Variant buildVariant(String variantId, int end, String reference, String alternate) {
@@ -63,19 +74,26 @@ public class VariantStringIdConverter {
         int start = Integer.parseInt(split[POS].trim());
         StructuralVariation sv = buildSv(split);
         if (StringUtils.contains(alternate, INS_SEQ_SEPARATOR)) {
-            String[] alternateSplit = StringUtils.split(alternate, INS_SEQ_SEPARATOR);
+            String[] alternateSplit = StringUtils.splitPreserveAllTokens(alternate, INS_SEQ_SEPARATOR);
             alternate = alternateSplit[0];
             if (sv == null) {
-                sv = new StructuralVariation(start, start, end, end, null, null, null, null);
+                sv = new StructuralVariation();
             }
-            sv.setRightSvInsSeq(alternateSplit[1]);
-            sv.setLeftSvInsSeq(alternateSplit[2]);
+            sv.setLeftSvInsSeq(alternateSplit[1]);
+            sv.setRightSvInsSeq(alternateSplit[2]);
         }
-        return new Variant(chr, start, end, reference, alternate).setSv(sv);
+        Variant variant = new Variant(chr, start, end, reference, alternate);
+        if (sv != null) {
+            if (variant.getSv() != null && variant.getSv().getType() != null) {
+                sv.setType(variant.getSv().getType());
+            }
+            variant.setSv(sv);
+        }
+        return variant;
     }
 
     private StructuralVariation buildSv(String[] split) {
-        if (split.length > CI_POS_L) {
+        if (split.length == SV_SPLIT_LENGTH) {
             return new StructuralVariation(
                     getInt(split, CI_POS_L),
                     getInt(split, CI_POS_R),
@@ -124,7 +142,7 @@ public class VariantStringIdConverter {
         }
 
         // All symbolic variants have a non null SV.
-        if (sv != null) {
+        if (validSV(sv)) {
             stringBuilder
                     .append(SEPARATOR_CHAR)
                     .append(get(sv::getCiStartLeft))
@@ -155,10 +173,34 @@ public class VariantStringIdConverter {
 
     private void reduce(StringBuilder stringBuilder, String allele, StructuralVariation sv) {
         // FIXME: Use the same method to reduce long alleles from all variants
-        if (sv == null) {
+        if (!validSV(sv)) {
             stringBuilder.append(new String(CryptoUtils.encryptSha1(allele)));
         } else {
             stringBuilder.append(allele.charAt(0)).append('~').append(allele.hashCode()).append('~').append(allele.length());
+        }
+    }
+
+    /**
+     * Check if the structural variant information should be serialized.
+     *
+     * Checks if any field is non null, or the type is not COPY_NUMBER_GAIN nor COPY_NUMBER_LOSS
+     * This two types are inferred from the Alternate
+     *
+     * @param sv StructuralVariation object
+     * @return true if it should be serialized
+     */
+    private boolean validSV(StructuralVariation sv) {
+        if (sv == null) {
+            return false;
+        } else {
+            StructuralVariantType type = sv.getType();
+            return type != null && !COPY_NUMBER_GAIN.equals(type) && !COPY_NUMBER_LOSS.equals(type)
+                    || sv.getCiStartLeft() != null
+                    || sv.getCiStartRight() != null
+                    || sv.getCiEndLeft() != null
+                    || sv.getCiEndRight() != null
+                    || sv.getLeftSvInsSeq() != null
+                    || sv.getRightSvInsSeq() != null;
         }
     }
 
@@ -171,7 +213,6 @@ public class VariantStringIdConverter {
         T t = supplier.get();
         return t == null ? "" : t.toString();
     }
-
 
     public static String buildId(String chromosome, int start) {
         return buildId(chromosome, start, new StringBuilder()).toString();

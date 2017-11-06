@@ -607,9 +607,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryGeneCT("ERMAP,SH2D5", "SO:0001632");
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
-                        .append(ANNOT_XREF.key(), "ERMAP,SH2D5,4:42895308:G:A")
+                        .append(ANNOT_XREF.key(), "ERMAP,SH2D5,7:100807230:G:T")
                         .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
-                at("4:42895308:G:A"));
+                at("7:100807230:G:T"));
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
                 .append(GENE.key(), "ERMAP")
@@ -618,11 +618,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 with("id", VariantAnnotation::getId, is("rs1171830")));
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
-                        .append(ANNOT_XREF.key(), "ERMAP,rs1171830,SH2D5,RCV000036856,4:42895308:G:A,COSM3760638")
+                        .append(ANNOT_XREF.key(), "ERMAP,rs1171830,SH2D5,RCV000036856,7:100807230:G:T,COSM3760638")
                         .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
                 anyOf(
                         with("id", VariantAnnotation::getId, is("rs1171830")),
-                        at("4:42895308:G:A")));
+                        at("7:100807230:G:T")));
 
         assertThat(dbAdaptor.get(new Query(ANNOT_XREF.key(), "rs1171830").append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566"), null),
                 everyResult(allVariants, allOf(

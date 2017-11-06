@@ -374,7 +374,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             }
         }
 
-        return  alignmentFilters;
+        return alignmentFilters;
     }
 
     private AlignmentOptions parseQueryOptions(QueryOptions options) {

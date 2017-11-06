@@ -215,7 +215,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         int i = 1;
         for (int fileId = 77; fileId <= 93; fileId++) {
             ObjectMap fileOptions = new ObjectMap();
-            fileOptions.append(VariantStorageEngine.Options.SAMPLE_IDS.key(), "NA128" + fileId + ':' + (i - 1))
+            fileOptions.append(VariantStorageEngine.Options.SAMPLE_IDS.key(), "NA128" + fileId + ':' + (i))
                     .append(VariantStorageEngine.Options.FILE_ID.key(), i)
                     .putAll(options);
             runDefaultETL(getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA128" + fileId + "_S1.genome.vcf.gz"),
