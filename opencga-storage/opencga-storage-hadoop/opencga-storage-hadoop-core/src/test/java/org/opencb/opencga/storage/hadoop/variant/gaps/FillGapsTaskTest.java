@@ -34,6 +34,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 
 /**
@@ -220,4 +221,13 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
             }
         }
     }
+
+
+    @Test
+    public void testOverlapsWith() {
+        assertTrue(FillGapsTask.overlapsWith(new Variant("1:100:T:-"), "1", 100, 100));
+        Variant variant = new Variant("1:100:-:T");
+        assertTrue(FillGapsTask.overlapsWith(variant, "1", variant.getStart(), variant.getEnd()));
+    }
+
 }
