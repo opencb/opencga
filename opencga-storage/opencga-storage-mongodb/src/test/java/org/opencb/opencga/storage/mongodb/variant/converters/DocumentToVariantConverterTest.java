@@ -60,6 +60,7 @@ public class DocumentToVariantConverterTest {
         FileEntry fileEntry = studyEntry.getFile(fileId.toString());
         fileEntry.getAttributes().put("QUAL", "0.01");
         fileEntry.getAttributes().put("AN", "2");
+        fileEntry.setCall(null);
         studyEntry.setFormatAsString("GT:DP");
 
         Map<String, String> na001 = new HashMap<>();
@@ -185,24 +186,6 @@ public class DocumentToVariantConverterTest {
         assertFalse(converted.containsKey(DocumentToVariantConverter.IDS_FIELD)); //IDs must be added manually.
         converted.put(DocumentToVariantConverter.IDS_FIELD, variant.getIds());  //Add IDs
         assertEquals(mongoVariant, converted);
-    }
-
-    @Test
-    public void testBuildStorageId() {
-        DocumentToVariantConverter converter = new DocumentToVariantConverter();
-
-        // SNV
-        Variant v1 = new Variant("1", 1000, 1000, "A", "C");
-        assertEquals(" 1:      1000:A:C", converter.buildStorageId(v1));
-
-        // Indel
-        Variant v2 = new Variant("1", 1000, 1002, "", "CA");
-        assertEquals(" 1:      1000::CA", converter.buildStorageId(v2));
-
-        // Structural
-        String alt = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT";
-        Variant v3 = new Variant("1", 1000, 1002, "TAG", alt);
-        assertEquals(" 1:      1000:TAG:" + new String(CryptoUtils.encryptSha1(alt)), converter.buildStorageId(v3));
     }
 
     @Test

@@ -219,7 +219,9 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
         if (!StringUtils.equals(variant.getChromosome(), chromosome)) {
             return false; // Different Chromosome
         } else {
-            return variant.getStart() <= end && variant.getEnd() >= start;
+            return variant.getStart() <= end && variant.getEnd() >= start
+                    // Insertions in the same position won't match previous statement.
+                    || variant.getStart() == start && variant.getEnd() == end;
         }
     }
 

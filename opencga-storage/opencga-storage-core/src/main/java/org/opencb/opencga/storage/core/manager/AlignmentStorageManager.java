@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.storage.core.manager;
 
-import ga4gh.Reads;
 import org.apache.commons.lang3.time.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectReader;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -32,9 +32,9 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
@@ -119,7 +119,7 @@ public class AlignmentStorageManager extends StorageManager {
         logger.info("Calculating the coverage...");
         watch.reset();
         watch.start();
-        alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace());
+//        alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace());
         watch.stop();
         logger.info("Coverage calculation took {} seconds", watch.getTime() / 1000.0);
     }
@@ -135,9 +135,9 @@ public class AlignmentStorageManager extends StorageManager {
         return alignmentStorageEngine.getDBAdaptor().get(studyInfo.getFileInfo().getPath(), query, options);
     }
 
-    public AlignmentIterator<Reads.ReadAlignment> iterator(String studyId, String fileId, Query query, QueryOptions options,
+    public AlignmentIterator<ReadAlignment> iterator(String studyId, String fileId, Query query, QueryOptions options,
                                                            String sessionId) throws CatalogException, IOException, StorageEngineException {
-        return iterator(studyId, fileId, query, options, sessionId, Reads.ReadAlignment.class);
+        return iterator(studyId, fileId, query, options, sessionId, ReadAlignment.class);
     }
 
     public <T> AlignmentIterator<T> iterator(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId,
@@ -195,22 +195,12 @@ public class AlignmentStorageManager extends StorageManager {
 //        return alignmentDBAdaptor.stats((Path) fileInfo.get("filePath"), (Path) fileInfo.get("workspace"), query, options);
     }
 
-    public QueryResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
+    public QueryResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Region region, int windowSize, String sessionId)
             throws Exception {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
         checkAlignmentBioformat(studyInfo.getFileInfos());
         FileInfo fileInfo = studyInfo.getFileInfo();
-//        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
-//        long studyId = fileAndStudyId.getLong("studyId");
-//        long fileId = fileAndStudyId.getLong("fileId");
-//        Path filePath = getFilePath(fileId, sessionId);
-//        Path workspace = getWorkspace(studyId, sessionId);
-
-        return alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace(), query, options);
-//        return alignmentDBAdaptor.coverage((Path) fileInfo.get("filePath"), (Path) fileInfo.get("workspace"), query, options);
+        return alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), region, windowSize);
     }
 
 

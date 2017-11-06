@@ -20,6 +20,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -134,7 +135,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                 }
                 return createOkResponse(queryResultList);
             } else {
-                return createOkResponse(alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId));
+                return createErrorResponse("query", "Missing region, no region provided");
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -149,24 +150,17 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam("region") String regions,
                                 @ApiParam(value = "Window size", defaultValue = "1") @QueryParam("windowSize") Integer windowSize) {
         try {
-            Query query = new Query();
-//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
-
-            QueryOptions queryOptions = new QueryOptions();
-//            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.WINDOW_SIZE.key(), windowSize);
-
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             if (StringUtils.isNotEmpty(regions)) {
                 String[] regionList = regions.split(",");
                 List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.length);
                 for (String region : regionList) {
-                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
-                    queryResultList.add(alignmentStorageManager.coverage(studyStr, fileIdStr, query, queryOptions, sessionId));
+                    Region region1 = Region.parseRegion(region);
+                    queryResultList.add(alignmentStorageManager.coverage(studyStr, fileIdStr, region1, windowSize, sessionId));
                 }
                 return createOkResponse(queryResultList);
             } else {
-                return createOkResponse(alignmentStorageManager.coverage(studyStr, fileIdStr, query, queryOptions, sessionId));
+                return createErrorResponse("coverage", "Missing region, no region provides");
             }
         } catch (Exception e) {
             return createErrorResponse(e);

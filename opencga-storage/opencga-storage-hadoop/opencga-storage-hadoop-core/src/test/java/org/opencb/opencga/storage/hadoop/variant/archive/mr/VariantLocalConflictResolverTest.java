@@ -251,7 +251,7 @@ public class VariantLocalConflictResolverTest {
         List<Variant> resolved = new VariantLocalConflictResolver().resolveConflicts(normalized);
         System.out.println("resolved = " + resolved);
         assertEquals(1, resolved.size());
-        assertSame(normalized.get(2), resolved.get(0));
+        assertSame(normalized.get(0), resolved.get(0));
         System.out.println("resolved.get(0).toJson(); = " + resolved.get(0).toJson());
     }
 
