@@ -220,6 +220,7 @@ public class VariantMongoDBQueryParser {
             parseStatsQueryParams(query, builder, defaultStudyConfiguration);
         }
 
+        logger.debug("----------------------");
         try {
             logger.debug("Query         = {}", originalQuery == null ? "{}" : queryMapper.writeValueAsString(originalQuery));
         } catch (IOException e) {

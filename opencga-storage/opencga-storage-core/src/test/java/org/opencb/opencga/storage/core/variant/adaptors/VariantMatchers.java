@@ -107,6 +107,17 @@ public class VariantMatchers {
                         missingValues.add(expectedValue);
                     }
                 }
+                if (!missingValues.isEmpty()) {
+                    T missingValue = missingValues.get(0);
+                    if (missingValue instanceof Variant) {
+                        System.out.println("missing " + ((Variant) missingValue).toJson());
+                        for (T extraValue : extraValues) {
+                            if (((Variant) extraValue).sameGenomicVariant(missingValue)) {
+                                System.out.println("extra " + ((Variant) extraValue).toJson());
+                            }
+                        }
+                    }
+                }
                 mismatchDescription.appendText(" has " + item.getNumResults() + " values "
                         + '(' + missingValues.size() + " missing, " + extraValues.size() + " extra)");
 
