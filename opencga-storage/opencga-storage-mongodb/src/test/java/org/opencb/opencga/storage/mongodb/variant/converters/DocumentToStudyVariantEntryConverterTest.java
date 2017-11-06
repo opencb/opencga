@@ -51,7 +51,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         studyId = 1;
         fileId = 2;
         studyEntry = new StudyEntry(studyId.toString());
-        FileEntry fileEntry = new FileEntry(fileId.toString(), "", new HashMap<>());
+        FileEntry fileEntry = new FileEntry(fileId.toString(), null, new HashMap<>());
         fileEntry.getAttributes().put("QUAL", "0.01");
         fileEntry.getAttributes().put("AN", "2.0");
         fileEntry.getAttributes().put("do.we.accept.attribute.with.dots?", "yes");
