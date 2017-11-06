@@ -27,9 +27,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -62,10 +59,20 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
         variantManager.count(query, sessionId);
     }
 
-
     @Test
     public void testQuery() throws Exception {
         Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
+        QueryResult<Variant> result = variantManager.get(query, new QueryOptions(), sessionId);
+        System.out.println("result.getNumResults() = " + result.getNumResults());
+        System.out.println("result.getResult().size() = " + result.getResult().size());
+        for (Variant variant : result.getResult()) {
+            System.out.println("variant = " + variant);
+        }
+    }
+
+    @Test
+    public void testQueryProject() throws Exception {
+        Query query = new Query(VariantCatalogQueryUtils.PROJECT.key(), projectId);
         QueryResult<Variant> result = variantManager.get(query, new QueryOptions(), sessionId);
         System.out.println("result.getNumResults() = " + result.getNumResults());
         System.out.println("result.getResult().size() = " + result.getResult().size());

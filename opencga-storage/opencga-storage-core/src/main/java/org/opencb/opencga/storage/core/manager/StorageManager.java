@@ -94,7 +94,7 @@ public abstract class StorageManager {
     }
 
     protected StudyInfo getStudyInfo(@Nullable String studyIdStr, List<String> fileIdStrs, String sessionId)
-            throws CatalogException, IOException {
+            throws CatalogException {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
 
         List<Long> fileIds;

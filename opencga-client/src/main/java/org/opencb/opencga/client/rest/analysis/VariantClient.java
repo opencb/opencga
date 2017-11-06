@@ -56,6 +56,7 @@ public class VariantClient extends AbstractParentClient {
 
     public QueryResponse<VariantMetadata> metadata(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
+            params = new ObjectMap(params);
             params.putAll(options);
         }
         return execute(VARIANT_URL, "metadata", params, GET, VariantMetadata.class);
@@ -63,6 +64,7 @@ public class VariantClient extends AbstractParentClient {
 
     public QueryResponse<Variant> query(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
+            params = new ObjectMap(params);
             params.putAll(options);
         }
         return execute(VARIANT_URL, "query", params, GET, Variant.class);
@@ -70,6 +72,7 @@ public class VariantClient extends AbstractParentClient {
 
     public VariantQueryResult<Variant> query2(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
+            params = new ObjectMap(params);
             params.putAll(options);
         }
         return executeVariantQuery(VARIANT_URL, "query", params, GET, Variant.class);
