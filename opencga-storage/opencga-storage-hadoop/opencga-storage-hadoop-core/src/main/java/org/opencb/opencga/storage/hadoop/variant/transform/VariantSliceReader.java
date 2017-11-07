@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.transform;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.io.DataReader;
@@ -41,6 +42,8 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
     private int numSlices;
     protected final Logger logger = LoggerFactory.getLogger(VariantSliceReader.class);
     private final int chunkSize;
+    private final String studyId;
+    private final String fileId;
     private final VariantReader reader;
     // chromosome -> slice -> variants
     // LinkedHashMap will preserve the reading order for the chromosomes
@@ -48,12 +51,14 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
     private String currentChromosome = null;
     private final ProgressLogger progressLogger;
 
-    public VariantSliceReader(int chunkSize, VariantReader reader) {
-        this(chunkSize, reader, null);
+    public VariantSliceReader(int chunkSize, VariantReader reader, int studyId, int fileId) {
+        this(chunkSize, reader, studyId, fileId, null);
     }
 
-    public VariantSliceReader(int chunkSize, VariantReader reader, ProgressLogger progressLogger) {
+    public VariantSliceReader(int chunkSize, VariantReader reader, int studyId, int fileId, ProgressLogger progressLogger) {
         this.chunkSize = chunkSize;
+        this.studyId = String.valueOf(studyId);
+        this.fileId = String.valueOf(fileId);
         this.reader = reader;
         this.progressLogger = progressLogger;
         bufferTree = new LinkedHashMap<>();
@@ -135,6 +140,12 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
 
     private void addVariant(Variant variant) {
         String chromosome = variant.getChromosome();
+
+        // Remap studyId and fileId
+        StudyEntry studyEntry = variant.getStudies().get(0);
+        studyEntry.setStudyId(studyId);
+        studyEntry.getFiles().get(0).setFileId(fileId);
+
         long[] coveredSlicePositions = getCoveredSlicePositions(variant);
         for (long slicePos : coveredSlicePositions) {
             addVariant(variant, chromosome, slicePos);
