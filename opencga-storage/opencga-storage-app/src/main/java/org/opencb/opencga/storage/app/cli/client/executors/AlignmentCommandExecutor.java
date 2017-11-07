@@ -264,40 +264,40 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         /**
          * Run query
          */
-        int subListSize = 20;
-        logger.info("options = {}", options.toJson());
-        if (queryAlignmentsCommandOptions.histogram) {
-            for (Region region : regions) {
-                System.out.println(dbAdaptor.getAllIntervalFrequencies(region, options));
-            }
-        } else if (regions != null && !regions.isEmpty()) {
-            for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
-                List<Region> subRegions = regions.subList(
-                        i * subListSize,
-                        Math.min((i + 1) * subListSize, regions.size()));
-
-                logger.info("subRegions = " + subRegions);
-                QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
-                logger.info("{}", queryResult);
-                System.out.println(new ObjectMap("queryResult", queryResult).toJson());
-            }
-        } else if (gffReader != null) {
-            List<Gff> gffList;
-            List<Region> subRegions;
-            while ((gffList = gffReader.read(subListSize)) != null) {
-                subRegions = new ArrayList<>(subListSize);
-                for (Gff gff : gffList) {
-                    subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
-                }
-
-                logger.info("subRegions = " + subRegions);
-                QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
-                logger.info("{}", queryResult);
-                System.out.println(new ObjectMap("queryResult", queryResult).toJson());
-            }
-        } else {
-            throw new UnsupportedOperationException("Unable to fetch over all the genome");
-//                System.out.println(dbAdaptor.getAllAlignments(options));
-        }
+//        int subListSize = 20;
+//        logger.info("options = {}", options.toJson());
+//        if (queryAlignmentsCommandOptions.histogram) {
+//            for (Region region : regions) {
+//                System.out.println(dbAdaptor.getAllIntervalFrequencies(region, options));
+//            }
+//        } else if (regions != null && !regions.isEmpty()) {
+//            for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
+//                List<Region> subRegions = regions.subList(
+//                        i * subListSize,
+//                        Math.min((i + 1) * subListSize, regions.size()));
+//
+//                logger.info("subRegions = " + subRegions);
+//                QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
+//                logger.info("{}", queryResult);
+//                System.out.println(new ObjectMap("queryResult", queryResult).toJson());
+//            }
+//        } else if (gffReader != null) {
+//            List<Gff> gffList;
+//            List<Region> subRegions;
+//            while ((gffList = gffReader.read(subListSize)) != null) {
+//                subRegions = new ArrayList<>(subListSize);
+//                for (Gff gff : gffList) {
+//                    subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
+//                }
+//
+//                logger.info("subRegions = " + subRegions);
+//                QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
+//                logger.info("{}", queryResult);
+//                System.out.println(new ObjectMap("queryResult", queryResult).toJson());
+//            }
+//        } else {
+//            throw new UnsupportedOperationException("Unable to fetch over all the genome");
+////                System.out.println(dbAdaptor.getAllAlignments(options));
+//        }
     }
 }

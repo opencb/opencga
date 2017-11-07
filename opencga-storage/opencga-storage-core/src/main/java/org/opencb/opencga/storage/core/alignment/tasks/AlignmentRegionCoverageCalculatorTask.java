@@ -39,6 +39,7 @@ import java.util.List;
  *         <p>
  *         Calculates coverage and mean coverage for AlignmentRegion
  **/
+@Deprecated
 public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion> {
 
     /**
