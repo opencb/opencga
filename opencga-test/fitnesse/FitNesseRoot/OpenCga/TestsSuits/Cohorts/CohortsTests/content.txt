@@ -178,11 +178,7 @@
 
 !3 Delete All Cohorts
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
-| GET | /v1/cohorts/$cohortId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId2'|
-
-# this not working, test when deleted are fully implemented
-#| GET | /v1/cohorts/$cohortId,$cohortId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+| GET | /v1/cohorts/$cohortId,$cohortId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'  && jsonbody.response[1].result[0].id == '$cohortId2'|
 
 !3 Search Deleted Cohort 
 !|Table: Rest Fixture | $baseURL |
