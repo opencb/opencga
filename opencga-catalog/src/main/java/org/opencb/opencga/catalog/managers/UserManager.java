@@ -169,7 +169,7 @@ public class UserManager extends AbstractManager {
             }
         }
 
-        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkValidUserId(id);
         ParamUtils.checkParameter(password, "password");
         ParamUtils.checkParameter(name, "name");
         checkEmail(email);
