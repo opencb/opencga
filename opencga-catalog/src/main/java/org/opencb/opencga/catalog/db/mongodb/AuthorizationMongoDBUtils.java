@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -20,6 +21,9 @@ public class AuthorizationMongoDBUtils {
     private static final String PRIVATE_ACL = "_acl";
     private static final String VARIABLE_SETS = "variableSets";
     private static final String ANNOTATION_SETS = "annotationSets";
+
+    private static final String PERMISSION_DELIMITER = "__";
+
     private static final String ANONYMOUS = "*";
 
     private static final String MEMBERS = "@members";
@@ -275,7 +279,7 @@ public class AuthorizationMongoDBUtils {
         if (permissionList != null) {
             // If _acl was not previously defined, it can be null the first time
             for (String memberPermission : permissionList) {
-                String[] split = memberPermission.split("_", 2);
+                String[] split = StringUtils.split(memberPermission, PERMISSION_DELIMITER, 2);
                 String member = null;
                 if (user.equals(split[0])) {
                     member = "user";
@@ -312,7 +316,7 @@ public class AuthorizationMongoDBUtils {
     public static Document getAuthorisedEntries(String user, List<String> groups, String permission, boolean isAnonymousPresent) {
         List<Document> queryList = new ArrayList<>();
         // 1. Check if the user has the permission
-        queryList.add(new Document(PRIVATE_ACL, user + "_" + permission));
+        queryList.add(new Document(PRIVATE_ACL, user + PERMISSION_DELIMITER + permission));
 
         // The rest of the queries would only be needed for registered users (not anonymous)
         if (!user.equals(ANONYMOUS)) {
@@ -322,7 +326,8 @@ public class AuthorizationMongoDBUtils {
 
             // 2. Check if the groups have the permission (& not the user)
             if (groups != null && !groups.isEmpty()) {
-                List<String> groupPermissionList = groups.stream().map(group -> group + "_" + permission).collect(Collectors.toList());
+                List<String> groupPermissionList = groups.stream().map(group -> group + PERMISSION_DELIMITER + permission)
+                        .collect(Collectors.toList());
                 queryList.add(new Document("$and",
                         Arrays.asList(
                                 new Document(PRIVATE_ACL, new Document("$in", groupPermissionList)),
@@ -335,7 +340,7 @@ public class AuthorizationMongoDBUtils {
 
             // 3. Check if the @members group have the permission (& not the user & not the other groups)
             queryList.add(new Document("$and", Arrays.asList(
-                    new Document(PRIVATE_ACL, "@members_" + permission),
+                    new Document(PRIVATE_ACL, "@members" + PERMISSION_DELIMITER + permission),
                     new Document(PRIVATE_ACL, new Document("$nin", patternList)))));
 
             if (isAnonymousPresent) {
@@ -344,7 +349,7 @@ public class AuthorizationMongoDBUtils {
                 patternList = new ArrayList<>(patternList);
                 patternList.add(MEMBERS_PATTERN);
                 queryList.add(new Document("$and", Arrays.asList(
-                        new Document(PRIVATE_ACL, ANONYMOUS + "_" + permission),
+                        new Document(PRIVATE_ACL, ANONYMOUS + PERMISSION_DELIMITER + permission),
                         new Document(PRIVATE_ACL, new Document("$nin", patternList)))));
             }
         }
