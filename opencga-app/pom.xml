@@ -314,6 +314,7 @@
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-benchmark</artifactId>
                     <version>${opencga.version}</version>
+                    <scope>provided</scope>
                 </dependency>
             </dependencies>
             <build>
@@ -327,11 +328,12 @@
                                 <phase>install</phase>
                                 <configuration>
                                     <target>
-                                        <echo>Copying to ${build.dir}</echo>
+                                        <echo>Copying storage to ${build.dir}</echo>
                                         <exec executable="cp">
                                             <arg value="-r"/>
                                             <arg value="${project.basedir}/../opencga-storage/build/bin"/>
                                             <arg value="${project.basedir}/../opencga-storage/build/benchmark"/>
+                                            <arg value="${project.basedir}/../opencga-storage/build/libs/"/>
                                             <arg value="${build.dir}"/>
                                         </exec>
                                     </target>
