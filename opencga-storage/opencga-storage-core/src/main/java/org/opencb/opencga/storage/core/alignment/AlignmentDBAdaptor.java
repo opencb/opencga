@@ -28,7 +28,6 @@ import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -102,19 +101,6 @@ public interface AlignmentDBAdaptor {
     //String QO_AVERAGE = "average";
     String QO_INTERVAL_SIZE = "interval_size";
     String QO_COVERAGE_CHUNK_SIZE = "chunk_size";
-
-    QueryResult getAllAlignmentsByRegion(List<Region> regions, QueryOptions options);
-
-    QueryResult getAllAlignmentsByGene(String gene, QueryOptions options);
-
-    QueryResult getCoverageByRegion(Region region, QueryOptions options);
-
-    @Deprecated
-    QueryResult getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax);
-
-    QueryResult getAllIntervalFrequencies(Region region, QueryOptions options);
-
-    QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
 
     QueryResult<ReadAlignment> get(Path path, Query query, QueryOptions options);
 

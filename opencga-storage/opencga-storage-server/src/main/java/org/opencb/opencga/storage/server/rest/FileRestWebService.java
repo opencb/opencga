@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.server.rest;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -33,7 +34,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 /**
  * Created by jacobo on 14/11/14.
@@ -106,9 +106,9 @@ public class FileRestWebService extends GenericRestWebService {
 
                     QueryResult queryResult;
                     if (histogram) {
-                        queryResult = dbAdaptor.getAllIntervalFrequencies(new Region(region), options);
+                        queryResult = dbAdaptor.coverage(Paths.get(path), new Region(region), interval);
                     } else {
-                        queryResult = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region(region)), options);
+                        queryResult = dbAdaptor.get(Paths.get(path), new Query("region", region), options);
                     }
 
                     return createOkResponse(queryResult);
