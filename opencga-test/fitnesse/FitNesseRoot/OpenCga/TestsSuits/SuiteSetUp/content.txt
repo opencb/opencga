@@ -15,7 +15,7 @@
 
 !3 Generate Random Variables 
 !|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/|
-|let|user|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|user|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5).concat("-",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)).concat(".",Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5))||
 |let|project|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|study|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|userA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
