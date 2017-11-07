@@ -37,6 +37,7 @@ import java.util.*;
  */
 public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<Variant>>> {
 
+    public static final int MAX_SLICES = 100;
     private int numSlices;
     protected final Logger logger = LoggerFactory.getLogger(VariantSliceReader.class);
     private final int chunkSize;
@@ -92,15 +93,18 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
         while (slices.size() < batchSize) {
 
             List<Variant> read;
-            do {
+            while (numSlices < MAX_SLICES) {
                 read = reader.read(10);
+                if (read.isEmpty()) {
+                    break;
+                }
                 if (progressLogger != null) {
                     progressLogger.increment(read.size());
                 }
                 for (Variant variant : read) {
                     addVariant(variant);
                 }
-            } while (!read.isEmpty() && numSlices < 100);
+            }
 
             // Nothing to read! Empty reader.
             if (numSlices == 0) {
