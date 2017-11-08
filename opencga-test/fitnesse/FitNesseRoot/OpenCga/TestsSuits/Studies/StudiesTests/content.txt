@@ -28,6 +28,37 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$lStudyId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName'|
 
+!3 Delete Anonymous User For Study
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "users" : "*",  "action": "REMOVE"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$studyId/groups/members/update?sid=$sessionId|200|Content-Type: application/json ||
+
+!3 Get Study Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error != ''|
+| GET | /v1/studies/$studyId/info ||Content-Type: application/json||
+
+!3 Create Anonymous User For Study
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "users" : "*",  "action": "ADD"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$studyId/groups/members/update?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == ''|
+
+!3 Get Study Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$studyId'|
+
+!3 Delete Anonymous User For Study
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "users" : "*",  "action": "REMOVE"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$studyId/groups/members/update?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == ''|
+
+!3 Get Study Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error != ''|
+
 !3 Get Studies Info
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$lStudyId,$studyId/info?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName' && jsonbody.response[1].result[0].id == '$studyId'|

@@ -37,6 +37,50 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/files/$fileId/info?sid=$sessionId |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$fileId'|
 
+!3 Get File Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId/info |403|Content-Type: application/json|jsonbody.error != ''|
+
+!3 Create VIEW_FILES ACL For Study
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions" : "VIEW_FILES",  "action": "SET",  "study": "$studyId"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/acl/*/update?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_FILES'|
+
+!3 Get File Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$fileId'|
+
+!3 Delete VIEW_FILES ACL For Study
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions" : "VIEW_FILES",  "action": "REMOVE",  "study": "$studyId"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/acl/*/update?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '0.0'|
+
+!3 Get File Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId/info |403|Content-Type: application/json|jsonbody.error != ''|
+
+!3 Create File ACL For Ananomous
+!|Table: Rest Fixture | $baseURL |
+|setBody|{"permissions": "VIEW", "action":"SET", "file": "$fileId"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/acl/*/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+
+!3 Get File Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$fileId'|
+
+!3 Delete File ACL For Ananomous
+!|Table: Rest Fixture | $baseURL |
+|setBody|{ "action":"RESET", "file": "$fileId"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/files/acl/*/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
+
+!3 Get File Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/files/$fileId/info |403|Content-Type: application/json|jsonbody.error != ''|
+
 !3 Get File & Folder Info
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/files/$fileId,$folderId/info?sid=$sessionId |200|Content-Type: application/json|jsonbody.error === ''&& jsonbody.response[0].result[0].id == '$fileId' && jsonbody.response[1].result[0].id == '$folderId'|

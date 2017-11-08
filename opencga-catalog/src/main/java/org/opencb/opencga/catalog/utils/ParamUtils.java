@@ -85,6 +85,12 @@ public class ParamUtils {
         }
     }
 
+    public static void checkValidUserId(String userId) throws CatalogParameterException {
+        if (userId == null || userId.isEmpty() || !userId.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+            throw new CatalogParameterException("Invalid user id.");
+        }
+    }
+
     public static void checkAlias(String alias, String name, long offset) throws CatalogParameterException {
         if (alias == null || alias.isEmpty() || !alias.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'.");

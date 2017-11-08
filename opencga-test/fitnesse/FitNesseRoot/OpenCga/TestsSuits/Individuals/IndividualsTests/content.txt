@@ -88,6 +88,51 @@
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/$individualId/info?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' |
 
+
+!3 Get Individual Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/info |403|Content-Type: application/json|jsonbody.error != ''|
+
+!3 Create VIEW_INDIVIDUALS ACL For Study
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions" : "VIEW_INDIVIDUALS",  "action": "SET",  "study": "$studyId"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/acl/*/update?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_INDIVIDUALS'|
+
+!3 Get Individual Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$individualId'|
+
+!3 Delete VIEW_INDIVIDUALS ACL For Study
+!|Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions" : "VIEW_INDIVIDUALS",  "action": "REMOVE",  "study": "$studyId"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/acl/*/update?sid=$sessionId|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions.length == '0.0'|
+
+!3 Get Individual Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/info |403|Content-Type: application/json|jsonbody.error != ''|
+
+!3 Create Individual ACL For Ananomous
+!|Table: Rest Fixture | $baseURL |
+|setBody|{"permissions": "VIEW", "action":"SET", "individual": "$individualId"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/acl/*/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+
+!3 Get Individual Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$individualId'|
+
+!3 Delete Individual ACL For Ananomous
+!|Table: Rest Fixture | $baseURL |
+|setBody|{ "action":"RESET", "individual": "$individualId"}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/individuals/acl/*/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
+
+!3 Get Individual Info As Anonymous
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId/info |403|Content-Type: application/json|jsonbody.error != ''|
+
 !3 Get Two Individuals
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/$individualId,$individualId2/info?sid=$sessionId&study=$study | 200 | Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' && jsonbody.response[1].result[0].id == '$individualId2' |
