@@ -28,6 +28,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -47,12 +48,13 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduc
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
+public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
 
-    private Logger logger = LoggerFactory.getLogger(VariantTableDeletionMapper.class);
+    private Logger logger = LoggerFactory.getLogger(VariantTableRemoveMapper.class);
     private Table analysisTable;
     private Table archiveTable;
     private boolean removeSampleColumns;
+    private VariantStorageEngine.MergeMode mergeMode;
 
     @Override
     protected void setup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context context) throws IOException,
@@ -65,49 +67,70 @@ public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
 
         removeSampleColumns = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS,
                 HadoopVariantStorageEngine.DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS);
+        mergeMode = VariantStorageEngine.MergeMode.from(getStudyConfiguration().getAttributes());
 
     }
 
     @Override
     protected void map(VariantMapReduceContext ctx) throws IOException, InterruptedException {
-        List<Variant> updateLst = new ArrayList<>();
-        List<Variant> removeLst = new ArrayList<>();
+        Collection<Variant> updateLst = new ArrayList<>();
+        Collection<Variant> removeLst = new ArrayList<>();
         BiMap<Integer, String> sampleIds = getStudyConfiguration().getSampleIds().inverse();
-        List<Variant> analysisVar = parseCurrentVariantsRegion(ctx);
-        ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
-        logger.info("Loaded {} variants ... ", analysisVar.size());
-        if (!analysisVar.isEmpty()) {
-            Variant tmpVar = analysisVar.get(0);
-            if (logger.isDebugEnabled()) {
-                logger.debug("Loaded variant from analysis table: " + tmpVar.toJson());
+
+        if (mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
+            List<Variant> analysisVar = parseCurrentVariantsRegion(ctx);
+            ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
+            logger.info("Loaded {} variants ... ", analysisVar.size());
+
+            endStep("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
+
+            if (!analysisVar.isEmpty()) {
+                Variant tmpVar = analysisVar.get(0);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Loaded variant from analysis table: " + tmpVar.toJson());
+                }
+                for (Variant var : analysisVar) {
+                    // remove values for Sample
+                    for (Integer sample : ctx.sampleIds) {
+                        String sampleName = sampleIds.get(sample);
+                        removeSample(var, sampleName);
+                    }
+                    // check if there are still variants to be committed
+                    boolean hasVariants = containsVariants(var);
+                    // save to commit list
+                    if (hasVariants) {
+                        updateLst.add(var);
+                    } else {
+                        removeLst.add(var);
+                    }
+                }
             }
+
+            List<VariantTableStudyRow> rows = new ArrayList<>();
+            updateOutputTable(ctx.context, updateLst, rows, null);
+            updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
+        } else {
+            updateLst = new HashSet<>();
+            for (Map.Entry<byte[], byte[]> entry : ctx.getValue().getFamilyMap(getHelper().getColumnFamily()).entrySet()) {
+                Variant var = GenomeHelper.getVariantFromArchiveVariantColumn(ctx.getChromosome(), entry.getKey());
+                if (var != null) {
+                    updateLst.add(var);
+                }
+            }
+//            for (Integer fileId : ctx.getFileIds()) {
+//                byte[] data = ctx.getValue()
+//                         .getValue(getHelper().getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
+//                VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(data);
+//                for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
+//                    int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, vcfSlice.getPosition());
+//                    int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, vcfSlice.getPosition());
+//                    updateLst.add(new Variant(vcfSlice.getChromosome(), start, end, vcfRecord.getReference(), vcfRecord.getAlternate()));
+//                }
+//            }
         }
 
-        endStep("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
-
-
-        for (Variant var : analysisVar) {
-            // remove values for Sample
-            for (Integer sample : ctx.sampleIds) {
-                String sampleName = sampleIds.get(sample);
-                removeSample(var, sampleName);
-            }
-            // check if there are still variants to be committed
-            boolean hasVariants = containsVariants(var);
-            // save to commit list
-            if (hasVariants) {
-                updateLst.add(var);
-            } else {
-                removeLst.add(var);
-            }
-        }
-
-        List<VariantTableStudyRow> rows = new ArrayList<>();
         deleteVariantsFromAnalysisTable(ctx, removeLst);
         deleteSamplesFromAnalysisTable(ctx, updateLst);
-        updateOutputTable(ctx.context, updateLst, rows, null);
-
-        updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
         deleteFromArchiveTable(ctx.context, ctx.currRowKey, ctx.fileIds);
     }
 
@@ -122,7 +145,7 @@ public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
         this.archiveTable.delete(del);
     }
 
-    private void deleteVariantsFromAnalysisTable(VariantMapReduceContext variantContext, List<Variant> fullRemoveList)
+    private void deleteVariantsFromAnalysisTable(VariantMapReduceContext variantContext, Collection<Variant> fullRemoveList)
             throws IOException, InterruptedException {
         int studyId = getStudyConfiguration().getStudyId();
         Context context = variantContext.context;
@@ -130,8 +153,12 @@ public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
         BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
         for (Variant variant : fullRemoveList) {
             VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
+            // Delete ALL files and samples in this row
             Delete delete = row.createDelete(getHelper());
-            for (Integer sampleId : variantContext.getSampleIds()) {
+            for (Integer fileId : getStudyConfiguration().getIndexedFiles()) {
+                delete.addColumn(columnFamily, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
+            }
+            for (Integer sampleId : getStudyConfiguration().getSampleIds().values()) {
                 delete.addColumn(columnFamily, VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId));
             }
 //            this.analysisTable.delete(delete);
@@ -140,7 +167,7 @@ public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
         }
     }
 
-    private void deleteSamplesFromAnalysisTable(VariantMapReduceContext variantContext, List<Variant> partialRemoveList)
+    private void deleteSamplesFromAnalysisTable(VariantMapReduceContext variantContext, Collection<Variant> partialRemoveList)
             throws IOException, InterruptedException {
         if (!removeSampleColumns || variantContext.getSampleIds().isEmpty()) {
             return;
@@ -152,6 +179,9 @@ public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
         for (Variant variant : partialRemoveList) {
             Delete delete = new Delete(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
 
+            for (Integer fileId : variantContext.getFileIds()) {
+                delete.addColumn(columnFamily, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
+            }
             for (Integer sampleId : variantContext.getSampleIds()) {
                 delete.addColumn(columnFamily, VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId));
             }
