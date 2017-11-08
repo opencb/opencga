@@ -30,6 +30,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -327,7 +328,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             addFileEntry(studyConfiguration, studyEntry, fileId, fileColumn, alternateFileMap);
         }
 
-        addSecondaryAlternates(variant, studyEntry, studyConfiguration, alternateFileMap);
+        addSecondaryAlternates(variant, studyEntry, studyConfiguration, alternateFileMap, row);
 
         if (row != null) {
             convert(variant, studyEntry, studyConfiguration, row);
@@ -649,13 +650,23 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
      * @param studyEntry         Study Entry all samples data
      * @param studyConfiguration StudyConfiguration from the study
      * @param alternateFileIdMap Map from SecondaryAlternate to FileId
+     * @param row                VariantTableStudyRow may contain secondary alternates.
+     *                           These alternates have preference over any other secondary alternate
      */
     private void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, StudyConfiguration studyConfiguration,
-                                        Map<String, List<String>> alternateFileIdMap) {
+                                        Map<String, List<String>> alternateFileIdMap, VariantTableStudyRow row) {
+
+        final List<AlternateCoordinate> alternateCoordinatesFromRow;
+        if (row != null) {
+            alternateCoordinatesFromRow = getAlternateCoordinates(variant, row);
+        } else {
+            alternateCoordinatesFromRow = Collections.emptyList();
+        }
+
         final List<AlternateCoordinate> alternateCoordinates;
         if (alternateFileIdMap.isEmpty()) {
-            alternateCoordinates = Collections.emptyList();
-        } else if (alternateFileIdMap.size() == 1) {
+            alternateCoordinates = alternateCoordinatesFromRow;
+        } else if (alternateFileIdMap.size() == 1 && alternateCoordinatesFromRow.isEmpty()) {
             alternateCoordinates = getAlternateCoordinates(alternateFileIdMap.keySet().iterator().next());
         } else {
             // There are multiple secondary alternates.
@@ -667,7 +678,21 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
 
             // Create one variant for each alternate with the samples data
+            // If VariantTableStudyRow had some alternates, add them in first place.
             List<Variant> variants = new ArrayList<>(alternateFileIdMap.size());
+            if (!alternateCoordinatesFromRow.isEmpty()) {
+                Variant sampleVariant = new Variant(
+                        variant.getChromosome(),
+                        variant.getStart(),
+                        variant.getReference(),
+                        variant.getAlternate());
+                StudyEntry se = new StudyEntry("0");
+                se.setSecondaryAlternates(alternateCoordinatesFromRow);
+                se.setFormat(studyEntry.getFormat());
+                sampleVariant.addStudyEntry(se);
+                variants.add(sampleVariant);
+            }
+
             for (Map.Entry<String, List<String>> entry : alternateFileIdMap.entrySet()) {
                 String secondaryAlternates = entry.getKey();
 
@@ -710,6 +735,27 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             alternateCoordinates = newSe.getSecondaryAlternates();
         }
         studyEntry.setSecondaryAlternates(alternateCoordinates);
+    }
+
+    protected List<AlternateCoordinate> getAlternateCoordinates(Variant variant, VariantTableStudyRow row) {
+        List<AlternateCoordinate> secAltArr;
+        List<VariantProto.AlternateCoordinate> secondaryAlternates = row.getComplexVariant().getSecondaryAlternatesList();
+        int secondaryAlternatesCount = row.getComplexVariant().getSecondaryAlternatesCount();
+        secAltArr = new ArrayList<>(secondaryAlternatesCount);
+        if (secondaryAlternatesCount > 0) {
+            for (VariantProto.AlternateCoordinate altCoordinate : secondaryAlternates) {
+                VariantType type = VariantType.valueOf(altCoordinate.getType().name());
+                String chr = StringUtils.isEmpty(altCoordinate.getChromosome())
+                        ? variant.getChromosome() : altCoordinate.getChromosome();
+                Integer start = altCoordinate.getStart() == 0 ? variant.getStart() : altCoordinate.getStart();
+                Integer end = altCoordinate.getEnd() == 0 ? variant.getEnd() : altCoordinate.getEnd();
+                String reference = StringUtils.isEmpty(altCoordinate.getReference()) ? "" : altCoordinate.getReference();
+                String alternate = StringUtils.isEmpty(altCoordinate.getAlternate()) ? "" : altCoordinate.getAlternate();
+                AlternateCoordinate alt = new AlternateCoordinate(chr, start, end, reference, alternate, type);
+                secAltArr.add(alt);
+            }
+        }
+        return secAltArr;
     }
 
     public List<AlternateCoordinate> getAlternateCoordinates(String s) {

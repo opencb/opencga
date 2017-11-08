@@ -208,7 +208,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     }
 
     private void processAnalysisVariants(VariantMapReduceContext ctx, List<Variant> analysisVar,
-                                         final NavigableMap<Integer, List<Variant>> varPosRegister, List<VariantTableStudyRow> rows) {
+                                         final NavigableMap<Integer, List<Variant>> archiveVarPosMap, List<VariantTableStudyRow> rows) {
 
         /* ******** Update Analysis Variants ************** */
 
@@ -226,7 +226,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         processVariants(analysisVar, var -> {
             long start = System.nanoTime();
             ctx.getContext().progress(); // Call process to avoid timeouts
-            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
+            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, archiveVarPosMap);
             long mid = System.nanoTime();
             variantMerger.merge(var, cleanList);
             long end = System.nanoTime();
@@ -290,7 +290,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
      *
      */
     private void processNewVariants(VariantMapReduceContext ctx, Collection<Variant> analysisNew,
-                                    NavigableMap<Integer, List<Variant>> varPosRegister, List<VariantTableStudyRow> rows)
+                                    NavigableMap<Integer, List<Variant>> archiveVarPosMap, List<VariantTableStudyRow> rows)
             throws IOException {
         logger.info("Merge {} new variants ", analysisNew.size());
         final AtomicLong overlap = new AtomicLong(0);
@@ -299,7 +299,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         processVariants(analysisNew, (var) -> {
             ctx.getContext().progress(); // Call process to avoid timeouts
             long start = System.nanoTime();
-            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
+            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, archiveVarPosMap);
             long mid = System.nanoTime();
             variantMergerSamplesToIndex.merge(var, cleanList);
             long end = System.nanoTime();
@@ -431,7 +431,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         endStep("1 Unpack and convert input ARCHIVE variants");
 
         logger.info("Index ...");
-        NavigableMap<Integer, List<Variant>> varPosRegister = indexAlts(archiveVar, (int) ctx.startPos, (int) ctx.nextStartPos);
+        NavigableMap<Integer, List<Variant>> archiveVarPosMap = indexAlts(archiveVar, (int) ctx.startPos, (int) ctx.nextStartPos);
         endStep("2 Index input ARCHIVE variants");
 
         logger.info("Parse ...");
@@ -449,10 +449,10 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         endStep("7b Create NEW variants");
 
         /* Update and submit Analysis missing and same Variants */
-        processAnalysisVariants(ctx, analysisVar, varPosRegister, rows);
+        processAnalysisVariants(ctx, analysisVar, archiveVarPosMap, rows);
 
         /* Update and submit Analysis new Variants */
-        processNewVariants(ctx, analysisNew, varPosRegister, rows);
+        processNewVariants(ctx, analysisNew, archiveVarPosMap, rows);
 
         // Checkpoint -> update archive table!!!
         startStep();
