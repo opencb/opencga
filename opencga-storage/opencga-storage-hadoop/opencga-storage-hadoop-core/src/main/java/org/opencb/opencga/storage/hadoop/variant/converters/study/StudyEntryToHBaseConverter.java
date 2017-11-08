@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
+import com.google.common.collect.LinkedListMultimap;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -48,6 +49,7 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
     private final Set<String> fixedFormatSet;
     private final List<String> fileAttributes;
     private final PhoenixHelper.Column studyColumn;
+    private final LinkedListMultimap<Integer, Integer> sampleToFileMap;
     private boolean addSecondaryAlternates;
 
     public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration) {
@@ -68,6 +70,13 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         fixedFormatSet = new HashSet<>(fixedFormat);
         fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyConfiguration);
+
+        sampleToFileMap = LinkedListMultimap.create();
+        for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+            for (Integer sampleId : entry.getValue()) {
+                sampleToFileMap.put(sampleId, entry.getKey());
+            }
+        }
     }
 
     @Override
@@ -91,7 +100,9 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         int sampleIdx = 0;
         List<String> samplesName = studyEntry.getOrderedSamplesName();
         // Always write file attributes if there is no samples (i.e. aggregated files)
-        boolean writeFileAttributes = samplesName.isEmpty();
+        boolean writeAllFileAttributes = samplesName.isEmpty();
+        boolean writeFileAttributes = writeAllFileAttributes;
+        Set<Integer> filesToWrite = new HashSet<>();
         for (String sampleName : samplesName) {
             Integer sampleId = studyConfiguration.getSampleIds().get(sampleName);
             if (sampleIds == null || sampleIds.contains(sampleId)) {
@@ -105,16 +116,21 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                     addVarcharArray(put, column, sampleData);
                     // Write file attributes if at least one sample is written.
                     writeFileAttributes = true;
+                    filesToWrite.addAll(sampleToFileMap.get(sampleId));
                 }
             }
             sampleIdx++;
         }
         if (writeFileAttributes) {
-            FileEntry fileEntry = studyEntry.getFiles().get(0);
-            byte[] fileColumnKey = VariantPhoenixHelper
-                    .buildFileColumnKey(studyConfiguration.getStudyId(), Integer.parseInt(fileEntry.getFileId()));
-            List<String> fileColumn = remapFileData(variant, studyEntry, fileEntry);
-            addVarcharArray(put, fileColumnKey, fileColumn);
+            for (FileEntry fileEntry : studyEntry.getFiles()) {
+                int fileId = Integer.parseInt(fileEntry.getFileId());
+                if (writeAllFileAttributes || filesToWrite.contains(fileId)) {
+                    byte[] fileColumnKey = VariantPhoenixHelper
+                            .buildFileColumnKey(studyConfiguration.getStudyId(), fileId);
+                    List<String> fileColumn = remapFileData(variant, studyEntry, fileEntry);
+                    addVarcharArray(put, fileColumnKey, fileColumn);
+                }
+            }
         }
 
         return put;
