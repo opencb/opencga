@@ -66,7 +66,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                         && StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getPassword())) {
                     authentication = "-u " + configuration.getCatalog().getDatabase().getUser() + " -p "
                             + configuration.getCatalog().getDatabase().getPassword() + " --authenticationDatabase "
-                            + configuration.getCatalog().getDatabase().getOptions().getOrDefault("authenticationDatabase", "admin");
+                            + configuration.getCatalog().getDatabase().getOptions().getOrDefault("authenticationDatabase", "admin") + " ";
                 }
 
                 String catalogCli = "mongo " + authentication + configuration.getCatalog().getDatabase().getHosts().get(0) + "/"
