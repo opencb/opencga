@@ -1497,6 +1497,7 @@ public class FileManager extends ResourceManager<File> {
             }
 
             params.put("outdir", Long.toString(outDir.getId()));
+            params.put("sid", sessionId);
 
         } else if (type.equals("BAM")) {
 
@@ -1556,10 +1557,12 @@ public class FileManager extends ResourceManager<File> {
 
         String fileIds = fileIdList.stream().map(File::getId).map(l -> Long.toString(l)).collect(Collectors.joining(","));
         params.put("file", fileIds);
-        params.put("sid", sessionId);
         List<File> outputList = outDir.getId() > 0 ? Arrays.asList(outDir) : Collections.emptyList();
-        Map<String, Object> attributes = new HashMap<>();
+        ObjectMap attributes = new ObjectMap();
         attributes.put(IndexDaemon.INDEX_TYPE, indexDaemonType);
+        attributes.putIfNotNull(Job.OPENCGA_OUTPUT_DIR, outDirPath);
+        attributes.putIfNotNull(Job.OPENCGA_STUDY, studyStr);
+
         logger.info("job description: " + description);
         jobQueryResult = catalogManager.getJobManager().queue(studyId, jobName, description, "opencga-analysis.sh",
                 Job.Type.INDEX, params, fileIdList, outputList, outDir, userId, attributes);

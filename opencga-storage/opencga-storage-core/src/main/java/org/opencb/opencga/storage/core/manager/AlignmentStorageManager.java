@@ -69,7 +69,7 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
 
-    public void index(String studyIdStr, String fileIdStr, ObjectMap options, String sessionId) throws Exception {
+    public void index(String studyIdStr, String fileIdStr, Path outDir, ObjectMap options, String sessionId) throws Exception {
         options = ParamUtils.defaultObject(options, ObjectMap::new);
         StopWatch watch = new StopWatch();
 
@@ -82,13 +82,19 @@ public class AlignmentStorageManager extends StorageManager {
 //        Path filePath = getFilePath(fileId, sessionId);
 //        Path workspace = getWorkspace(studyId, sessionId);
 
-        List<URI> fileUris = Arrays.asList(fileInfo.getPath().toUri());
+        Path linkedBamFilePath = Files.createSymbolicLink(outDir.resolve(fileInfo.getName()), fileInfo.getPath());
+
+        List<URI> fileUris = Arrays.asList(linkedBamFilePath.toUri());
 
         // TODO: Check if index is already created and link bai file
         logger.info("Creating index...");
         watch.start();
-        alignmentStorageEngine
-                .index(fileUris, studyInfo.getWorkspace().toUri(), false, options.getBoolean("transform"), options.getBoolean("load"));
+        try {
+            alignmentStorageEngine.index(fileUris, outDir.toUri(), false, options.getBoolean("transform"), options.getBoolean("load"));
+        } finally {
+            // Remove symbolic link
+            Files.delete(linkedBamFilePath);
+        }
         watch.stop();
         logger.info("Indexing took {} seconds", watch.getTime() / 1000.0);
 
@@ -96,7 +102,7 @@ public class AlignmentStorageManager extends StorageManager {
         logger.info("Calculating the stats...");
         watch.reset();
         watch.start();
-        QueryResult<AlignmentGlobalStats> stats = alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPath(), studyInfo.getWorkspace());
+        QueryResult<AlignmentGlobalStats> stats = alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPath(), outDir);
 
         if (stats != null && stats.getNumResults() == 1) {
             // Store the stats in catalog
@@ -107,7 +113,7 @@ public class AlignmentStorageManager extends StorageManager {
                     sessionId);
 
             // Remove the stats file
-            Path statsFile = studyInfo.getWorkspace().resolve(fileInfo.getPath().toFile().getName() + ".stats");
+            Path statsFile = outDir.resolve(fileInfo.getName() + ".stats");
             if (statsFile.toFile().exists()) {
                 Files.delete(statsFile);
             }
