@@ -28,8 +28,6 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$lStudyId/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName'|
 
-#  Delete next delete once bug is fixed.
-
 !3 Delete Anonymous User For Study
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "users" : "*",  "action": "REMOVE"}|
