@@ -26,12 +26,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.models.Job;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -177,18 +178,25 @@ public class IndexDaemon extends MonitorParentDaemon {
 //                variantIndexOutputRecorder.registerStorageETLResults(job, tmpOutdirPath);
                 logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, status);
                 try {
-//                    outputRecorder.recordJobOutputAndPostProcess(job, status);
-                    // TODO: Should this copy the output files?
-//                    outputRecorder.recordJobOutput;
-                    outputRecorder.updateJobStatus(job, new Job.JobStatus(status));
-                    if (!status.equals(Job.JobStatus.ERROR)) {
-                        logger.info("Removing temporal directory.");
-                        this.catalogIOManager.deleteDirectory(UriUtils.createUri(tmpOutdirPath.toString()));
+                    if (ALIGNMENT_TYPE.equals(String.valueOf(job.getAttributes().get(INDEX_TYPE)))) {
+                        String userToken = catalogManager.getUserManager().getSystemTokenForUser(job.getUserId(), sessionId);
+                        outputRecorder.recordJobOutput(job, tmpOutdirPath, userToken);
+                        outputRecorder.updateJobStatus(job, new Job.JobStatus(status));
+                        cleanPrivateJobInformation(job);
                     } else {
-                        logger.info("Keeping temporal directory from an error job : {}", tmpOutdirPath);
+                        // Variant
+                        outputRecorder.updateJobStatus(job, new Job.JobStatus(status));
+                        if (!status.equals(Job.JobStatus.ERROR)) {
+                            logger.info("Removing temporal directory.");
+                            this.catalogIOManager.deleteDirectory(UriUtils.createUri(tmpOutdirPath.toString()));
+                        } else {
+                            logger.info("Keeping temporal directory from an error job : {}", tmpOutdirPath);
+                        }
                     }
                 } catch (CatalogException | URISyntaxException e) {
                     logger.error("Error removing temporal directory", e);
+                } catch (IOException e) {
+                    logger.error("Error recording files generated to Catalog", e);
                 } finally {
                     closeSessionId(job);
                 }

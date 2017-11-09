@@ -64,7 +64,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                           @QueryParam(value = "file") String fileIdStr,
                           @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                          @QueryParam("study") String studyStr,
+                            @QueryParam("study") String studyStr,
+                          @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load) {
         if (StringUtils.isNotEmpty(studyId)) {
@@ -75,6 +76,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 //        addParamIfNotNull(params, "studyId", studyId);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
+        addParamIfNotNull(params, "outdir", outDirStr);
 
         logger.info("ObjectMap: {}", params);
 

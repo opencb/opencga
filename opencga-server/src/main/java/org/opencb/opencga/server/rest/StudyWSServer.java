@@ -128,7 +128,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{study}/delete")
+    @Path("/{studies}/delete")
     @ApiOperation(value = "Delete a study [WARNING]", response = Study.class,
             notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
                     "planned to be fully implemented and tested in version 1.4.0")
