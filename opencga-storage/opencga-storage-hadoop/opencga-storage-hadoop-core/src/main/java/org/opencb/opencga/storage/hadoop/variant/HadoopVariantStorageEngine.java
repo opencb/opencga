@@ -65,6 +65,7 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsMapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.slf4j.Logger;
@@ -75,6 +76,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -569,6 +571,28 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
+        }
+    }
+
+    @Override
+    protected void postRemoveFiles(String study, List<Integer> fileIds, boolean error) throws StorageEngineException {
+        super.postRemoveFiles(study, fileIds, error);
+        if (!error) {
+            VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
+            VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+
+            StudyConfiguration sc = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(study, null).first();
+
+            List<Integer> sampleIds = new ArrayList<>();
+            for (Integer fileId : fileIds) {
+                sampleIds.addAll(sc.getSamplesInFiles().get(fileId));
+            }
+
+            try {
+                phoenixHelper.dropFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId(), fileIds, sampleIds);
+            } catch (SQLException e) {
+                throw new StorageEngineException("Error removing columns from Phoenix", e);
+            }
         }
     }
 

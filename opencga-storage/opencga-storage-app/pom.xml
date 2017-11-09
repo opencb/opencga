@@ -95,7 +95,7 @@
                 <configuration>
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
-                    <useWildcardClassPath>true</useWildcardClassPath>
+                    <useWildcardClassPath>false</useWildcardClassPath>
                     <extraJvmArguments>-Xms256m -Xmx16384m -Dfile.encoding=UTF-8</extraJvmArguments>
                     <!-- -Dlog4j.debug -->
                     <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>

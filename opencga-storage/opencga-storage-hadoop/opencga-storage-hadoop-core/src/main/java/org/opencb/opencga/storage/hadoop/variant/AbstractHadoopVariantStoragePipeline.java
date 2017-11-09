@@ -202,7 +202,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         long end;
         // FIXME
         if (options.getBoolean("transform.proto.parallel")) {
-            VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader);
+            VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader,
+                    helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()));
 
             // Use a supplier to avoid concurrent modifications of non thread safe objects.
             Supplier<ParallelTaskRunner.TaskWithException<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice, ?>> supplier =

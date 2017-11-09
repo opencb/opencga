@@ -25,6 +25,7 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
@@ -188,6 +189,34 @@ public class GenomeHelper {
 
     public static String getVariantColumn(Integer pos, String reference, String alternate) {
         return VARIANT_COLUMN_PREFIX + '_' + pos + '_' + reference + '_' + alternate;
+    }
+
+    public static Variant getVariantFromArchiveVariantColumn(String chromosome, byte[] column) {
+        if (Bytes.startsWith(column, VARIANT_COLUMN_B_PREFIX)) {
+            int lastIdx = VARIANT_COLUMN_B_PREFIX.length + 1;
+            int elem = 0;
+            int start = 0;
+            String reference = null;
+            String alternate = null;
+            for (int i = lastIdx; i < column.length; i++) {
+                if (column[i] == '_' || i == column.length - 1) {
+                    String x = Bytes.toString(column, lastIdx + 1, i - lastIdx - 1);
+                    System.out.println(x);
+                    if (elem == 0) {
+                        start = Integer.valueOf(x);
+                    } else if (elem == 1) {
+                        reference = x;
+                    } else if (elem == 2) {
+                        alternate = x;
+                    }
+                    lastIdx = i;
+                    elem++;
+                }
+            }
+            return new Variant(chromosome, start, reference, alternate);
+        } else {
+            return null;
+        }
     }
 
 }

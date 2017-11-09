@@ -237,7 +237,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
 
         // Create dummy reader
-        VariantSliceReader reader = getVariantSliceReader(variants);
+        VariantSliceReader reader = getVariantSliceReader(variants, sc.getStudyId(), fileId);
 
         // Writers
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, DB_NAME, dbAdaptor.getHBaseManager());
@@ -274,7 +274,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(study.getStudyId()), fileMetadata);
 
         // Create dummy reader
-        VariantSliceReader reader = getVariantSliceReader(variants);
+        VariantSliceReader reader = getVariantSliceReader(variants, study.getStudyId(), fileId);
 
         // Task supplier
         Supplier<ParallelTaskRunner.Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> taskSupplier = () -> {
@@ -302,7 +302,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
     }
 
-    private VariantSliceReader getVariantSliceReader(List<Variant> variants) {
+    private VariantSliceReader getVariantSliceReader(List<Variant> variants, Integer studyId, Integer fileId) {
         return new VariantSliceReader(100, new VariantReader() {
             boolean empty = false;
             @Override public List<String> getSampleNames() { return variants.get(0).getStudies().get(0).getOrderedSamplesName(); }
@@ -315,7 +315,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                     return variants;
                 }
             }
-        });
+        }, studyId, fileId);
     }
 
     private void mergeVariants(StudyConfiguration study, Integer ...fileIds) throws Exception {

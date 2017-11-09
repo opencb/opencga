@@ -291,6 +291,19 @@ public class VariantPhoenixHelper {
         con.commit();
     }
 
+    public void dropFiles(Connection con, String table, Integer studyId, Collection<Integer> fileIds, Collection<Integer> sampleIds)
+            throws SQLException {
+        List<CharSequence> columns = new ArrayList<>(fileIds.size() + sampleIds.size());
+        for (Integer fileId : fileIds) {
+            columns.add(buildFileColumnKey(studyId, fileId, new StringBuilder()));
+        }
+        for (Integer sampleId : sampleIds) {
+            columns.add(buildSampleColumnKey(studyId, sampleId, new StringBuilder()));
+        }
+        phoenixHelper.dropColumns(con, table, columns);
+        con.commit();
+    }
+
     public void createSchemaIfNeeded(Connection con, String schema) throws SQLException {
         String sql = "CREATE SCHEMA IF NOT EXISTS \"" + schema + "\"";
         logger.debug(sql);

@@ -28,8 +28,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
@@ -411,13 +413,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 //        String[] format = {VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY};
         for (String key : expectedVariants.keySet()) {
             if (variants.containsKey(key)) {
+                StudyEntry studyEntry = variants.get(key).getStudy(studyName);
+                StudyEntry expectedStudyEntry = expectedVariants.get(key).getStudies().get(0);
                 for (String sample : samples) {
                     for (String formatKey : format) {
-                        String expected = expectedVariants.get(key).getStudies().get(0).getSampleData(sample, formatKey);
+                        String expected = expectedStudyEntry.getSampleData(sample, formatKey);
                         if (expected.equals("./.")) {
                             expected = ".";
                         }
-                        String actual = variants.get(key).getStudy(studyName).getSampleData(sample, formatKey);
+                        String actual = studyEntry.getSampleData(sample, formatKey);
                         if (actual.equals("./.")) {
                             actual = ".";
                         }
@@ -426,6 +430,19 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                         }
                     }
                 }
+                int numFiles = 0;
+                if (!studyEntry.getSampleData("s1", "GT").equals("0/0")) {
+                    numFiles++;
+                }
+                if (!studyEntry.getSampleData("s2", "GT").equals("0/0")) {
+                    numFiles++;
+                }
+                assertEquals(numFiles, studyEntry.getFiles().size());
+                assertEquals(expectedStudyEntry.getSecondaryAlternates().size(), studyEntry.getSecondaryAlternates().size());
+                assertEquals(
+                        expectedStudyEntry.getSecondaryAlternates().stream().map(AlternateCoordinate::getAlternate).collect(Collectors.toList()),
+                        studyEntry.getSecondaryAlternates().stream().map(AlternateCoordinate::getAlternate).collect(Collectors.toList()));
+
             } else {
                 errors.add("Missing variant! " + key);
             }

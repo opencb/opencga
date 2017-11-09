@@ -176,7 +176,9 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
     protected void loadFromAvro(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getStudyMetadata());
-        VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), variantReader, progressLogger);
+        int studyId = helper.getStudyId();
+        int fileId = Integer.valueOf(helper.getFileMetadata().getId());
+        VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), variantReader, studyId, fileId, progressLogger);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
 

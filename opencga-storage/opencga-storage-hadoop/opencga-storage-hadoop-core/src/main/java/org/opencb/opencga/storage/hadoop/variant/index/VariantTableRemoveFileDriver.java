@@ -63,7 +63,7 @@ public class VariantTableRemoveFileDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected Class<? extends TableMapper> getMapperClass() {
-        return VariantTableDeletionMapper.class;
+        return VariantTableRemoveMapper.class;
     }
 
     @Override
