@@ -23,8 +23,10 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
 import java.util.Collections;
@@ -66,8 +68,10 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         System.out.println("studyConfiguration = " + studyConfiguration);
         String studyName = studyConfiguration.getStudyName();
 
-        Map<String, Object> options = Collections.singletonMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
+        ObjectMap options = new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
         loadFile("s1.genome.vcf", studyConfiguration, options);
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         Map<String, Variant> variants = buildVariantsIdx();
         assertFalse(variants.containsKey("1:10014:A:G"));
 
@@ -76,6 +80,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
         loadFile("s2.genome.vcf", studyConfiguration, options);
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         variants = buildVariantsIdx();
         assertThat(variants.keySet(), hasItem("1:10014:A:G"));
         assertEquals("0/2", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s1", "GT"));
@@ -85,9 +90,9 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
-        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor());
         // delete
         removeFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         variants = buildVariantsIdx();
         if (variants.containsKey("1:10014:A:G")) {
             System.out.println(variants.get("1:10014:A:G").getImpl());
@@ -97,9 +102,6 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         assertThat(variants.keySet(), hasItem("1:10013:T:C"));
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
-
-        System.out.println("studyConfiguration = " + studyConfiguration);
-        System.out.println("studyConfiguration.getAttributes().toJson() = " + studyConfiguration.getAttributes().toJson());
     }
 
     @Test
@@ -135,6 +137,9 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         Map<String, Variant> variants = new HashMap<>();
         System.out.println("Build Variant map");
         for (Variant variant : dbAdaptor) {
+            if (variant.getStudies().isEmpty()) {
+                continue;
+            }
             String v = variant.toString();
             assertFalse(variants.containsKey(v));
             variants.put(v, variant);

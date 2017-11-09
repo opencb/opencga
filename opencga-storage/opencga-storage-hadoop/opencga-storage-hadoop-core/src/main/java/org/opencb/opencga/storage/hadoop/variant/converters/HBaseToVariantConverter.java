@@ -21,11 +21,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -215,27 +213,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;
-    }
-
-    protected List<AlternateCoordinate> getAlternateCoordinates(Variant variant, VariantTableStudyRow row) {
-        List<AlternateCoordinate> secAltArr;
-        List<VariantProto.AlternateCoordinate> secondaryAlternates = row.getComplexVariant().getSecondaryAlternatesList();
-        int secondaryAlternatesCount = row.getComplexVariant().getSecondaryAlternatesCount();
-        secAltArr = new ArrayList<>(secondaryAlternatesCount);
-        if (secondaryAlternatesCount > 0) {
-            for (VariantProto.AlternateCoordinate altCoordinate : secondaryAlternates) {
-                VariantType type = VariantType.valueOf(altCoordinate.getType().name());
-                String chr = StringUtils.isEmpty(altCoordinate.getChromosome())
-                        ? variant.getChromosome() : altCoordinate.getChromosome();
-                Integer start = altCoordinate.getStart() == 0 ? variant.getStart() : altCoordinate.getStart();
-                Integer end = altCoordinate.getEnd() == 0 ? variant.getEnd() : altCoordinate.getEnd();
-                String reference = StringUtils.isEmpty(altCoordinate.getReference()) ? "" : altCoordinate.getReference();
-                String alternate = StringUtils.isEmpty(altCoordinate.getAlternate()) ? "" : altCoordinate.getAlternate();
-                AlternateCoordinate alt = new AlternateCoordinate(chr, start, end, reference, alternate, type);
-                secAltArr.add(alt);
-            }
-        }
-        return secAltArr;
     }
 
     private void wrongVariant(String message) {
