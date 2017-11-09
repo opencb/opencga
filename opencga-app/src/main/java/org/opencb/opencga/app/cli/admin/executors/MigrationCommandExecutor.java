@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
@@ -58,9 +59,17 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 String sessionId = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
 
                 // Catalog
-                String line;
                 String basePath = appHome + "/migration/v1.3.0/";
-                String catalogCli = "mongo " + configuration.getCatalog().getDatabase().getHosts().get(0) + "/"
+
+                String authentication = "";
+                if (StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getUser())
+                        && StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getPassword())) {
+                    authentication = "-u " + configuration.getCatalog().getDatabase().getUser() + " -p "
+                            + configuration.getCatalog().getDatabase().getPassword() + " --authenticationDatabase "
+                            + configuration.getCatalog().getDatabase().getOptions().getOrDefault("authenticationDatabase", "admin");
+                }
+
+                String catalogCli = "mongo " + authentication + configuration.getCatalog().getDatabase().getHosts().get(0) + "/"
                         + catalogManager.getCatalogDatabase() + " opencga_catalog_v1.2.x_to_1.3.0.js";
 
                 logger.info("Migrating Catalog. Running {} from {}", catalogCli, basePath);
@@ -69,6 +78,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 Process p = processBuilder.start();
 
                 BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line;
                 while ((line = input.readLine()) != null) {
                     logger.info(line);
                 }
