@@ -150,7 +150,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     public Response getCoverage(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
                                 @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam("region") String regions,
-                                @ApiParam(value = "Window size", defaultValue = "1") @QueryParam("windowSize") Integer windowSize) {
+                                @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
         try {
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             if (StringUtils.isNotEmpty(regions)) {
