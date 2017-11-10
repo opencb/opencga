@@ -16,17 +16,22 @@
 
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -39,6 +44,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     protected OpenCGAClient openCGAClient;
 
     protected AbstractOutputWriter writer;
+
+    protected static final String ANSI_RESET = "\033[0m";
+    protected static final String ANSI_RED = "\033[31m";
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         this(options, false);
@@ -86,30 +94,40 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 if (StringUtils.isEmpty(cliSession.getLogout())) {
                     // no timeout checks
                     if (skipDuration) {
-                        openCGAClient = new OpenCGAClient(cliSession.getSessionId(), clientConfiguration);
+                        openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
                         openCGAClient.setUserId(cliSession.getUserId());
                         if (options.sessionId == null) {
-                            options.sessionId = cliSession.getSessionId();
+                            options.sessionId = cliSession.getToken();
                         }
                     } else {
-                        int sessionDuration = clientConfiguration.getSessionDuration() * 1000;
-                        long timestamp = cliSession.getTimestamp();
-                        long now = System.currentTimeMillis();
-                        if ((now - timestamp) >= sessionDuration) {
-                            logger.warn("Session expired, too much time with not action");
-                            openCGAClient = new OpenCGAClient(cliSession.getSessionId(), clientConfiguration);
-                            openCGAClient.setUserId(cliSession.getUserId());
-                            openCGAClient.logout();
-                            logoutCliSessionFile();
-                        } else {
+                        // Get the expiration of the token stored in the session file
+                        String myClaims = StringUtils.split(cliSession.getToken(), ".")[1];
+                        String decodedClaimsString = new String(Base64.getDecoder().decode(myClaims), StandardCharsets.UTF_8);
+                        ObjectMap claimsMap = new ObjectMapper().readValue(decodedClaimsString, ObjectMap.class);
+                        Date expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
+
+                        Date currentDate = new Date();
+
+                        if (currentDate.before(expirationDate)) {
                             logger.debug("Session ok!!");
 //                            this.sessionId = cliSession.getSessionId();
-                            openCGAClient = new OpenCGAClient(cliSession.getSessionId(), clientConfiguration);
+                            openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
                             openCGAClient.setUserId(cliSession.getUserId());
 
+                            // Update token
+                            cliSession.setToken(openCGAClient.refresh());
+                            updateCliSessionFile();
+
                             if (options.sessionId == null) {
-                                options.sessionId = cliSession.getSessionId();
+                                options.sessionId = cliSession.getToken();
                             }
+                        } else {
+                            String message = "ERROR: Your session has expired. Please, login again to keep working or logout to work as "
+                                    + "anonymous.";
+                            System.err.println(ANSI_RED + message + ANSI_RESET);
+                            System.exit(1);
+//                            throw new RuntimeException("Your session has expired. Please, login again to keep working or logout to work "
+//                                    + "as anonymous.");
                         }
                     }
                 } else {
@@ -120,7 +138,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 logger.debug("No Session file");
                 openCGAClient = new OpenCGAClient(clientConfiguration);
             }
-        } catch (IOException e) {
+        } catch (ClientException | IOException e) {
             e.printStackTrace();
         }
     }

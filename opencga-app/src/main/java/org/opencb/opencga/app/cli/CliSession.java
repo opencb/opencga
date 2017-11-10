@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.app.cli;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -28,30 +27,27 @@ import java.util.Map;
 public class CliSession {
 
     private String userId;
-    private String sessionId;
+    private String token;
     private String login;
     private String logout;
-    private long timestamp;
     private Map<String, List<String>> projectsAndStudies;
 
     public CliSession() {
     }
 
-    public CliSession(String userId, String sessionId) {
-        this(userId, sessionId, LocalDateTime.now().toString(), null, Instant.now().toEpochMilli(), new HashMap<>());
+    public CliSession(String userId, String token) {
+        this(userId, token, LocalDateTime.now().toString(), null, new HashMap<>());
     }
 
-    public CliSession(String userId, String sessionId, Map<String, List<String>> projectsAndStudies) {
-        this(userId, sessionId, LocalDateTime.now().toString(), null, Instant.now().toEpochMilli(), projectsAndStudies);
+    public CliSession(String userId, String token, Map<String, List<String>> projectsAndStudies) {
+        this(userId, token, LocalDateTime.now().toString(), null, projectsAndStudies);
     }
 
-    public CliSession(String userId, String sessionId, String login, String logout, long timestamp, Map<String,
-            List<String>> projectsAndStudies) {
+    public CliSession(String userId, String token, String login, String logout, Map<String, List<String>> projectsAndStudies) {
         this.userId = userId;
-        this.sessionId = sessionId;
+        this.token = token;
         this.login = login;
         this.logout = logout;
-        this.timestamp = timestamp;
         this.projectsAndStudies = projectsAndStudies;
     }
 
@@ -59,10 +55,9 @@ public class CliSession {
     public String toString() {
         final StringBuilder sb = new StringBuilder("CliSession{");
         sb.append("userId='").append(userId).append('\'');
-        sb.append(", sessionId='").append(sessionId).append('\'');
+        sb.append(", sessionId='").append(token).append('\'');
         sb.append(", login='").append(login).append('\'');
         sb.append(", logout='").append(logout).append('\'');
-        sb.append(", timestamp=").append(timestamp);
         sb.append(", projects=").append(projectsAndStudies);
         sb.append('}');
         return sb.toString();
@@ -77,12 +72,12 @@ public class CliSession {
         return this;
     }
 
-    public String getSessionId() {
-        return sessionId;
+    public String getToken() {
+        return token;
     }
 
-    public CliSession setSessionId(String sessionId) {
-        this.sessionId = sessionId;
+    public CliSession setToken(String token) {
+        this.token = token;
         return this;
     }
 
@@ -101,15 +96,6 @@ public class CliSession {
 
     public CliSession setLogout(String logout) {
         this.logout = logout;
-        return this;
-    }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public CliSession setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
         return this;
     }
 
