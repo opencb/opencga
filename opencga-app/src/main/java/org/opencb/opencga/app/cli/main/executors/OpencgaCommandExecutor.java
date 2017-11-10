@@ -126,8 +126,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                                     + "anonymous.";
                             System.err.println(ANSI_RED + message + ANSI_RESET);
                             System.exit(1);
-//                            throw new RuntimeException("Your session has expired. Please, login again to keep working or logout to work "
-//                                    + "as anonymous.");
                         }
                     }
                 } else {
