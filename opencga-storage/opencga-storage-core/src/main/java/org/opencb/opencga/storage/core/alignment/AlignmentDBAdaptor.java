@@ -42,6 +42,7 @@ public interface AlignmentDBAdaptor {
         MAX_NM("maxNM", INTEGER, ""),
         MAX_NH("maxNH", INTEGER, ""),
         PROPERLY_PAIRED("properlyPaired", BOOLEAN, ""),
+        MAX_INSERT_SIZE("maxInsertSize", INTEGER, ""),
         SKIP_UNMAPPED("skipUnmapped", BOOLEAN, ""),
         SKIP_DUPLICATED("skipDuplicated", BOOLEAN, ""),
         CONTAINED("contained", BOOLEAN, ""),
