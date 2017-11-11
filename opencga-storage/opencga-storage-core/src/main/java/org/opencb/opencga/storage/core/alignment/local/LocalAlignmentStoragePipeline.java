@@ -85,7 +85,7 @@ public class LocalAlignmentStoragePipeline implements StoragePipeline {
 
         // 3) Create the BigWig file containing the coverage using the bamCoverage from the DeepTools package
         Path bwPath = workspace.resolve(path.getFileName() + ".bw");
-        bamManager.calculateBigWigCoverage(bwPath);
+        bamManager.calculateBigWigCoverage(bwPath, 50);
 
         return input;
     }
