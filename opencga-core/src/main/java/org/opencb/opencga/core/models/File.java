@@ -179,6 +179,7 @@ public class File {
         BCF,
         GVCF,
         TBI,
+        BIGWIG,
 
         SAM,
         BAM,
@@ -230,6 +231,7 @@ public class File {
 
         VARIANT,
         ALIGNMENT,
+        COVERAGE,
         SEQUENCE,
         PEDIGREE,
         NONE,
