@@ -334,6 +334,11 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 alignmentFilters.addProperlyPairedFilter();
             }
 
+            int maxInsertSize = query.getInt(QueryParams.MAX_INSERT_SIZE.key());
+            if (maxInsertSize > 0) {
+                alignmentFilters.addInsertSizeFilter(maxInsertSize);
+            }
+
             if (query.getBoolean(QueryParams.SKIP_UNMAPPED.key())) {
                 alignmentFilters.addUnmappedFilter();
             }

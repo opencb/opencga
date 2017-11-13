@@ -157,6 +157,26 @@ public class OpenCGAClient {
         return sessionId;
     }
 
+    /**
+     * Refresh the user token.
+     *
+     * @return the new token of the user. Null if the current session id is no longer valid.
+     * @throws ClientException when it is not possible refreshing.
+     */
+    public String refresh() throws ClientException {
+        UserClient userClient = getUserClient();
+        QueryResponse<ObjectMap> refresh = userClient.refresh();
+        String sessionId;
+        if (refresh.allResultsSize() == 1) {
+            sessionId = refresh.firstResult().getString("token");
+            setSessionId(sessionId);
+        } else {
+            throw new ClientException(refresh.getError());
+        }
+
+        return sessionId;
+    }
+
     public void logout() {
         if (this.sessionId != null) {
             // Remove sessionId and userId for all clients
