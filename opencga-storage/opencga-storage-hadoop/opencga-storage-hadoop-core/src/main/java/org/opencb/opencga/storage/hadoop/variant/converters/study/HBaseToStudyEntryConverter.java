@@ -254,6 +254,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(columnFamily).entrySet()) {
             byte[] qualifier = entry.getKey();
             byte[] bytes = entry.getValue();
+            if (bytes == null || bytes.length == 0) {
+                continue;
+            }
             if (endsWith(qualifier, VariantPhoenixHelper.SAMPLE_DATA_SUFIX_BYTES)) {
                 String columnName = Bytes.toString(qualifier);
                 String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
