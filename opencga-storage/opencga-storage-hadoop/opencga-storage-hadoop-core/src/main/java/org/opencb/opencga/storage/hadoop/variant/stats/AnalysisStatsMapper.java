@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 /**
  * Created by mh719 on 07/12/2016.
  */
+@Deprecated
 public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableBytesWritable, Put> {
 
     private Logger logger = LoggerFactory.getLogger(AnalysisStatsMapper.class);
@@ -82,7 +83,7 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
             try {
                 Variant variant = this.getHbaseToVariantConverter().convert(value);
                 List<VariantStatsWrapper> annotations = this.variantStatisticsCalculator.calculateBatch(
-                        Collections.singletonList(variant), this.studyId, "notused", this.samples);
+                        Collections.singletonList(variant), this.studyId, this.samples);
                 for (VariantStatsWrapper annotation : annotations) {
                     Put convert = this.variantStatsToHBaseConverter.convert(annotation);
                     if (null != convert) {
