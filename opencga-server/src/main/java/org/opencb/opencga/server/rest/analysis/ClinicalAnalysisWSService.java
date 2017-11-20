@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.Api;
@@ -8,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -19,17 +36,33 @@ import java.util.Map;
 
 @Path("/{version}/analysis/clinical")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - Clinical", position = 4, description = "Methods for working with Clinical Analysis")
+@Api(value = "Analysis - Clinical Interpretation", position = 4, description = "Methods for working with Clinical Analysis")
 public class ClinicalAnalysisWSService extends AnalysisWSService {
+
+    private ClinicalInterpretationManager clinicalInterpretationManager;
 
     public ClinicalAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
+
+        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
     }
 
     public ClinicalAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
+
+        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
+    }
+
+    @GET
+    @Path("/index")
+    @ApiOperation(value = "TEAM interpretation analysis", position = 14, response = QueryResponse.class)
+    public Response index(@ApiParam(value = "Comma separated list of interpretation IDs") @QueryParam(value = "interpretation") String fileIdStrOld,
+                          @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysis") String clinicalAnalysis,
+                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr) {
+
+        return Response.ok().build();
     }
 
     @GET
