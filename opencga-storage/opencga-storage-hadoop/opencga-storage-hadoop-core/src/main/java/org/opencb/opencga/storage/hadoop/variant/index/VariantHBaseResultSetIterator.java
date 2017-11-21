@@ -62,9 +62,9 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
         converter = HBaseToVariantConverter.fromResultSet(this.genomeHelper, this.scm)
                 .setSelectVariantElements(select)
                 .setMutableSamplesPosition(false)
-                .setStudyNameAsStudyId(options.getBoolean("studyNameAsStudyId", true))
+                .setStudyNameAsStudyId(options.getBoolean(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, true))
                 .setUnknownGenotype(unknownGenotype)
-                .setSimpleGenotypes(options.getBoolean("simpleGenotypes", true))
+                .setSimpleGenotypes(options.getBoolean(HBaseToVariantConverter.SIMPLE_GENOTYPES, true))
                 .setFormats(formats);
         hasNext = fetch(resultSet::next);
     }

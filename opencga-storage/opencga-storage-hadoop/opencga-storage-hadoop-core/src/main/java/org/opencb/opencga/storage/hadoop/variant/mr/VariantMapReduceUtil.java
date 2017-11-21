@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
@@ -10,9 +11,11 @@ import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,4 +108,14 @@ public class VariantMapReduceUtil {
                 addDependencyJar);
     }
 
+    public static void configureVariantConverter(Configuration configuration,
+                                                 boolean mutableSamplesPosition,
+                                                 boolean studyNameAsStudyId,
+                                                 boolean simpleGenotypes,
+                                                 String unknownGenotype) {
+        configuration.setBoolean(HBaseToVariantConverter.MUTABLE_SAMPLES_POSITION, mutableSamplesPosition);
+        configuration.setBoolean(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, studyNameAsStudyId);
+        configuration.setBoolean(HBaseToVariantConverter.SIMPLE_GENOTYPES, simpleGenotypes);
+        configuration.set(VariantQueryParam.UNKNOWN_GENOTYPE.key(), unknownGenotype);
+    }
 }

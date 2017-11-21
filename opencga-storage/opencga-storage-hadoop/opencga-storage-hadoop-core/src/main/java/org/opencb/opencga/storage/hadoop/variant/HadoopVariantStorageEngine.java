@@ -68,6 +68,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDri
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
+import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -348,7 +349,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
+        if (getOptions().getBoolean("stats.local", false)) {
+            return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
+        } else {
+            return new HadoopMRVariantStatisticsManager(getDBAdaptor(), mrExecutor, getOptions());
+        }
     }
 
     @Override

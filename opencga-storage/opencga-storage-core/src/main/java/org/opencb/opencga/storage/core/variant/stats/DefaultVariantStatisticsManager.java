@@ -301,7 +301,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             boolean defaultCohortAbsent = false;
 
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants,
-                    studyConfiguration.getStudyName(), null/*fileId*/, cohorts);
+                    studyConfiguration.getStudyName(), cohorts);
 
             long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
@@ -490,7 +490,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
      * * if a cohort is already calculated, it is not an error if overwrite was provided
      *
      */
-    List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
+    static List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
                                                           Map<String, Set<String>> cohorts,
                                                           Map<String, Integer> cohortIds,
                                                           boolean overwrite, boolean updateStats)
@@ -604,8 +604,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         return cohortIdList;
     }
 
-    void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, URI uri, boolean updateStats) throws IOException {
-
+    void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, URI uri, boolean updateStats)
+            throws IOException, StorageEngineException {
         /** Select input path **/
         Path variantInput = Paths.get(uri.getPath());
 
@@ -615,31 +615,9 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             if (parser.nextToken() != null) {
                 VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);
                 Set<String> cohortNames = variantStatsWrapper.getCohortStats().keySet();
-                checkAndUpdateCalculatedCohorts(studyConfiguration, cohortNames, updateStats);
+                VariantStatisticsManager.checkAndUpdateCalculatedCohorts(studyConfiguration, cohortNames, updateStats);
             } else {
                 throw new IOException("File " + uri + " is empty");
-            }
-        }
-    }
-
-    void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, Collection<String> cohorts, boolean updateStats)
-            throws IOException {
-        for (String cohortName : cohorts) {
-//            if (cohortName.equals(VariantSourceEntry.DEFAULT_COHORT)) {
-//                continue;
-//            }
-            Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
-            if (studyConfiguration.getInvalidStats().contains(cohortId)) {
-//                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
-                logger.debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
-                studyConfiguration.getInvalidStats().remove(cohortId);
-            }
-            if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
-                if (!updateStats) {
-                    throw new IOException("Cohort \"" + cohortName + "\" stats already calculated");
-                }
-            } else {
-                studyConfiguration.getCalculatedStats().add(cohortId);
             }
         }
     }

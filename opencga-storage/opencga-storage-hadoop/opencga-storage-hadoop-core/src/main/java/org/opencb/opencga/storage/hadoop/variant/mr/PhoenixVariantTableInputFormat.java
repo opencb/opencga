@@ -29,7 +29,7 @@ public class PhoenixVariantTableInputFormat
     protected void init(Configuration configuration) throws IOException {
         PhoenixConfigurationUtil.setInputClass(configuration, ResultSetDBWritable.class);
         inputFormat = new PhoenixInputFormat<>();
-        converter = HBaseToVariantConverter.fromResultSet(new VariantTableHelper(configuration));
+        initConverter(HBaseToVariantConverter.fromResultSet(new VariantTableHelper(configuration)), configuration);
     }
 
     @Override

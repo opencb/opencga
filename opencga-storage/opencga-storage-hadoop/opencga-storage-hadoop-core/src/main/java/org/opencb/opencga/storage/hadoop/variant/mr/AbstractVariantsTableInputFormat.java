@@ -29,6 +29,10 @@ public abstract class AbstractVariantsTableInputFormat<KEYIN, VALUEIN, T> extend
 
     protected abstract void init(Configuration configuration) throws IOException;
 
+    protected void initConverter(HBaseToVariantConverter<T> converter, Configuration configuration) {
+        this.converter = converter.configure(configuration);
+    }
+
     protected static class RecordReaderTransform<KEYIN, VALUEIN, VALUEOUT> extends RecordReader<KEYIN, VALUEOUT> {
 
         private final RecordReader<KEYIN, VALUEIN> recordReader;
