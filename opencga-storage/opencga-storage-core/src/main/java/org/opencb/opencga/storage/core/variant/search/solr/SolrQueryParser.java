@@ -341,16 +341,29 @@ public class SolrQueryParser {
     }
 
     /**
-     *
      * Parse string values, e.g.: dbSNP, type, chromosome,... This function takes into account multiple values and
      * the separator between them can be:
      *     "," or ";" to apply a "OR" condition
      *
-     * @param name         Parameter name
-     * @param value        Parameter value
+     * @param name          Parameter name
+     * @param value         Parameter value
      * @return             A list of strings, each string represents a boolean condition
      */
-    private String parseCategoryTermValue(String name, String value) {
+    public String parseCategoryTermValue(String name, String value) {
+        return parseCategoryTermValue(name, value, false);
+    }
+
+    /**
+     * Parse string values, e.g.: dbSNP, type, chromosome,... This function takes into account multiple values and
+     * the separator between them can be:
+     *     "," or ";" to apply a "OR" condition
+     *
+     * @param name          Parameter name
+     * @param value         Parameter value
+     * @param partialSearch Flag to partial search
+     * @return             A list of strings, each string represents a boolean condition
+     */
+    public String parseCategoryTermValue(String name, String value, boolean partialSearch) {
         StringBuilder filter = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
             boolean or = value.contains(",");
@@ -359,16 +372,17 @@ public class SolrQueryParser {
                 throw new IllegalArgumentException("Command and semi-colon cannot be mixed: " + value);
             }
             String logicalComparator = or ? " OR " : " AND ";
+            String wildcard = partialSearch ? "*" : "";
 
             String[] values = value.split("[,;]");
             if (values.length == 1) {
-                filter.append(name).append(":\"").append(value).append("\"");
+                filter.append(name).append(":\"").append(wildcard).append(value).append(wildcard).append("\"");
             } else {
                 filter.append("(");
-                filter.append(name).append(":\"").append(values[0]).append("\"");
+                filter.append(name).append(":\"").append(wildcard).append(values[0]).append(wildcard).append("\"");
                 for (int i = 1; i < values.length; i++) {
                     filter.append(logicalComparator);
-                    filter.append(name).append(":\"").append(values[i]).append("\"");
+                    filter.append(name).append(":\"").append(wildcard).append(values[i]).append(wildcard).append("\"");
                 }
                 filter.append(")");
             }
@@ -385,7 +399,7 @@ public class SolrQueryParser {
      * @param value        Parameter value
      * @return             The string with the boolean conditions
      */
-    private String parseScoreValue(String value) {
+    public String parseScoreValue(String value) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
@@ -436,7 +450,7 @@ public class SolrQueryParser {
      * @param value        Paramenter value
      * @return             The string with the boolean conditions
      */
-    private String parsePopValue(String name, String value) {
+    public String parsePopValue(String name, String value) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
@@ -507,7 +521,7 @@ public class SolrQueryParser {
      * @param value     Parameter value, e.g.: 0.314, tolerated,...
      * @return          Solr query range
      */
-    private String getRange(String prefix, String name, String op, String value) {
+    public String getRange(String prefix, String name, String op, String value) {
         StringBuilder sb = new StringBuilder();
         switch (op) {
             case "=":
@@ -610,7 +624,7 @@ public class SolrQueryParser {
         return sb.toString();
     }
 
-    private SolrQuery.ORDER getSortOrder(QueryOptions queryOptions) {
+    public SolrQuery.ORDER getSortOrder(QueryOptions queryOptions) {
         return queryOptions.getString(QueryOptions.ORDER).equals(QueryOptions.ASCENDING)
                 ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
     }
@@ -835,7 +849,7 @@ public class SolrQueryParser {
      * @param range   String containing the facet range definition
      * @param solrQuery   Solr query
      */
-    private void parseSolrFacetRanges(String range, SolrQuery solrQuery) {
+    public void parseSolrFacetRanges(String range, SolrQuery solrQuery) {
         String[] split = range.split(":");
         if (split.length != 4) {
             logger.warn("Facet range '" + range + "' malformed. The expected range format is 'name:start:end:gap'");
@@ -866,7 +880,7 @@ public class SolrQueryParser {
      * @param intersection   String containing the facet intersection
      * @param solrQuery   Solr query
      */
-    private void parseSolrFacetIntersections(String intersection, SolrQuery solrQuery) {
+    public void parseSolrFacetIntersections(String intersection, SolrQuery solrQuery) {
         boolean error = true;
         String[] splitA = intersection.split(":");
         if (splitA.length == 2) {
