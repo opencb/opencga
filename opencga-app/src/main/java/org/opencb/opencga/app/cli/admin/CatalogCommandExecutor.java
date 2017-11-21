@@ -177,7 +177,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         logger.info("\nChecking and installing non-existing indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
-        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword(), "localhost").first().getId();
 
         catalogManager.installIndexes(token);
     }

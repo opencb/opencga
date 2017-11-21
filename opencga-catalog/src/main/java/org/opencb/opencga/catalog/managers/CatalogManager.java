@@ -180,7 +180,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installIndexes(String token) throws CatalogException {
-        if (!ADMIN.equals(userManager.getUserId(token))) {
+        if (!ADMIN.equals(userManager.getId(token))) {
             throw new CatalogAuthorizationException("Only the admin can install new indexes");
         }
         catalogDBAdaptorFactory.createIndexes();
