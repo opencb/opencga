@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
@@ -141,13 +142,21 @@ public class VariantHBaseQueryParser {
 
         if (isValidParam(query, ANNOTATION_EXISTS)) {
             if (!query.getBoolean(ANNOTATION_EXISTS.key())) {
-//                filters.addFilter(new SkipFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
-//                        new BinaryComparator(VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes()))));
-                filters.addFilter(new SkipFilter(new SingleColumnValueFilter(
-                        genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes(),
-                        CompareFilter.CompareOp.EQUAL, new BinaryComparator(new byte[]{}))));
+                // Use a column different from FULL_ANNOTATION to read few elements from disk
+//                byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
+                byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.SO.bytes();
+
+                // Filter : SKIP QualifierFilter(!=, <COLUMN>)
+                // Skip rows where NOT ALL cells ( has QualifierName != <COLUMN> )
+                // == Get rows where ALL cells (has QualifierName != <COLUMN>)
+                // == Get rows where <COLUMN> is missing
+                filters.addFilter(new SkipFilter(new QualifierFilter(
+                        CompareFilter.CompareOp.NOT_EQUAL, new BinaryComparator(annotationColumn))));
+//                filters.addFilter(new SkipFilter(new SingleColumnValueFilter(
+//                        genomeHelper.getColumnFamily(), annotationColumn,
+//                        CompareFilter.CompareOp.EQUAL, new BinaryComparator(new byte[]{}))));
                 if (!returnedFields.contains(VariantField.ANNOTATION)) {
-                    scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+                    scan.addColumn(genomeHelper.getColumnFamily(), annotationColumn);
                 }
             } else {
                 logger.warn("Filter " + ANNOTATION_EXISTS.key() + "=true not implemented in native mode");
@@ -191,10 +200,13 @@ public class VariantHBaseQueryParser {
         scan.setFilter(filters);
         scan.setMaxResultSize(options.getInt(QueryOptions.LIMIT));
 
-        logger.debug("StartRow = " + new String(scan.getStartRow()));
-        logger.debug("StopRow = " + new String(scan.getStopRow()));
-        logger.debug("MaxResultSize = " + scan.getMaxResultSize());
-        logger.debug("Filters = " + scan.getFilter().toString());
+        logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()));
+        logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()));
+        logger.info("columns = " + scan.getFamilyMap().get(
+                genomeHelper.getColumnFamily()).stream().map(Bytes::toString).collect(Collectors.joining(",")));
+        logger.info("MaxResultSize = " + scan.getMaxResultSize());
+        logger.info("Filters = " + scan.getFilter().toString());
+        logger.info("Batch = " + scan.getBatch());
         return scan;
     }
 
