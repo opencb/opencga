@@ -363,10 +363,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        if (getOptions().getBoolean("stats.local", false)) {
+        if (getOptions().getBoolean("stats.local", true)) {
             return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
         } else {
-            return new HadoopMRVariantStatisticsManager(getDBAdaptor(), mrExecutor, getOptions());
+            return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(getOptions()), getOptions());
         }
     }
 
