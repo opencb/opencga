@@ -237,6 +237,10 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 // Zookeeper always with the same clientPort.
 //                conf.setInt("test.hbase.zookeeper.property.clientPort", 55419);
 
+                // Do not put up web UI
+                conf.setInt("hbase.regionserver.info.port", -1);
+                conf.setInt("hbase.master.info.port", -1);
+
                 utility.get().startMiniCluster(1);
 
     //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();

@@ -41,7 +41,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.db.VariantStatsDBWriter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
@@ -56,14 +55,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.checkStudyConfiguration;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NOT;
 
 /**
  * Created by jmmut on 12/02/15.
@@ -210,22 +206,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
 
         // reader, tasks and writer
-        Query readerQuery = new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
-                .append(VariantQueryParam.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
-        if (options.containsKey(Options.FILE_ID.key())) {
-            readerQuery.append(VariantQueryParam.FILES.key(), options.get(Options.FILE_ID.key()));
-        }
-        if (options.containsKey(VariantQueryParam.REGION.key())) {
-            Object region = options.get(VariantQueryParam.REGION.key());
-            readerQuery.put(VariantQueryParam.REGION.key(), region);
-        }
-        if (updateStats) {
-            //Get all variants that not contain any of the required cohorts
-            readerQuery.append(VariantQueryParam.COHORTS.key(),
-                    cohorts.keySet().stream().map((cohort) -> NOT + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
-                            .joining(AND)));
-        }
-        readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".");
+        Query readerQuery = VariantStatisticsManager.buildInputQuery(studyConfiguration, cohorts.keySet(), updateStats, options);
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true)
                 .append(QueryOptions.EXCLUDE, VariantField.ANNOTATION);

@@ -5,10 +5,11 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
@@ -39,11 +40,16 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        calculator = new VariantStatisticsCalculator(true);
-        // TODO: Set aggregation
-        calculator.setAggregationType(Aggregation.NONE, null);
         helper = new VariantTableHelper(context.getConfiguration());
         studyConfiguration = helper.readStudyConfiguration();
+        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+        calculator = new VariantStatisticsCalculator(overwrite);
+        // TODO: TAG MAP!!
+        if (studyConfiguration.isAggregated()) {
+            throw new UnsupportedOperationException("Unable to extract aggregated statistics using MR. "
+                    + "Use " + HadoopVariantStorageEngine.STATS_LOCAL + " = true");
+        }
+        calculator.setAggregationType(studyConfiguration.getAggregation(), null);
         study = studyConfiguration.getStudyName();
         converter = new VariantStatsToHBaseConverter(helper, studyConfiguration);
 

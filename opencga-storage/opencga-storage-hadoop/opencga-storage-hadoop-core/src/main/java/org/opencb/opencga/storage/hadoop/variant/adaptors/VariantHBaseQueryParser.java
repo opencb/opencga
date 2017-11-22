@@ -91,7 +91,12 @@ public class VariantHBaseQueryParser {
         return otherParams.isEmpty();
     }
 
-    ////// Util methods:
+    public Scan parseQuery(Query query, QueryOptions options) {
+        VariantQueryUtils.SelectVariantElements selectElements =
+                VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager);
+        return parseQuery(selectElements, query, options);
+    }
+
     public Scan parseQuery(VariantQueryUtils.SelectVariantElements selectElements, Query query, QueryOptions options) {
 
         Scan scan = new Scan();

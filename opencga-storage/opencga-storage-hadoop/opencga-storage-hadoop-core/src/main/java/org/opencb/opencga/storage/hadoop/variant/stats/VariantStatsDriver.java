@@ -2,12 +2,14 @@ package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.filter.CompareFilter;
-import org.apache.hadoop.hbase.filter.RowFilter;
-import org.apache.hadoop.hbase.filter.SubstringComparator;
 import org.apache.hadoop.mapreduce.Job;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +24,11 @@ import java.util.Collection;
  */
 public class VariantStatsDriver extends AbstractAnalysisTableDriver {
     public static final String STATS_INPUT = "stats.input";
-    public static final String STATS_INPUT_DEFAULT = "hbase";
+    public static final String STATS_INPUT_DEFAULT = "phoenix";
     private static final String STATS_OPERATION_NAME = "stats";
 
     private Collection<Integer> cohorts;
-    private final Logger logger = LoggerFactory.getLogger(VariantStatsDriver.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VariantStatsDriver.class);
 
     public VariantStatsDriver() {
     }
@@ -47,30 +49,33 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected Job setupJob(Job job, String archiveTableName, String variantTableName) throws IOException {
-//        if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
-//            try (HBaseStudyConfigurationDBAdaptor adaptor = new HBaseStudyConfigurationDBAdaptor(getAnalysisTable(), getConf(), null);
-//                 StudyConfigurationManager scm = new StudyConfigurationManager(adaptor)) {
-//                // Sql
-//                Query query = buildQuery(getStudyId(), samples, getFiles());
-//                QueryOptions options = buildQueryOptions();
-//                String sql = new VariantSqlQueryParser(getHelper(), getAnalysisTable(), scm).parse(query,
-//                        options).getSql();
-//
-//                logger.info("Query : " + query.toJson());
-//                logger.info(sql);
-//
-//                // input
-//                VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, FillGapsMapper.class);
-//            }
-//        } else {
+        QueryOptions options = new QueryOptions();
+        getConf().iterator().forEachRemaining(entry -> options.put(entry.getKey(), entry.getValue()));
+
+        boolean updateStats = options.getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(), false);
+        Query query = VariantStatisticsManager.buildInputQuery(readStudyConfiguration(), cohorts, updateStats, options);
+        LOG.info("Query : " + query.toJson());
+
+        if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
+            // Sql
+            String sql = new VariantSqlQueryParser(getHelper(), getAnalysisTable(), getStudyConfigurationManager())
+                    .parse(query, options).getSql();
+
+            LOG.info(sql);
+
+            // input
+            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, getMapperClass());
+        } else {
             // scan
             // TODO: Improve filter!
-            Scan scan = new Scan();
-            scan.setFilter(new RowFilter(CompareFilter.CompareOp.NOT_EQUAL, new SubstringComparator(getHelper().getMetaRowKeyString())));
+            // Some of the filters in query are not supported by VariantHBaseQueryParser
+            Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, options);
+
             // input
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, getMapperClass());
-//        }
-        VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true, ".");
+        }
+        VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
+                VariantStatisticsManager.UNKNOWN_GENOTYPE);
 
         // output
         VariantMapReduceUtil.setOutputHBaseTable(job, variantTableName);
@@ -89,9 +94,9 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(new FillGapsDriver().privateMain(args));
+            System.exit(new VariantStatsDriver().privateMain(args));
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Error executing " + VariantStatsDriver.class, e);
             System.exit(1);
         }
     }
