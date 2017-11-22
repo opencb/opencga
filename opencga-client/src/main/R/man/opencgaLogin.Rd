@@ -30,7 +30,7 @@ con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
 # Configuration in list format
 conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
-con <- initOpencgaR(conf=conf)
+con <- initOpencgaR(opencgaConfig=conf)
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
 # Configuration in file format ("YAML" or "JSON")

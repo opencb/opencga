@@ -15,7 +15,3 @@ opencgaLogin}
 A function extract all the available information from Opencga web services 
 at the defined host
 }
-\examples{
-opencgaHelp(con)
-
-}

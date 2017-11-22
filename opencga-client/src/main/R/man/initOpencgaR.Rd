@@ -29,12 +29,14 @@ required by OpencgaR methods to connect to OpenCGA web services. By defult,
 it is configured to query HGVA (http://hgva.opencb.org/).
 }
 \examples{
-con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
+con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", 
+user = "user")
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
 # Configuration in list format
-conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
-con <- initOpencgaR(conf=conf)
+conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/",
+user="user"))
+con <- initOpencgaR(opencgaConfig=conf)
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
 # Configuration in file format ("YAML" or "JSON")
