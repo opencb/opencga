@@ -19,6 +19,8 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +34,7 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
     protected long timeFetching = 0;
     protected long timeConverting = 0;
     private List<AutoCloseable> closeables = new ArrayList<>();
+    private final Logger logger = LoggerFactory.getLogger(VariantDBIterator.class);
 
     public void addCloseable(AutoCloseable closeable) {
         this.closeables.add(closeable);
@@ -94,7 +97,11 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         try {
             return fetcher.call();
         } finally {
-            timeFetching += System.nanoTime() - start;
+            long delta = System.nanoTime() - start;
+            if (TimeUnit.NANOSECONDS.toSeconds(delta) > 60) {
+                logger.warn("Slow backend. Took " + (TimeUnit.NANOSECONDS.toMillis(delta) / 1000.0) + "s to fetch more data");
+            }
+            this.timeFetching += delta;
         }
     }
 
@@ -109,7 +116,7 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         return EMPTY_ITERATOR;
     }
 
-    static class EmptyVariantDBIterator extends VariantDBIterator {
+    private static class EmptyVariantDBIterator extends VariantDBIterator {
         EmptyVariantDBIterator() {
         }
 

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -38,5 +39,12 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     protected VariantAnnotationDBWriter newVariantAnnotationDBWriter(VariantDBAdaptor dbAdaptor, QueryOptions options) {
         VariantHadoopDBAdaptor hadoopDBAdaptor = (VariantHadoopDBAdaptor) dbAdaptor;
         return hadoopDBAdaptor.newAnnotationLoader(options);
+    }
+
+    @Override
+    protected QueryOptions getIteratorQueryOptions(ObjectMap params) {
+        QueryOptions iteratorQueryOptions = super.getIteratorQueryOptions(params);
+        iteratorQueryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+        return iteratorQueryOptions;
     }
 }

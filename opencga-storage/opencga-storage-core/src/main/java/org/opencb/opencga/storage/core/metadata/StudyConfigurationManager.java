@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.metadata;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -27,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -384,8 +386,8 @@ public class StudyConfigurationManager implements AutoCloseable {
                     fileStr = removeNegation(fileStr);
                 }
             }
-            if (fileStr.contains(":")) {
-                String[] studyFile = fileStr.split(":");
+            String[] studyFile = VariantQueryUtils.splitStudyResource(fileStr);
+            if (studyFile.length == 2) {
                 String study = studyFile[0];
                 fileStr = studyFile[1];
                 StudyConfiguration sc;
@@ -453,7 +455,7 @@ public class StudyConfigurationManager implements AutoCloseable {
      * @return List of file ids within this study
      * @throws VariantQueryException if the list of files contains files from other studies
      */
-    public List<Integer> getFileIdsFromStudy(List<?> files, StudyConfiguration studyConfiguration) throws VariantQueryException {
+    public static List<Integer> getFileIdsFromStudy(List<?> files, StudyConfiguration studyConfiguration) throws VariantQueryException {
         Objects.requireNonNull(studyConfiguration);
         List<Integer> fileIds = new ArrayList<>(files.size());
         for (Object fileObj : files) {
@@ -469,60 +471,71 @@ public class StudyConfigurationManager implements AutoCloseable {
     /**
      * Get fileId from a given study configuration.
      *
-     * @param fileObj            List of files
+     * @param fileObj            File object
      * @param studyConfiguration Study configuration.
      * @return File id within this study. Null if the file does not exist.
      */
     public static Integer getFileIdFromStudy(Object fileObj, StudyConfiguration studyConfiguration) {
-        final Integer fileId;
-        if (fileObj instanceof Number) {
-            int aux = ((Number) fileObj).intValue();
-            if (studyConfiguration.getFileIds().containsValue(aux)) {
-                fileId = aux;
+        return getResourceIdFromStudy(fileObj, studyConfiguration, studyConfiguration.getFileIds());
+    }
+
+    /**
+     * Get fileId from a given study configuration.
+     *
+     * @param obj                Object
+     * @param studyConfiguration Study configuration.
+     * @param biMap              BiMap containing Names and Ids for this resource
+     * @return File id within this study. Null if the file does not exist.
+     */
+    private static Integer getResourceIdFromStudy(Object obj, StudyConfiguration studyConfiguration, BiMap<String, Integer> biMap) {
+        final Integer id;
+        if (obj instanceof Number) {
+            int aux = ((Number) obj).intValue();
+            if (biMap.containsValue(aux)) {
+                id = aux;
             } else {
-                fileId = null;
+                id = null;
             }
         } else {
-            String fileStr = fileObj.toString();
-            if (isNegated(fileStr)) {
-                fileStr = removeNegation(fileStr);
+            String str = obj.toString();
+            if (isNegated(str)) {
+                str = removeNegation(str);
             }
-            if (StringUtils.isNumeric(fileStr)) {
-                fileId = Integer.parseInt(fileStr);
+            if (StringUtils.isNumeric(str)) {
+                id = Integer.parseInt(str);
             } else {
-                int idx = fileStr.indexOf(':');
-                if (idx > 0) {
-                    String[] split = fileStr.split(":", 2);
+                String[] split = VariantQueryUtils.splitStudyResource(str);
+                if (split.length == 2) {
                     String study = split[0];
-                    fileStr = split[1];
+                    str = split[1];
                     if (study.equals(studyConfiguration.getStudyName())
                             || StringUtils.isNumeric(study) && Integer.valueOf(study).equals(studyConfiguration.getStudyId())) {
-                        if (StringUtils.isNumeric(fileStr)) {
-                            int aux = Integer.valueOf(fileStr);
-                            if (studyConfiguration.getFileIds().containsValue(aux)) {
-                                fileId = aux;
+                        if (StringUtils.isNumeric(str)) {
+                            int aux = Integer.valueOf(str);
+                            if (biMap.containsValue(aux)) {
+                                id = aux;
                             } else {
-                                fileId = null;
+                                id = null;
                             }
                         } else {
-                            fileId = studyConfiguration.getFileIds().get(fileStr);
+                            id = biMap.get(str);
                         }
                     } else {
-                        fileId = null;
+                        id = null;
                     }
-                } else if (StringUtils.isNumeric(fileStr)) {
-                    int aux = Integer.valueOf(fileStr);
-                    if (studyConfiguration.getFileIds().containsValue(aux)) {
-                        fileId = aux;
+                } else if (StringUtils.isNumeric(str)) {
+                    int aux = Integer.valueOf(str);
+                    if (biMap.containsValue(aux)) {
+                        id = aux;
                     } else {
-                        fileId = null;
+                        id = null;
                     }
                 } else {
-                    fileId = studyConfiguration.getFileIds().get(fileStr);
+                    id = biMap.get(str);
                 }
             }
         }
-        return fileId;
+        return id;
     }
 
     // TODO: Return sampleId and studyId as a Pair
@@ -538,10 +551,10 @@ public class StudyConfigurationManager implements AutoCloseable {
             if (StringUtils.isNumeric(sampleStr)) {
                 sampleId = Integer.parseInt(sampleStr);
             } else {
-                if (sampleStr.contains(":")) {  //Expect to be as <study>:<sample>
-                    String[] split = sampleStr.split(":");
+                String[] split = VariantQueryUtils.splitStudyResource(sampleStr);
+                if (split.length == 2) {  //Expect to be as <study>:<sample>
                     String study = split[0];
-                    sampleStr= split[1];
+                    sampleStr = split[1];
                     StudyConfiguration sc;
                     if (defaultStudyConfiguration != null && study.equals(defaultStudyConfiguration.getStudyName())) {
                         sc = defaultStudyConfiguration;
@@ -572,50 +585,7 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public static Integer getSampleIdFromStudy(Object sampleObj, StudyConfiguration sc) {
-        final Integer sampleId;
-        if (sampleObj instanceof Number) {
-            int aux = ((Number) sampleObj).intValue();
-            if (sc.getSampleIds().containsValue(aux)) {
-                sampleId = aux;
-            } else {
-                sampleId = null;
-            }
-        } else {
-            String sampleStr = sampleObj.toString();
-            if (StringUtils.isNumeric(sampleStr)) {
-                sampleId = Integer.parseInt(sampleStr);
-            } else {
-                int idx = sampleStr.indexOf(':');
-                if (idx > 0) {
-                    String[] split = sampleStr.split(":", 2);
-                    if (split[0].equals(sc.getStudyName())
-                            || StringUtils.isNumeric(split[0]) && Integer.valueOf(split[0]).equals(sc.getStudyId())) {
-                        if (StringUtils.isNumeric(sampleStr)) {
-                            int aux = Integer.valueOf(sampleStr);
-                            if (sc.getSampleIds().containsValue(aux)) {
-                                sampleId = aux;
-                            } else {
-                                sampleId = null;
-                            }
-                        } else {
-                            sampleId = sc.getSampleIds().get(sampleStr);
-                        }
-                    } else {
-                        sampleId = null;
-                    }
-                } else if (StringUtils.isNumeric(sampleStr)) {
-                    int aux = Integer.valueOf(sampleStr);
-                    if (sc.getSampleIds().containsValue(aux)) {
-                        sampleId = aux;
-                    } else {
-                        sampleId = null;
-                    }
-                } else {
-                    sampleId = sc.getSampleIds().get(sampleStr);
-                }
-            }
-        }
-        return sampleId;
+        return getResourceIdFromStudy(sampleObj, sc, sc.getSampleIds());
     }
 
     // TODO: Return cohortId and studyId as a Pair
@@ -646,6 +616,32 @@ public class StudyConfigurationManager implements AutoCloseable {
         return cohortId;
     }
 
+    /**
+     * Get list of fileIds from a study.
+     *
+     * @param cohorts              List of cohorts
+     * @param studyConfiguration Study configuration.
+     * @return List of file ids within this study
+     * @throws VariantQueryException if the list of cohorts contains cohorts from other studies
+     */
+    public static List<Integer> getCohortIdsFromStudy(List<?> cohorts, StudyConfiguration studyConfiguration) throws VariantQueryException {
+        Objects.requireNonNull(studyConfiguration);
+        List<Integer> fileIds = new ArrayList<>(cohorts.size());
+        for (Object cohortObj : cohorts) {
+            Integer cohortId = getCohortIdFromStudy(cohortObj, studyConfiguration);
+            if (cohortId == null) {
+                throw VariantQueryException.cohortNotFound(cohortObj.toString(), studyConfiguration.getStudyId(),
+                        studyConfiguration.getCohortIds().keySet());
+            }
+            fileIds.add(cohortId);
+        }
+        return fileIds;
+    }
+
+    public static Integer getCohortIdFromStudy(Object cohortObj, StudyConfiguration sc) {
+        return getResourceIdFromStudy(cohortObj, sc, sc.getCohortIds());
+    }
+
     /*
      * Before load file, the StudyConfiguration has to be updated with the new sample names.
      * Will read param SAMPLE_IDS like [<sampleName>:<sampleId>,]*
@@ -664,7 +660,7 @@ public class StudyConfigurationManager implements AutoCloseable {
         if (options.containsKey(VariantStorageEngine.Options.SAMPLE_IDS.key())
                 && !options.getAsStringList(VariantStorageEngine.Options.SAMPLE_IDS.key()).isEmpty()) {
             for (String sampleEntry : options.getAsStringList(VariantStorageEngine.Options.SAMPLE_IDS.key())) {
-                String[] split = sampleEntry.split(":");
+                String[] split = VariantQueryUtils.splitStudyResource(sampleEntry);
                 if (split.length != 2) {
                     throw new StorageEngineException("Param " + sampleEntry + " is malformed");
                 }

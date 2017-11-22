@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
+import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
 import java.util.Map;
 
@@ -32,11 +35,24 @@ import java.util.Map;
  */
 public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManagerTest implements HadoopVariantStorageTest {
 
+    @Override
+    public void before() throws Exception {
+        super.before();
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+    }
+
     @Rule
     public ExternalResource externalResource = new HadoopExternalResource();
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
+        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED)
+                .append("stats.local", false);
     }
 }

@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters;
 
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -31,6 +32,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -57,6 +59,10 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant> {
+
+    public static final String MUTABLE_SAMPLES_POSITION = "mutableSamplesPosition";
+    public static final String STUDY_NAME_AS_STUDY_ID = "studyNameAsStudyId";
+    public static final String SIMPLE_GENOTYPES = "simpleGenotypes";
 
     protected final HBaseToVariantAnnotationConverter annotationConverter;
     protected final HBaseToStudyEntryConverter studyEntryConverter;
@@ -222,6 +228,25 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             logger.warn(message);
         }
     }
+
+    public HBaseToVariantConverter<T> configure(Configuration configuration) {
+        if (StringUtils.isNotEmpty(configuration.get(MUTABLE_SAMPLES_POSITION))) {
+            setMutableSamplesPosition(configuration.getBoolean(MUTABLE_SAMPLES_POSITION, true));
+        }
+        if (StringUtils.isNotEmpty(configuration.get(STUDY_NAME_AS_STUDY_ID))) {
+            setStudyNameAsStudyId(configuration.getBoolean(STUDY_NAME_AS_STUDY_ID, false));
+        }
+        if (StringUtils.isNotEmpty(configuration.get(SIMPLE_GENOTYPES))) {
+            setSimpleGenotypes(configuration.getBoolean(SIMPLE_GENOTYPES, false));
+        }
+        setUnknownGenotype(configuration.get(VariantQueryParam.UNKNOWN_GENOTYPE.key()));
+
+//                .setSelectVariantElements(select)
+//                .setFormats(formats)
+
+        return this;
+    }
+
 
     private static class VariantTableStudyRowToVariantConverter extends HBaseToVariantConverter<VariantTableStudyRow> {
         VariantTableStudyRowToVariantConverter(VariantTableHelper helper) throws IOException {

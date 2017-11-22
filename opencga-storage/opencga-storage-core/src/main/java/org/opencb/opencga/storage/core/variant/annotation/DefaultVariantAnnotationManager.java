@@ -152,14 +152,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         URI fileUri = path.toUri();
 
         /** Getting iterator from OpenCGA Variant database. **/
-        QueryOptions iteratorQueryOptions;
-        if (params == null) {
-            iteratorQueryOptions = new QueryOptions();
-        } else {
-            iteratorQueryOptions = new QueryOptions(params);
-        }
-        List<VariantField> include = Arrays.asList(CHROMOSOME, START, END, REFERENCE, ALTERNATE, SV);
-        iteratorQueryOptions.add(QueryOptions.INCLUDE, include);
+        QueryOptions iteratorQueryOptions = getIteratorQueryOptions(params);
 
         int batchSize = 200;
         int numThreads = 8;
@@ -171,6 +164,10 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         try {
             DataReader<Variant> variantDataReader = new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
             ProgressLogger progressLogger = new ProgressLogger("Annotated variants:", () -> {
+                int limit = iteratorQueryOptions.getInt(QueryOptions.LIMIT, 0);
+                if (limit > 0) {
+                    return (long) limit;
+                }
                 Long count = dbAdaptor.count(query).first();
                 numAnnotationsToLoad = count;
                 return count;
@@ -208,6 +205,18 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         }
 
         return fileUri;
+    }
+
+    protected QueryOptions getIteratorQueryOptions(ObjectMap params) {
+        QueryOptions iteratorQueryOptions;
+        if (params == null) {
+            iteratorQueryOptions = new QueryOptions();
+        } else {
+            iteratorQueryOptions = new QueryOptions(params);
+        }
+        List<VariantField> include = Arrays.asList(CHROMOSOME, START, END, REFERENCE, ALTERNATE, SV);
+        iteratorQueryOptions.add(QueryOptions.INCLUDE, include);
+        return iteratorQueryOptions;
     }
 
 

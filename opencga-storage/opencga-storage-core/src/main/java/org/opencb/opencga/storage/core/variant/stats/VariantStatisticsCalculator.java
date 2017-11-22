@@ -105,12 +105,11 @@ public class VariantStatisticsCalculator {
      *
      * @param variants variants to to calculate stats from
      * @param studyId  needed to choose the VariantSourceEntry in the variants
-     * @param fileId   needed to choose the VariantSourceEntry in the variants
      * @param samples  keys are cohort names, values are sets of samples names. groups of samples (cohorts) for each to compute
      *                 VariantStats.
      * @return list of VariantStatsWrapper. may be shorter than the list of variants if there is no source for some variant
      */
-    public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, String studyId, String fileId,
+    public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, String studyId,
                                                     Map<String, Set<String>> samples) {
         List<VariantStatsWrapper> variantStatsWrappers = new ArrayList<>(variants.size());
 

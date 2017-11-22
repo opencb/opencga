@@ -18,8 +18,11 @@ package org.opencb.opencga.storage.core.variant.stats;
 
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -46,4 +49,27 @@ public interface VariantStatisticsManager {
      */
     void calculateStatistics(String study, List<String> cohorts, QueryOptions options) throws IOException, StorageEngineException;
 
+
+    static void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, Collection<String> cohorts, boolean updateStats)
+            throws StorageEngineException {
+        for (String cohortName : cohorts) {
+//            if (cohortName.equals(VariantSourceEntry.DEFAULT_COHORT)) {
+//                continue;
+//            }
+            Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
+            if (studyConfiguration.getInvalidStats().contains(cohortId)) {
+//                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
+                LoggerFactory.getLogger(VariantStatisticsManager.class)
+                        .debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
+                studyConfiguration.getInvalidStats().remove(cohortId);
+            }
+            if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
+                if (!updateStats) {
+                    throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
+                }
+            } else {
+                studyConfiguration.getCalculatedStats().add(cohortId);
+            }
+        }
+    }
 }

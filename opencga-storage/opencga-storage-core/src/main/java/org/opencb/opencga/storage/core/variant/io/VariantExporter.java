@@ -64,7 +64,7 @@ public class VariantExporter {
     public VariantExporter(VariantStorageEngine engine, VariantMetadataFactory metadataFactory) throws StorageEngineException {
         this.engine = engine;
         variantWriterFactory = new VariantWriterFactory(engine.getDBAdaptor());
-        this.metadataFactory =metadataFactory;
+        this.metadataFactory = metadataFactory;
     }
 
     /**

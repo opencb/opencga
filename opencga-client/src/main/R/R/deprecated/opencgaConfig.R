@@ -16,11 +16,11 @@
 #   }
 #   return(list(host=host, version=version))
 # }
-# 
+#
 # read.conf.file <- function(conf){
 #   type <- get.config.type(conf)
 #   print(paste("Reading configuration file in", type, "format", sep = " "))
 #   conf.obj <- read.config(conf, warn = F)
-#   
+#
 #   read.conf.list(conf.obj)
 # }

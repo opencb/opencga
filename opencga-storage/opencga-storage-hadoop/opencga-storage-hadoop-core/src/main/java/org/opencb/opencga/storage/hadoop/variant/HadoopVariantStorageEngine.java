@@ -68,6 +68,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDri
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
+import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +80,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 
@@ -202,11 +204,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 }); // Set Daemon for quick shutdown !!!
         LinkedList<Future<StoragePipelineResult>> futures = new LinkedList<>();
         List<Integer> indexedFiles = new CopyOnWriteArrayList<>();
+        AtomicBoolean continueLoading = new AtomicBoolean(true);
         for (URI inputFile : inputFiles) {
             //Provide a connected storageETL if load is required.
 
             VariantStoragePipeline storageETL = newStoragePipeline(doLoad, new ObjectMap(extraOptions));
             futures.add(executorService.submit(() -> {
+                if (!continueLoading.get()) {
+                    return null;
+                }
                 try {
                     Thread.currentThread().setName(Paths.get(inputFile).getFileName().toString());
                     StoragePipelineResult storagePipelineResult = new StoragePipelineResult(inputFile);
@@ -256,21 +262,30 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         int errors = 0;
         try {
             while (!futures.isEmpty()) {
-                executorService.awaitTermination(1, TimeUnit.MINUTES);
                 // Check values
                 if (futures.peek().isDone() || futures.peek().isCancelled()) {
                     Future<StoragePipelineResult> first = futures.pop();
                     StoragePipelineResult result = first.get(1, TimeUnit.MINUTES);
+                    if (result == null) {
+                        continue;
+                    }
+                    boolean error = false;
                     if (result.getTransformError() != null) {
-                        //TODO: Handle errors. Retry?
-                        errors++;
                         logger.error("Error transforming file " + result.getInput(), result.getTransformError());
+                        error = true;
                     } else if (result.getLoadError() != null) {
-                        //TODO: Handle errors. Retry?
-                        errors++;
+                        error = true;
                         logger.error("Error loading file " + result.getInput(), result.getLoadError());
                     }
+                    if (error) {
+                        //TODO: Handle errors. Retry?
+                        errors++;
+                        continueLoading.set(false);
+                    }
                     concurrResult.add(result);
+                } else {
+                    // Sleep only if the task is not done
+                    executorService.awaitTermination(1, TimeUnit.MINUTES);
                 }
             }
             if (errors > 0) {
@@ -348,7 +363,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
+        if (getOptions().getBoolean("stats.local", true)) {
+            return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
+        } else {
+            return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(getOptions()), getOptions());
+        }
     }
 
     @Override

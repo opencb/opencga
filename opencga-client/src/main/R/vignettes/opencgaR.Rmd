@@ -1,0 +1,19 @@
+---
+title: "Introduction to opencgaR"
+author: "Mohammed Omar Elsiddieg Abdallah"
+date: "`r doc_date()`"
+package: "`r pkg_ver('opencgaR')`"
+#  BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{"Simplifying Genomic Annotations in R"}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+output: 
+   BiocStyle::html_document
+---
+# Introduction
+# Installation and configuration
+# Users login and authentication
+# Navigation through users projects, studies and files
+# Querying variant data
+# Integration with the Bioconductor ecosystem
