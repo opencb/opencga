@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -385,8 +386,8 @@ public class StudyConfigurationManager implements AutoCloseable {
                     fileStr = removeNegation(fileStr);
                 }
             }
-            if (fileStr.contains(":")) {
-                String[] studyFile = fileStr.split(":");
+            String[] studyFile = VariantQueryUtils.splitStudyResource(fileStr);
+            if (studyFile.length == 2) {
                 String study = studyFile[0];
                 fileStr = studyFile[1];
                 StudyConfiguration sc;
@@ -503,9 +504,8 @@ public class StudyConfigurationManager implements AutoCloseable {
             if (StringUtils.isNumeric(str)) {
                 id = Integer.parseInt(str);
             } else {
-                int idx = str.indexOf(':');
-                if (idx > 0) {
-                    String[] split = str.split(":", 2);
+                String[] split = VariantQueryUtils.splitStudyResource(str);
+                if (split.length == 2) {
                     String study = split[0];
                     str = split[1];
                     if (study.equals(studyConfiguration.getStudyName())
@@ -551,10 +551,10 @@ public class StudyConfigurationManager implements AutoCloseable {
             if (StringUtils.isNumeric(sampleStr)) {
                 sampleId = Integer.parseInt(sampleStr);
             } else {
-                if (sampleStr.contains(":")) {  //Expect to be as <study>:<sample>
-                    String[] split = sampleStr.split(":");
+                String[] split = VariantQueryUtils.splitStudyResource(sampleStr);
+                if (split.length == 2) {  //Expect to be as <study>:<sample>
                     String study = split[0];
-                    sampleStr= split[1];
+                    sampleStr = split[1];
                     StudyConfiguration sc;
                     if (defaultStudyConfiguration != null && study.equals(defaultStudyConfiguration.getStudyName())) {
                         sc = defaultStudyConfiguration;
@@ -660,7 +660,7 @@ public class StudyConfigurationManager implements AutoCloseable {
         if (options.containsKey(VariantStorageEngine.Options.SAMPLE_IDS.key())
                 && !options.getAsStringList(VariantStorageEngine.Options.SAMPLE_IDS.key()).isEmpty()) {
             for (String sampleEntry : options.getAsStringList(VariantStorageEngine.Options.SAMPLE_IDS.key())) {
-                String[] split = sampleEntry.split(":");
+                String[] split = VariantQueryUtils.splitStudyResource(sampleEntry);
                 if (split.length != 2) {
                     throw new StorageEngineException("Param " + sampleEntry + " is malformed");
                 }
