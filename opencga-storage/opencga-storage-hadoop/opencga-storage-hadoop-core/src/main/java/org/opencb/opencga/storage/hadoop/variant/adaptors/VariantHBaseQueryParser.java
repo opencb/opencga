@@ -24,6 +24,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -105,8 +106,6 @@ public class VariantHBaseQueryParser {
 //        FilterList regionFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
 //        filters.addFilter(regionFilters);
         List<byte[]> columnPrefixes = new LinkedList<>();
-        Set<VariantField> returnedFields = selectElements.getFields();
-        Map<Integer, List<Integer>> returnedSamples = selectElements.getSamples();
 
         List<Region> regions = getRegions(query);
 
@@ -160,7 +159,7 @@ public class VariantHBaseQueryParser {
 //                filters.addFilter(new SkipFilter(new SingleColumnValueFilter(
 //                        genomeHelper.getColumnFamily(), annotationColumn,
 //                        CompareFilter.CompareOp.EQUAL, new BinaryComparator(new byte[]{}))));
-                if (!returnedFields.contains(VariantField.ANNOTATION)) {
+                if (!selectElements.getFields().contains(VariantField.ANNOTATION)) {
                     scan.addColumn(genomeHelper.getColumnFamily(), annotationColumn);
                 }
             } else {
@@ -168,7 +167,7 @@ public class VariantHBaseQueryParser {
             }
         }
 
-        if (returnedFields.contains(VariantField.STUDIES)) {
+        if (selectElements.getFields().contains(VariantField.STUDIES)) {
             if (isValidParam(query, STUDIES)) {
                 //TODO: Handle negations(!), and(;) and or(,)
                 List<Integer> studyIdList = query.getAsIntegerList(STUDIES.key());
@@ -177,15 +176,33 @@ public class VariantHBaseQueryParser {
                 }
             }
 
-            returnedSamples.forEach((studyId, sampleIds) -> {
+            if (selectElements.getFields().contains(VariantField.STUDIES_STATS)) {
+                for (StudyConfiguration sc : selectElements.getStudyConfigurations().values()) {
+                    for (Integer cohortId : sc.getCalculatedStats()) {
+                        scan.addColumn(genomeHelper.getColumnFamily(),
+                                VariantPhoenixHelper.getStatsColumn(sc.getStudyId(), cohortId).bytes());
+                    }
+                    for (Integer cohortId : sc.getInvalidStats()) {
+                        scan.addColumn(genomeHelper.getColumnFamily(),
+                                VariantPhoenixHelper.getStatsColumn(sc.getStudyId(), cohortId).bytes());
+                    }
+                }
+            }
+            selectElements.getSamples().forEach((studyId, sampleIds) -> {
                 scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
                 for (Integer sampleId : sampleIds) {
                     scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId));
                 }
             });
+            selectElements.getFiles().forEach((studyId, fileIds) -> {
+                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+                for (Integer fileId : fileIds) {
+                    scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
+                }
+            });
         }
 
-        if (returnedFields.contains(VariantField.ANNOTATION)) {
+        if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
             scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
         }
 
@@ -202,7 +219,9 @@ public class VariantHBaseQueryParser {
             filters.addFilter(columnPrefixFilter);
         }
 
-        scan.setFilter(filters);
+        if (!filters.getFilters().isEmpty()) {
+            scan.setFilter(filters);
+        }
         scan.setMaxResultSize(options.getInt(QueryOptions.LIMIT));
 
         logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()));
@@ -210,7 +229,7 @@ public class VariantHBaseQueryParser {
         logger.info("columns = " + scan.getFamilyMap().get(
                 genomeHelper.getColumnFamily()).stream().map(Bytes::toString).collect(Collectors.joining(",")));
         logger.info("MaxResultSize = " + scan.getMaxResultSize());
-        logger.info("Filters = " + scan.getFilter().toString());
+        logger.info("Filters = " + scan.getFilter());
         logger.info("Batch = " + scan.getBatch());
         return scan;
     }
