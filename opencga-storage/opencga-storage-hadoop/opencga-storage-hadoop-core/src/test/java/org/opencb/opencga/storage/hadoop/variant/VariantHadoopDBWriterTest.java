@@ -172,7 +172,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         merger.setDefaultValue("AD", ".");
         merger.configure(sc1.getVariantHeader());
 
-        Map<String, Variant> loadedVariants = dbAdaptor.stream(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "."), new QueryOptions("studyNameAsStudyId", false))
+        Map<String, Variant> loadedVariants = dbAdaptor.stream(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "."), new QueryOptions(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, false))
                 .collect(Collectors.toMap(Variant::toString, i -> i));
 
         for (Variant variant : variants1) {

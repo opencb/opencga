@@ -764,19 +764,23 @@ public class VariantMongoDBQueryParser {
                             try {
                                 return Integer.parseInt(s);
                             } catch (NumberFormatException ignore) {
-                                int indexOf = s.lastIndexOf(':');
-                                if (defaultStudyConfiguration == null && indexOf < 0) {
+                                String[] split = VariantQueryUtils.splitStudyResource(s);
+                                if (defaultStudyConfiguration == null && split.length == 1) {
                                     throw VariantQueryException.malformedParam(COHORTS, s, "Expected {study}:{cohort}");
                                 } else {
                                     String study;
                                     String cohort;
                                     Integer cohortId;
-                                    if (defaultStudyConfiguration != null && indexOf < 0) {
+                                    if (defaultStudyConfiguration != null && split.length == 1) {
                                         cohort = s;
-                                        cohortId = studyConfigurationManager.getCohortId(cohort, defaultStudyConfiguration);
+                                        cohortId = StudyConfigurationManager.getCohortIdFromStudy(cohort, defaultStudyConfiguration);
+                                        if (cohortId == null) {
+                                            throw VariantQueryException.cohortNotFound(cohort, defaultStudyConfiguration.getStudyId(),
+                                                    defaultStudyConfiguration.getCohortIds().keySet());
+                                        }
                                     } else {
-                                        study = s.substring(0, indexOf);
-                                        cohort = s.substring(indexOf + 1);
+                                        study = split[0];
+                                        cohort = split[1];
                                         StudyConfiguration studyConfiguration =
                                                 studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
                                         cohortId = studyConfigurationManager.getCohortId(cohort, studyConfiguration);
@@ -1324,13 +1328,13 @@ public class VariantMongoDBQueryParser {
      * @param defaultStudyConfiguration
      */
     private QueryBuilder addStatsFilter(String key, String filter, QueryBuilder builder, StudyConfiguration defaultStudyConfiguration) {
-        if (filter.contains(":") || defaultStudyConfiguration != null) {
+        String[] studyValue = VariantQueryUtils.splitStudyResource(filter);
+        if (studyValue.length == 2 || defaultStudyConfiguration != null) {
             Integer studyId;
             Integer cohortId;
             String operator;
             String valueStr;
-            if (filter.contains(":")) {
-                String[] studyValue = filter.split(":");
+            if (studyValue.length == 2) {
                 String[] cohortOpValue = VariantQueryUtils.splitOperator(studyValue[1]);
                 String study = studyValue[0];
                 String cohort = cohortOpValue[0];

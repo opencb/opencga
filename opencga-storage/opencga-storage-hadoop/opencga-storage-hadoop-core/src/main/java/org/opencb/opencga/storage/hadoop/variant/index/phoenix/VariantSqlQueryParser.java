@@ -654,7 +654,7 @@ public class VariantSqlQueryParser {
                     cohort = removeNegation(cohort);
                     negated = true;
                 }
-                String[] studyCohort = cohort.split(":");
+                String[] studyCohort = splitStudyResource(cohort);
                 StudyConfiguration studyConfiguration;
                 if (studyCohort.length == 2) {
                     studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyCohort[0], defaultStudyConfiguration, null);
@@ -954,13 +954,13 @@ public class VariantSqlQueryParser {
                                                                       BiFunction<Integer, Integer, Column> columnBuilder) {
         return (keyOpValue, v) -> {
             String key = keyOpValue[0];
-            int indexOf = key.lastIndexOf(":");
+            String[] split = VariantQueryUtils.splitStudyResource(key);
 
             String cohort;
             final StudyConfiguration sc;
-            if (indexOf > 0) {
-                String study = key.substring(0, indexOf);
-                cohort = key.substring(indexOf + 1);
+            if (split.length == 2) {
+                String study = split[0];
+                cohort = split[1];
                 sc = studyConfigurationManager.getStudyConfiguration(study, defaultStudyConfiguration, null);
             } else {
                 cohort = key;

@@ -117,6 +117,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
             calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+            variantStorageEngine.getOptions().putAll(calculateStatsOptions);
             List<String> cohortsName = cohortsMap.values().stream().map(Cohort::getName).collect(Collectors.toList());
             variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohortsName,
                     calculateStatsOptions);

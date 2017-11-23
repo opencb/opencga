@@ -4,7 +4,7 @@
 !1 OpenCga
 
 !3 Notes
-User must have a working test envirnment with latest OpenCGA '''!style_code(!style_red[PUBLIC])''' installation. Change the following variables in Suite Set Up page to run tests against own installtion:
+User must have a working test environment with latest OpenCGA '''!style_code(!style_red[PUBLIC])''' installation. Change the following variables in Suite Set Up page to run tests against own installtion:
  * OPENCGA_VERSION 
  * TEST_HOST 
 !4 1: Catalog Tests don't require any prepopulated data in Test System	  

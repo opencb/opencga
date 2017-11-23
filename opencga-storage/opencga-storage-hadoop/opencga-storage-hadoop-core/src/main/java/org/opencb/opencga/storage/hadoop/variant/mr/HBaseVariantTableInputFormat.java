@@ -26,7 +26,7 @@ public class HBaseVariantTableInputFormat extends AbstractVariantsTableInputForm
 //            configuration.forEach(entry -> System.out.println(entry.getKey() + " = " + entry.getValue()));
         tableInputFormat.setConf(configuration);
         inputFormat = tableInputFormat;
-        converter = HBaseToVariantConverter.fromResult(new VariantTableHelper(configuration));
+        initConverter(HBaseToVariantConverter.fromResult(new VariantTableHelper(configuration)), configuration);
     }
 
     @Override

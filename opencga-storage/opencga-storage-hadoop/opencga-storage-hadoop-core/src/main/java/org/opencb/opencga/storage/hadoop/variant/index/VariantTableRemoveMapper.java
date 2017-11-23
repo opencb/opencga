@@ -122,9 +122,13 @@ public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
 //                         .getValue(getHelper().getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
 //                VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(data);
 //                for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
-//                    int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, vcfSlice.getPosition());
-//                    int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, vcfSlice.getPosition());
-//                    updateLst.add(new Variant(vcfSlice.getChromosome(), start, end, vcfRecord.getReference(), vcfRecord.getAlternate()));
+//                    if (VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET.contains(VcfRecordProtoToVariantConverter
+//                            .getVariantType(vcfRecord.getType()))) {
+//                        int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, vcfSlice.getPosition());
+//                        int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, vcfSlice.getPosition());
+//                        updateLst.add(
+//                                new Variant(vcfSlice.getChromosome(), start, end, vcfRecord.getReference(), vcfRecord.getAlternate()));
+//                    }
 //                }
 //            }
         }
@@ -177,7 +181,8 @@ public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
         Context context = variantContext.context;
         byte[] columnFamily = getHelper().getColumnFamily();
         for (Variant variant : partialRemoveList) {
-            Delete delete = new Delete(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
+            byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
+            Delete delete = new Delete(row);
 
             for (Integer fileId : variantContext.getFileIds()) {
                 delete.addColumn(columnFamily, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
@@ -188,6 +193,11 @@ public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
 //            this.analysisTable.delete(delete);
             context.write(new ImmutableBytesWritable(getHelper().getAnalysisTable()), delete);
             context.getCounter(COUNTER_GROUP_NAME, "ANALYSIS_TABLE_ROW-PARTIAL-DELETE").increment(1);
+
+//            // Mark this variant to be reviewed
+//            Put put = new Put(row);
+//            put.addColumn(columnFamily, Bytes.toBytes("R"), PDataType.TRUE_BYTES);
+//            context.write(new ImmutableBytesWritable(getHelper().getAnalysisTable()), put);
         }
     }
 

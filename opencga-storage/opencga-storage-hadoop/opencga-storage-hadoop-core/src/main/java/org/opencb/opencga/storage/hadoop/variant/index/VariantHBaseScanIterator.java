@@ -57,8 +57,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
         iterator = resultScanner.iterator();
         converter = HBaseToVariantConverter.fromResult(genomeHelper, scm)
                 .setMutableSamplesPosition(false)
-                .setStudyNameAsStudyId(true)
-                .setSimpleGenotypes(true)
+                .setStudyNameAsStudyId(options.getBoolean(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, true))
+                .setSimpleGenotypes(options.getBoolean(HBaseToVariantConverter.SIMPLE_GENOTYPES, true))
                 .setUnknownGenotype(unknownGenotype)
                 .setSelectVariantElements(selectElements)
                 .setFormats(formats);

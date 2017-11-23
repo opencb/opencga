@@ -54,6 +54,7 @@ public class VariantQueryUtils {
     public static final String IS = ":";
     public static final String NOT = "!";
     public static final String STUDY_POP_FREQ_SEPARATOR = ":";
+    public static final char STUDY_RESOURCE_SEPARATOR = ':';
     public static final char QUOTE_CHAR = '"';
 
     public static final String NONE = "none";
@@ -265,6 +266,15 @@ public class VariantQueryUtils {
 
 
         return new SelectVariantElements(returnedFields, returnedStudies, studyConfigurations, sampleIds, fileIds);
+    }
+
+    public static String[] splitStudyResource(String value) {
+        int idx = value.lastIndexOf(STUDY_RESOURCE_SEPARATOR);
+        if (idx <= 0 || idx == value.length() - 1) {
+            return new String[]{value};
+        } else {
+            return new String[]{value.substring(0, idx), value.substring(idx + 1)};
+        }
     }
 
     public static StudyConfiguration getDefaultStudyConfiguration(Query query, QueryOptions options,

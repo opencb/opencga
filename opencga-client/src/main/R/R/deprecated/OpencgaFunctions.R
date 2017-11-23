@@ -24,17 +24,17 @@
 #' #' con <- OpencgaReadConfig(conf)
 #' #' 
 #' #' @export
-#' OpencgaReadConfig <- function(conf){
-#'   if (class(conf) == "list"){
-#'     # read from R object
-#'     conf <- read.conf.list(conf)
-#'   }else if(class(conf) == "character"){
-#'     # read from file
-#'     conf <- read.conf.file(conf)
-#'   }
-#'   ocgaConf <- new(Class = "OpencgaConfig", host=conf$host, version=conf$version)
-#'   return(ocgaConf)
-#' }
+# OpencgaReadConfig <- function(conf){
+#   if (class(conf) == "list"){
+#     # read from R object
+#     conf <- read.conf.list(conf)
+#   }else if(class(conf) == "character"){
+#     # read from file
+#     conf <- read.conf.file(conf)
+#   }
+#   ocgaConf <- new(Class = "OpencgaConfig", host=conf$host, version=conf$version)
+#   return(ocgaConf)
+# }
 
 
 #' @title Login to OpenCGA Web Services

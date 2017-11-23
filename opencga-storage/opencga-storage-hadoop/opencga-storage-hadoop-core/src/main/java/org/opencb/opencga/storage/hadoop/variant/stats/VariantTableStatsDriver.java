@@ -38,6 +38,7 @@ import java.util.Collections;
 /**
  * Created by mh719 on 21/11/2016.
  */
+@Deprecated
 public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
 
     private final Logger logger = LoggerFactory.getLogger(VariantTableStatsDriver.class);

@@ -76,6 +76,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  * Created by mh719 on 16/06/15.
  */
 public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
+    public static final String NATIVE = "native";
     protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);
     private final String variantTable;
     private final VariantPhoenixHelper phoenixHelper;
@@ -303,7 +304,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
 
         boolean archiveIterator = options.getBoolean("archive", false);
-        boolean hbaseIterator = options.getBoolean("native", false);
+        boolean hbaseIterator = options.getBoolean(NATIVE, false);
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 
         if (archiveIterator) {
@@ -365,9 +366,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw new RuntimeException(e);
             }
         } else if (hbaseIterator) {
-            logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
-            Scan scan = hbaseQueryParser.parseQuery(query, options);
+            logger.debug("Creating " + VariantHBaseScanIterator.class.getSimpleName() + " iterator");
             SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager.get());
+            Scan scan = hbaseQueryParser.parseQuery(selectElements, query, options);
             try {
                 Table table = getConnection().getTable(TableName.valueOf(variantTable));
                 ResultScanner resScan = table.getScanner(scan);

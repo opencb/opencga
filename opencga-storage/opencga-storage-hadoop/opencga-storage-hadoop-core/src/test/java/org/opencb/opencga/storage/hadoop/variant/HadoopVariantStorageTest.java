@@ -89,6 +89,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -464,6 +465,11 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     System.out.println("Executing FillGapsDriver : " + executable + " " + args);
                     int r = new FillGapsDriver().privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution FillGapsDriver");
+                    return r;
+                } else if (executable.endsWith(VariantStatsDriver.class.getName())) {
+                    System.out.println("Executing VariantStatsDriver : " + executable + " " + args);
+                    int r = new VariantStatsDriver().privateMain(Commandline.translateCommandline(args), conf);
+                    System.out.println("Finish execution VariantStatsDriver");
                     return r;
                 }
             } catch (Exception e) {
