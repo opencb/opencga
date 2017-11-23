@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.stats;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.mapreduce.Job;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -49,17 +50,21 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected Job setupJob(Job job, String archiveTableName, String variantTableName) throws IOException {
-        QueryOptions options = new QueryOptions();
+        ObjectMap options = new ObjectMap();
         getConf().iterator().forEachRemaining(entry -> options.put(entry.getKey(), entry.getValue()));
 
-        boolean updateStats = options.getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(), false);
-        Query query = VariantStatisticsManager.buildInputQuery(readStudyConfiguration(), cohorts, updateStats, options);
+        boolean updateStats = options.getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(),
+                VariantStorageEngine.Options.UPDATE_STATS.defaultValue());
+        boolean overwrite = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(),
+                VariantStorageEngine.Options.OVERWRITE_STATS.defaultValue());
+        Query query = VariantStatisticsManager.buildInputQuery(readStudyConfiguration(), cohorts, overwrite, updateStats, options);
+        QueryOptions queryOptions = VariantStatisticsManager.buildIncludeExclude();
         LOG.info("Query : " + query.toJson());
 
         if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
             // Sql
             String sql = new VariantSqlQueryParser(getHelper(), getAnalysisTable(), getStudyConfigurationManager())
-                    .parse(query, options).getSql();
+                    .parse(query, queryOptions).getSql();
 
             LOG.info(sql);
 
@@ -69,7 +74,7 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
             // scan
             // TODO: Improve filter!
             // Some of the filters in query are not supported by VariantHBaseQueryParser
-            Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, options);
+            Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, queryOptions);
 
             // input
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, getMapperClass());

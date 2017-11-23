@@ -174,7 +174,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         int numTasks = options.getInt(Options.LOAD_THREADS.key(), 6);
         boolean overwrite = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
-        Properties tagmap = options.get(Options.AGGREGATION_MAPPING_PROPERTIES.key(), Properties.class, null);
+        Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
 //            fileId = options.getString(VariantStorageEngine.Options.FILE_ID.key());
 
         // if no cohorts provided and the study is aggregated: try to get the cohorts from the tagMap
@@ -206,7 +206,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
 
         // reader, tasks and writer
-        Query readerQuery = VariantStatisticsManager.buildInputQuery(studyConfiguration, cohorts.keySet(), updateStats, options);
+        Query readerQuery = VariantStatisticsManager.buildInputQuery(studyConfiguration, cohorts.keySet(), overwrite, updateStats, options);
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true)
                 .append(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
