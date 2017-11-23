@@ -24,10 +24,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Comment;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.ReportedVariant;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantEngine;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantException;
+import org.opencb.opencga.storage.core.clinical.ReportedVariantIterator;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
 
@@ -61,4 +64,23 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariantEngine.query(query, options, "");
     }
 
+    public QueryResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String token)
+            throws IOException, ClinicalVariantException {
+
+        return clinicalVariantEngine.interpretationQuery(query, options, "");
+    }
+
+    public ReportedVariantIterator iterator(Query query, QueryOptions options, String toten) throws IOException, ClinicalVariantException {
+        return clinicalVariantEngine.iterator(query, options, "");
+    }
+
+    public void addInterpretationComment(long interpretationId, Comment comment, String toten)
+            throws IOException, ClinicalVariantException {
+        clinicalVariantEngine.addInterpretationComment(interpretationId, comment, "");
+    }
+
+    public void addReportedVariantComment(long interpretationId, String variantId, Comment comment, String toten)
+            throws IOException, ClinicalVariantException {
+        clinicalVariantEngine.addReportedVariantComment(interpretationId, variantId, comment, "");
+    }
 }
