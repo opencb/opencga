@@ -146,6 +146,8 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
 
     long getStudyIdByFileId(long fileId) throws CatalogDBException;
 
+    void nativeInsert(Map<String, Object> file, String userId) throws CatalogDBException;
+
     /***
      * Inserts the passed file in the database.
      *

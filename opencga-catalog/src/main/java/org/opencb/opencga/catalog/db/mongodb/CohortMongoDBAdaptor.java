@@ -78,6 +78,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     }
 
     @Override
+    public void nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException {
+        Document document = getMongoDBDocument(cohort, "cohort");
+        cohortCollection.insert(document, null);
+    }
+
+    @Override
     public QueryResult<Cohort> insert(Cohort cohort, long studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 

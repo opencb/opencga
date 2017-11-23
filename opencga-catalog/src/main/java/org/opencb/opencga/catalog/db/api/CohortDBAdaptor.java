@@ -120,6 +120,8 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         }
     }
 
+    void nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
+
     QueryResult<Cohort> insert(Cohort cohort, long studyId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;

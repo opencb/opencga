@@ -70,6 +70,12 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             case "index":
                 index();
                 break;
+            case "export":
+                export();
+                break;
+            case "import":
+                importDatabase();
+                break;
             case "daemon":
                 daemons();
                 break;
@@ -98,23 +104,28 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         AnalysisDemo.insertPedigreeFile(catalogManager, 6L, Paths.get(this.appHome).resolve("examples/20130606_g1k.ped"), sessionId);
     }
 
+    private void export() throws CatalogException, IOException {
+        AdminCliOptionsParser.ExportCatalogCommandOptions commandOptions = catalogCommandOptions.exportCatalogCommandOptions;
+        validateConfiguration(commandOptions, commandOptions.commonOptions);
+
+        CatalogManager catalogManager = new CatalogManager(configuration);
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+
+        catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
+    }
+
+    private void importDatabase() throws CatalogException, IOException {
+        AdminCliOptionsParser.ImportCatalogCommandOptions commandOptions = catalogCommandOptions.importCatalogCommandOptions;
+        validateConfiguration(commandOptions, commandOptions.commonOptions);
+
+        CatalogManager catalogManager = new CatalogManager(configuration);
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+
+        catalogManager.getProjectManager().importReleases(commandOptions.owner, commandOptions.directory, token);
+    }
+
     private void install() throws CatalogException {
-        if (catalogCommandOptions.installCatalogCommandOptions.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(catalogCommandOptions.installCatalogCommandOptions.databaseUser);
-        }
-        if (catalogCommandOptions.installCatalogCommandOptions.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(catalogCommandOptions.installCatalogCommandOptions.databasePassword);
-        }
-        if (catalogCommandOptions.installCatalogCommandOptions.prefix != null) {
-            configuration.setDatabasePrefix(catalogCommandOptions.installCatalogCommandOptions.prefix);
-        }
-        if (catalogCommandOptions.installCatalogCommandOptions.databaseHost != null) {
-            configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(catalogCommandOptions.installCatalogCommandOptions
-                    .databaseHost));
-        }
-        if (catalogCommandOptions.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(catalogCommandOptions.commonOptions.adminPassword);
-        }
+        validateConfiguration(catalogCommandOptions.installCatalogCommandOptions, catalogCommandOptions.commonOptions);
 
         this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
         this.configuration.getAdmin().setAlgorithm(this.catalogCommandOptions.installCatalogCommandOptions.algorithm);
@@ -204,6 +215,24 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             Response response = target.request().get();
             logger.info(response.toString());
         }
+    }
 
+    private void validateConfiguration(AdminCliOptionsParser.CatalogDatabaseCommandOptions catalogOptions,
+                                       AdminCliOptionsParser.AdminCommonCommandOptions adminOptions) {
+        if (catalogOptions.databaseUser != null) {
+            configuration.getCatalog().getDatabase().setUser(catalogOptions.databaseUser);
+        }
+        if (catalogOptions.databasePassword != null) {
+            configuration.getCatalog().getDatabase().setPassword(catalogOptions.databasePassword);
+        }
+        if (catalogOptions.prefix != null) {
+            configuration.setDatabasePrefix(catalogOptions.prefix);
+        }
+        if (catalogOptions.databaseHost != null) {
+            configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(catalogOptions.databaseHost));
+        }
+        if (adminOptions.adminPassword != null) {
+            configuration.getAdmin().setPassword(adminOptions.adminPassword);
+        }
     }
 }
