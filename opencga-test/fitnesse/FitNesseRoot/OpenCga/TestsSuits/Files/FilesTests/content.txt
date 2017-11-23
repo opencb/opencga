@@ -135,7 +135,7 @@
 
 !3 Get File Formats
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/formats ||Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result.length == '23'|
+| GET | /v1/files/formats ||Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result.length == '24'|
 
 !3 Create Sample 1
 !|Table: Rest Fixture | $baseURL |
