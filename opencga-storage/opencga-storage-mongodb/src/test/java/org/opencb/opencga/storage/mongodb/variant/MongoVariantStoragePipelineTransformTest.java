@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.alignment;
+package org.opencb.opencga.storage.mongodb.variant;
 
-import org.opencb.opencga.storage.core.StoragePipeline;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipelineTransformTest;
 
 /**
- * Created by pfurio on 31/10/16.
+ * Created on 01/04/16
+ *
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Deprecated
-public abstract class AlignmentStoragePipeline implements StoragePipeline {
-
-    protected static final int MINOR_CHUNK_SIZE = 1000;
-    protected static final String COVERAGE_DATABASE_NAME = "coverage.db";
-
+public class MongoVariantStoragePipelineTransformTest extends VariantStoragePipelineTransformTest implements MongoDBVariantStorageTest {
 }

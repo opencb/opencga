@@ -31,8 +31,11 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.PROJECT_DESC;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_FILTER_DESC;
 
 /**
@@ -48,6 +51,7 @@ public class VariantCommandOptions {
     public VariantQueryCommandOptions queryVariantCommandOptions;
     public VariantStatsCommandOptions statsVariantCommandOptions;
     public VariantAnnotateCommandOptions annotateVariantCommandOptions;
+    public FillGapsCommandOptions fillGapsVariantCommandOptions;
     public VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
     public VariantImportCommandOptions importVariantCommandOptions;
     public VariantIbsCommandOptions ibsVariantCommandOptions;
@@ -73,6 +77,7 @@ public class VariantCommandOptions {
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
+        this.fillGapsVariantCommandOptions = new FillGapsCommandOptions();
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
@@ -110,8 +115,12 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-p", "--project-id"}, description = "Project to index.", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
         public String project;
+
+        @Deprecated
+        @Parameter(names = {"--project-id"}, description = "Project to index. DEPRECATED: Use --project", arity = 1)
+        public String projectId;
 
     }
 
@@ -404,6 +413,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
         public String output;
+
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
+        public String project;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
@@ -573,6 +585,16 @@ public class VariantCommandOptions {
 
     }
 
+    @Parameters(commandNames = {FILL_GAPS_COMMAND}, commandDescription = FILL_GAPS_COMMAND_DESCRIPTION)
+    public class FillGapsCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.GenericFillGapsOptions genericFillGapsOptions = new StorageVariantCommandOptions.GenericFillGapsOptions();
+    }
+
     @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")
     public class VariantExportStatsCommandOptions {
 
@@ -598,8 +620,11 @@ public class VariantCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes")
         public String gene;
 
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
+        public String project;
+
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned")
-        public String studies;
+        public String study;
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
         public String output;

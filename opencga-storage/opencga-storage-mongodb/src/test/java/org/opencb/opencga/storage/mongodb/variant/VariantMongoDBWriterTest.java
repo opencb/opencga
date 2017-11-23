@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.variant.vcf.VCFHeader;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -27,11 +29,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
+import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -88,7 +92,9 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         List<Object[]> parameters = new ArrayList<>();
         for (boolean cleanWhileLoading : new boolean[]{true, false}) {
             for (String defaultGenotype : Arrays.asList(UNKNOWN_GENOTYPE, "0/0")) {
-                parameters.add(new Object[]{cleanWhileLoading, defaultGenotype});
+                for (boolean ignoreOverlapping : new boolean[]{true, false}) {
+                    parameters.add(new Object[]{cleanWhileLoading, defaultGenotype, ignoreOverlapping});
+                }
             }
         }
         return parameters;
@@ -100,10 +106,18 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @Parameter(1)
     public String defaultGenotype;
 
+    @Parameter(2)
+    public boolean ignoreOverlappingVariants;
+
     @Before
     public void setUp() throws Exception {
-        logger.info("cleanWhileLoading " + cleanWhileLoading);
-        logger.info("defaultGenotype = " + defaultGenotype);
+        System.out.println("====================================================");
+        System.out.println(" #        CONFIGURATION");
+        System.out.println(" # cleanWhileLoading = " + cleanWhileLoading);
+        System.out.println(" # defaultGenotype = " + defaultGenotype);
+        System.out.println(" # overlappingVariants = " + !ignoreOverlappingVariants);
+        System.out.println(" #     (ignoreOverlapping = " + ignoreOverlappingVariants + ')');
+        System.out.println("====================================================");
         ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
         stderr.setThreshold(Level.toLevel("debug"));
 
@@ -482,7 +496,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                studyConfiguration.getIndexedFiles(), false, false);
+                studyConfiguration.getIndexedFiles(), false, ignoreOverlappingVariants);
         boolean resume = false;
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(),
                 dbAdaptor.getStudiesCollection(), studyConfiguration, fileIds, resume, cleanWhileLoading, null);
@@ -524,62 +538,63 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @SuppressWarnings("unchecked")
     public static List<Variant> createFile1Variants(String chromosome, String fileId, String studyId) {
 
-        Variant variant;
-        StudyEntry sourceEntry;
         List<Variant> variants = new LinkedList<>();
-        variant = new Variant(chromosome, 999, 999, "A", "C");
-        sourceEntry = new StudyEntry(fileId, studyId);
-        sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "./.").append("DP", "11").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "1/1").append("DP", "12").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "0/0").append("DP", "13").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "1/0").append("DP", "14").append("GQX", "0.7")));
-        variant.addStudyEntry(sourceEntry);
-        variants.add(variant);
+        variants.add(Variant.newBuilder(chromosome, 999, 999, "A", "C")
+                .setStudyId(studyId)
+                .setFileId(fileId)
+                .setFormat("GT", "DP", "GQX")
+                .addSample("NA19600", "./.", "11", "0.7")
+                .addSample("NA19660", "1/1", "12", "0.7")
+                .addSample("NA19661", "0/0", "13", "0.7")
+                .addSample("NA19685", "1/0", "14", "0.7")
+                .build());
 
-        variant = new Variant(chromosome, 1000, 1000, "A", "C");
-        sourceEntry = new StudyEntry(fileId, studyId);
-        sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "./.").append("DP", "11").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "1/1").append("DP", "12").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "0/0").append("DP", "13").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "1/0").append("DP", "14").append("GQX", "0.7")));
-        variant.addStudyEntry(sourceEntry);
-        variants.add(variant);
+        variants.add(Variant.newBuilder(chromosome, 1000, 1000, "A", "C")
+                .setStudyId(studyId)
+                .setFileId(fileId)
+                .setFormat("GT", "DP", "GQX")
+                .addSample("NA19600", "./.", "11", "0.7")
+                .addSample("NA19660", "1/1", "12", "0.7")
+                .addSample("NA19661", "0/0", "13", "0.7")
+                .addSample("NA19685", "1/0", "14", "0.7")
+                .build());
 
-        variant = new Variant(chromosome, 1002, 1002, "A", "C");
-        sourceEntry = new StudyEntry(fileId, studyId);
-        sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "0/1").append("DP", "11").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "0/0").append("DP", "12").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "1/0").append("DP", "13").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "0/0").append("DP", "14").append("GQX", "0.7")));
-        variant.addStudyEntry(sourceEntry);
-        variants.add(variant);
+        variants.add(Variant.newBuilder(chromosome, 1002, 1002, "A", "C")
+                .setStudyId(studyId)
+                .setFileId(fileId)
+                .setFormat("GT", "DP", "GQX")
+                .addSample("NA19600", "0/1", "11", "0.7")
+                .addSample("NA19660", "0/0", "12", "0.7")
+                .addSample("NA19661", "1/0", "13", "0.7")
+                .addSample("NA19685", "0/0", "14", "0.7")
+                .build());
 
         return variants;
     }
 
     @SuppressWarnings("unchecked")
     public static List<Variant> createFile2Variants(String chromosome, String fileId, String studyId) {
-        Variant variant;
-        StudyEntry sourceEntry;
         List<Variant> variants = new LinkedList<>();
 
-        variant = new Variant(chromosome, 1000, 1000, "A", "C");
-        sourceEntry = new StudyEntry(fileId, studyId);
-        sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "./.").append("DP", "1").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "1/1").append("DP", "2").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "0/0").append("DP", "3").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "1/0").append("DP", "4").append("GQX", "0.7")));
-        variant.addStudyEntry(sourceEntry);
-        variants.add(variant);
+        variants.add(Variant.newBuilder(chromosome, 1000, 1000, "A", "C")
+                .setStudyId(studyId)
+                .setFileId(fileId)
+                .setFormat("GT", "DP", "GQX")
+                .addSample("NA19600", "./.", "1", "0.7")
+                .addSample("NA19660", "1/1", "2", "0.7")
+                .addSample("NA19661", "0/0", "3", "0.7")
+                .addSample("NA19685", "1/0", "4", "0.7")
+                .build());
 
-        variant = new Variant(chromosome, 1004, 1004, "A", "C");
-        sourceEntry = new StudyEntry(fileId, studyId);
-        sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "0/1").append("DP", "1").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "0/0").append("DP", "2").append("GQX", ".")));
-        sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "1/0").append("DP", "3").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "0/0").append("DP", "4").append("GQX", "..")));
-        variant.addStudyEntry(sourceEntry);
-        variants.add(variant);
+        variants.add(Variant.newBuilder(chromosome, 1004, 1004, "A", "C")
+                .setStudyId(studyId)
+                .setFileId(fileId)
+                .setFormat("GT", "DP", "GQX")
+                .addSample("NA19600", "0/1", "1", "0.7")
+                .addSample("NA19660", "0/0", "2", ".")
+                .addSample("NA19661", "1/0", "3", "0.7")
+                .addSample("NA19685", "0/0", "4", "..")
+                .build());
 
         return variants;
     }
@@ -587,36 +602,38 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @SuppressWarnings("unchecked")
     public static List<Variant> createFile3Variants(String chromosome, String fileId, String studyId) {
 
-        Variant variant;
-        StudyEntry sourceEntry;
         List<Variant> variants = new LinkedList<>();
 
-        variant = new Variant(chromosome, 1000, 1000, "A", "C");
-        sourceEntry = new StudyEntry(fileId, studyId);
-        sourceEntry.addSampleData("NA00001.X", ((Map) new ObjectMap("GT", "0/1").append("DP", "5").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA00002.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "6").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA00003.X", ((Map) new ObjectMap("GT", "1/0").append("DP", "7").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA00004.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "8").append("GQX", "0.7")));
-        variant.addStudyEntry(sourceEntry);
-        variants.add(variant);
+        variants.add(Variant.newBuilder(chromosome, 1000, 1000, "A", "C")
+                .setStudyId(studyId)
+                .setFileId(fileId)
+                .setFormat("GT", "DP", "GQX")
+                .addSample("NA00001.X", "0/1", "5", "0.7")
+                .addSample("NA00002.X", "0/0", "6", "0.7")
+                .addSample("NA00003.X", "1/0", "7", "0.7")
+                .addSample("NA00004.X", "0/0", "8", "0.7")
+                .build());
 
-        variant = new Variant(chromosome, 1002, 1002, "A", "C");
-        sourceEntry = new StudyEntry(fileId, studyId);
-        sourceEntry.addSampleData("NA00001.X", ((Map) new ObjectMap("GT", "0/1").append("DP", "5").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA00002.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "6").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA00003.X", ((Map) new ObjectMap("GT", "1/0").append("DP", "7").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA00004.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "8").append("GQX", "0.7")));
-        variant.addStudyEntry(sourceEntry);
-        variants.add(variant);
+        variants.add(Variant.newBuilder(chromosome, 1002, 1002, "A", "C")
+                .setStudyId(studyId)
+                .setFileId(fileId)
+                .setFormat("GT", "DP", "GQX")
+                .addSample("NA00001.X", "0/1", "5", "0.7")
+                .addSample("NA00002.X", "0/0", "6", "0.7")
+                .addSample("NA00003.X", "1/0", "7", "0.7")
+                .addSample("NA00004.X", "0/0", "8", "0.7")
+                .build());
 
-        variant = new Variant(chromosome, 1006, 1006, "A", "C");
-        sourceEntry = new StudyEntry(fileId, studyId);
-        sourceEntry.addSampleData("NA00001.X", ((Map) new ObjectMap("GT", "0/1").append("DP", "5").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA00002.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "6").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA00003.X", ((Map) new ObjectMap("GT", "1/0").append("DP", "7").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA00004.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "8").append("GQX", "0.7")));
-        variant.addStudyEntry(sourceEntry);
-        variants.add(variant);
+        variants.add(Variant.newBuilder(chromosome, 1006, 1006, "A", "C")
+                .setStudyId(studyId)
+                .setFileId(fileId)
+                .setFormat("GT", "DP", "GQX")
+                .addSample("NA00001.X", "0/1", "5", "0.7")
+                .addSample("NA00002.X", "0/0", "6", "0.7")
+                .addSample("NA00003.X", "1/0", "7", "0.7")
+                .addSample("NA00004.X", "0/0", "8", "0.7")
+                .build());
+
 
         return variants;
     }
@@ -677,12 +694,89 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         assertEqualsResult(new MongoDBVariantWriteResult(2, 0, 2, 0, 0, 2), resultMergeFile3);
     }
 
+    @Test
+    public void testLoad1ImpreciseSVVariants() throws Exception {
+        StudyConfiguration sc = new StudyConfiguration(1, "s1");
+        List<Variant> variants = readVariants(sc, "/variant-test-sv.vcf", 1);
+        List<Variant> variants2 = readVariants(sc, "/variant-test-sv.vcf", 2, "_2");
+
+        MongoDBVariantWriteResult result = stageVariants(sc, variants, 1);
+        result = mergeVariants(sc, 1, result);
+        assertEqualsResult(new MongoDBVariantWriteResult(17, 0, 0, 0, 0, 0), result);
+
+        result = stageVariants(sc, variants2, 2);
+        result = mergeVariants(sc, 2, result);
+        assertEqualsResult(new MongoDBVariantWriteResult(0, 17, 0, 0, 0, 0), result);
+
+    }
+
+    @Test
+    public void testLoad2ImpreciseSVVariants() throws Exception {
+        StudyConfiguration sc = new StudyConfiguration(1, "s1");
+        List<Variant> variants = readVariants(sc, "/variant-test-sv.vcf", 1);
+
+        MongoDBVariantWriteResult result = stageVariants(sc, variants, 1);
+        result = mergeVariants(sc, 1, result);
+        assertEqualsResult(new MongoDBVariantWriteResult(17, 0, 0, 0, 0, 0), result);
+
+        // Despite there are overlapping variants between the two files, the number of overlapping variants MUST be 0.
+        // Do not check overlaps with Structural Variants!
+        List<Variant> variants2 = readVariants(sc, "/variant-test-sv_2.vcf", 2);
+        result = stageVariants(sc, variants2, 2);
+        result = mergeVariants(sc, 2, result);
+        assertEqualsResult(new MongoDBVariantWriteResult(7, 10, 7, 0, 0, 0), result);
+
+    }
+
+    protected List<Variant> readVariants(StudyConfiguration sc, String fileName, Integer fileId) {
+        return readVariants(sc, fileName, fileId, "");
+    }
+
+    protected List<Variant> readVariants(StudyConfiguration sc, String fileName, Integer fileId, String sampleSufix) {
+        FullVcfCodec codec = new FullVcfCodec();
+        LineIterator lineIterator = codec.makeSourceFromStream(getClass().getResourceAsStream(fileName));
+        VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
+        VariantNormalizer normalizer = new VariantNormalizer().configure(header);
+        VariantFileMetadata file = new VariantFileMetadata(fileId.toString(), "file");
+        VariantStudyMetadata studyMetadata = file.toVariantStudyMetadata(String.valueOf(sc.getStudyId()));
+
+        VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(getClass().getResourceAsStream(fileName), studyMetadata, normalizer);
+        reader.open();
+        reader.pre();
+        List<Variant> variants = reader.read(1000000);
+        reader.post();
+        reader.close();
+
+
+        sc.getAttributes().append(DEFAULT_GENOTYPE.key(), defaultGenotype);
+        LinkedHashSet<Integer> sampleIds = new LinkedHashSet<>();
+        LinkedHashMap<String, Integer> samplesPosition = new LinkedHashMap<>();
+        for (String sample : file.getSampleIds()) {
+            sample = sample + sampleSufix;
+            sc.getSampleIds().putIfAbsent(sample, sc.getSampleIds().size() + 1);
+            sampleIds.add(sc.getSampleIds().get(sample));
+            samplesPosition.put(sample, samplesPosition.size());
+        }
+        sc.getFileIds().put(getFileName(fileId), fileId);
+        sc.getSamplesInFiles().put(fileId, sampleIds);
+
+        for (Variant variant : variants) {
+            variant.getStudies().get(0).setSortedSamplesPosition(samplesPosition);
+        }
+
+        return variants;
+    }
+
     public void assertEqualsResult(MongoDBVariantWriteResult expected, MongoDBVariantWriteResult result) {
         result.setExistingVariantsNanoTime(0).setFillGapsNanoTime(0).setNewVariantsNanoTime(0).setGenotypes(Collections.emptySet());
 
         if (defaultGenotype.equals(UNKNOWN_GENOTYPE)) {
             // If defaultGenotype is the unknown, overlapping missing variants won't not be updated
             expected.setUpdatedMissingVariants(0);
+        }
+        if (ignoreOverlappingVariants) {
+            // If ignoring overlapping variants, there wont be overlapped variants!
+            expected.setOverlappedVariants(0);
         }
         assertEquals(expected, result);
     }

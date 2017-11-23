@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
 import java.util.Map;
@@ -25,19 +26,25 @@ import java.util.Map;
  */
 public class VariantStatsWrapper {
     private String chromosome;
-    private int position;
+    private int start;
+    private int end;
+    private StructuralVariation sv;
     private Map<String, VariantStats> cohortStats;
 
     public VariantStatsWrapper() {
         this.chromosome = null;
-        this.position = -1;
+        this.start = -1;
+        this.end = -1;
         this.cohortStats = null;
+        this.sv = null;
     }
 
-    public VariantStatsWrapper(String chromosome, int position, Map<String, VariantStats> cohortStats) {
+    public VariantStatsWrapper(String chromosome, int start, int end, Map<String, VariantStats> cohortStats, StructuralVariation sv) {
         this.chromosome = chromosome;
-        this.position = position;
+        this.start = start;
+        this.end = end;
         this.cohortStats = cohortStats;
+        this.sv = sv;
     }
 
     public String getChromosome() {
@@ -48,12 +55,21 @@ public class VariantStatsWrapper {
         this.chromosome = chromosome;
     }
 
-    public int getPosition() {
-        return position;
+    public int getStart() {
+        return start;
     }
 
-    public void setPosition(int position) {
-        this.position = position;
+    public void setStart(int start) {
+        this.start = start;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public VariantStatsWrapper setEnd(int end) {
+        this.end = end;
+        return this;
     }
 
     public Map<String, VariantStats> getCohortStats() {
@@ -62,5 +78,14 @@ public class VariantStatsWrapper {
 
     public void setCohortStats(Map<String, VariantStats> cohortStats) {
         this.cohortStats = cohortStats;
+    }
+
+    public StructuralVariation getSv() {
+        return sv;
+    }
+
+    public VariantStatsWrapper setSv(StructuralVariation sv) {
+        this.sv = sv;
+        return this;
     }
 }

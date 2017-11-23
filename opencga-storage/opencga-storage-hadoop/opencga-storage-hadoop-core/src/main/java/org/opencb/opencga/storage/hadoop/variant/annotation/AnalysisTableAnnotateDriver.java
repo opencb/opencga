@@ -25,10 +25,10 @@ import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by mh719 on 15/12/2016.
@@ -57,13 +57,13 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+    protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         // QUERY design
         Scan scan = createVariantsTableScan();
 
         // set other scan attrs
         TableMapReduceUtil.setScannerCaching(job, 200);
-        initMapReduceJob(job, getMapperClass(), variantTable, scan);
+        VariantMapReduceUtil.initTableMapperJob(job, variantTable, scan, getMapperClass());
 
         String[] fieldNames = Arrays.stream(VariantColumn.values()).map(VariantColumn::toString).toArray(String[]::new);
         PhoenixMapReduceUtil.setOutput(job, SchemaUtil.getEscapedFullTableName(variantTable), fieldNames);

@@ -198,7 +198,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
         if (variantSearchModel.getTraits() != null) {
             for (String trait : variantSearchModel.getTraits()) {
-                String[] fields = trait.split(" -- ");
+                String[] fields = StringUtils.splitByWholeSeparatorPreserveAllTokens(trait, " -- ");
                 switch (fields[0]) {
                     case "HP":
                         // Gene trait: HP -- hpo -- id -- name

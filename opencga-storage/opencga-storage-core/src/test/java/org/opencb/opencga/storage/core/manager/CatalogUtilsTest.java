@@ -30,7 +30,7 @@ public class CatalogUtilsTest {
 
     @Test
     public void parseSampleAnnotationQuery() throws Exception {
-        Query query = CatalogUtils.parseSampleAnnotationQuery("age>20;ontologies=hpo:123,hpo:456;name=smith", SampleDBAdaptor.QueryParams::getParam);
+        Query query = CatalogUtils.parseSampleAnnotationQuery("age>20;" + SampleDBAdaptor.QueryParams.PHENOTYPES.key() + "=hpo:123,hpo:456;" + SampleDBAdaptor.QueryParams.NAME.key() + "=smith", SampleDBAdaptor.QueryParams::getParam);
 
         assertEquals(3, query.size());
 

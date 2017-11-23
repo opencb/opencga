@@ -20,13 +20,18 @@ import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
+import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 /**
@@ -78,22 +83,31 @@ public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        if (!cliOptions.load && !cliOptions.transform) {  // if not present --transform nor --load,
-            // do both
-            params.put("extract", true);
-            params.put("load", true);
-            params.put("transform", true);
-        } else {
-            params.put("extract", cliOptions.transform);
-            params.put("load", cliOptions.load);
-            params.put("transform", cliOptions.transform);
-        }
+        params.put("transform", true);
+        // TODO: Calculate coverage and stats
 
         String sessionId = cliOptions.commonOptions.sessionId;
 
+        // Initialize monitor
+        ExecutorMonitor monitor = new ExecutorMonitor();
+        Thread hook = new Thread(() -> {
+            monitor.stop(new Status(Status.ERROR));
+            logger.info("Running ShutdownHook. Tool execution has being aborted.");
+        });
+
+        Path outDirPath = Paths.get(cliOptions.outdirId);
+
+        Runtime.getRuntime().addShutdownHook(hook);
+        monitor.start(outDirPath);
+
+        // Run index
         org.opencb.opencga.storage.core.manager.AlignmentStorageManager alignmentStorageManager =
                 new org.opencb.opencga.storage.core.manager.AlignmentStorageManager(catalogManager, storageEngineFactory);
-        alignmentStorageManager.index(cliOptions.study, cliOptions.fileId, params, sessionId);
+        alignmentStorageManager.index(cliOptions.study, cliOptions.fileId, outDirPath, params, sessionId);
+
+        // Stop monitor
+        Runtime.getRuntime().removeShutdownHook(hook);
+        monitor.stop(new Status(Status.DONE));
     }
 
 
@@ -110,9 +124,9 @@ public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
                 alignmentCommandOptions.queryAlignmentCommandOptions.mdField);
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(),
                 alignmentCommandOptions.queryAlignmentCommandOptions.binQualities);
-        objectMap.putIfNotNull("count", alignmentCommandOptions.queryAlignmentCommandOptions.count);
-        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.LIMIT.key(), alignmentCommandOptions.queryAlignmentCommandOptions.limit);
-        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP.key(), alignmentCommandOptions.queryAlignmentCommandOptions.skip);
+        objectMap.putIfNotNull(QueryOptions.LIMIT, alignmentCommandOptions.queryAlignmentCommandOptions.limit);
+        objectMap.putIfNotNull(QueryOptions.SKIP, alignmentCommandOptions.queryAlignmentCommandOptions.skip);
+        objectMap.putIfNotNull(QueryOptions.COUNT, alignmentCommandOptions.queryAlignmentCommandOptions.count);
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
         QueryResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()

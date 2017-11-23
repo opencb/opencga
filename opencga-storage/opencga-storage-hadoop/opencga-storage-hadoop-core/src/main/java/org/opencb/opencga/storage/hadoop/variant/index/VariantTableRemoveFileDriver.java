@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -51,9 +50,9 @@ public class VariantTableRemoveFileDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+    protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         // QUERY design
-        Scan scan = createArchiveTableScan(files);
+        Scan scan = createArchiveTableScan(getFiles());
 
         // set other scan attrs
         initMapReduceJob(job, getMapperClass(), archiveTable, variantTable, scan);
@@ -64,7 +63,7 @@ public class VariantTableRemoveFileDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected Class<? extends TableMapper> getMapperClass() {
-        return VariantTableDeletionMapper.class;
+        return VariantTableRemoveMapper.class;
     }
 
     @Override

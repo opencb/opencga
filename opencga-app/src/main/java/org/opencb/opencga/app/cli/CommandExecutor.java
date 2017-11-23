@@ -24,8 +24,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.RollingFileAppender;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,7 +132,7 @@ public abstract class CommandExecutor {
             privateLogger.debug("CLI session file is: {}", this.cliSession);
 
             if (cliSession != null) {
-                this.sessionId = cliSession.getSessionId();
+                this.sessionId = cliSession.getToken();
                 this.userId = cliSession.getUserId();
             }
 
@@ -141,19 +141,19 @@ public abstract class CommandExecutor {
         }
 
         // Update the timestamp every time one executed command finishes
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                updateCliSessionFileTimestamp();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
+//        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+//            try {
+//                updateCliSessionFile();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }));
     }
 
     @Deprecated
     protected String getSessionId(GeneralCliOptions.CommonCommandOptions commonOptions) {
         if (StringUtils.isBlank(commonOptions.sessionId)) {
-            return cliSession.getSessionId();
+            return cliSession.getToken();
         } else {
             return commonOptions.sessionId;
         }
@@ -180,14 +180,17 @@ public abstract class CommandExecutor {
             this.configuration.setLogFile(this.options.logFile);
         }
 
+        Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
+        rootLogger.setLevel(level);
+
         // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
         ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
         if (StringUtils.isEmpty(this.configuration.getLogFile())) {
-            stderr.setThreshold(Level.toLevel(configuration.getLogLevel(), Level.INFO));
+            stderr.setThreshold(level);
         } else {
             RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.configuration.getLogFile(), true);
             rootLogger.addAppender(rollingFileAppender);
-            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel(), Level.INFO));
+            rollingFileAppender.setThreshold(level);
             rollingFileAppender.setMaxFileSize("100MB");
             rollingFileAppender.setMaxBackupIndex(10);
         }
@@ -296,15 +299,26 @@ public abstract class CommandExecutor {
         new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), new CliSession(user, session, studies));
     }
 
-    protected void updateCliSessionFileTimestamp() throws IOException {
+    protected void updateCliSessionFile() throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
         if (Files.exists(sessionPath)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
-            cliSession.setTimestamp(System.currentTimeMillis());
+//            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
         }
     }
+
+//    protected void updateCliSessionFileTimestamp() throws IOException {
+////        QueryResponse<ObjectMap> refresh = new OpenCGAClient(sessionId, clientConfiguration).refresh();
+//
+//        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
+//        if (Files.exists(sessionPath)) {
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
+//            cliSession.setTimestamp(System.currentTimeMillis());
+//            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
+//        }
+//    }
 
     protected void logoutCliSessionFile() throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);

@@ -50,8 +50,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
@@ -71,9 +70,9 @@ import static com.mongodb.client.model.Updates.*;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getIncludeFormats;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getReturnedFiles;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_KEY;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_VARIANT_ID;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 
@@ -184,7 +183,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Integer studyId = studyConfigurationManager.getStudyId(study, null, false);
         StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-        List<Integer> fileIds = studyConfigurationManager.getFileIds(files, false, sc);
+        List<Integer> fileIds = studyConfigurationManager.getFileIdsFromStudy(files, sc);
 
         ArrayList<Integer> otherIndexedFiles = new ArrayList<>(sc.getIndexedFiles());
         otherIndexedFiles.removeAll(fileIds);
@@ -816,8 +815,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // )
 
             if (!cohorts.isEmpty()) {
-                String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
-                        variantStats.getRefAllele(), variantStats.getAltAllele());
+                String id = variantConverter.buildStorageId(new Variant(wrapper.getChromosome(), wrapper.getStart(), wrapper.getEnd(),
+                        variantStats.getRefAllele(), variantStats.getAltAllele()).setSv(wrapper.getSv()));
 
 
                 Document find = new Document("_id", id);
@@ -850,6 +849,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             variantsCollection.update(pullQueriesBulkList, pullUpdatesBulkList, new QueryOptions());
         }
         BulkWriteResult writeResult = variantsCollection.update(pushQueriesBulkList, pushUpdatesBulkList, new QueryOptions()).first();
+        if (writeResult.getMatchedCount() != pushQueriesBulkList.size()) {
+            logger.warn("Could not update stats from some variants: "
+                    + writeResult.getMatchedCount() + " != " + pushQueriesBulkList.size() + " , "
+                    + (pushQueriesBulkList.size() - writeResult.getMatchedCount()) + " non loaded stats");
+        }
         int writes = writeResult.getModifiedCount();
 
 
@@ -889,8 +893,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         long start = System.nanoTime();
         DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), queryOptions);
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
-            String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                    variantAnnotation.getReference(), variantAnnotation.getAlternate());
+            String id;
+            if (variantAnnotation.getAdditionalAttributes() != null
+                    && variantAnnotation.getAdditionalAttributes().containsKey(ADDITIONAL_ATTRIBUTES_KEY)) {
+                String variantString = variantAnnotation.getAdditionalAttributes()
+                        .get(ADDITIONAL_ATTRIBUTES_KEY)
+                        .getAttribute()
+                        .get(ADDITIONAL_ATTRIBUTES_VARIANT_ID);
+                id = variantConverter.buildStorageId(new Variant(variantString));
+            } else {
+                id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+                        variantAnnotation.getReference(), variantAnnotation.getAlternate());
+            }
             Document find = new Document("_id", id);
             DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter();
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
@@ -933,33 +947,28 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, QueryOptions options) {
-        List<Integer> returnedStudies = getReturnedStudies(query, options);
+        return getDocumentToVariantConverter(query, VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager));
+    }
+
+    private DocumentToVariantConverter getDocumentToVariantConverter(Query query, SelectVariantElements selectVariantElements) {
+
+        List<Integer> returnedStudies = selectVariantElements.getStudies();
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
         samplesConverter.setFormat(getIncludeFormats(query));
         // Fetch some StudyConfigurations that will be needed
-        if (returnedStudies != null) {
-            for (Integer studyId : returnedStudies) {
-                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, options);
-                if (queryResult.getResult().isEmpty()) {
-                    throw VariantQueryException.studyNotFound(studyId);
-//                    throw new IllegalArgumentException("Couldn't find studyConfiguration for StudyId '" + studyId + "'");
-                } else {
-                    samplesConverter.addStudyConfiguration(queryResult.first());
-                }
-            }
+        for (StudyConfiguration studyConfiguration : selectVariantElements.getStudyConfigurations().values()) {
+            samplesConverter.addStudyConfiguration(studyConfiguration);
         }
         if (query.containsKey(UNKNOWN_GENOTYPE.key())) {
             samplesConverter.setReturnedUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
         }
 
-        Set<VariantField> fields = VariantField.getReturnedFields(options);
-        samplesConverter.setReturnedSamples(getReturnedSamples(query, options));
+        samplesConverter.setReturnedSamples(selectVariantElements.getSamples());
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
-        Collection<Integer> returnedFiles = getReturnedFiles(query, options, fields, studyConfigurationManager);
 
-        studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, returnedFiles, samplesConverter);
+        studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
         return new DocumentToVariantConverter(studyEntryConverter,
                 new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies);

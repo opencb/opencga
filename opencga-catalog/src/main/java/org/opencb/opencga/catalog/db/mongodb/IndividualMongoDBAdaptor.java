@@ -271,9 +271,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+        filterOutDeleted(query);
 
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS : studyPermissions);
@@ -292,6 +290,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()));
         return individualCollection.count(bson);
+    }
+
+    private void filterOutDeleted(Query query) {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
     }
 
     @Override
@@ -855,9 +859,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name());
         }
 
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+        filterOutDeleted(query);
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
 
         logger.debug("Individual get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -886,18 +888,21 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return rank(individualCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(individualCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(individualCollection, bsonQuery, fields, "name", options);
     }
@@ -908,6 +913,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(individualCollection, bsonQuery, field, QueryParams.NAME.key(), options);
     }
@@ -918,6 +924,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(individualCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }

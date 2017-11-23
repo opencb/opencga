@@ -223,7 +223,7 @@ public class VariantStorageManager extends StorageManager {
         } else if (StringUtils.isEmpty(studies) && StringUtils.isEmpty(project)) {
             // If non study or project is given, read all the studies from the user
             String userId = catalogManager.getUserManager().getUserId(sessionId);
-            studyIds = catalogManager.getStudyManager().getIds(userId, null).stream()
+            studyIds = catalogManager.getStudyManager().getIds(userId, Collections.emptyList()).stream()
                     .map(Object::toString)
                     .collect(Collectors.toList());
         } else {
@@ -252,6 +252,19 @@ public class VariantStorageManager extends StorageManager {
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
         throw new UnsupportedOperationException();
+    }
+
+    public void fillGaps(String study, List<String> samples, ObjectMap config, String sessionId)
+            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, study);
+        DataStore dataStore = getDataStore(studyId, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        catalogManager.getSampleManager().getIds(String.join(",", samples), study, sessionId);
+
+        variantStorageEngine.fillGaps(String.valueOf(studyId), samples, config);
     }
 
     // ---------------------//
@@ -525,6 +538,9 @@ public class VariantStorageManager extends StorageManager {
         }
         if (queryOptions.containsKey(VariantCatalogQueryUtils.SAMPLE_FILTER.key())) {
             query.put(VariantCatalogQueryUtils.SAMPLE_FILTER.key(), queryOptions.get(VariantCatalogQueryUtils.SAMPLE_FILTER.key()));
+        }
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.PROJECT.key())) {
+            query.put(VariantCatalogQueryUtils.PROJECT.key(), queryOptions.get(VariantCatalogQueryUtils.PROJECT.key()));
         }
 
         return query;

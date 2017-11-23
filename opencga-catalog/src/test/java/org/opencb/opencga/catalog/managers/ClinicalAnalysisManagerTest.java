@@ -164,7 +164,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
-    public void updateSubjectsAdnFamilyTest() throws CatalogException {
+    public void updateSubjectsAndFamilyTest() throws CatalogException {
         createDummyEnvironment(false);
 
         ObjectMap params = new ObjectMap()

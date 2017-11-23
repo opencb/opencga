@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.stats;
 import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -27,8 +28,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
-import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseVariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 /**
  * Created by mh719 on 07/12/2016.
  */
+@Deprecated
 public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableBytesWritable, Put> {
 
     private Logger logger = LoggerFactory.getLogger(AnalysisStatsMapper.class);
@@ -58,7 +60,6 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         this.getHbaseToVariantConverter().setSimpleGenotypes(true);
-        this.getHbaseToVariantConverter().setReadFullSamplesData(false);
         studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
         variantStatisticsCalculator = new VariantStatisticsCalculator(true);
         this.variantStatisticsCalculator.setAggregationType(Aggregation.NONE, null);
@@ -69,9 +70,10 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
         this.samples = this.getStudyConfiguration().getCohortIds().entrySet().stream()
                 .map(e -> new MutablePair<>(e.getKey(), this.getStudyConfiguration().getCohorts().get(e.getValue())))
                 .map(p -> new MutablePair<>(p.getKey(),
-                        p.getValue().stream().map(i -> sampleIds.get(i)).collect(Collectors.toSet())))
-                .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
-        this.samples.forEach((k, v) -> logger.info("Calculate {} stats for cohort {} with {}", studyId, k, StringUtils.join(v, ",")));
+                        p.getValue().stream().map(sampleIds::get).collect(Collectors.toSet())))
+                .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        this.samples.forEach((cohortId, samples) ->
+                logger.info("Calculate {} stats for cohort {} with {}", studyId, cohortId, StringUtils.join(samples, ",")));
     }
 
     @Override
@@ -81,7 +83,7 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
             try {
                 Variant variant = this.getHbaseToVariantConverter().convert(value);
                 List<VariantStatsWrapper> annotations = this.variantStatisticsCalculator.calculateBatch(
-                        Collections.singletonList(variant), this.studyId, "notused", this.samples);
+                        Collections.singletonList(variant), this.studyId, this.samples);
                 for (VariantStatsWrapper annotation : annotations) {
                     Put convert = this.variantStatsToHBaseConverter.convert(annotation);
                     if (null != convert) {

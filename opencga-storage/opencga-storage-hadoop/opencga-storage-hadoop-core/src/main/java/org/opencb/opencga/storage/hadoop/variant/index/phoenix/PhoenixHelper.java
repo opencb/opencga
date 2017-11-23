@@ -183,6 +183,29 @@ public class PhoenixHelper {
         }
     }
 
+    public String buildAlterDropColumns(String tableName, Collection<CharSequence> columns, boolean ifExists) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ALTER ").append(DEFAULT_TABLE_TYPE).append(' ').append(SchemaUtil.getEscapedFullTableName(tableName))
+                .append(" DROP COLUMN ").append(ifExists ? "IF EXISTS " : "");
+        Iterator<CharSequence> iterator = columns.iterator();
+        while (iterator.hasNext()) {
+            sb.append('"').append(iterator.next()).append('"');
+            if (iterator.hasNext()) {
+                sb.append(", ");
+            }
+        }
+        return sb.toString();
+    }
+
+    public void dropColumns(Connection con, String tableName, Collection<CharSequence> columns)
+            throws SQLException {
+        logger.info("Dropping columns: " + columns);
+        String sql = buildAlterDropColumns(tableName, columns, true);
+        logger.info(sql);
+
+        execute(con, sql);
+    }
+
     public Connection newJdbcConnection() throws SQLException, ClassNotFoundException {
         return newJdbcConnection(conf);
     }
@@ -199,7 +222,7 @@ public class PhoenixHelper {
         return connection;
     }
 
-    public static byte[] toBytes(Collection collection, PArrayDataType arrayType) {
+    public static byte[] toBytes(Collection<?> collection, PArrayDataType arrayType) {
         PDataType pDataType = PDataType.arrayBaseType(arrayType);
         Object[] elements = collection.toArray();
         PhoenixArray phoenixArray = new PhoenixArray(pDataType, elements);

@@ -26,23 +26,25 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
 import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +65,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     private final Logger logger = LoggerFactory.getLogger(AbstractAnalysisTableDriver.class);
     private VariantTableHelper variantTablehelper;
     private StudyConfigurationManager scm;
+    private List<Integer> fileIds;
 
     public AbstractAnalysisTableDriver() {
         super(HBaseConfiguration.create());
@@ -99,7 +102,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             throw new IllegalArgumentException("No Study id specified!!!");
         }
 
-        VariantTableHelper helper = initVariantTableHelper(studyId, archiveTable, variantTable);
+        initVariantTableHelper(studyId, archiveTable, variantTable);
 
         // Other validations
         parseAndValidateParameters();
@@ -110,13 +113,10 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             checkTablesExist(hBaseManager, archiveTable, variantTable);
         }
 
-        // Check File(s) or Study is specified
-        List<Integer> fileIds = getFiles();
-
         /* -------------------------------*/
         // JOB setup
-        Job job = newJob(variantTable, fileIds);
-        setupJob(job, archiveTable, variantTable, fileIds);
+        Job job = newJob(variantTable);
+        setupJob(job, archiveTable, variantTable);
 
         preExecution(variantTable);
 
@@ -142,7 +142,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     protected abstract Class<?> getMapperClass();
 
-    protected abstract Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException;
+    protected abstract Job setupJob(Job job, String archiveTable, String variantTable) throws IOException;
 
     /**
      * Give the name of the action that the job is doing.
@@ -173,32 +173,11 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
 
-    protected final void initMapReduceJob(Job job, Class<? extends TableMapper> mapperClass, String inTable, Scan scan)
-            throws IOException {
-        boolean addDependencyJar = getConf().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
-        logger.info("Use table {} as input", inTable);
-        TableMapReduceUtil.initTableMapperJob(
-                inTable,      // input table
-                scan,             // Scan instance to control CF and attribute selection
-                mapperClass,   // mapper class
-                null,             // mapper output key
-                null,             // mapper output value
-                job,
-                addDependencyJar);
-    }
-
     protected final void initMapReduceJob(Job job, Class<? extends TableMapper> mapperClass, String inTable, String outTable, Scan scan)
             throws IOException {
-        boolean addDependencyJar = getConf().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
-        initMapReduceJob(job, mapperClass, inTable, scan);
-        logger.info("Use table {} as output", outTable);
-        TableMapReduceUtil.initTableReducerJob(
-                outTable,      // output table
-                null,             // reducer class
-                job,
-                null, null, null, null,
-                addDependencyJar);
-        job.setNumReduceTasks(0);
+        VariantMapReduceUtil.initTableMapperJob(job, inTable, scan, mapperClass);
+        VariantMapReduceUtil.setOutputHBaseTable(job, outTable);
+        VariantMapReduceUtil.setNoneReduce(job);
     }
 
     protected final Scan createArchiveTableScan(List<Integer> files) {
@@ -234,8 +213,9 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return scan;
     }
 
-    private Job newJob(String variantTable, List<Integer> files) throws IOException {
-        Job job = Job.getInstance(getConf(), "opencga: " + getJobOperationName() + " files " + files
+    private Job newJob(String variantTable) throws IOException {
+        List<Integer> files = getFiles();
+        Job job = Job.getInstance(getConf(), "opencga: " + getJobOperationName() + (files.isEmpty() ? " " : " files " + files)
                 + " from VariantTable '" + variantTable + '\'');
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
         job.setJarByClass(getMapperClass());    // class that contains mapper
@@ -271,10 +251,14 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     protected List<Integer> getFiles() {
-        String[] fileArr = getConf().getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
-        return Arrays.stream(fileArr)
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
+        if (fileIds == null) {
+            String[] fileArr = getConf().getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
+            fileIds = Arrays.stream(fileArr)
+                    .filter(s -> StringUtils.isNotEmpty(s) && !s.equals("."))
+                    .map(Integer::parseInt)
+                    .collect(Collectors.toList());
+        }
+        return fileIds;
     }
 
     protected int getStudyId() {
@@ -332,13 +316,11 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     private void configFromArgs(String[] args) {
-        // TODO ?? Do we need this??
-//        setConf(HBaseManager.addHBaseSettings(getConf(), args[0]));
-        int fixedSizeArgs = 5;
+        int fixedSizeArgs = 4;
 
         if (args.length < fixedSizeArgs || (args.length - fixedSizeArgs) % 2 != 0) {
             System.err.println("Usage: " + getClass().getSimpleName()
-                    + " [generic options] <server> <input-table> <output-table> <studyId> <fileIds> [<key> <value>]*");
+                    + " [generic options] <archive-table> <variants-table> <studyId> <fileIds> [<key> <value>]*");
             System.err.println("Found " + Arrays.toString(args));
             ToolRunner.printGenericCommandUsage(System.err);
             throw new IllegalArgumentException("Wrong number of arguments!");
@@ -349,10 +331,16 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             getConf().set(args[i], args[i + 1]);
         }
 
-        getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[1]);
-        getConf().set(CONFIG_VARIANT_TABLE_NAME, args[2]);
-        getConf().set(VariantStorageEngine.Options.STUDY_ID.key(), args[3]);
-        getConf().setStrings(VariantStorageEngine.Options.FILE_ID.key(), args[4].split(","));
+        getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[0]);
+        getConf().set(CONFIG_VARIANT_TABLE_NAME, args[1]);
+        getConf().set(VariantStorageEngine.Options.STUDY_ID.key(), args[2]);
+        if (args[3].equals(".") || args[3].isEmpty()) {
+            getConf().unset(VariantStorageEngine.Options.FILE_ID.key());
+            getConf().unset(VariantQueryParam.FILES.key());
+        } else {
+            getConf().setStrings(VariantStorageEngine.Options.FILE_ID.key(), args[3].split(","));
+            getConf().setStrings(VariantQueryParam.FILES.key(), args[3].split(","));
+        }
 
     }
 
@@ -370,23 +358,36 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
 
-    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId,
-                                              List<Integer> fileIds, Map<String, Object> other) {
-        StringBuilder stringBuilder = new StringBuilder().append(server).append(' ').append(inputTable).append(' ')
-                .append(outputTable).append(' ').append(studyId).append(' ');
+    public static String buildCommandLineArgs(String archiveTable, String variantsTable, int studyId, Collection<?> fileIds,
+                                              ObjectMap other) {
+        StringBuilder stringBuilder = new StringBuilder()
+//                .append(server).append(' ')
+                .append(archiveTable).append(' ')
+                .append(variantsTable).append(' ')
+                .append(studyId).append(' ');
 
-        stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+        if (fileIds.isEmpty()) {
+            stringBuilder.append('.');
+        } else {
+            stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+        }
         addOtherParams(other, stringBuilder);
         return stringBuilder.toString();
     }
 
-    public static void addOtherParams(Map<String, Object> other, StringBuilder stringBuilder) {
+    public static void addOtherParams(ObjectMap other, StringBuilder stringBuilder) {
         for (Map.Entry<String, Object> entry : other.entrySet()) {
+            String key = entry.getKey();
             Object value = entry.getValue();
-            if (value != null && (value instanceof Number
-                    || value instanceof Boolean
-                    || value instanceof String && !((String) value).contains(" ") && !((String) value).isEmpty())) {
-                stringBuilder.append(' ').append(entry.getKey()).append(' ').append(value);
+            if (value != null) {
+                if (value instanceof Number || value instanceof Boolean) {
+                    stringBuilder.append(' ').append(key).append(' ').append(value);
+                } else {
+                    String valueStr = other.getString(key);
+                    if (valueStr != null && !valueStr.contains(" ") && !valueStr.isEmpty()) {
+                        stringBuilder.append(' ').append(key).append(' ').append(valueStr);
+                    }
+                }
             }
         }
     }

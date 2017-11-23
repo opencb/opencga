@@ -55,7 +55,7 @@ public class DocumentToStudyVariantEntryConverter {
     public static final String ALTERNATES_TYPE = "type";
 
     private boolean includeSrc;
-    private Set<Integer> returnedFiles;
+    private Map<Integer, List<Integer>> returnedFiles;
 
     //    private Integer fileId;
     private DocumentToSamplesConverter samplesConverter;
@@ -97,17 +97,18 @@ public class DocumentToStudyVariantEntryConverter {
      * @param returnedFiles    If present, reads the information of this files from FILES_FIELD
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DocumentToStudyVariantEntryConverter(boolean includeSrc, Collection<Integer> returnedFiles,
+    public DocumentToStudyVariantEntryConverter(boolean includeSrc, Map<Integer, List<Integer>> returnedFiles,
                                                 DocumentToSamplesConverter samplesConverter) {
+
         this(includeSrc);
-        this.returnedFiles = (returnedFiles != null) ? new HashSet<>(returnedFiles) : null;
+        this.returnedFiles = returnedFiles;
         this.samplesConverter = samplesConverter;
     }
 
 
-    public DocumentToStudyVariantEntryConverter(boolean includeSrc, Integer returnedFile,
+    public DocumentToStudyVariantEntryConverter(boolean includeSrc, int studyId, int fileId,
                                                 DocumentToSamplesConverter samplesConverter) {
-        this(includeSrc, Collections.singletonList(returnedFile), samplesConverter);
+        this(includeSrc, Collections.singletonMap(studyId, Collections.singletonList(fileId)), samplesConverter);
     }
 
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
@@ -133,7 +134,7 @@ public class DocumentToStudyVariantEntryConverter {
                 if (fid < 0) {
                     fid = -fid;
                 }
-                if (returnedFiles != null && !returnedFiles.contains(fid)) {
+                if (returnedFiles != null && !returnedFiles.getOrDefault(studyId, Collections.emptyList()).contains(fid)) {
                     continue;
                 }
                 HashMap<String, String> attributes = new HashMap<>();
@@ -164,8 +165,6 @@ public class DocumentToStudyVariantEntryConverter {
                 if (fileObject.containsKey(ORI_FIELD)) {
                     Document ori = (Document) fileObject.get(ORI_FIELD);
                     fileEntry.setCall(ori.get("s") + ":" + ori.get("i"));
-                } else {
-                    fileEntry.setCall("");
                 }
             }
             study.setFiles(files);

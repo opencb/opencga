@@ -28,6 +28,7 @@ import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -177,8 +178,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         addParam(queryOptions, AlignmentDBAdaptor.QueryParams.CONTAINED.key(), commandOptions.contained);
         addParam(queryOptions, AlignmentDBAdaptor.QueryParams.MD_FIELD.key(), commandOptions.mdField);
         addParam(queryOptions, AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(),commandOptions.binQualities);
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.LIMIT.key(), commandOptions.limit);
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.SKIP.key(), commandOptions.skip);
+        addParam(queryOptions, QueryOptions.LIMIT, commandOptions.limit);
+        addParam(queryOptions, QueryOptions.SKIP, commandOptions.skip);
 
         GenericAlignmentServiceModel.Request request = GenericAlignmentServiceModel.Request.newBuilder()
                 .putAllQuery(query)

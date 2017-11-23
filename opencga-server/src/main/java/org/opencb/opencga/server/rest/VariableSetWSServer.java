@@ -109,6 +109,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId) {
         try {
+            isSingleId(variablesetId);
             QueryResult<VariableSetSummary> queryResult = catalogManager.getStudyManager().getVariableSetSummary(studyStr, variablesetId,
                     sessionId);
             return createOkResponse(queryResult);
@@ -212,6 +213,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
             @ApiParam(value = "Variable name to delete", required = true) @QueryParam("name") String name) {
         try {
+            isSingleId(variablesetId);
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().removeFieldFromVariableSet(studyStr, variablesetId,
                     name, sessionId);
             return createOkResponse(queryResult);
@@ -229,6 +231,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Variable name to rename", required = true) @QueryParam("oldName") String oldName,
             @ApiParam(value = "New name for the variable", required = true) @QueryParam("newName") String newName) {
         try {
+            isSingleId(variablesetId);
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().renameFieldFromVariableSet(studyStr, variablesetId,
                     oldName, newName, sessionId);
             return createOkResponse(queryResult);

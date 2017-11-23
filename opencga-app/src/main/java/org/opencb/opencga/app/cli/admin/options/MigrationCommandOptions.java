@@ -1,10 +1,13 @@
 package org.opencb.opencga.app.cli.admin.options;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+
+import java.util.List;
 
 /**
  * Created on 08/09/17.
@@ -28,6 +31,12 @@ public class MigrationCommandOptions extends GeneralCliOptions {
 
         @ParametersDelegate
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
+
+        @Parameter(names = {"--file-backup"}, description = "Create a backup for all migrated variant metadata files")
+        public boolean createBackup;
+
+        @Parameter(names = {"--files"}, description = "VariantSource files to migrate into VariantFileMetadata. Don't do any operation in catalog.", variableArity = true)
+        public List<String> files;
 
     }
 

@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
@@ -69,9 +71,10 @@ public class VariantHBaseQueryParser {
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
-    public static boolean fullySupportedQuery(Query query) {
+    public static boolean isSupportedQuery(Query query) {
         Set<VariantQueryParam> otherParams = validParams(query);
         otherParams.removeAll(SUPPORTED_QUERY_PARAMS);
+
 
 
 //        if (otherParams.contains(ID)) {
@@ -88,8 +91,13 @@ public class VariantHBaseQueryParser {
         return otherParams.isEmpty();
     }
 
-    ////// Util methods:
     public Scan parseQuery(Query query, QueryOptions options) {
+        VariantQueryUtils.SelectVariantElements selectElements =
+                VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager);
+        return parseQuery(selectElements, query, options);
+    }
+
+    public Scan parseQuery(VariantQueryUtils.SelectVariantElements selectElements, Query query, QueryOptions options) {
 
         Scan scan = new Scan();
         scan.addFamily(genomeHelper.getColumnFamily());
@@ -97,11 +105,18 @@ public class VariantHBaseQueryParser {
 //        FilterList regionFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
 //        filters.addFilter(regionFilters);
         List<byte[]> columnPrefixes = new LinkedList<>();
+        Set<VariantField> returnedFields = selectElements.getFields();
+        Map<Integer, List<Integer>> returnedSamples = selectElements.getSamples();
 
-        if (isValidParam(query, REGION)) {
-            // TODO: Use MultiRowRangeFilter
-            Region region = Region.parseRegion(query.getString(REGION.key()));
+        List<Region> regions = getRegions(query);
+
+        if (regions != null && !regions.isEmpty()) {
+            if (regions.size() > 1) {
+                throw VariantQueryException.malformedParam(REGION, regions.toString(), "Unsupported multiple region filter");
+            }
+            Region region = regions.get(0);
             logger.debug("region = " + region);
+            // TODO: Use MultiRowRangeFilter
             addRegionFilter(scan, region);
         } else {
             addDefaultRegionFilter(scan);
@@ -130,9 +145,28 @@ public class VariantHBaseQueryParser {
             addValueFilter(filters, BIOTYPE.bytes(), query.getAsStringList(ANNOT_BIOTYPE.key()));
         }
 
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        Map<Integer, List<Integer>> returnedSamples
-                = VariantQueryUtils.getReturnedSamples(query, options, studyConfigurationManager);
+        if (isValidParam(query, ANNOTATION_EXISTS)) {
+            if (!query.getBoolean(ANNOTATION_EXISTS.key())) {
+                // Use a column different from FULL_ANNOTATION to read few elements from disk
+//                byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
+                byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.SO.bytes();
+
+                // Filter : SKIP QualifierFilter(!=, <COLUMN>)
+                // Skip rows where NOT ALL cells ( has QualifierName != <COLUMN> )
+                // == Get rows where ALL cells (has QualifierName != <COLUMN>)
+                // == Get rows where <COLUMN> is missing
+                filters.addFilter(new SkipFilter(new QualifierFilter(
+                        CompareFilter.CompareOp.NOT_EQUAL, new BinaryComparator(annotationColumn))));
+//                filters.addFilter(new SkipFilter(new SingleColumnValueFilter(
+//                        genomeHelper.getColumnFamily(), annotationColumn,
+//                        CompareFilter.CompareOp.EQUAL, new BinaryComparator(new byte[]{}))));
+                if (!returnedFields.contains(VariantField.ANNOTATION)) {
+                    scan.addColumn(genomeHelper.getColumnFamily(), annotationColumn);
+                }
+            } else {
+                logger.warn("Filter " + ANNOTATION_EXISTS.key() + "=true not implemented in native mode");
+            }
+        }
 
         if (returnedFields.contains(VariantField.STUDIES)) {
             if (isValidParam(query, STUDIES)) {
@@ -142,36 +176,55 @@ public class VariantHBaseQueryParser {
                     columnPrefixes.add(Bytes.toBytes(studyId.toString() + genomeHelper.getSeparator()));
                 }
             }
-        }
 
-        returnedSamples.forEach((studyId, sampleIds) -> {
-            scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
-            for (Integer sampleId : sampleIds) {
-                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId));
-            }
-        });
+            returnedSamples.forEach((studyId, sampleIds) -> {
+                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+                for (Integer sampleId : sampleIds) {
+                    scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId));
+                }
+            });
+        }
 
         if (returnedFields.contains(VariantField.ANNOTATION)) {
             scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
         }
 
-        if (!returnedFields.contains(VariantField.ANNOTATION) && !returnedFields.contains(VariantField.STUDIES)) {
-            KeyOnlyFilter keyOnlyFilter = new KeyOnlyFilter();
-            filters.addFilter(keyOnlyFilter);
-        }
+//        if (!returnedFields.contains(VariantField.ANNOTATION) && !returnedFields.contains(VariantField.STUDIES)) {
+////            KeyOnlyFilter keyOnlyFilter = new KeyOnlyFilter();
+////            filters.addFilter(keyOnlyFilter);
+//            scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+//        }
+        scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
 
-        MultipleColumnPrefixFilter columnPrefixFilter = new MultipleColumnPrefixFilter(
-                columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
-        filters.addFilter(columnPrefixFilter);
+        if (!columnPrefixes.isEmpty()) {
+            MultipleColumnPrefixFilter columnPrefixFilter = new MultipleColumnPrefixFilter(
+                    columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
+            filters.addFilter(columnPrefixFilter);
+        }
 
         scan.setFilter(filters);
         scan.setMaxResultSize(options.getInt(QueryOptions.LIMIT));
 
-        logger.debug("StartRow = " + new String(scan.getStartRow()));
-        logger.debug("StopRow = " + new String(scan.getStopRow()));
-        logger.debug("MaxResultSize = " + scan.getMaxResultSize());
-        logger.debug("Filters = " + scan.getFilter().toString());
+        logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()));
+        logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()));
+        logger.info("columns = " + scan.getFamilyMap().get(
+                genomeHelper.getColumnFamily()).stream().map(Bytes::toString).collect(Collectors.joining(",")));
+        logger.info("MaxResultSize = " + scan.getMaxResultSize());
+        logger.info("Filters = " + scan.getFilter().toString());
+        logger.info("Batch = " + scan.getBatch());
         return scan;
+    }
+
+    private List<Region> getRegions(Query query) {
+        List<Region> regions;
+        if (isValidParam(query, REGION)) {
+            regions = Region.parseRegions(query.getString(REGION.key()));
+        } else if (isValidParam(query, VariantQueryParam.CHROMOSOME)) {
+            regions = Region.parseRegions(query.getString(VariantQueryParam.CHROMOSOME.key()));
+        } else {
+            regions = Collections.emptyList();
+        }
+        return regions;
     }
 
     private void addValueFilter(FilterList filters, byte[] column, List<String> values) {

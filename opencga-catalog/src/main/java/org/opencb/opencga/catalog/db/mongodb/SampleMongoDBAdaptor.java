@@ -360,9 +360,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Override
     public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+        filterOutDeleted(query);
 
         if (studyPermission == null) {
             studyPermission = StudyAclEntry.StudyPermissions.VIEW_SAMPLES;
@@ -381,6 +379,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         logger.debug("Sample count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return sampleCollection.count(bson);
+    }
+
+    private void filterOutDeleted(Query query) {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
     }
 
     @Override
@@ -579,9 +583,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
         }
 
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+        filterOutDeleted(query);
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
@@ -622,18 +624,21 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return rank(sampleCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(sampleCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(sampleCollection, bsonQuery, fields, "name", options);
     }
@@ -644,6 +649,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(sampleCollection, bsonQuery, field, QueryParams.NAME.key(), options);
     }
@@ -654,6 +660,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(sampleCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }

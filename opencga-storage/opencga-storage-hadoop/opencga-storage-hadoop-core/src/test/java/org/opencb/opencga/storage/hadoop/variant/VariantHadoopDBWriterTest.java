@@ -37,16 +37,15 @@ import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -107,6 +106,11 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         fileId1 = createNewFile(sc1);
         fileId2 = createNewFile(sc1);
 
+        sc1.getVariantHeader().getComplexLines()
+                .add(new VariantFileHeaderComplexLine("INFO", "AD", "", "R", "Integer", Collections.emptyMap()));
+        sc1.getVariantHeader().getComplexLines()
+                .add(new VariantFileHeaderComplexLine("FORMAT", "AD", "", "R", "Integer", Collections.emptyMap()));
+
         timestamp = new AtomicLong(1L);
     }
 
@@ -141,7 +145,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     public void testBasicMerge() throws Exception {
 
         sc1.getAttributes()
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX")
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,AD")
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
 
         int studyId = sc1.getStudyId();
@@ -162,17 +166,23 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         List<String> expectedSamples = new ArrayList<>(variants1.get(0).getStudies().get(0).getOrderedSamplesName());
         expectedSamples.addAll(variants2.get(0).getStudies().get(0).getOrderedSamplesName());
         merger.setExpectedSamples(expectedSamples);
-        merger.setExpectedFormats(asList("GT", VariantMerger.GENOTYPE_FILTER_KEY, "DP", "GQX"));
+        merger.setExpectedFormats(asList("GT", VariantMerger.GENOTYPE_FILTER_KEY, "DP", "GQX", "AD"));
         merger.setDefaultValue("DP", ".");
         merger.setDefaultValue("GQX", ".");
+        merger.setDefaultValue("AD", ".");
+        merger.configure(sc1.getVariantHeader());
 
-        Map<String, Variant> loadedVariants = dbAdaptor.stream(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "."), null)
+        Map<String, Variant> loadedVariants = dbAdaptor.stream(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "."), new QueryOptions(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, false))
                 .collect(Collectors.toMap(Variant::toString, i -> i));
 
         for (Variant variant : variants1) {
             Variant expected = merger.merge(variant, variants2.stream().filter(v -> v.toString().equals(variant.toString())).collect(Collectors.toList()));
+            if (expected.getId() == null) {
+                expected.setId(expected.toString());
+            }
             assertThat(loadedVariants.keySet(), CoreMatchers.hasItem(expected.toString()));
             Variant actual = loadedVariants.get(expected.toString());
+            actual.setAnnotation(null);
 
             List<AlternateCoordinate> expectedAlternates = expected.getStudies().get(0).getSecondaryAlternates();
             List<AlternateCoordinate> actualAlternates = actual.getStudies().get(0).getSecondaryAlternates();
@@ -185,6 +195,11 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                         // Up to 3 alternates. The first alternate must match. Swap second and third alternate (1/2 -> 1/3)
                         String newGT = expectedSamplesData.get(i).get(0).replace('2', 'X').replace('3', '2').replace('X', '3');
                         expectedSamplesData.get(i).set(0, newGT);
+                        if (expectedSamplesData.get(i).get(4).equals("1,2,3")) {
+                            expectedSamplesData.get(i).set(4, "1,2,0,3");
+                        } else if (expectedSamplesData.get(i).get(4).equals("1,2,0,3")) {
+                            expectedSamplesData.get(i).set(4, "1,2,3");
+                        }
                     }
                     assertEquals(expectedSamplesData, actualSamplesData);
                 } else {
@@ -213,15 +228,16 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), DB_NAME);
 
-        // Create empty VariantSource
+        // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
+        fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
         dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(sc.getStudyId()), fileMetadata);
 
         ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getStudyId(), fileMetadata);
 
 
         // Create dummy reader
-        VariantSliceReader reader = getVariantSliceReader(variants);
+        VariantSliceReader reader = getVariantSliceReader(variants, sc.getStudyId(), fileId);
 
         // Writers
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, DB_NAME, dbAdaptor.getHBaseManager());
@@ -240,7 +256,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, QueryOptions.empty());
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId());
-        phoenixHelper.registerNewSamples(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId(), sc.getSamplesInFiles().get(fileId));
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId(), Collections.singleton(fileId), sc.getSamplesInFiles().get(fileId));
     }
 
     private void loadVariants(StudyConfiguration studyConfiguration, int fileId, List<Variant> variants) throws Exception {
@@ -252,11 +268,13 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         String archiveTableName = engine.getArchiveTableName(study.getStudyId());
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
 
-        // Create empty VariantSource
-        dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(study.getStudyId()), new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId)));
+        // Create empty VariantFileMetadata
+        VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
+        fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
+        dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(study.getStudyId()), fileMetadata);
 
         // Create dummy reader
-        VariantSliceReader reader = getVariantSliceReader(variants);
+        VariantSliceReader reader = getVariantSliceReader(variants, study.getStudyId(), fileId);
 
         // Task supplier
         Supplier<ParallelTaskRunner.Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> taskSupplier = () -> {
@@ -284,7 +302,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
     }
 
-    private VariantSliceReader getVariantSliceReader(List<Variant> variants) {
+    private VariantSliceReader getVariantSliceReader(List<Variant> variants, Integer studyId, Integer fileId) {
         return new VariantSliceReader(100, new VariantReader() {
             boolean empty = false;
             @Override public List<String> getSampleNames() { return variants.get(0).getStudies().get(0).getOrderedSamplesName(); }
@@ -297,7 +315,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                     return variants;
                 }
             }
-        });
+        }, studyId, fileId);
     }
 
     private void mergeVariants(StudyConfiguration study, Integer ...fileIds) throws Exception {
@@ -359,7 +377,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(study, QueryOptions.empty());
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), DB_NAME, study.getStudyId());
-        phoenixHelper.registerNewSamples(dbAdaptor.getJdbcConnection(), DB_NAME, study.getStudyId(), fileIds.stream().flatMap(i -> study.getSamplesInFiles().get(i).stream()).collect(Collectors.toSet()));
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), DB_NAME, study.getStudyId(), fileIds, fileIds.stream().flatMap(i -> study.getSamplesInFiles().get(i).stream()).collect(Collectors.toSet()));
     }
 
     private Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context mockContext(Map<String, Counter> counterMap) throws IOException, InterruptedException {
@@ -403,55 +421,58 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     }
 
     public static Variant newVariant(String chromosome, int start, int end, String reference, String alternate, Integer fileId, Integer studyId) {
-        Variant variant;
-        StudyEntry sourceEntry;
-        variant = new Variant(chromosome, start, end, reference, alternate);
-        sourceEntry = new StudyEntry(fileId.toString(), studyId.toString());
-        sourceEntry.setFiles(Collections.singletonList(new FileEntry(fileId.toString(), null, Collections.singletonMap(StudyEntry.FILTER, "PASS_" + fileId))));
-        variant.addStudyEntry(sourceEntry);
-
         int pad = (fileId - 1) * NUM_SAMPLES;
-        addSample(variant, "S" + (1 + pad), "./.", String.valueOf(11 + pad), "0.7");
-        addSample(variant, "S" + (2 + pad), "1/1", String.valueOf(12 + pad), "0.7");
-        addSample(variant, "S" + (3 + pad), "0/0", String.valueOf(13 + pad), "0.7");
-        addSample(variant, "S" + (4 + pad), "1/0", String.valueOf(14 + pad), "0.7");
-
-        return variant;
+        return Variant.newBuilder()
+                .setChromosome(chromosome)
+                .setStart(start)
+                .setEnd(end)
+                .setReference(reference)
+                .setAlternate(alternate)
+                .setStudyId(studyId.toString())
+                .setFileId(fileId.toString())
+                .setFilter("PASS_" + fileId)
+                .setQuality(fileId * 100.0)
+                .addAttribute("AD", "1,2")
+                .setFormat("GT", "DP", "GQX", "AD")
+                .addSample("S" + (1 + pad), "./.", String.valueOf(11 + pad), "0.7", "1,2")
+                .addSample("S" + (2 + pad), "1/1", String.valueOf(12 + pad), "0.7", "1,2")
+                .addSample("S" + (3 + pad), "0/0", String.valueOf(13 + pad), "0.7", "1,2")
+                .addSample("S" + (4 + pad), "1/0", String.valueOf(14 + pad), "0.7", "1,2").build();
     }
 
     public static List<Variant> newVariants(String chromosome, int start, int end, String reference, List<String> alternates, Integer fileId, Integer studyId) {
-        Variant variant;
-        StudyEntry sourceEntry;
-        variant = new Variant(chromosome, start, end, reference, alternates.get(0));
-        sourceEntry = new StudyEntry(fileId.toString(), studyId.toString());
-        sourceEntry.setFiles(Collections.singletonList(new FileEntry(fileId.toString(), null, Collections.singletonMap(StudyEntry.FILTER, "PASS_" + fileId))));
-        for (int i = 1; i < alternates.size(); i++) {
-            String alternate = alternates.get(i);
-            sourceEntry.getSecondaryAlternates().add(new AlternateCoordinate(chromosome, start, end, reference, alternate, Variant.inferType(reference, alternate)));
+        StringBuilder adBuilder = new StringBuilder();
+        adBuilder.append(1);
+        for (int i = 0; i < alternates.size(); i++) {
+            adBuilder.append(',');
+            adBuilder.append(i + 2);
         }
-        variant.addStudyEntry(sourceEntry);
+        String ad = adBuilder.toString();
+
+        VariantBuilder builder = Variant.newBuilder()
+                .setChromosome(chromosome)
+                .setStart(start)
+                .setEnd(end)
+                .setReference(reference)
+                .setAlternates(alternates)
+                .setStudyId(studyId.toString())
+                .setFileId(fileId.toString())
+                .setFilter("PASS_" + fileId)
+                .setQuality(fileId * 100.0)
+                .addAttribute("AD", ad)
+                .setFormat("GT", "DP", "GQX", "AD");
 
         int pad = (fileId - 1) * NUM_SAMPLES;
-
-        List<String> gts = new ArrayList<>(NUM_SAMPLES);
         int count = 0;
         for (int i = 0; i < NUM_SAMPLES; i++) {
             int allele1 = (count++) % (alternates.size() + 1);
             int allele2 = (count++) % (alternates.size() + 1);
-            gts.add(allele1 + "/" + allele2);
+            String gt = allele1 + "/" + allele2;
+            builder.addSample("S" + (i + 1 + pad), gt, String.valueOf(i + 1 + pad), "0.7", ad);
         }
 
-        addSample(variant, "S" + (1 + pad), gts.get(0), String.valueOf(1 + pad), "0.7");
-        addSample(variant, "S" + (2 + pad), gts.get(1), String.valueOf(2 + pad), "0.7");
-        addSample(variant, "S" + (3 + pad), gts.get(2), String.valueOf(3 + pad), "0.7");
-        addSample(variant, "S" + (4 + pad), gts.get(3), String.valueOf(4 + pad), "0.7");
         VariantNormalizer normalizer = new VariantNormalizer(true, true);
-        return normalizer.apply(Collections.singletonList(variant));
-    }
-
-    @SuppressWarnings("unchecked")
-    public static void addSample(Variant variant, String s1, String gt, String dp, String gqx) {
-        variant.getStudies().get(0).addSampleData(s1, ((Map) new ObjectMap("GT", gt).append("DP", dp).append("GQX", gqx)));
+        return normalizer.apply(Collections.singletonList(builder.build()));
     }
 
 }

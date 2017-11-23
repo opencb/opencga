@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>1.3.0-dev</version>
+    <version>1.3.0-rc</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
     
@@ -37,12 +37,12 @@
     </modules>
 
     <properties>
-        <opencga.version>1.3.0-dev</opencga.version>
+        <opencga.version>1.3.0-rc</opencga.version>
         <java.version>1.8</java.version>
-        <java-common-libs.version>3.6.0-SNAPSHOT</java-common-libs.version>
-        <biodata.version>1.3.0-SNAPSHOT</biodata.version>
-        <cellbase.version>4.5.2-SNAPSHOT</cellbase.version>
-        <hpg-bigdata.version>1.0.0-beta4-SNAPSHOT</hpg-bigdata.version>
+        <java-common-libs.version>3.6.0</java-common-libs.version>
+        <biodata.version>1.3.0</biodata.version>
+        <cellbase.version>4.5.3</cellbase.version>
+        <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
         <avro.version>1.7.7</avro.version>
@@ -501,6 +501,7 @@
                 <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
                 <OPENCGA.USER.WORKSPACE>/opt/opencga/sessions</OPENCGA.USER.WORKSPACE>
                 <OPENCGA.JOBS.DIR>${OPENCGA.USER.WORKSPACE}/jobs</OPENCGA.JOBS.DIR>
+                <OPENCGA.TOOLS.DIR>${OPENCGA.INSTALLATION.DIR}/tools</OPENCGA.TOOLS.DIR>
                 <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
                 <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
 

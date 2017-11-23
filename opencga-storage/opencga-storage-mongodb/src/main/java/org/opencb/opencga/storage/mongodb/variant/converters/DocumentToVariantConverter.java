@@ -16,9 +16,12 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.StructuralVariantType;
+import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
@@ -36,7 +39,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVa
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DocumentToVariantConverter implements ComplexTypeConverter<Variant, Document> {
+public class DocumentToVariantConverter extends AbstractDocumentConverter implements ComplexTypeConverter<Variant, Document> {
 
     public static final String CHROMOSOME_FIELD = "chromosome";
     public static final String START_FIELD = "start";
@@ -46,6 +49,12 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
     public static final String ALTERNATE_FIELD = "alternate";
     public static final String IDS_FIELD = "ids";
     public static final String TYPE_FIELD = "type";
+    public static final String SV_FIELD = "sv";
+    public static final String SV_CISTART_FIELD = "cistart";
+    public static final String SV_CIEND_FIELD = "ciend";
+    public static final String SV_CN_FIELD = "cn";
+    public static final String SV_INS_SEQ = "ins_seq";
+    public static final String SV_TYPE = "type";
 
     public static final String HGVS_FIELD = "hgvs";
     public static final String HGVS_NAME_FIELD = "name";
@@ -89,6 +98,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         map.put(VariantField.LENGTH, singletonList(LENGTH_FIELD));
         map.put(VariantField.TYPE, singletonList(TYPE_FIELD));
         map.put(VariantField.HGVS, singletonList(HGVS_FIELD));
+        map.put(VariantField.SV, singletonList(SV_FIELD));
         map.put(VariantField.STUDIES, Arrays.asList(STUDIES_FIELD, STATS_FIELD));
         map.put(VariantField.STUDIES_SAMPLES_DATA, Arrays.asList(
                 STUDIES_FIELD + '.' + GENOTYPES_FIELD,
@@ -222,6 +232,29 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
             }
         }
 
+        // SV
+        Document mongoSv = object.get(SV_FIELD, Document.class);
+        if (mongoSv != null) {
+            StructuralVariation sv = new StructuralVariation();
+            List<Integer> ciStart = getDefault(mongoSv, SV_CISTART_FIELD, Arrays.asList(null, null));
+            List<Integer> ciEnd = getDefault(mongoSv, SV_CIEND_FIELD, Arrays.asList(null, null));
+            List<String> insSeq = getDefault(mongoSv, SV_INS_SEQ, Arrays.asList(null, null));
+            sv.setCiStartLeft(ciStart.get(0));
+            sv.setCiStartRight(ciStart.get(1));
+            sv.setCiEndLeft(ciEnd.get(0));
+            sv.setCiEndRight(ciEnd.get(1));
+            sv.setLeftSvInsSeq(insSeq.get(0));
+            sv.setRightSvInsSeq(insSeq.get(1));
+            sv.setCopyNumber(mongoSv.getInteger(SV_CN_FIELD));
+
+            String type = mongoSv.getString(SV_TYPE);
+            if (type != null) {
+                sv.setType(StructuralVariantType.valueOf(type));
+            }
+
+            variant.setSv(sv);
+        }
+
         // Files
         if (variantStudyEntryConverter != null) {
             List mongoFiles = object.get(STUDIES_FIELD, List.class);
@@ -284,6 +317,24 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
                 .append(REFERENCE_FIELD, variant.getReference())
                 .append(ALTERNATE_FIELD, variant.getAlternate())
                 .append(TYPE_FIELD, variant.getType().name());
+
+        // SV
+        if (variant.getSv() != null) {
+            StructuralVariation sv = variant.getSv();
+            Document mongoSv = new Document();
+            mongoSv.put(SV_CISTART_FIELD, Arrays.asList(sv.getCiStartLeft(), sv.getCiStartRight()));
+            mongoSv.put(SV_CIEND_FIELD, Arrays.asList(sv.getCiEndLeft(), sv.getCiEndRight()));
+            if (sv.getCopyNumber() != null) {
+                mongoSv.put(SV_CN_FIELD, sv.getCopyNumber());
+            }
+            if (StringUtils.isNotEmpty(sv.getLeftSvInsSeq()) || StringUtils.isNotEmpty(sv.getRightSvInsSeq())) {
+                mongoSv.put(SV_INS_SEQ, Arrays.asList(sv.getLeftSvInsSeq(), sv.getRightSvInsSeq()));
+            }
+            if (sv.getType() != null) {
+                mongoSv.put(SV_TYPE, sv.getType().toString());
+            }
+            mongoVariant.put(SV_FIELD, mongoSv);
+        }
 
         // Internal fields used for query optimization (dictionary named "_at")
         Document at = new Document();

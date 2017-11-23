@@ -73,6 +73,8 @@ import org.apache.zookeeper.server.PrepRequestProcessor;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
@@ -81,10 +83,13 @@ import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -218,7 +223,6 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 conf.set("hbase.rpc.controllerfactory.class",
                         org.apache.hadoop.hbase.ipc.controller.ServerRpcControllerFactory.class.getName());
 
-
                 // Not required in Phoenix 4.8
 //                conf.set("hbase.master.loadbalancer.class",
 //                        org.apache.phoenix.hbase.index.balancer.IndexLoadBalancer.class.getName());
@@ -232,6 +236,10 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
                 // Zookeeper always with the same clientPort.
 //                conf.setInt("test.hbase.zookeeper.property.clientPort", 55419);
+
+                // Do not put up web UI
+                conf.setInt("hbase.regionserver.info.port", -1);
+                conf.setInt("hbase.master.info.port", -1);
 
                 utility.get().startMiniCluster(1);
 
@@ -405,6 +413,14 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
     }
 
+    default int getExpectedNumLoadedVariants(VariantFileMetadata fileMetadata) {
+        int numRecords = 0;
+        for (VariantType variantType : VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET) {
+            numRecords += fileMetadata.getStats().getVariantTypeCount(variantType);
+        }
+        return numRecords;
+    }
+
     class TestMRExecutor implements MRExecutor {
 
         private static Configuration staticConfiguration;
@@ -448,6 +464,16 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     System.out.println("Executing VariantTableDeletionDriver : " + executable + " " + args);
                     int r = new VariantTableRemoveFileDriver().privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution VariantTableDeletionDriver");
+                    return r;
+                } else if (executable.endsWith(FillGapsDriver.class.getName())) {
+                    System.out.println("Executing FillGapsDriver : " + executable + " " + args);
+                    int r = new FillGapsDriver().privateMain(Commandline.translateCommandline(args), conf);
+                    System.out.println("Finish execution FillGapsDriver");
+                    return r;
+                } else if (executable.endsWith(VariantStatsDriver.class.getName())) {
+                    System.out.println("Executing VariantStatsDriver : " + executable + " " + args);
+                    int r = new VariantStatsDriver().privateMain(Commandline.translateCommandline(args), conf);
+                    System.out.println("Finish execution VariantStatsDriver");
                     return r;
                 }
             } catch (Exception e) {

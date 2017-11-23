@@ -20,6 +20,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -60,10 +61,11 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/index")
     @ApiOperation(value = "Index alignment files", position = 14, response = QueryResponse.class)
     public Response index(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
-                              @QueryParam(value = "file") String fileIdStr,
+                          @QueryParam(value = "file") String fileIdStr,
                           @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String studyStr,
+                            @QueryParam("study") String studyStr,
+                          @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load) {
         if (StringUtils.isNotEmpty(studyId)) {
@@ -74,11 +76,13 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 //        addParamIfNotNull(params, "studyId", studyId);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
+        addParamIfNotNull(params, "outdir", outDirStr);
 
         logger.info("ObjectMap: {}", params);
 
         try {
-            QueryResult queryResult = catalogManager.getFileManager().index(fileIdStr, studyStr, "BAM", params, sessionId);
+            List<String> idList = getIdList(fileIdStr);
+            QueryResult queryResult = catalogManager.getFileManager().index(idList, studyStr, "BAM", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
@@ -89,59 +93,79 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/query")
     @ApiOperation(value = "Fetch alignments from a BAM file", position = 15, response = ReadAlignment[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
-                    paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "limit", value = "Max number of results to be returned", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Return total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
-    public Response getAlignments(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
-                                          String fileIdStr,
-                                  @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                      @QueryParam("study") String studyStr,
-                                  @ApiParam(value = "Comma separated list of regions 'chr:start-end'", required = false) @QueryParam
-                                          ("region") String region,
-                                  @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
-                                  @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
-                                  @QueryParam("contained") Boolean contained,
-                                  @ApiParam(value = "Force SAM MD optional field to be set with the alignments", required = false)
-                                  @QueryParam("mdField") Boolean mdField,
-                                  @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels", required = false)
-                                  @QueryParam("binQualities") Boolean binQualities) {
+    public Response getAlignments(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
+                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the Id or alias") @QueryParam("study") String studyStr,
+                                  @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam ("region") String regions,
+                                  @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
+                                  @ApiParam(value = "Maximum number of mismatches") @QueryParam("maxNM") Integer maxNM,
+                                  @ApiParam(value = "Maximum number of hits") @QueryParam("maxNH") Integer maxNH,
+                                  @ApiParam(value = "Return only properly paired alignments") @QueryParam("properlyPaired") @DefaultValue("false") Boolean properlyPaired,
+                                  @ApiParam(value = "Maximum insert size") @QueryParam("maxInsertSize") Integer maxInsertSize,
+                                  @ApiParam(value = "Skip unmapped alignments") @QueryParam("skipUnmapped") @DefaultValue("false") Boolean unmapped,
+                                  @ApiParam(value = "Skip duplicated alignments") @QueryParam("skipDuplicated") @DefaultValue("false") Boolean duplicated,
+                                  @ApiParam(value = "Return alignments contained within boundaries of region") @DefaultValue("false") @QueryParam("contained") Boolean contained,
+                                  @ApiParam(value = "Force SAM MD optional field to be set with the alignments") @DefaultValue("false") @QueryParam("mdField") Boolean mdField,
+                                  @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels") @QueryParam("binQualities") @DefaultValue("false") Boolean binQualities) {
         try {
-            if (StringUtils.isNotEmpty(studyId)) {
-                studyStr = studyId;
-            }
-
             Query query = new Query();
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MAX_NM.key(), maxNM);
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MAX_NH.key(), maxNH);
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.PROPERLY_PAIRED.key(), properlyPaired);
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MAX_INSERT_SIZE.key(), maxInsertSize);
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP_UNMAPPED.key(), unmapped);
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP_DUPLICATED.key(), duplicated);
 
             QueryOptions queryOptions = new QueryOptions();
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.LIMIT.key(), limit);
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP.key(), skip);
-            queryOptions.putIfNotNull("count", count);
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(), mdField);
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(), binQualities);
+            queryOptions.putIfNotNull(QueryOptions.LIMIT, limit);
+            queryOptions.putIfNotNull(QueryOptions.SKIP, skip);
+            queryOptions.putIfNotNull(QueryOptions.COUNT, count);
 
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-
-            if (StringUtils.isNotEmpty(region)) {
-                String[] regionList = region.split(",");
+            if (StringUtils.isNotEmpty(regions)) {
+                String[] regionList = regions.split(",");
                 List<QueryResult<ReadAlignment>> queryResultList = new ArrayList<>(regionList.length);
-                for (String regionAux : regionList) {
-                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
-                    queryResultList.add(alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId));
+                for (String region: regionList) {
+                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
+                    QueryResult<ReadAlignment> queryResult = alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId);
+                    queryResultList.add(queryResult);
                 }
                 return createOkResponse(queryResultList);
             } else {
-                return createOkResponse(alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId));
+                return createErrorResponse("query", "Missing region, no region provided");
             }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
+    @GET
+    @Path("/coverage")
+    @ApiOperation(value = "Fetch the coverage of an alignment file", position = 15, response = RegionCoverage.class)
+    public Response getCoverage(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
+                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+                                @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam("region") String regions,
+                                @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
+        try {
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+            if (StringUtils.isNotEmpty(regions)) {
+                String[] regionList = regions.split(",");
+                List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.length);
+                for (String region : regionList) {
+                    Region region1 = Region.parseRegion(region);
+                    queryResultList.add(alignmentStorageManager.coverage(studyStr, fileIdStr, region1, windowSize, sessionId));
+                }
+                return createOkResponse(queryResultList);
+            } else {
+                return createErrorResponse("coverage", "Missing region, no region provides");
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -151,14 +175,14 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/stats")
     @ApiOperation(value = "Fetch the stats of an alignment file", position = 15, response = AlignmentGlobalStats.class)
     public Response getStats(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
-                                          String fileIdStr,
+                                     String fileIdStr,
                              @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                 @QueryParam("study") String studyStr,
-                             @ApiParam(value = "Comma separated list of regions 'chr:start-end'", required = false) @QueryParam("region") String region,
-                             @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
-                             @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
-                                 @QueryParam("contained") Boolean contained) {
+                             @QueryParam("study") String studyStr,
+                             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String region,
+                             @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
+                             @ApiParam(value = "Only alignments completely contained within boundaries of region")
+                             @QueryParam("contained") Boolean contained) {
         try {
             if (StringUtils.isNotEmpty(studyId)) {
                 studyStr = studyId;
@@ -206,51 +230,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 //            AlignmentGlobalStats stats = alignmentStorageManager.getDBAdaptor().stats(path, query, queryOptions);
 //            QueryResult<AlignmentGlobalStats> queryResult = new QueryResult<>("get stats", -1, 1, 1, "", "", Arrays.asList(stats));
 //            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/coverage")
-    @ApiOperation(value = "Fetch the coverage of an alignment file", position = 15, response = RegionCoverage.class)
-    public Response getCoverage(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
-                                     String fileIdStr,
-                                @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
-                                @ApiParam(value = "Comma separated list of regions 'chr:start-end'", required = false) @QueryParam("region")
-                                            String region,
-                                @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
-                                @ApiParam(value = "Window size", required = false, defaultValue = "1") @QueryParam("windowSize")
-                                    Integer windowSize,
-                                @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
-                                    @QueryParam("contained") Boolean contained) {
-        try {
-            if (StringUtils.isNotEmpty(studyId)) {
-                studyStr = studyId;
-            }
-
-            Query query = new Query();
-            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
-
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.WINDOW_SIZE.key(), windowSize);
-
-            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-
-            if (StringUtils.isNotEmpty(region)) {
-                String[] regionList = region.split(",");
-                List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.length);
-                for (String regionAux : regionList) {
-                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
-                    queryResultList.add(alignmentStorageManager.coverage(studyStr, fileIdStr, query, queryOptions, sessionId));
-                }
-                return createOkResponse(queryResultList);
-            } else {
-                return createOkResponse(alignmentStorageManager.coverage(studyStr, fileIdStr, query, queryOptions, sessionId));
-            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }

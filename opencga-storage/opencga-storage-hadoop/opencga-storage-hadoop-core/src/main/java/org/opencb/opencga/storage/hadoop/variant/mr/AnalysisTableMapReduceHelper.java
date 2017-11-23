@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant;
+package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import com.google.common.collect.BiMap;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.slf4j.Logger;

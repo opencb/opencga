@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.storage.core.manager;
 
-import ga4gh.Reads;
 import org.apache.commons.lang3.time.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectReader;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -32,9 +32,9 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
@@ -57,19 +57,19 @@ import java.util.Map;
  */
 public class AlignmentStorageManager extends StorageManager {
 
-    private AlignmentStorageEngine alignmentStorageManager;
+    private AlignmentStorageEngine alignmentStorageEngine;
 
     private static final String GLOBAL_STATS = "globalStats";
 
     public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         super(catalogManager, storageEngineFactory);
 
-        // TODO: Create this alignmentStorageManager by reflection
-        this.alignmentStorageManager = new LocalAlignmentStorageEngine();
+        // TODO: Create this alignmentStorageEngine by reflection
+        this.alignmentStorageEngine = new LocalAlignmentStorageEngine();
     }
 
 
-    public void index(String studyIdStr, String fileIdStr, ObjectMap options, String sessionId) throws Exception {
+    public void index(String studyIdStr, String fileIdStr, Path outDir, ObjectMap options, String sessionId) throws Exception {
         options = ParamUtils.defaultObject(options, ObjectMap::new);
         StopWatch watch = new StopWatch();
 
@@ -82,13 +82,19 @@ public class AlignmentStorageManager extends StorageManager {
 //        Path filePath = getFilePath(fileId, sessionId);
 //        Path workspace = getWorkspace(studyId, sessionId);
 
-        List<URI> fileUris = Arrays.asList(fileInfo.getPath().toUri());
+        Path linkedBamFilePath = Files.createSymbolicLink(outDir.resolve(fileInfo.getName()), fileInfo.getPath());
+
+        List<URI> fileUris = Arrays.asList(linkedBamFilePath.toUri());
 
         // TODO: Check if index is already created and link bai file
         logger.info("Creating index...");
         watch.start();
-        alignmentStorageManager
-                .index(fileUris, studyInfo.getWorkspace().toUri(), false, options.getBoolean("transform"), options.getBoolean("load"));
+        try {
+            alignmentStorageEngine.index(fileUris, outDir.toUri(), false, options.getBoolean("transform"), options.getBoolean("load"));
+        } finally {
+            // Remove symbolic link
+            Files.delete(linkedBamFilePath);
+        }
         watch.stop();
         logger.info("Indexing took {} seconds", watch.getTime() / 1000.0);
 
@@ -96,8 +102,7 @@ public class AlignmentStorageManager extends StorageManager {
         logger.info("Calculating the stats...");
         watch.reset();
         watch.start();
-        QueryResult<AlignmentGlobalStats> stats = alignmentStorageManager.getDBAdaptor()
-                .stats(fileInfo.getPath(), studyInfo.getWorkspace());
+        QueryResult<AlignmentGlobalStats> stats = alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPath(), outDir);
 
         if (stats != null && stats.getNumResults() == 1) {
             // Store the stats in catalog
@@ -108,7 +113,7 @@ public class AlignmentStorageManager extends StorageManager {
                     sessionId);
 
             // Remove the stats file
-            Path statsFile = studyInfo.getWorkspace().resolve(fileInfo.getPath().toFile().getName() + ".stats");
+            Path statsFile = outDir.resolve(fileInfo.getName() + ".stats");
             if (statsFile.toFile().exists()) {
                 Files.delete(statsFile);
             }
@@ -120,7 +125,7 @@ public class AlignmentStorageManager extends StorageManager {
         logger.info("Calculating the coverage...");
         watch.reset();
         watch.start();
-        alignmentStorageManager.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace());
+//        alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace());
         watch.stop();
         logger.info("Coverage calculation took {} seconds", watch.getTime() / 1000.0);
     }
@@ -132,16 +137,13 @@ public class AlignmentStorageManager extends StorageManager {
 
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
         checkAlignmentBioformat(studyInfo.getFileInfos());
-//        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
-//        long fileId = fileAndStudyId.getLong("fileId");
-//        Path filePath = getFilePath(fileId, sessionId);
 
-        return alignmentStorageManager.getDBAdaptor().get(studyInfo.getFileInfo().getPath(), query, options);
+        return alignmentStorageEngine.getDBAdaptor().get(studyInfo.getFileInfo().getPath(), query, options);
     }
 
-    public AlignmentIterator<Reads.ReadAlignment> iterator(String studyId, String fileId, Query query, QueryOptions options,
+    public AlignmentIterator<ReadAlignment> iterator(String studyId, String fileId, Query query, QueryOptions options,
                                                            String sessionId) throws CatalogException, IOException, StorageEngineException {
-        return iterator(studyId, fileId, query, options, sessionId, Reads.ReadAlignment.class);
+        return iterator(studyId, fileId, query, options, sessionId, ReadAlignment.class);
     }
 
     public <T> AlignmentIterator<T> iterator(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId,
@@ -155,7 +157,7 @@ public class AlignmentStorageManager extends StorageManager {
 //        long fileId = fileAndStudyId.getLong("fileId");
 //        Path filePath = getFilePath(fileId, sessionId);
 
-        return alignmentStorageManager.getDBAdaptor().iterator(studyInfo.getFileInfo().getPath(), query, options, clazz);
+        return alignmentStorageEngine.getDBAdaptor().iterator(studyInfo.getFileInfo().getPath(), query, options, clazz);
 //        return alignmentDBAdaptor.iterator((Path) fileInfo.get("filePath"), query, options, clazz);
     }
 
@@ -194,27 +196,17 @@ public class AlignmentStorageManager extends StorageManager {
         logger.info("Calculating the stats...");
 //        Path filePath = getFilePath(fileId, sessionId);
 //        Path workspace = getWorkspace(studyId, sessionId);
-        return alignmentStorageManager.getDBAdaptor().stats(fileInfo.getPath(), studyInfo.getWorkspace(), query, options);
+        return alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPath(), studyInfo.getWorkspace(), query, options);
 
 //        return alignmentDBAdaptor.stats((Path) fileInfo.get("filePath"), (Path) fileInfo.get("workspace"), query, options);
     }
 
-    public QueryResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
+    public QueryResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Region region, int windowSize, String sessionId)
             throws Exception {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
         checkAlignmentBioformat(studyInfo.getFileInfos());
         FileInfo fileInfo = studyInfo.getFileInfo();
-//        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
-//        long studyId = fileAndStudyId.getLong("studyId");
-//        long fileId = fileAndStudyId.getLong("fileId");
-//        Path filePath = getFilePath(fileId, sessionId);
-//        Path workspace = getWorkspace(studyId, sessionId);
-
-        return alignmentStorageManager.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace(), query, options);
-//        return alignmentDBAdaptor.coverage((Path) fileInfo.get("filePath"), (Path) fileInfo.get("workspace"), query, options);
+        return alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), region, windowSize);
     }
 
 
@@ -228,7 +220,7 @@ public class AlignmentStorageManager extends StorageManager {
 //        long fileId = fileAndStudyId.getLong("fileId");
 //        Path filePath = getFilePath(fileId, sessionId);
 
-        return alignmentStorageManager.getDBAdaptor().count(studyInfo.getFileInfo().getPath(), query, options);
+        return alignmentStorageEngine.getDBAdaptor().count(studyInfo.getFileInfo().getPath(), query, options);
     }
 
     private void checkAlignmentBioformat(List<FileInfo> fileInfo) throws CatalogException {

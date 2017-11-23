@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.3.0-dev</version>
+        <version>1.3.0-rc</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -54,6 +54,11 @@
                     <artifactId>opencga-storage-benchmark</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-mongodb</artifactId>
+            <version>${opencga.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -309,6 +314,7 @@
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-benchmark</artifactId>
                     <version>${opencga.version}</version>
+                    <scope>provided</scope>
                 </dependency>
             </dependencies>
             <build>
@@ -322,11 +328,12 @@
                                 <phase>install</phase>
                                 <configuration>
                                     <target>
-                                        <echo>Copying to ${build.dir}</echo>
+                                        <echo>Copying storage to ${build.dir}</echo>
                                         <exec executable="cp">
                                             <arg value="-r"/>
                                             <arg value="${project.basedir}/../opencga-storage/build/bin"/>
                                             <arg value="${project.basedir}/../opencga-storage/build/benchmark"/>
+                                            <arg value="${project.basedir}/../opencga-storage/build/libs/"/>
                                             <arg value="${build.dir}"/>
                                         </exec>
                                     </target>
@@ -344,6 +351,9 @@
             <id>storage-mongodb</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>storage-mongodb</name>
+                </property>
             </activation>
             <dependencies>
                 <dependency>

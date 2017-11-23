@@ -58,22 +58,14 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-i", "--file"}, description = "Unique ID for the file", required = true, arity = 1)
         public String fileId;
 
-        @Parameter(names = "--calculate-coverage", description = "Calculate coverage while indexing")
-        public boolean calculateCoverage = true;
+        @Parameter(names = "--skip-coverage", description = "Skip calculating the coverage after creating the .bai file")
+        public boolean skipCoverage = false;
 
-        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag " +
-                "\"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
-        public List<String> meanCoverage;
+        @Parameter(names = "--skip-stats", description = "Skip calculating the bam stats after creating the .bai file")
+        public boolean skipStats = false;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1)
         public String outdirId;
-
-        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        public boolean transform = false;
-
-        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        public boolean load = false;
-
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")

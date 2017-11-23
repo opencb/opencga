@@ -17,12 +17,14 @@
 #' and the RESTful API documentation 
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @examples
-#' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
+#' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", 
+#' user = "user")
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 #' 
 #' # Configuration in list format
-#' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
-#' con <- initOpencgaR(conf=conf)
+#' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/",
+#' user="user"))
+#' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 #' 
 #' # Configuration in file format ("YAML" or "JSON")
@@ -79,11 +81,12 @@ setMethod("show", signature = "OpencgaR", definition = function(object){
 #' 
 #' # Configuration in list format
 #' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
-#' con <- initOpencgaR(conf=conf)
+#' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 #' 
 #' # Configuration in file format ("YAML" or "JSON")
 #' conf <- "/path/to/conf/client-configuration.yml"
+#' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
 opencgaReadConfig <- function(conf){
@@ -94,14 +97,14 @@ opencgaReadConfig <- function(conf){
         # read from file
         conf <- readConfFile(conf)
     }
-    if ("user" %in% conf){
-        user=conf$user
-    }else{
-        cat("User name not specified. Please specify it if login is required.")
-        user=""
-    }
+    # if ("user" %in% conf){
+    #     user=conf$user
+    # }else{
+    #     cat("User name not specified. Please specify it if login is required.")
+    #     user=""
+    # }
     ocga <- new(Class = "OpencgaR", host=conf$host, version=conf$version,
-                    user=user, sessionId="")
+                    user="", sessionId="")
     return(ocga)
 }
 
@@ -153,11 +156,12 @@ readConfFile <- function(conf){
 #' 
 #' # Configuration in list format
 #' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
-#' con <- initOpencgaR(conf=conf)
+#' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 #' 
 #' # Configuration in file format ("YAML" or "JSON")
 #' conf <- "/path/to/conf/client-configuration.yml"
+#' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 #' 
 #' @export
@@ -229,12 +233,14 @@ opencgaLogout <- function(opencga){
 #' @aliases OpencgaHelp
 #' @param opencga an object of type OpencgaR generated using initOpencga or 
 #' opencgaLogin
-#' @examples
-#' opencgaHelp(con)
+#' 
+#' @examples 
+#' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1")
+#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' opencgaHelp(con, client="userClient", action="info")
 #' 
 #' @export
 opencgaHelp <- function(opencga, client=NULL, action=NULL){
-    #debug(getMethodInfo)
     if (class(opencga) != "OpencgaR"){
         stop("Please, provide a valid config object. See initOpencgaR")
     }

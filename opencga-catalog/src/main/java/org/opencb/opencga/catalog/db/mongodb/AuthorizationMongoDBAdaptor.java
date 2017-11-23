@@ -58,6 +58,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private Map<String, List<String>> fullPermissionsMap = new HashMap<>();
 
     private static final String ANONYMOUS = "*";
+    private static final String PERMISSION_DELIMITER = "__";
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
@@ -280,7 +281,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             if (memberList != null) {
                 // If _acl was not previously defined, it can be null the first time
                 for (String memberPermission : memberList) {
-                    String[] split = memberPermission.split("_", 2);
+                    String[] split = StringUtils.split(memberPermission, PERMISSION_DELIMITER, 2);
+//                    String[] split = memberPermission.split(PERMISSION_DELIMITER, 2);
                     if (memberSet.isEmpty() || memberSet.contains(split[0])) {
                         if (!permissions.containsKey(split[0])) {
                             permissions.put(split[0], new ArrayList<>());
@@ -553,7 +555,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             }
 
             for (String permission : stringListEntry.getValue()) {
-                myPermissions.add(stringListEntry.getKey() + "_" + permission);
+                myPermissions.add(stringListEntry.getKey() + PERMISSION_DELIMITER + permission);
             }
         }
 
@@ -571,7 +573,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         List<String> myPermissions = new ArrayList<>(members.size() * writtenPermissions.size());
         for (String member : members) {
             for (String writtenPermission : writtenPermissions) {
-                myPermissions.add(member + "_" + writtenPermission);
+                myPermissions.add(member + PERMISSION_DELIMITER + writtenPermission);
             }
         }
         return myPermissions;

@@ -31,7 +31,6 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
@@ -55,7 +54,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
+import static org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
@@ -74,9 +73,9 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
 
     public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
             VariantType.SNV, VariantType.SNP,
-            VariantType.INDEL, VariantType.INSERTION, VariantType.DELETION,
+            VariantType.INDEL, /* VariantType.INSERTION, VariantType.DELETION,*/
             VariantType.MNV, VariantType.MNP);
-    private List<String> expectedFormats;
+    private List<String> fixedFormat;
 
     private boolean isParallel() {
         return this.parallel.get();
@@ -115,7 +114,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             }
         }
 
-        expectedFormats = HBaseToVariantConverter.getFormat(getStudyConfiguration());
+        fixedFormat = HBaseToVariantConverter.getFixedFormat(getStudyConfiguration());
 
 
         variantMerger = newVariantMerger(collapseDeletions);
@@ -132,7 +131,8 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     public VariantMerger newVariantMerger(boolean collapseDeletions) {
         VariantMerger variantMerger = new VariantMerger(collapseDeletions);
         variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
-        variantMerger.setExpectedFormats(expectedFormats);
+        // Format is no longer fixed when merging variants.
+//        variantMerger.setExpectedFormats(fixedFormat);
         variantMerger.configure(getStudyConfiguration().getVariantHeader());
         return variantMerger;
     }
@@ -208,7 +208,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     }
 
     private void processAnalysisVariants(VariantMapReduceContext ctx, List<Variant> analysisVar,
-                                         final NavigableMap<Integer, List<Variant>> varPosRegister, List<VariantTableStudyRow> rows) {
+                                         final NavigableMap<Integer, List<Variant>> archiveVarPosMap, List<VariantTableStudyRow> rows) {
 
         /* ******** Update Analysis Variants ************** */
 
@@ -226,7 +226,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         processVariants(analysisVar, var -> {
             long start = System.nanoTime();
             ctx.getContext().progress(); // Call process to avoid timeouts
-            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
+            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, archiveVarPosMap);
             long mid = System.nanoTime();
             variantMerger.merge(var, cleanList);
             long end = System.nanoTime();
@@ -290,7 +290,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
      *
      */
     private void processNewVariants(VariantMapReduceContext ctx, Collection<Variant> analysisNew,
-                                    NavigableMap<Integer, List<Variant>> varPosRegister, List<VariantTableStudyRow> rows)
+                                    NavigableMap<Integer, List<Variant>> archiveVarPosMap, List<VariantTableStudyRow> rows)
             throws IOException {
         logger.info("Merge {} new variants ", analysisNew.size());
         final AtomicLong overlap = new AtomicLong(0);
@@ -299,7 +299,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         processVariants(analysisNew, (var) -> {
             ctx.getContext().progress(); // Call process to avoid timeouts
             long start = System.nanoTime();
-            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
+            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, archiveVarPosMap);
             long mid = System.nanoTime();
             variantMergerSamplesToIndex.merge(var, cleanList);
             long end = System.nanoTime();
@@ -431,7 +431,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         endStep("1 Unpack and convert input ARCHIVE variants");
 
         logger.info("Index ...");
-        NavigableMap<Integer, List<Variant>> varPosRegister = indexAlts(archiveVar, (int) ctx.startPos, (int) ctx.nextStartPos);
+        NavigableMap<Integer, List<Variant>> archiveVarPosMap = indexAlts(archiveVar, (int) ctx.startPos, (int) ctx.nextStartPos);
         endStep("2 Index input ARCHIVE variants");
 
         logger.info("Parse ...");
@@ -449,10 +449,10 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         endStep("7b Create NEW variants");
 
         /* Update and submit Analysis missing and same Variants */
-        processAnalysisVariants(ctx, analysisVar, varPosRegister, rows);
+        processAnalysisVariants(ctx, analysisVar, archiveVarPosMap, rows);
 
         /* Update and submit Analysis new Variants */
-        processNewVariants(ctx, analysisNew, varPosRegister, rows);
+        processNewVariants(ctx, analysisNew, archiveVarPosMap, rows);
 
         // Checkpoint -> update archive table!!!
         startStep();
@@ -544,8 +544,16 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
                     throw new IllegalStateException(String.format(
                             "Study Entry for study %s of target variant is null: %s",  studyId, tar));
                 }
-                Variant tarNew = variantMerger.createFromTemplate(tar);
-                analysisNew.add(tarNew);
+                Variant var = new Variant(tar.getChromosome(), tar.getStart(), tar.getEnd(), tar.getReference(), tar.getAlternate());
+                var.setType(tar.getType());
+                for (StudyEntry tse : tar.getStudies()) {
+                    StudyEntry studyEntry = new StudyEntry(tse.getStudyId());
+                    studyEntry.setFormat(tse.getFormat());
+                    studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
+                    studyEntry.setSamplesData(new ArrayList<>());
+                    var.addStudyEntry(studyEntry);
+                }
+                analysisNew.add(var);
             }
         }
 
@@ -573,8 +581,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
                         tarNew.setType(type);
                         for (StudyEntry tse : tar.getStudies()) {
                             StudyEntry se = new StudyEntry(tse.getStudyId());
-                            se.setFiles(Collections.singletonList(new FileEntry("", "", new HashMap<>())));
-                            se.setFormat(expectedFormats);
+                            se.setFormat(fixedFormat);
                             se.setSamplesPosition(new HashMap<>());
                             se.setSamplesData(new ArrayList<>());
                             tarNew.addStudyEntry(se);

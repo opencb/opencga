@@ -40,10 +40,7 @@ import org.opencb.opencga.core.models.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 
@@ -119,6 +116,34 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private Logger logger;
 
+    public MongoDBAdaptorFactory(Configuration catalogConfiguration) throws CatalogDBException {
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", catalogConfiguration.getCatalog().getDatabase().getUser())
+                .add("password", catalogConfiguration.getCatalog().getDatabase().getPassword())
+                .add("authenticationDatabase", catalogConfiguration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
+                .setConnectionsPerHost(Integer.parseInt(catalogConfiguration.getCatalog().getDatabase().getOptions()
+                        .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
+                .build();
+
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : catalogConfiguration.getCatalog().getDatabase().getHosts()) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+
+        this.mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+        this.configuration = mongoDBConfiguration;
+        this.database = getCatalogDatabase(catalogConfiguration.getDatabasePrefix());
+
+        logger = LoggerFactory.getLogger(this.getClass());
+        connect();
+    }
+
     public MongoDBAdaptorFactory(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration,
                                  String database) throws CatalogDBException {
 //        super(LoggerFactory.getLogger(CatalogMongoDBAdaptor.class));
@@ -190,6 +215,21 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             logger.error(e.getMessage(), e);
             return new ObjectMap();
         }
+    }
+
+    @Override
+    public String getCatalogDatabase(String prefix) {
+        String database;
+        if (StringUtils.isNotEmpty(prefix)) {
+            if (!prefix.endsWith("_")) {
+                database = prefix + "_catalog";
+            } else {
+                database = prefix + "catalog";
+            }
+        } else {
+            database = "opencga_catalog";
+        }
+        return database;
     }
 
     @Override

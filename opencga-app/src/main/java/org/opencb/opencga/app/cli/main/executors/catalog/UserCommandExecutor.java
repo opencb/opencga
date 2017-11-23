@@ -79,7 +79,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             case "update":
                 queryResponse = update();
                 break;
-            case "change-password":
+            case "password":
                 queryResponse = changePassword();
                 break;
             case "projects":
@@ -90,9 +90,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "logout":
                 logout();
-                break;
-            case "reset-password":
-                resetPasword();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -129,13 +126,13 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 }
                 // write CLI session file
                 saveCliSessionFile(user, sessionId, studies);
-                System.out.println("You have been logged correctly. This is your new session id " + sessionId);
+                System.out.println("You have been logged correctly. This is your new token " + sessionId);
             }
         } else {
             String sessionId = usersCommandOptions.commonCommandOptions.sessionId;
             String errorMsg = "Missing password. ";
             if (StringUtils.isNotEmpty(sessionId)) {
-                errorMsg += "Active session id detected " + sessionId;
+                errorMsg += "Active token detected " + sessionId;
             }
             System.err.println(errorMsg);
         }
@@ -206,14 +203,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getUserClient().getProjects(queryOptions);
-    }
-
-    private void resetPasword() throws ClientException, IOException {
-        logger.debug("Resetting the user password and sending a new one to the e-mail stored in catalog.");
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull("userId", usersCommandOptions.resetPasswordCommandOptions.user);
-        openCGAClient.getUserClient().resetPassword(params);
     }
 
     private void delete() throws CatalogException, IOException {

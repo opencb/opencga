@@ -53,7 +53,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
 
@@ -109,6 +110,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case "annotate":
                 annotate();
                 break;
+            case FILL_GAPS_COMMAND:
+                fillGaps();
+                break;
             case "samples":
                 samples();
                 break;
@@ -146,8 +150,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantCommandOptions.VariantQueryCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
         queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
-        queryCliOptions.study = exportCliOptions.studies;
-        queryCliOptions.genericVariantQueryOptions.returnStudy = exportCliOptions.studies;
+        queryCliOptions.project = exportCliOptions.project;
+        queryCliOptions.study = exportCliOptions.study;
+        queryCliOptions.genericVariantQueryOptions.returnStudy = exportCliOptions.study;
         queryCliOptions.numericOptions.limit = exportCliOptions.numericOptions.limit;
 //        queryCliOptions.sort = true;
         queryCliOptions.numericOptions.skip = exportCliOptions.numericOptions.skip;
@@ -178,7 +183,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
 
         Map<Long, String> studyIds = getStudyIds(sessionId);
-        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds);
+        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds, clientConfiguration);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
@@ -274,8 +279,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         String study = cliOptions.study;
-        if (StringUtils.isEmpty(study) && StringUtils.isNotEmpty(cliOptions.project)) {
-            QueryResult<Study> result = catalogManager.getStudyManager().get(cliOptions.project, new Query(), new QueryOptions(), sessionId);
+        String project = StringUtils.isEmpty(cliOptions.project) ? cliOptions.projectId : cliOptions.project;
+        if (StringUtils.isEmpty(study) && StringUtils.isNotEmpty(project)) {
+            QueryResult<Study> result = catalogManager.getStudyManager().get(project, new Query(), new QueryOptions(), sessionId);
             if (!result.getResult().isEmpty()) {
                 study = String.valueOf(result.first().getId());
             }
@@ -337,6 +343,19 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         options.putAll(cliOptions.commonOptions.params);
 
         variantManager.annotate(cliOptions.project, cliOptions.study, query, cliOptions.outdir, options, sessionId);
+    }
+
+    private void fillGaps() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
+            AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+
+        VariantCommandOptions.FillGapsCommandOptions cliOptions = variantCommandOptions.fillGapsVariantCommandOptions;
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        ObjectMap options = new ObjectMap();
+//        options.put("excludeHomRef", cliOptions.excludeHomRef);
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantManager.fillGaps(cliOptions.study, cliOptions.genericFillGapsOptions.samples, options, sessionId);
     }
 
     private void samples() throws Exception {

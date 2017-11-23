@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.utils.CollectionUtils;
@@ -28,6 +27,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -69,10 +69,12 @@ public class CatalogManager implements AutoCloseable {
 
     private Configuration configuration;
 
+    private static final String ADMIN = "admin";
+
     public CatalogManager(Configuration configuration) throws CatalogException {
         this.configuration = configuration;
-        logger.debug("CatalogManager configureDBAdaptor");
-        configureDBAdaptor(configuration);
+        logger.debug("CatalogManager configureDBAdaptorFactory");
+        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration) {};
         logger.debug("CatalogManager configureIOManager");
         configureIOManager(configuration);
         logger.debug("CatalogManager configureManager");
@@ -80,17 +82,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public String getCatalogDatabase() {
-        String database;
-        if (StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
-            if (!configuration.getDatabasePrefix().endsWith("_")) {
-                database = configuration.getDatabasePrefix() + "_catalog";
-            } else {
-                database = configuration.getDatabasePrefix() + "catalog";
-            }
-        } else {
-            database = "opencga_catalog";
-        }
-        return database;
+        return catalogDBAdaptorFactory.getCatalogDatabase(configuration.getDatabasePrefix());
     }
 
     private void configureManagers(Configuration configuration) throws CatalogException {
@@ -166,8 +158,10 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.installCatalogDB(configuration);
     }
 
-    public void installIndexes() throws CatalogException {
-        userManager.validatePassword("admin", configuration.getAdmin().getPassword(), true);
+    public void installIndexes(String token) throws CatalogException {
+        if (!ADMIN.equals(userManager.getUserId(token))) {
+            throw new CatalogAuthorizationException("Only the admin can install new indexes");
+        }
         catalogDBAdaptorFactory.createIndexes();
     }
 
@@ -227,30 +221,6 @@ public class CatalogManager implements AutoCloseable {
 
     private void configureIOManager(Configuration properties) throws CatalogIOException {
         catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
-    }
-
-    private void configureDBAdaptor(Configuration configuration) throws CatalogDBException {
-
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getDatabase().getUser())
-                .add("password", configuration.getCatalog().getDatabase().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
-                .setConnectionsPerHost(Integer.parseInt(configuration.getCatalog().getDatabase().getOptions()
-                        .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
-                .build();
-
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
-                getCatalogDatabase()) {};
     }
 
     @Override

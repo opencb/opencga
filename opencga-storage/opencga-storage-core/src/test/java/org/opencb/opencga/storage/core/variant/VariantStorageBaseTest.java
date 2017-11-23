@@ -58,6 +58,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     public static final String DB_NAME = "opencga_variants_test";
     public static final int FILE_ID = 6;
     public static final Set<String> VARIANTS_WITH_CONFLICTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "22:16050655-16063474:-:<CN0>",
+            "22:16050655-16063474:-:<CN2>",
+            "22:16050655-16063474:-:<CN3>",
+            "22:16050655-16063474:-:<CN4>",
             "22:16050655:G:A", // Overlaps with a CNV
 //            "22:16080425:TA:-",
             "22:16080425:T:C",
@@ -110,11 +114,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
         Path smallInputPath = rootDir.resolve(SMALL_VCF_TEST_FILE_NAME);
         Path corruptedInputPath = rootDir.resolve(VCF_CORRUPTED_FILE_NAME);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
+        Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
                 StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath,
+        Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath,
                 StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath,
+        Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath,
                 StandardCopyOption.REPLACE_EXISTING);
 
         inputUri = inputPath.toUri();
@@ -136,7 +140,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             Files.createDirectories(resourcePath.getParent());
         }
         if (!resourcePath.toFile().exists()) {
-            Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption
+            Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption
                     .REPLACE_EXISTING);
         }
         return resourcePath.toUri();
@@ -174,6 +178,14 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         // stackTrace[1] = "newOutputUri"
         // stackTrace[2] =  caller method
         String testName = stackTrace[2 + extraCalls].getMethodName();
+        return newOutputUri(testName, outputUri);
+    }
+
+    protected URI newOutputUri(String testName) throws IOException {
+        return newOutputUri(testName, outputUri);
+    }
+
+    protected static URI newOutputUri(String testName, URI outputUri) throws IOException {
         int c = 0;
         URI finalOutputUri = outputUri.resolve("test_" + testName + "/");
         while (Paths.get(finalOutputUri).toFile().exists()) {

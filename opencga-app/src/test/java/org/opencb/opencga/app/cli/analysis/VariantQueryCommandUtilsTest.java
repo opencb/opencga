@@ -44,7 +44,7 @@ public class VariantQueryCommandUtilsTest {
         queryVariantsOptions.genericVariantQueryOptions.returnStudy = "1";
         Map<Long, String> studyIds = Collections.singletonMap(1L, "study");
 
-        Query query = VariantQueryCommandUtils.parseQuery(queryVariantsOptions, studyIds);
+        Query query = VariantQueryCommandUtils.parseQuery(queryVariantsOptions, studyIds, null);
 
 //        System.out.println("query = " + query.toJson());
         assertEquals("HP:0002812", query.get(VariantQueryParam.ANNOT_HPO.key()));

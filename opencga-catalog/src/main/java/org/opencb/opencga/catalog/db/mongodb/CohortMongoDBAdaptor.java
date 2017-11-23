@@ -210,9 +210,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     @Override
     public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+        filterOutDeleted(query);
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_COHORTS : studyPermissions);
 
@@ -225,6 +223,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         logger.debug("Cohort count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return cohortCollection.count(bson);
+    }
+
+    private void filterOutDeleted(Query query) {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
     }
 
     @Override
@@ -499,9 +503,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), CohortAclEntry.CohortPermissions.VIEW.name());
         }
 
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+        filterOutDeleted(query);
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
@@ -526,18 +528,21 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return rank(cohortCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(cohortCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
         return groupBy(cohortCollection, bsonQuery, fields, "name", options);
     }
@@ -548,6 +553,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS
                 .name(), CohortAclEntry.CohortPermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(cohortCollection, bsonQuery, field, QueryParams.NAME.key(), options);
     }
@@ -558,6 +564,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS
                 .name(), CohortAclEntry.CohortPermissions.VIEW.name());
+        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(cohortCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }

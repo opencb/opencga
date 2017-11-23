@@ -57,6 +57,7 @@ import java.util.List;
 /**
  * Created by jacobo on 14/08/14.
  */
+@Deprecated
 public abstract class AlignmentStorageEngineOld extends StorageEngine<AlignmentDBAdaptor> implements StoragePipeline {
 
     protected StorageEtlConfiguration storageEtlConfiguration;

@@ -42,6 +42,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -62,6 +63,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.GZIPInputStream;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 
 /**
  * Two steps annotation pipeline.
@@ -149,14 +152,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         URI fileUri = path.toUri();
 
         /** Getting iterator from OpenCGA Variant database. **/
-        QueryOptions iteratorQueryOptions;
-        if (params == null) {
-            iteratorQueryOptions = new QueryOptions();
-        } else {
-            iteratorQueryOptions = new QueryOptions(params);
-        }
-        List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference");
-        iteratorQueryOptions.add("include", include);
+        QueryOptions iteratorQueryOptions = getIteratorQueryOptions(params);
 
         int batchSize = 200;
         int numThreads = 8;
@@ -168,6 +164,10 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         try {
             DataReader<Variant> variantDataReader = new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
             ProgressLogger progressLogger = new ProgressLogger("Annotated variants:", () -> {
+                int limit = iteratorQueryOptions.getInt(QueryOptions.LIMIT, 0);
+                if (limit > 0) {
+                    return (long) limit;
+                }
                 Long count = dbAdaptor.count(query).first();
                 numAnnotationsToLoad = count;
                 return count;
@@ -205,6 +205,18 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         }
 
         return fileUri;
+    }
+
+    protected QueryOptions getIteratorQueryOptions(ObjectMap params) {
+        QueryOptions iteratorQueryOptions;
+        if (params == null) {
+            iteratorQueryOptions = new QueryOptions();
+        } else {
+            iteratorQueryOptions = new QueryOptions(params);
+        }
+        List<VariantField> include = Arrays.asList(CHROMOSOME, START, END, REFERENCE, ALTERNATE, SV);
+        iteratorQueryOptions.add(QueryOptions.INCLUDE, include);
+        return iteratorQueryOptions;
     }
 
 
@@ -246,7 +258,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
                             .setProgressLogger(progressLogger), null, config);
             ptr.run();
         } catch (ExecutionException e) {
-            throw new StorageEngineException("Error loading variant annotation");
+            throw new StorageEngineException("Error loading variant annotation", e);
         }
 
     }

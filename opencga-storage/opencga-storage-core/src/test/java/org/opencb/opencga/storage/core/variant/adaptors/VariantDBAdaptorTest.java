@@ -221,7 +221,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void multiIterator() throws Exception {
         List<String> variantsToQuery = allVariants.getResult()
                 .stream()
-                .map(Variant::toString).limit(allVariants.getResult().size() / 2)
+                .filter(v -> !v.isSymbolic())
+                .map(Variant::toString)
+                .limit(allVariants.getResult().size() / 2)
                 .collect(Collectors.toList());
 
         VariantDBIterator iterator = dbAdaptor.iterator(variantsToQuery.iterator(), new Query(), new QueryOptions());
@@ -486,7 +488,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         List<Variant> variants = new ArrayList<>();
         for (Variant variant : allVariants.getResult()) {
             if (i++ % 10 == 0) {
-                variants.add(variant);
+                if (!variant.isSymbolic()) {
+                    variants.add(variant);
+                }
             }
         }
         List<Variant> result = dbAdaptor.get(new Query(ID.key(), variants), new QueryOptions()).getResult();
@@ -603,9 +607,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryGeneCT("ERMAP,SH2D5", "SO:0001632");
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
-                        .append(ANNOT_XREF.key(), "ERMAP,SH2D5,4:42895308:G:A")
+                        .append(ANNOT_XREF.key(), "ERMAP,SH2D5,7:100807230:G:T")
                         .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
-                at("4:42895308:G:A"));
+                at("7:100807230:G:T"));
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
                 .append(GENE.key(), "ERMAP")
@@ -614,11 +618,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 with("id", VariantAnnotation::getId, is("rs1171830")));
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
-                        .append(ANNOT_XREF.key(), "ERMAP,rs1171830,SH2D5,RCV000036856,4:42895308:G:A,COSM3760638")
+                        .append(ANNOT_XREF.key(), "ERMAP,rs1171830,SH2D5,RCV000036856,7:100807230:G:T,COSM3760638")
                         .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
                 anyOf(
                         with("id", VariantAnnotation::getId, is("rs1171830")),
-                        at("4:42895308:G:A")));
+                        at("7:100807230:G:T")));
 
         assertThat(dbAdaptor.get(new Query(ANNOT_XREF.key(), "rs1171830").append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566"), null),
                 everyResult(allVariants, allOf(
@@ -1261,13 +1265,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         numResults = dbAdaptor.count(query).first();
         assertEquals(NUM_VARIANTS, numResults);
 
+        VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyConfiguration.getStudyName()));
+        thrown.expectMessage(e.getMessage());
+        thrown.expect(e.getClass());
         query = new Query(FILES.key(), -1);
-        numResults = dbAdaptor.count(query).first();
-        assertEquals("There is no file with ID -1", 0, numResults);
+        dbAdaptor.count(query).first();
+//        assertEquals("There is no file with ID -1", 0, numResults);
     }
 
     @Test
-    public void testGetAllVariants_filter() {
+    public void testGetAllVariants_filterNoFile() {
         // FILTER
         Query query = new Query(FILTER.key(), "PASS");
         long numResults = dbAdaptor.count(query).first();
@@ -1276,16 +1283,23 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         query.append(FILTER.key(), "NO_PASS");
         assertEquals(0, dbAdaptor.count(query).first().longValue());
 
-        // FILTER+FILE
-        query = new Query(FILES.key(), 6).append(FILTER.key(), "PASS");
+        // FILTER+STUDY
+        query = new Query(STUDIES.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
         numResults = dbAdaptor.count(query).first();
         assertEquals(NUM_VARIANTS, numResults);
 
         query.append(FILTER.key(), "NO_PASS");
         assertEquals(0, dbAdaptor.count(query).first().longValue());
 
-        // FILTER+STUDY
-        query = new Query(STUDIES.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
+    }
+
+    @Test
+    public void testGetAllVariants_filter() {
+        Query query;
+        long numResults;
+
+        // FILTER+FILE
+        query = new Query(FILES.key(), 6).append(FILTER.key(), "PASS");
         numResults = dbAdaptor.count(query).first();
         assertEquals(NUM_VARIANTS, numResults);
 

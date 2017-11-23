@@ -758,9 +758,10 @@ public class FileUtils {
                 case SAM:
                 case BAM:
                 case CRAM:
-                    return File.Bioformat.ALIGNMENT;
                 case BAI:
-                    return File.Bioformat.NONE; //TODO: Alignment?
+                    return File.Bioformat.ALIGNMENT;
+                case BIGWIG:
+                    return File.Bioformat.COVERAGE;
                 case FASTQ:
                     return File.Bioformat.SEQUENCE;
                 case PED:
@@ -880,52 +881,54 @@ public class FileUtils {
             extension = com.google.common.io.Files.getFileExtension(path);
         }
 
-        if (extension != null) {
-            switch (extension.toLowerCase()) {
-                case "vcf":
-                    return File.Format.VCF;
-                case "bcf":
-                    return File.Format.BCF;
-                case "bam":
-                    return File.Format.BAM;
-                case "bai":
-                    return File.Format.BAI;
-                case "sam":
-                    return File.Format.SAM;
-                case "cram":
-                    return File.Format.CRAM;
-                case "ped":
-                    return File.Format.PED;
-                case "fastq":
-                    return File.Format.FASTQ;
-                case "tsv":
-                    return File.Format.TAB_SEPARATED_VALUES;
-                case "csv":
-                    return File.Format.COMMA_SEPARATED_VALUES;
-                case "txt":
-                case "log":
-                    return File.Format.PLAIN;
-                case "xml":
-                    return File.Format.XML;
-                case "json":
-                    return File.Format.JSON;
-                case "proto":
-                    return File.Format.PROTOCOL_BUFFER;
-                case "avro":
-                    return File.Format.AVRO;
-                case "parquet":
-                    return File.Format.PARQUET;
-                case "png":
-                case "bmp":
-                case "svg":
-                case "gif":
-                case "jpeg":
-                case "tif":
-                    return File.Format.IMAGE;
-                default:
-                    break;
-            }
+
+        switch (extension.toLowerCase()) {
+            case "vcf":
+                return File.Format.VCF;
+            case "bcf":
+                return File.Format.BCF;
+            case "bam":
+                return File.Format.BAM;
+            case "bw":
+                return File.Format.BIGWIG;
+            case "bai":
+                return File.Format.BAI;
+            case "sam":
+                return File.Format.SAM;
+            case "cram":
+                return File.Format.CRAM;
+            case "ped":
+                return File.Format.PED;
+            case "fastq":
+                return File.Format.FASTQ;
+            case "tsv":
+                return File.Format.TAB_SEPARATED_VALUES;
+            case "csv":
+                return File.Format.COMMA_SEPARATED_VALUES;
+            case "txt":
+            case "log":
+                return File.Format.PLAIN;
+            case "xml":
+                return File.Format.XML;
+            case "json":
+                return File.Format.JSON;
+            case "proto":
+                return File.Format.PROTOCOL_BUFFER;
+            case "avro":
+                return File.Format.AVRO;
+            case "parquet":
+                return File.Format.PARQUET;
+            case "png":
+            case "bmp":
+            case "svg":
+            case "gif":
+            case "jpeg":
+            case "tif":
+                return File.Format.IMAGE;
+            default:
+                break;
         }
+
         //PLAIN
         return File.Format.UNKNOWN;
     }

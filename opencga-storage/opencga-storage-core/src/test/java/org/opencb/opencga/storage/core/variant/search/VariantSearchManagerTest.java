@@ -58,7 +58,7 @@ public class VariantSearchManagerTest extends GenericTest {
 
     @Before
     public void setUp() throws Exception {
-        filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
+        filename = "~/Downloads/variation_chr1.full.json.gz";
 
         factory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper();
@@ -124,8 +124,7 @@ public class VariantSearchManagerTest extends GenericTest {
     public void conversionTest() {
 
         try {
-//            filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
-            filename = "/home/jtarraga/data150/vcf/variation_chr22.3.json";
+            filename = "~/Downloads/variation_chr1.full.json.gz";
             BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get(filename));
 
             VariantSearchToVariantConverter variantSearchToVariantConverter = new VariantSearchToVariantConverter();

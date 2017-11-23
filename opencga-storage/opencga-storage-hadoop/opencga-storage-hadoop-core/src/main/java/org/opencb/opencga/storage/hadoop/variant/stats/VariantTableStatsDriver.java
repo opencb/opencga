@@ -34,11 +34,11 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by mh719 on 21/11/2016.
  */
+@Deprecated
 public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
 
     private final Logger logger = LoggerFactory.getLogger(VariantTableStatsDriver.class);
@@ -62,7 +62,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+    protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         // QUERY design
         Scan scan = createVariantsTableScan();
 

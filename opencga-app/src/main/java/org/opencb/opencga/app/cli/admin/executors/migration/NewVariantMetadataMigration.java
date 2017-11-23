@@ -78,12 +78,14 @@ public class NewVariantMetadataMigration {
     private final CatalogManager catalogManager;
     protected static final QueryOptions UPSER_OPTIONS = new QueryOptions(MongoDBCollection.UPSERT, true).append(MongoDBCollection.REPLACE, true);
     protected static final QueryOptions REPLACE_OPTIONS = new QueryOptions(MongoDBCollection.REPLACE, true);
+    private boolean createBackup;
 
     public NewVariantMetadataMigration(StorageConfiguration storageConfiguration, CatalogManager catalogManager, MigrationCommandOptions.MigrateV1_3_0CommandOptions options) {
         this.storageConfiguration = storageConfiguration;
         this.catalogManager = catalogManager;
         objectMapper = new ObjectMapper()
                 .addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        createBackup = options.createBackup;
     }
 
     /**
@@ -183,16 +185,20 @@ public class NewVariantMetadataMigration {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 Path metaFile = Paths.get(file.getUri());
-                logger.info("Migrating file " + metaFile);
                 migrateVariantFileMetadataFile(metaFile);
             }
         }
     }
 
-    private void migrateVariantFileMetadataFile(Path metaFile) throws IOException {
+    public void migrateVariantFileMetadataFile(Path metaFile) throws IOException {
         if (!VariantReaderUtils.isMetaFile(metaFile.toString())) {
             return;
         }
+        if (!metaFile.toFile().exists()) {
+            logger.warn("File " + metaFile + " not found! Skip this file");
+            return;
+        }
+        logger.info("Migrating file " + metaFile);
 
         VariantSourceToVariantFileMetadataConverter converter = new VariantSourceToVariantFileMetadataConverter();
 
@@ -214,7 +220,7 @@ public class NewVariantMetadataMigration {
             try (InputStream inputStream = new GZIPInputStream(new FileInputStream(inputFile.toFile()))) {
                 objectMapper.readValue(inputStream, VariantFileMetadata.class);
                 // The file is already a VariantFileMetadata! Skip this file
-                logger.info("File already migrated!");
+                logger.info("File " + metaFile + " already migrated!");
                 return;
             } catch (Exception ex) {
                 // Some error occurred. Throw original exception!
@@ -231,7 +237,9 @@ public class NewVariantMetadataMigration {
         VariantTransformTask.writeVariantFileMetadata(fileMetadata, metaFile);
 
         // Delete backup!
-        Files.deleteIfExists(backupFile);
+        if (!createBackup) {
+            Files.deleteIfExists(backupFile);
+        }
     }
 
     private void migrateFilesCollection(MongoDataStore mongoDataStore, ObjectMap options) {

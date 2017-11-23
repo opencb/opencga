@@ -16,11 +16,21 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NOT;
 
 /**
  * Created on 02/12/16.
@@ -28,6 +38,8 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface VariantStatisticsManager {
+
+    String UNKNOWN_GENOTYPE = ".";
 
     /**
      *
@@ -46,4 +58,49 @@ public interface VariantStatisticsManager {
      */
     void calculateStatistics(String study, List<String> cohorts, QueryOptions options) throws IOException, StorageEngineException;
 
+
+    static void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, Collection<String> cohorts, boolean updateStats)
+            throws StorageEngineException {
+        for (String cohortName : cohorts) {
+//            if (cohortName.equals(VariantSourceEntry.DEFAULT_COHORT)) {
+//                continue;
+//            }
+            Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
+            if (studyConfiguration.getInvalidStats().contains(cohortId)) {
+//                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
+                LoggerFactory.getLogger(VariantStatisticsManager.class)
+                        .debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
+                studyConfiguration.getInvalidStats().remove(cohortId);
+            }
+            if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
+                if (!updateStats) {
+                    throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
+                }
+            } else {
+                studyConfiguration.getCalculatedStats().add(cohortId);
+            }
+        }
+    }
+
+    static Query buildInputQuery(StudyConfiguration studyConfiguration, Collection<?> cohorts, boolean updateStats,
+                                 QueryOptions options) {
+        // TODO: Add RETURNED_FILES and RETURNED_SAMPLES
+        Query readerQuery = new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantQueryParam.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
+        if (options.containsKey(VariantStorageEngine.Options.FILE_ID.key())) {
+            readerQuery.append(VariantQueryParam.FILES.key(), options.get(VariantStorageEngine.Options.FILE_ID.key()));
+        }
+        if (options.containsKey(VariantQueryParam.REGION.key())) {
+            Object region = options.get(VariantQueryParam.REGION.key());
+            readerQuery.put(VariantQueryParam.REGION.key(), region);
+        }
+        if (updateStats) {
+            //Get all variants that not contain any of the required cohorts
+            readerQuery.append(VariantQueryParam.COHORTS.key(),
+                    cohorts.stream().map((cohort) -> NOT + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
+                            .joining(AND)));
+        }
+        readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), UNKNOWN_GENOTYPE);
+        return readerQuery;
+    }
 }

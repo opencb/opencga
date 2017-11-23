@@ -135,7 +135,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            QueryResult queryResult = catalogManager.getFileManager().index(fileIdStr, studyStr, "VCF", params, sessionId);
+            List<String> idList = getIdList(fileIdStr);
+            QueryResult queryResult = catalogManager.getFileManager().index(idList, studyStr, "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
@@ -175,6 +176,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = INCLUDE_FORMAT_DESCR) @QueryParam("include-format") String includeFormat,
                                 @ApiParam(value = INCLUDE_GENOTYPE_DESCR) @QueryParam("include-genotype") String includeGenotype,
                                 @ApiParam(value = VariantCatalogQueryUtils.SAMPLE_FILTER_DESC) @QueryParam("sampleFilter") String sampleFilter,
+                                @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam("project") String project,
                                 @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578") @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
                                 @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,

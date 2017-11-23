@@ -107,6 +107,17 @@ public class VariantMatchers {
                         missingValues.add(expectedValue);
                     }
                 }
+                if (!missingValues.isEmpty()) {
+                    T missingValue = missingValues.get(0);
+                    if (missingValue instanceof Variant) {
+                        System.out.println("missing " + ((Variant) missingValue).toJson());
+                        for (T extraValue : extraValues) {
+                            if (((Variant) extraValue).sameGenomicVariant(missingValue)) {
+                                System.out.println("extra " + ((Variant) extraValue).toJson());
+                            }
+                        }
+                    }
+                }
                 mismatchDescription.appendText(" has " + item.getNumResults() + " values "
                         + '(' + missingValues.size() + " missing, " + extraValues.size() + " extra)");
 
@@ -289,7 +300,7 @@ public class VariantMatchers {
         return new FeatureMatcher<Variant, StudyEntry>(subMatcher, "with first study", "Study") {
             @Override
             protected StudyEntry featureValueOf(Variant actual) {
-                return actual.getStudies().get(0);
+                return actual.getStudies().isEmpty() ? null : actual.getStudies().get(0);
             }
         };
     }
@@ -330,6 +341,19 @@ public class VariantMatchers {
             @Override
             protected String featureValueOf(StudyEntry actual) {
                 return actual.getSampleData(sampleName, formatField);
+            }
+        };
+    }
+
+    public static Matcher<StudyEntry> withFileId(String fileId) {
+        return matcher(studyEntry -> studyEntry.getFile(fileId) != null, "with fileId " + fileId);
+    }
+
+    public static Matcher<StudyEntry> withFileId(String fileId, Matcher<? super FileEntry> subMatcher) {
+        return new FeatureMatcher<StudyEntry, FileEntry>(subMatcher, "with file " + fileId, "FileIds") {
+            @Override
+            protected FileEntry featureValueOf(StudyEntry actual) {
+                return actual.getFile(fileId);
             }
         };
     }
@@ -493,7 +517,7 @@ public class VariantMatchers {
         };
     }
 
-    public static <T> long count(List<T> objects, Matcher<T> matcher) {
+    public static <T> long count(List<T> objects, Matcher<? super T> matcher) {
         long c = 0;
         for (T t: objects) {
             if (matcher.matches(t)) {
@@ -503,7 +527,7 @@ public class VariantMatchers {
         return c;
     }
 
-    public static <T> Set<T> filter(List<T> objects, Matcher<T> matcher) {
+    public static <T> Set<T> filter(List<T> objects, Matcher<? super T> matcher) {
         Set<T> l = new HashSet<>();
         for (T t: objects) {
             if (matcher.matches(t)) {

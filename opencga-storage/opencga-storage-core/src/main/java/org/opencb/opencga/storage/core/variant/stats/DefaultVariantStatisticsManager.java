@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.base.Throwables;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -40,7 +41,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.db.VariantStatsDBWriter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
@@ -55,14 +55,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.checkStudyConfiguration;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NOT;
 
 /**
  * Created by jmmut on 12/02/15.
@@ -209,22 +206,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
 
         // reader, tasks and writer
-        Query readerQuery = new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
-                .append(VariantQueryParam.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
-        if (options.containsKey(Options.FILE_ID.key())) {
-            readerQuery.append(VariantQueryParam.FILES.key(), options.get(Options.FILE_ID.key()));
-        }
-        if (options.containsKey(VariantQueryParam.REGION.key())) {
-            Object region = options.get(VariantQueryParam.REGION.key());
-            readerQuery.put(VariantQueryParam.REGION.key(), region);
-        }
-        if (updateStats) {
-            //Get all variants that not contain any of the required cohorts
-            readerQuery.append(VariantQueryParam.COHORTS.key(),
-                    cohorts.keySet().stream().map((cohort) -> NOT + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
-                            .joining(AND)));
-        }
-        readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".");
+        Query readerQuery = VariantStatisticsManager.buildInputQuery(studyConfiguration, cohorts.keySet(), updateStats, options);
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true)
                 .append(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
@@ -285,6 +267,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             this.progressLogger = progressLogger;
             jsonObjectMapper = new ObjectMapper(new JsonFactory());
             jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+            jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
             this.variantSourceStats = variantSourceStats;
             this.tagmap = tagmap;
@@ -299,7 +282,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             boolean defaultCohortAbsent = false;
 
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants,
-                    studyConfiguration.getStudyName(), null/*fileId*/, cohorts);
+                    studyConfiguration.getStudyName(), cohorts);
 
             long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
@@ -309,7 +292,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                         defaultCohortAbsent = true;
                     }
                 } catch (JsonProcessingException e) {
-                    e.printStackTrace();
+                    throw Throwables.propagate(e);
                 }
             }
 
@@ -488,7 +471,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
      * * if a cohort is already calculated, it is not an error if overwrite was provided
      *
      */
-    List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
+    static List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
                                                           Map<String, Set<String>> cohorts,
                                                           Map<String, Integer> cohortIds,
                                                           boolean overwrite, boolean updateStats)
@@ -602,8 +585,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         return cohortIdList;
     }
 
-    void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, URI uri, boolean updateStats) throws IOException {
-
+    void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, URI uri, boolean updateStats)
+            throws IOException, StorageEngineException {
         /** Select input path **/
         Path variantInput = Paths.get(uri.getPath());
 
@@ -613,31 +596,9 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             if (parser.nextToken() != null) {
                 VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);
                 Set<String> cohortNames = variantStatsWrapper.getCohortStats().keySet();
-                checkAndUpdateCalculatedCohorts(studyConfiguration, cohortNames, updateStats);
+                VariantStatisticsManager.checkAndUpdateCalculatedCohorts(studyConfiguration, cohortNames, updateStats);
             } else {
                 throw new IOException("File " + uri + " is empty");
-            }
-        }
-    }
-
-    void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, Collection<String> cohorts, boolean updateStats)
-            throws IOException {
-        for (String cohortName : cohorts) {
-//            if (cohortName.equals(VariantSourceEntry.DEFAULT_COHORT)) {
-//                continue;
-//            }
-            Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
-            if (studyConfiguration.getInvalidStats().contains(cohortId)) {
-//                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
-                logger.debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
-                studyConfiguration.getInvalidStats().remove(cohortId);
-            }
-            if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
-                if (!updateStats) {
-                    throw new IOException("Cohort \"" + cohortName + "\" stats already calculated");
-                }
-            } else {
-                studyConfiguration.getCalculatedStats().add(cohortId);
             }
         }
     }

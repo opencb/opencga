@@ -1,0 +1,55 @@
+---
+title: "Introduction to opencgaR"
+author: 
+  - Marta Bleda
+  - Mohammed Omar Elsiddieg Abdallah
+date: "`r doc_date()`"
+package: "`r pkg_ver('opencgaR')`"
+vignette: >
+  %\VignetteIndexEntry{"Introduction to opencgaR"}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+output: 
+   BiocStyle::html_document
+---
+# Introduction
+OpenCGA is an open-source project that aims to provide a **Big Data storage engine and analysis framework for genomic scale data analysis** of hundreds of terabytes or even petabytes. For users, its main features include uploading and downloading files to a repository, storing their information in a generic way (non-dependant of the original file-format) and retrieving this information efficiently. For developers, it will be a platform for supporting the most used bioinformatics file formats and accelerating the development of visualization and analysis applications.
+
+The OpencgaR client provides a user-friendly interface to work with OpenCGA REST Web Services through R and has been implemented following the Bioconductor guidelines for package development which promote high-quality, well documented and interoperable software. The source code of the R package can be found in [GitHub](https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/R). For more information see the documentation [website](http://docs.opencb.org/display/opencga/Overview).
+
+# Installation and configuration
+Please visit http://docs.opencb.org/display/opencga/Installation+Guide for detailed information on how to install and configure OpenCGA.
+
+# Users login and authentication
+A set of methods have been implemented to deal with the connectivity and login to the REST host. Connection to the host is done in two steps using the functions *__initOpencgaR__* and *__opencgaLogin__* for defining the connection details and loging in, respectively.
+
+The *__initOpencgaR__* function accepts either host and version information or a configuration file (as `list()` or in [YAML or JSON format](http://docs.opencb.org/display/opencga/client-configuration.yml)). The *__opencgaLogin__* function stablishes the connection with the host. It requires an object opencgaR (created using *initOpencgaR*) and the login details: user and password. User and password can be introduced interactively through a popup window using `interactive=TRUE`, to avoid typing user credentials in the R script.
+
+The code below shows the different ways to initialise the OpenCGA connection with the REST server.
+
+```r
+# Initialise connection specifying host and REST version
+con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1")
+
+# Initialise connection using configuration (list)
+conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
+con <- initOpencgaR(opencgaConfig=conf)
+
+# Initialise connection using configuration (YAML or JSON format)
+conf <- "/path/to/conf/client-configuration.yml"
+con <- initOpencgaR(opencgaConfig=conf)
+```
+
+Once the connection has been initialised users can login specifying their OpenCGA user ID and password.
+
+```r
+# Log in
+con <- opencgaLogin(opencga = con, userid = "user", passwd = "pass")
+```
+
+
+
+
+# Navigation through users projects, studies and files
+# Querying variant data
+# Integration with the Bioconductor ecosystem

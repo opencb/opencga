@@ -16,12 +16,62 @@
 
 package org.opencb.opencga.storage.core.alignment.adaptors;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Test;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
+import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+
+import static org.junit.Assert.assertTrue;
+
 /**
  * Created by pfurio on 26/10/16.
  */
 public class DefaultAlignmentDBAdaptorTest {
 
-//    @Test
+    private static Path rootDir = null;
+
+    public static Path getTmpRootDir() throws IOException {
+        if (rootDir == null) {
+            newRootDir();
+        }
+        return rootDir;
+    }
+
+    private static void newRootDir() throws IOException {
+        rootDir = Paths.get("target/test-data", "junit-opencga-storage-" + TimeUtils.getTimeMillis() + "_"
+                + RandomStringUtils.randomAlphabetic(3));
+        Files.createDirectories(rootDir);
+    }
+
+    @Test
+    public void index() throws Exception {
+        URI resource = getClass().getResource("/HG00096.chrom20.small.bam").toURI();
+
+        Path tmpRootDir = getTmpRootDir();
+        File inputFile = tmpRootDir.resolve("HG00096.chrom20.small.bam").toFile();
+        FileOutputStream fileOutputStream = new FileOutputStream(inputFile);
+        Files.copy(Paths.get(resource.getPath()), fileOutputStream);
+
+        AlignmentStorageEngine defaultAlignmentStorageManager = new LocalAlignmentStorageEngine();
+        defaultAlignmentStorageManager.index(Arrays.asList(inputFile.toURI()), getTmpRootDir().toUri(), true, true, true);
+
+        assertTrue(Files.exists(Paths.get(inputFile.getPath())));
+        assertTrue(Files.exists(tmpRootDir.resolve("HG00096.chrom20.small.bam.bai")));
+        assertTrue(Files.exists(tmpRootDir.resolve("HG00096.chrom20.small.bam.stats")));
+        assertTrue(Files.exists(tmpRootDir.resolve("HG00096.chrom20.small.bam.bw")));
+    }
+
+    //    @Test
 //    public void iterator() throws Exception {
 //        String inputPath = getClass().getResource("/HG00096.chrom20.small.bam").getPath();
 //        AlignmentStorageEngine defaultAlignmentStorageManager =

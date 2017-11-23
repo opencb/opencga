@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.server;
 
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTransformTest;
+public class WebServiceException extends Exception {
 
-/**
- * Created on 01/04/16
- *
- * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- */
-public class MongoVariantStorageEngineTransformTest extends VariantStorageManagerTransformTest implements MongoDBVariantStorageTest {
+    public WebServiceException(String message) {
+        super(message);
+    }
+
 }

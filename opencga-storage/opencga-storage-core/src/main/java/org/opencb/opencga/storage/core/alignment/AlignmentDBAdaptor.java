@@ -28,39 +28,34 @@ import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
-/**
- * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
- *
- *     TODO: Implement {@link AutoCloseable}
- */
+
 public interface AlignmentDBAdaptor {
 
     enum QueryParams implements QueryParam {
-//        SESSION_ID("sid", TEXT, ""),
 //        FILE_ID("fileId", TEXT, ""),
         REGION("region", TEXT, ""),
-        WINDOW_SIZE("windowSize", INTEGER, ""),
         MIN_MAPQ("minMapQ", INTEGER, ""),
-        LIMIT("limit", INTEGER, ""),
-        SKIP("skip", INTEGER, ""),
+        MAX_NM("maxNM", INTEGER, ""),
+        MAX_NH("maxNH", INTEGER, ""),
+        PROPERLY_PAIRED("properlyPaired", BOOLEAN, ""),
+        MAX_INSERT_SIZE("maxInsertSize", INTEGER, ""),
+        SKIP_UNMAPPED("skipUnmapped", BOOLEAN, ""),
+        SKIP_DUPLICATED("skipDuplicated", BOOLEAN, ""),
         CONTAINED("contained", BOOLEAN, ""),
         MD_FIELD("mdField", BOOLEAN, ""),
-        BIN_QUALITIES("binQualities", BOOLEAN, "");
+        BIN_QUALITIES("binQualities", BOOLEAN, ""),
+        WINDOW_SIZE("windowSize", INTEGER, "");
 
-        // Fixme: Index attributes
         private static Map<String, QueryParams> map = new HashMap<>();
         static {
             for (QueryParams param : QueryParams.values()) {
                 map.put(param.key(), param);
             }
         }
-
-        // TOCHECK: Pedro. Add annotation support?
 
         private final String key;
         private Type type;
@@ -108,26 +103,6 @@ public interface AlignmentDBAdaptor {
     String QO_INTERVAL_SIZE = "interval_size";
     String QO_COVERAGE_CHUNK_SIZE = "chunk_size";
 
-    QueryResult getAllAlignmentsByRegion(List<Region> regions, QueryOptions options);
-
-//    List<QueryResult> getAllAlignmentsByRegionList(List<Region> region, QueryOptions options);
-
-
-//    QueryResult getAllAlignmentBlocksByRegion(Region region, QueryOptions options);
-//
-//    List<QueryResult> getAllAlignmentBlocksByRegionList(List<Region> region, QueryOptions options);
-
-    QueryResult getAllAlignmentsByGene(String gene, QueryOptions options);
-
-    QueryResult getCoverageByRegion(Region region, QueryOptions options);
-
-    @Deprecated
-    QueryResult getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax);
-
-    QueryResult getAllIntervalFrequencies(Region region, QueryOptions options);
-
-    QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
-
     QueryResult<ReadAlignment> get(Path path, Query query, QueryOptions options);
 
     AlignmentIterator iterator(Path path);
@@ -142,7 +117,7 @@ public interface AlignmentDBAdaptor {
 
     QueryResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
 
-    QueryResult<RegionCoverage> coverage(Path path, Path workspace) throws Exception;
+    QueryResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception;
 
-    QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
+//    QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
 }
