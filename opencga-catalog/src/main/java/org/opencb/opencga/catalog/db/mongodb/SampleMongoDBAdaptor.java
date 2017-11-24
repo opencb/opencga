@@ -83,6 +83,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
      */
 
     @Override
+    public void nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException {
+        Document sampleDocument = getMongoDBDocument(sample, "sample");
+        sampleCollection.insert(sampleDocument, null);
+    }
+
+    @Override
     public QueryResult<Sample> insert(long studyId, Sample sample, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 

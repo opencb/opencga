@@ -45,6 +45,8 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         }
     }
 
+    void nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
+
     QueryResult<Job> insert(Job job, long studyId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Long> extractFilesFromJobs(Query query, List<Long> fileIds) throws CatalogDBException;

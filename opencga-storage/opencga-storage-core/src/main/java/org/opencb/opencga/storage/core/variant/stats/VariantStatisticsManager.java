@@ -16,14 +16,25 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NOT;
 
 /**
  * Created on 02/12/16.
@@ -31,6 +42,8 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface VariantStatisticsManager {
+
+    String UNKNOWN_GENOTYPE = ".";
 
     /**
      *
@@ -72,4 +85,35 @@ public interface VariantStatisticsManager {
             }
         }
     }
+
+    static QueryOptions buildIncludeExclude() {
+        return new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS));
+    }
+
+    static Query buildInputQuery(StudyConfiguration studyConfiguration, Collection<?> cohorts, boolean overwrite, boolean updateStats,
+                                 ObjectMap options) {
+        // TODO: Add RETURNED_FILES and RETURNED_SAMPLES
+        Query readerQuery = new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantQueryParam.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
+        if (options.containsKey(VariantStorageEngine.Options.FILE_ID.key())) {
+            readerQuery.append(VariantQueryParam.FILES.key(), options.get(VariantStorageEngine.Options.FILE_ID.key()));
+        }
+        if (options.containsKey(VariantQueryParam.REGION.key())) {
+            Object region = options.get(VariantQueryParam.REGION.key());
+            readerQuery.put(VariantQueryParam.REGION.key(), region);
+        }
+        if (updateStats && !overwrite) {
+            //Get all variants that not contain any of the required cohorts
+            readerQuery.append(VariantQueryParam.COHORTS.key(),
+                    cohorts.stream().map((cohort) -> NOT + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
+                            .joining(AND)));
+        }
+        readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), UNKNOWN_GENOTYPE);
+        return readerQuery;
+    }
+
+    static Properties getAggregationMappingProperties(QueryOptions options) {
+        return options.get(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), Properties.class, null);
+    }
+
 }

@@ -120,6 +120,8 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         }
     }
 
+    void nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
+
     QueryResult<Project> insert(Project project, String userId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;

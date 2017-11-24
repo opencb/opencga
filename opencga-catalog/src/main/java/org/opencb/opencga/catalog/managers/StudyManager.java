@@ -411,21 +411,12 @@ public class StudyManager extends AbstractManager {
      * @throws CatalogException CatalogException
      */
     public QueryResult<Study> get(String projectStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-
+        ParamUtils.checkParameter(projectStr, "project");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
-
         query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
 
-        if (!qOptions.containsKey("include") || qOptions.get("include") == null || qOptions.getAsStringList("include").isEmpty()) {
-            qOptions.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
-        }
-
-        QueryResult<Study> allStudies = studyDBAdaptor.get(query, qOptions, userId);
-
-        return allStudies;
+        return get(query, options, sessionId);
     }
 
     public List<QueryResult<Study>> get(List<String> projectList, Query query, QueryOptions options, boolean silent, String sessionId)
@@ -458,9 +449,17 @@ public class StudyManager extends AbstractManager {
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    @Deprecated
     public QueryResult<Study> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return get(null, query, options, sessionId);
+        query = ParamUtils.defaultObject(query, Query::new);
+        QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+
+        if (!qOptions.containsKey("include") || qOptions.get("include") == null || qOptions.getAsStringList("include").isEmpty()) {
+            qOptions.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
+        }
+
+        return studyDBAdaptor.get(query, qOptions, userId);
     }
 
     /**

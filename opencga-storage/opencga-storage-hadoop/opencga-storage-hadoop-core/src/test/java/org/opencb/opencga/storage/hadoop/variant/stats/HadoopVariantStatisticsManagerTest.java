@@ -53,6 +53,6 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
     public Map<String, ?> getOtherStorageConfigurationOptions() {
         return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED)
-                .append("stats.local", false);
+                .append(HadoopVariantStorageEngine.STATS_LOCAL, false);
     }
 }

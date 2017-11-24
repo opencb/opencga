@@ -5,8 +5,9 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -28,6 +30,8 @@ import java.util.stream.Collectors;
 public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Put> {
 
     public static final String COHORTS = "cohorts";
+    public static final String TAGMAP_PREFIX = "tagmap.";
+
     private String study;
     private VariantStatisticsCalculator calculator;
     private Map<String, Set<String>> samples;
@@ -39,11 +43,12 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        calculator = new VariantStatisticsCalculator(true);
-        // TODO: Set aggregation
-        calculator.setAggregationType(Aggregation.NONE, null);
         helper = new VariantTableHelper(context.getConfiguration());
         studyConfiguration = helper.readStudyConfiguration();
+        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+        calculator = new VariantStatisticsCalculator(overwrite);
+        Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
+        calculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
         study = studyConfiguration.getStudyName();
         converter = new VariantStatsToHBaseConverter(helper, studyConfiguration);
 
@@ -103,5 +108,35 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
 
     public static void setCohorts(Job job, Collection<Integer> cohorts) {
         job.getConfiguration().set(COHORTS, cohorts.stream().map(Object::toString).collect(Collectors.joining(",")));
+    }
+
+    private Properties getAggregationMappingProperties(Configuration configuration) {
+        Properties tagmap = new Properties();
+        configuration.iterator().forEachRemaining(entry -> {
+            if (entry.getKey().startsWith(TAGMAP_PREFIX)) {
+                tagmap.put(entry.getKey().substring(TAGMAP_PREFIX.length()), entry.getValue());
+            }
+        });
+        if (tagmap.isEmpty()) {
+            return null;
+        } else {
+            return tagmap;
+        }
+    }
+
+    public static void setAggregationMappingProperties(Configuration conf, Properties tagmap) {
+        setAggregationMappingProperties(conf::set, tagmap);
+    }
+
+    public static void setAggregationMappingProperties(ObjectMap conf, Properties tagmap) {
+        setAggregationMappingProperties(conf::put, tagmap);
+    }
+
+    private static void setAggregationMappingProperties(BiConsumer<String, String> f, Properties tagmap) {
+        if (tagmap != null) {
+            for (Map.Entry<Object, Object> entry : tagmap.entrySet()) {
+                f.accept(TAGMAP_PREFIX + entry.getKey(), entry.getValue().toString());
+            }
+        }
     }
 }
