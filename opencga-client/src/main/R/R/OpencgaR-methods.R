@@ -55,7 +55,7 @@ initOpencgaR <- function(host=NULL, version="v1", user=NULL, opencgaConfig=NULL)
         host <- paste0(host, "webservices/rest/")
     }
     baseurl <- paste0(host, "swagger.json")
-    swagger <- fromJSON(baseurl)
+    swagger <- jsonlite::fromJSON(baseurl)
     ocga@swagger <- swagger
     return(ocga)
 }
@@ -127,9 +127,9 @@ readConfList <- function(conf){
 
 readConfFile <- function(conf){
     if(requireNamespace("configr", quietly = TRUE)){
-        type <- get.config.type(conf)
+        type <- configr::get.config.type(conf)
         print(paste("Reading configuration file in", type, "format", sep = " "))
-        conf.obj <- read.config(conf, warn = F)
+        conf.obj <- configr::read.config(conf, warn = F)
         
         readConfList(conf.obj)
     }
@@ -190,13 +190,13 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
     baseurl <- paste(baseurl, userid, "login", sep="/")
     
     # Send request
-    query <- POST(baseurl, body = list(password = passwd), encode = "json")
+    query <- httr::POST(baseurl, body = list(password = passwd), encode = "json")
     
     # check query status
-    warn_for_status(query)
-    stop_for_status(query)
+    httr::warn_for_status(query)
+    httr::stop_for_status(query)
     
-    res <- content(query)
+    res <- httr::content(query)
     sessionId <- res$response[[1]]$result[[1]]$sessionId
     opencga@user <- userid
     opencga@sessionId <- sessionId

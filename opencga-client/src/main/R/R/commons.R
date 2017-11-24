@@ -145,7 +145,7 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam){
             fullUrl <- paste0(pathUrl, skip)
         }
         print(paste("URL:",fullUrl))
-        resp <- GET(fullUrl, add_headers(Accept="application/json", Authorization=session), timeout(30))
+        resp <- httr::GET(fullUrl, add_headers(Accept="application/json", Authorization=session), timeout(30))
         
     }else if(httpMethod == "POST"){
     # Make POST call
@@ -174,21 +174,21 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam){
         
         print(paste("URL:",fullUrl))
         if (exists("bodyParams")){
-            resp <- POST(fullUrl, body = bodyParams, 
+            resp <- httr::POST(fullUrl, body = bodyParams, 
                          add_headers(`Authorization` = session), encode = "json")
         }else{
-            resp <- POST(fullUrl, add_headers(`Authorization` = session), 
+            resp <- httr::POST(fullUrl, add_headers(`Authorization` = session), 
                          encode = "json")
         }
     }
     
-    content <- content(resp, as="text", encoding = "utf-8")
+    content <- httr::content(resp, as="text", encoding = "utf-8")
     return(list(resp=resp, content=content))
 }
 
 ## A function to parse the json data into R dataframes
 parseResponse <- function(resp, content){
-    js <- lapply(content, function(x)fromJSON(x))
+    js <- lapply(content, function(x) jsonlite::fromJSON(x))
     if (resp$status_code == 200){
         if (js[[1]]$warning == ""){
             print("Query successful!")
@@ -220,7 +220,7 @@ parseResponse <- function(resp, content){
         
         ### Important to get correct vertical binding of dataframes
         names(ds) <- NULL
-        ds <- rbind_pages(ds)
+        ds <- jsonlite::rbind_pages(ds)
     }else{
         ds <- ares
         names(ds) <- NULL
