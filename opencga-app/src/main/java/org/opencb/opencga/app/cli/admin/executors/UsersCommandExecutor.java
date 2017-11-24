@@ -119,29 +119,33 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             } else {
                 try {
                     QueryResult<Group> group = catalogManager.getStudyManager().getGroup(executor.study, executor.to, sessionId);
-                    if (group.first().getSyncedFrom() != null && (!group.first().getSyncedFrom().getRemoteGroup().equals(executor.from)
-                            || !group.first().getSyncedFrom().getAuthOrigin().equals(executor.authOrigin))) {
-                        // Sync with different group or different authentication origin
-                        logger.error("Cannot synchronise with group {}. The group is already synchronised with the group {} from the "
-                                + "authentication origin {}", executor.to, group.first().getSyncedFrom().getRemoteGroup(),
-                                group.first().getSyncedFrom().getAuthOrigin());
-                        return;
-                    } else if (group.first().getSyncedFrom() == null && !executor.force) {
-                        logger.error("Cannot synchronise with group {}. The group already exists. You can use --force to force the "
-                                + "synchronisation with this group.", executor.to);
-                        return;
-                    }
+                    if (group.getNumResults() == 1) {
+                        if (group.first().getSyncedFrom() != null && (!group.first().getSyncedFrom().getRemoteGroup().equals(executor.from)
+                                || !group.first().getSyncedFrom().getAuthOrigin().equals(executor.authOrigin))) {
 
-                    // Remove all users from the group
-                    GroupParams groupParams = new GroupParams(StringUtils.join(group.first().getUserIds(), ","), GroupParams.Action.REMOVE);
-                    QueryResult<Group> deleteUsers = catalogManager.getStudyManager().updateGroup(executor.study, executor.to, groupParams,
-                            sessionId);
-                    if (deleteUsers.first().getUserIds().size() > 0) {
-                        logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
-                                deleteUsers.first().getUserIds().size(), deleteUsers.first().getName());
-                        return;
-                    }
+                            // Sync with different group or different authentication origin
+                            logger.error("Cannot synchronise with group {}. The group is already synchronised with the group {} from the "
+                                    + "authentication origin {}", executor.to, group.first().getSyncedFrom().getRemoteGroup(),
+                                    group.first().getSyncedFrom().getAuthOrigin());
+                            return;
+                        } else if (group.first().getSyncedFrom() == null && !executor.force) {
+                            logger.error("Cannot synchronise with group {}. The group already exists. You can use --force to force the "
+                                    + "synchronisation with this group.", executor.to);
+                            return;
+                        }
 
+                        // Remove all users from the group
+                        GroupParams groupParams = new GroupParams(StringUtils.join(group.first().getUserIds(), ","),
+                                GroupParams.Action.REMOVE);
+                        QueryResult<Group> deleteUsers = catalogManager.getStudyManager().updateGroup(executor.study, executor.to,
+                                groupParams, sessionId);
+                        if (deleteUsers.first().getUserIds().size() > 0) {
+                            logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
+                                    deleteUsers.first().getUserIds().size(), deleteUsers.first().getName());
+
+                            return;
+                        }
+                    }
                 } catch (CatalogException e) {
                     logger.info("{} group does not exist.", executor.to, e.getMessage());
                 }

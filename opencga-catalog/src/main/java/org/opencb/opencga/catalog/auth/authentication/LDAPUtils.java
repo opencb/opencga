@@ -64,14 +64,16 @@ public class LDAPUtils {
             Attributes attrs = sr.getAttributes();
 
             BasicAttribute uniquemember = (BasicAttribute) attrs.get("uniqueMember");
-            NamingEnumeration<?> all = uniquemember.getAll();
+            if (uniquemember != null) {
+                NamingEnumeration<?> all = uniquemember.getAll();
 
-            while (all.hasMore()) {
-                String next = (String) all.next();
-                for (String s : next.split(",")) {
-                    if (s.contains("uid")) {
-                        users.add(s.split("=")[1]);
-                        continue;
+                while (all.hasMore()) {
+                    String next = (String) all.next();
+                    for (String s : next.split(",")) {
+                        if (s.contains("uid")) {
+                            users.add(s.split("=")[1]);
+                            continue;
+                        }
                     }
                 }
             }

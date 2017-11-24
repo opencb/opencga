@@ -172,6 +172,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanViewStudy(long studyId, String userId) throws CatalogException {
+        if (ADMIN.equals(userId)) {
+            return;
+        }
+
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
 
         if (ownerId.equals(userId)) {
@@ -191,7 +195,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        if (!userId.equals(ownerId) && !isAdministrativeUser(studyId, userId)) {
+        if (!userId.equals(ADMIN) && !userId.equals(ownerId) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only administrative users are allowed to create/remove groups.");
         }
     }
@@ -218,7 +222,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogAuthorizationException("Only the owner of the study can assign/remove users to the administrative group.");
         }
 
-        if (!isAdministrativeUser(studyId, userId)) {
+        if (!userId.equals(ADMIN) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only administrative users are allowed to assign/remove users to groups.");
         }
 
