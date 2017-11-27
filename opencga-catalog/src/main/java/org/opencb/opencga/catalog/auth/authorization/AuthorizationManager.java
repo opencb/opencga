@@ -99,6 +99,8 @@ public interface AuthorizationManager {
 
     void checkCanViewStudy(long studyId, String userId) throws CatalogException;
 
+    void checkCanUpdatePermissionRules(long studyId, String userId) throws CatalogException;
+
     void checkCreateDeleteGroupPermissions(long studyId, String userId, String group) throws CatalogException;
 
     void checkSyncGroupPermissions(long studyId, String userId, String group) throws CatalogException;

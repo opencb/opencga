@@ -24,10 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.Group;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.Variable;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import javax.annotation.Nullable;
@@ -165,6 +162,26 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      */
     void resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException;
 
+    /**
+     * Adds the permission rule to the list of permission rules defined for the entry in the studyId
+     *
+     * @param studyId study id corresponding to the study where the permission rule will be added.
+     * @param entry entry for which the permission rule is to be applied (samples, cohorts, files...)
+     * @param permissionRules PermissionRules object that will be added.
+     * @throws CatalogDBException if there is any kind of error.
+     */
+    void addPermissionRule(long studyId, Study.Entry entry, PermissionRules permissionRules) throws CatalogDBException;
+
+    /**
+     * Get permission rules defined for an entry.
+     *
+     * @param studyId study id where the permission rules are stored.
+     * @param entry entry for which the permission rules is applied (samples, cohorts...)
+     * @return the list of permission rules defined.
+     * @throws CatalogDBException if there is any error.
+     */
+    QueryResult<PermissionRules> getPermissionRules(long studyId, Study.Entry entry) throws CatalogDBException;
+
     /*
      * VariableSet Methods
      * ***************************
@@ -275,6 +292,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         ROLES_ID("roles.id", TEXT, ""),
         ROLES_USERS("roles.users", TEXT_ARRAY, ""),
         ROLES_PERMISSIONS("roles.permissions", TEXT, ""),
+
+        PERMISSION_RULES("permissionRules", TEXT_ARRAY, ""),
 
         EXPERIMENT_ID("experiments.id", INTEGER_ARRAY, ""),
         EXPERIMENT_NAME("experiments.name", TEXT_ARRAY, ""),

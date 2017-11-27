@@ -466,6 +466,57 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
+    @Override
+    public void addPermissionRule(long studyId, Study.Entry entry, PermissionRules permissionRule) throws CatalogDBException {
+        if (entry == null) {
+            throw new CatalogDBException("Missing entry parameter");
+        }
+
+        // Get permission rules from study
+        QueryResult<PermissionRules> permissionRulesResult = getPermissionRules(studyId, entry);
+
+        List<Document> permissionDocumentList = new ArrayList<>();
+        if (permissionRulesResult.getNumResults() > 0) {
+            for (PermissionRules rule : permissionRulesResult.getResult()) {
+                // We add all the permission rules with different id
+                if (!rule.getId().equals(permissionRule.getId())) {
+                    permissionDocumentList.add(getMongoDBDocument(rule, "PermissionRules"));
+                }
+            }
+        }
+
+        permissionDocumentList.add(getMongoDBDocument(permissionRule, "PermissionRules"));
+
+        // We update the study document to contain the new permission rules
+        Query query = new Query(QueryParams.ID.key(), studyId);
+        Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry, permissionDocumentList));
+        QueryResult<UpdateResult> updateResult = studyCollection.update(parseQuery(query, true), update, QueryOptions.empty());
+
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Unexpected error occurred when adding new permission rules to study");
+        }
+    }
+
+    @Override
+    public QueryResult<PermissionRules> getPermissionRules(long studyId, Study.Entry entry) throws CatalogDBException {
+        // Get permission rules from study
+        Query query = new Query(QueryParams.ID.key(), studyId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.PERMISSION_RULES.key());
+
+        QueryResult<Study> studyQueryResult = get(query, options);
+        if (studyQueryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Unexpected error: Study " + studyId + " not found");
+        }
+
+        List<PermissionRules> permissionRules = studyQueryResult.first().getPermissionRules().get(entry);
+        if (permissionRules == null) {
+            permissionRules = Collections.emptyList();
+        }
+
+        return new QueryResult<>(String.valueOf(studyId), studyQueryResult.getDbTime(), permissionRules.size(), permissionRules.size(),
+                "", "", permissionRules);
+    }
+
     /*
      * Variables Methods
      * ***************************

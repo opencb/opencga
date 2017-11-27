@@ -189,6 +189,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void checkCanUpdatePermissionRules(long studyId, String userId) throws CatalogException {
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+
+        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to modify a update permission rules");
+        }
+    }
+
+    @Override
     public void checkCreateDeleteGroupPermissions(long studyId, String userId, String group) throws CatalogException {
         if (group.equals(MEMBERS_GROUP) || group.equals(ADMINS_GROUP)) {
             throw new CatalogAuthorizationException(group + " is a protected group that cannot be created or deleted.");

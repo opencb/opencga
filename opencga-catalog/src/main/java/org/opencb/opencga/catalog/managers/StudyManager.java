@@ -38,8 +38,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.*;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
@@ -49,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -499,6 +499,18 @@ public class StudyManager extends AbstractManager {
         QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
         return result;
+    }
+
+    public QueryResult<PermissionRules> addPermissionRule(String studyStr, Study.Entry entry, PermissionRules permissionRule,
+                                                          String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = getId(userId, studyStr);
+
+        authorizationManager.checkCanUpdatePermissionRules(studyId, userId);
+        validatePermissionRules(studyId, entry, permissionRule);
+
+        studyDBAdaptor.addPermissionRule(studyId, entry, permissionRule);
+        return studyDBAdaptor.getPermissionRules(studyId, entry);
     }
 
     public QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId)
@@ -1233,4 +1245,50 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.count(query).first() > 0;
     }
 
+    private void validatePermissionRules(long studyId, Study.Entry entry, PermissionRules permissionRule) throws CatalogException {
+        ParamUtils.checkIdentifier(permissionRule.getId(), "PermissionRules");
+
+        if (permissionRule.getPermissions() == null || permissionRule.getPermissions().isEmpty()) {
+            throw new CatalogException("Missing permissions for the Permissions Rule object");
+        }
+
+        switch (entry) {
+            case SAMPLES:
+                validatePermissions(permissionRule.getPermissions(), SampleAclEntry.SamplePermissions::valueOf);
+                break;
+            case FILES:
+                validatePermissions(permissionRule.getPermissions(), FileAclEntry.FilePermissions::valueOf);
+                break;
+            case COHORTS:
+                validatePermissions(permissionRule.getPermissions(), CohortAclEntry.CohortPermissions::valueOf);
+                break;
+            case INDIVIDUALS:
+                validatePermissions(permissionRule.getPermissions(), IndividualAclEntry.IndividualPermissions::valueOf);
+                break;
+            case FAMILIES:
+                validatePermissions(permissionRule.getPermissions(), FamilyAclEntry.FamilyPermissions::valueOf);
+                break;
+            case JOBS:
+                validatePermissions(permissionRule.getPermissions(), JobAclEntry.JobPermissions::valueOf);
+                break;
+            case CLINICAL_ANALYSIS:
+                validatePermissions(permissionRule.getPermissions(), ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf);
+                break;
+            default:
+                throw new CatalogException("Unexpected entry found");
+        }
+
+        checkMembers(studyId, permissionRule.getMembers());
+    }
+
+    private void validatePermissions(List<String> permissions, Function<String, Object> valueOf) throws CatalogException {
+        for (String permission : permissions) {
+            try {
+                valueOf.apply(permission);
+            } catch (IllegalArgumentException e) {
+                logger.error("Detected unsupported " + permission + " permission: {}", e.getMessage(), e);
+                throw new CatalogException("Detected unsupported " + permission + " permission.");
+            }
+        }
+    }
 }
