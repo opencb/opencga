@@ -27,5 +27,6 @@ con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
 # Configuration in file format ("YAML" or "JSON")
 conf <- "/path/to/conf/client-configuration.yml"
+con <- initOpencgaR(opencgaConfig=conf)
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 }

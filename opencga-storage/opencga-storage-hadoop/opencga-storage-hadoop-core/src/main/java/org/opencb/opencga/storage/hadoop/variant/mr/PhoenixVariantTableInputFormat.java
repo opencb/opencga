@@ -6,7 +6,7 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
-import org.apache.phoenix.mapreduce.PhoenixInputFormat;
+import org.apache.phoenix.jdbc.PhoenixDriver;
 import org.apache.phoenix.mapreduce.util.PhoenixConfigurationUtil;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -27,8 +27,12 @@ public class PhoenixVariantTableInputFormat
 
     @Override
     protected void init(Configuration configuration) throws IOException {
+        // Ensure PhoenixDriver is registered
+        if (PhoenixDriver.INSTANCE == null) {
+            throw new IOException("Error registering PhoenixDriver");
+        }
         PhoenixConfigurationUtil.setInputClass(configuration, ResultSetDBWritable.class);
-        inputFormat = new PhoenixInputFormat<>();
+        inputFormat = new CustomPhoenixInputFormat<>();
         initConverter(HBaseToVariantConverter.fromResultSet(new VariantTableHelper(configuration)), configuration);
     }
 

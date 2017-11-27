@@ -152,6 +152,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String ARCHIVE_ROW_KEY_SEPARATOR = "opencga.archive.row_key_sep";
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
+    public static final String STATS_LOCAL = "stats.local";
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
@@ -363,7 +364,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        if (getOptions().getBoolean("stats.local", true)) {
+        if (getOptions().getBoolean(STATS_LOCAL, true)) {
             return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
         } else {
             return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(getOptions()), getOptions());

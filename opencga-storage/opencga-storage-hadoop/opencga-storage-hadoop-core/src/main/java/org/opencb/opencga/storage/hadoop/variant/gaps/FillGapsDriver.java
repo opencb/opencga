@@ -8,10 +8,8 @@ import org.apache.hadoop.hbase.filter.SubstringComparator;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,20 +53,17 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
     @Override
     protected Job setupJob(Job job, String archiveTableName, String variantTableName) throws IOException {
         if (getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
-            try (HBaseStudyConfigurationDBAdaptor adaptor = new HBaseStudyConfigurationDBAdaptor(getAnalysisTable(), getConf(), null);
-                 StudyConfigurationManager scm = new StudyConfigurationManager(adaptor)) {
-                // Sql
-                Query query = buildQuery(getStudyId(), samples, getFiles());
-                QueryOptions options = buildQueryOptions();
-                String sql = new VariantSqlQueryParser(getHelper(), getAnalysisTable(), scm).parse(query,
-                        options).getSql();
+            // Sql
+            Query query = buildQuery(getStudyId(), samples, getFiles());
+            QueryOptions options = buildQueryOptions();
+            String sql = new VariantSqlQueryParser(getHelper(), getAnalysisTable(), getStudyConfigurationManager())
+                    .parse(query, options).getSql();
 
-                logger.info("Query : " + query.toJson());
-                logger.info(sql);
+            logger.info("Query : " + query.toJson());
+            logger.info(sql);
 
-                // input
-                VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, FillGapsMapper.class);
-            }
+            // input
+            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, FillGapsMapper.class);
         } else {
             // scan
             Scan scan = new Scan();

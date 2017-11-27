@@ -129,6 +129,8 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
     }
 
+    void nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
+
     QueryResult<Family> insert(Family family, long studyId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;

@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -333,10 +334,12 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[0]);
         getConf().set(CONFIG_VARIANT_TABLE_NAME, args[1]);
         getConf().set(VariantStorageEngine.Options.STUDY_ID.key(), args[2]);
-        if (args[4].equals(".") || args[3].isEmpty()) {
+        if (args[3].equals(".") || args[3].isEmpty()) {
             getConf().unset(VariantStorageEngine.Options.FILE_ID.key());
+            getConf().unset(VariantQueryParam.FILES.key());
         } else {
             getConf().setStrings(VariantStorageEngine.Options.FILE_ID.key(), args[3].split(","));
+            getConf().setStrings(VariantQueryParam.FILES.key(), args[3].split(","));
         }
 
     }

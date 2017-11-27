@@ -54,6 +54,7 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         String jar = HadoopVariantStorageEngine.getJarWithDependencies(options);
 
         options.put(VariantStatsMapper.COHORTS, cohortIds);
+        VariantStatsMapper.setAggregationMappingProperties(options, VariantStatisticsManager.getAggregationMappingProperties(options));
 
         Class execClass = VariantStatsDriver.class;
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
@@ -81,6 +82,8 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         } catch (SQLException e) {
             throw new IOException(e);
         }
+
+        logger.info("Finishing stats calculation, time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
 
     }
 }

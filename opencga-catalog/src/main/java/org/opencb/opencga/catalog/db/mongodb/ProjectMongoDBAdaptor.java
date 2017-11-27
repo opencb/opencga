@@ -54,6 +54,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixComplexQueryParam;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseUser;
 
 /**
@@ -75,6 +76,19 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public boolean exists(long projectId) {
         QueryResult<Long> count = userCollection.count(new Document("projects.id", projectId));
         return count.getResult().get(0) != 0;
+    }
+
+    @Override
+    public void nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException {
+        Bson query = Filters.and(Filters.eq("id", userId), Filters.ne("projects.alias", project.get(QueryParams.ALIAS.key())));
+        Bson update = Updates.push("projects", getMongoDBDocument(project, "project"));
+
+        //Update object
+        QueryResult<UpdateResult> queryResult = userCollection.update(query, update, null);
+
+        if (queryResult.getResult().get(0).getModifiedCount() == 0) { // Check if the project has been inserted
+            throw new CatalogDBException("Project {alias:\"" + project.get(QueryParams.ALIAS.key()) + "\"} already exists for this user");
+        }
     }
 
     @Override

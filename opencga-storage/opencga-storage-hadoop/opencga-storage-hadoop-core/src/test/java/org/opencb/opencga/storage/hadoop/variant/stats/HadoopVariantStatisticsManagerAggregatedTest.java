@@ -4,6 +4,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerAggregatedTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -29,6 +30,8 @@ public class HadoopVariantStatisticsManagerAggregatedTest extends VariantStatist
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
+        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
+                .append(HadoopVariantStorageEngine.STATS_LOCAL, false)
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
     }
 }

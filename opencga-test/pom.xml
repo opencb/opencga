@@ -31,12 +31,12 @@
         <dependency>
             <groupId>smartrics.restfixture</groupId>
             <artifactId>smartrics-RestFixture</artifactId>
-            <version>4.1</version>
+            <version>4.4</version>
         </dependency>
         <dependency>
             <groupId>org.fitnesse</groupId>
             <artifactId>fitnesse</artifactId>
-            <version>20160618</version>
+            <version>20161106</version>
         </dependency>
     </dependencies>
 
