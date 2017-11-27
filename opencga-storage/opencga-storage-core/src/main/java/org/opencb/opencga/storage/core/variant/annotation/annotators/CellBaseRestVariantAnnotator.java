@@ -22,6 +22,7 @@ import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
@@ -71,7 +72,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     }
 
     @Override
-    protected List<VariantAnnotation> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
+    protected List<QueryResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
         if (variants.isEmpty()) {
             return Collections.emptyList();
         }
@@ -79,7 +80,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             // FIXME getAnnotations has been renamed to getAnnotationByVariantIds
             QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient()
                     .getAnnotations(variants.stream().map(variantSerializer).collect(Collectors.toList()), queryOptions, true);
-            return getVariantAnnotationList(variants, queryResponse.getResponse());
+            return queryResponse.getResponse();
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error fetching variants from Client");
         }
