@@ -513,6 +513,14 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getPermissionRules(studyId, entry);
     }
 
+    public QueryResult<PermissionRules> getPermissionRules(String studyStr, Study.Entry entry, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = getId(userId, studyStr);
+
+        authorizationManager.checkCanViewStudy(studyId, userId);
+        return studyDBAdaptor.getPermissionRules(studyId, entry);
+    }
+
     public QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);

@@ -38,6 +38,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
+import java.security.Permission;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -465,6 +466,39 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             isSingleId(studyStr);
             return createOkResponse(catalogManager.getStudyManager().deleteGroup(studyStr, groupId, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{study}/aclRules")
+    @ApiOperation(value = "Fetch permission rules")
+    public Response getPermissionRules(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
+            @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @QueryParam("entry")
+                    Study.Entry entry) {
+        try {
+            isSingleId(studyStr);
+            return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entry, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/aclRules/{entry}/update")
+    @ApiOperation(value = "Updates permission rules")
+    public Response addPermissionRules(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
+            @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @PathParam("entry")
+                    Study.Entry entry,
+            @ApiParam(value = "JSON containing the permission rule", required = true) PermissionRules params) {
+        try {
+            isSingleId(studyStr);
+            return createOkResponse(catalogManager.getStudyManager().addPermissionRule(studyStr, entry, params, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

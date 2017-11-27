@@ -163,7 +163,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     void resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException;
 
     /**
-     * Adds the permission rule to the list of permission rules defined for the entry in the studyId
+     * Adds the permission rule to the list of permission rules defined for the entry in the studyId.
      *
      * @param studyId study id corresponding to the study where the permission rule will be added.
      * @param entry entry for which the permission rule is to be applied (samples, cohorts, files...)
