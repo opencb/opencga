@@ -1010,34 +1010,57 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 queryResults = authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
                         collectionName);
                 if (sampleAclParams.isPropagate()) {
-                    Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
-                            AclParams.Action.SET, StringUtils.join(resourceIds.getResourceIds(), ","), false);
-                    catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
+                    try {
+                        Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
+                                AclParams.Action.SET, StringUtils.join(resourceIds.getResourceIds(), ","), false);
+
+                        catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
+                    } catch (CatalogException e) {
+                        logger.warn("Error propagating permissions to individual: {}", e.getMessage(), e);
+                        queryResults.get(0).setWarningMsg("Error propagating permissions to individual: " + e.getMessage());
+                    }
                 }
                 break;
             case ADD:
                 queryResults = authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
                         collectionName);
                 if (sampleAclParams.isPropagate()) {
-                    Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
-                            AclParams.Action.ADD, StringUtils.join(resourceIds.getResourceIds(), ","), false);
-                    catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
+                    try {
+                        Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
+                                AclParams.Action.ADD, StringUtils.join(resourceIds.getResourceIds(), ","), false);
+                        catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
+                    } catch (CatalogException e) {
+                        logger.warn("Error propagating permissions to individual: {}", e.getMessage(), e);
+                        queryResults.get(0).setWarningMsg("Error propagating permissions to individual: " + e.getMessage());
+                    }
                 }
                 break;
             case REMOVE:
                 queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (sampleAclParams.isPropagate()) {
-                    Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
-                            AclParams.Action.REMOVE, StringUtils.join(resourceIds.getResourceIds(), ","), false);
-                    catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
+                    try {
+                        Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
+                                AclParams.Action.REMOVE, StringUtils.join(resourceIds.getResourceIds(), ","), false);
+
+                        catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
+                    } catch (CatalogException e) {
+                        logger.warn("Error propagating permissions to individual: {}", e.getMessage(), e);
+                        queryResults.get(0).setWarningMsg("Error propagating permissions to individual: " + e.getMessage());
+                    }
                 }
                 break;
             case RESET:
                 queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
                 if (sampleAclParams.isPropagate()) {
-                    Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
-                            AclParams.Action.RESET, StringUtils.join(resourceIds.getResourceIds(), ","), false);
-                    catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
+                    try {
+                        Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
+                                AclParams.Action.RESET, StringUtils.join(resourceIds.getResourceIds(), ","), false);
+
+                        catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
+                    } catch (CatalogException e) {
+                        logger.warn("Error propagating permissions to individual: {}", e.getMessage(), e);
+                        queryResults.get(0).setWarningMsg("Error propagating permissions to individual: " + e.getMessage());
+                    }
                 }
                 break;
             default:
