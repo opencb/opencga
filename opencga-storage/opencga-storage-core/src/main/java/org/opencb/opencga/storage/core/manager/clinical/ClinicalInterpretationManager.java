@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -39,11 +40,13 @@ import org.opencb.opencga.storage.core.manager.StorageManager;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ClinicalInterpretationManager extends StorageManager {
 
     private ClinicalAnalysisManager clinicalAnalysisManager;
     private ClinicalVariantEngine clinicalVariantEngine;
+
 
     public ClinicalInterpretationManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         super(catalogManager, storageEngineFactory);
@@ -71,7 +74,87 @@ public class ClinicalInterpretationManager extends StorageManager {
             checkQuery(query, token);
         }
 
+        if (query == null) {
+            throw new ClinicalVariantException("Query object is null");
+        }
+
+        // Get userId from token and Study numeric IDs from the query
+        String userId = catalogManager.getUserManager().getUserId(token);
+        List<Long> studyIds = getStudyLongIds(userId, query);
+
+        // If one specific clinical analysis, sample or individual is provided we expect a single valid study as well
+        if (isCaseProvided(query)) {
+            if (studyIds.size() == 1) {
+                // This checks that the user has permission to the clinical analysis, sample or individual
+                QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
+                        .get(String.valueOf(studyIds.get(0)), query, QueryOptions.empty(), token);
+
+                if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
+                    throw new ClinicalVariantException("Either the ID does not exist ir the user does not have permissions to view it");
+                } else {
+                    if (!query.containsKey("clinicalAnalysisId")) {
+                        query.remove("samples");
+                        query.remove("subject");
+                        String clinicalAnalysisList = StringUtils.join(
+                                clinicalAnalysisQueryResult.getResult().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList()),
+                                ",");
+                        query.put("clinicalAnalysisId", clinicalAnalysisList);
+                    }
+                }
+            } else {
+                throw new ClinicalVariantException("No single valid study provided: " + query.getString("study"));
+            }
+        } else {
+            // Get the owner of all the studies
+            Set<String> users = new HashSet<>();
+            for (Long studyId : studyIds) {
+                users.add(catalogManager.getStudyManager().getUserId(studyId));
+            }
+
+            // There must be one single owner for all the studies, we do nt allow to query multiple databases
+            if (users.size() == 1) {
+                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds, ","));
+                QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyQuery, QueryOptions.empty(), token);
+
+                // If the user is the owner we do not have to check anything else
+                List<String> studyAliases = new ArrayList<>(studyIds.size());
+                if (users.contains(userId)) {
+                    for (Study study : studyQueryResult.getResult()) {
+                        studyAliases.add(study.getAlias());
+                    }
+                } else {
+                    for (Study study : studyQueryResult.getResult()) {
+                        for (Group group : study.getGroups()) {
+                            if (group.getName().equalsIgnoreCase("admins") && group.getUserIds().contains(userId)) {
+                                studyAliases.add(study.getAlias());
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (studyAliases.isEmpty()) {
+                    throw new ClinicalVariantException("This user is not owner or admins for the provided studies");
+                } else {
+                    query.put("studies", StringUtils.join(studyAliases, "."));
+                }
+            } else {
+                throw new ClinicalVariantException("");
+            }
+        }
+
         return clinicalVariantEngine.query(query, options, "");
+    }
+
+    private List<Long> getStudyLongIds(String userId, Query query) throws CatalogException {
+        List<Long> studyIds = new ArrayList<>();
+
+        if (query != null && query.containsKey("study")) {
+            String study = query.getString("study");
+            List<String> studies = Arrays.asList(study.split(","));
+            studyIds = catalogManager.getStudyManager().getIds(userId, studies);
+        }
+        return studyIds;
     }
 
     public QueryResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String token)
@@ -107,6 +190,14 @@ public class ClinicalInterpretationManager extends StorageManager {
     /*--------------------------------------------------------------------------*/
     /*                    P R I V A T E     M E T H O D S                       */
     /*--------------------------------------------------------------------------*/
+
+    private boolean isCaseProvided(Query query) {
+        if (query != null) {
+            return query.containsKey("clinicalAnalysisId") || query.containsKey("sample");
+        }
+        return false;
+    }
+
 
     private List<String> getAllowedClinicalAnalysisIdList(Query query, String token) throws CatalogException {
         List<String> caIds = getClinicalAnalysisIdList(token);
