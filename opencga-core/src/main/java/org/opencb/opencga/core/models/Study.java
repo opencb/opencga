@@ -17,6 +17,7 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.opencga.core.common.FieldUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -41,7 +42,6 @@ public class Study {
     private String cipher;
 
     private List<Group> groups;
-//    private List<StudyAclEntry> acl;
 
     private List<Experiment> experiments;
 
@@ -56,6 +56,8 @@ public class Study {
     private List<DiseasePanel> panels;
 
     private List<VariableSet> variableSets;
+
+    private Map<Entry, List<PermissionRules>> permissionRules;
 
     private URI uri;
 
@@ -72,16 +74,17 @@ public class Study {
     public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
         this(-1, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
                 new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), uri,
-                new HashMap<>(), release, new HashMap<>(), new HashMap<>()
+                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new HashMap<>(),
+                uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>()
         );
     }
 
     public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastModified,
                  long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files, List<Job> jobs,
                  List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
-                 List<DiseasePanel> panels, List<VariableSet> variableSets, URI uri, Map<File.Bioformat, DataStore> dataStores, int release,
-                 Map<String, Object> stats, Map<String, Object> attributes) {
+                 List<DiseasePanel> panels, List<VariableSet> variableSets, Map<Entry, List<PermissionRules>> permissionRules,
+                 URI uri, Map<File.Bioformat, DataStore> dataStores, int release, Map<String, Object> stats,
+                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -92,21 +95,22 @@ public class Study {
         this.lastModified = lastModified;
         this.size = size;
         this.cipher = cipher;
-        this.groups = groups;
-        this.experiments = experiments;
-        this.files = files;
-        this.jobs = jobs;
-        this.individuals = individuals;
-        this.samples = samples;
-        this.datasets = datasets;
-        this.cohorts = cohorts;
-        this.panels = panels;
-        this.variableSets = variableSets;
+        this.groups = FieldUtils.defaultObject(groups, ArrayList::new);
+        this.experiments = FieldUtils.defaultObject(experiments, ArrayList::new);
+        this.files = FieldUtils.defaultObject(files, ArrayList::new);
+        this.jobs = FieldUtils.defaultObject(jobs, ArrayList::new);
+        this.individuals = FieldUtils.defaultObject(individuals, ArrayList::new);
+        this.samples = FieldUtils.defaultObject(samples, ArrayList::new);
+        this.datasets = FieldUtils.defaultObject(datasets, ArrayList::new);
+        this.cohorts = FieldUtils.defaultObject(cohorts, ArrayList::new);
+        this.panels = FieldUtils.defaultObject(panels, ArrayList::new);
+        this.variableSets = FieldUtils.defaultObject(variableSets, ArrayList::new);
+        this.permissionRules = FieldUtils.defaultObject(permissionRules, HashMap::new);
         this.uri = uri;
-        this.stats = stats;
+        this.stats = FieldUtils.defaultObject(stats, HashMap::new);
         this.release = release;
-        this.dataStores = dataStores;
-        this.attributes = attributes;
+        this.dataStores = FieldUtils.defaultObject(dataStores, HashMap::new);
+        this.attributes = FieldUtils.defaultObject(attributes, HashMap::new);
     }
 
     public enum Type {
@@ -122,6 +126,15 @@ public class Study {
         COLLECTION
     }
 
+    public enum Entry {
+        SAMPLES,
+        FILES,
+        COHORTS,
+        INDIVIDUALS,
+        FAMILIES,
+        JOBS,
+        CLINICAL_ANALYSIS
+    }
 
     @Override
     public String toString() {
@@ -146,6 +159,7 @@ public class Study {
         sb.append(", cohorts=").append(cohorts);
         sb.append(", panels=").append(panels);
         sb.append(", variableSets=").append(variableSets);
+        sb.append(", permissionRules=").append(permissionRules);
         sb.append(", uri=").append(uri);
         sb.append(", release=").append(release);
         sb.append(", dataStores=").append(dataStores);
@@ -332,6 +346,15 @@ public class Study {
 
     public Study setVariableSets(List<VariableSet> variableSets) {
         this.variableSets = variableSets;
+        return this;
+    }
+
+    public Map<Entry, List<PermissionRules>> getPermissionRules() {
+        return permissionRules;
+    }
+
+    public Study setPermissionRules(Map<Entry, List<PermissionRules>> permissionRules) {
+        this.permissionRules = permissionRules;
         return this;
     }
 

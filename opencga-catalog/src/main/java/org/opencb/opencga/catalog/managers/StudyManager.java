@@ -278,7 +278,8 @@ public class StudyManager extends AbstractManager {
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, Arrays.asList(new Group(MEMBERS, Collections.emptyList()), new Group(ADMINS, Collections.emptyList())),
                 experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                Collections.emptyList(), new LinkedList<>(), null, datastores, getProjectCurrentRelease(projectId), stats, attributes);
+                Collections.emptyList(), new LinkedList<>(), null, null, datastores, getProjectCurrentRelease(projectId), stats,
+                attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.insert(projectId, study, userId, options);

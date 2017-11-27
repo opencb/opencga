@@ -19,7 +19,8 @@ package org.opencb.opencga.core.models;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
-import java.util.function.Supplier;
+
+import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -470,13 +471,6 @@ public class Job {
     public Job setToolId(String toolId) {
         this.toolId = toolId;
         return this;
-    }
-
-    public static <O> O defaultObject(O object, Supplier<O> supplier) {
-        if (object == null) {
-            object = supplier.get();
-        }
-        return object;
     }
 
 }
