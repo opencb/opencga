@@ -411,7 +411,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             // Get files
             Set<String> fileIds = new HashSet<>();
             for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-                if (!Collections.disjoint(entry.getValue(), sampleIds)) {
+                if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
                     fileIds.add(entry.getKey().toString());
                 }
             }
@@ -453,7 +453,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 logger.info("Fill gaps of samples {} into variants table '{}'", samples, getVariantTableName());
                 logger.debug(executable + ' ' + args);
                 logger.info("------------------------------------------------------");
-                int exitValue = mrExecutor.run(executable, args);
+                int exitValue = getMRExecutor(options).run(executable, args);
                 logger.info("------------------------------------------------------");
                 logger.info("Exit value: {}", exitValue);
                 logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);

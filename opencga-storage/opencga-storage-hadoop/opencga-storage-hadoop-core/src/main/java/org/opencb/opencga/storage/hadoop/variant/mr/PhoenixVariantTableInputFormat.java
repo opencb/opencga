@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
+import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -13,6 +14,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConver
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,7 +25,7 @@ import java.sql.SQLException;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class PhoenixVariantTableInputFormat
-        extends AbstractVariantsTableInputFormat<NullWritable, PhoenixVariantTableInputFormat.ResultSetDBWritable, ResultSet> {
+        extends AbstractVariantsTableInputFormat<NullWritable, PhoenixVariantTableInputFormat.VariantDBWritable> {
 
     @Override
     protected void init(Configuration configuration) throws IOException {
@@ -31,9 +33,8 @@ public class PhoenixVariantTableInputFormat
         if (PhoenixDriver.INSTANCE == null) {
             throw new IOException("Error registering PhoenixDriver");
         }
-        PhoenixConfigurationUtil.setInputClass(configuration, ResultSetDBWritable.class);
+        PhoenixConfigurationUtil.setInputClass(configuration, VariantDBWritable.class);
         inputFormat = new CustomPhoenixInputFormat<>();
-        initConverter(HBaseToVariantConverter.fromResultSet(new VariantTableHelper(configuration)), configuration);
     }
 
     @Override
@@ -42,13 +43,15 @@ public class PhoenixVariantTableInputFormat
         if (inputFormat == null) {
             init(context.getConfiguration());
         }
-        RecordReader<NullWritable, ResultSetDBWritable> recordReader = inputFormat.createRecordReader(split, context);
+        RecordReader<NullWritable, VariantDBWritable> recordReader = inputFormat.createRecordReader(split, context);
 
-        return new RecordReaderTransform<>(recordReader, resultSetDBWritable -> converter.convert(resultSetDBWritable.getResultSet()));
+        return new RecordReaderTransform<>(recordReader, VariantDBWritable::getVariant);
     }
 
-    public static class ResultSetDBWritable implements DBWritable {
-        private ResultSet resultSet;
+    public static class VariantDBWritable implements DBWritable, Configurable {
+        private Configuration conf;
+        private HBaseToVariantConverter<ResultSet> converter;
+        private Variant variant;
 
         @Override
         public void write(PreparedStatement statement) throws SQLException {
@@ -57,11 +60,26 @@ public class PhoenixVariantTableInputFormat
 
         @Override
         public void readFields(ResultSet resultSet) throws SQLException {
-            this.resultSet = resultSet;
+            variant = converter.convert(resultSet);
         }
 
-        public ResultSet getResultSet() {
-            return resultSet;
+        public Variant getVariant() {
+            return variant;
+        }
+
+        @Override
+        public void setConf(Configuration conf) {
+            this.conf = conf;
+            try {
+                converter = HBaseToVariantConverter.fromResultSet(new VariantTableHelper(conf)).configure(conf);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        @Override
+        public Configuration getConf() {
+            return conf;
         }
     }
 
