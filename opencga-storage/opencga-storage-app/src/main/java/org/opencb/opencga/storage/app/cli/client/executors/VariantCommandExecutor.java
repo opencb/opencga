@@ -230,7 +230,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         params.put(VariantStorageEngine.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
         if (indexVariantsCommandOptions.annotator != null) {
-            params.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
+            params.put(VariantAnnotationManager.ANNOTATOR, indexVariantsCommandOptions.annotator);
         }
         params.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
         if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
@@ -355,7 +355,7 @@ public class VariantCommandExecutor extends CommandExecutor {
          */
         ObjectMap options = configuration.getStorageEngine(storageEngine).getVariant().getOptions();
         if (annotateVariantsCommandOptions.annotator != null) {
-            options.put(VariantAnnotationManager.ANNOTATION_SOURCE, annotateVariantsCommandOptions.annotator);
+            options.put(VariantAnnotationManager.ANNOTATOR, annotateVariantsCommandOptions.annotator);
         }
         if (annotateVariantsCommandOptions.customAnnotationKey != null) {
             options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotateVariantsCommandOptions.customAnnotationKey);
