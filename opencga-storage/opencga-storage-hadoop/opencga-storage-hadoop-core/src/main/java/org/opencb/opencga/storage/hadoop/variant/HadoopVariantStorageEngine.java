@@ -281,7 +281,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     if (error) {
                         //TODO: Handle errors. Retry?
                         errors++;
-                        continueLoading.set(false);
+                        if (getOptions().getBoolean("abortOnError", false)) {
+                            continueLoading.set(false);
+                        }
                     }
                     concurrResult.add(result);
                 } else {
