@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
+import org.opencb.opencga.core.models.PermissionRules;
 import org.opencb.opencga.core.models.acls.permissions.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -926,6 +927,30 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return aclResultList;
+    }
+
+    @Override
+    public void applyPermissionRules(long studyId, PermissionRules permissionRule, String entity, String userId) throws CatalogException {
+        // 1. Check permissions
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+        if (!ADMIN.equals(userId) && !ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+            throw new CatalogAuthorizationException("Only owners, administrative users or the OpenCGA admin are allowed to apply "
+                    + "permission rules to an study");
+        }
+
+        // 2. We obtain which of those members are actually users to add them to the @members group automatically
+        List<String> userList = permissionRule.getMembers().stream()
+                .filter(member -> !member.startsWith("@"))
+                .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(userList)) {
+            // We first add the member to the @members group in case they didn't belong already
+            studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
+        }
+
+
+
+        // 3. We can apply the permission rules
+        aclDBAdaptor.applyPermissionRules(studyId, permissionRule, entity);
     }
 
     /*

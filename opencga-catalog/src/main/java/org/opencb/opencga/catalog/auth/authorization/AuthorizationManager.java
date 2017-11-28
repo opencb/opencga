@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.GroupParams;
+import org.opencb.opencga.core.models.PermissionRules;
 import org.opencb.opencga.core.models.acls.permissions.*;
 
 import javax.annotation.Nullable;
@@ -357,5 +358,7 @@ public interface AuthorizationManager {
             throws CatalogException;
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
+
+    void applyPermissionRules(long studyId, PermissionRules permissionRule, String entity, String userId) throws CatalogException;
 
 }

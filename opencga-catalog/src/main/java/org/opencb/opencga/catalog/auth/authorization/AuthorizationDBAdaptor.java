@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.models.PermissionRules;
 import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
 
 import java.util.List;
@@ -72,4 +73,6 @@ public interface AuthorizationDBAdaptor {
     void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
 
     <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, String entity) throws CatalogDBException;
+
+    void applyPermissionRules(long studyId, PermissionRules permissionRule, String entity) throws CatalogException;
 }

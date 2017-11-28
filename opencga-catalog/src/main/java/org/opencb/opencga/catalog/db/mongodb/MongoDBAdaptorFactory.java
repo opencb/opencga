@@ -29,13 +29,12 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.config.Admin;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Admin;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +109,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private FamilyMongoDBAdaptor familyDBAdaptor;
     private DatasetMongoDBAdaptor datasetDBAdaptor;
     private PanelMongoDBAdaptor panelDBAdaptor;
-    private ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
+    private ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private AuditMongoDBAdaptor auditDBAdaptor;
     private MetaMongoDBAdaptor metaDBAdaptor;
 
@@ -309,7 +308,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor() {
+    public ClinicalAnalysisMongoDBAdaptor getClinicalAnalysisDBAdaptor() {
         return clinicalDBAdaptor;
     }
 

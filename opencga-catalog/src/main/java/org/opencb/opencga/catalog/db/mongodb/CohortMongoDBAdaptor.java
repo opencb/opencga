@@ -598,7 +598,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         return parseQuery(query, isolated, null);
     }
 
-    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries

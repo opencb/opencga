@@ -23,10 +23,7 @@ import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataStoreServerAddress;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -35,6 +32,7 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.models.PermissionRules;
 import org.opencb.opencga.core.models.acls.permissions.*;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.LoggerFactory;
@@ -530,6 +528,54 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
             collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        }
+    }
+
+    @Override
+    public void applyPermissionRules(long studyId, PermissionRules permissionRule, String entity) throws CatalogException {
+        MongoDBCollection collection = dbCollectionMap.get(entity);
+
+        // We will apply the permission rules to all the entries matching the query defined in the permission rules that does not have
+        // the permission rules applied yet
+        Document rawQuery = new Document()
+                .append(PRIVATE_STUDY_ID, studyId)
+                .append(PERMISSION_RULES_APPLIED, permissionRule.getId());
+        Bson bson = parseQuery(permissionRule.getQuery(), rawQuery, entity);
+
+        // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
+        List<String> permissions = new ArrayList<>(permissionRule.getPermissions());
+        permissions.add("NONE");
+        List<String> myPermissions = createPermissionArray(permissionRule.getMembers(), permissions);
+
+        Document update = new Document()
+                .append("$addToSet", new Document(QueryParams.ACL.key(), new Document("$each", myPermissions)))
+                .append("$pull", new Document(PERMISSION_RULES_APPLIED, permissionRule.getId()));
+
+        logger.debug("Apply permission rules: Query {}, Update {}",
+                bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        collection.update(bson, update, new QueryOptions("multi", true));
+    }
+
+    private Bson parseQuery(Query query, Document rawQuery, String entity) throws CatalogException {
+        switch (entity) {
+            case COHORT_COLLECTION:
+                return dbAdaptorFactory.getCatalogCohortDBAdaptor().parseQuery(query, true, rawQuery);
+            case INDIVIDUAL_COLLECTION:
+                return dbAdaptorFactory.getCatalogIndividualDBAdaptor().parseQuery(query, true, rawQuery);
+            case JOB_COLLECTION:
+                return dbAdaptorFactory.getCatalogJobDBAdaptor().parseQuery(query, true, rawQuery);
+            case FILE_COLLECTION:
+                return dbAdaptorFactory.getCatalogFileDBAdaptor().parseQuery(query, true, rawQuery);
+            case SAMPLE_COLLECTION:
+                return dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, true, rawQuery);
+            case FAMILY_COLLECTION:
+                return dbAdaptorFactory.getCatalogFamilyDBAdaptor().parseQuery(query, true, rawQuery);
+            case CLINICAL_ANALYSIS_COLLECTION:
+                return dbAdaptorFactory.getClinicalAnalysisDBAdaptor().parseQuery(query, true, rawQuery);
+            default:
+                throw new CatalogException("Unexpected parameter received. " + entity + " has been received.");
         }
     }
 

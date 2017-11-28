@@ -494,7 +494,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         return parseQuery(query, isolated, null);
     }
 
-    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
         if (isolated) {

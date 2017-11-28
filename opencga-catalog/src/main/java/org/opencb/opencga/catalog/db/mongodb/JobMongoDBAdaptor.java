@@ -557,7 +557,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return parseQuery(query, isolated, null);
     }
 
-    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
         if (isolated) {
