@@ -19,6 +19,7 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -83,6 +84,14 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariantEngine.interpretationQuery(query, options, "");
     }
 
+    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String token)
+            throws IOException, ClinicalVariantException, CatalogException {
+        // Check permissions
+        query = checkQueryPermissions(query, token);
+
+        return clinicalVariantEngine.facet(query, queryOptions, "");
+    }
+
     public ReportedVariantIterator iterator(Query query, QueryOptions options, String token)
             throws IOException, ClinicalVariantException, CatalogException {
         // Check permissions
@@ -128,7 +137,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                         .get(String.valueOf(studyIds.get(0)), query, QueryOptions.empty(), token);
 
                 if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
-                    throw new ClinicalVariantException("Either the ID does not exist ir the user does not have permissions to view it");
+                    throw new ClinicalVariantException("Either the ID does not exist or the user does not have permissions to view it");
                 } else {
                     if (!query.containsKey(ClinicalVariantEngine.QueryParams.CLINICAL_ANALYSIS_ID.key())) {
                         query.remove(ClinicalVariantEngine.QueryParams.FAMILY.key());
@@ -197,8 +206,8 @@ public class ClinicalInterpretationManager extends StorageManager {
                 .get(String.valueOf(studyId), query, QueryOptions.empty(), token);
 
         if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
-            throw new ClinicalVariantException("Either the interpretation ID (" + interpretationId + ") does not exist ir the user does"
-                    + " not have permissions to view it");
+            throw new ClinicalVariantException("Either the interpretation ID (" + interpretationId + ") does not exist or the user does"
+                    + " not have access permissions");
         }
     }
 
@@ -215,7 +224,10 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     private boolean isCaseProvided(Query query) {
         if (query != null) {
-            return query.containsKey("clinicalAnalysisId") || query.containsKey("sample");
+            return query.containsKey(ClinicalVariantEngine.QueryParams.CLINICAL_ANALYSIS_ID.key())
+                    || query.containsKey(ClinicalVariantEngine.QueryParams.FAMILY.key())
+                    || query.containsKey(ClinicalVariantEngine.QueryParams.SUBJECT.key())
+                    || query.containsKey(ClinicalVariantEngine.QueryParams.SAMPLE.key());
         }
         return false;
     }
