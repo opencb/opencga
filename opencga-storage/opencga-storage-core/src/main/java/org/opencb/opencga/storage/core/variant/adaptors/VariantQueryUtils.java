@@ -639,7 +639,14 @@ public class VariantQueryUtils {
                 samples = query.getAsStringList(VariantQueryParam.RETURNED_SAMPLES.key());
             }
         } else if (isValidParam(query, SAMPLES)) {
-            samples = query.getAsStringList(VariantQueryParam.SAMPLES.key());
+            String value = query.getString(SAMPLES.key());
+            samples = splitValue(value, checkOperator(value))
+                    .stream()
+                    .filter((v) -> !isNegated(v)) // Discard negated
+                    .collect(Collectors.toList());
+            if (samples.isEmpty()) {
+                samples = null;
+            }
         } else {
             samples = null;
         }

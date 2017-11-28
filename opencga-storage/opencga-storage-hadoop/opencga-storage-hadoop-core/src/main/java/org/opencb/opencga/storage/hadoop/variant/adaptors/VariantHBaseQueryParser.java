@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -26,6 +27,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -42,9 +44,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.validParams;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.HOM_REF;
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.STUDY_COLUMNS;
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.buildColumnKey;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.buildFileColumnKey;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.buildSampleColumnKey;
 
 /**
  * Created on 07/07/17.
@@ -150,15 +156,7 @@ public class VariantHBaseQueryParser {
 //                byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
                 byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.SO.bytes();
 
-                // Filter : SKIP QualifierFilter(!=, <COLUMN>)
-                // Skip rows where NOT ALL cells ( has QualifierName != <COLUMN> )
-                // == Get rows where ALL cells (has QualifierName != <COLUMN>)
-                // == Get rows where <COLUMN> is missing
-                filters.addFilter(new SkipFilter(new QualifierFilter(
-                        CompareFilter.CompareOp.NOT_EQUAL, new BinaryComparator(annotationColumn))));
-//                filters.addFilter(new SkipFilter(new SingleColumnValueFilter(
-//                        genomeHelper.getColumnFamily(), annotationColumn,
-//                        CompareFilter.CompareOp.EQUAL, new BinaryComparator(new byte[]{}))));
+                filters.addFilter(missingColumnFilter(annotationColumn));
                 if (!selectElements.getFields().contains(VariantField.ANNOTATION)) {
                     scan.addColumn(genomeHelper.getColumnFamily(), annotationColumn);
                 }
@@ -168,11 +166,19 @@ public class VariantHBaseQueryParser {
         }
 
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
-            if (isValidParam(query, STUDIES)) {
-                //TODO: Handle negations(!), and(;) and or(,)
-                List<Integer> studyIdList = query.getAsIntegerList(STUDIES.key());
-                for (Integer studyId : studyIdList) {
-                    columnPrefixes.add(Bytes.toBytes(studyId.toString() + genomeHelper.getSeparator()));
+            for (Integer studyId : selectElements.getStudies()) {
+                VariantStorageEngine.MergeMode mergeMode = VariantStorageEngine.MergeMode.from(
+                        selectElements.getStudyConfigurations().get(studyId).getAttributes());
+                List<String> studyColumns;
+                if (selectElements.getFields().contains(VariantField.STUDIES_SAMPLES_DATA)
+                        && mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
+                    studyColumns = STUDY_COLUMNS;
+                } else {
+                    // If samples are not required, do not fetch all the fields
+                    studyColumns = Collections.singletonList(HOM_REF);
+                }
+                for (String studyColumn : studyColumns) {
+                    scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(buildColumnKey(studyId, studyColumn)));
                 }
             }
 
@@ -188,18 +194,110 @@ public class VariantHBaseQueryParser {
                     }
                 }
             }
+
             selectElements.getSamples().forEach((studyId, sampleIds) -> {
                 scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
                 for (Integer sampleId : sampleIds) {
-                    scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId));
+                    scan.addColumn(genomeHelper.getColumnFamily(), buildSampleColumnKey(studyId, sampleId));
                 }
             });
+
             selectElements.getFiles().forEach((studyId, fileIds) -> {
                 scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
                 for (Integer fileId : fileIds) {
                     scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
                 }
             });
+        }
+
+        StudyConfiguration defaultStudyConfiguration;
+        if (isValidParam(query, STUDIES)) {
+            String value = query.getString(STUDIES.key());
+            VariantQueryUtils.QueryOperation operation = checkOperator(value);
+            List<String> values = splitValue(value, operation);
+
+            FilterList subFilters;
+            if (operation == QueryOperation.OR) {
+                subFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
+                filters.addFilter(subFilters);
+            } else {
+                subFilters = filters;
+            }
+            List<Integer> nonNegatedStudies = new ArrayList<>();
+            for (String studyStr : values) {
+                Integer studyId = studyConfigurationManager.getStudyId(studyStr, null);
+                byte[] column = Bytes.toBytes(buildColumnKey(studyId, HOM_REF));
+                if (isNegated(studyStr)) {
+                    subFilters.addFilter(missingColumnFilter(column));
+                } else {
+                    nonNegatedStudies.add(studyId);
+                    subFilters.addFilter(existingColumnFilter(column));
+                }
+            }
+            if (nonNegatedStudies.size() == 1) {
+                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(nonNegatedStudies.get(0), null).first();
+            } else {
+                defaultStudyConfiguration = null;
+            }
+        } else {
+            List<Integer> studyIds = studyConfigurationManager.getStudyIds(options);
+            if (studyIds.size() == 1) {
+                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyIds.get(0), options).first();
+            } else {
+                defaultStudyConfiguration = null;
+            }
+        }
+
+        if (isValidParam(query, FILES)) {
+            String value = query.getString(FILES.key());
+            VariantQueryUtils.QueryOperation operation = checkOperator(value);
+            List<String> values = splitValue(value, operation);
+            FilterList subFilters;
+            if (operation == QueryOperation.OR) {
+                subFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
+                filters.addFilter(subFilters);
+            } else {
+                subFilters = filters;
+            }
+            for (String file : values) {
+                Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, null);
+                byte[] column = buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue());
+                if (isNegated(file)) {
+                    subFilters.addFilter(missingColumnFilter(column));
+                } else {
+                    subFilters.addFilter(existingColumnFilter(column));
+                }
+            }
+        }
+
+        if (isValidParam(query, SAMPLES)) {
+            String value = query.getString(SAMPLES.key());
+            VariantQueryUtils.QueryOperation operation = checkOperator(value);
+            List<String> values = splitValue(value, operation);
+            FilterList subFilters;
+            if (operation == QueryOperation.OR) {
+                subFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
+                filters.addFilter(subFilters);
+            } else {
+                subFilters = filters;
+            }
+            for (String sample : values) {
+                if (defaultStudyConfiguration == null) {
+                    List<String> studyNames = studyConfigurationManager.getStudyNames(null);
+                    throw VariantQueryException.missingStudyForSample(sample, studyNames);
+                }
+                Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, defaultStudyConfiguration, true);
+                if (sampleId == null) {
+                    List<String> studyNames = studyConfigurationManager.getStudyNames(null);
+                    throw VariantQueryException.missingStudyForSample(sample, studyNames);
+                }
+                byte[] column = buildSampleColumnKey(defaultStudyConfiguration.getStudyId(), sampleId);
+                if (isNegated(sample)) {
+                    subFilters.addFilter(missingColumnFilter(column));
+                } else {
+                    subFilters.addFilter(existingColumnFilter(column));
+                }
+            }
         }
 
         if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
@@ -232,6 +330,38 @@ public class VariantHBaseQueryParser {
         logger.info("Filters = " + scan.getFilter());
         logger.info("Batch = " + scan.getBatch());
         return scan;
+    }
+
+    /**
+     * Filter : SKIP QualifierFilter(!=, {COLUMN}).
+     * Skip rows where NOT ALL cells ( has QualifierName != {COLUMN} )
+     * == Get rows where ALL cells (has QualifierName != {COLUMN})
+     * == Get rows where {COLUMN} is missing
+     * @param column Column
+     * @return Filter
+     */
+    public Filter missingColumnFilter(byte[] column) {
+
+      //filters.addFilter(new SkipFilter(new SingleColumnValueFilter(
+      //        genomeHelper.getColumnFamily(), annotationColumn,
+      //        CompareFilter.CompareOp.EQUAL, new BinaryComparator(new byte[]{}))));
+
+        return new SkipFilter(new QualifierFilter(
+                CompareFilter.CompareOp.NOT_EQUAL, new BinaryComparator(column)));
+    }
+
+    /**
+     * Filter : SingleColumnValueFilter('0', {COLUMM}, !=, null, true, true).
+     * Get rows that contain column {COLUMN} and {COLUMN} is not null
+     * @param column Column
+     * @return Filter
+     */
+    public Filter existingColumnFilter(byte[] column) {
+        SingleColumnValueFilter filter = new SingleColumnValueFilter(genomeHelper.getColumnFamily(), column,
+                CompareFilter.CompareOp.NOT_EQUAL, new NullComparator());
+        filter.setFilterIfMissing(true);
+        filter.setLatestVersionOnly(true);
+        return filter;
     }
 
     private List<Region> getRegions(Query query) {
