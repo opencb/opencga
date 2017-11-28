@@ -503,6 +503,10 @@ public class StudyManager extends AbstractManager {
 
     public QueryResult<PermissionRules> addPermissionRule(String studyStr, Study.Entry entry, PermissionRules permissionRule,
                                                           String sessionId) throws CatalogException {
+        if (entry == null) {
+            throw new CatalogException("Missing entry value");
+        }
+
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
 
@@ -512,13 +516,31 @@ public class StudyManager extends AbstractManager {
         studyDBAdaptor.addPermissionRule(studyId, entry, permissionRule);
 
         // Remove the permissionRule mark from all the entries contained by the study
-        clinicalDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-        cohortDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-        familyDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-        fileDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-        individualDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-        jobDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-        sampleDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+        switch (entry) {
+            case SAMPLES:
+                sampleDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+                break;
+            case FILES:
+                fileDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+                break;
+            case COHORTS:
+                cohortDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+                break;
+            case INDIVIDUALS:
+                individualDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+                break;
+            case FAMILIES:
+                familyDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+                break;
+            case JOBS:
+                jobDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+                break;
+            case CLINICAL_ANALYSIS:
+                clinicalDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+                break;
+            default:
+                throw new CatalogException("Unexpected entry " + entry + " detected");
+        }
 
         return studyDBAdaptor.getPermissionRules(studyId, entry);
     }
