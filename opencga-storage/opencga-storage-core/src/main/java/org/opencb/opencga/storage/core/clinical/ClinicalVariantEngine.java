@@ -18,8 +18,10 @@ package org.opencb.opencga.storage.core.clinical;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -30,8 +32,62 @@ import org.opencb.opencga.core.models.clinical.ReportedVariant;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 public interface ClinicalVariantEngine {
+
+    enum QueryParams implements QueryParam {
+        CLINICAL_ANALYSIS_ID("clinicalAnalysisId", INTEGER, ""),
+        FAMILY("family", TEXT_ARRAY, ""),
+        SUBJECT("subject", TEXT_ARRAY, ""),
+        SAMPLE("sample", TEXT_ARRAY, ""),
+
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
+
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams params : QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
 
     void create(String dbName) throws ClinicalVariantException;
 
