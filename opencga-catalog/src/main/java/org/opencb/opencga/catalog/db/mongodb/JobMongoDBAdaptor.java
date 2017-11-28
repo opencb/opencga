@@ -91,6 +91,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_ID, jobId);
         jobObject.put(PRIVATE_STUDY_ID, studyId);
+        jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0
 
         return endQuery("Create Job", startTime, get(jobId, filterOptions(options, FILTER_ROUTE_JOBS)));

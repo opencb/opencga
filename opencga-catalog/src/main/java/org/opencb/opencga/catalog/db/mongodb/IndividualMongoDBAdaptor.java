@@ -119,6 +119,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         individualDocument.put(RELEASE_FROM_VERSION, Arrays.asList(individual.getRelease()));
         individualDocument.put(LAST_OF_VERSION, true);
         individualDocument.put(LAST_OF_RELEASE, true);
+        individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         individualCollection.insert(individualDocument, null);
 

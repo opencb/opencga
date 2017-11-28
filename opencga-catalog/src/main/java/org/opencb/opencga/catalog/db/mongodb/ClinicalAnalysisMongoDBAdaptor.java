@@ -42,10 +42,7 @@ import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
@@ -426,6 +423,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         Document clinicalObject = clinicalConverter.convertToStorageType(clinicalAnalysis);
         clinicalObject.put(PRIVATE_STUDY_ID, studyId);
         clinicalObject.put(PRIVATE_ID, clinicalAnalysisId);
+        clinicalObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         clinicalCollection.insert(clinicalObject, null);
 
         return endQuery("createClinicalAnalysis", startTime, get(clinicalAnalysisId, options));

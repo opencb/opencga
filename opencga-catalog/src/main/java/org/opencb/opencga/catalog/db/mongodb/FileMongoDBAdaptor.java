@@ -107,6 +107,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Document fileDocument = fileConverter.convertToStorageType(file);
         fileDocument.append(PRIVATE_STUDY_ID, studyId);
         fileDocument.append(PRIVATE_ID, newFileId);
+        fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         try {
             fileCollection.insert(fileDocument, null);

@@ -116,6 +116,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
         sampleObject.put(LAST_OF_VERSION, true);
         sampleObject.put(LAST_OF_RELEASE, true);
+        sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         sampleCollection.insert(sampleObject, null);
 

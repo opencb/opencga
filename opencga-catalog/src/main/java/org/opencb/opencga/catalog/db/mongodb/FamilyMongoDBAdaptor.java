@@ -106,6 +106,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         familyObject.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
         familyObject.put(LAST_OF_VERSION, true);
         familyObject.put(LAST_OF_RELEASE, true);
+        familyObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         familyCollection.insert(familyObject, null);
 

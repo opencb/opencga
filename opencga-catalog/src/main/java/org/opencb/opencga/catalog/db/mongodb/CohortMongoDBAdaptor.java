@@ -96,6 +96,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Document cohortObject = cohortConverter.convertToStorageType(cohort);
         cohortObject.append(PRIVATE_STUDY_ID, studyId);
         cohortObject.append(PRIVATE_ID, newId);
+        cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         try {
             cohortCollection.insert(cohortObject, null);
