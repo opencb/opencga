@@ -63,7 +63,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             "22:16050655-16063474:-:<CN3>",
             "22:16050655-16063474:-:<CN4>",
             "22:16050655:G:A", // Overlaps with a CNV
-//            "22:16080425:TA:-",
+            "22:16080425:TA:-",
             "22:16080425:T:C",
             "22:16080426:A:G",
 //            "22:16136748:ATTA:-",
