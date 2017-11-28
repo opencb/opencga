@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
@@ -766,5 +767,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         List<Document> sampleList = fileConverter.convertSamples(samples);
         Bson update = Updates.addEachToSet(QueryParams.SAMPLES.key(), sampleList);
         fileCollection.update(Filters.eq(PRIVATE_ID, fileId), update, QueryOptions.empty());
+    }
+
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        unmarkPermissionRule(fileCollection, studyId, permissionRuleId);
     }
 }

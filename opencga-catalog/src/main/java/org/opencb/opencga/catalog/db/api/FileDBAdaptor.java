@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
 
@@ -220,5 +221,15 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
      * @throws CatalogDBException CatalogDBException.
      */
     void addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
+
+    /**
+     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
+     * be applied.
+     *
+     * @param studyId study id containing the entries affected.
+     * @param permissionRuleId permission rule id to be unmarked.
+     * @throws CatalogException if there is any database error.
+     */
+    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

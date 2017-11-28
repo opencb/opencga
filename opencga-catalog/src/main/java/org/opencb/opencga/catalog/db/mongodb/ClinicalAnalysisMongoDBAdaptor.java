@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverte
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
@@ -194,6 +195,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
 
         return endQuery("removeInterpretation", startTime, Arrays.asList(updateResult.first().getModifiedCount()));
+    }
+
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        unmarkPermissionRule(clinicalCollection, studyId, permissionRuleId);
     }
 
     @Override

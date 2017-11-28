@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
@@ -261,6 +262,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
         individualCollection.update(bson, update, queryOptions);
+    }
+
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        unmarkPermissionRule(individualCollection, studyId, permissionRuleId);
     }
 
     @Override

@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
@@ -612,6 +613,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
         familyCollection.update(bson, update, queryOptions);
+    }
+
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        unmarkPermissionRule(familyCollection, studyId, permissionRuleId);
     }
 
     private QueryResult<Family> setStatus(long familyId, String status) throws CatalogDBException {

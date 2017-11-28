@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Individual;
 
@@ -34,46 +35,6 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  * Created by hpccoll1 on 19/06/15.
  */
 public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> {
-
-    default boolean exists(long sampleId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
-    }
-
-    default void checkId(long individualId) throws CatalogDBException {
-        if (individualId < 0) {
-            throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
-        }
-
-        if (!exists(individualId)) {
-            throw CatalogDBException.newInstance("Indivivual id '{}' does not exist", individualId);
-        }
-    }
-
-    void nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
-
-    QueryResult<Individual> insert(Individual individual, long studyId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
-            throws CatalogDBException, CatalogAuthorizationException;
-
-//    @Deprecated
-//    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
-
-//    QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
-
-//    @Deprecated
-//    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
-
-    QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
-            CatalogDBException;
-
-    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
-
-    long getStudyId(long individualId) throws CatalogDBException;
-
-    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
@@ -160,5 +121,55 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
             return map.get(key);
         }
     }
+
+    default boolean exists(long sampleId) throws CatalogDBException {
+        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
+    }
+
+    default void checkId(long individualId) throws CatalogDBException {
+        if (individualId < 0) {
+            throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
+        }
+
+        if (!exists(individualId)) {
+            throw CatalogDBException.newInstance("Indivivual id '{}' does not exist", individualId);
+        }
+    }
+
+    void nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
+
+    QueryResult<Individual> insert(Individual individual, long studyId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
+            throws CatalogDBException, CatalogAuthorizationException;
+
+//    @Deprecated
+//    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
+
+//    QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+
+//    @Deprecated
+//    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
+
+    QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
+            CatalogDBException;
+
+    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
+
+    long getStudyId(long individualId) throws CatalogDBException;
+
+    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+
+    /**
+     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
+     * be applied.
+     *
+     * @param studyId study id containing the entries affected.
+     * @param permissionRuleId permission rule id to be unmarked.
+     * @throws CatalogException if there is any database error.
+     */
+    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

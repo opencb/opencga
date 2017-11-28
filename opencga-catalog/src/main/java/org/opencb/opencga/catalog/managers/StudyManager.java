@@ -510,6 +510,16 @@ public class StudyManager extends AbstractManager {
         validatePermissionRules(studyId, entry, permissionRule);
 
         studyDBAdaptor.addPermissionRule(studyId, entry, permissionRule);
+
+        // Remove the permissionRule mark from all the entries contained by the study
+        clinicalDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+        cohortDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+        familyDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+        fileDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+        individualDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+        jobDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+        sampleDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+
         return studyDBAdaptor.getPermissionRules(studyId, entry);
     }
 
