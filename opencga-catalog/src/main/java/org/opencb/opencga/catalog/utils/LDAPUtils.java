@@ -34,17 +34,46 @@ public class LDAPUtils {
     private static DirContext dctx;
 
     private static DirContext getDirContext(String host) throws NamingException {
-        if (dctx == null) {
+        int count = 0;
+        if (dctx == null || !IsConnectionAlive()) {
             // Obtain users from external origin
             Hashtable env = new Hashtable();
             env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
             env.put(Context.PROVIDER_URL, host);
 
-            dctx = new InitialDirContext(env);
+            dctx = null;
+            while (dctx == null) {
+                try {
+                    dctx = new InitialDirContext(env);
+                } catch (NamingException e) {
+                    if (count == 5) {
+                        // After 5 attempts, we will raise an error.
+                        throw e;
+                    }
+                    count++;
+                    try {
+                        // Sleep 10 seconds
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+
+                }
+
+            }
+
         }
 
         return dctx;
+    }
 
+    private static boolean IsConnectionAlive() {
+        try {
+            dctx.getAttributes("");
+            return true;
+        } catch (NamingException e) {
+            return false;
+        }
     }
 
     public static List<String> getUsersFromLDAPGroup(String host, String groupName, String groupBase) throws NamingException {
