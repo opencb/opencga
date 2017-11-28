@@ -257,7 +257,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         queryOptions.put(VariantStorageEngine.Options.ANNOTATE.key(), cliOptions.genericVariantIndexOptions.annotate);
         if (cliOptions.genericVariantIndexOptions.annotator != null) {
-            queryOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE,
+            queryOptions.put(VariantAnnotationManager.ANNOTATOR,
                     cliOptions.genericVariantIndexOptions.annotator);
         }
         queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantIndexOptions.overwriteAnnotations);
@@ -337,7 +337,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         options.put(VariantAnnotationManager.CREATE, cliOptions.genericVariantAnnotateOptions.create);
         options.putIfNotEmpty(VariantAnnotationManager.LOAD_FILE, cliOptions.genericVariantAnnotateOptions.load);
         options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.genericVariantAnnotateOptions.customAnnotationKey);
-        options.putIfNotNull(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.genericVariantAnnotateOptions.annotator);
+        options.putIfNotNull(VariantAnnotationManager.ANNOTATOR, cliOptions.genericVariantAnnotateOptions.annotator);
         options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.genericVariantAnnotateOptions.fileName);
         options.put(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         options.putAll(cliOptions.commonOptions.params);

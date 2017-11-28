@@ -84,9 +84,9 @@ public class CellBaseDirectVariantAnnotator extends AbstractCellBaseVariantAnnot
     }
 
     @Override
-    protected List<VariantAnnotation> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
+    protected List<QueryResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
 
-        List<QueryResult<VariantAnnotation>> queryResultList = null;
+        List<QueryResult<VariantAnnotation>> queryResultList;
         try {
             queryResultList = variantAnnotationCalculator.getAnnotationByVariantList(variants, queryOptions);
         } catch (InterruptedException e) {
@@ -96,7 +96,7 @@ public class CellBaseDirectVariantAnnotator extends AbstractCellBaseVariantAnnot
             throw new VariantAnnotatorException("Unable to calculate annotation", e);
         }
 
-        return getVariantAnnotationList(variants, queryResultList);
+        return queryResultList;
 
     }
 }

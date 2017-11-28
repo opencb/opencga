@@ -79,8 +79,8 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJobFromPhoenix(Job job, String variantTableName, String selectQuery,
                                                        Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
-        // ResultSetDBWritable is the DBWritable class that enables us to process the Result of the query
-        PhoenixMapReduceUtil.setInput(job, PhoenixVariantTableInputFormat.ResultSetDBWritable.class, variantTableName,  selectQuery);
+        // VariantDBWritable is the DBWritable class that enables us to process the Result of the query
+        PhoenixMapReduceUtil.setInput(job, PhoenixVariantTableInputFormat.VariantDBWritable.class, variantTableName,  selectQuery);
 
         job.setMapperClass(variantMapperClass);
         job.setOutputFormatClass(PhoenixOutputFormat.class);

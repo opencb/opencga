@@ -585,7 +585,23 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public static Integer getSampleIdFromStudy(Object sampleObj, StudyConfiguration sc) {
-        return getResourceIdFromStudy(sampleObj, sc, sc.getSampleIds());
+        return getSampleIdFromStudy(sampleObj, sc, false);
+    }
+
+    public static Integer getSampleIdFromStudy(Object sampleObj, StudyConfiguration sc, boolean indexed) {
+        Integer sampleId = getResourceIdFromStudy(sampleObj, sc, sc.getSampleIds());
+        if (indexed) {
+            if (sampleId != null) {
+                for (Integer indexedFile : sc.getIndexedFiles()) {
+                    if (sc.getSamplesInFiles().get(indexedFile).contains(sampleId)) {
+                        return sampleId;
+                    }
+                }
+            }
+            return null;
+        } else {
+            return sampleId;
+        }
     }
 
     // TODO: Return cohortId and studyId as a Pair
