@@ -35,7 +35,7 @@ public class LDAPUtils {
 
     private static DirContext getDirContext(String host) throws NamingException {
         int count = 0;
-        if (dctx == null || !IsConnectionAlive()) {
+        if (dctx == null || !isConnectionAlive()) {
             // Obtain users from external origin
             Hashtable env = new Hashtable();
             env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
@@ -67,7 +67,7 @@ public class LDAPUtils {
         return dctx;
     }
 
-    private static boolean IsConnectionAlive() {
+    private static boolean isConnectionAlive() {
         try {
             dctx.getAttributes("");
             return true;
