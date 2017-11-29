@@ -74,7 +74,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
 
         Map<String, String> params = new LinkedHashMap<>();
-//        addParamIfNotNull(params, "studyId", studyId);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
         addParamIfNotNull(params, "outdir", outDirStr);
@@ -210,29 +209,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             } else {
                 return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, sessionId));
             }
-//            String userId = catalogManager.getUserManager().getId(sessionId);
-//            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-//
-//            Query query = new Query();
-//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
-//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
-//
-//            QueryOptions queryOptions = new QueryOptions();
-//            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
-//
-//            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-//            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
-//
-//            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
-//                // This should never happen
-//                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
-//            }
-//            String path = fileQueryResult.first().getUri().getRawPath();
-//
-//            AlignmentStorageEngine alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-//            AlignmentGlobalStats stats = alignmentStorageManager.getDBAdaptor().stats(path, query, queryOptions);
-//            QueryResult<AlignmentGlobalStats> queryResult = new QueryResult<>("get stats", -1, 1, 1, "", "", Arrays.asList(stats));
-//            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
