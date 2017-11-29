@@ -38,7 +38,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
-import java.security.Permission;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -488,9 +487,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{study}/aclRules/{entry}/update")
-    @ApiOperation(value = "Updates permission rules")
-    public Response addPermissionRules(
+    @Path("/{study}/aclRules/{entry}/create")
+    @ApiOperation(value = "Create a new permission rule")
+    public Response createPermissionRules(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
                 @PathParam("study") String studyStr,
             @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @PathParam("entry")
@@ -498,7 +497,28 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the permission rule", required = true) PermissionRules params) {
         try {
             isSingleId(studyStr);
-            return createOkResponse(catalogManager.getStudyManager().addPermissionRule(studyStr, entry, params, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().createPermissionRule(studyStr, entry, params, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("/{study}/aclRules/{entry}/delete")
+    @ApiOperation(value = "Delete an existing permission rule")
+    public Response deletePermissionRules(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+            @PathParam("study") String studyStr,
+            @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @PathParam("entry")
+                    Study.Entry entry,
+            @ApiParam(value = "Permission rule id to be deleted", required = true) @QueryParam("permissionRuleId")
+                    String permissionRuleId,
+            @ApiParam(value = "Flag indicating whether permissions granted to users using the permission rule should be reversed",
+                    defaultValue = "false") @QueryParam("revertPermissions") boolean revert) {
+        try {
+            isSingleId(studyStr);
+            catalogManager.getStudyManager().markDeletedPermissionRule(studyStr, entry, permissionRuleId, revert, sessionId);
+            return createOkResponse(new QueryResult<>(permissionRuleId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

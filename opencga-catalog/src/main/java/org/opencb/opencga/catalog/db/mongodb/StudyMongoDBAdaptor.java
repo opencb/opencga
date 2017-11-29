@@ -467,7 +467,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void addPermissionRule(long studyId, Study.Entry entry, PermissionRules permissionRule) throws CatalogDBException {
+    public void createPermissionRule(long studyId, Study.Entry entry, PermissionRules permissionRule) throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
         }
@@ -481,6 +481,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 // We add all the permission rules with different id
                 if (!rule.getId().equals(permissionRule.getId())) {
                     permissionDocumentList.add(getMongoDBDocument(rule, "PermissionRules"));
+                } else {
+                    throw new CatalogDBException("Permission rule " + permissionRule.getId() + " already exists.");
                 }
             }
         }
@@ -494,6 +496,41 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         if (updateResult.first().getModifiedCount() == 0) {
             throw new CatalogDBException("Unexpected error occurred when adding new permission rules to study");
+        }
+    }
+
+    @Override
+    public void markDeletedPermissionRule(long studyId, Study.Entry entry, String permissionRuleId, boolean restorePermissions)
+            throws CatalogDBException {
+        if (entry == null) {
+            throw new CatalogDBException("Missing entry parameter");
+        }
+
+        String newPermissionRuleId = permissionRuleId + INTERNAL_DELIMITER;
+        if (restorePermissions) {
+            newPermissionRuleId += "TODELETEANDRESTORE";
+        } else {
+            newPermissionRuleId += "TODELETE";
+        }
+
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.PERMISSION_RULES.key() + "." + entry + ".id", permissionRuleId);
+        // Change permissionRule id
+        Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry + ".$.id",
+                newPermissionRuleId));
+
+        logger.debug("Mark permission rule for deletion: Query {}, Update {}",
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        QueryResult<UpdateResult> updateQueryResult = studyCollection.update(query, update, QueryOptions.empty());
+        if (updateQueryResult.first().getMatchedCount() == 0) {
+            throw new CatalogDBException("Permission rule " + permissionRuleId + " not found");
+        }
+
+        if (updateQueryResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Unexpected error: Permission rule " + permissionRuleId + " could not be marked for deletion");
         }
     }
 

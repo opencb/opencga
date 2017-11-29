@@ -501,11 +501,10 @@ public class StudyManager extends AbstractManager {
         return result;
     }
 
-    public QueryResult<PermissionRules> addPermissionRule(String studyStr, Study.Entry entry, PermissionRules permissionRule,
-                                                          String sessionId) throws CatalogException {
-        if (entry == null) {
-            throw new CatalogException("Missing entry value");
-        }
+    public QueryResult<PermissionRules> createPermissionRule(String studyStr, Study.Entry entry, PermissionRules permissionRule,
+                                                             String sessionId) throws CatalogException {
+        ParamUtils.checkObj(entry, "entry");
+        ParamUtils.checkObj(permissionRule, "permission rule");
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
@@ -513,36 +512,49 @@ public class StudyManager extends AbstractManager {
         authorizationManager.checkCanUpdatePermissionRules(studyId, userId);
         validatePermissionRules(studyId, entry, permissionRule);
 
-        studyDBAdaptor.addPermissionRule(studyId, entry, permissionRule);
+        studyDBAdaptor.createPermissionRule(studyId, entry, permissionRule);
 
-        // Remove the permissionRule mark from all the entries contained by the study
-        switch (entry) {
-            case SAMPLES:
-                sampleDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-                break;
-            case FILES:
-                fileDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-                break;
-            case COHORTS:
-                cohortDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-                break;
-            case INDIVIDUALS:
-                individualDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-                break;
-            case FAMILIES:
-                familyDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-                break;
-            case JOBS:
-                jobDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-                break;
-            case CLINICAL_ANALYSIS:
-                clinicalDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-                break;
-            default:
-                throw new CatalogException("Unexpected entry " + entry + " detected");
-        }
+//        // Remove the permissionRule mark from all the entries contained by the study
+//        switch (entry) {
+//            case SAMPLES:
+//                sampleDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case FILES:
+//                fileDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case COHORTS:
+//                cohortDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case INDIVIDUALS:
+//                individualDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case FAMILIES:
+//                familyDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case JOBS:
+//                jobDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case CLINICAL_ANALYSIS:
+//                clinicalDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            default:
+//                throw new CatalogException("Unexpected entry " + entry + " detected");
+//        }
 
         return studyDBAdaptor.getPermissionRules(studyId, entry);
+    }
+
+    public void markDeletedPermissionRule(String studyStr, Study.Entry entry, String permissionRuleId, boolean restorePermissions,
+                                          String sessionId) throws CatalogException {
+        ParamUtils.checkObj(entry, "entry");
+        ParamUtils.checkObj(permissionRuleId, "permission rule id");
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = getId(userId, studyStr);
+
+        authorizationManager.checkCanUpdatePermissionRules(studyId, userId);
+
+        studyDBAdaptor.markDeletedPermissionRule(studyId, entry, permissionRuleId, restorePermissions);
     }
 
     public QueryResult<PermissionRules> getPermissionRules(String studyStr, Study.Entry entry, String sessionId) throws CatalogException {

@@ -56,7 +56,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private Map<String, List<String>> fullPermissionsMap = new HashMap<>();
 
     private static final String ANONYMOUS = "*";
-    private static final String PERMISSION_DELIMITER = "__";
+    private static final String INTERNAL_DELIMITER = "__";
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
@@ -279,8 +279,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             if (memberList != null) {
                 // If _acl was not previously defined, it can be null the first time
                 for (String memberPermission : memberList) {
-                    String[] split = StringUtils.split(memberPermission, PERMISSION_DELIMITER, 2);
-//                    String[] split = memberPermission.split(PERMISSION_DELIMITER, 2);
+                    String[] split = StringUtils.split(memberPermission, INTERNAL_DELIMITER, 2);
+//                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
                     if (memberSet.isEmpty() || memberSet.contains(split[0])) {
                         if (!permissions.containsKey(split[0])) {
                             permissions.put(split[0], new ArrayList<>());
@@ -539,7 +539,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         // the permission rules applied yet
         Document rawQuery = new Document()
                 .append(PRIVATE_STUDY_ID, studyId)
-                .append(PERMISSION_RULES_APPLIED, permissionRule.getId());
+                .append(PERMISSION_RULES_APPLIED, new Document("$ne", permissionRule.getId()));
         Bson bson = parseQuery(permissionRule.getQuery(), rawQuery, entity);
 
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
@@ -549,7 +549,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         Document update = new Document()
                 .append("$addToSet", new Document(QueryParams.ACL.key(), new Document("$each", myPermissions)))
-                .append("$pull", new Document(PERMISSION_RULES_APPLIED, permissionRule.getId()));
+                .append("$addToSet", new Document(PERMISSION_RULES_APPLIED, permissionRule.getId()));
 
         logger.debug("Apply permission rules: Query {}, Update {}",
                 bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -601,7 +601,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             }
 
             for (String permission : stringListEntry.getValue()) {
-                myPermissions.add(stringListEntry.getKey() + PERMISSION_DELIMITER + permission);
+                myPermissions.add(stringListEntry.getKey() + INTERNAL_DELIMITER + permission);
             }
         }
 
@@ -619,7 +619,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         List<String> myPermissions = new ArrayList<>(members.size() * writtenPermissions.size());
         for (String member : members) {
             for (String writtenPermission : writtenPermissions) {
-                myPermissions.add(member + PERMISSION_DELIMITER + writtenPermission);
+                myPermissions.add(member + INTERNAL_DELIMITER + writtenPermission);
             }
         }
         return myPermissions;

@@ -163,14 +163,14 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     void resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException;
 
     /**
-     * Adds the permission rule to the list of permission rules defined for the entry in the studyId.
+     * Create the permission rule to the list of permission rules defined for the entry in the studyId.
      *
      * @param studyId study id corresponding to the study where the permission rule will be added.
      * @param entry entry for which the permission rule is to be applied (samples, cohorts, files...)
      * @param permissionRules PermissionRules object that will be added.
-     * @throws CatalogDBException if there is any kind of error.
+     * @throws CatalogDBException if the permission rule id already existed.
      */
-    void addPermissionRule(long studyId, Study.Entry entry, PermissionRules permissionRules) throws CatalogDBException;
+    void createPermissionRule(long studyId, Study.Entry entry, PermissionRules permissionRules) throws CatalogDBException;
 
     /**
      * Get permission rules defined for an entry.
@@ -181,6 +181,18 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @throws CatalogDBException if there is any error.
      */
     QueryResult<PermissionRules> getPermissionRules(long studyId, Study.Entry entry) throws CatalogDBException;
+
+    /**
+     * Mark a concrete permission rule to be deleted by the daemon.
+     *
+     * @param studyId study id where the permission rule is stored.
+     * @param entry entry for which the permission rules is applied (samples, cohorts...)
+     * @param permissionRuleId permission rule id to be marked for deletion.
+     * @param restorePermissions Flag indicating whether to revert permission to how they were before applying the permission rules.
+     * @throws CatalogDBException if the permission rule does not exist.
+     */
+    void markDeletedPermissionRule(long studyId, Study.Entry entry, String permissionRuleId,
+                                                           boolean restorePermissions) throws CatalogDBException;
 
     /*
      * VariableSet Methods
