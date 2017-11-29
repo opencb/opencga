@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.*;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 
 import java.io.IOException;
 import java.util.List;
@@ -14,9 +13,8 @@ import java.util.function.Function;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AbstractVariantsTableInputFormat<KEYIN, VALUEIN, T> extends InputFormat<KEYIN, Variant> {
+public abstract class AbstractVariantsTableInputFormat<KEYIN, VALUEIN> extends InputFormat<KEYIN, Variant> {
 
-    protected HBaseToVariantConverter<T> converter;
     protected InputFormat<KEYIN, VALUEIN> inputFormat;
 
     @Override
@@ -28,10 +26,6 @@ public abstract class AbstractVariantsTableInputFormat<KEYIN, VALUEIN, T> extend
     }
 
     protected abstract void init(Configuration configuration) throws IOException;
-
-    protected void initConverter(HBaseToVariantConverter<T> converter, Configuration configuration) {
-        this.converter = converter.configure(configuration);
-    }
 
     protected static class RecordReaderTransform<KEYIN, VALUEIN, VALUEOUT> extends RecordReader<KEYIN, VALUEOUT> {
 

@@ -98,10 +98,10 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     @Override
     public final List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {
         List<Variant> nonStructuralVariations = filterStructuralVariants(variants);
-        return annotateFiltered(nonStructuralVariations);
+        return getVariantAnnotationList(variants, annotateFiltered(nonStructuralVariations));
     }
 
-    protected abstract List<VariantAnnotation> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException;
+    protected abstract List<QueryResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException;
 
     private List<Variant> filterStructuralVariants(List<Variant> variants) {
         List<Variant> nonStructuralVariants = new ArrayList<>(variants.size());
@@ -131,13 +131,30 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         Iterator<Variant> iterator = variants.iterator();
         if (queryResults != null) {
             for (QueryResult<VariantAnnotation> queryResult : queryResults) {
+                // If the QueryResult is empty, assume that the variant was skipped
+                // Check that the skipped variant matches with the expected variant
+                if (queryResult.getResult().isEmpty()) {
+                    Variant variant = iterator.next();
+                    Variant variantId = new Variant(queryResult.getId());
+                    if (!variant.getChromosome().equals(variantId.getChromosome())
+                            || !variant.getStart().equals(variantId.getStart())
+                            || !variant.getReference().equals(variantId.getReference())
+                            || !variant.getAlternate().equals(variantId.getAlternate())) {
+                        throw unexpectedVariantOrderException(variant, variantId);
+                    } else {
+                        logger.warn("Skip annotation for variant " + variant);
+                    }
+                }
                 for (VariantAnnotation variantAnnotation : queryResult.getResult()) {
                     Variant variant = iterator.next();
                     if (!variant.getChromosome().equals(variantAnnotation.getChromosome())
                             || !variant.getStart().equals(variantAnnotation.getStart())
                             || !variant.getReference().equals(variantAnnotation.getReference())
                             || !variant.getAlternate().equals(variantAnnotation.getAlternate())) {
-                        throw new IllegalArgumentException("Variants not in the expected order!");
+                        throw unexpectedVariantOrderException(variant, variantAnnotation.getChromosome() + ':'
+                                + variantAnnotation.getStart() + ':'
+                                + variantAnnotation.getReference() + ':'
+                                + variantAnnotation.getAlternate());
                     }
                     if (variant.isSV()) {
                         // Variant annotation class does not have information about Structural Variations.
@@ -156,6 +173,11 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
             }
         }
         return variantAnnotationList;
+    }
+
+    public static RuntimeException unexpectedVariantOrderException(Object expected, Object actual) {
+        return new IllegalArgumentException("Variants not in the expected order! "
+                + "Expected '" + expected + "', " + "but got '" + actual + "'.");
     }
 
 }

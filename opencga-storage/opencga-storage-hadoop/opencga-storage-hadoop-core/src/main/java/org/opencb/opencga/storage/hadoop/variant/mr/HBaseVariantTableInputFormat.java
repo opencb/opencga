@@ -18,7 +18,9 @@ import java.io.IOException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseVariantTableInputFormat extends AbstractVariantsTableInputFormat<ImmutableBytesWritable, Result, Result> {
+public class HBaseVariantTableInputFormat extends AbstractVariantsTableInputFormat<ImmutableBytesWritable, Result> {
+
+    private HBaseToVariantConverter<Result> converter;
 
     @Override
     protected void init(Configuration configuration) throws IOException {
@@ -26,7 +28,7 @@ public class HBaseVariantTableInputFormat extends AbstractVariantsTableInputForm
 //            configuration.forEach(entry -> System.out.println(entry.getKey() + " = " + entry.getValue()));
         tableInputFormat.setConf(configuration);
         inputFormat = tableInputFormat;
-        initConverter(HBaseToVariantConverter.fromResult(new VariantTableHelper(configuration)), configuration);
+        converter = HBaseToVariantConverter.fromResult(new VariantTableHelper(configuration)).configure(configuration);
     }
 
     @Override

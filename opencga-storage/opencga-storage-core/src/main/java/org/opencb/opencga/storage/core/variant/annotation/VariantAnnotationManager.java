@@ -31,6 +31,8 @@ public interface VariantAnnotationManager {
 
     String SPECIES = "species";
     String ASSEMBLY = "assembly";
+    String ANNOTATOR = "annotator";
+    @Deprecated
     String ANNOTATION_SOURCE = "annotationSource";
     String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
     String VARIANT_ANNOTATOR_CLASSNAME = "variant.annotator.classname";

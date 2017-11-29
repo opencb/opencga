@@ -63,6 +63,9 @@ import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_S
 public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     public static final String DEFAULT_COHORT_DESCRIPTION = "Default cohort with almost all indexed samples";
+    public static final QueryOptions FILE_GET_QUERY_OPTIONS = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(
+            FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
+            FileDBAdaptor.QueryParams.STATS.key()));
     private final FileManager fileManager;
 
 
@@ -156,7 +159,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 //        for (Long fileIdLong : fileIds) {
         for (FileInfo fileInfo : studyInfo.getFileInfos()) {
             long fileIdLong = fileInfo.getFileId();
-            File inputFile = fileManager.get(fileIdLong, new QueryOptions(), sessionId).first();
+            File inputFile = fileManager.get(fileIdLong, FILE_GET_QUERY_OPTIONS, sessionId).first();
 
             if (inputFile.getType() == File.Type.FILE) {
                 inputFiles.add(inputFile);
@@ -166,7 +169,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                     query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                             Arrays.asList(File.Format.VCF, File.Format.GVCF));
-                    QueryResult<File> fileQueryResult = fileManager.get(studyIdByInputFileId, query, options, sessionId);
+                    QueryResult<File> fileQueryResult = fileManager.get(studyIdByInputFileId, query, FILE_GET_QUERY_OPTIONS, sessionId);
                     inputFiles.addAll(fileQueryResult.getResult());
                 } else {
                     throw new CatalogException(String.format("Expected file type %s or %s instead of %s",
@@ -791,7 +794,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             logger.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
             throw new CatalogException("Internal error. No vcf file could be found for file " + file.getId());
         }
-        QueryResult<File> vcfQueryResult = fileManager.get(vcfId, new QueryOptions(), sessionId);
+        QueryResult<File> vcfQueryResult = fileManager.get(vcfId, FILE_GET_QUERY_OPTIONS, sessionId);
         if (vcfQueryResult.getNumResults() != 1) {
             logger.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
             throw new CatalogException("Internal error. No vcf file could be found under id " + vcfId);
@@ -810,7 +813,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                     + " a registered transformed file");
             throw new CatalogException("Internal error. No transformed file could be found for file " + file.getId());
         }
-        QueryResult<File> queryResult = fileManager.get(transformedFile, new QueryOptions(), sessionId);
+        QueryResult<File> queryResult = fileManager.get(transformedFile, FILE_GET_QUERY_OPTIONS, sessionId);
         if (queryResult.getNumResults() != 1) {
             logger.error("This code should never be executed. No transformed file could be found under ");
             throw new CatalogException("Internal error. No transformed file could be found under id " + transformedFile);

@@ -36,8 +36,14 @@ public class LDAPUtilsTest {
 
     @Test
     public void getUsersFromLDAPGroup() throws Exception {
-        List<String> bioUsers = LDAPUtils.getUsersFromLDAPGroup("ldap://localhost:9000", "bio", "ou=general,ou=groups,dc=ge,dc=co,dc=uk");
+        List<String> bioUsers = LDAPUtils.getUsersFromLDAPGroup("ldap://localhost:9000", "bio", "ou=groups,dc=ge,dc=co,dc=uk");
         assertEquals(59, bioUsers.size());
+    }
+
+    @Test
+    public void getUsersFromEmptyLDAPGroup() throws Exception {
+        List<String> bioUsers = LDAPUtils.getUsersFromLDAPGroup("ldap://localhost:9000", "cipapi-ldp-rxn", "ou=groups,dc=ge,dc=co,dc=uk");
+        assertEquals(0, bioUsers.size());
     }
 
     @Test

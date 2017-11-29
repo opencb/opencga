@@ -872,88 +872,88 @@ public class UserManager extends AbstractManager {
             retResult.setErrorMsg(e.getMessage());
             return retResult;
         }
-        if (usersFromLDAP.size() == 0) {
-            retResult.setWarningMsg("No users were found. Nothing to do.");
-            return retResult;
-        }
 
-        base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
-        List<Attributes> userAttrList;
-        try {
-            List<String> userList = new ArrayList<>(usersFromLDAP.size());
-            userList.addAll(usersFromLDAP);
-            userAttrList = LDAPUtils.getUserInfoFromLDAP(authenticationOrigin.getHost(), userList, base);
-        } catch (NamingException e) {
-            logger.error(e.getMessage(), e);
-            retResult.setErrorMsg(e.getMessage());
-            return retResult;
-        }
-
-        if (userAttrList.isEmpty()) {
-            retResult.setWarningMsg("No users were found. Nothing to do.");
-            return retResult;
-        }
-
-        String type;
-        if (Account.GUEST.equalsIgnoreCase(accountType)) {
-            type = Account.GUEST;
-        } else {
-            type = Account.FULL;
-        }
-
-        Set<String> userList = new HashSet<>(userAttrList.size());
         LdapImportResult.SummaryResult summaryResult = new LdapImportResult.SummaryResult();
-        summaryResult.setTotal(usersFromLDAP.size());
+        Set<String> userSet = new HashSet<>();
+        if (usersFromLDAP.size() > 0) {
 
-        // Register users in catalog
-        for (Attributes attrs : userAttrList) {
-            String displayname;
-            String mail;
-            String uid;
-            String rdn;
+            base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
+            List<Attributes> userAttrList;
             try {
-                displayname = LDAPUtils.getFullName(attrs);
-                mail = LDAPUtils.getMail(attrs);
-                uid = LDAPUtils.getUID(attrs);
-                rdn = LDAPUtils.getRDN(attrs);
+                List<String> userList = new ArrayList<>(usersFromLDAP.size());
+                userList.addAll(usersFromLDAP);
+                userAttrList = LDAPUtils.getUserInfoFromLDAP(authenticationOrigin.getHost(), userList, base);
             } catch (NamingException e) {
                 logger.error(e.getMessage(), e);
                 retResult.setErrorMsg(e.getMessage());
                 return retResult;
             }
 
-            // Check if the user already exists in catalog
-            if (userDBAdaptor.exists(uid)) {
-                summaryResult.getExistingUsers().add(uid);
-                userList.add(uid);
-                continue;
+            if (userAttrList.isEmpty()) {
+                retResult.setWarningMsg("No users were found. Nothing to do.");
+                return retResult;
             }
 
-            logger.debug("Registering {} in Catalog", uid);
+            String type;
+            if (Account.GUEST.equalsIgnoreCase(accountType)) {
+                type = Account.GUEST;
+            } else {
+                type = Account.FULL;
+            }
 
-            // Create the user in catalog
-            Account account = new Account().setType(type).setAuthOrigin(authOrigin);
+            summaryResult.setTotal(usersFromLDAP.size());
 
-            // TODO: Parse expiration date
+            // Register users in catalog
+            for (Attributes attrs : userAttrList) {
+                String displayname;
+                String mail;
+                String uid;
+                String rdn;
+                try {
+                    displayname = LDAPUtils.getFullName(attrs);
+                    mail = LDAPUtils.getMail(attrs);
+                    uid = LDAPUtils.getUID(attrs);
+                    rdn = LDAPUtils.getRDN(attrs);
+                } catch (NamingException e) {
+                    logger.error(e.getMessage(), e);
+                    retResult.setErrorMsg(e.getMessage());
+                    return retResult;
+                }
+
+                // Check if the user already exists in catalog
+                if (userDBAdaptor.exists(uid)) {
+                    summaryResult.getExistingUsers().add(uid);
+                    userSet.add(uid);
+                    continue;
+                }
+
+                logger.debug("Registering {} in Catalog", uid);
+
+                // Create the user in catalog
+                Account account = new Account().setType(type).setAuthOrigin(authOrigin);
+
+                // TODO: Parse expiration date
 //            if (params.get("expirationDate") != null) {
 //                account.setExpirationDate(...);
 //            }
 
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put("LDAP_RDN", rdn);
-            User user = new User(uid, displayname, mail, "", base, account, User.UserStatus.READY, "", -1, -1, new ArrayList<>(),
-                    new ArrayList<>(), new HashMap<>(), attributes);
+                Map<String, Object> attributes = new HashMap<>();
+                attributes.put("LDAP_RDN", rdn);
+                User user = new User(uid, displayname, mail, "", base, account, User.UserStatus.READY, "", -1, -1, new ArrayList<>(),
+                        new ArrayList<>(), new HashMap<>(), attributes);
 
-            userDBAdaptor.insert(user, QueryOptions.empty());
 
-            summaryResult.getNewUsers().add(uid);
-            userList.add(uid);
-        }
+                userDBAdaptor.insert(user, QueryOptions.empty());
 
-        // Check users not found in LDAP
-        for (String uid : retResult.getInput().getUsers()) {
-            if (!userList.contains(uid)) {
-                summaryResult.getNonExistingUsers().add(uid);
+                summaryResult.getNewUsers().add(uid);
+                userSet.add(uid);
+            }
+
+            // Check users not found in LDAP
+            for (String uid : retResult.getInput().getUsers()) {
+                if (!userSet.contains(uid)) {
+                    summaryResult.getNonExistingUsers().add(uid);
+                }
             }
         }
 
@@ -973,7 +973,7 @@ public class UserManager extends AbstractManager {
 
         try {
             catalogManager.getStudyManager().createGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(),
-                    StringUtils.join(userList, ","), ADMIN_TOKEN);
+                    StringUtils.join(userSet, ","), ADMIN_TOKEN);
         } catch (CatalogException e) {
             if (e.getMessage().contains("users already belong to")) {
                 // Cannot create a group with those users because they already belong to other group
@@ -981,7 +981,7 @@ public class UserManager extends AbstractManager {
                 return retResult;
             }
             try {
-                GroupParams groupParams = new GroupParams(StringUtils.join(userList, ","), GroupParams.Action.ADD);
+                GroupParams groupParams = new GroupParams(StringUtils.join(userSet, ","), GroupParams.Action.ADD);
                 catalogManager.getStudyManager().updateGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(), groupParams,
                         ADMIN_TOKEN);
             } catch (CatalogException e1) {

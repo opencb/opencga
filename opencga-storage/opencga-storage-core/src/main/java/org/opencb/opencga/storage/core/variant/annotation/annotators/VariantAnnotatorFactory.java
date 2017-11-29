@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.ANNOTATOR;
 import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.ANNOTATION_SOURCE;
 import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME;
 
@@ -50,15 +52,22 @@ public final class VariantAnnotatorFactory {
 
     public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId, ObjectMap options)
             throws VariantAnnotatorException {
-        ObjectMap storageOptions = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        ObjectMap storageOptions = new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions());
         if (options != null) {
-            storageOptions.putAll(options);
+            options.forEach(storageOptions::putIfNotNull);
         }
-        String defaultValue = storageOptions.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
-                ? AnnotationSource.OTHER.name()
-                : AnnotationSource.CELLBASE_REST.name();
-        AnnotationSource annotationSource =
-                AnnotationSource.valueOf(storageOptions.getString(ANNOTATION_SOURCE, defaultValue).toUpperCase());
+        AnnotationSource defaultValue = storageOptions.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
+                ? AnnotationSource.OTHER
+                : AnnotationSource.CELLBASE_REST;
+        AnnotationSource annotationSource;
+        if (StringUtils.isNotBlank(storageOptions.getString(ANNOTATOR))) {
+            annotationSource = AnnotationSource.valueOf(storageOptions.getString(ANNOTATOR).toUpperCase());
+        } else if (StringUtils.isNotBlank(storageOptions.getString(ANNOTATION_SOURCE))) {
+            annotationSource = AnnotationSource.valueOf(storageOptions.getString(ANNOTATION_SOURCE).toUpperCase());
+            logger.warn("Using deprecated parameter '" + ANNOTATION_SOURCE + "'. Use '" + ANNOTATOR + "' instead");
+        } else {
+            annotationSource = defaultValue;
+        }
 
 
         switch (annotationSource) {

@@ -37,15 +37,13 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FilterOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.text.DecimalFormat;
@@ -63,7 +61,9 @@ import java.util.stream.IntStream;
  *
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  * @author Matthias Haimel
+ * @deprecated Use {@link VcfDataWriter}
  */
+@Deprecated
 public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     private static final DecimalFormat DECIMAL_FORMAT_7 = new DecimalFormat("#.#######");
@@ -885,23 +885,5 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     }
 
 
-    /**
-     * Unclosable output stream.
-     *
-     * Avoid passing System.out directly to HTSJDK, because it will close it at the end.
-     *
-     * http://stackoverflow.com/questions/8941298/system-out-closed-can-i-reopen-it/23791138#23791138
-     */
-    public static class UnclosableOutputStream extends FilterOutputStream {
-
-        public UnclosableOutputStream(OutputStream os) {
-            super(os);
-        }
-
-        @Override
-        public void close() throws IOException {
-            super.flush();
-        }
-    }
 }
 

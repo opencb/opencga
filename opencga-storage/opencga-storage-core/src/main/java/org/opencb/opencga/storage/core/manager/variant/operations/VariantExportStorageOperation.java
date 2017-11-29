@@ -88,7 +88,8 @@ public class VariantExportStorageOperation extends StorageOperation {
                 throw new IllegalArgumentException(e);
             }
             String outputFileName = null;
-            if (!Paths.get(outdirUri).toFile().exists()) {
+            java.io.File file = Paths.get(outdirUri).toFile();
+            if (!file.exists() || !file.isDirectory()) {
                 outputFileName = outdirUri.resolve(".").relativize(outdirUri).toString();
                 outdirUri = outdirUri.resolve(".");
             } else {
