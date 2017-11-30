@@ -170,7 +170,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param permissionRules PermissionRules object that will be added.
      * @throws CatalogDBException if the permission rule id already existed.
      */
-    void createPermissionRule(long studyId, Study.Entry entry, PermissionRules permissionRules) throws CatalogDBException;
+    void createPermissionRule(long studyId, Study.Entry entry, PermissionRule permissionRules) throws CatalogDBException;
 
     /**
      * Get permission rules defined for an entry.
@@ -180,7 +180,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @return the list of permission rules defined.
      * @throws CatalogDBException if there is any error.
      */
-    QueryResult<PermissionRules> getPermissionRules(long studyId, Study.Entry entry) throws CatalogDBException;
+    QueryResult<PermissionRule> getPermissionRules(long studyId, Study.Entry entry) throws CatalogDBException;
 
     /**
      * Mark a concrete permission rule to be deleted by the daemon.

@@ -494,7 +494,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 @PathParam("study") String studyStr,
             @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @PathParam("entry")
                     Study.Entry entry,
-            @ApiParam(value = "JSON containing the permission rule", required = true) PermissionRules params) {
+            @ApiParam(value = "JSON containing the permission rule", required = true) PermissionRule params) {
         try {
             isSingleId(studyStr);
             return createOkResponse(catalogManager.getStudyManager().createPermissionRule(studyStr, entry, params, sessionId));

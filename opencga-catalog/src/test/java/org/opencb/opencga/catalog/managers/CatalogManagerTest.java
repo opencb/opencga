@@ -661,9 +661,9 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreatePermissionRules() throws CatalogException {
-        PermissionRules rules = new PermissionRules("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
                 Arrays.asList("VIEW", "UPDATE"));
-        QueryResult<PermissionRules> permissionRulesQueryResult = catalogManager.getStudyManager().createPermissionRule(
+        QueryResult<PermissionRule> permissionRulesQueryResult = catalogManager.getStudyManager().createPermissionRule(
                 String.valueOf(studyId), Study.Entry.SAMPLES, rules, sessionIdUser);
         assertEquals(1, permissionRulesQueryResult.getNumResults());
         assertEquals("rules1", permissionRulesQueryResult.first().getId());
@@ -680,7 +680,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testUpdatePermissionRulesIncorrectPermission() throws CatalogException {
-        PermissionRules rules = new PermissionRules("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
                 Arrays.asList("VV", "UPDATE"));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Detected unsupported");
@@ -689,7 +689,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testUpdatePermissionRulesNonExistingUser() throws CatalogException {
-        PermissionRules rules = new PermissionRules("rules1", new Query("a", "b"), Arrays.asList("user2", "user20"),
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user20"),
                 Arrays.asList("VIEW", "UPDATE"));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("does not exist");
@@ -698,7 +698,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testUpdatePermissionRulesNonExistingGroup() throws CatalogException {
-        PermissionRules rules = new PermissionRules("rules1", new Query("a", "b"), Arrays.asList("user2", "@group"),
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "@group"),
                 Arrays.asList("VIEW", "UPDATE"));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");

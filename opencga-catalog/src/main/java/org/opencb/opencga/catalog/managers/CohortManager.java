@@ -29,11 +29,11 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
@@ -90,7 +90,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
         cohort.setAnnotationSets(validateAnnotationSets(cohort.getAnnotationSets()));
-        cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap<String, Object>::new));
+        cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
         cohort.setRelease(studyManager.getCurrentRelease(studyId));
 
         if (!cohort.getSamples().isEmpty()) {
@@ -792,19 +792,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
-        String collectionName = MongoDBAdaptorFactory.COHORT_COLLECTION;
-
         switch (aclParams.getAction()) {
             case SET:
                 return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.COHORT);
             case ADD:
                 return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.COHORT);
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, Entity.COHORT);
             case RESET:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, Entity.COHORT);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }

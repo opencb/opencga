@@ -467,17 +467,17 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void createPermissionRule(long studyId, Study.Entry entry, PermissionRules permissionRule) throws CatalogDBException {
+    public void createPermissionRule(long studyId, Study.Entry entry, PermissionRule permissionRule) throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
         }
 
         // Get permission rules from study
-        QueryResult<PermissionRules> permissionRulesResult = getPermissionRules(studyId, entry);
+        QueryResult<PermissionRule> permissionRulesResult = getPermissionRules(studyId, entry);
 
         List<Document> permissionDocumentList = new ArrayList<>();
         if (permissionRulesResult.getNumResults() > 0) {
-            for (PermissionRules rule : permissionRulesResult.getResult()) {
+            for (PermissionRule rule : permissionRulesResult.getResult()) {
                 // We add all the permission rules with different id
                 if (!rule.getId().equals(permissionRule.getId())) {
                     permissionDocumentList.add(getMongoDBDocument(rule, "PermissionRules"));
@@ -535,7 +535,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<PermissionRules> getPermissionRules(long studyId, Study.Entry entry) throws CatalogDBException {
+    public QueryResult<PermissionRule> getPermissionRules(long studyId, Study.Entry entry) throws CatalogDBException {
         // Get permission rules from study
         Query query = new Query(QueryParams.ID.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.PERMISSION_RULES.key());
@@ -545,7 +545,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("Unexpected error: Study " + studyId + " not found");
         }
 
-        List<PermissionRules> permissionRules = studyQueryResult.first().getPermissionRules().get(entry);
+        List<PermissionRule> permissionRules = studyQueryResult.first().getPermissionRules().get(entry);
         if (permissionRules == null) {
             permissionRules = Collections.emptyList();
         }

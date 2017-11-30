@@ -4,7 +4,7 @@ import org.opencb.commons.datastore.core.Query;
 
 import java.util.List;
 
-public class PermissionRules {
+public class PermissionRule {
 
     private String id;
     private Query query;
@@ -12,10 +12,10 @@ public class PermissionRules {
     private List<String> permissions;
 
 
-    public PermissionRules() {
+    public PermissionRule() {
     }
 
-    public PermissionRules(String id, Query query, List<String> members, List<String> permissions) {
+    public PermissionRule(String id, Query query, List<String> members, List<String> permissions) {
         this.id = id;
         this.query = query;
         this.members = members;
@@ -39,7 +39,7 @@ public class PermissionRules {
         return id;
     }
 
-    public PermissionRules setId(String id) {
+    public PermissionRule setId(String id) {
         this.id = id;
         return this;
     }
@@ -48,7 +48,7 @@ public class PermissionRules {
         return query;
     }
 
-    public PermissionRules setQuery(Query query) {
+    public PermissionRule setQuery(Query query) {
         this.query = query;
         return this;
     }
@@ -57,7 +57,7 @@ public class PermissionRules {
         return members;
     }
 
-    public PermissionRules setMembers(List<String> members) {
+    public PermissionRule setMembers(List<String> members) {
         this.members = members;
         return this;
     }
@@ -66,7 +66,7 @@ public class PermissionRules {
         return permissions;
     }
 
-    public PermissionRules setPermissions(List<String> permissions) {
+    public PermissionRule setPermissions(List<String> permissions) {
         this.permissions = permissions;
         return this;
     }

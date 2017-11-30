@@ -27,19 +27,22 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.core.common.Entity;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.config.Configuration;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
@@ -697,8 +700,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readSampleExplicitUnshared() throws CatalogException {
         QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp1.getId(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
-        catalogManager.getAuthorizationManager().removeAcls(Arrays.asList(smp1.getId()), Arrays.asList(externalUser), null,
-                MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        catalogManager.getAuthorizationManager().removeAcls(Arrays.asList(smp1.getId()), Arrays.asList(externalUser), null, Entity.SAMPLE);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(smp1.getId(), null, externalSessionId);
     }

@@ -501,8 +501,8 @@ public class StudyManager extends AbstractManager {
         return result;
     }
 
-    public QueryResult<PermissionRules> createPermissionRule(String studyStr, Study.Entry entry, PermissionRules permissionRule,
-                                                             String sessionId) throws CatalogException {
+    public QueryResult<PermissionRule> createPermissionRule(String studyStr, Study.Entry entry, PermissionRule permissionRule,
+                                                            String sessionId) throws CatalogException {
         ParamUtils.checkObj(entry, "entry");
         ParamUtils.checkObj(permissionRule, "permission rule");
 
@@ -557,7 +557,7 @@ public class StudyManager extends AbstractManager {
         studyDBAdaptor.markDeletedPermissionRule(studyId, entry, permissionRuleId, restorePermissions);
     }
 
-    public QueryResult<PermissionRules> getPermissionRules(String studyStr, Study.Entry entry, String sessionId) throws CatalogException {
+    public QueryResult<PermissionRule> getPermissionRules(String studyStr, Study.Entry entry, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
 
@@ -1297,7 +1297,7 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.count(query).first() > 0;
     }
 
-    private void validatePermissionRules(long studyId, Study.Entry entry, PermissionRules permissionRule) throws CatalogException {
+    private void validatePermissionRules(long studyId, Study.Entry entry, PermissionRule permissionRule) throws CatalogException {
         ParamUtils.checkIdentifier(permissionRule.getId(), "PermissionRules");
 
         if (permissionRule.getPermissions() == null || permissionRule.getPermissions().isEmpty()) {

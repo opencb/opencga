@@ -10,7 +10,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.PermissionRules;
+import org.opencb.opencga.core.models.PermissionRule;
 import org.opencb.opencga.core.models.Study;
 
 import java.util.Arrays;
@@ -63,24 +63,22 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
 
         logger.info("Analysing study {} ({})", study.getAlias(), study.getId());
 
-        for (Map.Entry<Study.Entry, List<PermissionRules>> myMap : study.getPermissionRules().entrySet()) {
+        for (Map.Entry<Study.Entry, List<PermissionRule>> myMap : study.getPermissionRules().entrySet()) {
             Study.Entry entry = myMap.getKey();
-            for (PermissionRules permissionRules : myMap.getValue()) {
+            for (PermissionRule permissionRules : myMap.getValue()) {
 
                 try {
                     if (permissionRules.getId().endsWith(DBAdaptor.INTERNAL_DELIMITER + "TODELETEANDRESTORE")) {
                         logger.info("Removing permission rule {} and removing applied permissions for {}",
                                 permissionRules.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0], entry);
-
-
+                        authorizationManager.removePermissionRulesAndRestorePermissions(study.getId(), permissionRules, entry);
                     } else if (permissionRules.getId().endsWith(DBAdaptor.INTERNAL_DELIMITER + "TODELETE")) {
                         logger.info("Removing permission rule {} for {}", permissionRules.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0],
                                 entry);
-
-
+                        authorizationManager.removePermissionRules(study.getId(), permissionRules.getId(), entry);
                     } else {
                         logger.info("Attempting to apply permission rule {} in {}", permissionRules.getId(), entry);
-                        authorizationManager.applyPermissionRules(study.getId(), permissionRules, entry.getName(), "admin");
+                        authorizationManager.applyPermissionRules(study.getId(), permissionRules, entry);
                     }
 
                 } catch (CatalogException e) {

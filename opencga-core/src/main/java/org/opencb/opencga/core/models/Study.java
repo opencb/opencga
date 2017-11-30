@@ -17,9 +17,10 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.FieldUtils;
-import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.net.URI;
 import java.util.*;
@@ -57,7 +58,7 @@ public class Study {
 
     private List<VariableSet> variableSets;
 
-    private Map<Entry, List<PermissionRules>> permissionRules;
+    private Map<Entry, List<PermissionRule>> permissionRules;
 
     private URI uri;
 
@@ -82,7 +83,7 @@ public class Study {
     public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastModified,
                  long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files, List<Job> jobs,
                  List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
-                 List<DiseasePanel> panels, List<VariableSet> variableSets, Map<Entry, List<PermissionRules>> permissionRules,
+                 List<DiseasePanel> panels, List<VariableSet> variableSets, Map<Entry, List<PermissionRule>> permissionRules,
                  URI uri, Map<File.Bioformat, DataStore> dataStores, int release, Map<String, Object> stats,
                  Map<String, Object> attributes) {
         this.id = id;
@@ -127,22 +128,22 @@ public class Study {
     }
 
     public enum Entry {
-        SAMPLES("sample"),
-        FILES("file"),
-        COHORTS("cohort"),
-        INDIVIDUALS("individual"),
-        FAMILIES("family"),
-        JOBS("job"),
-        CLINICAL_ANALYSES("clinical");
+        SAMPLES(Entity.SAMPLE),
+        FILES(Entity.FILE),
+        COHORTS(Entity.COHORT),
+        INDIVIDUALS(Entity.INDIVIDUAL),
+        FAMILIES(Entity.FAMILY),
+        JOBS(Entity.JOB),
+        CLINICAL_ANALYSES(Entity.CLINICAL_ANALYSIS);
 
-        private final String name;
+        private final Entity entity;
 
-        Entry(String name) {
-            this.name = name;
+        Entry(Entity entity) {
+            this.entity = entity;
         }
 
-        public String getName() {
-            return name;
+        public Entity getEntity() {
+            return entity;
         }
     }
 
@@ -359,11 +360,11 @@ public class Study {
         return this;
     }
 
-    public Map<Entry, List<PermissionRules>> getPermissionRules() {
+    public Map<Entry, List<PermissionRule>> getPermissionRules() {
         return permissionRules;
     }
 
-    public Study setPermissionRules(Map<Entry, List<PermissionRules>> permissionRules) {
+    public Study setPermissionRules(Map<Entry, List<PermissionRule>> permissionRules) {
         this.permissionRules = permissionRules;
         return this;
     }

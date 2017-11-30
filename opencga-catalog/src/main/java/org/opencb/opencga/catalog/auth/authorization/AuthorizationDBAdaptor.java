@@ -19,7 +19,9 @@ package org.opencb.opencga.catalog.auth.authorization;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.PermissionRules;
+import org.opencb.opencga.core.common.Entity;
+import org.opencb.opencga.core.models.PermissionRule;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
 
 import java.util.List;
@@ -32,26 +34,26 @@ public interface AuthorizationDBAdaptor {
     /**
      * Retrieve the list of Acls for the list of members in the resource given.
      *
+     * @param <E> AclEntry type.
      * @param resourceId id of the study, file, sample... where the Acl will be looked for.
      * @param members members for whom the Acls will be obtained.
-     * @param entity Entity for which the ACLs will be retrieved.
-     * @param <E> AclEntry type.
+     * @param entry Entity for which the ACLs will be retrieved.
      * @return the list of Acls defined for the members.
      * @throws CatalogException  CatalogException.
      */
-    <E extends AbstractAclEntry> QueryResult<E> get(long resourceId, List<String> members, String entity) throws CatalogException;
+    <E extends AbstractAclEntry> QueryResult<E> get(long resourceId, List<String> members, Entity entry) throws CatalogException;
 
     /**
      * Retrieve the list of Acls for the list of members in the resources given.
      *
+     * @param <E> AclEntry type.
      * @param resourceIds ids of the study, file, sample... where the Acl will be looked for.
      * @param members members for whom the Acls will be obtained.
-     * @param entity Entity for which the ACLs will be retrieved.
-     * @param <E> AclEntry type.
+     * @param entry Entity for which the ACLs will be retrieved.
      * @return the list of Acls defined for the members.
      * @throws CatalogException  CatalogException.
      */
-    <E extends AbstractAclEntry> List<QueryResult<E>> get(List<Long> resourceIds, List<String> members, String entity)
+    <E extends AbstractAclEntry> List<QueryResult<E>> get(List<Long> resourceIds, List<String> members, Entity entry)
             throws CatalogException;
 
     /**
@@ -59,20 +61,25 @@ public interface AuthorizationDBAdaptor {
      *
      * @param studyId study id where the Acls will be removed from.
      * @param member member from whom the Acls will be removed.
-     * @param entity Entity for which the ACLs will be retrieved.
+     * @param entry Entity for which the ACLs will be retrieved.
      * @throws CatalogException  CatalogException.
      */
-    void removeFromStudy(long studyId, String member, String entity) throws CatalogException;
+    void removeFromStudy(long studyId, String member, Entity entry) throws CatalogException;
 
-    void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity) throws CatalogDBException;
+    void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entry) throws CatalogDBException;
 
-    void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity) throws CatalogDBException;
+    void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entry) throws CatalogDBException;
 
-    void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity) throws CatalogDBException;
+    void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity) throws CatalogDBException;
 
     void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
 
-    <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, String entity) throws CatalogDBException;
+    <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException;
 
-    void applyPermissionRules(long studyId, PermissionRules permissionRule, String entity) throws CatalogException;
+    void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException;
+
+    void removePermissionRules(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException;
+
+    void removePermissionRulesAndRestorePermissions(long studyId, PermissionRule permissionRule, Study.Entry entity)
+            throws CatalogException;
 }
