@@ -259,11 +259,41 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         Query query = new Query(SAMPLES.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
         long realCount = dbAdaptor.count(query).first();
-        long approxCount = variantStorageEngine.approxCount(query, new QueryOptions("numSamples", realCount * 0.1)).first();
+        VariantQueryResult<Long> result = variantStorageEngine
+                .approxCount(query, new QueryOptions(VariantStorageEngine.Options.NUM_SAMPLES.key(), realCount * 0.1));
+        long approxCount = result.first();
         System.out.println("approxCount = " + approxCount);
         System.out.println("realCount = " + realCount);
+        assertTrue(result.getApproximateCount());
         assertThat(approxCount, lte(realCount * 1.25));
         assertThat(approxCount, gte(realCount * 0.75));
+    }
+
+    @Test
+    public void testExactApproxCount() throws Exception {
+        Query query = new Query(SAMPLES.key(), "NA19660")
+                .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
+        long realCount = dbAdaptor.count(query).first();
+        VariantQueryResult<Long> result = variantStorageEngine
+                .approxCount(query, new QueryOptions(VariantStorageEngine.Options.NUM_SAMPLES.key(), allVariants.getNumResults()));
+        long approxCount = result.first();
+        System.out.println("approxCount = " + approxCount);
+        System.out.println("realCount = " + realCount);
+        assertFalse(result.getApproximateCount());
+        assertEquals(approxCount, realCount);
+    }
+
+    @Test
+    public void testExactApproxCountToSearch() throws Exception {
+        Query query = new Query(ANNOT_CONSERVATION.key(), "gerp>0.1");
+        long realCount = dbAdaptor.count(query).first();
+        VariantQueryResult<Long> result = variantStorageEngine
+                .approxCount(query, new QueryOptions(VariantStorageEngine.Options.NUM_SAMPLES.key(), 2));
+        long approxCount = result.first();
+        System.out.println("approxCount = " + approxCount);
+        System.out.println("realCount = " + realCount);
+        assertFalse(result.getApproximateCount());
+        assertEquals(approxCount, realCount);
     }
 
 }

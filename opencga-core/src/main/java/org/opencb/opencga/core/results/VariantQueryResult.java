@@ -29,6 +29,7 @@ import java.util.Map;
 public class VariantQueryResult<T> extends QueryResult<T> {
 
     private Map<String, List<String>> samples;
+    private Boolean approximateCount;
 
     public VariantQueryResult() {
         this.samples = null;
@@ -49,14 +50,26 @@ public class VariantQueryResult<T> extends QueryResult<T> {
                 queryResult.getErrorMsg(),
                 queryResult.getResult());
         this.samples = samples;
+        if (numTotalResults >= 0) {
+            approximateCount = false;
+        }
     }
 
     public Map<String, List<String>> getSamples() {
         return samples;
     }
 
-    public VariantQueryResult setSamples(Map<String, List<String>> samples) {
+    public VariantQueryResult<T> setSamples(Map<String, List<String>> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public Boolean getApproximateCount() {
+        return approximateCount;
+    }
+
+    public VariantQueryResult<T> setApproximateCount(Boolean approximateCount) {
+        this.approximateCount = approximateCount;
         return this;
     }
 }
