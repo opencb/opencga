@@ -46,14 +46,14 @@ public class LDAPUtils {
                 try {
                     dctx = new InitialDirContext(env);
                 } catch (NamingException e) {
-                    if (count == 5) {
-                        // After 5 attempts, we will raise an error.
+                    if (count == 3) {
+                        // After 3 attempts, we will raise an error.
                         throw e;
                     }
                     count++;
                     try {
-                        // Sleep 10 seconds
-                        Thread.sleep(10000);
+                        // Sleep 1 seconds
+                        Thread.sleep(1000);
                     } catch (InterruptedException e1) {
                         e1.printStackTrace();
                     }
