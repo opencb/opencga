@@ -88,7 +88,6 @@
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/$individualId/info?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' |
 
-
 !3 Get Individual Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/individuals/$individualId/info |403|Content-Type: application/json|jsonbody.error != ''|
@@ -198,6 +197,16 @@
 !3 Update (SET) ACL Individual And Propagate (True)
 !| Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions": "DELETE", "action": "SET", "individual" : "$individualId" , "propagate" : "true"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
+
+!3 Get Individual 2
+!| Table: Rest Fixture | $baseURL |
+| GET | /v1/individuals/$individualId2/info?sid=$sessionId | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == 0 |
+
+!3 Update (SET) ACL Individual And Propagate True Without Any Attached Samples
+!| Table: Rest Fixture | $baseURL |
+| setBody | {  "permissions": "DELETE", "action": "SET", "individual" : "$individualId2" , "propagate" : "true"} |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/acl/$userA/update?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 
