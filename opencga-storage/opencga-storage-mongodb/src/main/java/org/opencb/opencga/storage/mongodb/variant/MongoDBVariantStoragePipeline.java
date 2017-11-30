@@ -45,6 +45,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
+import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
@@ -63,6 +64,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.setStatus;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
@@ -163,7 +165,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), defaultGenotype);
         }
 
-        boolean newSampleBatch = checkCanLoadSampleBatch(studyConfiguration, fileId);
+        boolean loadSplitData = options.getBoolean(Options.LOAD_SPLIT_DATA.key(), Options.LOAD_SPLIT_DATA.defaultValue());
+        boolean newSampleBatch = checkCanLoadSampleBatch(studyConfiguration, fileId, loadSplitData);
 
         if (newSampleBatch) {
             logger.info("New sample batch!!!");
@@ -771,10 +774,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
      *
      * @param studyConfiguration StudyConfiguration from the selected study
      * @param fileId             File to load
+     * @param loadSplitData      Allow load split data
      * @return Returns if this file represents a new batch of samples
      * @throws StorageEngineException If there is any unaccomplished requirement
      */
-    public static boolean checkCanLoadSampleBatch(final StudyConfiguration studyConfiguration, int fileId) throws StorageEngineException {
+    public static boolean checkCanLoadSampleBatch(final StudyConfiguration studyConfiguration, int fileId, boolean loadSplitData)
+            throws StorageEngineException {
         LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
         if (!sampleIds.isEmpty()) {
             boolean allSamplesRepeated = true;
@@ -790,24 +795,23 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
 
             if (allSamplesRepeated) {
-                ArrayList<Integer> indexedFiles = new ArrayList<>(studyConfiguration.getIndexedFiles());
-                if (!indexedFiles.isEmpty()) {
-                    int lastIndexedFile = indexedFiles.get(indexedFiles.size() - 1);
-                    //Check that are the same samples in the same order
-                    if (!new ArrayList<>(studyConfiguration.getSamplesInFiles().get(lastIndexedFile)).equals(new ArrayList<>(sampleIds))) {
-                        //ERROR
-                        if (studyConfiguration.getSamplesInFiles().get(lastIndexedFile).containsAll(sampleIds)) {
-                            throw new StorageEngineException("Unable to load this batch. Wrong samples order"); //TODO: Should it care?
-                        } else {
-                            throw new StorageEngineException("Unable to load this batch. Another sample batch has been loaded already.");
-                        }
+                if (loadSplitData) {
+                    Logger logger = LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class);
+                    if (studyConfiguration.getSamplesInFiles().get(fileId).size() > 100) {
+                        logger.info("About to load split data for samples in file " + studyConfiguration.getSamplesInFiles().get(fileId));
+                    } else {
+                        String samples = studyConfiguration.getSamplesInFiles().get(fileId)
+                                .stream()
+                                .map(studyConfiguration.getSampleIds().inverse()::get)
+                                .collect(Collectors.joining(",", "[", "]"));
+                        logger.info("About to load split data for samples " + samples);
                     }
-                    //Ok, the batch of samples matches with the last loaded batch of samples.
-                    return false; // This is NOT a new batch of samples
+                } else {
+                    throw MongoVariantStorageEngineException.alreadyLoadedSamples(studyConfiguration, fileId);
                 }
+                return false;
             } else if (someSamplesRepeated) {
-                throw new StorageEngineException("There was some already indexed samples, but not all of them. "
-                        + "Unable to load in Storage-MongoDB");
+                throw MongoVariantStorageEngineException.alreadyLoadedSomeSamples(studyConfiguration, fileId);
             }
         }
         return true; // This is a new batch of samples
