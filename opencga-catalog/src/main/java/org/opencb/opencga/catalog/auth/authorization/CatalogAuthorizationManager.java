@@ -947,8 +947,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
         }
 
-
-
         // 3. We can apply the permission rules
         aclDBAdaptor.applyPermissionRules(studyId, permissionRule, entity);
     }

@@ -23,18 +23,18 @@ import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.PermissionRules;
 import org.opencb.opencga.core.models.acls.permissions.*;
-import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -50,8 +50,6 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory.*;
  */
 public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements AuthorizationDBAdaptor {
 
-    private MongoDataStore mongoDataStore;
-
     private Map<String, MongoDBCollection> dbCollectionMap = new HashMap<>();
     private Map<String, List<String>> fullPermissionsMap = new HashMap<>();
 
@@ -60,7 +58,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
-        initMongoDatastore(configuration);
+        dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
         initCollectionConnections();
         initPermissions();
     }
@@ -112,16 +110,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     private void initCollectionConnections() {
-        this.dbCollectionMap.put(STUDY_COLLECTION, mongoDataStore.getCollection(STUDY_COLLECTION));
-        this.dbCollectionMap.put(COHORT_COLLECTION, mongoDataStore.getCollection(COHORT_COLLECTION));
-        this.dbCollectionMap.put(DATASET_COLLECTION, mongoDataStore.getCollection(DATASET_COLLECTION));
-        this.dbCollectionMap.put(FILE_COLLECTION, mongoDataStore.getCollection(FILE_COLLECTION));
-        this.dbCollectionMap.put(INDIVIDUAL_COLLECTION, mongoDataStore.getCollection(INDIVIDUAL_COLLECTION));
-        this.dbCollectionMap.put(JOB_COLLECTION, mongoDataStore.getCollection(JOB_COLLECTION));
-        this.dbCollectionMap.put(SAMPLE_COLLECTION, mongoDataStore.getCollection(SAMPLE_COLLECTION));
-        this.dbCollectionMap.put(PANEL_COLLECTION, mongoDataStore.getCollection(PANEL_COLLECTION));
-        this.dbCollectionMap.put(FAMILY_COLLECTION, mongoDataStore.getCollection(FAMILY_COLLECTION));
-        this.dbCollectionMap.put(CLINICAL_ANALYSIS_COLLECTION, mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION));
+        this.dbCollectionMap.put(STUDY_COLLECTION, dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection());
+        this.dbCollectionMap.put(COHORT_COLLECTION, dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection());
+        this.dbCollectionMap.put(DATASET_COLLECTION, dbAdaptorFactory.getCatalogDatasetDBAdaptor().getDatasetCollection());
+        this.dbCollectionMap.put(FILE_COLLECTION, dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection());
+        this.dbCollectionMap.put(INDIVIDUAL_COLLECTION, dbAdaptorFactory.getCatalogIndividualDBAdaptor().getCollection());
+        this.dbCollectionMap.put(JOB_COLLECTION, dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection());
+        this.dbCollectionMap.put(SAMPLE_COLLECTION, dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection());
+        this.dbCollectionMap.put(PANEL_COLLECTION, dbAdaptorFactory.getCatalogPanelDBAdaptor().getCollection());
+        this.dbCollectionMap.put(FAMILY_COLLECTION, dbAdaptorFactory.getCatalogFamilyDBAdaptor().getCollection());
+        this.dbCollectionMap.put(CLINICAL_ANALYSIS_COLLECTION, dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getClinicalCollection());
     }
 
     private void initPermissions() {
@@ -161,48 +159,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         for (Map.Entry<String, List<String>> stringListEntry : this.fullPermissionsMap.entrySet()) {
             stringListEntry.getValue().add("NONE");
         }
-    }
-
-    private void initMongoDatastore(Configuration configuration) throws CatalogDBException {
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getDatabase().getUser())
-                .add("password", configuration.getCatalog().getDatabase().getPassword())
-                .setAuthenticationDatabase(configuration.getCatalog().getDatabase().getOptions()
-                        .get(MongoDBConfiguration.AUTHENTICATION_DATABASE))
-                .setConnectionsPerHost(Integer.parseInt(configuration.getCatalog().getDatabase().getOptions()
-                        .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
-                .build();
-
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        mongoDataStore = mongoManager.get(getCatalogDatabase(configuration), mongoDBConfiguration);
-        if (mongoDataStore == null) {
-            throw new CatalogDBException("Unable to connect to MongoDB");
-        }
-    }
-
-    private String getCatalogDatabase(Configuration configuration) {
-        String database;
-        if (StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
-            if (!configuration.getDatabasePrefix().endsWith("_")) {
-                database = configuration.getDatabasePrefix() + "_catalog";
-            } else {
-                database = configuration.getDatabasePrefix() + "catalog";
-            }
-        } else {
-            database = "opencga_catalog";
-        }
-        return database;
     }
 
     private void validateCollection(String collection) throws CatalogDBException {
@@ -548,8 +504,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         List<String> myPermissions = createPermissionArray(permissionRule.getMembers(), permissions);
 
         Document update = new Document()
-                .append("$addToSet", new Document(QueryParams.ACL.key(), new Document("$each", myPermissions)))
-                .append("$addToSet", new Document(PERMISSION_RULES_APPLIED, permissionRule.getId()));
+                .append("$addToSet", new Document()
+                        .append(QueryParams.ACL.key(), new Document("$each", myPermissions))
+                        .append(PERMISSION_RULES_APPLIED, permissionRule.getId()));
 
         logger.debug("Apply permission rules: Query {}, Update {}",
                 bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),

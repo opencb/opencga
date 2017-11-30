@@ -127,13 +127,23 @@ public class Study {
     }
 
     public enum Entry {
-        SAMPLES,
-        FILES,
-        COHORTS,
-        INDIVIDUALS,
-        FAMILIES,
-        JOBS,
-        CLINICAL_ANALYSIS
+        SAMPLES("sample"),
+        FILES("file"),
+        COHORTS("cohort"),
+        INDIVIDUALS("individual"),
+        FAMILIES("family"),
+        JOBS("job"),
+        CLINICAL_ANALYSES("clinical");
+
+        private final String name;
+
+        Entry(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 
     @Override

@@ -534,7 +534,7 @@ public class StudyManager extends AbstractManager {
 //            case JOBS:
 //                jobDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
 //                break;
-//            case CLINICAL_ANALYSIS:
+//            case CLINICAL_ANALYSES:
 //                clinicalDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
 //                break;
 //            default:
@@ -1323,7 +1323,7 @@ public class StudyManager extends AbstractManager {
             case JOBS:
                 validatePermissions(permissionRule.getPermissions(), JobAclEntry.JobPermissions::valueOf);
                 break;
-            case CLINICAL_ANALYSIS:
+            case CLINICAL_ANALYSES:
                 validatePermissions(permissionRule.getPermissions(), ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf);
                 break;
             default:
