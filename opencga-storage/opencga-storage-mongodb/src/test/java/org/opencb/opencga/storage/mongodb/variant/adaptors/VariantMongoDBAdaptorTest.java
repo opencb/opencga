@@ -102,18 +102,18 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     public void removeAnnotationTest() throws Exception {
         fileIndexed = false;
         Query query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), true);
-        query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());
+        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId());
         long numAnnotatedVariants = dbAdaptor.count(query).first();
 
         assertEquals("All variants should be annotated", NUM_VARIANTS, numAnnotatedVariants);
 
         query = new Query(VariantQueryParam.CHROMOSOME.key(), "1");
-        query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());
+        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId());
         long numVariantsChr1 = dbAdaptor.count(query).first();
         ((VariantMongoDBAdaptor) dbAdaptor).removeAnnotation("", new Query(VariantQueryParam.CHROMOSOME.key(), "1"), new QueryOptions());
 
         query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
-        query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());
+        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId());
         long numVariantsNoAnnotation = dbAdaptor.count(query).first();
 
         assertNotEquals(numVariantsChr1, NUM_VARIANTS);

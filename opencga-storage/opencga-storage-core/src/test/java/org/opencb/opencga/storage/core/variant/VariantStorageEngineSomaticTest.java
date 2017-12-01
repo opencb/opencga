@@ -91,7 +91,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "TU"));
         }
 
-        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_1"), new QueryOptions());
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), "SAMPLE_1"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
             assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
@@ -100,7 +100,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
         });
 
-        iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_2"), new QueryOptions());
+        iterator = dbAdaptor.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), "SAMPLE_2"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
             assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
@@ -109,9 +109,9 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
         });
 
-        iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_2")
-                .append(VariantQueryParam.FILES.key(), 3)
-                .append(VariantQueryParam.RETURNED_FILES.key(), 3), new QueryOptions());
+        iterator = dbAdaptor.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), "SAMPLE_2")
+                .append(VariantQueryParam.FILE.key(), 3)
+                .append(VariantQueryParam.INCLUDE_FILE.key(), 3), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             System.out.println("variant.toJson() = " + variant.toJson());
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());

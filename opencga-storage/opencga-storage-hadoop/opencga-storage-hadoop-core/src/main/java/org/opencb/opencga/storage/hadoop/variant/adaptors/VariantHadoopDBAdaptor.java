@@ -308,7 +308,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 
         if (archiveIterator) {
-            String study = query.getString(STUDIES.key());
+            String study = query.getString(STUDY.key());
             StudyConfiguration studyConfiguration;
             int studyId;
             if (StringUtils.isNumeric(study)) {
@@ -319,7 +319,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 studyId = studyConfiguration.getStudyId();
             }
 
-            int fileId = query.getInt(FILES.key());
+            int fileId = query.getInt(FILE.key());
             if (!studyConfiguration.getFileIds().containsValue(fileId)) {
                 return VariantDBIterator.emptyIterator();
             }
@@ -329,7 +329,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             for (Integer sampleId : samlpeIds) {
                 returnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
             }
-            query.put(RETURNED_SAMPLES.key(), returnedSamples);
+            query.put(INCLUDE_SAMPLE.key(), returnedSamples);
 
             Region region = null;
             if (!StringUtils.isEmpty(query.getString(REGION.key()))) {

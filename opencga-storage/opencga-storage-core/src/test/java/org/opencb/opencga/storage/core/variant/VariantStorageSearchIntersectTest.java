@@ -207,7 +207,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testSkipLimit_extraQueries() throws Exception {
-        Query query = new Query(SAMPLES.key(), "NA19660")
+        Query query = new Query(SAMPLE.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>1");
         QueryOptions options = new QueryOptions(QUERY_INTERSECT, true);
         skipLimit(query, options, 250, true);
@@ -247,7 +247,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 .map(Variant::toString)
                 .limit(400)
                 .collect(Collectors.toList());
-        Query query = new Query(SAMPLES.key(), "NA19660")
+        Query query = new Query(SAMPLE.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.2")
                 .append(ID.key(), variantIds);
         QueryOptions options = new QueryOptions(QUERY_INTERSECT, true);
@@ -256,7 +256,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testApproxCount() throws Exception {
-        Query query = new Query(SAMPLES.key(), "NA19660")
+        Query query = new Query(SAMPLE.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
         long realCount = dbAdaptor.count(query).first();
         VariantQueryResult<Long> result = variantStorageEngine
@@ -271,7 +271,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testExactApproxCount() throws Exception {
-        Query query = new Query(SAMPLES.key(), "NA19660")
+        Query query = new Query(SAMPLE.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
         long realCount = dbAdaptor.count(query).first();
         VariantQueryResult<Long> result = variantStorageEngine

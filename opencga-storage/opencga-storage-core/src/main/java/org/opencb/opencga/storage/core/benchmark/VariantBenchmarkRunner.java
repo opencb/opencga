@@ -137,7 +137,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     case "queryByStudies":
-                        query.put(VariantQueryParam.STUDIES.key(), queryParams);
+                        query.put(VariantQueryParam.STUDY.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     default:

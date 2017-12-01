@@ -370,10 +370,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(sessionId));
 
         if (StringUtils.isNotEmpty(cliOptions.samples)) {
-            query.append(VariantQueryParam.RETURNED_SAMPLES.key(), Arrays.asList(cliOptions.samples.split(",")));
+            query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), Arrays.asList(cliOptions.samples.split(",")));
         }
         if (StringUtils.isNotEmpty(cliOptions.study)) {
-            query.append(VariantQueryParam.STUDIES.key(), cliOptions.study);
+            query.append(VariantQueryParam.STUDY.key(), cliOptions.study);
         }
 
         List<String> genotypes = Arrays.asList(cliOptions.genotypes.split(","));

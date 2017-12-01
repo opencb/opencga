@@ -61,7 +61,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
         }
 
 
-        variantManager.iterator(new Query(VariantQueryParam.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+        variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
         });
     }
@@ -75,7 +75,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
         }
         indexFiles(files, new QueryOptions(), outputId);
 
-        variantManager.iterator(new Query(VariantQueryParam.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+        variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
         });
     }
@@ -90,7 +90,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
         }
         loadFiles(files, new QueryOptions(), outputId);
 
-        variantManager.iterator(new Query(VariantQueryParam.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+        variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
         });
     }

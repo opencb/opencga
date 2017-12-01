@@ -336,10 +336,10 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         getConf().set(VariantStorageEngine.Options.STUDY_ID.key(), args[2]);
         if (args[3].equals(".") || args[3].isEmpty()) {
             getConf().unset(VariantStorageEngine.Options.FILE_ID.key());
-            getConf().unset(VariantQueryParam.FILES.key());
+            getConf().unset(VariantQueryParam.FILE.key());
         } else {
             getConf().setStrings(VariantStorageEngine.Options.FILE_ID.key(), args[3].split(","));
-            getConf().setStrings(VariantQueryParam.FILES.key(), args[3].split(","));
+            getConf().setStrings(VariantQueryParam.FILE.key(), args[3].split(","));
         }
 
     }

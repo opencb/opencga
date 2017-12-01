@@ -280,8 +280,8 @@ public class VariantQueryUtils {
     public static StudyConfiguration getDefaultStudyConfiguration(Query query, QueryOptions options,
                                                                   StudyConfigurationManager studyConfigurationManager) {
         final StudyConfiguration defaultStudyConfiguration;
-        if (isValidParam(query, VariantQueryParam.STUDIES)) {
-            String value = query.getString(VariantQueryParam.STUDIES.key());
+        if (isValidParam(query, VariantQueryParam.STUDY)) {
+            String value = query.getString(VariantQueryParam.STUDY.key());
 
             // Check that the study exists
             VariantQueryUtils.QueryOperation studiesOperation = checkOperator(value);
@@ -310,17 +310,17 @@ public class VariantQueryUtils {
         Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
         if (!returnedFields.contains(VariantField.STUDIES)) {
             return false;
-        } else if (isValidParam(query, RETURNED_STUDIES)) {
-            String returnedStudies = query.getString(VariantQueryParam.RETURNED_STUDIES.key());
+        } else if (isValidParam(query, INCLUDE_STUDY)) {
+            String returnedStudies = query.getString(VariantQueryParam.INCLUDE_STUDY.key());
             if (NONE.equals(returnedStudies)) {
                 return false;
             } else if (ALL.equals(returnedStudies)) {
                 return studies.size() > 1;
             } else {
-                return query.getAsList(VariantQueryParam.RETURNED_STUDIES.key()).size() > 1;
+                return query.getAsList(VariantQueryParam.INCLUDE_STUDY.key()).size() > 1;
             }
-        } else if (isValidParam(query, STUDIES)) {
-            String value = query.getString(VariantQueryParam.STUDIES.key());
+        } else if (isValidParam(query, STUDY)) {
+            String value = query.getString(VariantQueryParam.STUDY.key());
             long numStudies = splitValue(value, checkOperator(value)).stream().filter(s -> !isNegated(s)).count();
             return numStudies > 1;
         } else {
@@ -337,17 +337,17 @@ public class VariantQueryUtils {
         List<Integer> studyIds;
         if (!returnedFields.contains(VariantField.STUDIES)) {
             studyIds = Collections.emptyList();
-        } else if (isValidParam(query, RETURNED_STUDIES)) {
-            String returnedStudies = query.getString(VariantQueryParam.RETURNED_STUDIES.key());
+        } else if (isValidParam(query, INCLUDE_STUDY)) {
+            String returnedStudies = query.getString(VariantQueryParam.INCLUDE_STUDY.key());
             if (NONE.equals(returnedStudies)) {
                 studyIds = Collections.emptyList();
             } else if (ALL.equals(returnedStudies)) {
                 studyIds = studyConfigurationManager.getStudyIds(options);
             } else {
-                studyIds = studyConfigurationManager.getStudyIds(query.getAsList(VariantQueryParam.RETURNED_STUDIES.key()), options);
+                studyIds = studyConfigurationManager.getStudyIds(query.getAsList(VariantQueryParam.INCLUDE_STUDY.key()), options);
             }
-        } else if (isValidParam(query, STUDIES)) {
-            String studies = query.getString(VariantQueryParam.STUDIES.key());
+        } else if (isValidParam(query, STUDY)) {
+            String studies = query.getString(VariantQueryParam.STUDY.key());
             studyIds = studyConfigurationManager.getStudyIds(splitValue(studies, checkOperator(studies)), options);
             // if empty, all the studies
             if (studyIds.isEmpty()) {
@@ -362,9 +362,9 @@ public class VariantQueryUtils {
     /**
      * Get list of returned files for each study.
      * <p>
-     * Use {@link VariantQueryParam#RETURNED_FILES} if defined.
-     * If missing, get non negated values from {@link VariantQueryParam#FILES}
-     * If missing, get files from samples at {@link VariantQueryParam#SAMPLES}
+     * Use {@link VariantQueryParam#INCLUDE_FILE} if defined.
+     * If missing, get non negated values from {@link VariantQueryParam#FILE}
+     * If missing, get files from samples at {@link VariantQueryParam#SAMPLE}
      * <p>
      * Null for undefined returned files. If null, return ALL files.
      * Return NONE if empty list
@@ -379,22 +379,22 @@ public class VariantQueryUtils {
             Query query, Collection<Integer> studyIds, Set<VariantField> fields, Function<Integer, StudyConfiguration> studyProvider) {
 
         List<String> sampleNames = Collections.emptyList();
-        if (isValidParam(query, SAMPLES)) {
-            String value = query.getString(SAMPLES.key());
+        if (isValidParam(query, SAMPLE)) {
+            String value = query.getString(SAMPLE.key());
             sampleNames = splitValue(value, checkOperator(value))
                     .stream()
                     .filter((v) -> !isNegated(v)) // Discard negated
                     .collect(Collectors.toList());
         }
-        if (sampleNames.isEmpty() && isValidParam(query, RETURNED_SAMPLES)) {
-            String value = query.getString(RETURNED_SAMPLES.key());
+        if (sampleNames.isEmpty() && isValidParam(query, INCLUDE_SAMPLE)) {
+            String value = query.getString(INCLUDE_SAMPLE.key());
             sampleNames = splitValue(value, checkOperator(value))
                     .stream()
                     .filter((v) -> !isNegated(v)) // Discard negated
                     .collect(Collectors.toList());
         }
         List<String> returnedFilesList = getReturnedFilesList(query, fields);
-        boolean returnAllFiles = ALL.equals(query.getString(RETURNED_FILES.key()));
+        boolean returnAllFiles = ALL.equals(query.getString(INCLUDE_FILE.key()));
 
         Map<Integer, List<Integer>> files = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -440,8 +440,8 @@ public class VariantQueryUtils {
     /**
      * Get list of returned files.
      * <p>
-     * Use {@link VariantQueryParam#RETURNED_FILES} if defined.
-     * If missing, get non negated values from {@link VariantQueryParam#FILES}
+     * Use {@link VariantQueryParam#INCLUDE_FILE} if defined.
+     * If missing, get non negated values from {@link VariantQueryParam#FILE}
      * <p>
      * Null for undefined returned files. If null, return ALL files.
      * Return NONE if empty list
@@ -456,17 +456,17 @@ public class VariantQueryUtils {
         List<String> returnedFiles;
         if (!fields.contains(VariantField.STUDIES_FILES)) {
             returnedFiles = Collections.emptyList();
-        } else if (query.containsKey(RETURNED_FILES.key())) {
-            String files = query.getString(RETURNED_FILES.key());
+        } else if (query.containsKey(INCLUDE_FILE.key())) {
+            String files = query.getString(INCLUDE_FILE.key());
             if (files.equals(ALL)) {
                 returnedFiles = null;
             } else if (files.equals(NONE)) {
                 returnedFiles = Collections.emptyList();
             } else {
-                returnedFiles = query.getAsStringList(RETURNED_FILES.key());
+                returnedFiles = query.getAsStringList(INCLUDE_FILE.key());
             }
-        } else if (query.containsKey(FILES.key())) {
-            String files = query.getString(FILES.key());
+        } else if (query.containsKey(FILE.key())) {
+            String files = query.getString(FILE.key());
             returnedFiles = splitValue(files, checkOperator(files))
                     .stream()
                     .filter(value -> !isNegated(value))
@@ -483,8 +483,8 @@ public class VariantQueryUtils {
     public static boolean isReturnedSamplesDefined(Query query, Set<VariantField> returnedFields) {
         if (getReturnedSamplesList(query, returnedFields) != null) {
             return true;
-        } else if (isValidParam(query, FILES)) {
-            String files = query.getString(FILES.key());
+        } else if (isValidParam(query, FILE)) {
+            String files = query.getString(FILE.key());
             return splitValue(files, checkOperator(files))
                     .stream()
                     .anyMatch((value) -> !isNegated(value)); // Discard negated
@@ -547,15 +547,15 @@ public class VariantQueryUtils {
             BiFunction<StudyConfiguration, String, T> getSample, Function<StudyConfiguration, T> getStudyId) {
 
         List<String> files = Collections.emptyList();
-        if (isValidParam(query, FILES)) {
-            String value = query.getString(FILES.key());
+        if (isValidParam(query, FILE)) {
+            String value = query.getString(FILE.key());
             files = splitValue(value, checkOperator(value))
                     .stream()
                     .filter((v) -> !isNegated(v)) // Discard negated
                     .collect(Collectors.toList());
         }
-        if (files.isEmpty() && isValidParam(query, RETURNED_FILES)) {
-            String value = query.getString(FILES.key());
+        if (files.isEmpty() && isValidParam(query, INCLUDE_FILE)) {
+            String value = query.getString(FILE.key());
             files = splitValue(value, checkOperator(value))
                     .stream()
                     .filter((v) -> !isNegated(v)) // Discard negated
@@ -564,7 +564,7 @@ public class VariantQueryUtils {
 
         List<String> returnedSamples = getReturnedSamplesList(query, options);
         LinkedHashSet<String> returnedSamplesSet = returnedSamples != null ? new LinkedHashSet<>(returnedSamples) : null;
-        boolean returnAllSamples = query.getString(VariantQueryParam.RETURNED_SAMPLES.key()).equals(ALL);
+        boolean returnAllSamples = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).equals(ALL);
 
         Map<T, List<T>> samples = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -629,17 +629,17 @@ public class VariantQueryUtils {
      */
     private static List<String> getReturnedSamplesList(Query query) {
         List<String> samples;
-        if (isValidParam(query, RETURNED_SAMPLES)) {
-            String samplesString = query.getString(VariantQueryParam.RETURNED_SAMPLES.key());
+        if (isValidParam(query, INCLUDE_SAMPLE)) {
+            String samplesString = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key());
             if (samplesString.equals(ALL)) {
                 samples = null; // Undefined. All by default
             } else if (samplesString.equals(NONE)) {
                 samples = Collections.emptyList();
             } else {
-                samples = query.getAsStringList(VariantQueryParam.RETURNED_SAMPLES.key());
+                samples = query.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
             }
-        } else if (isValidParam(query, SAMPLES)) {
-            String value = query.getString(SAMPLES.key());
+        } else if (isValidParam(query, SAMPLE)) {
+            String value = query.getString(SAMPLE.key());
             samples = splitValue(value, checkOperator(value))
                     .stream()
                     .filter((v) -> !isNegated(v)) // Discard negated

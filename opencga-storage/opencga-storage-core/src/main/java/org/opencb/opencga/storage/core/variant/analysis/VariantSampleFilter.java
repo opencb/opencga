@@ -48,9 +48,9 @@ public class VariantSampleFilter {
     public Map<String, Set<Variant>> getSamplesInAnyVariants(List<?> variants, String study, List<String> samples, List<String> genotypes) {
         List<String> variantsList = variants.stream().map(Object::toString).collect(Collectors.toList());
         Query query = new Query(VariantQueryParam.ID.key(), variantsList)
-                .append(VariantQueryParam.STUDIES.key(), study)
-                .append(VariantQueryParam.RETURNED_STUDIES.key(), study)
-                .append(VariantQueryParam.RETURNED_SAMPLES.key(), samples);
+                .append(VariantQueryParam.STUDY.key(), study)
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), study)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), samples);
         return getSamplesInAnyVariants(query, genotypes);
     }
 
@@ -84,9 +84,9 @@ public class VariantSampleFilter {
     public Collection<String> getSamplesInAllVariants(List<?> variants, String study, List<String> samples, List<String> genotypes) {
         List<String> variantsList = variants.stream().map(Object::toString).collect(Collectors.toList());
         Query query = new Query(VariantQueryParam.ID.key(), variantsList)
-                .append(VariantQueryParam.STUDIES.key(), study)
-                .append(VariantQueryParam.RETURNED_STUDIES.key(), study)
-                .append(VariantQueryParam.RETURNED_SAMPLES.key(), samples);
+                .append(VariantQueryParam.STUDY.key(), study)
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), study)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), samples);
         return getSamplesInAllVariants(query, genotypes);
     }
 

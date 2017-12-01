@@ -669,8 +669,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
-        if (isValidParam(query, VariantQueryParam.STUDIES) && studyNames.size() == 1) {
-            query.remove(VariantQueryParam.STUDIES.key());
+        if (isValidParam(query, VariantQueryParam.STUDY) && studyNames.size() == 1) {
+            query.remove(VariantQueryParam.STUDY.key());
         }
 
         convertGoToGeneQuery(query, cellBaseUtils);

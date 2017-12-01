@@ -80,7 +80,7 @@ public class FileRestWebService extends GenericRestWebService {
         try {
             switch (bioformat) {
                 case "vcf":
-                    queryOptions.add(VariantQueryParam.FILES.key(), fileId);
+                    queryOptions.add(VariantQueryParam.FILE.key(), fileId);
                     return createOkResponse(VariantRestWebService.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
                             queryOptions));
                 case "bam":

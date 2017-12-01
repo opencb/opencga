@@ -290,23 +290,23 @@ public class VariantMongoDBQueryParser {
                 addScoreFilter(value, builder, ANNOT_CONSERVATION, false);
             }
 
-            if (isValidParam(query, ANNOT_TRANSCRIPTION_FLAGS)) {
-                String value = query.getString(ANNOT_TRANSCRIPTION_FLAGS.key());
+            if (isValidParam(query, ANNOT_TRANSCRIPTION_FLAG)) {
+                String value = query.getString(ANNOT_TRANSCRIPTION_FLAG.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, builder, QueryOperation.AND);
             }
 
 //            QueryBuilder geneTraitBuilder = QueryBuilder.start();
-            if (isValidParam(query, ANNOT_GENE_TRAITS_ID)) {
-                String value = query.getString(ANNOT_GENE_TRAITS_ID.key());
+            if (isValidParam(query, ANNOT_GENE_TRAIT_ID)) {
+                String value = query.getString(ANNOT_GENE_TRAIT_ID.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_ID_FIELD, value, builder, QueryOperation.AND);
             }
 
-            if (isValidParam(query, ANNOT_GENE_TRAITS_NAME)) {
-                String value = query.getString(ANNOT_GENE_TRAITS_NAME.key());
+            if (isValidParam(query, ANNOT_GENE_TRAIT_NAME)) {
+                String value = query.getString(ANNOT_GENE_TRAIT_NAME.key());
                 addCompQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, builder, false);
@@ -357,8 +357,8 @@ public class VariantMongoDBQueryParser {
             }
 
 
-            if (isValidParam(query, ANNOT_PROTEIN_KEYWORDS)) {
-                String value = query.getString(ANNOT_PROTEIN_KEYWORDS.key());
+            if (isValidParam(query, ANNOT_PROTEIN_KEYWORD)) {
+                String value = query.getString(ANNOT_PROTEIN_KEYWORD.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, value, builder, QueryOperation.AND);
@@ -376,8 +376,8 @@ public class VariantMongoDBQueryParser {
                 addScoreFilter(value, builder, ANNOT_FUNCTIONAL_SCORE, false);
             }
 
-            if (isValidParam(query, ANNOT_CUSTOM)) {
-                String value = query.getString(ANNOT_CUSTOM.key());
+            if (isValidParam(query, CUSTOM_ANNOTATION)) {
+                String value = query.getString(CUSTOM_ANNOTATION.key());
                 addCompListQueryFilter(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD, value, builder, true);
             }
 
@@ -453,13 +453,13 @@ public class VariantMongoDBQueryParser {
             Map<String, Integer> studies = studyConfigurationManager.getStudies(null);
 
             boolean singleStudy = studies.size() == 1;
-            boolean validStudiesFilter = isValidParam(query, STUDIES);
+            boolean validStudiesFilter = isValidParam(query, STUDY);
             // SAMPLES filter will add a FILES filter if absent
-            boolean validFilesFilter = isValidParam(query, FILES) || isValidParam(query, SAMPLES);
+            boolean validFilesFilter = isValidParam(query, FILE) || isValidParam(query, SAMPLE);
             boolean otherFilters =
-                    isValidParam(query, FILES)
+                    isValidParam(query, FILE)
                             || isValidParam(query, GENOTYPE)
-                            || isValidParam(query, SAMPLES)
+                            || isValidParam(query, SAMPLE)
                             || isValidParam(query, FILTER);
 
             // Use an elemMatch with all the study filters if there is more than one study registered,
@@ -477,9 +477,9 @@ public class VariantMongoDBQueryParser {
             QueryBuilder studyBuilder = QueryBuilder.start();
             final StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, null, studyConfigurationManager);
 
-            if (isValidParam(query, STUDIES)) {
+            if (isValidParam(query, STUDY)) {
                 String sidKey = DocumentToVariantConverter.STUDIES_FIELD + '.' + DocumentToStudyVariantEntryConverter.STUDYID_FIELD;
-                String value = query.getString(STUDIES.key());
+                String value = query.getString(STUDY.key());
 
                 // Check that the study exists
                 QueryOperation studiesOperation = checkOperator(value);
@@ -510,8 +510,8 @@ public class VariantMongoDBQueryParser {
 
             List<Integer> fileIds = Collections.emptyList();
             QueryOperation filesOperation = QueryOperation.OR;
-            if (isValidParam(query, FILES)) {
-                String filesValue = query.getString(FILES.key());
+            if (isValidParam(query, FILE)) {
+                String filesValue = query.getString(FILE.key());
                 filesOperation = checkOperator(filesValue);
                 List<String> fileNames = splitValue(filesValue, filesOperation);
 
@@ -575,8 +575,8 @@ public class VariantMongoDBQueryParser {
                 parseGenotypeFilter(sampleGenotypes, genotypesFilter);
             }
 
-            if (isValidParam(query, SAMPLES)) {
-                String samples = query.getString(SAMPLES.key());
+            if (isValidParam(query, SAMPLE)) {
+                String samples = query.getString(SAMPLE.key());
 
                 List<String> genotypes;
                 if (defaultStudyConfiguration != null) {
@@ -593,7 +593,7 @@ public class VariantMongoDBQueryParser {
                 }
                 for (String sample : samples.split(",")) {
                     if (isNegated(sample)) {
-                        throw VariantQueryException.malformedParam(SAMPLES, samples, "Unsupported negated samples");
+                        throw VariantQueryException.malformedParam(SAMPLE, samples, "Unsupported negated samples");
                     }
                     int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
                     genotypesFilter.put(sampleId, genotypes);
@@ -602,7 +602,7 @@ public class VariantMongoDBQueryParser {
 
             if (!genotypesFilter.isEmpty()) {
                 Set<Integer> files = new HashSet<>();
-                boolean filesFilterBySamples = !isValidParam(query, FILES) && defaultStudyConfiguration != null;
+                boolean filesFilterBySamples = !isValidParam(query, FILE) && defaultStudyConfiguration != null;
 
                 List<String> defaultGenotypes;
                 List<String> otherGenotypes;
@@ -756,17 +756,17 @@ public class VariantMongoDBQueryParser {
 
     private void parseStatsQueryParams(Query query, QueryBuilder builder, StudyConfiguration defaultStudyConfiguration) {
         if (query != null) {
-            if (query.get(COHORTS.key()) != null && !query.getString(COHORTS.key()).isEmpty()) {
+            if (query.get(COHORT.key()) != null && !query.getString(COHORT.key()).isEmpty()) {
                 addQueryFilter(DocumentToVariantConverter.STATS_FIELD
                                 + '.' + DocumentToVariantStatsConverter.COHORT_ID,
-                        query.getString(COHORTS.key()), builder, QueryOperation.AND,
+                        query.getString(COHORT.key()), builder, QueryOperation.AND,
                         s -> {
                             try {
                                 return Integer.parseInt(s);
                             } catch (NumberFormatException ignore) {
                                 String[] split = VariantQueryUtils.splitStudyResource(s);
                                 if (defaultStudyConfiguration == null && split.length == 1) {
-                                    throw VariantQueryException.malformedParam(COHORTS, s, "Expected {study}:{cohort}");
+                                    throw VariantQueryException.malformedParam(COHORT, s, "Expected {study}:{cohort}");
                                 } else {
                                     String study;
                                     String cohort;

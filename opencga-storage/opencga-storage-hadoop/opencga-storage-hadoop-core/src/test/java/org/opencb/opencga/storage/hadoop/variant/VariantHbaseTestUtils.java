@@ -60,7 +60,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexFilter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexVariant;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
@@ -269,8 +268,8 @@ public class VariantHbaseTestUtils {
                                                            StudyConfiguration studyConfiguration, int fileId, OutputStream os) throws Exception {
         VariantHadoopArchiveDBIterator archive = (VariantHadoopArchiveDBIterator) dbAdaptor.iterator(
                 new Query()
-                        .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
-                        .append(VariantQueryParam.FILES.key(), fileId),
+                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+                        .append(VariantQueryParam.FILE.key(), fileId),
                 new QueryOptions("archive", true));
 
         ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), fileId);

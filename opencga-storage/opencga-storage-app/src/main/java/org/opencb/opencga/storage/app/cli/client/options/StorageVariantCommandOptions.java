@@ -262,7 +262,7 @@ public class StorageVariantCommandOptions {
                 "NA0001:0/0,0/1;NA0002:0/1", arity = 1)
         public String sampleGenotype;
 
-        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLES_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
         public String samples;
 
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)

@@ -344,10 +344,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
                     annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
                 }
-                annotationQuery.put(VariantQueryParam.STUDIES.key(),
+                annotationQuery.put(VariantQueryParam.STUDY.key(),
                         Collections.singletonList(studyId));    // annotate just the indexed variants
                 // annotate just the indexed variants
-                annotationQuery.put(VariantQueryParam.FILES.key(), fileIds);
+                annotationQuery.put(VariantQueryParam.FILE.key(), fileIds);
 
                 QueryOptions annotationOptions = new QueryOptions()
                         .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath())

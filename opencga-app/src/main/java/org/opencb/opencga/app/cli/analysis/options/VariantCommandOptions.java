@@ -36,7 +36,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.PROJECT_DESC;
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_FILTER_DESC;
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -404,7 +404,7 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
+        @Parameter(names = {"--sample-filter"}, description = SAMPLE_ANNOTATION_DESC)
         public String sampleFilter;
 
         // FIXME: This param should not be in the ANALYSIS command line!

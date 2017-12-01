@@ -68,9 +68,9 @@ public class VariantHBaseQueryParser {
 //            FILES,   // Not supported at all
 //            SAMPLES, // May be supported
 //            REGION,  // Only one region supported
-            RETURNED_FILES,
-            RETURNED_STUDIES,
-            RETURNED_SAMPLES,
+            INCLUDE_FILE,
+            INCLUDE_STUDY,
+            INCLUDE_SAMPLE,
             UNKNOWN_GENOTYPE));
 
     public VariantHBaseQueryParser(GenomeHelper genomeHelper, StudyConfigurationManager studyConfigurationManager) {
@@ -211,8 +211,8 @@ public class VariantHBaseQueryParser {
         }
 
         StudyConfiguration defaultStudyConfiguration;
-        if (isValidParam(query, STUDIES)) {
-            String value = query.getString(STUDIES.key());
+        if (isValidParam(query, STUDY)) {
+            String value = query.getString(STUDY.key());
             VariantQueryUtils.QueryOperation operation = checkOperator(value);
             List<String> values = splitValue(value, operation);
 
@@ -248,8 +248,8 @@ public class VariantHBaseQueryParser {
             }
         }
 
-        if (isValidParam(query, FILES)) {
-            String value = query.getString(FILES.key());
+        if (isValidParam(query, FILE)) {
+            String value = query.getString(FILE.key());
             VariantQueryUtils.QueryOperation operation = checkOperator(value);
             List<String> values = splitValue(value, operation);
             FilterList subFilters;
@@ -270,8 +270,8 @@ public class VariantHBaseQueryParser {
             }
         }
 
-        if (isValidParam(query, SAMPLES)) {
-            String value = query.getString(SAMPLES.key());
+        if (isValidParam(query, SAMPLE)) {
+            String value = query.getString(SAMPLE.key());
             VariantQueryUtils.QueryOperation operation = checkOperator(value);
             List<String> values = splitValue(value, operation);
             FilterList subFilters;

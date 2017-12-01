@@ -167,9 +167,9 @@ public class VariantSqlQueryParser {
      * Select only the required columns.
      * <p>
      * Uses the params:
-     * {@link VariantQueryParam#RETURNED_STUDIES}
-     * {@link VariantQueryParam#RETURNED_SAMPLES}
-     * {@link VariantQueryParam#RETURNED_FILES}
+     * {@link VariantQueryParam#INCLUDE_STUDY}
+     * {@link VariantQueryParam#INCLUDE_SAMPLE}
+     * {@link VariantQueryParam#INCLUDE_FILE}
      * {@link VariantQueryParam#UNKNOWN_GENOTYPE}
      *
      * @param sb              SQLStringBuilder
@@ -437,10 +437,10 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#REFERENCE}
      * {@link VariantQueryParam#ALTERNATE}
      * {@link VariantQueryParam#TYPE}
-     * {@link VariantQueryParam#STUDIES}
-     * {@link VariantQueryParam#FILES}
+     * {@link VariantQueryParam#STUDY}
+     * {@link VariantQueryParam#FILE}
      * {@link VariantQueryParam#FILTER}
-     * {@link VariantQueryParam#COHORTS}
+     * {@link VariantQueryParam#COHORT}
      * {@link VariantQueryParam#GENOTYPE}
      *
      * Annotation filters:
@@ -454,13 +454,13 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ANNOT_POPULATION_ALTERNATE_FREQUENCY}
      * {@link VariantQueryParam#ANNOT_POPULATION_REFERENCE_FREQUENCY}
 
-     * {@link VariantQueryParam#ANNOT_TRANSCRIPTION_FLAGS}
-     * {@link VariantQueryParam#ANNOT_GENE_TRAITS_ID}
-     * {@link VariantQueryParam#ANNOT_GENE_TRAITS_NAME}
+     * {@link VariantQueryParam#ANNOT_TRANSCRIPTION_FLAG}
+     * {@link VariantQueryParam#ANNOT_GENE_TRAIT_ID}
+     * {@link VariantQueryParam#ANNOT_GENE_TRAIT_NAME}
      * {@link VariantQueryParam#ANNOT_HPO}
      * {@link VariantQueryParam#ANNOT_GO}
      * {@link VariantQueryParam#ANNOT_EXPRESSION}
-     * {@link VariantQueryParam#ANNOT_PROTEIN_KEYWORDS}
+     * {@link VariantQueryParam#ANNOT_PROTEIN_KEYWORD}
      * {@link VariantQueryParam#ANNOT_DRUG}
      * {@link VariantQueryParam#ANNOT_FUNCTIONAL_SCORE}
      *
@@ -505,8 +505,8 @@ public class VariantSqlQueryParser {
         });
 
         final StudyConfiguration defaultStudyConfiguration;
-        if (isValidParam(query, STUDIES)) {
-            String value = query.getString(STUDIES.key());
+        if (isValidParam(query, STUDY)) {
+            String value = query.getString(STUDY.key());
             QueryOperation operation = checkOperator(value);
             List<String> values = splitValue(value, operation);
             StringBuilder sb = new StringBuilder();
@@ -565,14 +565,14 @@ public class VariantSqlQueryParser {
             filtersOperation = checkOperator(value);
             filterValues = splitValue(value, filtersOperation);
             if (!filterValues.isEmpty()) {
-                if (!isValidParam(query, FILES)) {
-                    throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILES.key() + "\" filter");
+                if (!isValidParam(query, FILE)) {
+                    throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
         }
 
-        if (isValidParam(query, FILES)) {
-            String value = query.getString(FILES.key());
+        if (isValidParam(query, FILE)) {
+            String value = query.getString(FILE.key());
             QueryOperation operation = checkOperator(value);
             List<String> values = splitValue(value, operation);
 
@@ -647,8 +647,8 @@ public class VariantSqlQueryParser {
             filters.add(sb.toString());
         }
 
-        if (isValidParam(query, COHORTS)) {
-            for (String cohort : query.getAsStringList(COHORTS.key())) {
+        if (isValidParam(query, COHORT)) {
+            for (String cohort : query.getAsStringList(COHORT.key())) {
                 boolean negated = false;
                 if (isNegated(cohort)) {
                     cohort = removeNegation(cohort);
@@ -662,7 +662,7 @@ public class VariantSqlQueryParser {
                 } else if (studyCohort.length == 1) {
                     studyConfiguration = defaultStudyConfiguration;
                 } else {
-                    throw VariantQueryException.malformedParam(COHORTS, query.getString((COHORTS.key())), "Expected {study}:{cohort}");
+                    throw VariantQueryException.malformedParam(COHORT, query.getString((COHORT.key())), "Expected {study}:{cohort}");
                 }
                 int cohortId = studyConfigurationManager.getCohortId(cohort, studyConfiguration);
                 Column column = VariantPhoenixHelper.getStatsColumn(studyConfiguration.getStudyId(), cohortId);
@@ -679,8 +679,8 @@ public class VariantSqlQueryParser {
             // NA12877_01 :  0/0  ;  NA12878_01 :  0/1  ,  1/1
             parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
         }
-        if (isValidParam(query, SAMPLES)) {
-            String value = query.getString(SAMPLES.key());
+        if (isValidParam(query, SAMPLE)) {
+            String value = query.getString(SAMPLE.key());
             QueryOperation op = checkOperator(value);
             List<String> samples = splitValue(value, op);
             for (String sample : samples) {
@@ -885,11 +885,11 @@ public class VariantSqlQueryParser {
                     return "";
                 }, filters, 1);
 
-        addQueryFilter(query, ANNOT_TRANSCRIPTION_FLAGS, VariantColumn.TRANSCRIPTION_FLAGS, filters);
+        addQueryFilter(query, ANNOT_TRANSCRIPTION_FLAG, VariantColumn.TRANSCRIPTION_FLAGS, filters);
 
-        addQueryFilter(query, ANNOT_GENE_TRAITS_ID, VariantColumn.GENE_TRAITS_ID, filters);
+        addQueryFilter(query, ANNOT_GENE_TRAIT_ID, VariantColumn.GENE_TRAITS_ID, filters);
 
-        addQueryFilter(query, ANNOT_GENE_TRAITS_NAME, VariantColumn.GENE_TRAITS_NAME, filters);
+        addQueryFilter(query, ANNOT_GENE_TRAIT_NAME, VariantColumn.GENE_TRAITS_NAME, filters);
 
         addQueryFilter(query, ANNOT_HPO, VariantColumn.XREFS, filters);
 
@@ -923,7 +923,7 @@ public class VariantSqlQueryParser {
             }
         }
 
-        addQueryFilter(query, ANNOT_PROTEIN_KEYWORDS, VariantColumn.PROTEIN_KEYWORDS, filters);
+        addQueryFilter(query, ANNOT_PROTEIN_KEYWORD, VariantColumn.PROTEIN_KEYWORDS, filters);
 
         addQueryFilter(query, ANNOT_DRUG, VariantColumn.DRUG, filters);
 

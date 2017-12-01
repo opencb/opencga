@@ -35,7 +35,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CUSTOM;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.CUSTOM_ANNOTATION;
 import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.CUSTOM_ANNOTATION_KEY;
 
 /**
@@ -94,9 +94,9 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
             }
         }
 
-        assertEquals(pos1, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".name=Pos1")).first().intValue());
-        assertEquals(pos2, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".name=Pos2")).first().intValue());
-        assertEquals(pos3, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".name=Pos3")).first().intValue());
+        assertEquals(pos1, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".name=Pos1")).first().intValue());
+        assertEquals(pos2, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".name=Pos2")).first().intValue());
+        assertEquals(pos3, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".name=Pos3")).first().intValue());
 
     }
 
@@ -139,9 +139,9 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
             }
         }
 
-        assertEquals(feat1, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".feature=enhancer")).first().intValue());
-        assertEquals(feat2, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".feature=promoter")).first().intValue());
-        assertEquals(feat3, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".feature=other")).first().intValue());
+        assertEquals(feat1, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".feature=enhancer")).first().intValue());
+        assertEquals(feat2, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".feature=promoter")).first().intValue());
+        assertEquals(feat3, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".feature=other")).first().intValue());
 
 
     }
@@ -188,10 +188,10 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
             }
         }
 
-        assertEquals(feat1, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".FEATURE=enhancer")).first().intValue());
-        assertEquals(feat2, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".FEATURE=promoter")).first().intValue());
-        assertEquals(feat3, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".FEATURE=other")).first().intValue());
-        assertEquals(1, dbAdaptor.count(new Query(ANNOT_CUSTOM.key(), annotKey + ".FEATURE=specific")).first().intValue());
+        assertEquals(feat1, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".FEATURE=enhancer")).first().intValue());
+        assertEquals(feat2, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".FEATURE=promoter")).first().intValue());
+        assertEquals(feat3, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".FEATURE=other")).first().intValue());
+        assertEquals(1, dbAdaptor.count(new Query(CUSTOM_ANNOTATION.key(), annotKey + ".FEATURE=specific")).first().intValue());
 
 
     }
