@@ -55,9 +55,18 @@ public class CatalogStudyConfigurationFactory {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FileDBAdaptor.QueryParams.ID.key(),
             FileDBAdaptor.QueryParams.NAME.key(),
-            FileDBAdaptor.QueryParams.PATH.key()));
+            FileDBAdaptor.QueryParams.PATH.key(),
+            FileDBAdaptor.QueryParams.INDEX.key()));
     public static final Query INDEXED_FILES_QUERY = new Query()
-            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY)
+            .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
+            .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
+
+    public static final Query RUNNING_INDEX_FILES_QUERY = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
+            FileIndex.IndexStatus.LOADING,
+            FileIndex.IndexStatus.INDEXING))
+            .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
+            .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
 
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             SampleDBAdaptor.QueryParams.ID.key(),
@@ -343,15 +352,10 @@ public class CatalogStudyConfigurationFactory {
         }
 
         // Update READY files
-        Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                        FileDBAdaptor.QueryParams.NAME.key(),
-                        FileDBAdaptor.QueryParams.INDEX.key()));
         Set<Long> indexedFiles = new HashSet<>();
         studyConfiguration.getIndexedFiles().forEach((e) -> indexedFiles.add(e.longValue()));
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(studyConfiguration.getStudyId(), query, queryOptions, sessionId)) {
+                .iterator(studyConfiguration.getStudyId(), INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 if (!indexedFiles.contains(file.getId())) {
@@ -370,11 +374,8 @@ public class CatalogStudyConfigurationFactory {
         }
 
         // Update ongoing files
-        query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-                FileIndex.IndexStatus.LOADING,
-                FileIndex.IndexStatus.INDEXING));
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(studyConfiguration.getStudyId(), query, queryOptions, sessionId)) {
+                .iterator(studyConfiguration.getStudyId(), RUNNING_INDEX_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
 

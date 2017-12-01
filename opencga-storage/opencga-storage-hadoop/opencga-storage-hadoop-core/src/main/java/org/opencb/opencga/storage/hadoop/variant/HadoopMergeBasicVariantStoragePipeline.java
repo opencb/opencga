@@ -180,7 +180,10 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         int fileId = Integer.valueOf(helper.getFileMetadata().getId());
         VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), variantReader, studyId, fileId, progressLogger);
 
-        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(1)
+                .setBatchSize(1)
+                .setReadQueuePutTimeout(1000).build();
 
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager(), true);
         VariantHadoopDBWriter hadoopDBWriter = newVariantHadoopDBWriter();

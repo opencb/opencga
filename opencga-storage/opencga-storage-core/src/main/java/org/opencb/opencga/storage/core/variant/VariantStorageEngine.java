@@ -21,9 +21,9 @@ import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
@@ -53,7 +53,6 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
-import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
@@ -87,6 +86,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     private CellBaseUtils cellBaseUtils;
+
+    public static final String APPROX_COUNT = "approxCount";
 
     public enum MergeMode {
         BASIC,
@@ -149,7 +150,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         // Intersect options
         INTERSECT_ACTIVE("intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
         INTERSECT_ALWAYS("intersect.always", false),                      // Force intersect queries
-        INTERSECT_PARAMS_THRESHOLD("intersect.params.threshold", 3);      // Minimum number of QueryParams in the query to intersect
+        INTERSECT_PARAMS_THRESHOLD("intersect.params.threshold", 3),      // Minimum number of QueryParams in the query to intersect
+
+        NUM_SAMPLES("numSamples", 1000);
 
         private final String key;
         private final Object value;
@@ -708,17 +711,24 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 Iterator<?> variantsIterator;
                 Number numTotalResults = null;
                 AtomicLong searchCount = null;
+                Boolean approxCount = null;
 
-                if (isQueryCovered(query)) {
-                    // If the query is fully covered, the numTotalResults from solr is correct.
-                    searchCount = new AtomicLong();
-                    numTotalResults = searchCount;
-                    // Skip count in storage. We already know the numTotalResults
-                    options.put(QueryOptions.SKIP_COUNT, true);
-                } else {
-                    if (options.getBoolean("approxCount")) {
+                // Do not count for iterator
+                if (!iterator) {
+                    if (isQueryCovered(query)) {
+                        // If the query is fully covered, the numTotalResults from solr is correct.
+                        searchCount = new AtomicLong();
+                        numTotalResults = searchCount;
+                        // Skip count in storage. We already know the numTotalResults
                         options.put(QueryOptions.SKIP_COUNT, true);
-                        numTotalResults = approxCount(query, options).first();
+                        approxCount = false;
+                    } else {
+                        if (options.getBoolean(APPROX_COUNT)) {
+                            options.put(QueryOptions.SKIP_COUNT, true);
+                            VariantQueryResult<Long> result = approxCount(query, options);
+                            numTotalResults = result.first();
+                            approxCount = result.getApproximateCount();
+                        }
                     }
                 }
 
@@ -748,6 +758,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     setDefaultTimeout(options);
                     VariantQueryResult<Variant> queryResult = dbAdaptor.get(variantsIterator, engineQuery, options);
                     if (numTotalResults != null) {
+                        queryResult.setApproximateCount(approxCount);
                         queryResult.setNumTotalResults(numTotalResults.longValue());
                     }
                     queryResult.setWarningMsg("Data from Solr + " + getStorageEngineId());
@@ -853,20 +864,24 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    public QueryResult<Long> approxCount(Query query, QueryOptions options) throws StorageEngineException {
+    public VariantQueryResult<Long> approxCount(Query query, QueryOptions options) throws StorageEngineException {
         long count;
+        boolean approxCount = true;
         StopWatch watch = StopWatch.createStarted();
         try {
             if (doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
+                approxCount = false;
                 count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
             } else {
-                int numSamples = options.getInt("numSamples", 1000);
+                int numSamples = options.getInt(NUM_SAMPLES.key(), getOptions().getInt(NUM_SAMPLES.key(), NUM_SAMPLES.defaultValue()));
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, numSamples);
 
                 VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager().nativeQuery(dbName, query, queryOptions);
                 List<String> variantIds = nativeResult.getResult().stream().map(VariantSearchModel::getId).collect(Collectors.toList());
                 // Adjust numSamples if the results from SearchManager is smaller than numSamples
+                // If this happens, the count is not approximated
                 if (variantIds.size() < numSamples) {
+                    approxCount = false;
                     numSamples = variantIds.size();
                 }
                 long numSearchResults = nativeResult.getNumTotalResults();
@@ -876,13 +891,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 engineQuery.put(ID.key(), variantIds);
                 long numResults = getDBAdaptor().count(engineQuery).first();
                 logger.debug("NumResults: {}, NumSearchResults: {}, NumSamples: {}", numResults, numSearchResults, numSamples);
-                count = (long) ((numResults / (float) numSamples) * numSearchResults);
+                if (approxCount) {
+                    count = (long) ((numResults / (float) numSamples) * numSearchResults);
+                } else {
+                    count = numResults;
+                }
             }
         } catch (IOException | VariantSearchException e) {
             throw new VariantQueryException("Error querying Solr", e);
         }
         int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-        return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
+        return new VariantQueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count), null)
+                .setApproximateCount(approxCount);
     }
 
     /**

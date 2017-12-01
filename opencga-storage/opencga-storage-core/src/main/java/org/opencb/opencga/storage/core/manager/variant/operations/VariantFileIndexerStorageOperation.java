@@ -220,7 +220,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 }
                 break;
             case LOAD:
-                filesToIndex = filterLoadFiles(inputFiles, options, fileUris, resume, sessionId);
+                filesToIndex = filterLoadFiles(study.getId(), inputFiles, options, fileUris, resume, sessionId);
                 fileStatus = FileIndex.IndexStatus.LOADING;
                 fileStatusMessage = "Start loading file";
                 break;
@@ -684,13 +684,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         return filteredFiles;
     }
 
-    private List<File> filterLoadFiles(List<File> fileList, QueryOptions options, List<URI> fileUris, boolean resume, String sessionId)
+    private List<File> filterLoadFiles(long studyId, List<File> fileList, QueryOptions options, List<URI> fileUris,
+                                       boolean resume, String sessionId)
             throws CatalogException, URISyntaxException {
         if (fileList == null || fileList.isEmpty()) {
             return new ArrayList<>();
         }
 
-        List<String> transformedFiles = null;
+        List<String> transformedFiles;
         if (options.get(TRANSFORMED_FILES) != null) {
             transformedFiles = options.getAsStringList(TRANSFORMED_FILES);
             if (transformedFiles.size() != fileList.size()) {
@@ -704,11 +705,15 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                     throw new CatalogException("File " + file + " does not exist or it is not an avro file");
                 }
             }
+        } else {
+            transformedFiles = null;
         }
 
         List<File> filteredFiles = new ArrayList<>(fileList.size());
+        Map<Long, Long> transformedToOrigFileIdsMap = new HashMap<>();
         for (int i = 0; i < fileList.size(); i++) {
             File file = fileList.get(i);
+            File transformed = null;
 
             // If is a transformed file, get the related VCF file
             if (VariantReaderUtils.isTransformedVariants(file.getName())) {
@@ -723,6 +728,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                                 + "different uri " + avroUri + " by the user.");
                     }
                 }
+                transformed = file;
                 file = getOriginalFromTransformed(sessionId, file);
             }
 
@@ -746,17 +752,13 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                         }
                     case FileIndex.IndexStatus.TRANSFORMED:
                         // We will attempt to use the avro file registered in catalog
-                        File transformed = getTransformedFromOriginal(sessionId, file);
-                        if (transformedFiles != null) {
-                            // Check that the uri from the avro file obtained from catalog is the same the user has put as input
-                            URI uri = UriUtils.createUri(transformedFiles.get(i));
-                            if (!uri.equals(transformed.getUri())) {
-                                throw new CatalogException("A transformed file was found for file " + file.getId() + " in "
-                                        + transformed.getUri() + ". However, the user selected a different one in " + uri);
-                            }
+                        if (transformed == null) {
+                            // Don't query file by file. Make one single call at the end
+                            transformedToOrigFileIdsMap.put(getTransformedFileIdFromOriginal(file), file.getId());
+                        } else {
+                            fileUris.add(transformed.getUri());
                         }
                         filteredFiles.add(file);
-                        fileUris.add(transformed.getUri());
                         break;
                     case FileIndex.IndexStatus.TRANSFORMING:
                         logger.warn("We can only load files previously transformed. Skipping file {}", file.getName());
@@ -773,6 +775,33 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             }
 
         }
+        if (!transformedToOrigFileIdsMap.isEmpty()) {
+            Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), new ArrayList<>(transformedToOrigFileIdsMap.keySet()));
+            Set<Long> foundTransformedFiles = new HashSet<>();
+            fileManager.iterator(studyId, query, new QueryOptions(QueryOptions.INCLUDE,
+                    Arrays.asList(FileDBAdaptor.QueryParams.ID.key(), FileDBAdaptor.QueryParams.URI.key())), sessionId)
+                    .forEachRemaining(transformed -> {
+                        foundTransformedFiles.add(transformed.getId());
+                        fileUris.add(transformed.getUri());
+                        //if (transformedFiles != null) {
+                        //    // Check that the uri from the avro file obtained from catalog is the same the user has put as input
+                        //    URI uri = UriUtils.createUri(transformedFiles.get(i));
+                        //    if (!uri.equals(transformed.getUri())) {
+                        //        throw new CatalogException("A transformed file was found for file " + file.getId() + " in "
+                        //                + transformed.getUri() + ". However, the user selected a different one in " + uri);
+                        //    }
+                        //}
+                    });
+            if (foundTransformedFiles.size() != transformedToOrigFileIdsMap.size()) {
+                for (Long foundTransformedFile : foundTransformedFiles) {
+                    transformedToOrigFileIdsMap.remove(foundTransformedFile);
+                }
+                throw new CatalogException("Internal error. No transformed file could be found for files "
+                        + transformedToOrigFileIdsMap.values());
+            }
+        }
+
+
         return filteredFiles;
     }
 
@@ -805,6 +834,17 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     private File getTransformedFromOriginal(String sessionId, File file)
             throws CatalogException, URISyntaxException {
+        long transformedFileId = getTransformedFileIdFromOriginal(file);
+        QueryResult<File> queryResult = fileManager.get(transformedFileId, FILE_GET_QUERY_OPTIONS, sessionId);
+        if (queryResult.getNumResults() != 1) {
+            logger.error("This code should never be executed. No transformed file could be found under ");
+            throw new CatalogException("Internal error. No transformed file could be found under id " + transformedFileId);
+        }
+
+        return queryResult.first();
+    }
+
+    private long getTransformedFileIdFromOriginal(File file) throws CatalogException {
         long transformedFile = file.getIndex() != null && file.getIndex().getTransformedFile() != null
                 ? file.getIndex().getTransformedFile().getId()
                 : -1;
@@ -813,13 +853,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                     + " a registered transformed file");
             throw new CatalogException("Internal error. No transformed file could be found for file " + file.getId());
         }
-        QueryResult<File> queryResult = fileManager.get(transformedFile, FILE_GET_QUERY_OPTIONS, sessionId);
-        if (queryResult.getNumResults() != 1) {
-            logger.error("This code should never be executed. No transformed file could be found under ");
-            throw new CatalogException("Internal error. No transformed file could be found under id " + transformedFile);
-        }
-
-        return queryResult.first();
+        return transformedFile;
     }
 
 
