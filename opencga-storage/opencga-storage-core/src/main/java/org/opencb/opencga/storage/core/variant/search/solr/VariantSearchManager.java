@@ -75,8 +75,16 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-    public static final String SKIP_SEARCH = "skipSearch";
-    public static final String QUERY_INTERSECT = "queryIntersect";
+    public static final String USE_SEARCH_INDEX = "useSearchIndex";
+    public enum UseSearchIndex {
+        YES, NO, AUTO;
+        public static UseSearchIndex from(Map<String, Object> options) {
+            return options == null || !options.containsKey(USE_SEARCH_INDEX)
+                    ? AUTO
+                    : UseSearchIndex.valueOf(options.get(USE_SEARCH_INDEX).toString().toUpperCase());
+        }
+    }
+
     private static final int DEFAULT_INSERT_SIZE = 10000;
 
     @Deprecated
