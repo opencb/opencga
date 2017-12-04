@@ -330,66 +330,88 @@ public class VariantAnalysisWSService extends AnalysisWSService {
      * Do not use native values (like boolean or int), so they are null by default.
      */
     private static class VariantQueryParams {
-        public String ids;
+        public String id;
         public String region;
         public String chromosome;
         public String gene;
         public String type;
         public String reference;
         public String alternate;
-        public String studies;
-        public String returnedStudies;
-        public String returnedSamples;
-        public String returnedFiles;
-        public String files;
+        public String project;
+        public String study;
+        public String includeStudy;
+        public String includeSample;
+        public String includeFile;
+        public String includeFormat;
+        public String includeGenotype;
+        public String file;
         public String filter;
+        public String cohort;
         public String maf;
         public String mgf;
         public String missingAlleles;
         public String missingGenotypes;
         public Boolean annotationExists;
         public String genotype;
-        @JsonProperty("annot-ct")
-//        @ApiModelProperty(name = "annot-ct")
-        public String annot_ct;
-        @JsonProperty("annot-xref")
-        public String annot_xref;
-        @JsonProperty("annot-biotype")
-        public String annot_biotype;
-        public String polyphen;
-        public String sift;
-//        public String protein_substitution;
+        public String sample;
+        public String sampleAnnotation;
+        public String ct;
+        public String xref;
+        public String biotype;
+        @Deprecated public String polyphen;
+        @Deprecated public String sift;
+        public String proteinSubstitution;
         public String conservation;
-        @JsonProperty("annot-population-maf")
-        public String annotPopulationMaf;
-        public String alternate_frequency;
-        public String reference_frequency;
-        @JsonProperty("annot-transcription-flags")
-        public String transcriptionFlags;
-        @JsonProperty("annot-gene-trait-id")
+        public String populationFrequencyMaf;
+        public String populationFrequencyAlt;
+        public String populationFrequencyRef;
+        public String transcriptionFlag;
         public String geneTraitId;
-        @JsonProperty("annot-gene-trait-name")
         public String geneTraitName;
-        @JsonProperty("annot-hpo")
+        public String trait;
+        public String cosmic;
+        public String clinvar;
         public String hpo;
-        @JsonProperty("annot-go")
         public String go;
-        @JsonProperty("annot-expression")
         public String expression;
-        @JsonProperty("annot-protein-keywords")
         public String proteinKeyword;
-        @JsonProperty("annot-drug")
         public String drug;
-        @JsonProperty("annot-functional-score")
-        public String functional;
+        public String functionalScore;
+        public String customAnnotation;
+
         public String unknownGenotype;
         public boolean samplesMetadata = false;
         public boolean sort = false;
         public String groupBy;
         public boolean histogram = false;
         public int interval = 2000;
-        public boolean merge = false;
 
+        @Deprecated public String ids;
+        @Deprecated public String studies;
+        @Deprecated public String returnedStudies;
+        @Deprecated public String returnedSamples;
+        @Deprecated public String returnedFiles;
+        @Deprecated public String files;
+        @Deprecated public String samples;
+        @Deprecated public String cohorts;
+        @Deprecated @JsonProperty("include-genotype") public String include_genotype;
+        @Deprecated @JsonProperty("include-format") public String include_format;
+
+        @Deprecated @JsonProperty("annot-ct") public String annot_ct;
+        @Deprecated @JsonProperty("annot-xref") public String annot_xref;
+        @Deprecated @JsonProperty("annot-biotype") public String annot_biotype;
+        @Deprecated @JsonProperty("annot-population-maf") public String annot_populationMaf;
+        @Deprecated public String alternate_frequency;
+        @Deprecated public String reference_frequency;
+        @Deprecated @JsonProperty("annot-transcription-flags") public String transcriptionFlags;
+        @Deprecated @JsonProperty("annot-gene-trait-id") public String annot_geneTraitId;
+        @Deprecated @JsonProperty("annot-gene-trait-name") public String annot_geneTraitName;
+        @Deprecated @JsonProperty("annot-hpo") public String annot_hpo;
+        @Deprecated @JsonProperty("annot-go") public String annot_go;
+        @Deprecated @JsonProperty("annot-expression") public String annot_expression;
+        @Deprecated @JsonProperty("annot-protein-keywords") public String annot_proteinKeyword;
+        @Deprecated @JsonProperty("annot-drug") public String annot_drug;
+        @Deprecated @JsonProperty("annot-functional-score") public String annot_functionalScore;
     }
 
     @POST
@@ -673,7 +695,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
 
             // DEPRECATED PARAMS
             @ApiImplicitParam(name = "studies", value = DEPRECATED + STUDY_DESCR, dataType = "string", paramType = "query"),
