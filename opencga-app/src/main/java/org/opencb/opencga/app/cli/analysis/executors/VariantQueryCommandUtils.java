@@ -114,6 +114,10 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
             queryOptions.add(VariantField.SUMMARY, true);
         }
 
+        if (queryVariantsOptions.genericVariantQueryOptions.sort) {
+            queryOptions.put(QueryOptions.SORT, true);
+        }
+
         queryOptions.putAll(queryVariantsOptions.commonOptions.params);
 
         return queryOptions;

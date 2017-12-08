@@ -384,6 +384,8 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters")
         public boolean summary;
 
+        @Parameter(names = {"--sort"}, description = "Sort the output elements.")
+        public boolean sort;
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
