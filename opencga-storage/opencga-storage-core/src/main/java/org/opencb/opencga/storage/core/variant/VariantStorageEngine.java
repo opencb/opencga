@@ -135,6 +135,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         LOAD_BATCH_SIZE("load.batch.size", 100),
         LOAD_THREADS("load.threads", 6),
 
+        RELEASE("release", 1),
+
         MERGE_MODE("merge.mode", MergeMode.ADVANCED),
 
         CALCULATE_STATS("calculateStats", false),          //Calculate stats on the postLoad step

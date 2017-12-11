@@ -596,8 +596,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         boolean ignoreOverlapping = studyConfiguration.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
                 MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
+        int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds, indexedFiles, resume,
-                ignoreOverlapping);
+                ignoreOverlapping, release);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(
                 dbAdaptor.getVariantsCollection(), stageCollection, dbAdaptor.getStudiesCollection(),
                 studyConfiguration, fileIds, resume, cleanWhileLoading, progressLogger);

@@ -55,6 +55,7 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.IDS_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.RELEASE_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.ID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.SECONDARY_ALTERNATES_FIELD;
@@ -245,8 +246,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final List<String> format;
     private boolean resume;
 
+    private final int release;
+
     public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
-                                Set<Integer> indexedFiles, boolean resume, boolean ignoreOverlapping) {
+                                Set<Integer> indexedFiles, boolean resume, boolean ignoreOverlapping, int release) {
         this.dbAdaptor = Objects.requireNonNull(dbAdaptor);
         this.studyConfiguration = Objects.requireNonNull(studyConfiguration);
         this.fileIds = Objects.requireNonNull(fileIds);
@@ -256,6 +259,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         format = buildFormat(studyConfiguration);
         indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds));
         studyId = studyConfiguration.getStudyId();
+        this.release = release;
         studyIdStr = String.valueOf(studyId);
         String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
         if (defaultGenotype.equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
@@ -1070,6 +1074,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
                 List<Bson> updates = new ArrayList<>();
                 updates.add(push(STUDIES_FIELD, studyDocument));
+                updates.add(addToSet(RELEASE_FIELD, release));
                 if (newVariant) {
                     Document variantDocument = variantConverter.convertToStorageType(emptyVar);
                     updates.add(addEachToSet(IDS_FIELD, ids));
@@ -1100,6 +1105,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             if (!ids.isEmpty()) {
                 mergeUpdates.add(addEachToSet(IDS_FIELD, ids));
             }
+            mergeUpdates.add(addToSet(RELEASE_FIELD, release));
 
             if (!excludeGenotypes) {
                 for (String gt : gts.keySet()) {
