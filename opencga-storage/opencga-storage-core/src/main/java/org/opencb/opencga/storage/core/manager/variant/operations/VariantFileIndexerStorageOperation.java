@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -193,6 +194,13 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
         options.put(VariantAnnotationManager.SPECIES, scientificName);
         options.put(VariantAnnotationManager.ASSEMBLY, studyInfo.getOrganism().getAssembly());
+
+        QueryResult<Project> projectQueryResult = catalogManager
+                .getProjectManager()
+                .get(String.valueOf(studyInfo.getProjectId()),
+                        new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()), sessionId);
+        int release = projectQueryResult.first().getCurrentRelease();
+        options.put(VariantStorageEngine.Options.RELEASE.key(), release);
 
         variantStorageEngine.getOptions().putAll(options);
         boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())
