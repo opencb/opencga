@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.QUERY_INTERSECT;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SKIP_SEARCH;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils.*;
 
@@ -761,7 +762,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         queryResult.setApproximateCount(approxCount);
                         queryResult.setNumTotalResults(numTotalResults.longValue());
                     }
-                    queryResult.setWarningMsg("Data from Solr + " + getStorageEngineId());
+                    queryResult.setSource(SEARCH_ENGINE_ID + '+' + getStorageEngineId());
                     return queryResult;
                 }
             } else {
@@ -769,7 +770,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     return dbAdaptor.iterator(query, options);
                 } else {
                     setDefaultTimeout(options);
-                    return dbAdaptor.get(query, options);
+                    return dbAdaptor.get(query, options).setSource(getStorageEngineId());
                 }
             }
         }
@@ -901,8 +902,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw new VariantQueryException("Error querying Solr", e);
         }
         int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-        return new VariantQueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count), null)
-                .setApproximateCount(approxCount);
+        return new VariantQueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count), null,
+                SEARCH_ENGINE_ID + '+' + getStorageEngineId(), approxCount);
     }
 
     /**

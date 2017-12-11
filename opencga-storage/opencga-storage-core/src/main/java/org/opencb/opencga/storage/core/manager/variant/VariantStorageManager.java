@@ -306,7 +306,9 @@ public class VariantStorageManager extends StorageManager {
                 result.getWarningMsg(),
                 result.getErrorMsg(),
                 variants,
-                result.getSamples());
+                result.getSamples(),
+                result.getSource(),
+                result.getApproximateCount());
 
     }
 

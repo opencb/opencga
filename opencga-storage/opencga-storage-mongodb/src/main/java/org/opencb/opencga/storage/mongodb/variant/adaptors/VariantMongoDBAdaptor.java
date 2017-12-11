@@ -463,7 +463,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
         watch.stop();
-        return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null);
+        return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null,
+                MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
     }
 
     @Override

@@ -30,15 +30,24 @@ public class VariantQueryResult<T> extends QueryResult<T> {
 
     private Map<String, List<String>> samples;
     private Boolean approximateCount;
+    private String source;
 
     public VariantQueryResult() {
         this.samples = null;
     }
 
+
     public VariantQueryResult(String id, int dbTime, int numResults, long numTotalResults, String warningMsg, String errorMsg,
-                              List<T> result, Map<String, List<String>> samples) {
+                              List<T> result, Map<String, List<String>> samples, String source) {
+        this(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result, samples, source, null);
+    }
+
+    public VariantQueryResult(String id, int dbTime, int numResults, long numTotalResults, String warningMsg, String errorMsg,
+                              List<T> result, Map<String, List<String>> samples, String source, Boolean approximateCount) {
         super(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result);
         this.samples = samples;
+        this.source = source;
+        this.approximateCount = approximateCount;
     }
 
     public VariantQueryResult(QueryResult<T> queryResult, Map<String, List<String>> samples) {
@@ -70,6 +79,15 @@ public class VariantQueryResult<T> extends QueryResult<T> {
 
     public VariantQueryResult<T> setApproximateCount(Boolean approximateCount) {
         this.approximateCount = approximateCount;
+        return this;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public VariantQueryResult<T> setSource(String source) {
+        this.source = source;
         return this;
     }
 }

@@ -249,7 +249,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         Map<String, List<String>> samples = getSamplesMetadata(query, options, getStudyConfigurationManager());
         return new VariantQueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults,
-                warn, error, variants, samples);
+                warn, error, variants, samples, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
     }
 
     @Override
