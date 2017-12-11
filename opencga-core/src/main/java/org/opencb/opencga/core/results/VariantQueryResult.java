@@ -29,8 +29,9 @@ import java.util.Map;
 public class VariantQueryResult<T> extends QueryResult<T> {
 
     private Map<String, List<String>> samples;
-    private Boolean approximateCount;
     private String source;
+    private Boolean approximateCount;
+    private Integer approximateCountSamplingSize;
 
     public VariantQueryResult() {
         this.samples = null;
@@ -39,15 +40,17 @@ public class VariantQueryResult<T> extends QueryResult<T> {
 
     public VariantQueryResult(String id, int dbTime, int numResults, long numTotalResults, String warningMsg, String errorMsg,
                               List<T> result, Map<String, List<String>> samples, String source) {
-        this(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result, samples, source, null);
+        this(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result, samples, source, null, null);
     }
 
     public VariantQueryResult(String id, int dbTime, int numResults, long numTotalResults, String warningMsg, String errorMsg,
-                              List<T> result, Map<String, List<String>> samples, String source, Boolean approximateCount) {
+                              List<T> result, Map<String, List<String>> samples, String source,
+                              Boolean approximateCount, Integer approximateCountSamplingSize) {
         super(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result);
         this.samples = samples;
         this.source = source;
         this.approximateCount = approximateCount;
+        this.approximateCountSamplingSize = approximateCountSamplingSize;
     }
 
     public VariantQueryResult(QueryResult<T> queryResult, Map<String, List<String>> samples) {
@@ -79,6 +82,15 @@ public class VariantQueryResult<T> extends QueryResult<T> {
 
     public VariantQueryResult<T> setApproximateCount(Boolean approximateCount) {
         this.approximateCount = approximateCount;
+        return this;
+    }
+
+    public Integer getApproximateCountSamplingSize() {
+        return approximateCountSamplingSize;
+    }
+
+    public VariantQueryResult setApproximateCountSamplingSize(Integer approximateCountSamplingSize) {
+        this.approximateCountSamplingSize = approximateCountSamplingSize;
         return this;
     }
 
