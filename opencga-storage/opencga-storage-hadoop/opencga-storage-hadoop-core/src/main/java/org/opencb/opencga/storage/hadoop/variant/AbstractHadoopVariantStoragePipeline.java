@@ -86,6 +86,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RELEASE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
@@ -686,6 +687,9 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                     throw new StorageEngineException("Unable to register samples in Phoenix", e);
                 }
             }
+
+            int release = studyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
+            phoenixHelper.registerRelease(jdbcConnection, tableName, release);
 
             try {
                 hBaseLock.unlock(GenomeHelper.PHOENIX_LOCK_COLUMN, lock);

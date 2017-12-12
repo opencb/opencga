@@ -23,6 +23,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.Converter;
@@ -30,16 +32,15 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created on 03/12/15.
@@ -89,49 +90,99 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
 
     @Override
     public VariantAnnotation convert(Result result) {
+        VariantAnnotation variantAnnotation = null;
 
         byte[] value = result.getValue(columnFamily, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
         if (ArrayUtils.isNotEmpty(value)) {
             try {
-                return post(objectMapper.readValue(value, VariantAnnotation.class));
+                variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }
-        return null;
+        List<Integer> releases = new ArrayList<>();
+        for (byte[] bytes : result.getFamilyMap(columnFamily).keySet()) {
+            if (Bytes.startsWith(bytes, VariantPhoenixHelper.RELEASE_PREFIX_BYTES)) {
+                releases.add(getRelease(Bytes.toString(bytes)));
+            }
+        }
+
+        return post(variantAnnotation, releases);
     }
 
     public VariantAnnotation convert(ResultSet resultSet) {
-        int column;
-        try {
-            column = resultSet.findColumn(VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.column());
-        } catch (SQLException e) {
-            //Column not found
-            return null;
+        VariantAnnotation variantAnnotation = null;
+
+        Integer column = findColumn(resultSet, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION);
+        if (column != null) {
+            try {
+                    String value = resultSet.getString(column);
+                    if (StringUtils.isNotEmpty(value)) {
+                        try {
+                            variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
+            } catch (SQLException e) {
+                // This should never happen!
+                throw new IllegalStateException(e);
+            }
         }
+
+
+        List<Integer> releases = new ArrayList<>();
         try {
-            String value = resultSet.getString(column);
-            if (StringUtils.isNotEmpty(value)) {
-                try {
-                    return post(objectMapper.readValue(value, VariantAnnotation.class));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                String columnName = metaData.getColumnName(i);
+                if (columnName.startsWith(VariantPhoenixHelper.RELEASE_PREFIX)) {
+                    if (resultSet.getBoolean(i)) {
+                        releases.add(getRelease(columnName));
+                    }
                 }
             }
         } catch (SQLException e) {
             // This should never happen!
             throw new IllegalStateException(e);
         }
-        return null;
-
+        return post(variantAnnotation, releases);
     }
 
-    private VariantAnnotation post(VariantAnnotation variantAnnotation) {
+    public Integer findColumn(ResultSet resultSet, PhoenixHelper.Column column) {
+        try {
+            return resultSet.findColumn(column.column());
+        } catch (SQLException e) {
+            //Column not found
+            return null;
+        }
+    }
+
+    public Integer getRelease(String columnName) {
+        return Integer.valueOf(columnName.substring(VariantPhoenixHelper.RELEASE_PREFIX.length()));
+    }
+
+    private VariantAnnotation post(VariantAnnotation variantAnnotation, List<Integer> releases) {
+        if (variantAnnotation == null) {
+            if (releases.isEmpty()) {
+                return null;
+            } else {
+                variantAnnotation = new VariantAnnotation();
+            }
+        }
         // If there are VariantTraitAssociation, and there are none TraitAssociations (EvidenceEntry), convert
         if (variantAnnotation.getVariantTraitAssociation() != null
                 && CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {
             List<EvidenceEntry> evidenceEntries = traitAssociationConverter.convert(variantAnnotation.getVariantTraitAssociation());
             variantAnnotation.setTraitAssociation(evidenceEntries);
+        }
+        if (releases != null && !releases.isEmpty()) {
+            if (variantAnnotation.getAdditionalAttributes() == null) {
+                variantAnnotation.setAdditionalAttributes(new HashMap<>());
+            }
+            String release = releases.stream().min(Integer::compareTo).orElse(0).toString();
+            variantAnnotation.getAdditionalAttributes().put("opencga",
+                    new AdditionalAttribute(Collections.singletonMap("release", release)));
         }
 
         return variantAnnotation;

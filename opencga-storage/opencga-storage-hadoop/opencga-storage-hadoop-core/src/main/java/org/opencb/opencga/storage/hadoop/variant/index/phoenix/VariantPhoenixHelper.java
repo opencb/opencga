@@ -63,6 +63,8 @@ public class VariantPhoenixHelper {
     public static final String MGF_SUFIX = "_MGF";
     public static final char COLUMN_KEY_SEPARATOR = '_';
     public static final String COLUMN_KEY_SEPARATOR_STR = String.valueOf(COLUMN_KEY_SEPARATOR);
+    public static final String RELEASE_PREFIX = "R_";
+    public static final byte[] RELEASE_PREFIX_BYTES = Bytes.toBytes(RELEASE_PREFIX);
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
     private final PhoenixHelper phoenixHelper;
     private final GenomeHelper genomeHelper;
@@ -287,6 +289,12 @@ public class VariantPhoenixHelper {
             columns.add(getSampleColumn(studyId, sampleId));
         }
         columns.add(getStudyColumn(studyId));
+        phoenixHelper.addMissingColumns(con, table, columns, true);
+        con.commit();
+    }
+
+    public void registerRelease(Connection con, String table, int release) throws SQLException {
+        List<Column> columns = Collections.singletonList(getReleaseColumn(release));
         phoenixHelper.addMissingColumns(con, table, columns, true);
         con.commit();
     }
@@ -545,6 +553,18 @@ public class VariantPhoenixHelper {
 
     public static Column getFileColumn(int studyId, int sampleId) {
         return Column.build(buildFileColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
+    }
+
+    public static byte[] buildReleaseColumnKey(int release) {
+        return Bytes.toBytes(buildReleaseColumnKey(release, new StringBuilder()).toString());
+    }
+
+    public static StringBuilder buildReleaseColumnKey(int release, StringBuilder stringBuilder) {
+        return stringBuilder.append(RELEASE_PREFIX).append(release);
+    }
+
+    public static Column getReleaseColumn(int release) {
+        return Column.build(buildReleaseColumnKey(release, new StringBuilder()).toString(), PBoolean.INSTANCE);
     }
 
 }

@@ -25,6 +25,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
@@ -51,6 +52,7 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
     private final PhoenixHelper.Column studyColumn;
     private final LinkedListMultimap<Integer, Integer> sampleToFileMap;
     private boolean addSecondaryAlternates;
+    private final PhoenixHelper.Column releaseColumn;
 
     public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration) {
         this(columnFamily, studyConfiguration, false);
@@ -77,6 +79,8 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                 sampleToFileMap.put(sampleId, entry.getKey());
             }
         }
+        int release = studyConfiguration.getAttributes().getInt(VariantStorageEngine.Options.RELEASE.key());
+        releaseColumn = VariantPhoenixHelper.getReleaseColumn(release);
     }
 
     @Override
@@ -85,6 +89,8 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         Put put = new Put(rowKey);
         add(put, VariantPhoenixHelper.VariantColumn.TYPE, variant.getType().toString());
         add(put, studyColumn, 0);
+        add(put, releaseColumn, true);
+
         return convert(variant, put, null);
     }
 

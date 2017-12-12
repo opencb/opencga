@@ -242,6 +242,20 @@ public class VariantSqlQueryParser {
             }
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
+
+                int release = 0;
+                if (phoenixSQLQuery.getSelect() != null
+                        && phoenixSQLQuery.getSelect().getStudyConfigurations() != null
+                        && !phoenixSQLQuery.getSelect().getStudyConfigurations().isEmpty()) {
+                    // TODO: Release should be a global attribute, not a study attribute.
+                    for (StudyConfiguration sc : phoenixSQLQuery.getSelect().getStudyConfigurations().values()) {
+                        release = Math.max(release, sc.getAttributes().getInt(VariantStorageEngine.Options.RELEASE.key()));
+                    }
+                }
+                for (int i = 0; i <= release; i++) {
+                    sb.append(',');
+                    VariantPhoenixHelper.buildReleaseColumnKey(i, sb);
+                }
             }
 
             return sb;
