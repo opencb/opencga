@@ -295,7 +295,7 @@ public class VariantSqlQueryParser {
     }
 
     protected StringBuilder appendFilters(StringBuilder sb, List<String> filters, String delimiter) {
-        delimiter = " " + delimiter + " ";
+        delimiter = ' ' + delimiter + ' ';
         if (!filters.isEmpty()) {
             sb.append(filters.stream().collect(Collectors.joining(delimiter, " ( ", " )")));
         }
@@ -456,6 +456,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#FILTER}
      * {@link VariantQueryParam#COHORTS}
      * {@link VariantQueryParam#GENOTYPE}
+     * {@link VariantQueryParam#RELEASE}
      *
      * Annotation filters:
      * {@link VariantQueryParam#ANNOTATION_EXISTS}
@@ -793,6 +794,20 @@ public class VariantSqlQueryParser {
                     filters.add(gtFilters.stream().collect(Collectors.joining(" AND ", " ( ", " ) ")));
                 }
             }
+        }
+
+        if (isValidParam(query, RELEASE)) {
+            int release = query.getInt(RELEASE.key(), -1);
+            if (release <= 0) {
+                throw VariantQueryException.malformedParam(RELEASE, query.getString(RELEASE.key()));
+            }
+
+            StringBuilder releaseFilters = new StringBuilder();
+            releaseFilters.append(buildFilter(getReleaseColumn(1), "=", true));
+            for (int i = 2; i <= release; i++) {
+                releaseFilters.append(" OR ").append(buildFilter(getReleaseColumn(i), "=", true));
+            }
+            filters.add(releaseFilters.toString());
         }
 
         return defaultStudyConfiguration;
@@ -1194,6 +1209,13 @@ public class VariantSqlQueryParser {
                         .append(parseNumericOperator(op))
                         .append(' ').append(parsedValue);
                 break;
+            case "BOOLEAN":
+                parsedValue = parseBoolean(value);
+                sb.append(negated)
+                        .append('"').append(column).append('"').append(arrayPosition).append(' ')
+                        .append(parseBooleanOperator(op))
+                        .append(' ').append(parsedValue);
+                break;
             default:
                 throw new VariantQueryException("Unsupported column type " + column.getPDataType().getSqlTypeName()
                         + " for column " + column);
@@ -1233,6 +1255,14 @@ public class VariantSqlQueryParser {
                     throw new VariantQueryException("Error parsing integer value '" + value + '\'', e);
                 }
             }
+        }
+    }
+
+    private boolean parseBoolean(Object value) {
+        if (value instanceof Boolean) {
+            return ((Boolean) value);
+        } else {
+            return Boolean.parseBoolean(value.toString());
         }
     }
 
@@ -1313,5 +1343,14 @@ public class VariantSqlQueryParser {
         }
         return parsedOp;
     }
+
+    public static String parseBooleanOperator(String op) {
+        String parsedOp = parseOperator(op);
+        if (!parsedOp.equals("=") && !parsedOp.equals("!=")) {
+            throw new VariantQueryException("Unable to use operator (" + op + ") with boolean fields");
+        }
+        return parsedOp;
+    }
+
 
 }

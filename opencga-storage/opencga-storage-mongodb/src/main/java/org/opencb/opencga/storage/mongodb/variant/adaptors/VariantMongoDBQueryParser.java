@@ -210,6 +210,15 @@ public class VariantMongoDBQueryParser {
 //                query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
             }
 
+            if (isValidParam(query, RELEASE)) {
+                int release = query.getInt(RELEASE.key(), -1);
+                if (release <= 0) {
+                    throw VariantQueryException.malformedParam(RELEASE, query.getString(RELEASE.key()));
+                }
+
+                builder.and(DocumentToVariantConverter.RELEASE_FIELD).lessThanEquals(release);
+            }
+
             /* ANNOTATION PARAMS */
             parseAnnotationQueryParams(query, builder);
 

@@ -22,9 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.ALL;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NONE;
 
@@ -284,6 +282,11 @@ public final class VariantQueryParam implements QueryParam {
             = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]";
     public static final VariantQueryParam UNKNOWN_GENOTYPE
             = new VariantQueryParam("unknownGenotype", TEXT, UNKNOWN_GENOTYPE_DESCR);
+
+    public static final String RELEASE_DESCR
+            = "";
+    public static final VariantQueryParam RELEASE
+            = new VariantQueryParam("release", INTEGER, RELEASE_DESCR);
 
     private VariantQueryParam(String key, Type type, String description) {
         this.key = key;

@@ -294,7 +294,10 @@ public class VariantPhoenixHelper {
     }
 
     public void registerRelease(Connection con, String table, int release) throws SQLException {
-        List<Column> columns = Collections.singletonList(getReleaseColumn(release));
+        List<Column> columns = new ArrayList<>(release);
+        for (int i = 1; i <= release; i++) {
+            columns.add(getReleaseColumn(i));
+        }
         phoenixHelper.addMissingColumns(con, table, columns, true);
         con.commit();
     }
