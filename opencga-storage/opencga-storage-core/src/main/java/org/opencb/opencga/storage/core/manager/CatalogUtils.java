@@ -16,13 +16,14 @@
 
 package org.opencb.opencga.storage.core.manager;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -88,50 +89,6 @@ public class CatalogUtils {
         return query;
     }
 
-    @FunctionalInterface
-    protected interface CatalogIdResolver {
-        Long get(String value) throws CatalogException;
-    }
-
-    /**
-     * Splits the value from the query (if any) and translates the IDs to numerical Ids.
-     * @param query     Query with the data
-     * @param param     Param to modify
-     * @param toId      Method to translate from String to numerical ID
-     * @throws CatalogException if there is any catalog error
-     */
-    protected void transformFilter(Query query, VariantQueryParam param, CatalogIdResolver toId) throws CatalogException {
-        if (VariantQueryUtils.isValidParam(query, param)) {
-            String valuesStr = query.getString(param.key());
-            // Do not try to transform ALL or NONE values
-            if (isNoneOrAll(valuesStr)) {
-                return;
-            }
-            VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.checkOperator(valuesStr);
-            if (queryOperation == null) {
-                queryOperation = VariantQueryUtils.QueryOperation.OR;
-            }
-            List<String> values = VariantQueryUtils.splitValue(valuesStr, queryOperation);
-            StringBuilder sb = new StringBuilder();
-            for (String value : values) {
-                if (sb.length() > 0) {
-                    sb.append(queryOperation.separator());
-                }
-                if (isNegated(value)) {
-                    sb.append(NOT);
-                    value = removeNegation(value);
-                }
-
-                if (StringUtils.isNumeric(value)) {
-                    sb.append(value);
-                } else {
-                    sb.append(toId.get(value));
-                }
-            }
-            query.put(param.key(), sb.toString());
-        }
-    }
-
     /**
      * Get the list of studies. Discards negated studies (starting with '!').
      *
@@ -177,6 +134,19 @@ public class CatalogUtils {
         }
         return studies;
     }
+
+    public Project getProjectFromQuery(Query query, String sessionId, QueryOptions options) throws CatalogException {
+        if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
+            String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
+            return catalogManager.getProjectManager().get(project, options, sessionId).first();
+        } else {
+            long studyId = getAnyStudyId(query, sessionId);
+            Long projectId = catalogManager.getStudyManager().getProjectId(studyId);
+            return catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId), options, sessionId)
+                    .first();
+        }
+    }
+
 
     /**
      * Gets any studyId referred in the Query. If none, tries to get the default study. If more than one, thrown an exception.
