@@ -305,11 +305,10 @@ public class VariantHBaseQueryParser {
             scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
             if (defaultStudyConfiguration != null) {
                 int release = defaultStudyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
-                for (int i = 0; i <= release; i++) {
+                for (int i = 1; i <= release; i++) {
                     scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildReleaseColumnKey(release));
                 }
             }
-
         }
 
 //        if (!returnedFields.contains(VariantField.ANNOTATION) && !returnedFields.contains(VariantField.STUDIES)) {

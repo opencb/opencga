@@ -252,7 +252,7 @@ public class VariantSqlQueryParser {
                         release = Math.max(release, sc.getAttributes().getInt(VariantStorageEngine.Options.RELEASE.key()));
                     }
                 }
-                for (int i = 0; i <= release; i++) {
+                for (int i = 1; i <= release; i++) {
                     sb.append(',');
                     VariantPhoenixHelper.buildReleaseColumnKey(i, sb);
                 }

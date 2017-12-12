@@ -648,7 +648,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // FIXME: CurrentRelease should be a global attribute, not a study attribute.
         int currentRelease = studyConfiguration.getAttributes().getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
         if (options.containsKey(Options.RELEASE.key())) {
-            if (release < currentRelease) {
+            if (release < currentRelease || release <= 0) {
                 //ERROR, asking to use a release lower than currentRelease
                 throw StorageEngineException.invalidReleaseException(release, currentRelease);
             } else {
