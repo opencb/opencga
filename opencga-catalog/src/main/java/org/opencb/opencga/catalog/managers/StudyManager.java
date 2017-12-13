@@ -544,9 +544,10 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getPermissionRules(studyId, entry);
     }
 
-    public void markDeletedPermissionRule(String studyStr, Study.Entry entry, String permissionRuleId, boolean restorePermissions,
-                                          String sessionId) throws CatalogException {
+    public void markDeletedPermissionRule(String studyStr, Study.Entry entry, String permissionRuleId,
+                                          PermissionRule.DeleteAction deleteAction, String sessionId) throws CatalogException {
         ParamUtils.checkObj(entry, "entry");
+        ParamUtils.checkObj(deleteAction, "Delete action");
         ParamUtils.checkObj(permissionRuleId, "permission rule id");
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
@@ -554,7 +555,7 @@ public class StudyManager extends AbstractManager {
 
         authorizationManager.checkCanUpdatePermissionRules(studyId, userId);
 
-        studyDBAdaptor.markDeletedPermissionRule(studyId, entry, permissionRuleId, restorePermissions);
+        studyDBAdaptor.markDeletedPermissionRule(studyId, entry, permissionRuleId, deleteAction);
     }
 
     public QueryResult<PermissionRule> getPermissionRules(String studyStr, Study.Entry entry, String sessionId) throws CatalogException {

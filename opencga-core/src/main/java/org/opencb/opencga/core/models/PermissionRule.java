@@ -70,4 +70,12 @@ public class PermissionRule {
         this.permissions = permissions;
         return this;
     }
+
+    public enum DeleteAction {
+        REMOVE, // Remove all the permissions assigned by the permission rule even if it had been also assigned manually.
+        REVERT, // Remove all the permissions assigned by the permission rule but retain manual permissions as well as other permissions
+                // that might have been assigned by other permission rules (leave permissions as if the permission rule had never existed).
+        NONE,   // Remove the permission rule but no the permissions that might have been eventually assigned because of it.
+    }
+
 }

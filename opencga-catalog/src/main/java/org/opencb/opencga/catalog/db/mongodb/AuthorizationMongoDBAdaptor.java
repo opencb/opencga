@@ -17,9 +17,11 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -57,6 +59,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     private static final String ANONYMOUS = "*";
     private static final String INTERNAL_DELIMITER = "__";
+    private static final String USER_DEFINED_ACLS = "_userAcls";
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
@@ -67,7 +70,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
-        ACL("_acl", TEXT_ARRAY, "");
+        ACL("_acl", TEXT_ARRAY, ""),
+        USER_DEFINED_ACLS("_userAcls", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
 
@@ -188,9 +192,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
      * @param resourceId Resource id being queried.
      * @param membersList    Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
      * @param entry     Entity where the query will be performed.
-     * @return A map of user -> List of permissions.
+     * @return A map of [acl, user_defined_acl] -> user -> List of permissions.
      */
-    private Map<String, List<String>> internalGet(long resourceId, List<String> membersList, Entity entry) {
+    private Map<String, Map<String, List<String>>> internalGet(long resourceId, List<String> membersList, Entity entry) {
 
         List<String> members = (membersList == null ? Collections.emptyList() : membersList);
 
@@ -199,7 +203,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, resourceId)));
         aggregation.add(Aggregates.project(
-                Projections.include(QueryParams.ID.key(), QueryParams.ACL.key())));
+                Projections.include(QueryParams.ID.key(), QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key())));
 
         List<Bson> filters = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(members)) {
@@ -226,25 +230,44 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         QueryResult<Document> aggregate = collection.aggregate(aggregation, null);
 
         // Code replicated in MongoDBAdaptor
-        Map<String, List<String>> permissions = new HashMap<>();
+        Map<String, Map<String, List<String>>> permissions = new HashMap<>();
+        permissions.put(QueryParams.ACL.key(), new HashMap<>());
+        permissions.put(QueryParams.USER_DEFINED_ACLS.key(), new HashMap<>());
+
         if (aggregate.getNumResults() > 0) {
             Set<String> memberSet = new HashSet<>();
             memberSet.addAll(members);
 
             Document document = aggregate.first();
-            List<String> memberList = (List<String>) document.get(QueryParams.ACL.key);
-
-            if (memberList != null) {
+            List<String> aclList = (List<String>) document.get(QueryParams.ACL.key());
+            if (aclList != null) {
                 // If _acl was not previously defined, it can be null the first time
-                for (String memberPermission : memberList) {
+                for (String memberPermission : aclList) {
                     String[] split = StringUtils.split(memberPermission, INTERNAL_DELIMITER, 2);
 //                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
                     if (memberSet.isEmpty() || memberSet.contains(split[0])) {
                         if (!permissions.containsKey(split[0])) {
-                            permissions.put(split[0], new ArrayList<>());
+                            permissions.get(QueryParams.ACL.key()).put(split[0], new ArrayList<>());
                         }
                         if (!("NONE").equals(split[1])) {
-                            permissions.get(split[0]).add(split[1]);
+                            permissions.get(QueryParams.ACL.key()).get(split[0]).add(split[1]);
+                        }
+                    }
+                }
+            }
+
+            List<String> userDefinedAcls = (List<String>) document.get(QueryParams.USER_DEFINED_ACLS.key());
+            if (userDefinedAcls != null) {
+                // If _acl was not previously defined, it can be null the first time
+                for (String memberPermission : userDefinedAcls) {
+                    String[] split = StringUtils.split(memberPermission, INTERNAL_DELIMITER, 2);
+//                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
+                    if (memberSet.isEmpty() || memberSet.contains(split[0])) {
+                        if (!permissions.containsKey(split[0])) {
+                            permissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(split[0], new ArrayList<>());
+                        }
+                        if (!("NONE").equals(split[1])) {
+                            permissions.get(QueryParams.USER_DEFINED_ACLS.key()).get(split[0]).add(split[1]);
                         }
                     }
                 }
@@ -260,7 +283,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         validateEntry(entry);
         long startTime = startQuery();
 
-        Map<String, List<String>> myMap = internalGet(resourceId, members, entry);
+        Map<String, List<String>> myMap = internalGet(resourceId, members, entry).get(QueryParams.ACL.key());
         List<E> retList;
         switch (entry) {
             case STUDY:
@@ -347,7 +370,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append("$isolated", 1)
                 .append(PRIVATE_STUDY_ID, studyId);
         List<String> removePermissions = createPermissionArray(Arrays.asList(member), fullPermissionsMap.get(entry));
-        Document update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
+        Document update = new Document("$pullAll", new Document()
+                .append(QueryParams.ACL.key(), removePermissions)
+                .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
+        );
         logger.debug("Remove all acls for entity {} in study {}. Query: {}, pullAll: {}", entry, studyId,
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -368,16 +394,21 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         for (long resourceId : resourceIds) {
             // Get current permissions for resource and override with new ones set for members (already existing or not)
-            Map<String, List<String>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entry);
+            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entry);
             for (String member : members) {
-                currentPermissions.put(member, new ArrayList<>(permissions));
+                currentPermissions.get(QueryParams.ACL.key()).put(member, new ArrayList<>(permissions));
+                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(member, new ArrayList<>(permissions));
             }
 
-            List<String> permissionArray = createPermissionArray(currentPermissions);
+            List<String> permissionArray = createPermissionArray(currentPermissions.get(QueryParams.ACL.key()));
+            List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));
             Document queryDocument = new Document()
                     .append("$isolated", 1)
                     .append(PRIVATE_ID, resourceId);
-            Document update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+            Document update = new Document("$set", new Document()
+                    .append(QueryParams.ACL.key(), permissionArray)
+                    .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray)
+            );
 
             logger.debug("Set Acls (set): Query {}, Push {}",
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -402,7 +433,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         Document queryDocument = new Document()
                 .append("$isolated", 1)
                 .append(PRIVATE_ID, new Document("$in", resourceIds));
-        Document update = new Document("$addToSet", new Document(QueryParams.ACL.key(), new Document("$each", myPermissions)));
+        Document update = new Document("$addToSet", new Document()
+                .append(QueryParams.ACL.key(), new Document("$each", myPermissions))
+                .append(QueryParams.USER_DEFINED_ACLS.key(), new Document("$each", myPermissions))
+        );
         logger.debug("Add Acls (addToSet): Query {}, Push {}",
                 queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -432,7 +466,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         Document queryDocument = new Document()
                 .append("$isolated", 1)
                 .append(PRIVATE_ID, new Document("$in", resourceIds));
-        Document update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
+        Document update = new Document("$pullAll", new Document()
+                .append(QueryParams.ACL.key(), removePermissions)
+                .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
+        );
         logger.debug("Remove Acls (pullAll): Query {}, Pull {}",
                 queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -465,20 +502,24 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         for (long resourceId : resourceIds) {
             // Get current permissions for resource and override with new ones set for members (already existing or not)
-            Map<String, List<String>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
+            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
             for (E acl : acls) {
                 List<String> permissions = (List<String>) acl.getPermissions().stream().map(a -> a.toString()).collect(Collectors.toList());
                 // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
                 permissions = new ArrayList<>(permissions);
                 permissions.add("NONE");
-                currentPermissions.put(acl.getMember(), permissions);
+                currentPermissions.get(QueryParams.ACL.key()).put(acl.getMember(), permissions);
+                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(acl.getMember(), permissions);
             }
+            List<String> permissionArray = createPermissionArray(currentPermissions.get(QueryParams.ACL.key()));
+            List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));
 
-            List<String> permissionArray = createPermissionArray(currentPermissions);
             Document queryDocument = new Document()
                     .append("$isolated", 1)
                     .append(PRIVATE_ID, resourceId);
-            Document update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+            Document update = new Document("$set", new Document()
+                    .append(QueryParams.ACL.key(), permissionArray)
+                    .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray));
 
             logger.debug("Set Acls (set): Query {}, Push {}",
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -517,70 +558,216 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void removePermissionRules(long studyId, String permissionRuleToDeleteId, Study.Entry entry) throws CatalogException {
+    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entry entry)
+            throws CatalogException {
+        // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
+        Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
+                .collect(Collectors.toMap(PermissionRule::getId, p -> p));
+        PermissionRule permissionRuleToDelete = permissionRuleMap.get(permissionRuleToDeleteId);
+
+        Set<String> permissionsToRemove =
+                createPermissionArray(permissionRuleToDelete.getMembers(), permissionRuleToDelete.getPermissions())
+                        .stream().collect(Collectors.toSet());
+
         MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
 
         // Remove the __TODELETE tag...
         String permissionRuleId = permissionRuleToDeleteId.split(INTERNAL_DELIMITER)[0];
 
-        // 1. Remove the permission rule id everywhere it was applied
+        // 1. Get all the entries that have the permission rule to be removed applied
         Document query = new Document()
-                .append(PRIVATE_STUDY_ID, studyId)
-                .append(PERMISSION_RULES_APPLIED, permissionRuleId)
-                .append("$isolated", 1);
-        Document update = new Document("$pull", new Document(PERMISSION_RULES_APPLIED, permissionRuleId));
-        logger.debug("Remove permission rule id from all {} in study {}: Query {}, Update {}", entry, studyId,
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        collection.update(query, update, new QueryOptions("multi", true));
+                .append(PRIVATE_STUDY_ID, study.getId())
+                .append(PERMISSION_RULES_APPLIED, permissionRuleId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_ID));
+        MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
+        while (iterator.hasNext()) {
+            Document myDocument = iterator.next();
+            Set<String> effectivePermissions = new HashSet<>();
+            Set<String> manualPermissions = new HashSet<>();
+            Set<String> permissionRulesApplied = new HashSet<>();
+
+            List<String> currentAclList = (List) myDocument.get(QueryParams.ACL.key());
+            List<String> currentManualAclList = (List) myDocument.get(QueryParams.USER_DEFINED_ACLS.key());
+            List<String> currentPermissionRulesApplied = (List) myDocument.get(PERMISSION_RULES_APPLIED);
+
+            // TODO: Control that if there are no more permissions set for a user or group, we should also remove the NONE permission
+            // Remove permissions from the permission rule
+            for (String permission : currentAclList) {
+                if (!permissionsToRemove.contains(permission)) {
+                    effectivePermissions.add(permission);
+                }
+            }
+
+            // Remove permissions from the permission rule from the internal manual permissions list
+            if (currentManualAclList != null) {
+                for (String permission : currentManualAclList) {
+                    if (!permissionsToRemove.contains(permission)) {
+                        manualPermissions.add(permission);
+                    }
+                }
+            }
+
+            for (String tmpPermissionRuleId : currentPermissionRulesApplied) {
+                // We apply the rest of permission rules except the one to be deleted
+                if (!tmpPermissionRuleId.equals(permissionRuleId)) {
+                    PermissionRule tmpPermissionRule = permissionRuleMap.get(tmpPermissionRuleId);
+                    List<String> tmpPermissionList = new ArrayList<>(tmpPermissionRule.getPermissions());
+                    tmpPermissionList.add("NONE");
+                    List<String> permissionArray = createPermissionArray(tmpPermissionRule.getMembers(), tmpPermissionList);
+
+                    effectivePermissions.addAll(permissionArray);
+                    permissionRulesApplied.add(tmpPermissionRuleId);
+                }
+            }
+
+            Document tmpQuery = new Document()
+                    .append(PRIVATE_ID, myDocument.get(PRIVATE_ID))
+                    .append(PRIVATE_STUDY_ID, study.getId())
+                    .append("$isolated", true);
+
+            Document update = new Document("$set", new Document()
+                    .append(QueryParams.ACL.key(), effectivePermissions)
+                    .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissions)
+                    .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
+
+            logger.debug("Remove permission rule id and permissions from {}: Query {}, Update {}", entry,
+                    tmpQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            QueryResult<UpdateResult> updateResult = collection.update(tmpQuery, update, new QueryOptions("multi", true));
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_ID));
+            }
+        }
 
         // 2. Remove the permission rule from the map in the study
-        query = new Document()
-                .append(PRIVATE_ID, studyId)
-                .append(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry + ".id", permissionRuleToDeleteId);
-        update = new Document("$pull",
-                new Document(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry,
-                        new Document("id", permissionRuleToDeleteId)));
-        logger.debug("Remove permission rule from the study {}: Query {}, Update {}", studyId,
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        dbCollectionMap.get(Entity.STUDY).update(query, update, new QueryOptions("multi", true));
+        removeReferenceToPermissionRuleInStudy(study.getId(), permissionRuleToDeleteId, entry);
     }
 
     @Override
-    public void removePermissionRulesAndRestorePermissions(long studyId, PermissionRule permissionRule, Study.Entry entry)
+    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entry entry)
             throws CatalogException {
+        // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
+        Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
+                .collect(Collectors.toMap(PermissionRule::getId, p -> p));
+        PermissionRule permissionRuleToDelete = permissionRuleMap.get(permissionRuleToDeleteId);
+
+        Set<String> permissionsToRemove =
+                createPermissionArray(permissionRuleToDelete.getMembers(), permissionRuleToDelete.getPermissions())
+                        .stream().collect(Collectors.toSet());
+
         MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
 
-        List<String> permissions = new ArrayList<>(permissionRule.getPermissions());
-        List<String> removePermissions = createPermissionArray(permissionRule.getMembers(), permissions);
-
         // Remove the __TODELETE tag...
-        String permissionRuleId = permissionRule.getId().split(INTERNAL_DELIMITER)[0];
+        String permissionRuleId = permissionRuleToDeleteId.split(INTERNAL_DELIMITER)[0];
 
-        // 1. Remove the permission rule id and the permissions everywhere it was applied
+        // 1. Get all the entries that have the permission rule to be removed applied
+        Document query = new Document()
+                .append(PRIVATE_STUDY_ID, study.getId())
+                .append(PERMISSION_RULES_APPLIED, permissionRuleId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_ID));
+        MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
+        while (iterator.hasNext()) {
+            Document myDocument = iterator.next();
+            Set<String> effectivePermissions = new HashSet<>();
+            Set<String> permissionRulesApplied = new HashSet<>();
+
+            List<String> currentAclList = (List) myDocument.get(QueryParams.ACL.key());
+            List<String> currentManualAclList = (List) myDocument.get(QueryParams.USER_DEFINED_ACLS.key());
+            List<String> currentPermissionRulesApplied = (List) myDocument.get(PERMISSION_RULES_APPLIED);
+
+            // TODO: Control that if there are no more permissions set for a user or group, we should also remove the NONE permission
+            // Remove permissions from the permission rule
+            for (String permission : currentAclList) {
+                if (!permissionsToRemove.contains(permission)) {
+                    effectivePermissions.add(permission);
+                }
+            }
+
+            // Restore manual permissions
+            if (currentManualAclList != null) {
+                for (String permission : currentManualAclList) {
+                    effectivePermissions.add(permission);
+                }
+            }
+
+            for (String tmpPermissionRuleId : currentPermissionRulesApplied) {
+                // We apply the rest of permission rules except the one to be deleted
+                if (!tmpPermissionRuleId.equals(permissionRuleId)) {
+                    PermissionRule tmpPermissionRule = permissionRuleMap.get(tmpPermissionRuleId);
+                    List<String> tmpPermissionList = new ArrayList<>(tmpPermissionRule.getPermissions());
+                    tmpPermissionList.add("NONE");
+                    List<String> permissionArray = createPermissionArray(tmpPermissionRule.getMembers(), tmpPermissionList);
+
+                    effectivePermissions.addAll(permissionArray);
+                    permissionRulesApplied.add(tmpPermissionRuleId);
+                }
+            }
+
+            Document tmpQuery = new Document()
+                    .append(PRIVATE_ID, myDocument.get(PRIVATE_ID))
+                    .append(PRIVATE_STUDY_ID, study.getId())
+                    .append("$isolated", true);
+
+            Document update = new Document("$set", new Document()
+                    .append(QueryParams.ACL.key(), effectivePermissions)
+                    .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
+
+            logger.debug("Remove permission rule id and restoring permissions from {}: Query {}, Update {}", entry,
+                    tmpQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            QueryResult<UpdateResult> updateResult = collection.update(tmpQuery, update, new QueryOptions("multi", true));
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_ID));
+            }
+        }
+
+        // 2. Remove the permission rule from the map in the study
+        removeReferenceToPermissionRuleInStudy(study.getId(), permissionRuleToDeleteId, entry);
+    }
+
+    @Override
+    public void removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entry entry) throws CatalogException {
+        // Remove the __TODELETE tag...
+        String permissionRuleId = permissionRuleToDelete.split(INTERNAL_DELIMITER)[0];
+
         Document query = new Document()
                 .append(PRIVATE_STUDY_ID, studyId)
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId)
                 .append("$isolated", 1);
         Document update = new Document()
-                .append("$pull", new Document(PERMISSION_RULES_APPLIED, permissionRuleId))
-                .append("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
+                .append("$pull", new Document(PERMISSION_RULES_APPLIED, permissionRuleId));
         logger.debug("Remove permission rule id from all {} in study {}: Query {}, Update {}", entry, studyId,
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        collection.update(query, update, new QueryOptions("multi", true));
 
-        // 2. Remove the permission rule from the map in the study
-        query = new Document()
+        MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
+        QueryResult<UpdateResult> updateResult = collection.update(query, update, new QueryOptions("multi", true));
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogException("Could not remove permission rule id " + permissionRuleId + " from all " + entry);
+        }
+
+        // Remove the permission rule from the map in the study
+        removeReferenceToPermissionRuleInStudy(studyId, permissionRuleToDelete, entry);
+    }
+
+    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Study.Entry entry)
+            throws CatalogException {
+        Document query = new Document()
                 .append(PRIVATE_ID, studyId)
-                .append(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry + ".id", permissionRule.getId());
-        update = new Document("$pull",
-                new Document(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry, new Document("id", permissionRule.getId())));
+                .append(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry + ".id", permissionRuleToDelete);
+        Document update = new Document("$pull",
+                new Document(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry,
+                        new Document("id", permissionRuleToDelete)));
         logger.debug("Remove permission rule from the study {}: Query {}, Update {}", studyId,
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        dbCollectionMap.get(Entity.STUDY).update(query, update, new QueryOptions("multi", true));
+        QueryResult<UpdateResult> updateResult = dbCollectionMap.get(Entity.STUDY).update(query, update, new QueryOptions("multi", true));
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogException("Could not remove permission rule " + permissionRuleToDelete + " from study "
+                    + String.valueOf(studyId));
+        }
     }
 
     private Bson parseQuery(Query query, Document rawQuery, Entity entry) throws CatalogException {
@@ -613,7 +800,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append("$isolated", 1)
                 .append(PRIVATE_STUDY_ID, studyId)
                 .append(QueryParams.ACL.key(), new Document("$in", removePermissions));
-        Document update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
+        Document update = new Document("$pullAll", new Document()
+                .append(QueryParams.ACL.key(), removePermissions)
+                .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
+        );
 
         collection.update(queryDocument, update, new QueryOptions("multi", true));
     }

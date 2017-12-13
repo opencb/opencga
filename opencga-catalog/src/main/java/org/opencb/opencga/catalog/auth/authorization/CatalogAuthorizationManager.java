@@ -931,7 +931,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException {
+    public void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException {
         // 1. We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = permissionRule.getMembers().stream()
                 .filter(member -> !member.startsWith("@"))
@@ -946,20 +946,29 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRules(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException {
+    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entry entry)
+            throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
-        aclDBAdaptor.removePermissionRules(studyId, permissionRuleId, entry);
+        aclDBAdaptor.removePermissionRuleAndRemovePermissions(study, permissionRuleId, entry);
     }
 
     @Override
-    public void removePermissionRulesAndRestorePermissions(long studyId, PermissionRule permissionRule, Study.Entry entry)
+    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entry entry)
             throws CatalogException {
-        ParamUtils.checkObj(permissionRule, "PermissionRule");
+        ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
-        aclDBAdaptor.removePermissionRulesAndRestorePermissions(studyId, permissionRule, entry);
+        aclDBAdaptor.removePermissionRuleAndRestorePermissions(study, permissionRuleId, entry);
+    }
+
+    @Override
+    public void removePermissionRule(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException {
+        ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
+        ParamUtils.checkObj(entry, "Entity");
+
+        aclDBAdaptor.removePermissionRule(studyId, permissionRuleId, entry);
     }
 
     /*

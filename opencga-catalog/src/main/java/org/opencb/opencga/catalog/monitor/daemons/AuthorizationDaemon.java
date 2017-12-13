@@ -65,20 +65,34 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
 
         for (Map.Entry<Study.Entry, List<PermissionRule>> myMap : study.getPermissionRules().entrySet()) {
             Study.Entry entry = myMap.getKey();
-            for (PermissionRule permissionRules : myMap.getValue()) {
-
+            for (PermissionRule permissionRule : myMap.getValue()) {
                 try {
-                    if (permissionRules.getId().endsWith(DBAdaptor.INTERNAL_DELIMITER + "TODELETEANDRESTORE")) {
-                        logger.info("Removing permission rule {} and removing applied permissions for {}",
-                                permissionRules.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0], entry);
-                        authorizationManager.removePermissionRulesAndRestorePermissions(study.getId(), permissionRules, entry);
-                    } else if (permissionRules.getId().endsWith(DBAdaptor.INTERNAL_DELIMITER + "TODELETE")) {
-                        logger.info("Removing permission rule {} for {}", permissionRules.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0],
-                                entry);
-                        authorizationManager.removePermissionRules(study.getId(), permissionRules.getId(), entry);
+                    String[] split = permissionRule.getId().split(DBAdaptor.INTERNAL_DELIMITER, 2);
+                    if (split.length == 1) {
+                        // Apply rules
+                        logger.info("Attempting to apply permission rule {} in {}", permissionRule.getId(), entry);
+                        authorizationManager.applyPermissionRule(study.getId(), permissionRule, entry);
                     } else {
-                        logger.info("Attempting to apply permission rule {} in {}", permissionRules.getId(), entry);
-                        authorizationManager.applyPermissionRules(study.getId(), permissionRules, entry);
+                        // Remove permission rule
+                        PermissionRule.DeleteAction deleteAction = PermissionRule.DeleteAction.valueOf(split[1].split("_")[1]);
+                        switch (deleteAction) {
+                            case NONE:
+                                logger.info("Removing permission rule {}", permissionRule.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0],
+                                        entry);
+                                authorizationManager.removePermissionRule(study.getId(), permissionRule.getId(), entry);
+                                break;
+                            case REVERT:
+                                logger.info("Removing permission rule {} and reverting applied permissions for {}",
+                                        permissionRule.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0], entry);
+                                authorizationManager.removePermissionRuleAndRestorePermissions(study, permissionRule.getId(), entry);
+                                break;
+                            case REMOVE:
+                            default:
+                                logger.info("Removing permission rule {} and removing applied permissions for {}",
+                                        permissionRule.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0], entry);
+                                authorizationManager.removePermissionRuleAndRemovePermissions(study, permissionRule.getId(), entry);
+                                break;
+                        }
                     }
 
                 } catch (CatalogException e) {
@@ -87,7 +101,4 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
             }
         }
     }
-
-
-
 }

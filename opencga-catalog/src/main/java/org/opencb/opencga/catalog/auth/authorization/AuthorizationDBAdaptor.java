@@ -78,8 +78,10 @@ public interface AuthorizationDBAdaptor {
 
     void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException;
 
-    void removePermissionRules(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException;
+    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entry entry) throws CatalogException;
 
-    void removePermissionRulesAndRestorePermissions(long studyId, PermissionRule permissionRule, Study.Entry entity)
+    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entry entity)
             throws CatalogException;
+
+    void removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entry entry) throws CatalogException;
 }

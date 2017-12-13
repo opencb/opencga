@@ -188,11 +188,16 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param studyId study id where the permission rule is stored.
      * @param entry entry for which the permission rules is applied (samples, cohorts...)
      * @param permissionRuleId permission rule id to be marked for deletion.
-     * @param restorePermissions Flag indicating whether to revert permission to how they were before applying the permission rules.
+     * @param deleteAction Action to be performed after the permission rule is removed:
+                REMOVE: Remove all the permissions assigned by the permission rule even if it had been also assigned manually.
+                REVERT: Remove all the permissions assigned by the permission rule but retain manual permissions as well as other
+                        permissions that might have been assigned by other permission rules (leave permissions as if the permission rule
+                        had never existed).
+                NONE: Remove the permission rule but no the permissions that might have been eventually assigned because of it.
      * @throws CatalogDBException if the permission rule does not exist.
      */
     void markDeletedPermissionRule(long studyId, Study.Entry entry, String permissionRuleId,
-                                                           boolean restorePermissions) throws CatalogDBException;
+                                   PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
 
     /*
      * VariableSet Methods

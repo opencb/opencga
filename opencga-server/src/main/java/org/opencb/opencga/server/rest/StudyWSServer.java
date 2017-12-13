@@ -471,7 +471,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{study}/aclRules")
+    @Path("/{study}/permissionRules")
     @ApiOperation(value = "Fetch permission rules")
     public Response getPermissionRules(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
@@ -487,7 +487,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{study}/aclRules/{entry}/create")
+    @Path("/{study}/permissionRules/{entry}/create")
     @ApiOperation(value = "Create a new permission rule")
     public Response createPermissionRules(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
@@ -504,7 +504,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @DELETE
-    @Path("/{study}/aclRules/{entry}/delete")
+    @Path("/{study}/permissionRules/{entry}/delete")
     @ApiOperation(value = "Delete an existing permission rule")
     public Response deletePermissionRules(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
@@ -513,11 +513,13 @@ public class StudyWSServer extends OpenCGAWSServer {
                     Study.Entry entry,
             @ApiParam(value = "Permission rule id to be deleted", required = true) @QueryParam("permissionRuleId")
                     String permissionRuleId,
-            @ApiParam(value = "Flag indicating whether permissions granted to users using the permission rule should be reversed",
-                    defaultValue = "false") @QueryParam("revertPermissions") boolean revert) {
+            @ApiParam(value = "Extra action to be performed when removing the permission rule: REMOVE - Remove all permissions assigned "
+                    + "by the permission rule (even if it overlaps any manual permission); REVERT - Remove all permissions assigned by the"
+                    + " permission rule (keep manual overlaps); NONE - Don't touch any permissions assigned by the permission rule.",
+                    defaultValue = "REMOVE") @QueryParam("action") PermissionRule.DeleteAction action) {
         try {
             isSingleId(studyStr);
-            catalogManager.getStudyManager().markDeletedPermissionRule(studyStr, entry, permissionRuleId, revert, sessionId);
+            catalogManager.getStudyManager().markDeletedPermissionRule(studyStr, entry, permissionRuleId, action, sessionId);
             return createOkResponse(new QueryResult<>(permissionRuleId));
         } catch (Exception e) {
             return createErrorResponse(e);

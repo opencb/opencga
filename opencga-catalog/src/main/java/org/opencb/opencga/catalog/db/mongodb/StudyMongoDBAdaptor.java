@@ -500,18 +500,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void markDeletedPermissionRule(long studyId, Study.Entry entry, String permissionRuleId, boolean restorePermissions)
-            throws CatalogDBException {
+    public void markDeletedPermissionRule(long studyId, Study.Entry entry, String permissionRuleId,
+                                          PermissionRule.DeleteAction deleteAction) throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
         }
 
-        String newPermissionRuleId = permissionRuleId + INTERNAL_DELIMITER;
-        if (restorePermissions) {
-            newPermissionRuleId += "TODELETEANDRESTORE";
-        } else {
-            newPermissionRuleId += "TODELETE";
-        }
+        String newPermissionRuleId = permissionRuleId + INTERNAL_DELIMITER + "DELETE_" + deleteAction.name();
 
         Document query = new Document()
                 .append(PRIVATE_ID, studyId)
