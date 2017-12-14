@@ -59,7 +59,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     private static final String ANONYMOUS = "*";
     private static final String INTERNAL_DELIMITER = "__";
-    private static final String USER_DEFINED_ACLS = "_userAcls";
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));

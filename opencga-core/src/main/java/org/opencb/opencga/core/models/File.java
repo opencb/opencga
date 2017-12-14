@@ -394,10 +394,12 @@ public class File {
         return this;
     }
 
+    @Deprecated
     public String getModificationDate() {
         return modificationDate;
     }
 
+    @Deprecated
     public File setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
@@ -502,10 +504,12 @@ public class File {
         return this;
     }
 
+    @Deprecated
     public List<Long> getSampleIds() {
         return sampleIds;
     }
 
+    @Deprecated
     public File setSampleIds(List<Long> sampleIds) {
         this.sampleIds = sampleIds;
         return this;
