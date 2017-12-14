@@ -66,6 +66,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         map.put("studies", STUDY);
         map.put("files", FILE);
         map.put("samples", SAMPLE);
+        map.put("samplesMetadata", SAMPLE_METADATA);
         map.put("cohorts", COHORT);
 
         map.put("returnedStudies", INCLUDE_STUDY);
@@ -214,7 +215,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "samplesMetadata", value = SAMPLES_METADATA_DESCR, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "sampleMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
@@ -224,13 +225,13 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "includeFiles", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFormat", value = INCLUDE_FORMAT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeGenotype", value = INCLUDE_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
 
             // Annotation filters
-            @ApiImplicitParam(name = "annotationExists", value = ANNOTATION_EXISTS_DESCR, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "annotationExists", value = ANNOT_EXISTS_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "xref", value = ANNOT_XREF_DESCR, dataType = "string", paramType = "query"),
@@ -261,6 +262,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "studies", value = DEPRECATED + STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "files", value = DEPRECATED + FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "samples", value = DEPRECATED + SAMPLE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "samplesMetadata", value = DEPRECATED + SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "cohorts", value = DEPRECATED + COHORT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "returnedStudies", value = DEPRECATED + INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "returnedSamples", value = DEPRECATED + INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
@@ -380,7 +382,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String customAnnotation;
 
         public String unknownGenotype;
-        public boolean samplesMetadata = false;
+        public boolean sampleMetadata = false;
         public boolean sort = false;
         public String groupBy;
         public boolean histogram = false;
@@ -393,6 +395,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         @Deprecated public String returnedFiles;
         @Deprecated public String files;
         @Deprecated public String samples;
+        @Deprecated public boolean samplesMetadata = false;
         @Deprecated public String cohorts;
         @Deprecated @JsonProperty("include-genotype") public String include_genotype;
         @Deprecated @JsonProperty("include-format") public String include_format;
@@ -586,7 +589,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //            @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "samplesMetadata", value = SAMPLES_METADATA_DESCR, dataType = "boolean", paramType = "query"),
+//            @ApiImplicitParam(name = "samplesMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
 //            @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
@@ -602,7 +605,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //            @ApiImplicitParam(name = "includeGenotype", value = INCLUDE_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
 
             // Annotation filters
-            @ApiImplicitParam(name = "annotationExists", value = ANNOTATION_EXISTS_DESCR, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "annotationExists", value = ANNOT_EXISTS_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "xref", value = ANNOT_XREF_DESCR, dataType = "string", paramType = "query"),

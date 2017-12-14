@@ -51,7 +51,7 @@ public class VariantSearchUtils {
                     VariantQueryParam.UNKNOWN_GENOTYPE,
                     VariantQueryParam.INCLUDE_FORMAT,
                     VariantQueryParam.INCLUDE_GENOTYPE,
-                    VariantQueryParam.SAMPLES_METADATA
+                    VariantQueryParam.SAMPLE_METADATA
                     // RETURNED_COHORTS
             )));
 

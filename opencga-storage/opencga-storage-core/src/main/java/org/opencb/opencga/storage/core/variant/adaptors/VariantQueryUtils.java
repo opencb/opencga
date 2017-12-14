@@ -507,7 +507,7 @@ public class VariantQueryUtils {
 
     public static Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options,
                                                                StudyConfigurationManager studyConfigurationManager) {
-        if (query.getBoolean(SAMPLES_METADATA.key(), false)) {
+        if (query.getBoolean(SAMPLE_METADATA.key(), false)) {
             if (VariantField.getReturnedFields(options).contains(VariantField.STUDIES)) {
                 List<Integer> returnedStudies = getReturnedStudies(query, options, studyConfigurationManager);
                 Function<Integer, StudyConfiguration> studyProvider = studyId ->

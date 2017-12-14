@@ -1330,7 +1330,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public void checkSamplesData(String returnedSamples) {
-        Query query = new Query(SAMPLES_METADATA.key(), true);
+        Query query = new Query(SAMPLE_METADATA.key(), true);
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true); //no limit;
 
         query.put(INCLUDE_SAMPLE.key(), returnedSamples);

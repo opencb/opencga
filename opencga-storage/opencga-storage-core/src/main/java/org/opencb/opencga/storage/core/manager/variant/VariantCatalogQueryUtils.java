@@ -44,7 +44,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             "Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith";
     public static final QueryParam SAMPLE_ANNOTATION
             = QueryParam.create("sampleAnnotation", SAMPLE_ANNOTATION_DESC, QueryParam.Type.TEXT_ARRAY);
-    public static final String PROJECT_DESC = "Project [user@]project where project can be either the id or the alias.";
+    public static final String PROJECT_DESC = "Project [user@]project where project can be either the ID or the alias";
     public static final QueryParam PROJECT = QueryParam.create("project", PROJECT_DESC, QueryParam.Type.TEXT_ARRAY);
 //    public static final QueryParam SAMPLE_FILTER_GENOTYPE = QueryParam.create("sampleFilterGenotype", "", QueryParam.Type.TEXT_ARRAY);
 
