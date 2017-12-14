@@ -559,6 +559,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 //        }
     }
 
+    @Deprecated
     private boolean updateDefaultCohort(File file, Study study, QueryOptions options, String sessionId) throws CatalogException {
         /* Get file samples */
         boolean modified = false;
