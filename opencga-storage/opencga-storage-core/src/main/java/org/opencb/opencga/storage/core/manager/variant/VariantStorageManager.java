@@ -179,16 +179,18 @@ public class VariantStorageManager extends StorageManager {
 
     public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, VariantSearchException,
             IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
-        searchIndex(study, new Query(), new QueryOptions(), sessionId);
+        searchIndex(new Query(STUDIES.key(), study), new QueryOptions(), sessionId);
     }
 
-    public void searchIndex(String study, Query query, QueryOptions queryOptions, String sessionId) throws StorageEngineException,
+    public void searchIndex(Query query, QueryOptions queryOptions, String sessionId) throws StorageEngineException,
             IOException, VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, study);
+//        String userId = catalogManager.getUserManager().getUserId(sessionId);
+//        long studyId = catalogManager.getStudyManager().getId(userId, study);
+        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
         DataStore dataStore = getDataStore(studyId, sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        catalogUtils.parseQuery(query, sessionId);
         variantStorageEngine.searchIndex(query, queryOptions);
     }
 
