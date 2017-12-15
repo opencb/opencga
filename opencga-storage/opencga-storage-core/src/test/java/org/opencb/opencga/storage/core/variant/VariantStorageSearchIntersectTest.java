@@ -62,11 +62,11 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     @ClassRule
     public static SolrExternalResource solr = new SolrExternalResource();
 
-    private VariantDBAdaptor dbAdaptor;
+    protected VariantDBAdaptor dbAdaptor;
     private StudyConfiguration studyConfiguration;
     private static VariantQueryResult<Variant> allVariants;
     private VariantFileMetadata fileMetadata;
-    private static boolean loaded = false;
+    protected static boolean loaded = false;
     private SolrClient solrClient;
 
     @Before

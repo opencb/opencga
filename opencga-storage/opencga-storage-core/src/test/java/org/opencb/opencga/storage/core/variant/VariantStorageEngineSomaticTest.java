@@ -11,6 +11,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -91,7 +92,8 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "TU"));
         }
 
-        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_1"), new QueryOptions());
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_1")
+                .append(VariantQueryParam.RETURNED_FILES.key(), VariantQueryUtils.ALL), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
             assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
@@ -100,7 +102,8 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
         });
 
-        iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_2"), new QueryOptions());
+        iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_2")
+                .append(VariantQueryParam.RETURNED_FILES.key(), VariantQueryUtils.ALL), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
             assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
