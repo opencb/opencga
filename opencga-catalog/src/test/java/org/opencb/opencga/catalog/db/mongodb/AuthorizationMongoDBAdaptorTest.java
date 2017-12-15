@@ -21,22 +21,24 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -222,6 +224,35 @@ public class AuthorizationMongoDBAdaptorTest {
 
         assertEquals(newAcl.getPermissions(), aclDBAdaptor.get(s1.getId(), Arrays.asList(user2.getId()),
                 Entity.SAMPLE).first().getPermissions());
+    }
+
+    @Test
+    public void testPermissionRulesPlusManualPermissions() throws CatalogException {
+        // We create a new sample s2
+        Sample s2 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample(0, "s2", "", new Individual(), "", "", false,
+                1, 1, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap(), Collections.emptyMap()), QueryOptions.empty())
+                .first();
+
+        // We create a new permission rule
+        PermissionRule pr = new PermissionRule("myPermissionRule", new Query(), Arrays.asList(user3.getId()),
+                Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name()));
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().createPermissionRule(studyId, Study.Entry.SAMPLES, pr);
+
+        // Apply the permission rule
+        aclDBAdaptor.applyPermissionRules(studyId, pr, Study.Entry.SAMPLES);
+
+        // All the samples should have view permissions for user user2
+        List<QueryResult<AbstractAclEntry>> queryResults = aclDBAdaptor.get(Arrays.asList(s1.getId(), s2.getId()),
+                Arrays.asList(user3.getId()), Entity.SAMPLE);
+        for (QueryResult<AbstractAclEntry> queryResult : queryResults) {
+            assertEquals(1, queryResult.first().getPermissions().size());
+            assertTrue(queryResult.first().getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
+        }
+
+        // Assign a manual permission to s2
+        aclDBAdaptor.addToMembers(Arrays.asList(s2.getId()), Arrays.asList(user3.getId()),
+                Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()), Entity.SAMPLE);
+
     }
 
 }

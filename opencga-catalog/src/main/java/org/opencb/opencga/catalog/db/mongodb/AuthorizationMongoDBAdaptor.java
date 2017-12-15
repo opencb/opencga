@@ -245,7 +245,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     String[] split = StringUtils.split(memberPermission, INTERNAL_DELIMITER, 2);
 //                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
                     if (memberSet.isEmpty() || memberSet.contains(split[0])) {
-                        if (!permissions.containsKey(split[0])) {
+                        if (!permissions.get(QueryParams.ACL.key()).containsKey(split[0])) {
                             permissions.get(QueryParams.ACL.key()).put(split[0], new ArrayList<>());
                         }
                         if (!("NONE").equals(split[1])) {
@@ -262,7 +262,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     String[] split = StringUtils.split(memberPermission, INTERNAL_DELIMITER, 2);
 //                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
                     if (memberSet.isEmpty() || memberSet.contains(split[0])) {
-                        if (!permissions.containsKey(split[0])) {
+                        if (!permissions.get(QueryParams.USER_DEFINED_ACLS.key()).containsKey(split[0])) {
                             permissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(split[0], new ArrayList<>());
                         }
                         if (!("NONE").equals(split[1])) {
@@ -404,10 +404,15 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             Document queryDocument = new Document()
                     .append("$isolated", 1)
                     .append(PRIVATE_ID, resourceId);
-            Document update = new Document("$set", new Document()
-                    .append(QueryParams.ACL.key(), permissionArray)
-                    .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray)
-            );
+            Document update;
+            if (isPermissionRuleEntity(entry)) {
+                update = new Document("$set", new Document()
+                        .append(QueryParams.ACL.key(), permissionArray)
+                        .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray)
+                );
+            } else {
+                update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+            }
 
             logger.debug("Set Acls (set): Query {}, Push {}",
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -432,10 +437,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         Document queryDocument = new Document()
                 .append("$isolated", 1)
                 .append(PRIVATE_ID, new Document("$in", resourceIds));
-        Document update = new Document("$addToSet", new Document()
-                .append(QueryParams.ACL.key(), new Document("$each", myPermissions))
-                .append(QueryParams.USER_DEFINED_ACLS.key(), new Document("$each", myPermissions))
-        );
+        Document update;
+        if (isPermissionRuleEntity(entry)) {
+            update = new Document("$addToSet", new Document()
+                    .append(QueryParams.ACL.key(), new Document("$each", myPermissions))
+                    .append(QueryParams.USER_DEFINED_ACLS.key(), new Document("$each", myPermissions))
+            );
+        } else {
+            update = new Document("$addToSet", new Document(QueryParams.ACL.key(), new Document("$each", myPermissions)));
+        }
+
         logger.debug("Add Acls (addToSet): Query {}, Push {}",
                 queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -465,10 +476,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         Document queryDocument = new Document()
                 .append("$isolated", 1)
                 .append(PRIVATE_ID, new Document("$in", resourceIds));
-        Document update = new Document("$pullAll", new Document()
-                .append(QueryParams.ACL.key(), removePermissions)
-                .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
-        );
+        Document update;
+        if (isPermissionRuleEntity(entity)) {
+            update = new Document("$pullAll", new Document()
+                    .append(QueryParams.ACL.key(), removePermissions)
+                    .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
+            );
+        } else {
+            update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
+        }
+
         logger.debug("Remove Acls (pullAll): Query {}, Pull {}",
                 queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -516,9 +533,14 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             Document queryDocument = new Document()
                     .append("$isolated", 1)
                     .append(PRIVATE_ID, resourceId);
-            Document update = new Document("$set", new Document()
-                    .append(QueryParams.ACL.key(), permissionArray)
-                    .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray));
+            Document update;
+            if (isPermissionRuleEntity(entity)) {
+                update = new Document("$set", new Document()
+                        .append(QueryParams.ACL.key(), permissionArray)
+                        .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray));
+            } else {
+                update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+            }
 
             logger.debug("Set Acls (set): Query {}, Push {}",
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -749,6 +771,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         // Remove the permission rule from the map in the study
         removeReferenceToPermissionRuleInStudy(studyId, permissionRuleToDelete, entry);
+    }
+
+    private boolean isPermissionRuleEntity(Entity entity) {
+        if (Study.Entry.CLINICAL_ANALYSES.getEntity() == entity || Study.Entry.COHORTS.getEntity() == entity
+                || Study.Entry.FAMILIES.getEntity() == entity || Study.Entry.FILES.getEntity() == entity
+                || Study.Entry.INDIVIDUALS.getEntity() == entity || Study.Entry.JOBS.getEntity() == entity
+                || Study.Entry.SAMPLES.getEntity() == entity) {
+            return true;
+        }
+        return false;
     }
 
     private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Study.Entry entry)
