@@ -154,6 +154,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String STATS_LOCAL = "stats.local";
 
+    public static final String DBADAPTOR_PHOENIX_FETCH_SIZE = "dbadaptor.phoenix.fetch_size";
+
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
     private HdfsVariantReaderUtils variantReaderUtils;
