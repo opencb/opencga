@@ -86,6 +86,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS;
+import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
@@ -643,14 +644,14 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             HBaseLock hBaseLock = new HBaseLock(dbAdaptor.getHBaseManager(), tableName,
                     dbAdaptor.getGenomeHelper().getColumnFamily(),
                     VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0));
-            long lock;
+            Long lock;
             try {
                 long lockDuration = TimeUnit.MINUTES.toMillis(5);
                 try {
                     lock = hBaseLock.lock(GenomeHelper.PHOENIX_LOCK_COLUMN, lockDuration, TimeUnit.SECONDS.toMillis(5));
                 } catch (TimeoutException e) {
                     int duration = 10;
-                    logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", tableName, 10);
+                    logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", tableName, duration);
                     lock = hBaseLock.lock(GenomeHelper.PHOENIX_LOCK_COLUMN, lockDuration, TimeUnit.MINUTES.toMillis(duration));
                 }
                 logger.debug("Winning lock {}", lock);
@@ -661,40 +662,44 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
             }
 
-            if (MergeMode.from(studyConfiguration.getAttributes()).equals(MergeMode.ADVANCED)) {
-                try {
-                    phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyConfiguration.getStudyId());
-                } catch (SQLException e) {
-                    throw new StorageEngineException("Unable to register study in Phoenix", e);
+            try {
+                if (MergeMode.from(studyConfiguration.getAttributes()).equals(MergeMode.ADVANCED)) {
+                    try {
+                        phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyConfiguration.getStudyId());
+                    } catch (SQLException e) {
+                        throw new StorageEngineException("Unable to register study in Phoenix", e);
+                    }
                 }
-            }
 
-            if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
-                try {
-                    Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
-                    Set<Integer> newSamples = new HashSet<>();
-                    for (Integer fileId : fileIds) {
-                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                            if (!previouslyIndexedSamples.contains(sampleId)) {
-                                newSamples.add(sampleId);
+                if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
+                    try {
+                        Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
+                        Set<Integer> newSamples = new HashSet<>();
+                        for (Integer fileId : fileIds) {
+                            for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                                if (!previouslyIndexedSamples.contains(sampleId)) {
+                                    newSamples.add(sampleId);
+                                }
                             }
                         }
+                        phoenixHelper.registerNewFiles(jdbcConnection, tableName, studyConfiguration.getStudyId(), fileIds, newSamples);
+
+                    } catch (SQLException e) {
+                        throw new StorageEngineException("Unable to register samples in Phoenix", e);
                     }
-                    phoenixHelper.registerNewFiles(jdbcConnection, tableName, studyConfiguration.getStudyId(), fileIds, newSamples);
-
-                } catch (SQLException e) {
-                    throw new StorageEngineException("Unable to register samples in Phoenix", e);
                 }
-            }
-
-            try {
-                hBaseLock.unlock(GenomeHelper.PHOENIX_LOCK_COLUMN, lock);
-            } catch (IOException e) {
-                throw new StorageEngineException("Error releasing lock", e);
+            } finally {
+                try {
+                    hBaseLock.unlock(GenomeHelper.PHOENIX_LOCK_COLUMN, lock);
+                } catch (HBaseLock.IllegalLockStatusException e) {
+                    logger.warn(e.getMessage());
+                    logger.debug(e.getMessage(), e);
+                }
             }
 
             if (!options.getBoolean(VARIANT_TABLE_INDEXES_SKIP, false)) {
                 try {
+                    lock = hBaseLock.lock(PHOENIX_INDEX_LOCK_COLUMN, TimeUnit.MINUTES.toMillis(60), TimeUnit.SECONDS.toMillis(5));
                     if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
                         List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
                         phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, tableName, columns, true);
@@ -704,12 +709,24 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                     phoenixHelper.createVariantIndexes(jdbcConnection, tableName);
                 } catch (SQLException e) {
                     throw new StorageEngineException("Unable to create Phoenix Indexes", e);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new StorageEngineException("Unable to create Phoenix Indexes", e);
+                } catch (TimeoutException e) {
+                    // Indices are been created by another instance. Don't need to create twice.
+                    logger.info("Unable to get lock to create PHOENIX INDICES. Already been created by another instance. "
+                            + "Skip create indexes!");
+                    lock = null;
+                } finally {
+                    if (lock != null) {
+                        hBaseLock.unlock(PHOENIX_INDEX_LOCK_COLUMN, lock);
+                    }
                 }
             } else {
                 logger.info("Skip create indexes!!");
             }
 
-        } catch (SQLException | ClassNotFoundException e) {
+        } catch (SQLException | ClassNotFoundException | IOException e) {
             throw new StorageEngineException("Error with Phoenix connection", e);
         }
 
