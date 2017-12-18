@@ -121,6 +121,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
         public boolean resume;
+
+        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)")
+        public boolean loadSplitData;
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")

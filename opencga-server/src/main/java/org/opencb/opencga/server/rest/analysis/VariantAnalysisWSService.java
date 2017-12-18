@@ -86,7 +86,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                           @ApiParam("Type of aggregated VCF file: none, basic, EVS or ExAC") @DefaultValue("none") @QueryParam("aggregated") String aggregated,
                           @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
-                          @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations) {
+                          @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations,
+                          @ApiParam("Resume a previously failed indexation") @DefaultValue("false") @QueryParam("resume") boolean resume,
+                          @ApiParam("Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)") @DefaultValue("false") @QueryParam("loadSplitData") boolean loadSplitData) {
 
         if (StringUtils.isNotEmpty(fileIdStrOld)) {
             fileIdStr = fileIdStrOld;
@@ -107,6 +109,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         addParamIfTrue(params, CALCULATE_STATS.key(), calculateStats);
         addParamIfTrue(params, ANNOTATE.key(), annotate);
         addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
+        addParamIfTrue(params, LOAD_SPLIT_DATA.key(), loadSplitData);
 
         Set<String> knownParams = new HashSet<>();
         knownParams.add("study");
@@ -123,6 +126,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         knownParams.add("sid");
         knownParams.add("include");
         knownParams.add("exclude");
+        knownParams.add("loadSplitData");
 
         // Add other params
         query.forEach((key, value) -> {

@@ -135,6 +135,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         TRANSFORM_FORMAT("transform.format", "avro"),
         LOAD_BATCH_SIZE("load.batch.size", 100),
         LOAD_THREADS("load.threads", 6),
+        LOAD_SPLIT_DATA("load.split-data", false),
 
         MERGE_MODE("merge.mode", MergeMode.ADVANCED),
 
