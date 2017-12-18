@@ -462,7 +462,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         Iterator<VariantFileMetadata> iterator = dbAdaptor.getVariantFileMetadataDBAdaptor().iterator(query, null);
 
         // List of chromosomes to be loaded
-        Set<String> chromosomesToLoad = new HashSet<>();
+        TreeSet<String> chromosomesToLoad = new TreeSet<>((s1, s2) -> {
+            try {
+                return Integer.valueOf(s1).compareTo(Integer.valueOf(s2));
+            } catch (NumberFormatException e) {
+                return s1.compareTo(s2);
+            }
+        });
         // List of all the indexed files that cover each chromosome
         ListMultimap<String, Integer> chromosomeInLoadedFiles = LinkedListMultimap.create();
         // List of all the indexed files that cover each chromosome
@@ -470,26 +476,32 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         Set<String> wholeGenomeFiles = new HashSet<>();
         Set<String> byChromosomeFiles = new HashSet<>();
-        while (iterator.hasNext()) {
-            VariantFileMetadata fileMetadata = iterator.next();
-            int fileId = Integer.parseInt(fileMetadata.getId());
 
-            // If the file is going to be loaded, check if covers just one chromosome
-            if (fileIds.contains(fileId)) {
-                if (fileMetadata.getStats().getChromosomeCounts().size() == 1) {
-                    chromosomesToLoad.addAll(fileMetadata.getStats().getChromosomeCounts().keySet());
-                    byChromosomeFiles.add(fileMetadata.getPath());
-                } else {
-                    wholeGenomeFiles.add(fileMetadata.getPath());
+        boolean loadUnknownGenotypes = MongoDBVariantMerger.loadUnknownGenotypes(studyConfiguration);
+        // Loading split files is only a problem when loading unknown genotypes
+        // If so, load files per chromosome.
+        if (loadUnknownGenotypes) {
+            while (iterator.hasNext()) {
+                VariantFileMetadata fileMetadata = iterator.next();
+                int fileId = Integer.parseInt(fileMetadata.getId());
+
+                // If the file is going to be loaded, check if covers just one chromosome
+                if (fileIds.contains(fileId)) {
+                    if (fileMetadata.getStats().getChromosomeCounts().size() == 1) {
+                        chromosomesToLoad.addAll(fileMetadata.getStats().getChromosomeCounts().keySet());
+                        byChromosomeFiles.add(fileMetadata.getPath());
+                    } else {
+                        wholeGenomeFiles.add(fileMetadata.getPath());
+                    }
                 }
-            }
-            // If the file is indexed, add to the map of chromosome->fileId
-            for (String chromosome : fileMetadata.getStats().getChromosomeCounts().keySet()) {
-                if (studyConfiguration.getIndexedFiles().contains(fileId)) {
-                    chromosomeInLoadedFiles.put(chromosome, fileId);
-                } else if (fileIds.contains(fileId)) {
-                    chromosomeInFilesToLoad.put(chromosome, fileId);
-                } // else { ignore files that are not loaded, and are not going to be loaded }
+                // If the file is indexed, add to the map of chromosome->fileId
+                for (String chromosome : fileMetadata.getStats().getChromosomeCounts().keySet()) {
+                    if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+                        chromosomeInLoadedFiles.put(chromosome, fileId);
+                    } else if (fileIds.contains(fileId)) {
+                        chromosomeInFilesToLoad.put(chromosome, fileId);
+                    } // else { ignore files that are not loaded, and are not going to be loaded }
+                }
             }
         }
 
@@ -509,8 +521,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             });
             Runtime.getRuntime().addShutdownHook(hook);
             try {
-                if (!wholeGenomeFiles.isEmpty() && !byChromosomeFiles.isEmpty()) {
-                    String message = "Impossible to merge files splitted and not splitted by chromosome at the same time! "
+                // This scenario only matters when adding unknownGenotypes
+                if (loadUnknownGenotypes && !wholeGenomeFiles.isEmpty() && !byChromosomeFiles.isEmpty()) {
+                    String message = "Impossible to merge files split and not split by chromosome at the same time! "
                             + "Files covering only one chromosome: " + byChromosomeFiles + ". "
                             + "Files covering more than one chromosome: " + wholeGenomeFiles;
                     logger.error(message);
