@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
@@ -97,6 +98,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         cohortObject.append(PRIVATE_STUDY_ID, studyId);
         cohortObject.append(PRIVATE_ID, newId);
         cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
+        cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         try {
             cohortCollection.insert(cohortObject, null);
@@ -200,6 +202,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         } else {
             return ((Document) queryResult.first()).getLong(PRIVATE_STUDY_ID);
         }
+    }
+
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        unmarkPermissionRule(cohortCollection, studyId, permissionRuleId);
     }
 
     @Override
@@ -592,7 +599,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         return parseQuery(query, isolated, null);
     }
 
-    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries

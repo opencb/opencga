@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Job;
 
 import java.util.HashMap;
@@ -78,6 +79,16 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
     String getStatus(long jobId, String sessionId) throws CatalogDBException;
 
     long getStudyId(long jobId) throws CatalogDBException;
+
+    /**
+     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
+     * be applied.
+     *
+     * @param studyId study id containing the entries affected.
+     * @param permissionRuleId permission rule id to be unmarked.
+     * @throws CatalogException if there is any database error.
+     */
+    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),

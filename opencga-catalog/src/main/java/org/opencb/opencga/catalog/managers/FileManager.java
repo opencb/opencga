@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -42,6 +41,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -593,8 +593,7 @@ public class FileManager extends ResourceManager<File> {
         QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
         // Propagate ACLs
         if (allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
-                    MongoDBAdaptorFactory.FILE_COLLECTION);
+            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(), Entity.FILE);
         }
 
         auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -1700,19 +1699,17 @@ public class FileManager extends ResourceManager<File> {
         checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
-        String collectionName = MongoDBAdaptorFactory.FILE_COLLECTION;
-
         switch (fileAclParams.getAction()) {
             case SET:
                 return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.FILE);
             case ADD:
                 return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.FILE);
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, Entity.FILE);
             case RESET:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, Entity.FILE);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
@@ -2327,8 +2324,7 @@ public class FileManager extends ResourceManager<File> {
         QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
-                    MongoDBAdaptorFactory.FILE_COLLECTION);
+            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(), Entity.FILE);
         }
     }
 
@@ -2484,7 +2480,7 @@ public class FileManager extends ResourceManager<File> {
                 // Propagate ACLs
                 if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                     authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
-                            MongoDBAdaptorFactory.FILE_COLLECTION);
+                            Entity.FILE);
                 }
 
                 File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
@@ -2556,7 +2552,7 @@ public class FileManager extends ResourceManager<File> {
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                                 authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),
-                                        allFileAcls.getResult(), MongoDBAdaptorFactory.FILE_COLLECTION);
+                                        allFileAcls.getResult(), Entity.FILE);
                             }
                         }
 
@@ -2606,7 +2602,7 @@ public class FileManager extends ResourceManager<File> {
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                                 authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),
-                                        allFileAcls.getResult(), MongoDBAdaptorFactory.FILE_COLLECTION);
+                                        allFileAcls.getResult(), Entity.FILE);
                             }
 
                             File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),

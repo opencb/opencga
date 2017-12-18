@@ -38,8 +38,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.*;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
@@ -49,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -278,7 +278,8 @@ public class StudyManager extends AbstractManager {
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, Arrays.asList(new Group(MEMBERS, Collections.emptyList()), new Group(ADMINS, Collections.emptyList())),
                 experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                Collections.emptyList(), new LinkedList<>(), null, datastores, getProjectCurrentRelease(projectId), stats, attributes);
+                Collections.emptyList(), new LinkedList<>(), null, null, datastores, getProjectCurrentRelease(projectId), stats,
+                attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.insert(projectId, study, userId, options);
@@ -498,6 +499,71 @@ public class StudyManager extends AbstractManager {
         QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
         return result;
+    }
+
+    public QueryResult<PermissionRule> createPermissionRule(String studyStr, Study.Entry entry, PermissionRule permissionRule,
+                                                            String sessionId) throws CatalogException {
+        ParamUtils.checkObj(entry, "entry");
+        ParamUtils.checkObj(permissionRule, "permission rule");
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = getId(userId, studyStr);
+
+        authorizationManager.checkCanUpdatePermissionRules(studyId, userId);
+        validatePermissionRules(studyId, entry, permissionRule);
+
+        studyDBAdaptor.createPermissionRule(studyId, entry, permissionRule);
+
+//        // Remove the permissionRule mark from all the entries contained by the study
+//        switch (entry) {
+//            case SAMPLES:
+//                sampleDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case FILES:
+//                fileDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case COHORTS:
+//                cohortDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case INDIVIDUALS:
+//                individualDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case FAMILIES:
+//                familyDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case JOBS:
+//                jobDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            case CLINICAL_ANALYSES:
+//                clinicalDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
+//                break;
+//            default:
+//                throw new CatalogException("Unexpected entry " + entry + " detected");
+//        }
+
+        return studyDBAdaptor.getPermissionRules(studyId, entry);
+    }
+
+    public void markDeletedPermissionRule(String studyStr, Study.Entry entry, String permissionRuleId,
+                                          PermissionRule.DeleteAction deleteAction, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(entry, "entry");
+        ParamUtils.checkObj(deleteAction, "Delete action");
+        ParamUtils.checkObj(permissionRuleId, "permission rule id");
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = getId(userId, studyStr);
+
+        authorizationManager.checkCanUpdatePermissionRules(studyId, userId);
+
+        studyDBAdaptor.markDeletedPermissionRule(studyId, entry, permissionRuleId, deleteAction);
+    }
+
+    public QueryResult<PermissionRule> getPermissionRules(String studyStr, Study.Entry entry, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = getId(userId, studyStr);
+
+        authorizationManager.checkCanViewStudy(studyId, userId);
+        return studyDBAdaptor.getPermissionRules(studyId, entry);
     }
 
     public QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId)
@@ -1232,4 +1298,50 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.count(query).first() > 0;
     }
 
+    private void validatePermissionRules(long studyId, Study.Entry entry, PermissionRule permissionRule) throws CatalogException {
+        ParamUtils.checkIdentifier(permissionRule.getId(), "PermissionRules");
+
+        if (permissionRule.getPermissions() == null || permissionRule.getPermissions().isEmpty()) {
+            throw new CatalogException("Missing permissions for the Permissions Rule object");
+        }
+
+        switch (entry) {
+            case SAMPLES:
+                validatePermissions(permissionRule.getPermissions(), SampleAclEntry.SamplePermissions::valueOf);
+                break;
+            case FILES:
+                validatePermissions(permissionRule.getPermissions(), FileAclEntry.FilePermissions::valueOf);
+                break;
+            case COHORTS:
+                validatePermissions(permissionRule.getPermissions(), CohortAclEntry.CohortPermissions::valueOf);
+                break;
+            case INDIVIDUALS:
+                validatePermissions(permissionRule.getPermissions(), IndividualAclEntry.IndividualPermissions::valueOf);
+                break;
+            case FAMILIES:
+                validatePermissions(permissionRule.getPermissions(), FamilyAclEntry.FamilyPermissions::valueOf);
+                break;
+            case JOBS:
+                validatePermissions(permissionRule.getPermissions(), JobAclEntry.JobPermissions::valueOf);
+                break;
+            case CLINICAL_ANALYSES:
+                validatePermissions(permissionRule.getPermissions(), ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf);
+                break;
+            default:
+                throw new CatalogException("Unexpected entry found");
+        }
+
+        checkMembers(studyId, permissionRule.getMembers());
+    }
+
+    private void validatePermissions(List<String> permissions, Function<String, Object> valueOf) throws CatalogException {
+        for (String permission : permissions) {
+            try {
+                valueOf.apply(permission);
+            } catch (IllegalArgumentException e) {
+                logger.error("Detected unsupported " + permission + " permission: {}", e.getMessage(), e);
+                throw new CatalogException("Detected unsupported " + permission + " permission.");
+            }
+        }
+    }
 }

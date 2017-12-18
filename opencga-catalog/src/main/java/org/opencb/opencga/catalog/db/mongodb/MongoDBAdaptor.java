@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.client.model.Accumulators;
-import com.mongodb.client.model.Aggregates;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Sorts;
+import com.mongodb.client.model.*;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.Query;
@@ -65,6 +62,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String RELEASE_FROM_VERSION = "_releaseFromVersion";
     static final String LAST_OF_RELEASE = "_lastOfRelease";
     static final String PRIVATE_CREATION_DATE = "_creationDate";
+    static final String PERMISSION_RULES_APPLIED = "_permissionRulesApplied";
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
 
@@ -350,4 +348,14 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
     }
+
+    protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
+        Bson query = new Document()
+                .append(PRIVATE_STUDY_ID, studyId)
+                .append(PERMISSION_RULES_APPLIED, permissionRuleId);
+        Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
+
+        collection.update(query, update, new QueryOptions("multi", true));
+    }
+
 }

@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
@@ -120,6 +121,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         individualDocument.put(LAST_OF_VERSION, true);
         individualDocument.put(LAST_OF_RELEASE, true);
         individualDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(individual.getCreationDate()));
+        individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         individualCollection.insert(individualDocument, null);
 
@@ -261,6 +263,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
         individualCollection.update(bson, update, queryOptions);
+    }
+
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        unmarkPermissionRule(individualCollection, studyId, permissionRuleId);
     }
 
     @Override
@@ -944,7 +951,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         return parseQuery(query, isolated, null);
     }
 
-    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
