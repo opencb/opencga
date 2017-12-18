@@ -45,7 +45,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         URI("uri", TEXT_ARRAY, ""),
         PATH("path", TEXT_ARRAY, ""),
         OWNER_ID("ownerId", TEXT_ARRAY, ""),
-        CREATION_DATE("creationDate", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         EXTERNAL("external", BOOLEAN, ""),

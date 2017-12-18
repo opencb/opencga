@@ -47,7 +47,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         MOTHER_ID("members.mother.id", INTEGER, ""),
         MEMBER_ID("members.id", INTEGER, ""),
         MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),
-        CREATION_DATE("creationDate", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

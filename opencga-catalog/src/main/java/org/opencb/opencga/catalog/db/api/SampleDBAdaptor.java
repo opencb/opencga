@@ -53,7 +53,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         RELEASE("release", INTEGER, ""), //  Release where the sample was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the sample
-        CREATION_DATE("creationDate", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.

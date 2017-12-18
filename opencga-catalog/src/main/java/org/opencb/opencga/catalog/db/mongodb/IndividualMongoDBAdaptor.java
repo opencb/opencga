@@ -119,6 +119,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         individualDocument.put(RELEASE_FROM_VERSION, Arrays.asList(individual.getRelease()));
         individualDocument.put(LAST_OF_VERSION, true);
         individualDocument.put(LAST_OF_RELEASE, true);
+        individualDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(individual.getCreationDate()));
 
         individualCollection.insert(individualDocument, null);
 
@@ -1004,6 +1005,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case SNAPSHOT:
                         addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case FATHER_ID:
                     case MOTHER_ID:
@@ -1020,7 +1024,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case KARYOTYPIC_SEX:
                     case LIFE_STATUS:
                     case AFFECTATION_STATUS:
-                    case CREATION_DATE:
                     case RELEASE:
                     case VERSION:
                     case SAMPLES_ID:

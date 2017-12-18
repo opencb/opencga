@@ -131,6 +131,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         studyObject.put(PRIVATE_PROJECT_ID, projectId);
         studyObject.put(PRIVATE_OWNER_ID, ownerId);
 
+        studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(study.getCreationDate()));
+
         //Insert
         QueryResult<WriteResult> updateResult = studyCollection.insert(studyObject, null);
 
@@ -1495,9 +1497,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case ALIAS:
-                    case CREATION_DATE:
                     case DESCRIPTION:
                     case CIPHER:
                     case STATUS_NAME:

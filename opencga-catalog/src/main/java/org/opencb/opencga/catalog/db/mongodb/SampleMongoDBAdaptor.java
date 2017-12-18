@@ -116,6 +116,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
         sampleObject.put(LAST_OF_VERSION, true);
         sampleObject.put(LAST_OF_RELEASE, true);
+        sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(sample.getCreationDate()));
 
         sampleCollection.insert(sampleObject, null);
 
@@ -742,6 +743,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case SNAPSHOT:
                         addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case RELEASE:
                     case VERSION:
@@ -756,7 +760,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case PHENOTYPES_NAME:
                     case PHENOTYPES_SOURCE:
                     case ANNOTATION_SETS:
-                    case CREATION_DATE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:

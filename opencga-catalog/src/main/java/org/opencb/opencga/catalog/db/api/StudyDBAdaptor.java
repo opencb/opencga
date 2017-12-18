@@ -246,7 +246,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
-        CREATION_DATE("creationDate", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         CIPHER("cipher", TEXT, ""),
         STATUS_NAME("status.name", TEXT, ""),

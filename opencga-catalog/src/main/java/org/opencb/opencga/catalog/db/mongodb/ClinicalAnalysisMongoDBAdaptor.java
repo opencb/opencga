@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverte
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
@@ -426,6 +427,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         Document clinicalObject = clinicalConverter.convertToStorageType(clinicalAnalysis);
         clinicalObject.put(PRIVATE_STUDY_ID, studyId);
         clinicalObject.put(PRIVATE_ID, clinicalAnalysisId);
+        clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
         clinicalCollection.insert(clinicalObject, null);
 
         return endQuery("createClinicalAnalysis", startTime, get(clinicalAnalysisId, options));
@@ -528,6 +530,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     // Other parameter that can be queried.
                     case NAME:
                     case TYPE:
@@ -536,7 +541,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case FAMILY_ID:
                     case GERMLINE_ID:
                     case SOMATIC_ID:
-                    case CREATION_DATE:
                     case DESCRIPTION:
                     case RELEASE:
                     case STATUS:

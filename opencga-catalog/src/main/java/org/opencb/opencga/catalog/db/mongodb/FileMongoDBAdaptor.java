@@ -107,6 +107,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Document fileDocument = fileConverter.convertToStorageType(file);
         fileDocument.append(PRIVATE_STUDY_ID, studyId);
         fileDocument.append(PRIVATE_ID, newFileId);
+        fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
 
         try {
             fileCollection.insert(fileDocument, null);
@@ -682,6 +683,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     // Other parameter that can be queried.
                     case NAME:
                     case TYPE:
@@ -689,7 +693,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case BIOFORMAT:
                     case URI:
                     case PATH:
-                    case CREATION_DATE:
                     case MODIFICATION_DATE:
                     case DESCRIPTION:
                     case EXTERNAL:

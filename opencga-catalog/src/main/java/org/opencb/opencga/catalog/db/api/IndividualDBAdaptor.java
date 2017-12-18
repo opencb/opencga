@@ -95,7 +95,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
         DATE_OF_BIRTH("dateOfBirth", TEXT, ""),
-        CREATION_DATE("creationDate", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
         RELEASE("release", INTEGER, ""), //  Release where the individual was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual

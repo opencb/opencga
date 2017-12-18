@@ -96,6 +96,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Document cohortObject = cohortConverter.convertToStorageType(cohort);
         cohortObject.append(PRIVATE_STUDY_ID, studyId);
         cohortObject.append(PRIVATE_ID, newId);
+        cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
 
         try {
             cohortCollection.insert(cohortObject, null);
@@ -652,9 +653,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                         addQueryFilter(queryParam.key(), queryParam.key(), query, queryParam.type(),
                                 MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
                         break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case TYPE:
-                    case CREATION_DATE:
                     case RELEASE:
                     case STATUS_NAME:
                     case STATUS_MSG:

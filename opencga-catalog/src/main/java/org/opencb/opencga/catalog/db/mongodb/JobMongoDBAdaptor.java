@@ -91,6 +91,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_ID, jobId);
         jobObject.put(PRIVATE_STUDY_ID, studyId);
+        jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
+
         jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0
 
         return endQuery("Create Job", startTime, get(jobId, filterOptions(options, FILTER_ROUTE_JOBS)));
@@ -600,11 +602,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         addQueryFilter(QueryParams.OUTPUT_ID.key(), queryParam.key(), query, queryParam.type(),
                                 MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
                         break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case USER_ID:
                     case TOOL_NAME:
                     case TYPE:
-                    case CREATION_DATE:
                     case DESCRIPTION:
                     case START_TIME:
                     case END_TIME:

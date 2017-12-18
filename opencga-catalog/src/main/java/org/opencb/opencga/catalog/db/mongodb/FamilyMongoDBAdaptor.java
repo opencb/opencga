@@ -106,6 +106,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         familyObject.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
         familyObject.put(LAST_OF_VERSION, true);
         familyObject.put(LAST_OF_RELEASE, true);
+        familyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(family.getCreationDate()));
 
         familyCollection.insert(familyObject, null);
 
@@ -687,6 +688,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                         break;
                     case SNAPSHOT:
                         addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case FATHER_ID:
                     case MOTHER_ID:

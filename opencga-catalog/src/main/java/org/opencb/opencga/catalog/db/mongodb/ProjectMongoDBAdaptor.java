@@ -112,6 +112,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson query = Filters.and(Filters.eq("id", userId), Filters.ne("projects.alias", project.getAlias()));
 
         Document projectDocument = projectConverter.convertToStorageType(project);
+        projectDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(project.getCreationDate()));
+
         Bson update = Updates.push("projects", projectDocument);
 
         //Update object
@@ -697,9 +699,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                         mongoKey = "projects." + entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
                     case ALIAS:
-                    case CREATION_DATE:
                     case DESCRIPTION:
                     case ORGANIZATION:
                     case ORGANISM:
