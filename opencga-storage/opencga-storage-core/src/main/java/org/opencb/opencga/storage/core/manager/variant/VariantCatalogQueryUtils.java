@@ -17,22 +17,22 @@
 package org.opencb.opencga.storage.core.manager.variant;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.CatalogUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -81,8 +81,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             // Nothing to do!
             return null;
         }
-        Set<Long> studies = getStudies(query, sessionId);
-        long defaultStudyId = getDefaultStudyId(query, sessionId, studies);
+        List<Long> studies = getStudies(query, sessionId);
+        long defaultStudyId = getDefaultStudyId(studies);
         String defaultStudyStr = defaultStudyId > 0 ? String.valueOf(defaultStudyId) : null;
         Integer release = getReleaseFilter(query, sessionId);
 
@@ -100,6 +100,50 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         cohortTransformFilter.processFilter(query, VariantQueryParam.MISSING_ALLELES, release, sessionId, defaultStudyStr);
         cohortTransformFilter.processFilter(query, VariantQueryParam.MISSING_GENOTYPES, release, sessionId, defaultStudyStr);
 
+        if (release != null) {
+            // If no list of included files is specified:
+            if (VariantQueryUtils.isReturnedFilesDefined(query, Collections.singleton(VariantField.STUDIES_FILES))) {
+                List<String> includeFiles = new ArrayList<>();
+                QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+                Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
+                        .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+
+                for (Long study : studies) {
+                    for (File file : catalogManager.getFileManager().get(study, fileQuery, fileOptions, sessionId).getResult()) {
+                        includeFiles.add(String.valueOf(file.getId()));
+                    }
+                }
+                query.append(VariantQueryParam.RETURNED_FILES.key(), includeFiles);
+            }
+            // If no list of included samples is specified:
+            if (!VariantQueryUtils.isReturnedSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA))) {
+                List<String> includeSamples = new ArrayList<>();
+                Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
+                QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
+
+                for (Long study : studies) {
+                    Query cohortQuery = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+                    QueryOptions cohortOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_IDS.key());
+                    // Get default cohort. It contains the list of indexed samples. If it doesn't exist, or is empty, do not include any
+                    // sample from this study.
+                    QueryResult<Cohort> result = catalogManager.getCohortManager().get(study, cohortQuery, cohortOptions, sessionId);
+                    if (result.first() != null || result.first().getSamples().isEmpty()) {
+                        Set<Long> sampleIds = result
+                                .first()
+                                .getSamples()
+                                .stream()
+                                .map(Sample::getId)
+                                .collect(Collectors.toSet());
+                        for (Sample s : catalogManager.getSampleManager().get(study, sampleQuery, sampleOptions, sessionId).getResult()) {
+                            if (sampleIds.contains(s.getId())) {
+                                includeSamples.add(String.valueOf(s.getId()));
+                            }
+                        }
+                    }
+                }
+                query.append(VariantQueryParam.RETURNED_SAMPLES.key(), includeSamples);
+            }
+        }
 
         if (isValidParam(query, SAMPLE_FILTER)) {
             String sampleAnnotation = query.getString(SAMPLE_FILTER.key());
@@ -136,31 +180,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return query;
     }
 
-    public long getDefaultStudyId(Query query, String sessionId, Set<Long> studies) throws CatalogException {
+    public long getDefaultStudyId(Collection<Long> studies) throws CatalogException {
         final long defaultStudyId;
         if (studies.size() == 1) {
             defaultStudyId = studies.iterator().next();
-        } else if (studies.isEmpty()) {
-            if (isValidParam(query, PROJECT)) {
-                studies = catalogManager.getStudyManager()
-                        .get(
-                                query.getString(PROJECT.key()),
-                                new Query(),
-                                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID),
-                                sessionId)
-                        .getResult()
-                        .stream()
-                        .map(Study::getId)
-                        .collect(Collectors.toSet());
-                if (studies.size() == 1) {
-                    defaultStudyId = studies.iterator().next();
-                } else {
-                    defaultStudyId = -1;
-                }
-            } else {
-                String userId = catalogManager.getUserManager().getUserId(sessionId);
-                defaultStudyId = catalogManager.getStudyManager().getId(userId, null);
-            }
         } else {
             defaultStudyId = -1;
         }

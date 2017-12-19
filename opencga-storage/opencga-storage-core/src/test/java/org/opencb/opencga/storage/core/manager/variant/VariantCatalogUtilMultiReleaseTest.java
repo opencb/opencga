@@ -1,19 +1,22 @@
 package org.opencb.opencga.storage.core.manager.variant;
 
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Created on 12/12/17.
@@ -31,6 +34,7 @@ public class VariantCatalogUtilMultiReleaseTest {
     private static CatalogManager catalog;
     private static String sessionId;
     private static VariantCatalogQueryUtils queryUtils;
+    private static List<Sample> samples = new ArrayList<>();
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -42,30 +46,36 @@ public class VariantCatalogUtilMultiReleaseTest {
         catalog.getStudyManager().create("p1", "s1", "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
         createFile("file1.vcf");
         createFile("file2.vcf");
-        catalog.getSampleManager().create("s1", "sample1", null, null, null, false, null, null, null, null, sessionId);
-        catalog.getSampleManager().create("s1", "sample2", null, null, null, false, null, null, null, null, sessionId);
+        createSample("sample1");
+        createSample("sample2");
         catalog.getCohortManager().create("s1", new Cohort().setName("c1").setSamples(Collections.emptyList()), null, sessionId);
 
         catalog.getProjectManager().incrementRelease("p1", sessionId);
         createFile("file3.vcf");
         createFile("file4.vcf");
-        catalog.getSampleManager().create("s1", "sample3", null, null, null, false, null, null, null, null, sessionId);
-        catalog.getSampleManager().create("s1", "sample4", null, null, null, false, null, null, null, null, sessionId);
+        createSample("sample3");
+        createSample("sample4");
         catalog.getCohortManager().create("s1", new Cohort().setName("c2").setSamples(Collections.emptyList()), null, sessionId);
+        catalog.getCohortManager().create("s1", new Cohort().setName(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
         queryUtils = new VariantCatalogQueryUtils(catalog);
     }
 
+    public static void createSample(String name) throws CatalogException {
+        samples.add(catalog.getSampleManager().create("s1", name, null, null, null, false, null, null, null, null, sessionId).first());
+    }
+
     public static void createFile(String path) throws CatalogException {
-        catalog.getFileManager().create("s1", File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, path, null, null, null, 10, -1, null, -1, null, null, false, "", null, sessionId);
+        File file = catalog.getFileManager().create("s1", File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, path, null, null, null, 10, -1, null, -1, null, null, false, "", null, sessionId).first();
+        catalog.getFileManager().updateFileIndexStatus(file, Status.READY, "", sessionId);
     }
 
     @Test
     public void queriesWithRelease() throws Exception {
-        queryUtils.parseQuery(new Query(VariantQueryParam.SAMPLES.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 2), sessionId).toJson();
-        queryUtils.parseQuery(new Query(VariantQueryParam.SAMPLES.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
-        queryUtils.parseQuery(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
-        queryUtils.parseQuery(new Query(VariantQueryParam.FILES.key(), "file1.vcf").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
-        queryUtils.parseQuery(new Query(VariantQueryParam.STATS_MAF.key(), "c1>0.1").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+        System.out.println(queryUtils.parseQuery(new Query(VariantQueryParam.SAMPLES.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 2), sessionId).toJson());
+        System.out.println(queryUtils.parseQuery(new Query(VariantQueryParam.SAMPLES.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson());
+        System.out.println(queryUtils.parseQuery(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson());
+        System.out.println(queryUtils.parseQuery(new Query(VariantQueryParam.FILES.key(), "file1.vcf").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson());
+        System.out.println(queryUtils.parseQuery(new Query(VariantQueryParam.STATS_MAF.key(), "c1>0.1").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson());
     }
 
     @Test
