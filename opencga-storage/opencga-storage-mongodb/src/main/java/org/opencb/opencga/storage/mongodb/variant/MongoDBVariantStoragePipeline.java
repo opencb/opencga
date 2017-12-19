@@ -122,6 +122,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), MergeMode.ADVANCED);
                 logger.debug("Merge overlapping variants, as said in the StudyConfiguration");
             }
+            options.put(Options.MERGE_MODE.key(), studyConfiguration.getAttributes().get(Options.MERGE_MODE.key()));
         } else {
             MergeMode mergeMode = MergeMode.from(options);
             studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
@@ -600,7 +601,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         MongoDBCollection stageCollection = dbAdaptor.getStageCollection();
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
                 chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
-        MergeMode mergeMode = MergeMode.from(options);
+        MergeMode mergeMode = MergeMode.from(studyConfiguration.getAttributes());
         if (mergeMode.equals(MergeMode.BASIC)) {
             // Read only files to load when MergeMode is BASIC
             reader.setFileIds(fileIds);

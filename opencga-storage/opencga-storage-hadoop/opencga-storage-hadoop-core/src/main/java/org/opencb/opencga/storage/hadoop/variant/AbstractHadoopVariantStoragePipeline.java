@@ -86,6 +86,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
@@ -373,6 +374,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         if (!studyConfiguration.getAttributes().containsKey(Options.MERGE_MODE.key())) {
             mergeMode = MergeMode.from(options);
             studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
+        } else {
+            options.put(MERGE_MODE.key(), MergeMode.from(studyConfiguration.getAttributes()));
         }
 
         Stream<String> stream;
