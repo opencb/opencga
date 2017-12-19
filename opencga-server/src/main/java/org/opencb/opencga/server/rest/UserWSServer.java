@@ -61,8 +61,8 @@ public class UserWSServer extends OpenCGAWSServer {
                 createErrorResponse(new CatalogException("id, name, email or password not present"));
             }
 
-            QueryResult queryResult = catalogManager.getUserManager().create(user.id, user.name, user.email, user.password, user
-                    .organization, null, Account.FULL, queryOptions);
+            QueryResult queryResult = catalogManager.getUserManager()
+                    .create(user.id, user.name, user.email, user.password, user.organization, null, Account.FULL, queryOptions, null);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -370,7 +370,7 @@ public class UserWSServer extends OpenCGAWSServer {
         public Map<String, Object> attributes;
     }
 
-    protected static class UserCreatePOST {
+    public static class UserCreatePOST {
         @Deprecated
         public String userId;
         @JsonProperty(required = true)

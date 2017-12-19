@@ -25,10 +25,10 @@ import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
@@ -241,7 +241,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                     usersCommandOptions.createUserCommandOptions.userPassword,
                     usersCommandOptions.createUserCommandOptions.userOrganization, userQuota,
-                    usersCommandOptions.createUserCommandOptions.type, null).first();
+                    usersCommandOptions.createUserCommandOptions.type, null, null).first();
 
             System.out.println("The user has been successfully created: " + user.toString() + "\n");
         }

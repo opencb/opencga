@@ -128,11 +128,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.installCatalogDB();
         fileManager = catalogManager.getFileManager();
 
-        catalogManager.getUserManager().create(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null);
-        catalogManager.getUserManager().create(studyAdminUser1, studyAdminUser1, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null);
-        catalogManager.getUserManager().create(studyAdminUser2, studyAdminUser2, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null);
-        catalogManager.getUserManager().create(memberUser, memberUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null);
-        catalogManager.getUserManager().create(externalUser, externalUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null);
+        catalogManager.getUserManager().create(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create(studyAdminUser1, studyAdminUser1, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create(studyAdminUser2, studyAdminUser2, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create(memberUser, memberUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create(externalUser, externalUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);
 
         ownerSessionId = catalogManager.getUserManager().login(ownerUser, password);
         studyAdmin1SessionId = catalogManager.getUserManager().login(studyAdminUser1, password);
@@ -326,7 +326,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void addExistingUserToRole() throws CatalogException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_ANALYST);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(s1)), newUser, aclParams, ownerSessionId).get(0);
     }
@@ -335,7 +335,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void addExistingUserToRole2() throws CatalogException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("Only owners or administrative users");
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_ANALYST);
@@ -345,7 +345,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void addExistingGroupToRole() throws CatalogException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);
         String group = "@newGroup";
 //        catalogManager.addUsersToGroup(s1, group, newUser, studyAdmin1SessionId);
         catalogManager.getStudyManager().createGroup(Long.toString(s1), group, newUser, studyAdmin1SessionId);
@@ -557,7 +557,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readFileNoStudyMember() throws CatalogException, IOException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null, null);
         String sessionId = catalogManager.getUserManager().login(newUser, password);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFileManager().get(data, null, sessionId);
@@ -567,7 +567,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readFileSharedForGroup() throws CatalogException, IOException {
         // Add a new user to a new group
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null, null);
         String sessionId = catalogManager.getUserManager().login(newUser, password);
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(s1, "@external", newUser, ownerSessionId);
@@ -597,7 +597,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readFileForbiddenForGroupSharedWithUser() throws CatalogException, IOException {
         // Add a new user to a new group
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null, null);
         String sessionId = catalogManager.getUserManager().login(ownerUser, password);
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(s1, "@external", newUser, ownerSessionId);
@@ -658,7 +658,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void createFileNoStudyMember() throws CatalogException, IOException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null, null);
         String sessionId = catalogManager.getUserManager().login(newUser, password);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/my_folder/").toString(), null, false, null,
@@ -718,7 +718,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readSampleExternalUser() throws CatalogException, IOException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null, null);
         String sessionId = catalogManager.getUserManager().login(newUser, password);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(smp2.getId(), null, sessionId);
@@ -744,7 +744,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readSampleSharedForGroup() throws CatalogException, IOException {
         // Add a new user to a new group
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null, null);
         String sessionId = catalogManager.getUserManager().login(ownerUser, password);
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(s1, "@external", newUser, ownerSessionId);
@@ -771,7 +771,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readSampleSharedForOthersNotWithStudyPermissions() throws CatalogException, IOException {
         // Add a new user to a new group
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null);
+        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null, null);
         String sessionId = catalogManager.getUserManager().login(ownerUser, password);
         catalogManager.getStudyManager().updateGroup(Long.toString(s1), "@members", new GroupParams(newUser, GroupParams.Action.ADD),
                 ownerSessionId);

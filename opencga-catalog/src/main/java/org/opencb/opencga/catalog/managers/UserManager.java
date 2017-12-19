@@ -57,6 +57,7 @@ public class UserManager extends AbstractManager {
     private String INTERNAL_AUTHORIZATION = "internal";
     private Map<String, AuthenticationManager> authenticationManagerMap;
     private final String ADMIN_TOKEN;
+    private static final String ROOT = "admin";
 
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
@@ -153,18 +154,16 @@ public class UserManager extends AbstractManager {
      * @param quota        Maximum user disk quota
      * @param accountType  User account type. Full or guest.
      * @param options      Optional options
+     * @param token        Authentication token needed if the registration is closed.
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
     public QueryResult<User> create(String id, String name, String email, String password, String organization, Long quota,
-                                    String accountType, QueryOptions options) throws CatalogException {
+                                    String accountType, QueryOptions options, String token) throws CatalogException {
 
         // Check if the users can be registered publicly or just the admin.
         if (!authorizationManager.isPublicRegistration()) {
-            String adminPassword = configuration.getAdmin().getPassword();
-            if (adminPassword != null && !adminPassword.isEmpty()) {
-                authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminPassword, true);
-            } else {
+            if (!ROOT.equals(getUserId(token))) {
                 throw new CatalogException("The registration is closed to the public: Please talk to your administrator.");
             }
         }
@@ -395,7 +394,9 @@ public class UserManager extends AbstractManager {
 
         String authId;
         QueryResult<User> user = null;
-        if (!userId.equals("admin")) {
+        if (ROOT.equals(userId)) {
+            authId = INTERNAL_AUTHORIZATION;
+        } else {
             try {
                 user = userDBAdaptor.get(userId, new QueryOptions(), null);
             } catch (CatalogDBException e) {
@@ -434,8 +435,6 @@ public class UserManager extends AbstractManager {
 
             // Check that the authentication id is valid
             authId = user.first().getAccount().getAuthOrigin();
-        } else {
-            authId = INTERNAL_AUTHORIZATION;
         }
         AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authId);
 

@@ -25,10 +25,10 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.User;
 import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
@@ -40,6 +40,8 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
     private final UserDBAdaptor userDBAdaptor;
     private final MetaDBAdaptor metaDBAdaptor;
+
+    private static final String ROOT = "admin";
 
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
         super(configuration);
@@ -63,7 +65,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         String cypherPassword = cypherPassword(password);
         String storedPassword;
         boolean validSessionId = false;
-        if (userId.equals("admin")) {
+        if (ROOT.equals(userId)) {
             storedPassword = metaDBAdaptor.getAdminPassword();
             try {
                 validSessionId = jwtManager.getUser(password).equals(userId);

@@ -72,9 +72,9 @@ public class CatalogSampleManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.FULL, null, null);
 
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
@@ -921,7 +921,7 @@ public class CatalogSampleManagerTest extends GenericTest {
     @Test
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
-                Account.GUEST, QueryOptions.empty());
+                Account.GUEST, QueryOptions.empty(), null);
         catalogManager.getStudyManager().updateGroup(String.valueOf(studyId), "@members", new GroupParams("dummy",
                 GroupParams.Action.ADD), sessionIdUser);
 
