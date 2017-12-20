@@ -1,10 +1,9 @@
 package org.opencb.opencga.server.rest.admin;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
@@ -13,26 +12,25 @@ import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
 
 @Path("/{apiVersion}/admin/users")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Admin - Users", position = 4, description = "Methods to manage user accounts")
-public class UserWSServer extends OpenCGAWSServer {
+@Api(value = "Admin", position = 4, description = "Administrator webservices")
+public class AdminWSServer extends OpenCGAWSServer {
 
-    public UserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public AdminWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
+    //******************************** USERS **********************************//
+
     @POST
-    @Path("/create")
+    @Path("/users/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new user", response = User.class, notes = "Account type can only be one of 'guest' (default) or 'full'")
     public Response create(@ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user) {
@@ -55,7 +53,7 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/import")
+    @Path("/users/import")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Import users or a group of users from LDAP", response = User.class,
             notes = "One of <b>users</b> or <b>group</b> need to be filled in at least. <br>"
@@ -82,16 +80,100 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/sync")
+    @Path("/users/sync")
     @ApiOperation(value = "Synchronise groups of users with LDAP groups")
     public Response ldapSync() {
         return createErrorResponse(new NotImplementedException());
     }
 
+    //******************************** AUDIT **********************************//
+
+    //    @GET
+//    @Path("/audit/query")
+//    @ApiOperation(value = "Query the audit database")
+//    public Response query() {
+//        return createErrorResponse(new NotImplementedException());
+//    }
+
+    @GET
+    @Path("/audit/groupBy")
+    @ApiOperation(value = "Group by operation")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
+    public Response groupBy(
+            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
+            @QueryParam("fields") String fields,
+            @ApiParam(value = "Resource to be grouped by.", required = true) @QueryParam("resource") AuditRecord.Resource resource,
+            @ApiParam(value = "Action performed") @DefaultValue("") @QueryParam("action") String action,
+            @ApiParam(value = "Object before update") @DefaultValue("") @QueryParam("before") String before,
+            @ApiParam(value = "Object after update") @DefaultValue("") @QueryParam("after") String after,
+            @ApiParam(value = "Date <,<=,>,>=(Format: yyyyMMddHHmmss) and yyyyMMddHHmmss-yyyyMMddHHmmss") @DefaultValue("")
+            @QueryParam("date") String date) {
+        try {
+
+
+            return createOkResponse(catalogManager.getAuditManager().groupBy(query, fields, queryOptions, sessionId));
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+
+    }
+
+    //    @GET
+//    @Path("/audit/stats")
+//    @ApiOperation(value = "Get some stats from the audit database")
+//    public Response stats() {
+//        return createErrorResponse(new NotImplementedException());
+//    }
+
+
+    //******************************** TOOLS **********************************//
+
 //    @POST
-//    @Path("/root")
-//    @ApiOperation(value = "Root?")
-//    public Response root() {
+//    @Path("/tools/install")
+//    @ApiOperation(value = "Install a new tool in OpenCGA")
+//    public Response install() {
+//        return createErrorResponse(new NotImplementedException());
+//    }
+//
+//    @GET
+//    @Path("/tools/list")
+//    @ApiOperation(value = "List the available tools in OpenCGA")
+//    public Response list() {
+//        return createErrorResponse(new NotImplementedException());
+//    }
+//
+//    @GET
+//    @Path("/tools/show")
+//    @ApiOperation(value = "Show one tool manifest")
+//    public Response show() {
+//        return createErrorResponse(new NotImplementedException());
+//    }
+
+    //******************************** DATABASE **********************************//
+
+//    @DELETE
+//    @Path("/database/clean")
+//    @ApiOperation(value = "Clean database from removed entries", notes = "Completely remove all 'removed' entries from the database")
+//    public Response clean() {
+//        return createErrorResponse(new NotImplementedException());
+//    }
+//
+//    @GET
+//    @Path("/database/stats")
+//    @ApiOperation(value = "Get basic database stats")
+//    public Response stats() {
+//        return createErrorResponse(new NotImplementedException());
+//    }
+//
+//    @POST
+//    @Path("/database/jwt")
+//    @ApiOperation(value = "Change JWT secret key or algorithm")
+//    public Response jwt() {
 //        return createErrorResponse(new NotImplementedException());
 //    }
 
