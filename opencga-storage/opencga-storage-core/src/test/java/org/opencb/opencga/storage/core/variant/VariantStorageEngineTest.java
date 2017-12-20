@@ -349,7 +349,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
 //        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageManager,
-                studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 6));
+                studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 6)
+                        .append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), true));
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkLoadedVariants(getVariantStorageEngine().getDBAdaptor(), studyConfiguration, true, false, false, -1);
@@ -383,6 +384,28 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         }
 
 
+    }
+
+    @Test
+    public void multiRegionIndexFail() throws Exception {
+        clearDB(DB_NAME);
+        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "multiRegion");
+
+        ObjectMap options = new ObjectMap()
+                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
+                .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
+
+        runDefaultETL(getResourceUri("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
+                studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 5));
+
+        studyConfiguration.getFileIds().put("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", 6);
+        StorageEngineException exception = StorageEngineException.alreadyLoadedSamples(studyConfiguration, 6);
+        thrown.expect(exception.getClass());
+        thrown.expectMessage(exception.getMessage());
+        runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
+                studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 6)
+                        .append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), false));
     }
 
     /**

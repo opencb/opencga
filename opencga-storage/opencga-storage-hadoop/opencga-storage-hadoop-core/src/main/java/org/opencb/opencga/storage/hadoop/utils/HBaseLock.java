@@ -52,7 +52,6 @@ import java.util.concurrent.TimeoutException;
  */
 public class HBaseLock {
 
-
     private static final String LOCK_SEPARATOR = "_";
     private static final String LOCK_EXPIRING_DATE_SEPARATOR = ":";
     private static final String CURRENT_LOCK = "CURRENT-";
@@ -137,12 +136,12 @@ public class HBaseLock {
     /**
      * Releases the lock.
      *
-     * @param column        Column to find the lock cell
-     * @param lockToken     Lock token
-     * @throws IOException  if there is an error writing or reading from HBase.
-     * @throws IllegalStateException  if the lockToken does not match with the current lockToken
+     * @param column    Column to find the lock cell
+     * @param lockToken Lock token
+     * @throws IOException                if there is an error writing or reading from HBase.
+     * @throws IllegalLockStatusException if the lockToken does not match with the current lockToken
      */
-    public void unlock(byte[] column, long lockToken) throws IOException {
+    public void unlock(byte[] column, long lockToken) throws IOException, IllegalLockStatusException {
         String[] lockValue;
         lockValue = readLockValue(column);
 
@@ -155,8 +154,7 @@ public class HBaseLock {
         }
 
         if (currentLock.hashCode() != lockToken) {
-            throw new IllegalStateException("Inconsistent lock status. You don't have the lock!"
-                    + lockToken + " != " + currentLock.hashCode() + " from " + Arrays.toString(lockValue));
+            throw new IllegalLockStatusException(lockToken, currentLock, lockValue);
         }
 
         logger.debug("Unlock lock with token " + lockToken);
@@ -194,7 +192,7 @@ public class HBaseLock {
         });
     }
 
-    public void clearLock(byte[] qualifier) throws IOException {
+    private void clearLock(byte[] qualifier) throws IOException {
         HBaseManager.act(getConnection(), tableName, table -> {
             Put p = new Put(getRow());
             byte[] columnFamily = getColumnFamily();
@@ -255,7 +253,14 @@ public class HBaseLock {
         return columnFamily;
     }
 
-    public Connection getConnection() {
+    private Connection getConnection() {
         return hbaseManager.getConnection();
+    }
+
+    public static class IllegalLockStatusException extends IllegalStateException {
+        IllegalLockStatusException(long lockToken, String currentLock, String[] lockValue) {
+            super("Inconsistent lock status. You don't have the lock!"
+                    + lockToken + " != " + currentLock.hashCode() + " from " + Arrays.toString(lockValue));
+        }
     }
 }

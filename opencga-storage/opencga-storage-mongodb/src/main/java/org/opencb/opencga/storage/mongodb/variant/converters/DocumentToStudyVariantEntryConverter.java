@@ -240,13 +240,7 @@ public class DocumentToStudyVariantEntryConverter {
     }
 
     public Document convertToStorageType(Variant variant, StudyEntry studyEntry) {
-
-        if (studyEntry.getFiles().size() != 1) {
-            throw new IllegalArgumentException("Expected just one file in the study to convert");
-        }
-        FileEntry file = studyEntry.getFiles().get(0);
-
-        return convertToStorageType(variant, studyEntry, file, new LinkedHashSet<>(studyEntry.getOrderedSamplesName()));
+        return convertToStorageType(variant, studyEntry, studyEntry.getFiles(), new LinkedHashSet<>(studyEntry.getOrderedSamplesName()));
     }
 
     public Document convertToStorageType(Variant variant, StudyEntry studyEntry, FileEntry file, LinkedHashSet<String> sampleNames) {
@@ -290,7 +284,7 @@ public class DocumentToStudyVariantEntryConverter {
             }
 
         } else {
-            fileDocuments = Collections.singletonList(convertFileDocument(studyEntry, new FileEntry()));
+            fileDocuments = Collections.emptyList();
         }
 
         studyObject.append(FILES_FIELD, fileDocuments);

@@ -88,6 +88,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final VariantSqlQueryParser queryParser;
     private final VariantHBaseQueryParser hbaseQueryParser;
     private final HadoopVariantFileMetadataDBAdaptor variantFileMetadataDBAdaptor;
+    private final int phoenixFetchSize;
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
@@ -116,6 +117,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
                 studyConfigurationManager.get(), cellBaseUtils, clientSideSkip);
+
+        phoenixFetchSize = options.getInt(HadoopVariantStorageEngine.DBADAPTOR_PHOENIX_FETCH_SIZE, -1);
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
 
@@ -249,7 +252,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         Map<String, List<String>> samples = getSamplesMetadata(query, options, getStudyConfigurationManager());
         return new VariantQueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults,
-                warn, error, variants, samples);
+                warn, error, variants, samples, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
     }
 
     @Override
@@ -397,7 +400,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 }
 
                 Statement statement = getJdbcConnection().createStatement(); // Statemnet closed by iterator
-                statement.setFetchSize(options.getInt("batchSize", -1));
+                statement.setFetchSize(options.getInt("batchSize", phoenixFetchSize));
                 ResultSet resultSet = statement.executeQuery(sql); // RS closed by iterator
                 List<String> formats = getIncludeFormats(query);
                 String unknownGenotype = null;

@@ -162,12 +162,13 @@ public class VariantQueryUtils {
      * <p>
      * Human Phenotype Ontology (HPO) terms starts with 'HP:'
      * Online Mendelian Inheritance in Man (OMIM) terms starts with 'OMIM:'
+     * Unified Medical Language System (UMLS) terms starts with 'umls:'
      *
      * @param value Value to check
      * @return If is a known accession
      */
     public static boolean isGeneAccession(String value) {
-        return value.startsWith("HP:") || value.startsWith("OMIM:");
+        return value.startsWith("HP:") || value.startsWith("OMIM:") || value.startsWith("umls:");
     }
 
     /**
@@ -180,7 +181,9 @@ public class VariantQueryUtils {
      */
     public static boolean isVariantId(String value) {
         int count = StringUtils.countMatches(value, ':');
-        return count == 3;
+        return count == 3
+                // It may have more colons if is a symbolic alternate like <DUP:TANDEM>
+                || count > 3 && StringUtils.contains(value, '<');
     }
 
     /**
@@ -205,6 +208,102 @@ public class VariantQueryUtils {
             }
         }
         return variant;
+    }
+
+    public static class VariantQueryXref {
+        private final List<String> genes = new LinkedList<>();
+        private final List<Variant> variants = new LinkedList<>();
+        private final List<String> ids = new LinkedList<>();
+        private final List<String> otherXrefs = new LinkedList<>();
+
+        /**
+         * @return List of genes found at {@link VariantQueryParam#GENE} and {@link VariantQueryParam#ANNOT_XREF}
+         */
+        public List<String> getGenes() {
+            return genes;
+        }
+
+        /**
+         * @return List of variants found at {@link VariantQueryParam#ANNOT_XREF} and {@link VariantQueryParam#ID}
+         */
+        public List<Variant> getVariants() {
+            return variants;
+        }
+
+        /**
+         * @return List of ids found at {@link VariantQueryParam#ID}
+         */
+        public List<String> getIds() {
+            return ids;
+        }
+
+        /**
+         * @return List of other xrefs found at
+         * {@link VariantQueryParam#ANNOT_XREF},
+         * {@link VariantQueryParam#ID},
+         * {@link VariantQueryParam#ANNOT_CLINVAR},
+         * {@link VariantQueryParam#ANNOT_COSMIC},
+         * {@link VariantQueryParam#ANNOT_HPO}
+         */
+        public List<String> getOtherXrefs() {
+            return otherXrefs;
+        }
+    }
+
+    /**
+     * Parses XREFS related filters, and sorts in different lists.
+     *
+     * - {@link VariantQueryParam#ID}
+     * - {@link VariantQueryParam#GENE}
+     * - {@link VariantQueryParam#ANNOT_XREF}
+     * - {@link VariantQueryParam#ANNOT_CLINVAR}
+     * - {@link VariantQueryParam#ANNOT_COSMIC}
+     * - {@link VariantQueryParam#ANNOT_HPO}
+     *
+     * @param query Query to parse
+     * @return VariantQueryXref with all VariantIds, ids, genes and xrefs
+     */
+    public static VariantQueryXref parseXrefs(Query query) {
+        VariantQueryXref xrefs = new VariantQueryXref();
+        if (query == null) {
+            return xrefs;
+        }
+        xrefs.getGenes().addAll(query.getAsStringList(GENE.key(), OR));
+
+        if (isValidParam(query, ID)) {
+            List<String> idsList = query.getAsStringList(ID.key(), OR);
+
+            for (String value : idsList) {
+                Variant variant = toVariant(value);
+                if (variant != null) {
+                    xrefs.getVariants().add(variant);
+                } else {
+                    xrefs.getIds().add(value);
+                }
+            }
+        }
+
+        if (isValidParam(query, ANNOT_XREF)) {
+            List<String> xrefsList = query.getAsStringList(ANNOT_XREF.key(), OR);
+            for (String value : xrefsList) {
+                Variant variant = toVariant(value);
+                if (variant != null) {
+                    xrefs.getVariants().add(variant);
+                } else {
+                    if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
+                        xrefs.getOtherXrefs().add(value);
+                    } else {
+                        xrefs.getGenes().add(value);
+                    }
+                }
+            }
+
+        }
+        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_HPO.key(), OR));
+        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_COSMIC.key(), OR));
+        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));
+
+        return xrefs;
     }
 
     public static final class SelectVariantElements {

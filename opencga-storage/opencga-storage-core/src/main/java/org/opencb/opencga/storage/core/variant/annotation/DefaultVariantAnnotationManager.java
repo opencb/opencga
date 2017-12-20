@@ -152,7 +152,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         URI fileUri = path.toUri();
 
         /** Getting iterator from OpenCGA Variant database. **/
-        QueryOptions iteratorQueryOptions = getIteratorQueryOptions(params);
+        QueryOptions iteratorQueryOptions = getIteratorQueryOptions(query, params);
 
         int batchSize = 200;
         int numThreads = 8;
@@ -207,7 +207,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         return fileUri;
     }
 
-    protected QueryOptions getIteratorQueryOptions(ObjectMap params) {
+    protected QueryOptions getIteratorQueryOptions(Query query, ObjectMap params) {
         QueryOptions iteratorQueryOptions;
         if (params == null) {
             iteratorQueryOptions = new QueryOptions();

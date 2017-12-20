@@ -17,7 +17,6 @@
 
 package org.opencb.opencga.storage.core.manager.variant.metadata;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -85,13 +84,8 @@ public class CatalogStudyConfigurationFactory {
             StudyDBAdaptor.QueryParams.ATTRIBUTES.key() + '.' + VariantStorageEngine.Options.AGGREGATED_TYPE.key()
     ));
 
-    private final ObjectMapper objectMapper;
-    private QueryOptions options;
-
-
     public CatalogStudyConfigurationFactory(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        objectMapper = new ObjectMapper();
     }
 
     public StudyConfiguration getStudyConfiguration(long studyId, QueryOptions options, String sessionId) throws CatalogException {
@@ -272,7 +266,7 @@ public class CatalogStudyConfigurationFactory {
     public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options, String sessionId)
             throws CatalogException {
         if (options == null) {
-            options = this.options;
+            options = QueryOptions.empty();
         }
         logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
 
@@ -281,16 +275,28 @@ public class CatalogStudyConfigurationFactory {
         if (cohortId != null && studyConfiguration.getCohorts().get(cohortId) != null) {
             Set<Long> cohortFromStorage = studyConfiguration.getCohorts().get(cohortId)
                     .stream()
-                    .map(i -> (long) i)
+                    .map(Number::longValue)
                     .collect(Collectors.toSet());
-            List<Long> cohortFromCatalog = catalogManager.getCohortManager()
-                    .get(String.valueOf(studyConfiguration.getStudyId()), String.valueOf(cohortId), null, sessionId).first()
+            Cohort defaultCohort = catalogManager.getCohortManager()
+                    .get(String.valueOf(studyConfiguration.getStudyId()), String.valueOf(cohortId), null, sessionId).first();
+            List<Long> cohortFromCatalog = defaultCohort
                     .getSamples()
                     .stream()
                     .map(Sample::getId)
                     .collect(Collectors.toList());
 
             if (cohortFromCatalog.size() != cohortFromStorage.size() || !cohortFromStorage.containsAll(cohortFromCatalog)) {
+                if (defaultCohort.getStatus().getName().equals(Cohort.CohortStatus.CALCULATING)) {
+                    String status;
+                    if (studyConfiguration.getInvalidStats().contains(cohortId)) {
+                        status = Cohort.CohortStatus.INVALID;
+                    } else if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
+                        status = Cohort.CohortStatus.READY;
+                    } else {
+                        status = Cohort.CohortStatus.NONE;
+                    }
+                    catalogManager.getCohortManager().setStatus(String.valueOf(cohortId), status, null, sessionId);
+                }
                 catalogManager.getCohortManager().update(String.valueOf(studyConfiguration.getStudyId()), String.valueOf(cohortId),
                         new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortFromStorage),
                         null, sessionId);
