@@ -179,7 +179,7 @@ public class VariantStorageManager extends StorageManager {
 
     public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, VariantSearchException,
             IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
-        searchIndex(new Query(STUDIES.key(), study), new QueryOptions(), sessionId);
+        searchIndex(new Query(STUDY.key(), study), new QueryOptions(), sessionId);
     }
 
     public void searchIndex(Query query, QueryOptions queryOptions, String sessionId) throws StorageEngineException,

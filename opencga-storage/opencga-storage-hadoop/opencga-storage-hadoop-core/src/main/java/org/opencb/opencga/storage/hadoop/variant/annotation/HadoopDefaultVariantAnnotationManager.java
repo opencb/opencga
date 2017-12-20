@@ -47,7 +47,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     @Override
     protected QueryOptions getIteratorQueryOptions(Query query, ObjectMap params) {
         QueryOptions iteratorQueryOptions = super.getIteratorQueryOptions(query, params);
-        if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.FILES)
+        if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.FILE)
                 || !VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOTATION_EXISTS)) {
             iteratorQueryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
         }
