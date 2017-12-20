@@ -274,18 +274,17 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantSearchModel variantSearchModel = new VariantSearchModel();
 
         // Set general Variant attributes: id, dbSNP, chromosome, start, end, type
-        variantSearchModel.setId(variant.getChromosome() + ":" + variant.getStart() + ":"
-                + variant.getReference() + ":" + variant.getAlternate());
+        variantSearchModel.setId(variant.toString());       // Internal unique ID e.g.  3:1000:AT:-
+        variantSearchModel.setVariantId(variant.getId());
         variantSearchModel.setChromosome(variant.getChromosome());
         variantSearchModel.setStart(variant.getStart());
         variantSearchModel.setEnd(variant.getEnd());
-        variantSearchModel.setVariantId(variant.getId());
         variantSearchModel.setType(variant.getType().toString());
 
         // This field contains all possible IDs: id, dbSNP, genes, transcripts, protein, clinvar, hpo, ...
         // This will help when searching by variant id. This is added at the end of the method after collecting all IDs
         Set<String> xrefs = new HashSet<>();
-        xrefs.add(variant.getChromosome() + ":" + variant.getStart() + ":" + variant.getReference() + ":" + variant.getAlternate());
+        xrefs.add(variantSearchModel.getId());
         xrefs.add(variantSearchModel.getVariantId());
 
         // Set Studies Alias
