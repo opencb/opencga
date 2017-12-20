@@ -1,19 +1,15 @@
 package org.opencb.opencga.server.rest.admin;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.*;
+import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 
 @Path("/{apiVersion}/admin/audit")
@@ -21,15 +17,9 @@ import java.io.IOException;
 @Api(value = "Admin - Audit", position = 4, description = "Methods to audit")
 public class AuditWSServer extends OpenCGAWSServer {
 
-
-    public AuditWSServer(UriInfo uriInfo, HttpServletRequest httpServletRequest, HttpHeaders httpHeaders)
+    public AuditWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-    }
-
-    public AuditWSServer(String version, UriInfo uriInfo, HttpServletRequest httpServletRequest, HttpHeaders httpHeaders)
-            throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, httpHeaders);
     }
 
     @GET
@@ -41,22 +31,36 @@ public class AuditWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/groupBy")
-    @ApiOperation(value = "Group by...")
-    public Response groupBy() {
-        return createErrorResponse(new NotImplementedException());
+    @ApiOperation(value = "Group by operation")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "50")
+    })
+    public Response groupBy(
+            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
+                @QueryParam("fields") String fields,
+            @ApiParam(value = "Resource to be grouped by.", required = true) @QueryParam("resource") AuditRecord.Resource resource,
+            @ApiParam(value = "Action performed") @DefaultValue("") @QueryParam("action") String action,
+            @ApiParam(value = "Object before update") @DefaultValue("") @QueryParam("before") String before,
+            @ApiParam(value = "Object after update") @DefaultValue("") @QueryParam("after") String after,
+            @ApiParam(value = "Date <,<=,>,>=(Format: yyyyMMddHHmmss) and yyyyMMddHHmmss-yyyyMMddHHmmss") @DefaultValue("")
+                @QueryParam("date") String date) {
+        try {
+
+
+            return createOkResponse(catalogManager.getAuditManager().groupBy(query, fields, queryOptions, sessionId));
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+
     }
 
     @GET
     @Path("/stats")
     @ApiOperation(value = "Get some stats from the audit database")
     public Response stats() {
-        return createErrorResponse(new NotImplementedException());
-    }
-
-    @GET
-    @Path("/login")
-    @ApiOperation(value = "Get an overview of the users that have logged in during a period of time")
-    public Response login() {
         return createErrorResponse(new NotImplementedException());
     }
 
