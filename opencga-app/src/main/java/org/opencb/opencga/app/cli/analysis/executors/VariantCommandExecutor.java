@@ -283,12 +283,12 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         Query query = new Query();
         query.putIfNotEmpty(VariantCatalogQueryUtils.PROJECT.key(), project);
-        query.putIfNotEmpty(VariantQueryParam.STUDIES.key(), cliOptions.study);
+        query.putIfNotEmpty(VariantQueryParam.STUDY.key(), cliOptions.study);
         query.putIfNotEmpty(VariantQueryParam.REGION.key(), cliOptions.region);
         query.putIfNotEmpty(VariantQueryParam.GENE.key(), cliOptions.gene);
-        query.putIfNotEmpty(VariantQueryParam.SAMPLES.key(), cliOptions.sample);
-        query.putIfNotEmpty(VariantQueryParam.FILES.key(), cliOptions.file);
-        query.putIfNotEmpty(VariantQueryParam.COHORTS.key(), cliOptions.cohort);
+        query.putIfNotEmpty(VariantQueryParam.SAMPLE.key(), cliOptions.sample);
+        query.putIfNotEmpty(VariantQueryParam.FILE.key(), cliOptions.file);
+        query.putIfNotEmpty(VariantQueryParam.COHORT.key(), cliOptions.cohort);
         variantManager.searchIndex(query, queryOptions, sessionId);
     }
 

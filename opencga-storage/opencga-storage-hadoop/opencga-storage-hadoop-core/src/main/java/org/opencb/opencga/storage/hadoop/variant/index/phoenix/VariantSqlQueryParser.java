@@ -300,13 +300,15 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ID}
      * {@link VariantQueryParam#GENE}
      * {@link VariantQueryParam#ANNOT_XREF}
+     * {@link VariantQueryParam#ANNOT_HPO}
+     * {@link VariantQueryParam#ANNOT_CLINVAR}
+     * {@link VariantQueryParam#ANNOT_COSMIC}
      *
      * @param query Query to parse
      * @return List of region filters
      */
     protected List<String> getRegionFilters(Query query) {
         List<String> regionFilters = new LinkedList<>();
-
 
         if (isValidParam(query, REGION)) {
             List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
@@ -317,61 +319,29 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, CHROMOSOME, VariantColumn.CHROMOSOME, regionFilters, Region::normalizeChromosome);
 
-//        addQueryFilter(query, ID, VariantColumn.XREFS, regionFilters);
-        List<Variant> variants = new ArrayList<>();
-        if (isValidParam(query, ID)) {
-            for (String id : query.getAsStringList(ID.key())) {
-                Variant variant = toVariant(id);
-                if (variant == null) {
-                    regionFilters.add(buildFilter(VariantColumn.XREFS, "=", id));
-                } else {
-                    variants.add(variant);
-//                    List<String> subFilters = new ArrayList<>(4);
-//                    subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", variant.getChromosome()));
-//                    subFilters.add(buildFilter(VariantColumn.POSITION, "=", variant.getStart().toString()));
-//                    subFilters.add(buildFilter(VariantColumn.REFERENCE, "=", variant.getReference()));
-//                    subFilters.add(buildFilter(VariantColumn.ALTERNATE, "=", varian   t.getAlternate()));
-//                    regionFilters.add(appendFilters(subFilters, QueryOperation.AND.toString()));
-                }
-            }
+        VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
+
+        // TODO: This should filter by ID from the VCF
+        for (String id : variantQueryXref.getIds()) {
+            regionFilters.add(buildFilter(VariantColumn.XREFS, "=", id));
+        }
+        for (String xrefs : variantQueryXref.getOtherXrefs()) {
+            regionFilters.add(buildFilter(VariantColumn.XREFS, "=", xrefs));
+        }
+        if (!variantQueryXref.getVariants().isEmpty()) {
+            regionFilters.add(getVariantFilter(variantQueryXref.getVariants()));
         }
 
-        // TODO: Ask cellbase for gene region?
+        // Ask cellbase for gene region?
+        for (String gene : variantQueryXref.getGenes()) {
+            Region region = cellBaseUtils.getGeneRegion(gene);
+            if (region != null) {
+                regionFilters.add(getRegionFilter(region));
+            } else {
+                regionFilters.add(getVoidFilter());
+            }
+        }
 //        addQueryFilter(query, GENE, VariantColumn.GENES, regionFilters);
-        List<String> genes = new ArrayList<>();
-        if (isValidParam(query, GENE)) {
-            for (String gene : query.getAsStringList(GENE.key())) {
-                genes.add(gene);
-                Region region = cellBaseUtils.getGeneRegion(gene);
-                if (region != null) {
-                    regionFilters.add(getRegionFilter(region));
-                } else {
-                    regionFilters.add(getVoidFilter());
-                }
-            }
-        }
-
-//        addQueryFilter(query, ANNOT_XREF, VariantColumn.XREFS, regionFilters);
-        if (isValidParam(query, ANNOT_XREF)) {
-            List<String> xrefs = query.getAsStringList(VariantQueryParam.ANNOT_XREF.key());
-            List<String> otherXrefs = new ArrayList<>();
-            for (String value : xrefs) {
-                Variant variant = toVariant(value);
-                if (variant != null) {
-                    variants.add(variant);
-                } else {
-                    if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
-                        otherXrefs.add(value);
-                    } else {
-                        genes.add(value);
-                    }
-                    regionFilters.add(buildFilter(VariantColumn.XREFS, "=", value));
-                }
-            }
-        }
-        if (!variants.isEmpty()) {
-            regionFilters.add(getVariantFilter(variants));
-        }
 
         if (regionFilters.isEmpty()) {
             // chromosome != _METADATA
@@ -457,7 +427,6 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ANNOT_TRANSCRIPTION_FLAG}
      * {@link VariantQueryParam#ANNOT_GENE_TRAIT_ID}
      * {@link VariantQueryParam#ANNOT_GENE_TRAIT_NAME}
-     * {@link VariantQueryParam#ANNOT_HPO}
      * {@link VariantQueryParam#ANNOT_GO}
      * {@link VariantQueryParam#ANNOT_EXPRESSION}
      * {@link VariantQueryParam#ANNOT_PROTEIN_KEYWORD}
@@ -890,8 +859,6 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_GENE_TRAIT_ID, VariantColumn.GENE_TRAITS_ID, filters);
 
         addQueryFilter(query, ANNOT_GENE_TRAIT_NAME, VariantColumn.GENE_TRAITS_NAME, filters);
-
-        addQueryFilter(query, ANNOT_HPO, VariantColumn.XREFS, filters);
 
         if (isValidParam(query, ANNOT_GO_GENES)) {
             String value = query.getString(ANNOT_GO_GENES.key());

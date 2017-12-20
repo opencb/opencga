@@ -904,12 +904,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Query query;
         Map<String, Integer> drugs = new HashMap<>();
         for (Variant variant : allVariants.getResult()) {
-            Set<String> drugsInVariant = new HashSet<>();
-            for (GeneDrugInteraction drugInteraction : variant.getAnnotation().getGeneDrugInteraction()) {
-                drugsInVariant.add(drugInteraction.getDrugName());
-            }
-            for (String flag : drugsInVariant) {
-                drugs.put(flag, drugs.getOrDefault(flag, 0) + 1);
+            if (variant.getAnnotation().getGeneDrugInteraction() != null) {
+                Set<String> drugsInVariant = new HashSet<>();
+                for (GeneDrugInteraction drugInteraction : variant.getAnnotation().getGeneDrugInteraction()) {
+                    drugsInVariant.add(drugInteraction.getDrugName());
+                }
+                for (String flag : drugsInVariant) {
+                    drugs.put(flag, drugs.getOrDefault(flag, 0) + 1);
+                }
             }
         }
 

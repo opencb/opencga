@@ -129,13 +129,13 @@ public class VariantCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = VariantQueryParam.GENE_DESCR)
         public String gene;
 
-        @Parameter(names = {"--file"}, description = VariantQueryParam.FILES_DESCR, arity = 1)
+        @Parameter(names = {"--file"}, description = VariantQueryParam.FILE_DESCR, arity = 1)
         public String file;
 
-        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLES_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
         public String sample;
 
-        @Parameter(names = {"--cohort"}, description = VariantQueryParam.COHORTS_DESCR, arity = 1)
+        @Parameter(names = {"--cohort"}, description = VariantQueryParam.COHORT_DESCR, arity = 1)
         public String cohort;
     }
 
