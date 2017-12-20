@@ -34,7 +34,6 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
 import java.io.ByteArrayInputStream;
@@ -365,10 +364,10 @@ public class CatalogManagerTest extends GenericTest {
         ObjectMap params = new ObjectMap()
                 .append("users", "pfurio,imedina");
 
-        LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params,
+        QueryResult<User> ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params,
                 getAdminToken());
 
-        assertEquals(2, ldapImportResult.getResult().getUserSummary().getTotal());
+        assertEquals(2, ldapImportResult.getNumResults());
     }
 
     // To make this test work we will need to add a correct user and password to be able to login
