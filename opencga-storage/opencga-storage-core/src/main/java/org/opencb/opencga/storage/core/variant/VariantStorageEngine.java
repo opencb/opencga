@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils.*;
 
 /**
@@ -131,6 +132,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         TRANSFORM_FORMAT("transform.format", "avro"),
         LOAD_BATCH_SIZE("load.batch.size", 100),
         LOAD_THREADS("load.threads", 6),
+        LOAD_SPLIT_DATA("load.split-data", false),
 
         MERGE_MODE("merge.mode", MergeMode.ADVANCED),
 
@@ -710,6 +712,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 Number numTotalResults = null;
                 AtomicLong searchCount = null;
                 Boolean approxCount = null;
+                Integer approxCountSamplingSize = null;
 
                 // Do not count for iterator
                 if (!iterator) {
@@ -725,6 +728,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         VariantQueryResult<Long> result = approximateCount(query, options);
                         numTotalResults = result.first();
                         approxCount = result.getApproximateCount();
+                        approxCountSamplingSize = result.getApproximateCountSamplingSize();
                     }
                 }
 
@@ -755,9 +759,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     VariantQueryResult<Variant> queryResult = dbAdaptor.get(variantsIterator, engineQuery, options);
                     if (numTotalResults != null) {
                         queryResult.setApproximateCount(approxCount);
+                        queryResult.setApproximateCountSamplingSize(approxCountSamplingSize);
                         queryResult.setNumTotalResults(numTotalResults.longValue());
                     }
-                    queryResult.setWarningMsg("Data from Solr + " + getStorageEngineId());
+                    queryResult.setSource(SEARCH_ENGINE_ID + '+' + getStorageEngineId());
                     return queryResult;
                 }
             } else {
@@ -765,7 +770,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     return dbAdaptor.iterator(query, options);
                 } else {
                     setDefaultTimeout(options);
-                    return dbAdaptor.get(query, options);
+                    return dbAdaptor.get(query, options).setSource(getStorageEngineId());
                 }
             }
         }
@@ -859,13 +864,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantQueryResult<Long> approximateCount(Query query, QueryOptions options) throws StorageEngineException {
         long count;
         boolean approxCount = true;
+        int sampling = 0;
         StopWatch watch = StopWatch.createStarted();
         try {
             if (doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
                 approxCount = false;
                 count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
             } else {
-                int sampling = options.getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
+                sampling = options.getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                         getOptions().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(), APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, sampling);
 
@@ -894,8 +900,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw new VariantQueryException("Error querying Solr", e);
         }
         int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-        return new VariantQueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count), null)
-                .setApproximateCount(approxCount);
+        return new VariantQueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count), null,
+                SEARCH_ENGINE_ID + '+' + getStorageEngineId(), approxCount, approxCount ? sampling : null);
     }
 
     /**

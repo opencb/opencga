@@ -1,10 +1,12 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.utils.CryptoUtils;
 
 import static org.junit.Assert.assertEquals;
+import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter.SV_SPLIT_LENGTH;
 
 /**
  * Created on 06/11/17.
@@ -68,5 +70,14 @@ public class VariantStringIdConverterTest {
         v.getSv().setCiStartRight(1010);
         assertEquals(" 1:      1000::<INS>_AAAAA_TTTT:999:1010::", converter.buildId(v));
         assertEquals(v, converter.buildVariant(converter.buildId(v), 999, "", "<INS>_AAAAA_TTTT"));
+    }
+
+    @Test
+    public void testAlleleSha1WithColons() {
+        // This allele, in SHA1 mode has 4 colons, so the parser thinks it is a structural variant
+        String alt = "CTATATTTTATATAAACTATATTTTATATGTATATGTGTGTATACTATATTTTATATACTATACTATAGA";
+        Variant v = new Variant("1:1000:-:" + alt);
+        assertEquals(SV_SPLIT_LENGTH - 1, StringUtils.countMatches(converter.buildId(v), ':'));
+        assertEquals(v, converter.buildVariant(converter.buildId(v), 999, "", alt));
     }
 }

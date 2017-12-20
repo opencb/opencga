@@ -216,6 +216,10 @@ public class VariantQueryCommandUtils {
             queryOptions.put(QueryOptions.COUNT, true);
         }
 
+        if (queryVariantsOptions.sort) {
+            queryOptions.put(QueryOptions.SORT, true);
+        }
+
         if (queryVariantsOptions.summary) {
             queryOptions.put(VariantField.SUMMARY, true);
         }

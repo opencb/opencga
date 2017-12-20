@@ -84,6 +84,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_GAPS_OPERATION_NAME;
@@ -153,6 +154,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String STATS_LOCAL = "stats.local";
+
+    public static final String DBADAPTOR_PHOENIX_FETCH_SIZE = "dbadaptor.phoenix.fetch_size";
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
@@ -487,7 +490,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         if (extraOptions != null) {
             options.putAll(extraOptions);
         }
-        MergeMode mergeMode = MergeMode.from(options);
         boolean directLoad = options.getBoolean(HADOOP_LOAD_DIRECT, HADOOP_LOAD_DIRECT_DEFAULT);
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
@@ -496,6 +498,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         int studyId = options.getInt(Options.STUDY_ID.key());
         HBaseCredentials archiveCredentials = buildCredentials(getArchiveTableName(studyId, options));
+        MergeMode mergeMode;
+        if (connected) {
+            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, null).first();
+            if (sc == null || !sc.getAttributes().containsKey(MERGE_MODE.key())) {
+                mergeMode = MergeMode.from(options);
+            } else {
+                mergeMode = MergeMode.from(sc.getAttributes());
+            }
+        } else {
+            mergeMode = MergeMode.from(options);
+        }
 
         AbstractHadoopVariantStoragePipeline storageETL;
         if (mergeMode.equals(MergeMode.BASIC)) {
