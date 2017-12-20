@@ -72,7 +72,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
         Set<String> siftDesc = new HashSet<>();
         Set<String> geneTraitName = new HashSet<>();
         Set<String> geneTraitId = new HashSet<>();
-        Set<String> hpo = new HashSet<>();
+//        Set<String> hpo = new HashSet<>();
         Set<String> drugs = new HashSet<>();
         Set<String> proteinKeywords = new HashSet<>();
         // Contains all the xrefs, and the id, the geneNames and transcripts
@@ -136,10 +136,10 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
             for (GeneTraitAssociation geneTrait : variantAnnotation.getGeneTraitAssociation()) {
                 addNotNull(geneTraitName, geneTrait.getName());
                 addNotNull(geneTraitId, geneTrait.getId());
-                addNotNull(hpo, geneTrait.getHpo());
+                addNotNull(xrefs, geneTrait.getHpo());
+                addNotNull(xrefs, geneTrait.getId());
             }
         }
-        xrefs.addAll(hpo);
 
         if (variantAnnotation.getGeneDrugInteraction() != null) {
             for (GeneDrugInteraction drug : variantAnnotation.getGeneDrugInteraction()) {
@@ -163,7 +163,6 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
         map.put(GENE_TRAITS_ID, geneTraitId);
         map.put(PROTEIN_KEYWORDS, proteinKeywords);
         map.put(GENE_TRAITS_NAME, geneTraitName);
-        map.put(HPO, hpo);
         map.put(DRUG, drugs);
         map.put(XREFS, xrefs);
 
