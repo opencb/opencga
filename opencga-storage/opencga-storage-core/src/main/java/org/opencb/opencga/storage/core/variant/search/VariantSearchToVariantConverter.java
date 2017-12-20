@@ -281,17 +281,23 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantSearchModel.setEnd(variant.getEnd());
         variantSearchModel.setType(variant.getType().toString());
 
-        // This field contains all possible IDs: id, dbSNP, genes, transcripts, protein, clinvar, hpo, ...
+        // This field contains all possible IDs: id, dbSNP, names, genes, transcripts, protein, clinvar, hpo, ...
         // This will help when searching by variant id. This is added at the end of the method after collecting all IDs
         Set<String> xrefs = new HashSet<>();
         xrefs.add(variantSearchModel.getId());
         xrefs.add(variantSearchModel.getVariantId());
+        if (variant.getNames() != null && !variant.getNames().isEmpty()) {
+            variant.getNames().forEach(name -> {
+                if (name != null) {
+                    xrefs.add(name);
+                }
+            });
+        }
 
         // Set Studies Alias
         if (variant.getStudies() != null && CollectionUtils.isNotEmpty(variant.getStudies())) {
             List<String> studies = new ArrayList<>();
             Map<String, Float> stats = new HashMap<>();
-//            variant.getStudies().forEach(s -> studies.add(s.getStudyId()));
 
             for (StudyEntry studyEntry : variant.getStudies()) {
                 String studyId = studyEntry.getStudyId();
@@ -334,9 +340,19 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             // This object store all info and descriptions for full-text search
             Set<String> traits = new HashSet<>();
 
+            // Add all XRefs coming from the variant annotation
+            if (variantAnnotation.getXrefs() != null && !variantAnnotation.getXrefs().isEmpty()) {
+                variantAnnotation.getXrefs().forEach(xref -> {
+                    if (xref != null) {
+                        xrefs.add(xref.getId());
+                    }
+                });
+            }
+
             // Set Genes and Consequence Types
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             if (consequenceTypes != null) {
+                // This MUST be a LinkedHashMap to keep the order of the elements!
                 Map<String, Set<String>> genes = new LinkedHashMap<>();
                 Set<Integer> soAccessions = new LinkedHashSet<>();
                 Set<String> geneToSOAccessions = new LinkedHashSet<>();
@@ -349,6 +365,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         if (!genes.containsKey(consequenceType.getGeneName())) {
                             genes.put(consequenceType.getGeneName(), new LinkedHashSet<>());
                         }
+                        // DO NOT change the order of the following code
                         genes.get(consequenceType.getGeneName()).add(consequenceType.getGeneName());
                         genes.get(consequenceType.getGeneName()).add(consequenceType.getEnsemblGeneId());
                         genes.get(consequenceType.getGeneName()).add(consequenceType.getEnsemblTranscriptId());
@@ -375,19 +392,28 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         }
                     }
 
-                    // Set Uniprot accession protein id in xrefs
                     if (consequenceType.getProteinVariantAnnotation() != null) {
-                        xrefs.add(consequenceType.getProteinVariantAnnotation().getUniprotAccession());
+                        ProteinVariantAnnotation proteinVariantAnnotation = consequenceType.getProteinVariantAnnotation();
 
-                        if (consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
-                            for (String keyword : consequenceType.getProteinVariantAnnotation().getKeywords()) {
-                                traits.add("KW -- " + consequenceType.getProteinVariantAnnotation().getUniprotAccession()
-                                        + " -- " + keyword);
-                            }
+                        // Add Uniprot accession, name and ID to xrefs
+                        if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotAccession())) {
+                            xrefs.add(proteinVariantAnnotation.getUniprotAccession());
+                        }
+                        if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotName())) {
+                            xrefs.add(proteinVariantAnnotation.getUniprotName());
+                        }
+                        if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotVariantId())) {
+                            xrefs.add(proteinVariantAnnotation.getUniprotVariantId());
                         }
 
-                        if (consequenceType.getProteinVariantAnnotation().getFeatures() != null) {
-                            for (ProteinFeature proteinFeature : consequenceType.getProteinVariantAnnotation().getFeatures()) {
+                        // Add keywords to and Features to traits
+                        if (proteinVariantAnnotation.getKeywords() != null) {
+                            for (String keyword : proteinVariantAnnotation.getKeywords()) {
+                                traits.add("KW -- " + proteinVariantAnnotation.getUniprotAccession() + " -- " + keyword);
+                            }
+                        }
+                        if (proteinVariantAnnotation.getFeatures() != null) {
+                            for (ProteinFeature proteinFeature : proteinVariantAnnotation.getFeatures()) {
                                 traits.add("PD -- " + proteinFeature.getId() + " -- " + proteinFeature.getDescription());
                             }
                         }
@@ -478,8 +504,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 for (GeneTraitAssociation geneTraitAssociation : variantAnnotation.getGeneTraitAssociation()) {
                     switch (geneTraitAssociation.getSource().toLowerCase()) {
                         case "hpo":
-//                            xrefs.add(geneTraitAssociation.getHpo());
-//                            xrefs.add(geneTraitAssociation.getId());
+                            xrefs.add(geneTraitAssociation.getId());
+                            if (StringUtils.isNotEmpty(geneTraitAssociation.getHpo())) {
+                                xrefs.add(geneTraitAssociation.getHpo());
+                            }
                             traits.add("HP -- " + geneTraitAssociation.getHpo() + " -- "
                                     + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());
                             break;
