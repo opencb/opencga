@@ -118,8 +118,8 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     @Test
     public void testVcfHtsExportSingleFile() throws Exception {
         Query query = new Query()
-                .append(VariantQueryParam.STUDIES.key(), STUDY_NAME)
-                .append(VariantQueryParam.FILES.key(), 1);
+                .append(VariantQueryParam.STUDY.key(), STUDY_NAME)
+                .append(VariantQueryParam.FILE.key(), 1);
 
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true);
@@ -134,7 +134,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     @Test
     public void testVcfHtsExportMultiFile() throws Exception {
         Query query = new Query();
-        query.append(VariantQueryParam.STUDIES.key(), STUDY_NAME);
+        query.append(VariantQueryParam.STUDY.key(), STUDY_NAME);
 //                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
         int failedVariants = export(outputVcf, query, new QueryOptions(QueryOptions.SORT, true));

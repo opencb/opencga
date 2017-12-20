@@ -261,11 +261,10 @@ public class StorageVariantCommandOptions {
 //        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
 //        public String study;
 
-        @Parameter(names = {"--gt", "--genotype"}, description = "A comma separated list of samples from the SAME study, example: " +
-                "NA0001:0/0,0/1;NA0002:0/1", arity = 1)
+        @Parameter(names = {"--gt", "--genotype"}, description = VariantQueryParam.GENOTYPE_DESCR, arity = 1)
         public String sampleGenotype;
 
-        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLES_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
         public String samples;
 
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)
@@ -274,7 +273,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR, arity = 1)
         public String filter;
 
-        @Parameter(names = {"--gene-biotype"}, description = "Biotype CSV", arity = 1)
+        @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR, arity = 1)
         public String geneBiotype;
 
         @Parameter(names = {"--pmaf", "--population-maf"}, description = "Population minor allele frequency: " +

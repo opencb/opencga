@@ -1010,7 +1010,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 queryResult = dbAdaptor.get(new Query()
                                 .append(VariantQueryParam.ID.key(), variant.toString())
                                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".")
-                                .append(VariantQueryParam.RETURNED_STUDIES.key(), studyId),
+                                .append(VariantQueryParam.INCLUDE_STUDY.key(), studyId),
                         new QueryOptions(QueryOptions.TIMEOUT, 30_000));
             } catch (MongoExecutionTimeoutException e) {
                 fails++;

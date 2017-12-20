@@ -155,7 +155,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 return openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
                 options.put(QueryOptions.SKIP_COUNT, true);
-                params.put(VariantQueryParam.SAMPLES_METADATA.key(), true);
+                params.put(VariantQueryParam.SAMPLE_METADATA.key(), true);
                 if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
                         || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                     QueryResponse<Variant> queryResponse = openCGAClient.getVariantClient().query(params, options);

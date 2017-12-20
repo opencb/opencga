@@ -232,8 +232,8 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @Test
     public void testArchiveIterator() {
         int count = 0;
-        Query query = new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
-                .append(VariantQueryParam.FILES.key(), 6);
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+                .append(VariantQueryParam.FILE.key(), 6);
 
         for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true)); iterator.hasNext(); ) {
             Variant variant = iterator.next();

@@ -61,7 +61,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_XREF.key(), "rs574335987");
 
         // execute
@@ -73,7 +73,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
         // execute
@@ -84,7 +84,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001792,SO:0001619");
 
         // execute
@@ -96,7 +96,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.GENE.key(), "WASH7P");
         query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001792");
 
@@ -108,7 +108,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.REGION.key(), "1:17700");
 
         // execute
@@ -119,7 +119,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.TYPE.key(), "CNV,SNV");
 
         // execute
@@ -130,7 +130,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "phylop<-1.0");
 
         // execute
@@ -141,7 +141,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.GENE.key(), "WASH7P");
         query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "phylop<-1.0");
 
@@ -153,7 +153,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.GENE.key(), "WASH7P");
         query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "phylop<-1.0");
         query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:ALL>0.1");
@@ -166,7 +166,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift==tolerated,polyphen==bening");
         //query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.5,polyphen==bening");
         //query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), "tolerated");
@@ -179,7 +179,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:YRI<0.01");
 //        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:ALL<0.0002");
 
@@ -191,7 +191,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         // (* -popFreq__1kG_phase3__YRI:*) OR popFreq_1kG_phase3__YRI:[0.01 TO *]
         query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:YRI<<0.01");
         // execute
@@ -202,7 +202,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "phastCons>0.02");
         // execute
         executeQuery(query, queryOptions);
@@ -212,7 +212,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "phastCons>>0.02");
         // execute
         executeQuery(query, queryOptions);
@@ -222,7 +222,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<<0.01");
         // execute
         executeQuery(query, queryOptions);
@@ -232,7 +232,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "phastCons!=0.035999998450279236");
         // execute
         executeQuery(query, queryOptions);
@@ -242,7 +242,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "phastCons=0.035999998450279236");
         // execute
         executeQuery(query, queryOptions);
@@ -252,7 +252,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:GWD!=0.061946902");
         // execute
         executeQuery(query, queryOptions);
@@ -263,7 +263,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:GWD==0.061946902");
         // execute
         executeQuery(query, queryOptions);
@@ -273,7 +273,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift==tolerated");
         // execute
         executeQuery(query, queryOptions);
@@ -283,7 +283,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=tolerated");
         // execute
         executeQuery(query, queryOptions);
@@ -293,7 +293,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift!=tolerated");
         // execute
         executeQuery(query, queryOptions);
@@ -303,7 +303,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift==-0.3");
         // execute
         executeQuery(query, queryOptions);
@@ -313,7 +313,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=-0.3");
         // execute
         executeQuery(query, queryOptions);
@@ -323,7 +323,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift!=-0.3");
         // execute
         executeQuery(query, queryOptions);
@@ -333,7 +333,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.REGION.key(), "1,3");
         // execute
         executeQuery(query, queryOptions);
@@ -343,7 +343,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.REGION.key(), "1:66381,1:98769");
         // execute
         executeQuery(query, queryOptions);
@@ -353,7 +353,7 @@ public class ParseSolrQueryTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(VariantQueryParam.STUDIES.key(), study);
+        query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.REGION.key(), "1:66381-76381,1:98766-117987");
         // execute
         executeQuery(query, queryOptions);

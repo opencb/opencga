@@ -26,8 +26,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RETURNED_STUDIES;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDIES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.validParams;
 
@@ -39,19 +39,19 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
 public class VariantSearchUtils {
 
     public static final Set<VariantQueryParam> UNSUPPORTED_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(
-            Arrays.asList(VariantQueryParam.FILES,
+            Arrays.asList(VariantQueryParam.FILE,
                     VariantQueryParam.FILTER,
                     VariantQueryParam.GENOTYPE,
-                    VariantQueryParam.SAMPLES)));
+                    VariantQueryParam.SAMPLE)));
 
     public static final Set<VariantQueryParam> UNSUPPORTED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
-            Arrays.asList(VariantQueryParam.RETURNED_FILES,
-                    VariantQueryParam.RETURNED_SAMPLES,
-                    VariantQueryParam.RETURNED_STUDIES,
+            Arrays.asList(VariantQueryParam.INCLUDE_FILE,
+                    VariantQueryParam.INCLUDE_SAMPLE,
+                    VariantQueryParam.INCLUDE_STUDY,
                     VariantQueryParam.UNKNOWN_GENOTYPE,
                     VariantQueryParam.INCLUDE_FORMAT,
                     VariantQueryParam.INCLUDE_GENOTYPE,
-                    VariantQueryParam.SAMPLES_METADATA
+                    VariantQueryParam.SAMPLE_METADATA
                     // RETURNED_COHORTS
             )));
 
@@ -119,14 +119,14 @@ public class VariantSearchUtils {
         }
         // Despite STUDIES is a covered filter by Solr, it has to be in the underlying
         // query to be used as defaultStudy
-        if (isValidParam(query, STUDIES)) {
+        if (isValidParam(query, STUDY)) {
             if (!uncoveredParams.isEmpty()) {
                 // This will set the default study, if needed
-                engineQuery.put(STUDIES.key(), query.get(STUDIES.key()));
-            } else if (!isValidParam(query, RETURNED_STUDIES)) {
+                engineQuery.put(STUDY.key(), query.get(STUDY.key()));
+            } else if (!isValidParam(query, INCLUDE_STUDY)) {
                 // If returned studies is not defined, we need to define it with the values from STUDIES
                 List<Integer> studies = VariantQueryUtils.getReturnedStudies(query, options, scm);
-                engineQuery.put(RETURNED_STUDIES.key(), studies);
+                engineQuery.put(INCLUDE_STUDY.key(), studies);
             }
         }
         return engineQuery;

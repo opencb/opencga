@@ -85,8 +85,8 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         List<Sample> samples = catalogManager.getSampleManager().get(studyId, new Query(), new QueryOptions(), sessionId).getResult();
         List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getName).collect(Collectors.toList());
-        Query query = new Query(VariantQueryParam.RETURNED_STUDIES.key(), studyId)
-                .append(VariantQueryParam.RETURNED_SAMPLES.key(), someSamples);
+        Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), someSamples);
         QueryOptions queryOptions = new QueryOptions();
         variantManager.exportData(export, VariantOutputFormat.AVRO, query, queryOptions, sessionId);
 

@@ -43,7 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RETURNED_STUDIES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF_GZ;
 
@@ -223,7 +223,7 @@ public class VariantWriterFactory {
                     List<String> annotations = queryOptions.getAsStringList("annotations");
                     exporter = VcfDataWriter.newWriterForAvro(variantMetadata, annotations, outputStream);
                 } else {
-                    throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
+                    throw new IllegalArgumentException("No study found named " + query.getAsStringList(INCLUDE_STUDY.key()).get(0));
                 }
                 break;
 

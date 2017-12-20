@@ -80,7 +80,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         System.out.println("outputFile = " + outputFile);
         List<String> samples = new LinkedList<>(studyConfiguration.getSampleIds().keySet()).subList(1, 3);
         Set<String> samplesSet = new HashSet<>(samples);
-        Query query = new Query(VariantQueryParam.RETURNED_SAMPLES.key(), samples);
+        Query query = new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), samples);
         variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, query, new QueryOptions());
 
         clearDB(DB_NAME);
@@ -116,7 +116,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         URI outputFile = newOutputUri().resolve("export.avro");
 
         System.out.println("outputFile = " + outputFile);
-        Query query = new Query(VariantQueryParam.RETURNED_SAMPLES.key(), ".");
+        Query query = new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), ".");
         QueryOptions queryOptions = new QueryOptions();
         variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, query, queryOptions);
 

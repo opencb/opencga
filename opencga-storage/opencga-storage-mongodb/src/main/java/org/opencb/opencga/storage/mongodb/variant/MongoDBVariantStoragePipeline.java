@@ -694,11 +694,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         VariantFileMetadata fileMetadata = dbAdaptor.getVariantFileMetadataDBAdaptor().get(String.valueOf(fileId), null).first();
 
         Long count = dbAdaptor.count(new Query()
-                .append(VariantQueryParam.FILES.key(), fileId)
-                .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())).first();
+                .append(VariantQueryParam.FILE.key(), fileId)
+                .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())).first();
         Long overlappedCount = dbAdaptor.count(new Query()
-                .append(VariantQueryParam.FILES.key(), -fileId)
-                .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())).first();
+                .append(VariantQueryParam.FILE.key(), -fileId)
+                .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())).first();
         long variantsToLoad = 0;
 
         long expectedSkippedVariants = 0;

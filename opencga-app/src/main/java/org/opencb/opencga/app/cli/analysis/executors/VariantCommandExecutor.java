@@ -283,12 +283,12 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         Query query = new Query();
         query.putIfNotEmpty(VariantCatalogQueryUtils.PROJECT.key(), project);
-        query.putIfNotEmpty(VariantQueryParam.STUDIES.key(), cliOptions.study);
+        query.putIfNotEmpty(VariantQueryParam.STUDY.key(), cliOptions.study);
         query.putIfNotEmpty(VariantQueryParam.REGION.key(), cliOptions.region);
         query.putIfNotEmpty(VariantQueryParam.GENE.key(), cliOptions.gene);
-        query.putIfNotEmpty(VariantQueryParam.SAMPLES.key(), cliOptions.sample);
-        query.putIfNotEmpty(VariantQueryParam.FILES.key(), cliOptions.file);
-        query.putIfNotEmpty(VariantQueryParam.COHORTS.key(), cliOptions.cohort);
+        query.putIfNotEmpty(VariantQueryParam.SAMPLE.key(), cliOptions.sample);
+        query.putIfNotEmpty(VariantQueryParam.FILE.key(), cliOptions.file);
+        query.putIfNotEmpty(VariantQueryParam.COHORT.key(), cliOptions.cohort);
         variantManager.searchIndex(query, queryOptions, sessionId);
     }
 
@@ -373,10 +373,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(sessionId));
 
         if (StringUtils.isNotEmpty(cliOptions.samples)) {
-            query.append(VariantQueryParam.RETURNED_SAMPLES.key(), Arrays.asList(cliOptions.samples.split(",")));
+            query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), Arrays.asList(cliOptions.samples.split(",")));
         }
         if (StringUtils.isNotEmpty(cliOptions.study)) {
-            query.append(VariantQueryParam.STUDIES.key(), cliOptions.study);
+            query.append(VariantQueryParam.STUDY.key(), cliOptions.study);
         }
 
         List<String> genotypes = Arrays.asList(cliOptions.genotypes.split(","));

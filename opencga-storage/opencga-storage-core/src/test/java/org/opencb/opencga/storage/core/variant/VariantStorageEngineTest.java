@@ -161,7 +161,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
 
         //Check that both studies contains the same information
-        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.STUDIES.key(),
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.STUDY.key(),
                 studyConfigurationMultiFile.getStudyId() + "," + studyConfigurationSingleFile.getStudyId()), new QueryOptions());
         int numVariants = 0;
         for (; iterator.hasNext(); ) {

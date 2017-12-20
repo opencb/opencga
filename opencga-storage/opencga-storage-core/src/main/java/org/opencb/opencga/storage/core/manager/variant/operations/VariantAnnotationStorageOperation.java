@@ -130,7 +130,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
             }
             if (studyIds != null && !studyIds.isEmpty()) {
-                annotationQuery.put(VariantQueryParam.STUDIES.key(), studyIds);
+                annotationQuery.put(VariantQueryParam.STUDY.key(), studyIds);
             }
 
             QueryOptions annotationOptions = new QueryOptions(options)
