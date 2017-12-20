@@ -78,6 +78,10 @@ public class VariantStatsStorageOperation extends StorageOperation {
         outdirMustBeEmpty(outdir, options);
 
         Aggregation aggregation = getAggregation(studyId, options, sessionId);
+
+        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
+
         List<Long> cohortIds = checkCohorts(studyId, aggregation, cohorts, options, sessionId);
         Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyId, cohortIds, updateStats, resume, sessionId);
 
@@ -104,8 +108,6 @@ public class VariantStatsStorageOperation extends StorageOperation {
             calculateStatsOptions.append(Options.AGGREGATION_MAPPING_PROPERTIES.key(), mappingFile);
         }
 
-        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
-        StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
 
         Thread hook = buildHook(cohortIds, sessionId, outdir);
         writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
