@@ -698,9 +698,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void testGetAllVariants_geneTraits() {
-        //ANNOT_GENE_TRAITS_ID
-        //ANNOT_GENE_TRAITS_NAME
+    public void testGetAllVariants_geneTrait() {
+        //ANNOT_GENE_TRAIT_ID
+        //ANNOT_GENE_TRAIT_NAME
         Query query;
         Map<String, Integer> idsMap = new HashMap<>();
         Map<String, Integer> namesMap = new HashMap<>();
@@ -732,31 +732,62 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         System.out.println(idsMap.size());
         System.out.println(namesMap.size());
         System.out.println(hposMap.size());
-//        for (Map.Entry<String, Integer> entry : namesMap.entrySet()) {
-//            query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(), "~="+entry.getKey());
-//            queryResult = dbAdaptor.get(query, null);
-//            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
-//        }
 
-        int i = 0;
-        for (Map.Entry<String, Integer> entry : idsMap.entrySet()) {
-            query = new Query(ANNOT_GENE_TRAIT_ID.key(), entry.getKey());
-            queryResult = dbAdaptor.get(query, null);
-            assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
-            if (i++ == QUERIES_LIM) {
-                break;
-            }
-        }
-
-        i = 0;
-        for (Map.Entry<String, Integer> entry : hposMap.entrySet()) {
-            query = new Query(ANNOT_HPO.key(), entry.getKey());
-            queryResult = dbAdaptor.get(query, null);
+        namesMap.entrySet().stream().limit(QUERIES_LIM).forEach(entry -> {
+            Query q = new Query(ANNOT_GENE_TRAIT_NAME.key(), '"' + entry.getKey() + '"');
+            queryResult = dbAdaptor.get(q, null);
             assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
-            if (i++ == QUERIES_LIM) {
-                break;
-            }
-        }
+        });
+
+        idsMap.entrySet().stream().limit(QUERIES_LIM).forEach(entry -> {
+            Query q = new Query(ANNOT_GENE_TRAIT_ID.key(), entry.getKey());
+            queryResult = dbAdaptor.get(q, null);
+            assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
+        });
+
+        hposMap.entrySet().stream().limit(QUERIES_LIM).forEach(entry -> {
+            Query q = new Query(ANNOT_HPO.key(), entry.getKey());
+            queryResult = dbAdaptor.get(q, null);
+            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
+        });
+
+        List<String> ids = idsMap.keySet().stream().limit(10).collect(Collectors.toList());
+        query = new Query(ANNOT_GENE_TRAIT_ID.key(), String.join(OR, ids));
+        queryResult = dbAdaptor.get(query, null);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants,
+                hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
+                        hasItem(with("GeneTraitId", GeneTraitAssociation::getId, is(anyOf(ids.stream().map(CoreMatchers::is).collect(Collectors.toList())))))))));
+
+        List<String> hpos = hposMap.keySet().stream().limit(10).collect(Collectors.toList());
+        query = new Query(ANNOT_GENE_TRAIT_ID.key(), String.join(OR, ids) + OR + String.join(OR, hpos));
+        queryResult = dbAdaptor.get(query, null);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants,
+                hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation, anyOf(
+                                hasItem(with("GeneTraitId", GeneTraitAssociation::getId, is(anyOf(ids.stream().map(CoreMatchers::is).collect(Collectors.toList()))))),
+                                hasItem(with("HPO", GeneTraitAssociation::getHpo, is(anyOf(hpos.stream().map(CoreMatchers::is).collect(Collectors.toList())))))
+                        )))));
+
+        ids = Arrays.asList("umls:C0007131", "umls:C0000786");
+        query = new Query(ANNOT_GENE_TRAIT_ID.key(), String.join(AND, ids));
+        queryResult = dbAdaptor.get(query, null);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants,
+                hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
+                        allOf(ids.stream().map(id -> hasItem(with("GeneTraitId", GeneTraitAssociation::getId, is(id)))).collect(Collectors.toList()))))));
+
+        ids = Arrays.asList("umls:C0007131", "umls:C0000786", "HP:0002483");
+        query = new Query(ANNOT_GENE_TRAIT_ID.key(), String.join(AND, ids));
+        queryResult = dbAdaptor.get(query, null);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants,
+                hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
+                        allOf(
+                                hasItem(with("GeneTraitId", GeneTraitAssociation::getId, is("umls:C0007131"))),
+                                hasItem(with("GeneTraitId", GeneTraitAssociation::getId, is("umls:C0000786"))),
+                                hasItem(with("HPO", GeneTraitAssociation::getHpo, is("HP:0002483")))
+                        )))));
     }
 
     @Test

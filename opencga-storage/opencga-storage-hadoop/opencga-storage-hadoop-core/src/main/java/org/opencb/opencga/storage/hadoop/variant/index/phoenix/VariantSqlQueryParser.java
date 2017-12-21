@@ -299,7 +299,6 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ID}
      * {@link VariantQueryParam#GENE}
      * {@link VariantQueryParam#ANNOT_XREF}
-     * {@link VariantQueryParam#ANNOT_HPO}
      * {@link VariantQueryParam#ANNOT_CLINVAR}
      * {@link VariantQueryParam#ANNOT_COSMIC}
      *
@@ -424,6 +423,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ANNOT_TRANSCRIPTION_FLAG}
      * {@link VariantQueryParam#ANNOT_GENE_TRAIT_ID}
      * {@link VariantQueryParam#ANNOT_GENE_TRAIT_NAME}
+     * {@link VariantQueryParam#ANNOT_HPO}
      * {@link VariantQueryParam#ANNOT_GO}
      * {@link VariantQueryParam#ANNOT_EXPRESSION}
      * {@link VariantQueryParam#ANNOT_PROTEIN_KEYWORD}
@@ -853,9 +853,11 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_TRANSCRIPTION_FLAG, VariantColumn.TRANSCRIPTION_FLAGS, filters);
 
-        addQueryFilter(query, ANNOT_GENE_TRAIT_ID, VariantColumn.GENE_TRAITS_ID, filters);
+        addQueryFilter(query, ANNOT_GENE_TRAIT_ID, VariantColumn.XREFS, filters);
 
         addQueryFilter(query, ANNOT_GENE_TRAIT_NAME, VariantColumn.GENE_TRAITS_NAME, filters);
+
+        addQueryFilter(query, ANNOT_HPO, VariantColumn.XREFS, filters);
 
         if (isValidParam(query, ANNOT_GO_GENES)) {
             String value = query.getString(ANNOT_GO_GENES.key());
@@ -1011,12 +1013,13 @@ public class VariantSqlQueryParser {
                                 Function<String[], String> extraFilters, List<String> filters, Function<String, Integer> arrayIdxParser) {
         if (isValidParam(query, param)) {
             List<String> subFilters = new LinkedList<>();
-            QueryOperation logicOperation = checkOperator(query.getString(param.key()));
+            String stringValue = query.getString(param.key());
+            QueryOperation logicOperation = checkOperator(stringValue);
             if (logicOperation == null) {
                 logicOperation = QueryOperation.AND;
             }
 
-            for (String rawValue : query.getAsStringList(param.key(), logicOperation.separator())) {
+            for (String rawValue : splitValue(stringValue, logicOperation)) {
                 String[] keyOpValue = splitOperator(rawValue);
                 Column column = columnParser.apply(keyOpValue, rawValue);
 

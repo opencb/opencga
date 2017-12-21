@@ -262,19 +262,65 @@ public class VariantMongoDBQueryParser {
                         + "." + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, builder, QueryOperation.AND);
             }
 
-//            QueryBuilder geneTraitBuilder = QueryBuilder.start();
             if (isValidParam(query, ANNOT_GENE_TRAIT_ID)) {
                 String value = query.getString(ANNOT_GENE_TRAIT_ID.key());
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_ID_FIELD, value, builder, QueryOperation.AND);
+                QueryOperation internalOp = checkOperator(value);
+                List<String> values = splitValue(value, internalOp);
+                QueryBuilder geneTraitBuilder;
+                if (internalOp == QueryOperation.OR) {
+                    geneTraitBuilder = QueryBuilder.start();
+                } else {
+                    geneTraitBuilder = builder;
+                }
+
+
+                List<String> geneTraitId = new LinkedList<>();
+                List<String> hpo = new LinkedList<>();
+                for (String v : values) {
+                    if (isHpo(v)) {
+                        hpo.add(v);
+                    } else {
+                        geneTraitId.add(v);
+                    }
+                }
+
+                if (!geneTraitId.isEmpty()) {
+                    addQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                                    + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
+                                    + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_ID_FIELD, geneTraitId, geneTraitBuilder,
+                            internalOp, internalOp, Object::toString);
+                }
+
+                if (!hpo.isEmpty()) {
+                    addQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                                    + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                                    + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, hpo, geneTraitBuilder,
+                            internalOp, internalOp, Object::toString);
+                }
+
+                if (internalOp == QueryOperation.OR) {
+                    builder.and(geneTraitBuilder.get());
+                }
             }
 
             if (isValidParam(query, ANNOT_GENE_TRAIT_NAME)) {
                 String value = query.getString(ANNOT_GENE_TRAIT_NAME.key());
-                addCompQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+//                addCompQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+//                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
+//                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, builder, false);
+                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, builder, false);
+                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, builder, QueryOperation.AND);
+            }
+
+            if (isValidParam(query, ANNOT_HPO)) {
+                String value = query.getString(ANNOT_HPO.key());
+//                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder,
+//                        QueryOperation.AND);
+                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, value, builder,
+                        QueryOperation.AND);
             }
 
 //            DBObject geneTraitQuery = geneTraitBuilder.get();

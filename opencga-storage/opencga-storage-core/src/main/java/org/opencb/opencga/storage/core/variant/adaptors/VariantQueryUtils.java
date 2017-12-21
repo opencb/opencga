@@ -168,7 +168,19 @@ public class VariantQueryUtils {
      * @return If is a known accession
      */
     public static boolean isGeneAccession(String value) {
-        return value.startsWith("HP:") || value.startsWith("OMIM:") || value.startsWith("umls:");
+        return isHpo(value) || value.startsWith("OMIM:") || value.startsWith("umls:");
+    }
+
+    /**
+     * Determines if the given value is a HPO term or not.
+     * <p>
+     * Human Phenotype Ontology (HPO) terms starts with 'HP:'
+     *
+     * @param value Value to check
+     * @return If is a HPO term
+     */
+    public static boolean isHpo(String value) {
+        return value.startsWith("HP:");
     }
 
     /**
@@ -242,8 +254,7 @@ public class VariantQueryUtils {
          * {@link VariantQueryParam#ANNOT_XREF},
          * {@link VariantQueryParam#ID},
          * {@link VariantQueryParam#ANNOT_CLINVAR},
-         * {@link VariantQueryParam#ANNOT_COSMIC},
-         * {@link VariantQueryParam#ANNOT_HPO}
+         * {@link VariantQueryParam#ANNOT_COSMIC}
          */
         public List<String> getOtherXrefs() {
             return otherXrefs;
@@ -258,7 +269,6 @@ public class VariantQueryUtils {
      * - {@link VariantQueryParam#ANNOT_XREF}
      * - {@link VariantQueryParam#ANNOT_CLINVAR}
      * - {@link VariantQueryParam#ANNOT_COSMIC}
-     * - {@link VariantQueryParam#ANNOT_HPO}
      *
      * @param query Query to parse
      * @return VariantQueryXref with all VariantIds, ids, genes and xrefs
@@ -299,7 +309,7 @@ public class VariantQueryUtils {
             }
 
         }
-        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_HPO.key(), OR));
+//        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_HPO.key(), OR));
         xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_COSMIC.key(), OR));
         xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));
 

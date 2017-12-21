@@ -661,9 +661,9 @@ public class DocumentToVariantAnnotationConverter
 //                    putNotNull(d, GENE_TRAIT_SOURCES_FIELD, geneTraitAssociation.getSources());
                     putNotNull(d, GENE_TRAIT_SOURCE_FIELD, geneTraitAssociation.getSource());
 
-                    if (StringUtils.isNotEmpty(geneTraitAssociation.getHpo())) {
-                        xrefs.add(convertXrefToStorage(geneTraitAssociation.getId(), geneTraitAssociation.getSource()));
-                    }
+//                    if (StringUtils.isNotEmpty(geneTraitAssociation.getHpo())) {
+//                        xrefs.add(convertXrefToStorage(geneTraitAssociation.getId(), geneTraitAssociation.getSource()));
+//                    }
 
                     geneTraitAssociations.add(d);
                 }

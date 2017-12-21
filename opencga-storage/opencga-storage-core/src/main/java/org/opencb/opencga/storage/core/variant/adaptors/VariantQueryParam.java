@@ -201,10 +201,8 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam ANNOT_TRANSCRIPTION_FLAG
             = new VariantQueryParam("transcriptionFlag", TEXT_ARRAY, ANNOT_TRANSCRIPTION_FLAG_DESCR);
 
-    @Deprecated
     public static final String ANNOT_GENE_TRAIT_ID_DESCR
             = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"";
-    @Deprecated
     public static final VariantQueryParam ANNOT_GENE_TRAIT_ID
             = new VariantQueryParam("geneTraitId", TEXT_ARRAY, ANNOT_GENE_TRAIT_ID_DESCR);
 
@@ -219,16 +217,22 @@ public final class VariantQueryParam implements QueryParam {
             = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...";
     public static final VariantQueryParam ANNOT_TRAIT = new VariantQueryParam("trait", TEXT_ARRAY, ANNOT_TRAIT_DESCR);
 
+    @Deprecated
     public static final String ANNOT_CLINVAR_DESCR
             = "List of ClinVar accessions";
+    @Deprecated
     public static final VariantQueryParam ANNOT_CLINVAR = new VariantQueryParam("clinvar", TEXT_ARRAY, ANNOT_CLINVAR_DESCR);
 
+    @Deprecated
     public static final String ANNOT_COSMIC_DESCR
             = "List of COSMIC mutation IDs.";
+    @Deprecated
     public static final VariantQueryParam ANNOT_COSMIC = new VariantQueryParam("cosmic", TEXT_ARRAY, ANNOT_COSMIC_DESCR);
 
+    @Deprecated
     public static final String ANNOT_HPO_DESCR
             = "List of HPO terms. e.g. HP:0000545";
+    @Deprecated
     public static final VariantQueryParam ANNOT_HPO = new VariantQueryParam("hpo", TEXT_ARRAY, ANNOT_HPO_DESCR);
 
     public static final String ANNOT_GO_DESCR
