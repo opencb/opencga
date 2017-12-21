@@ -190,12 +190,6 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 regions.addAll(c);
             }
         }
-        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.CHROMOSOME)) {
-            List<Region> c = Region.parseRegions(query.getString(VariantQueryParam.CHROMOSOME.key()));
-            if (c != null) {
-                regions.addAll(c);
-            }
-        }
         if (regions.isEmpty() || regions.size() > 1) {
             return alias + '.' + TimeUtils.getTime();
         } else {

@@ -88,18 +88,13 @@ public class VariantMongoDBQueryParser {
             Query query = new Query(originalQuery);
             boolean nonGeneRegionFilter = false;
             /* VARIANT PARAMS */
-            List<Region> regions = new ArrayList<>();
-            if (isValidParam(query, CHROMOSOME)) {
-                nonGeneRegionFilter = true;
-                regions.addAll(Region.parseRegions(query.getString(CHROMOSOME.key()), true));
-            }
 
             if (isValidParam(query, REGION)) {
                 nonGeneRegionFilter = true;
-                regions.addAll(Region.parseRegions(query.getString(REGION.key()), true));
-            }
-            if (!regions.isEmpty()) {
-                getRegionFilter(regions, builder);
+                List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
+                if (!regions.isEmpty()) {
+                    getRegionFilter(regions, builder);
+                }
             }
 
             // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters

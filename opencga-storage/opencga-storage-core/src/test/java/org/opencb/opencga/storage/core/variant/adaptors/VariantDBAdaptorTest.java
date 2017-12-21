@@ -1196,7 +1196,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         checkRegion(new Region("20:238442-7980390"));
         checkRegion(new Region("20:238442-7980389"));
 
-        query = new Query(CHROMOSOME.key(), "chr2");
+        query = new Query(REGION.key(), "chr2");
         queryResult = dbAdaptor.get(query, options);
         assertThat(queryResult, everyResult(allVariants, overlaps(new Region("2"))));
     }

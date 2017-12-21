@@ -116,10 +116,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                         query.put(VariantQueryParam.REGION.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
-                    case "queryByChromosome":
-                        query.put(VariantQueryParam.CHROMOSOME.key(), queryParams);
-                        executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
-                        break;
                     case "queryByGene":
                         query.put(VariantQueryParam.GENE.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));

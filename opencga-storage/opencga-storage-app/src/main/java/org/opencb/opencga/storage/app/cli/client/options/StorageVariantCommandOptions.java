@@ -472,10 +472,6 @@ public class StorageVariantCommandOptions {
         public String filterRegion;
 
         @Deprecated
-        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
-        public String filterChromosome;
-
-        @Deprecated
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
         public String filterGene;
 

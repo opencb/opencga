@@ -368,8 +368,6 @@ public class VariantHBaseQueryParser {
         List<Region> regions;
         if (isValidParam(query, REGION)) {
             regions = Region.parseRegions(query.getString(REGION.key()));
-        } else if (isValidParam(query, VariantQueryParam.CHROMOSOME)) {
-            regions = Region.parseRegions(query.getString(VariantQueryParam.CHROMOSOME.key()));
         } else {
             regions = Collections.emptyList();
         }

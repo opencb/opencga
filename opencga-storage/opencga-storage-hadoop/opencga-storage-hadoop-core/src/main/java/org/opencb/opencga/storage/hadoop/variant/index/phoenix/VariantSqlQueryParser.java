@@ -294,7 +294,6 @@ public class VariantSqlQueryParser {
      * A variant will pass this filters if matches with ANY of this filters.
      *
      * {@link VariantQueryParam#REGION}
-     * {@link VariantQueryParam#CHROMOSOME}
      *
      * Using annotation:
      * {@link VariantQueryParam#ID}
@@ -316,8 +315,6 @@ public class VariantSqlQueryParser {
                 regionFilters.add(getRegionFilter(region));
             }
         }
-
-        addQueryFilter(query, CHROMOSOME, VariantColumn.CHROMOSOME, regionFilters, Region::normalizeChromosome);
 
         VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
 

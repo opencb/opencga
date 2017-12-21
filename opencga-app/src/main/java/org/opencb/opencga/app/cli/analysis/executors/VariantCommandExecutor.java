@@ -331,7 +331,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         Query query = new Query()
                 .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantAnnotateOptions.filterRegion)
-                .append(VariantQueryParam.CHROMOSOME.key(), cliOptions.genericVariantAnnotateOptions.filterChromosome)
                 .append(VariantQueryParam.GENE.key(), cliOptions.genericVariantAnnotateOptions.filterGene)
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), cliOptions.genericVariantAnnotateOptions.filterAnnotConsequenceType);
 

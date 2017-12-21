@@ -107,10 +107,10 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
 
         assertEquals("All variants should be annotated", NUM_VARIANTS, numAnnotatedVariants);
 
-        query = new Query(VariantQueryParam.CHROMOSOME.key(), "1");
+        query = new Query(VariantQueryParam.REGION.key(), "1");
         query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId());
         long numVariantsChr1 = dbAdaptor.count(query).first();
-        ((VariantMongoDBAdaptor) dbAdaptor).removeAnnotation("", new Query(VariantQueryParam.CHROMOSOME.key(), "1"), new QueryOptions());
+        ((VariantMongoDBAdaptor) dbAdaptor).removeAnnotation("", new Query(VariantQueryParam.REGION.key(), "1"), new QueryOptions());
 
         query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId());

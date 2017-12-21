@@ -48,9 +48,9 @@ public final class VariantQueryParam implements QueryParam {
             = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000";
     public static final VariantQueryParam REGION = new VariantQueryParam("region", TEXT_ARRAY, REGION_DESCR);
 
+    @Deprecated
     public static final String CHROMOSOME_DESCR
             = "List of chromosomes, this is an alias of 'region' parameter with just the chromosome names";
-    public static final VariantQueryParam CHROMOSOME = new VariantQueryParam("chromosome", TEXT_ARRAY, CHROMOSOME_DESCR);
 
     public static final String REFERENCE_DESCR
             = "Reference allele";

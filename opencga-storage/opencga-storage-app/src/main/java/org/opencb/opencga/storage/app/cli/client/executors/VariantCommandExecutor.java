@@ -381,9 +381,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (annotateVariantsCommandOptions.filterRegion != null) {
             query.put(VariantQueryParam.REGION.key(), annotateVariantsCommandOptions.filterRegion);
         }
-        if (annotateVariantsCommandOptions.filterChromosome != null) {
-            query.put(VariantQueryParam.CHROMOSOME.key(), annotateVariantsCommandOptions.filterChromosome);
-        }
         if (annotateVariantsCommandOptions.filterGene != null) {
             query.put(VariantQueryParam.GENE.key(), annotateVariantsCommandOptions.filterGene);
         }

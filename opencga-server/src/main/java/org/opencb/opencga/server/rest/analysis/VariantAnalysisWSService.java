@@ -205,7 +205,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "chromosome", value = CHROMOSOME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "reference", value = REFERENCE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
@@ -249,6 +248,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneTraitName", value = ANNOT_GENE_TRAIT_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "hpo", value = ANNOT_HPO_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinvar", value = ANNOT_CLINVAR_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cosmic", value = ANNOT_COSMIC_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "proteinKeyword", value = ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
@@ -257,11 +258,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
 
             // WARN: Only available in Solr
-            @ApiImplicitParam(name = "clinvar", value = ANNOT_CLINVAR_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "cosmic", value = ANNOT_COSMIC_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
 
             // DEPRECATED VALUES
+            @ApiImplicitParam(name = "chromosome", value = DEPRECATED + CHROMOSOME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ids", value = DEPRECATED + ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "studies", value = DEPRECATED + STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "files", value = DEPRECATED + FILE_DESCR, dataType = "string", paramType = "query"),
@@ -468,11 +468,12 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "chromosome", value = CHROMOSOME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = "chromosome", value = DEPRECATED + CHROMOSOME_DESCR, dataType = "string", paramType = "query")
     })
     public Response samples(
             @ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String study,
@@ -579,7 +580,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "chromosome", value = CHROMOSOME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "reference", value = REFERENCE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
@@ -623,6 +623,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneTraitName", value = ANNOT_GENE_TRAIT_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "hpo", value = ANNOT_HPO_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinvar", value = ANNOT_CLINVAR_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cosmic", value = ANNOT_COSMIC_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "proteinKeyword", value = ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
@@ -631,11 +633,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
 
             // WARN: Only available in Solr
-            @ApiImplicitParam(name = "clinvar", value = ANNOT_CLINVAR_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "cosmic", value = ANNOT_COSMIC_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
 
             // DEPRECATED VALUES
+            @ApiImplicitParam(name = "chromosome", value = DEPRECATED + CHROMOSOME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ids", value = DEPRECATED + ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "studies", value = DEPRECATED + STUDY_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "files", value = DEPRECATED + FILE_DESCR, dataType = "string", paramType = "query"),
@@ -732,6 +733,16 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 }
             }
         });
+
+        String chromosome = queryOptions.getString("chromosome");
+        if (StringUtils.isNotEmpty(chromosome)) {
+            String region = query.getString(REGION.key());
+            if (StringUtils.isEmpty(region)) {
+                query.put(REGION.key(), chromosome);
+            } else {
+                query.put(REGION.key(), region + VariantQueryUtils.OR + chromosome);
+            }
+        }
         return query;
     }
 }
