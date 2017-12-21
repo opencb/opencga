@@ -658,6 +658,51 @@ public class CatalogManagerTest extends GenericTest {
         studyManager.syncGroupWith(Long.toString(studyId), "group2", syncFrom, sessionIdUser);
     }
 
+    @Test
+    public void testCreatePermissionRules() throws CatalogException {
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
+                Arrays.asList("VIEW", "UPDATE"));
+        QueryResult<PermissionRule> permissionRulesQueryResult = catalogManager.getStudyManager().createPermissionRule(
+                String.valueOf(studyId), Study.Entry.SAMPLES, rules, sessionIdUser);
+        assertEquals(1, permissionRulesQueryResult.getNumResults());
+        assertEquals("rules1", permissionRulesQueryResult.first().getId());
+        assertEquals(1, permissionRulesQueryResult.first().getQuery().size());
+        assertEquals(2, permissionRulesQueryResult.first().getMembers().size());
+        assertEquals(2, permissionRulesQueryResult.first().getPermissions().size());
+
+        // Add new permission rules object
+        rules.setId("rules2");
+        permissionRulesQueryResult = catalogManager.getStudyManager().createPermissionRule(String.valueOf(studyId), Study.Entry.SAMPLES, rules,
+                sessionIdUser);
+        assertEquals(2, permissionRulesQueryResult.getNumResults());
+    }
+
+    @Test
+    public void testUpdatePermissionRulesIncorrectPermission() throws CatalogException {
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
+                Arrays.asList("VV", "UPDATE"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Detected unsupported");
+        catalogManager.getStudyManager().createPermissionRule(String.valueOf(studyId), Study.Entry.SAMPLES, rules, sessionIdUser);
+    }
+
+    @Test
+    public void testUpdatePermissionRulesNonExistingUser() throws CatalogException {
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user20"),
+                Arrays.asList("VIEW", "UPDATE"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("does not exist");
+        catalogManager.getStudyManager().createPermissionRule(String.valueOf(studyId), Study.Entry.SAMPLES, rules, sessionIdUser);
+    }
+
+    @Test
+    public void testUpdatePermissionRulesNonExistingGroup() throws CatalogException {
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "@group"),
+                Arrays.asList("VIEW", "UPDATE"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getStudyManager().createPermissionRule(String.valueOf(studyId), Study.Entry.SAMPLES, rules, sessionIdUser);
+    }
 
     @Test
     public void removeAllPermissionsToMember() throws CatalogException {

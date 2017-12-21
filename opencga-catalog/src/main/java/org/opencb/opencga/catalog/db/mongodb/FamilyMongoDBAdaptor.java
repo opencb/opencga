@@ -30,11 +30,15 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
@@ -106,6 +110,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         familyObject.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
         familyObject.put(LAST_OF_VERSION, true);
         familyObject.put(LAST_OF_RELEASE, true);
+        familyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(family.getCreationDate()));
+        familyObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         familyCollection.insert(familyObject, null);
 
@@ -613,6 +619,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         familyCollection.update(bson, update, queryOptions);
     }
 
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        unmarkPermissionRule(familyCollection, studyId, permissionRuleId);
+    }
+
     private QueryResult<Family> setStatus(long familyId, String status) throws CatalogDBException {
         return update(familyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
@@ -625,7 +636,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         return parseQuery(query, isolated, null);
     }
 
-    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
@@ -687,6 +698,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                         break;
                     case SNAPSHOT:
                         addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case FATHER_ID:
                     case MOTHER_ID:

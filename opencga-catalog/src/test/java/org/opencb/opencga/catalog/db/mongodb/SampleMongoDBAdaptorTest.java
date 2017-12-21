@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
@@ -253,6 +254,53 @@ public class SampleMongoDBAdaptorTest {
         assertEquals(hg0097.getName(), result.first().getName());
         assertEquals(hg0097.getDescription(), result.first().getDescription());
         assertTrue(result.first().getId() > 0);
+    }
+
+    @Test
+    public void searchSampleByDateTest() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        // We create two samples "created" in different years
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(2004, Calendar.MARCH, 24);
+        Sample sample1 = new Sample(0, "sample1", "1000g", new Individual(), "A description", 1)
+                .setCreationDate(TimeUtils.getTime(calendar.getTime()));
+
+        calendar.set(2016, Calendar.DECEMBER, 17);
+        Sample sample2 = new Sample(0, "sample2", "1000g", new Individual(), "A description", 1)
+                .setCreationDate(TimeUtils.getTime(calendar.getTime()));
+
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample1, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample2, null);
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.NAME.key());
+
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.NAME.key(), "~^sample");
+
+        query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), ">2005");
+        QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleQueryResult.getNumResults());
+        assertEquals("sample2", sampleQueryResult.first().getName());
+
+        query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), ">200401");
+        sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(2, sampleQueryResult.getNumResults());
+
+        query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "2003-2005");
+        sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleQueryResult.getNumResults());
+        assertEquals("sample1", sampleQueryResult.first().getName());
+
+        query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "2003-2018");
+        sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(2, sampleQueryResult.getNumResults());
+
+        query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "<201611");
+        sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleQueryResult.getNumResults());
+        assertEquals("sample1", sampleQueryResult.first().getName());
     }
 
 

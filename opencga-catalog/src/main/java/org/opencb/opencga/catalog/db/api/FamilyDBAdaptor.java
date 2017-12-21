@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Family;
 
 import java.util.Map;
@@ -47,7 +48,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         MOTHER_ID("members.mother.id", INTEGER, ""),
         MEMBER_ID("members.id", INTEGER, ""),
         MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),
-        CREATION_DATE("creationDate", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -138,4 +139,14 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
     long getStudyId(long familyId) throws CatalogDBException;
 
     void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+
+    /**
+     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
+     * be applied.
+     *
+     * @param studyId study id containing the entries affected.
+     * @param permissionRuleId permission rule id to be unmarked.
+     * @throws CatalogException if there is any database error.
+     */
+    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 }

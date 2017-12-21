@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Sample;
 
 import java.util.Map;
@@ -53,7 +54,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         RELEASE("release", INTEGER, ""), //  Release where the sample was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the sample
-        CREATION_DATE("creationDate", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
@@ -135,5 +136,15 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     long getStudyId(long sampleId) throws CatalogDBException;
 
     void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+
+    /**
+     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
+     * be applied.
+     *
+     * @param studyId study id containing the entries affected.
+     * @param permissionRuleId permission rule id to be unmarked.
+     * @throws CatalogException if there is any database error.
+     */
+    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

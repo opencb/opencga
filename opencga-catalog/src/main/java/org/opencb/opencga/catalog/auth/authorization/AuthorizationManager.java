@@ -18,7 +18,10 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.models.GroupParams;
+import org.opencb.opencga.core.models.PermissionRule;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.*;
 
 import javax.annotation.Nullable;
@@ -98,6 +101,8 @@ public interface AuthorizationManager {
     void checkCanEditStudy(long studyId, String userId) throws CatalogException;
 
     void checkCanViewStudy(long studyId, String userId) throws CatalogException;
+
+    void checkCanUpdatePermissionRules(long studyId, String userId) throws CatalogException;
 
     void checkCreateDeleteGroupPermissions(long studyId, String userId, String group) throws CatalogException;
 
@@ -343,17 +348,24 @@ public interface AuthorizationManager {
 //    <E extends AbstractAclEntry> QueryResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                              String entity) throws CatalogException;
+                                                              Entity entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                              String entity) throws CatalogException;
+                                                              Entity entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members, @Nullable List<String> permissions,
-                                                                 String entity) throws CatalogException;
+                                                                 Entity entity) throws CatalogException;
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries, String entity)
+    <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries, Entity entity)
             throws CatalogException;
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
 
+    void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException;
+
+    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entry entry) throws CatalogException;
+
+    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entry entry) throws CatalogException;
+
+    void removePermissionRule(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException;
 }
