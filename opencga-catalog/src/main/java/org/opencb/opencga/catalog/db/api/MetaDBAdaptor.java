@@ -20,10 +20,13 @@ package org.opencb.opencga.catalog.db.api;
  * Created by pfurio on 23/05/16.
  */
 
-import org.opencb.opencga.core.config.Admin;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 public interface MetaDBAdaptor {
+
+    String SECRET_KEY = "secretKey";
+    String ALGORITHM = "algorithm";
 
     String getAdminPassword() throws CatalogDBException;
 
@@ -31,6 +34,6 @@ public interface MetaDBAdaptor {
 
     String readAlgorithm() throws CatalogDBException;
 
-    void updateAdmin(Admin admin) throws  CatalogDBException;
+    void updateJWTParameters(ObjectMap params) throws CatalogDBException;
 
 }

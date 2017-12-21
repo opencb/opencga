@@ -323,13 +323,13 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         public String secretKey;
 
-        @Parameter(
-                names = {"--algorithm"},
-                description = "Algorithm to encrypt JWT session token (HS256)",
-                required = true
-        )
-
-        public String algorithm;
+//        @Parameter(
+//                names = {"--algorithm"},
+//                description = "Algorithm to encrypt JWT session token (HS256)",
+//                required = true
+//        )
+//
+//        public String algorithm;
 
         public InstallCatalogCommandOptions() {
             super();

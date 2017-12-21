@@ -4,13 +4,13 @@ import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -18,7 +18,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
 
-@Path("/{apiVersion}/admin/users")
+@Path("/{apiVersion}/admin")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Admin", position = 4, description = "Administrator webservices")
 public class AdminWSServer extends OpenCGAWSServer {
@@ -186,12 +186,19 @@ public class AdminWSServer extends OpenCGAWSServer {
 //        return createErrorResponse(new NotImplementedException());
 //    }
 //
-//    @POST
-//    @Path("/database/jwt")
-//    @ApiOperation(value = "Change JWT secret key or algorithm")
-//    public Response jwt() {
-//        return createErrorResponse(new NotImplementedException());
-//    }
+    @POST
+    @Path("/database/jwt")
+    @ApiOperation(value = "Change JWT secret key")
+    public Response jwt(@ApiParam(value = "JSON containing the parameters", required = true) JWTParams jwtParams) {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(MetaDBAdaptor.SECRET_KEY, jwtParams.secretKey);
+        try {
+            catalogManager.updateJWTParameters(params, sessionId);
+            return createOkResponse(new QueryResult<>("jwt"));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     public static class UserCreateParams extends org.opencb.opencga.server.rest.UserWSServer.UserCreatePOST {
         public String account;
@@ -212,6 +219,10 @@ public class AdminWSServer extends OpenCGAWSServer {
         public String to;
         public String study;
         public boolean force = false;
+    }
+
+    public static class JWTParams {
+        public String secretKey;
     }
 
 }
