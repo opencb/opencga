@@ -7,7 +7,7 @@
 opencgaReadConfig(conf)
 }
 \arguments{
-\item{conf}{a list or the path to a file (in "JSON" or "YAML" format) 
+\item{conf}{a list or the path to a file (in "JSON" or "YAML" format)
 containing the host and version configurations to set OpenCGA connection}
 }
 \value{
@@ -17,6 +17,7 @@ a OpencgaR object
 Read OpenCGA configuration
 }
 \examples{
+\dontrun{
 con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
@@ -29,4 +30,5 @@ con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 conf <- "/path/to/conf/client-configuration.yml"
 con <- initOpencgaR(opencgaConfig=conf)
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+}
 }

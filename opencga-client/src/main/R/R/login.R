@@ -1,6 +1,8 @@
+#' @import miniUI
+#' @import shiny
+NULL
+
 user_login <- function() {
-  require(miniUI)
-  require(shiny)
   ui <- miniPage(
     gadgetTitleBar("Please enter your username and password"),
     miniContentPanel(
@@ -24,6 +26,3 @@ user_login <- function() {
 
   runGadget(ui, server, viewer = dialogViewer("user_login"))
 }
-
-
-

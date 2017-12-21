@@ -8,16 +8,17 @@
 opencgaHelp(opencga, client = NULL, action = NULL)
 }
 \arguments{
-\item{opencga}{an object of type OpencgaR generated using initOpencga or 
+\item{opencga}{an object of type OpencgaR generated using initOpencga or
 opencgaLogin}
 }
 \description{
-A function extract all the available information from Opencga web services 
+A function extract all the available information from Opencga web services
 at the defined host
 }
 \examples{
+\dontrun{
 con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1")
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 opencgaHelp(con, client="userClient", action="info")
-
+}
 }

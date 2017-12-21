@@ -1,24 +1,29 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: 1.3.0
+Version: 1.3.1
 Author: Marta Bleda <martableda@gmail.com>
 Maintainer: Marta Bleda <martableda@gmail.com>
-Description: Classes and methods for working with Opencga data
+Description: An R client that contains classes and methods for working with
+    Opencga data.
 License: GPL-3
 LazyData: TRUE
 Depends:
     R(>= 3.2.2),
-    jsonlite,methods,httr
+    jsonlite,
+    methods,
+    httr
 Suggests:
-    configr,pbapply,
+    configr,
+    pbapply,
     BiocStyle,
     knitr,
     rmarkdown
 Imports:
-    stringi
-Enhances: shiny,miniUI
-Collate: 
+    stringi,
+    shiny,
+    miniUI
+Collate:
     'AllClasses.R'
     'AllGenerics.R'
     'commons.R'
