@@ -77,8 +77,6 @@ public class LDAPUtils {
     }
 
     public static List<String> getUsersFromLDAPGroup(String host, String groupName, String groupBase) throws NamingException {
-
-
         String groupFilter = "(cn=" + groupName + ")";
 
         String[] attributeFilter = {"uniqueMember"};
@@ -109,6 +107,18 @@ public class LDAPUtils {
         }
 
         return users;
+    }
+
+    public static boolean existsLDAPGroup(String host, String groupName, String groupBase) throws NamingException {
+        String groupFilter = "(cn=" + groupName + ")";
+        SearchControls sc = new SearchControls();
+        sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        NamingEnumeration<SearchResult> search = getDirContext(host).search(groupBase, groupFilter, sc);
+
+        if (search.hasMore()) {
+            return true;
+        }
+        return false;
     }
 
     public static List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase) throws NamingException {

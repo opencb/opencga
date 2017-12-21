@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
@@ -65,6 +66,7 @@ public abstract class AbstractManager {
     protected final PanelDBAdaptor panelDBAdaptor;
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
 
+    protected static final String ROOT = "admin";
     protected static final String ANONYMOUS = "*";
 
     AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -122,6 +124,17 @@ public abstract class AbstractManager {
             result.put("featureName", featureStr);
         }
         return result;
+    }
+
+    AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
+        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
+                if (authOrigin.equals(authenticationOrigin.getId())) {
+                    return authenticationOrigin;
+                }
+            }
+        }
+        return null;
     }
 
     /**

@@ -56,7 +56,6 @@ public class UserManager extends AbstractManager {
     private String INTERNAL_AUTHORIZATION = "internal";
     private Map<String, AuthenticationManager> authenticationManagerMap;
     private final String ADMIN_TOKEN;
-    private static final String ROOT = "admin";
 
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
@@ -789,17 +788,6 @@ public class UserManager extends AbstractManager {
             throw new CatalogException(userId + " user not found");
         }
         return user.first().getAccount().getAuthOrigin();
-    }
-
-    private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
-                if (authOrigin.equals(authenticationOrigin.getId())) {
-                    return authenticationOrigin;
-                }
-            }
-        }
-        return null;
     }
 
     public QueryResult<User> importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String token)

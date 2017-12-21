@@ -7,6 +7,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -81,9 +82,24 @@ public class AdminWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/users/sync")
-    @ApiOperation(value = "Synchronise groups of users with LDAP groups")
-    public Response ldapSync() {
-        return createErrorResponse(new NotImplementedException());
+    @ApiOperation(value = "Synchronise groups of users with LDAP groups", response = Group.class,
+        notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b>, <b>from</b> and <b>to</b><br>"
+                + "<ul>"
+                + "<li><b>authOriginId</b>: Authentication origin id defined in the main Catalog configuration.</li>"
+                + "<li><b>study</b>: Study [[user@]project:]study where the group of users will be synced with the LDAP group.</li>"
+                + "<li><b>from</b>: LDAP group to be synced with a catalog group.</li>"
+                + "<li><b>to</b>: Catalog group that will be synced with the LDAP group.</li>"
+                + "<li><b>force</b>: Boolean to force the synchronisation with already existing Catalog groups that are not yet "
+                +   "synchronised with any other group.</li>"
+                + "</ul>"
+    )
+    public Response ldapSync(@ApiParam(value = "JSON containing the parameters", required = true) LDAPSyncParams ldapParams) {
+        try {
+            return createOkResponse(catalogManager.getStudyManager().syncGroupWith(ldapParams.study, ldapParams.from, ldapParams.to,
+                    ldapParams.authenticationOriginId, ldapParams.force, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     //******************************** AUDIT **********************************//
@@ -182,12 +198,20 @@ public class AdminWSServer extends OpenCGAWSServer {
     }
 
     public static class LDAPImportParams {
+        public String authenticationOriginId;
         public List<String> users;
         public String group;
         public String study;
         public String studyGroup;
         public String account;
+    }
+
+    public static class LDAPSyncParams {
         public String authenticationOriginId;
+        public String from;
+        public String to;
+        public String study;
+        public boolean force = false;
     }
 
 }

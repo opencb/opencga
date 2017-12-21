@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.catalog.auth.authentication.LDAPUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -35,6 +36,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -47,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.naming.NamingException;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -781,17 +784,81 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
     }
 
+    public QueryResult<Group> syncGroupWith(String studyStr, String externalGroup, String catalogGroup, String authenticationOriginId,
+                                            boolean force, String token) throws CatalogException {
+        if (!ROOT.equals(catalogManager.getUserManager().getUserId(token))) {
+            throw new CatalogAuthorizationException("Only the root of OpenCGA can synchronise groups");
+        }
+
+        ParamUtils.checkObj(studyStr, "study");
+        ParamUtils.checkObj(externalGroup, "external group");
+        ParamUtils.checkObj(catalogGroup, "catalog group");
+        ParamUtils.checkObj(authenticationOriginId, "authentication origin");
+
+        AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authenticationOriginId);
+        if (authenticationOrigin == null) {
+            throw new CatalogException("Authentication origin " + authenticationOriginId + " not found");
+        }
+
+        try {
+            String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.GROUPS_SEARCH));
+            if (!LDAPUtils.existsLDAPGroup(authenticationOrigin.getHost(), externalGroup, base)) {
+                throw new CatalogException("Group " + externalGroup + " not found in origin " + authenticationOriginId);
+            }
+        } catch (NamingException e) {
+            logger.error("{}", e.getMessage(), e);
+            throw new CatalogException("Unexpected LDAP error: " + e.getMessage());
+        }
+
+        long studyId = getId(ROOT, studyStr);
+
+        // Fix the groupId
+        if (!catalogGroup.startsWith("@")) {
+            catalogGroup = "@" + catalogGroup;
+        }
+
+        QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, catalogGroup, Collections.emptyList());
+        if (group.getNumResults() == 1) {
+            if (group.first().getSyncedFrom() != null && StringUtils.isNotEmpty(group.first().getSyncedFrom().getAuthOrigin())
+                    && StringUtils.isNotEmpty(group.first().getSyncedFrom().getRemoteGroup())) {
+                if (authenticationOriginId.equals(group.first().getSyncedFrom().getAuthOrigin())
+                        && externalGroup.equals(group.first().getSyncedFrom().getRemoteGroup())) {
+                    // It is already synced with that group from that authentication origin
+                    return group;
+                } else {
+                    throw new CatalogException("The group " + catalogGroup + " is already synced with the group " + externalGroup + " "
+                            + "from " + authenticationOriginId + ". If you still want to sync the group with the new external group, "
+                            + "please use the force parameter.");
+                }
+            }
+
+            if (!force) {
+                throw new CatalogException("Cannot sync the group " + catalogGroup + " because it already exist in Catalog. Please, use "
+                        + "force parameter if you still want sync it.");
+            }
+
+            // We remove all the users belonging to that group and resync it with the new external group
+            studyDBAdaptor.removeUsersFromGroup(studyId, catalogGroup, group.first().getUserIds());
+            studyDBAdaptor.syncGroup(studyId, catalogGroup, new Group.Sync(authenticationOriginId, externalGroup));
+        } else {
+            // We need to create a new group
+            Group newGroup = new Group(catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId, externalGroup));
+            studyDBAdaptor.createGroup(studyId, newGroup);
+        }
+
+        return studyDBAdaptor.getGroup(studyId, catalogGroup, Collections.emptyList());
+    }
+
+
     public QueryResult<Group> syncGroupWith(String studyStr, String groupId, Group.Sync syncedFrom, String sessionId)
             throws CatalogException {
+        ParamUtils.checkObj(syncedFrom, "sync");
+
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
 
         if (StringUtils.isEmpty(groupId)) {
             throw new CatalogException("Missing group name parameter");
-        }
-
-        if (syncedFrom == null) {
-            throw new CatalogException("Missing sync object");
         }
 
         // Fix the groupId
