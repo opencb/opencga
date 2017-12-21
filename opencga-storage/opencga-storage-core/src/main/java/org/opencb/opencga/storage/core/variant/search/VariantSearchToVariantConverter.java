@@ -78,13 +78,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
                 if (studyEntryMap.containsKey(fields[1])) {
                     VariantStats variantStats = new VariantStats();
-                    variantStats.setMaf(variantSearchModel.getStats().get(key));
-
+                    variantStats.setAltAlleleFreq(variantSearchModel.getStats().get(key));
                     studyEntryMap.get(fields[1]).setStats(fields[2], variantStats);
                 }
-//                else {
-//                    System.out.println("Something wrong happened: stats " + key + ", but there is no study for that stats.");
-//                }
             }
         }
 
@@ -236,6 +232,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
         }
+
         VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
         List<ClinVar> clinVarList = new ArrayList<>(clinVarMap.size());
         for (String key : clinVarMap.keySet()) {
@@ -311,7 +308,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                     Map<String, VariantStats> studyStats = studyEntry.getStats();
                     for (String key : studyStats.keySet()) {
-                        stats.put("stats__" + studyId + "__" + key, studyStats.get(key).getMaf());
+                        stats.put("stats__" + studyId + "__" + key, studyStats.get(key).getAltAlleleFreq());
                     }
                 }
             }
@@ -395,7 +392,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     if (consequenceType.getProteinVariantAnnotation() != null) {
                         ProteinVariantAnnotation proteinVariantAnnotation = consequenceType.getProteinVariantAnnotation();
 
-                        // Add Uniprot accession, name and ID to xrefs
+                        // Add UniProt accession, name and ID to xrefs
                         if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotAccession())) {
                             xrefs.add(proteinVariantAnnotation.getUniprotAccession());
                         }
@@ -492,10 +489,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
                 if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
                     variantAnnotation.getVariantTraitAssociation().getCosmic()
-                            .forEach(cosm -> {
-                                xrefs.add(cosm.getMutationId());
-                                traits.add("CM -- " + cosm.getMutationId() + " -- "
-                                        + cosm.getPrimaryHistology() + " -- " + cosm.getHistologySubtype());
+                            .forEach(cosmic -> {
+                                xrefs.add(cosmic.getMutationId());
+                                traits.add("CM -- " + cosmic.getMutationId() + " -- "
+                                        + cosmic.getPrimaryHistology() + " -- " + cosmic.getHistologySubtype());
                             });
                 }
             }
@@ -504,10 +501,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 for (GeneTraitAssociation geneTraitAssociation : variantAnnotation.getGeneTraitAssociation()) {
                     switch (geneTraitAssociation.getSource().toLowerCase()) {
                         case "hpo":
-                            xrefs.add(geneTraitAssociation.getId());
-                            if (StringUtils.isNotEmpty(geneTraitAssociation.getHpo())) {
-                                xrefs.add(geneTraitAssociation.getHpo());
-                            }
+//                            xrefs.add(geneTraitAssociation.getId());
+//                            if (StringUtils.isNotEmpty(geneTraitAssociation.getHpo())) {
+//                                xrefs.add(geneTraitAssociation.getHpo());
+//                            }
                             traits.add("HP -- " + geneTraitAssociation.getHpo() + " -- "
                                     + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());
                             break;
