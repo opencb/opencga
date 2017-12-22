@@ -965,7 +965,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
             }
         } catch (VariantSearchException | IOException e) {
-            throw new VariantQueryException("Error querying Solr", e);
+            throw new VariantQueryException("Error querying " + VariantSearchManager.SEARCH_ENGINE_ID, e);
         }
         return variantsIterator;
     }
@@ -973,5 +973,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public void close() throws IOException {
         cellBaseUtils = null;
+        if (variantSearchManager.get() == null) {
+            try {
+                variantSearchManager.get().close();
+            } finally {
+                variantSearchManager.set(null);
+            }
+        }
     }
 }

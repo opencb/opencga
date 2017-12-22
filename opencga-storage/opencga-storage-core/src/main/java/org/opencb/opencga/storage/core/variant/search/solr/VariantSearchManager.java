@@ -829,4 +829,10 @@ public class VariantSearchManager {
         this.solrClient = solrClient;
         return this;
     }
+
+    public void close() throws IOException {
+        if (solrClient != null) {
+            solrClient.close();
+        }
+    }
 }

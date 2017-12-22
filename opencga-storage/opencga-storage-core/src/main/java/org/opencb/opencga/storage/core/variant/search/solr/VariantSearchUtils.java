@@ -42,7 +42,10 @@ public class VariantSearchUtils {
             Arrays.asList(VariantQueryParam.FILE,
                     VariantQueryParam.FILTER,
                     VariantQueryParam.GENOTYPE,
-                    VariantQueryParam.SAMPLE)));
+                    VariantQueryParam.SAMPLE,
+                    VariantQueryParam.COHORT,
+                    VariantQueryParam.MISSING_ALLELES,
+                    VariantQueryParam.MISSING_GENOTYPES)));
 
     public static final Set<VariantQueryParam> UNSUPPORTED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.INCLUDE_FILE,

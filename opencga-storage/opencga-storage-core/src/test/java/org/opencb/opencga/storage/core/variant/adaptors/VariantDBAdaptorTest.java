@@ -26,12 +26,12 @@ import org.hamcrest.Matcher;
 import org.hamcrest.core.IsAnything;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -162,8 +162,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
                 for (int i = 0; i < 30  ; i++) {
                     allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
-                    Long annotated = dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first();
-                    Long all = dbAdaptor.count(new Query()).first();
+                    Long annotated = count(new Query(ANNOTATION_EXISTS.key(), true));
+                    Long all = count(new Query());
 
                     System.out.println("count annotated = " + annotated);
                     System.out.println("count           = " + all);
@@ -181,7 +181,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         break;
                     }
                 }
-                assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
+                assertEquals(count(new Query(ANNOTATION_EXISTS.key(), true)), count(new Query()));
             }
         }
         allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
@@ -200,6 +200,25 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         dbAdaptor.close();
     }
 
+    public VariantQueryResult<Variant> query(Query query, QueryOptions options) {
+        return dbAdaptor.get(query, options);
+    }
+
+    public VariantDBIterator iterator(Query query, QueryOptions options) {
+        return dbAdaptor.iterator(query, options);
+    }
+
+    public Long count(Query query) {
+        return dbAdaptor.count(query).first();
+    }
+
+    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+        return dbAdaptor.groupBy(query, field, options);
+    }
+
+    public QueryResult rank(int limit, Query query, String field, boolean asc) {
+        return dbAdaptor.rank(query, field, limit, asc);
+    }
 
     protected String getHetGT() {
         return "0|1,1|0";
@@ -234,7 +253,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants() {
-        long numResults = dbAdaptor.count(null).first();
+        long numResults = count(null);
         assertEquals(NUM_VARIANTS, numResults);
     }
 
@@ -259,14 +278,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public void limitSkip(Query query, QueryOptions options) {
-        VariantQueryResult<Variant> expected = dbAdaptor.get(query, options);
+        VariantQueryResult<Variant> expected = query(query, options);
         int numVariants = expected.getNumResults();
 //        expected.getResult().forEach(v -> logger.info("expected variant: == " + v));
         for (int batchSize : new int[]{50, 100, 1000}) {
             List<Variant> variants = new ArrayList<>();
             Set<String> variantStr = new HashSet<>();
             for (int i = 0; i < numVariants / batchSize + 1; i++) {
-                QueryResult<Variant> result = dbAdaptor.get(query, new QueryOptions(options)
+                QueryResult<Variant> result = query(query, new QueryOptions(options)
                         .append(QueryOptions.LIMIT, batchSize)
                         .append(QueryOptions.SKIP, i * batchSize));
                 logger.info("Got " + result.getNumResults() + " results");
@@ -284,33 +303,33 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetVariantsByType() {
-        Set<Variant> snv = new HashSet<>(dbAdaptor.get(new Query(VariantQueryParam.TYPE.key(), VariantType.SNV), new QueryOptions()).getResult());
+        Set<Variant> snv = new HashSet<>(query(new Query(VariantQueryParam.TYPE.key(), VariantType.SNV), new QueryOptions()).getResult());
         System.out.println("SNV = " + snv.size());
         snv.forEach(variant -> assertThat(EnumSet.of(VariantType.SNV, VariantType.SNP), hasItem(variant.getType())));
 
-        Set<Variant> not_snv = new HashSet<>(dbAdaptor.get(new Query(VariantQueryParam.TYPE.key(), "!" + VariantType.SNV), new QueryOptions()).getResult());
+        Set<Variant> not_snv = new HashSet<>(query(new Query(VariantQueryParam.TYPE.key(), "!" + VariantType.SNV), new QueryOptions()).getResult());
         System.out.println("!SNV = " + not_snv.size());
         not_snv.forEach(variant -> assertFalse(EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType())));
 
-        Set<Variant> snv_snp = new HashSet<>(dbAdaptor.get(new Query(VariantQueryParam.TYPE.key(), VariantType.SNV + "," + VariantContext.Type.SNP), new QueryOptions()).getResult());
+        Set<Variant> snv_snp = new HashSet<>(query(new Query(VariantQueryParam.TYPE.key(), VariantType.SNV + "," + VariantContext.Type.SNP), new QueryOptions()).getResult());
         System.out.println("SNV_SNP = " + snv_snp.size());
         assertEquals(snv_snp, snv);
 
-        Set<Variant> snp = new HashSet<>(dbAdaptor.get(new Query(VariantQueryParam.TYPE.key(), VariantType.SNP), new QueryOptions()).getResult());
+        Set<Variant> snp = new HashSet<>(query(new Query(VariantQueryParam.TYPE.key(), VariantType.SNP), new QueryOptions()).getResult());
         snp.forEach(variant -> assertEquals(VariantType.SNP, variant.getType()));
         snp.forEach(variant -> assertThat(snv, hasItem(variant)));
         System.out.println("SNP = " + snp.size());
 
-        Set<Variant> indels = new HashSet<>(dbAdaptor.get(new Query(VariantQueryParam.TYPE.key(), VariantType.INDEL), new QueryOptions()).getResult());
+        Set<Variant> indels = new HashSet<>(query(new Query(VariantQueryParam.TYPE.key(), VariantType.INDEL), new QueryOptions()).getResult());
         indels.forEach(variant -> assertEquals(VariantType.INDEL, variant.getType()));
         System.out.println("INDEL = " + indels.size());
 
-        Set<Variant> indels_snp = new HashSet<>(dbAdaptor.get(new Query(VariantQueryParam.TYPE.key(), VariantType.INDEL + "," + VariantType.SNP), new QueryOptions()).getResult());
+        Set<Variant> indels_snp = new HashSet<>(query(new Query(VariantQueryParam.TYPE.key(), VariantType.INDEL + "," + VariantType.SNP), new QueryOptions()).getResult());
         indels_snp.forEach(variant -> assertThat(EnumSet.of(VariantType.INDEL, VariantType.SNP), hasItem(variant.getType())));
         indels_snp.forEach(variant -> assertTrue(indels.contains(variant) || snp.contains(variant)));
         System.out.println("INDEL_SNP = " + indels_snp.size());
 
-        Set<Variant> indels_snv = new HashSet<>(dbAdaptor.get(new Query(VariantQueryParam.TYPE.key(), VariantType.INDEL + "," + VariantType.SNV), new QueryOptions()).getResult());
+        Set<Variant> indels_snv = new HashSet<>(query(new Query(VariantQueryParam.TYPE.key(), VariantType.INDEL + "," + VariantType.SNV), new QueryOptions()).getResult());
         indels_snv.forEach(variant -> assertThat(EnumSet.of(VariantType.INDEL, VariantType.SNP, VariantType.SNV), hasItem(variant.getType())));
         indels_snv.forEach(variant -> assertTrue(indels.contains(variant) || snv.contains(variant)));
         System.out.println("INDEL_SNV = " + indels_snv.size());
@@ -322,7 +341,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Query query;
         query = new Query()
                 .append(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), GENOMES_PHASE_3 + ":AFR<=0.05001");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopRefFreq(GENOMES_PHASE_3, "AFR", lte(0.05001)))));
     }
 
@@ -333,21 +352,21 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         query = new Query()
                 .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ESP_6500 + ":AA>0.05001");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopAltFreq(ESP_6500, "AA", gt(0.05001)))));
 
 //        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && map.get(ESP_6500 + ":AA").getAltAlleleFreq() > 0.05001), filter);
 
         query = new Query()
                 .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), GENOMES_PHASE_3 + ":AFR<=0.05001");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopAltFreq(GENOMES_PHASE_3, "AFR", lte(0.05001)))));
 
 //        filterPopulation(map -> (!map.containsKey(GENOMES_PHASE_3 + ":AFR") || map.get(GENOMES_PHASE_3 + ":AFR").getAltAlleleFreq() <= 0.05001), filter);
 
         query = new Query()
                 .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ESP_6500 + ":AA>0.05001;" + GENOMES_PHASE_3 + ":AFR<=0.05001");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(allOf(
                         hasPopAltFreq(ESP_6500, "AA", gt(0.05001)),
                         hasPopAltFreq(GENOMES_PHASE_3, "AFR", lte(0.05001))))));
@@ -357,7 +376,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         query = new Query()
                 .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ESP_6500 + ":AA>0.05001," + GENOMES_PHASE_3 + ":AFR<=0.05001");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
 
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(anyOf(
                 hasPopAltFreq(ESP_6500, "AA", gt(0.05001)),
@@ -375,31 +394,31 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         Query query = new Query(baseQuery)
                 .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), GENOMES_PHASE_3 + ":AFR<=0.0501");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
                 map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
 
         query = new Query(baseQuery)
                 .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ESP_6500 + ":AA>0.0501");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
                 map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501));
 
         query = new Query(baseQuery)
                 .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),GENOMES_PHASE_3 + ":AFR<=0.0501");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
                 map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
 
         query = new Query(baseQuery)
                 .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),GENOMES_PHASE_3 + ":ALL<=0.0501");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":ALL", defaultPopulation).getRefAlleleFreq(),
                 map.getOrDefault(GENOMES_PHASE_3 + ":ALL", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
 
         query = new Query(baseQuery)
                 .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ESP_6500 + ":AA>0.0501;" + GENOMES_PHASE_3 + ":AFR<=0.0501");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
                 map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501
                 && Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
@@ -407,7 +426,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         query = new Query(baseQuery)
                 .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ESP_6500 + ":AA>0.0501," + GENOMES_PHASE_3 + ":AFR<=0.0501");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
                 map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501
                 || Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
@@ -493,7 +512,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 }
             }
         }
-        List<Variant> result = dbAdaptor.get(new Query(ID.key(), variants), new QueryOptions()).getResult();
+        List<Variant> result = query(new Query(ID.key(), variants), new QueryOptions()).getResult();
 
         assertTrue(variants.size() > 0);
         List<String> expectedList = variants.stream().map(Object::toString).sorted().collect(Collectors.toList());
@@ -514,7 +533,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_xref() {
         Query query = new Query(ANNOT_XREF.key(), "3:108634973:C:A,rs2032582,HP:0001250,VAR_048225,Q9BY64,ENSG00000250026,TMPRSS11B,COSM1421316");
-        queryResult = dbAdaptor.get(query, null);
+        queryResult = query(query, null);
         assertThat(queryResult, everyResult(allVariants, anyOf(
                 hasAnnotation(at("3:108634973:C:A")),
                 with("id", Variant::getId, is("rs2032582")),
@@ -545,14 +564,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_rs(String key) {
         // This test queries a single ID with no more options
         Query query = new Query(key, "rs1137005");
-        queryResult = dbAdaptor.get(query, null);
+        queryResult = query(query, null);
         Variant variant = queryResult.first();
         assertEquals(1, queryResult.getNumResults());
         assertEquals(variant.getStart(), Integer.valueOf(1650807));
         assertThat(variant.getIds(), hasItem("rs1137005"));
 
         query = new Query(key, "rs1137005,rs150535390");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, this.options);
         assertEquals(2, queryResult.getNumResults());
         queryResult.getResult().forEach(v -> assertThat(v.getIds(), anyOf(hasItem("rs1137005"), hasItem("rs150535390"))));
     }
@@ -562,36 +581,36 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Query query;
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566");
-        queryResult = dbAdaptor.get(query, null);
+        queryResult = query(query, null);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSO(hasItem("SO:0001566")))));
         assertThat(queryResult, numResults(gt(0)));
 //        assertEquals(911, queryResult.getNumResults());
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "1566");
-        queryResult = dbAdaptor.get(query, null);
+        queryResult = query(query, null);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSO(hasItem("SO:0001566")))));
         assertThat(queryResult, numResults(gt(0)));
 //        assertEquals(911, queryResult.getNumResults());
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566,SO:0001583");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSO(anyOf(hasItem("SO:0001566"), hasItem("SO:0001583"))))));
         assertThat(queryResult, numResults(gt(0)));
 //        assertEquals(947, queryResult.getNumResults());
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), ConsequenceTypeMappings.accessionToTerm.get(1566) + ",SO:0001583");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSO(anyOf(hasItem("SO:0001566"), hasItem("SO:0001583"))))));
         assertThat(queryResult, numResults(gt(0)));
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "1566,SO:0001583");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSO(anyOf(hasItem("SO:0001566"), hasItem("SO:0001583"))))));
         assertThat(queryResult, numResults(gt(0)));
 //        assertEquals(947, queryResult.getNumResults());
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566;SO:0001583");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSO(allOf(hasItem("SO:0001566"), hasItem("SO:0001583"))))));
         assertThat(queryResult, numResults(gt(0)));
 
@@ -624,7 +643,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         with("id", VariantAnnotation::getId, is("rs1171830")),
                         at("7:100807230:G:T")));
 
-        assertThat(dbAdaptor.get(new Query(ANNOT_XREF.key(), "rs1171830").append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566"), null),
+        assertThat(query(new Query(ANNOT_XREF.key(), "rs1171830").append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566"), null),
                 everyResult(allVariants, allOf(
                         with("id", Variant::getId, is("rs1171830")),
                         hasAnnotation(hasSO(hasItem(is("SO:0001566")))))));
@@ -636,7 +655,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     private void queryGeneCT(String gene, String so, Query query, Matcher<VariantAnnotation> regionMatcher) {
         logger.info(query.toJson());
-        queryResult = dbAdaptor.get(query, null);
+        queryResult = query(query, null);
         logger.info(" -> numResults " + queryResult.getNumResults());
 
         Matcher<String> geneMatcher;
@@ -691,7 +710,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         for (String flag : flags.elementSet()) {
             System.out.println(flag + ", " + flags.count(flag));
             query = new Query(ANNOT_TRANSCRIPTION_FLAG.key(), flag);
-            queryResult = dbAdaptor.get(query, null);
+            queryResult = query(query, null);
             assertEquals(flags.count(flag), queryResult.getNumResults());
         }
 
@@ -735,25 +754,25 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         namesMap.entrySet().stream().limit(QUERIES_LIM).forEach(entry -> {
             Query q = new Query(ANNOT_GENE_TRAIT_NAME.key(), '"' + entry.getKey() + '"');
-            queryResult = dbAdaptor.get(q, null);
+            queryResult = query(q, null);
             assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
         });
 
         idsMap.entrySet().stream().limit(QUERIES_LIM).forEach(entry -> {
             Query q = new Query(ANNOT_GENE_TRAIT_ID.key(), entry.getKey());
-            queryResult = dbAdaptor.get(q, null);
+            queryResult = query(q, null);
             assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
         });
 
         hposMap.entrySet().stream().limit(QUERIES_LIM).forEach(entry -> {
             Query q = new Query(ANNOT_HPO.key(), entry.getKey());
-            queryResult = dbAdaptor.get(q, null);
+            queryResult = query(q, null);
             assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
         });
 
         List<String> ids = idsMap.keySet().stream().limit(10).collect(Collectors.toList());
         query = new Query(ANNOT_GENE_TRAIT_ID.key(), String.join(OR, ids));
-        queryResult = dbAdaptor.get(query, null);
+        queryResult = query(query, null);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants,
                 hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
@@ -761,7 +780,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         List<String> hpos = hposMap.keySet().stream().limit(10).collect(Collectors.toList());
         query = new Query(ANNOT_GENE_TRAIT_ID.key(), String.join(OR, ids) + OR + String.join(OR, hpos));
-        queryResult = dbAdaptor.get(query, null);
+        queryResult = query(query, null);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants,
                 hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation, anyOf(
@@ -771,7 +790,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         ids = Arrays.asList("umls:C0007131", "umls:C0000786");
         query = new Query(ANNOT_GENE_TRAIT_ID.key(), String.join(AND, ids));
-        queryResult = dbAdaptor.get(query, null);
+        queryResult = query(query, null);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants,
                 hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
@@ -779,7 +798,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         ids = Arrays.asList("umls:C0007131", "umls:C0000786", "HP:0002483");
         query = new Query(ANNOT_GENE_TRAIT_ID.key(), String.join(AND, ids));
-        queryResult = dbAdaptor.get(query, null);
+        queryResult = query(query, null);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants,
                 hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
@@ -910,17 +929,17 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertTrue(combinedKeywordsAndNot > 0);
 
         query = new Query(ANNOT_PROTEIN_KEYWORD.key(), "Complete proteome,Transmembrane helix");
-        assertEquals(combinedKeywordsOr, dbAdaptor.count(query).first().intValue());
+        assertEquals(combinedKeywordsOr, count(query).intValue());
         query = new Query(ANNOT_PROTEIN_KEYWORD.key(), "Complete proteome;Transmembrane helix");
-        assertEquals(combinedKeywordsAnd, dbAdaptor.count(query).first().intValue());
+        assertEquals(combinedKeywordsAnd, count(query).intValue());
         query = new Query(ANNOT_PROTEIN_KEYWORD.key(), "Complete proteome;!Transmembrane helix");
-        assertEquals(combinedKeywordsAndNot, dbAdaptor.count(query).first().intValue());
+        assertEquals(combinedKeywordsAndNot, count(query).intValue());
 
         int i = 0;
         for (Map.Entry<String, Integer> entry : keywords.entrySet()) {
             System.out.println(entry);
             query = new Query(ANNOT_PROTEIN_KEYWORD.key(), entry.getKey());
-            queryResult = dbAdaptor.get(query, null);
+            queryResult = query(query, null);
             assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
             if (++i > QUERIES_LIM) {
                 break;
@@ -952,7 +971,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 continue;
             }
             query = new Query(ANNOT_DRUG.key(), entry.getKey());
-            queryResult = dbAdaptor.get(query, null);
+            queryResult = query(query, null);
             assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
             if (++i > QUERIES_LIM) {
                 break;
@@ -982,16 +1001,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             Matcher<Double> m = entry.getValue();
 
             System.out.println("q = " + q + " -> " + m);
-            queryResult = dbAdaptor.get(new Query(ANNOT_SIFT.key(), q), null);
+            queryResult = query(new Query(ANNOT_SIFT.key(), q), null);
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySift(m))));
 
-            queryResult = dbAdaptor.get(new Query(ANNOT_POLYPHEN.key(), q), null);
+            queryResult = query(new Query(ANNOT_POLYPHEN.key(), q), null);
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphen(m))));
         }
 
         Query query = new Query(ANNOT_POLYPHEN.key(), "sift>0.5");
         thrown.expect(VariantQueryException.class);
-        dbAdaptor.get(query, null);
+        query(query, null);
 //        for (Map.Entry<Double, Integer> entry : polyphen.entrySet()) {
 //            query = new Query(VariantDBAdaptor.VariantQueryParams.SIFT.key(), entry.getKey());
 //            queryResult = dbAdaptor.get(query, null);
@@ -1003,12 +1022,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAlVariants_polyphenSiftDescription() {
         for (String p : Arrays.asList("benign", "possibly damaging", "probably damaging", "unknown")) {
-            queryResult = dbAdaptor.get(new Query(ANNOT_POLYPHEN.key(), p), null);
+            queryResult = query(new Query(ANNOT_POLYPHEN.key(), p), null);
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphenDesc(equalTo(p)))));
         }
 
         for (String s : Arrays.asList("deleterious", "tolerated")) {
-            queryResult = dbAdaptor.get(new Query(ANNOT_SIFT.key(), s), null);
+            queryResult = query(new Query(ANNOT_SIFT.key(), s), null);
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySiftDesc(equalTo(s)))));
         }
     }
@@ -1033,7 +1052,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         VariantQueryException expected = VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, value);
         thrown.expect(expected.getClass());
         thrown.expectMessage(expected.getMessage());
-        dbAdaptor.get(new Query(ANNOT_FUNCTIONAL_SCORE.key(), value), null);
+        query(new Query(ANNOT_FUNCTIONAL_SCORE.key(), value), null);
     }
 
     @Test
@@ -1042,7 +1061,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         VariantQueryException expected = VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, value);
         thrown.expect(expected.getClass());
         thrown.expectMessage(expected.getMessage());
-        dbAdaptor.get(new Query(ANNOT_FUNCTIONAL_SCORE.key(), value), null);
+        query(new Query(ANNOT_FUNCTIONAL_SCORE.key(), value), null);
     }
 
     @Test
@@ -1072,7 +1091,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         VariantQueryException e = VariantQueryException.malformedParam(ANNOT_CONSERVATION, "phast<0.5");
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());
-        dbAdaptor.get(new Query(ANNOT_CONSERVATION.key(), "phast<0.5"), null);
+        query(new Query(ANNOT_CONSERVATION.key(), "phast<0.5"), null);
     }
 
     @Test
@@ -1080,7 +1099,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         VariantQueryException e = VariantQueryException.malformedParam(ANNOT_CONSERVATION, "phastCons<a");
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());
-        dbAdaptor.get(new Query(ANNOT_CONSERVATION.key(), "phastCons<a"), null);
+        query(new Query(ANNOT_CONSERVATION.key(), "phastCons<a"), null);
     }
 
     public void checkConservationScore(Query query, Predicate<Double> doublePredicate, String source) {
@@ -1096,7 +1115,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public void checkScore(Query query, Predicate<List<Score>> scorePredicate, Function<VariantAnnotation, List<Score>> mapper) {
-        QueryResult<Variant> result = dbAdaptor.get(query, null);
+        QueryResult<Variant> result = query(query, null);
         long expected = countScore(allVariants, scorePredicate, mapper);
         long actual = countScore(result, scorePredicate, mapper);
         assertTrue("Expecting a query returning some value.", expected > 0);
@@ -1132,7 +1151,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetSortedVariantsDefault() {
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true);
-        VariantDBIterator iterator = dbAdaptor.iterator(null, options);
+        VariantDBIterator iterator = iterator(null, options);
         Variant next, prev;
         prev = iterator.next();
         while (iterator.hasNext()) {
@@ -1147,7 +1166,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetSortedVariantsAscending() {
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true).append(QueryOptions.ORDER, QueryOptions.ASCENDING);
-        VariantDBIterator iterator = dbAdaptor.iterator(null, options);
+        VariantDBIterator iterator = iterator(null, options);
         Variant next, prev;
         prev = iterator.next();
         while (iterator.hasNext()) {
@@ -1162,7 +1181,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetSortedVariantsReverse() {
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true).append(QueryOptions.ORDER, QueryOptions.DESCENDING);
-        VariantDBIterator iterator = dbAdaptor.iterator(null, options);
+        VariantDBIterator iterator = iterator(null, options);
         Variant next, prev;
         prev = iterator.next();
         while (iterator.hasNext()) {
@@ -1177,21 +1196,21 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_region() {
         Query query = new Query(REGION.key(), "1:13910417-13910417,1:165389129-165389129");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertEquals(2, queryResult.getNumResults());
 
         query = new Query(REGION.key(), Arrays.asList("1:13910417-13910417", "1:165389129-165389129"));
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertEquals(2, queryResult.getNumResults());
 
         query = new Query(REGION.key(),
                 Arrays.asList(Region.parseRegion("1:13910417-13910417"), Region.parseRegion("1:165389129-165389129")));
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertEquals(2, queryResult.getNumResults());
 
         options.put(QueryOptions.SORT, true);
         query = new Query(REGION.key(), "1:14000000-160000000");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1:14000000-160000000"))));
 
         int lastStart = 0;
@@ -1228,7 +1247,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         checkRegion(new Region("20:238442-7980389"));
 
         query = new Query(REGION.key(), "chr2");
-        queryResult = dbAdaptor.get(query, options);
+        queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, overlaps(new Region("2"))));
     }
 
@@ -1237,14 +1256,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public void checkRegion(Region queryRegion, Region overlappingRegion) {
-        queryResult = dbAdaptor.get(new Query(REGION.key(), queryRegion), null);
+        queryResult = query(new Query(REGION.key(), queryRegion), null);
         assertThat(queryResult, everyResult(allVariants, overlaps(overlappingRegion)));
     }
 
     @Test
     public void testGetAllVariants_genes() {
         Query query = new Query(GENE.key(), "FLG-AS1");
-        QueryResult<Variant> result = dbAdaptor.get(query, new QueryOptions());
+        QueryResult<Variant> result = query(query, new QueryOptions());
 
         assertThat(result, everyResult(allVariants, hasAnnotation(hasGenes(Collections.singletonList("FLG-AS1")))));
 
@@ -1253,7 +1272,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         }
 
         query = new Query(GENE.key(), "WRONG_GENE");
-        result = dbAdaptor.get(query, new QueryOptions());
+        result = query(query, new QueryOptions());
 
         assertThat(result, everyResult(allVariants, hasAnnotation(hasGenes(Collections.singletonList("WRONG_GENE")))));
         assertThat(result, numResults(is(0)));
@@ -1266,19 +1285,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_studies() {
 
         Query query = new Query(STUDY.key(), studyConfiguration.getStudyName());
-        long numResults = dbAdaptor.count(query).first();
+        long numResults = count(query);
         assertEquals(allVariants.getNumResults(), numResults);
 
         query = new Query(STUDY.key(), studyConfiguration.getStudyId());
-        numResults = dbAdaptor.count(query).first();
+        numResults = count(query);
         assertEquals(allVariants.getNumResults(), numResults);
 
-        query = new Query(STUDY.key(), "!" + studyConfiguration.getStudyId());
-        numResults = dbAdaptor.count(query).first();
+        query = new Query(STUDY.key(), NOT + studyConfiguration.getStudyId());
+        numResults = count(query);
         assertEquals(0, numResults);
 
-        query = new Query(STUDY.key(), "!" + studyConfiguration.getStudyName());
-        numResults = dbAdaptor.count(query).first();
+        query = new Query(STUDY.key(), NOT + studyConfiguration.getStudyName());
+        numResults = count(query);
         assertEquals(0, numResults);
 
     }
@@ -1287,22 +1306,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_files() {
 
         Query query = new Query(FILE.key(), 6);
-        long numResults = dbAdaptor.count(query).first();
+        long numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
         query = new Query(FILE.key(), 6).append(STUDY.key(), studyConfiguration.getStudyId());
-        numResults = dbAdaptor.count(query).first();
+        numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
         query = new Query().append(STUDY.key(), studyConfiguration.getStudyId());
-        numResults = dbAdaptor.count(query).first();
+        numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
         VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyConfiguration.getStudyName()));
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         query = new Query(FILE.key(), -1);
-        dbAdaptor.count(query).first();
+        count(query);
 //        assertEquals("There is no file with ID -1", 0, numResults);
     }
 
@@ -1310,19 +1329,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_filterNoFile() {
         // FILTER
         Query query = new Query(FILTER.key(), "PASS");
-        long numResults = dbAdaptor.count(query).first();
+        long numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
         query.append(FILTER.key(), "NO_PASS");
-        assertEquals(0, dbAdaptor.count(query).first().longValue());
+        assertEquals(0, count(query).longValue());
 
         // FILTER+STUDY
         query = new Query(STUDY.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
-        numResults = dbAdaptor.count(query).first();
+        numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
         query.append(FILTER.key(), "NO_PASS");
-        assertEquals(0, dbAdaptor.count(query).first().longValue());
+        assertEquals(0, count(query).longValue());
 
     }
 
@@ -1333,19 +1352,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         // FILTER+FILE
         query = new Query(FILE.key(), 6).append(FILTER.key(), "PASS");
-        numResults = dbAdaptor.count(query).first();
+        numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
         query.append(FILTER.key(), "NO_PASS");
-        assertEquals(0, dbAdaptor.count(query).first().longValue());
+        assertEquals(0, count(query).longValue());
 
         // FILTER+FILE+STUDY
         query = new Query(FILE.key(), 6).append(STUDY.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
-        numResults = dbAdaptor.count(query).first();
+        numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
         query.append(FILTER.key(), "NO_PASS");
-        assertEquals(0, dbAdaptor.count(query).first().longValue());
+        assertEquals(0, count(query).longValue());
     }
 
     @Test
@@ -1367,7 +1386,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true); //no limit;
 
         query.put(INCLUDE_SAMPLE.key(), returnedSamples);
-        VariantQueryResult<Variant> queryResult = dbAdaptor.get(query, options);
+        VariantQueryResult<Variant> queryResult = query(query, options);
         List<String> samplesName;
         if (returnedSamples == null || returnedSamples.equals(VariantQueryUtils.ALL)) {
             samplesName = new ArrayList<>(StudyConfiguration.getSortedIndexedSamplesPosition(studyConfiguration).keySet());
@@ -1413,7 +1432,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testIterator() {
         int numVariants = 0;
         Query query = new Query();
-        for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions()); iterator.hasNext(); ) {
+        for (VariantDBIterator iterator = iterator(query, new QueryOptions()); iterator.hasNext(); ) {
             Variant variant = iterator.next();
             numVariants++;
             StudyEntry entry = variant.getStudiesMap().entrySet().iterator().next().getValue();
@@ -1430,48 +1449,48 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
 
         Query query = new Query(GENOTYPE.key(), na19600 + IS + homAlt);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertEquals(282, queryResult.getNumTotalResults());
+        queryResult = query(query, new QueryOptions());
+        assertEquals(282, queryResult.getNumResults());
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
         query = new Query(GENOTYPE.key(), STUDY_NAME + ":NA19600" + IS + homAlt);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertEquals(282, queryResult.getNumTotalResults());
+        queryResult = query(query, new QueryOptions());
+        assertEquals(282, queryResult.getNumResults());
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
         query = new Query(GENOTYPE.key(), "NA19600" + IS + homAlt)
                 .append(STUDY.key(), STUDY_NAME);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertEquals(282, queryResult.getNumTotalResults());
+        queryResult = query(query, new QueryOptions());
+        assertEquals(282, queryResult.getNumResults());
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
         query = new Query(GENOTYPE.key(), "NA19600" + IS + homAlt);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertEquals(282, queryResult.getNumTotalResults());
+        queryResult = query(query, new QueryOptions());
+        assertEquals(282, queryResult.getNumResults());
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
 
         //get for each genotype. Should return all variants
         query = new Query(GENOTYPE.key(), na19600 + IS + homRef + OR + het + OR + homAlt + OR + "./.");
-        long numResults = dbAdaptor.count(null).first();
+        long numResults = count(null);
         assertEquals(NUM_VARIANTS, numResults);
 
         //Get all missing genotypes for sample na19600
         query = new Query(GENOTYPE.key(), na19600 + IS + "./.");
-        queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertEquals(9, queryResult.getNumTotalResults());
+        queryResult = query(query, new QueryOptions());
+        assertEquals(9, queryResult.getNumResults());
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> {
             assertThat(Arrays.asList(".", "./."), hasItem(vse.getSampleData("NA19600", "GT")));
         }));
 
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
         query = new Query(GENOTYPE.key(), na19600 + IS + homAlt + AND + na19685 + IS + homRef + OR + het);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertEquals(40, queryResult.getNumTotalResults());
+        queryResult = query(query, new QueryOptions());
+        assertEquals(40, queryResult.getNumResults());
         Set<String> refHet = new HashSet<>();
         refHet.add(homRef);
         refHet.addAll(Arrays.asList(het.split(OR)));
@@ -1489,22 +1508,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         //Get all variants with not 1|1 for na19600
         query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homAlt);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", not(is(homAlt))))));
 
         //Get all variants with not 0/0 for na19600
         query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", not(is(homRef))))));
 
         //Get all variants with not 0/0 or 0|1 for na19600
         query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + NOT + het1);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", allOf(not(is(homRef)), not(is(het1)))))));
 
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
         query = new Query(GENOTYPE.key(), na19600 + IS + homAlt + AND + na19685 + IS + NOT + homRef + OR + NOT + het2);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", is(homAlt)),
                 withSampleData("NA19685", "GT", allOf(not(is(homRef)), not(is(het2))))))));
@@ -1517,7 +1536,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
 
         query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + het1);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", is(het1)))));
     }
 
@@ -1525,29 +1544,29 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_samples() {
         Query query;
 
-        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(INCLUDE_SAMPLE.key(), "NA19600"), new QueryOptions());
+        QueryResult<Variant> allVariants = query(new Query(INCLUDE_SAMPLE.key(), "NA19600"), new QueryOptions());
         query = new Query(SAMPLE.key(), "NA19600");
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", containsString("1")))));
 
-        allVariants = dbAdaptor.get(new Query(INCLUDE_SAMPLE.key(), "NA19685"), new QueryOptions());
+        allVariants = query(new Query(INCLUDE_SAMPLE.key(), "NA19685"), new QueryOptions());
         query = new Query(SAMPLE.key(), "NA19685");
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19685", "GT", containsString("1")))));
 
         query = new Query(STUDY.key(), studyConfiguration.getStudyName()).append(SAMPLE.key(), "NA19685");
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19685", "GT", containsString("1")))));
 
-        allVariants = dbAdaptor.get(new Query(INCLUDE_SAMPLE.key(), "NA19600,NA19685"), new QueryOptions());
+        allVariants = query(new Query(INCLUDE_SAMPLE.key(), "NA19600,NA19685"), new QueryOptions());
         query = new Query(SAMPLE.key(), "NA19600,NA19685");
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),
                 withSampleData("NA19685", "GT", containsString("1"))))));
 
         query = new Query(SAMPLE.key(), "NA19600").append(GENOTYPE.key(), "NA19685" + IS + homRef).append(INCLUDE_SAMPLE.key(), "NA19600,NA19685");
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),
                 withSampleData("NA19685", "GT", is(homRef))))));
@@ -1557,23 +1576,23 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_genotypes_wrong_values() {
         Query query = new Query(GENOTYPE.key(), "WRONG_SAMPLE:1|1");
         thrown.expect(VariantQueryException.class);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
+        queryResult = query(query, new QueryOptions());
     }
 
     @Test
     public void groupBy_gene_limit_0() throws Exception {
-        QueryResult queryResult = dbAdaptor.groupBy(new Query(), "gene", new QueryOptions("limit", 0).append("count", true));
+        QueryResult queryResult = groupBy(new Query(), "gene", new QueryOptions("limit", 0).append("count", true));
         assertTrue(queryResult.getNumResults() > 0);
     }
 
     @Test
     public void groupBy_gene() throws Exception {
         int limit = 10;
-        QueryResult<Map<String, Object>> queryResult_count = dbAdaptor.groupBy(new Query(), "gene", new QueryOptions("limit", limit)
+        QueryResult<Map<String, Object>> queryResult_count = groupBy(new Query(), "gene", new QueryOptions("limit", limit)
                 .append("count", true));
         Map<String, Long> counts = queryResult_count.getResult().stream().collect(Collectors.toMap(o -> ((Map<String, Object>) o).get
                 ("id").toString(), o -> Long.parseLong(((Map<String, Object>) o).get("count").toString())));
-        QueryResult<Map<String, Object>> queryResult_group = dbAdaptor.groupBy(new Query(), "gene", new QueryOptions("limit", limit));
+        QueryResult<Map<String, Object>> queryResult_group = groupBy(new Query(), "gene", new QueryOptions("limit", limit));
 
 //        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult_group));
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult_count));
@@ -1588,7 +1607,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     .intValue());
 
             QueryOptions queryOptions = new QueryOptions("limit", 1).append("skipCount", false);
-            QueryResult<Variant> queryResult3 = dbAdaptor.get(new Query(GENE.key(), id), queryOptions);
+            QueryResult<Variant> queryResult3 = query(new Query(GENE.key(), id), queryOptions);
             assertEquals("Count for ID " + id, counts.get(id).longValue(), queryResult3.getNumTotalResults());
             assertEquals(1, queryResult3.getNumResults());
         }
@@ -1596,29 +1615,26 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void rank_gene() throws Exception {
-        int limit = 40;
-        QueryResult<Map<String, Object>> queryResult_rank = dbAdaptor.rank(new Query(), "gene", limit, false);
+        QueryResult<Map<String, Object>> queryResult_rank = rank(40, new Query(), "gene", false);
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult_rank));
 
-        assertEquals(limit, queryResult_rank.getNumResults());
+        assertEquals(40, queryResult_rank.getNumResults());
         for (Map<String, Object> map : queryResult_rank.getResult()) {
-            QueryResult<Long> variantQueryResult = dbAdaptor.count(new Query(GENE.key(), map.get
-                    ("id")));
-            assertEquals(((Number) variantQueryResult.first()).intValue(), ((Number) map.get("count")).intValue());
+            Long variantQueryResult = count(new Query(GENE.key(), map.get("id")));
+            assertEquals((variantQueryResult).intValue(), ((Number) map.get("count")).intValue());
         }
     }
 
     @Test
     public void rank_ct() throws Exception {
         int limit = 20;
-        QueryResult<Map<String, Object>> queryResult_rank = dbAdaptor.rank(new Query(), "ct", limit, false);
+        QueryResult<Map<String, Object>> queryResult_rank = rank(limit, new Query(), "ct", false);
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult_rank));
 
         assertEquals(limit, queryResult_rank.getNumResults());
         for (Map<String, Object> map : queryResult_rank.getResult()) {
-            QueryResult<Long> variantQueryResult = dbAdaptor.count(new Query(ANNOT_CONSEQUENCE_TYPE
-                    .key(), map.get("id")));
-            assertEquals(((Number) variantQueryResult.first()).intValue(), ((Number) map.get("count")).intValue());
+            Long variantQueryResult = count(new Query(ANNOT_CONSEQUENCE_TYPE.key(), map.get("id")));
+            assertEquals((variantQueryResult).intValue(), ((Number) map.get("count")).intValue());
         }
     }
 
@@ -1630,41 +1646,41 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 //        numResults = dbAdaptor.count(new Query(STATS_MAF.key(), ">0.2")).first();
 //        System.out.println("queryResult.getNumTotalResults() = " + numResults);
 
-        queryResult = dbAdaptor.get(new Query(STATS_MAF.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + ">0.2"), null);
+        queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + ">0.2"), null);
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withStats(StudyEntry.DEFAULT_COHORT, withMaf(gt(0.2))))));
 
-        int expectedCount = (int) count(allVariants.getResult(), withStudy(STUDY_NAME, withStats("cohort1", withMaf(gt(0.2)))));
-        numResults = dbAdaptor.count(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort1>0.2")).first();
+        int expectedCount = (int) VariantMatchers.count(allVariants.getResult(), withStudy(STUDY_NAME, withStats("cohort1", withMaf(gt(0.2)))));
+        numResults = count(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort1>0.2"));
         assertEquals(expectedCount, numResults);
-        numResults = dbAdaptor.count(new Query(STATS_MAF.key(), "1:10>0.2")).first();
+        numResults = count(new Query(STATS_MAF.key(), "1:10>0.2"));
         assertEquals(expectedCount, numResults);
-        numResults = dbAdaptor.count(new Query(STATS_MAF.key(), STUDY_NAME + ":10>0.2")).first();
+        numResults = count(new Query(STATS_MAF.key(), STUDY_NAME + ":10>0.2"));
         assertEquals(expectedCount, numResults);
-        queryResult = dbAdaptor.get(new Query(STATS_MAF.key(), "1:cohort1>0.2"), null);
+        queryResult = query(new Query(STATS_MAF.key(), "1:cohort1>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());
-        queryResult = dbAdaptor.get(new Query(STUDY.key(), STUDY_NAME).append(STATS_MAF.key(), "cohort1>0.2"), null);
+        queryResult = query(new Query(STUDY.key(), STUDY_NAME).append(STATS_MAF.key(), "cohort1>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());
-        queryResult = dbAdaptor.get(new Query(STUDY.key(), STUDY_NAME).append(STATS_MAF.key(), "10>0.2"), null);
+        queryResult = query(new Query(STUDY.key(), STUDY_NAME).append(STATS_MAF.key(), "10>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());
-        queryResult = dbAdaptor.get(new Query(STUDY.key(), 1).append(STATS_MAF.key(), "10>0.2"), null);
+        queryResult = query(new Query(STUDY.key(), 1).append(STATS_MAF.key(), "10>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withStats("cohort1", withMaf(gt(0.2))))));
 
-        queryResult = dbAdaptor.get(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2"), null);
+        queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2"), null);
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withStats("cohort2", withMaf(gt(0.2))))));
 
-        queryResult = dbAdaptor.get(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2," + STUDY_NAME + ":cohort2<=0.2"), null);
+        queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2," + STUDY_NAME + ":cohort2<=0.2"), null);
         assertThat(queryResult, numResults(is(allVariants.getNumResults())));
 
-        queryResult = dbAdaptor.get(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2;" + STUDY_NAME + ":cohort2<=0.2"), null);
+        queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2;" + STUDY_NAME + ":cohort2<=0.2"), null);
         assertThat(queryResult, numResults(is(0)));
 
-        queryResult = dbAdaptor.get(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2;" + STUDY_NAME + ":cohort1<0.2"), null);
+        queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2;" + STUDY_NAME + ":cohort1<0.2"), null);
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withStats("cohort2", withMaf(gt(0.2))),
                 withStats("cohort1", withMaf(lt(0.2)))))));
 
-        queryResult = dbAdaptor.get(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2," + STUDY_NAME + ":cohort1<0.2"), null);
+        queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort2>0.2," + STUDY_NAME + ":cohort1<0.2"), null);
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, anyOf(
                 withStats("cohort2", withMaf(gt(0.2))),
                 withStats("cohort1", withMaf(lt(0.2)))))));
@@ -1675,16 +1691,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         VariantQueryException exception = VariantQueryException.cohortNotFound("cohort3", studyConfiguration.getStudyId(), studyConfiguration.getCohortIds().keySet());
         thrown.expect(instanceOf(exception.getClass()));
         thrown.expectCause(is(exception.getCause()));
-        dbAdaptor.get(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort3>0.2"), null);
+        query(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort3>0.2"), null);
     }
 
     @Test
     public void testGetAllVariants_mgf() throws Exception {
-        queryResult = dbAdaptor.get(new Query(STATS_MGF.key(), STUDY_NAME + ":ALL>0.2"), null);
+        queryResult = query(new Query(STATS_MGF.key(), STUDY_NAME + ":ALL>0.2"), null);
         System.out.println(queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withStats("ALL", withMgf(gt(0.2))))));
 
-        queryResult = dbAdaptor.get(new Query(STATS_MGF.key(), STUDY_NAME + ":ALL<0.2"), null);
+        queryResult = query(new Query(STATS_MGF.key(), STUDY_NAME + ":ALL<0.2"), null);
         System.out.println(queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withStats("ALL", withMgf(lt(0.2))))));
     }
@@ -1692,25 +1708,25 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_cohorts() throws Exception {
 
-        queryResult = dbAdaptor.get(new Query(COHORT.key(), STUDY_NAME + ":cohort2"), null);
+        queryResult = query(new Query(COHORT.key(), STUDY_NAME + ":cohort2"), null);
         assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
-        queryResult = dbAdaptor.get(new Query(COHORT.key(), STUDY_NAME + ":cohort1"), null);
+        queryResult = query(new Query(COHORT.key(), STUDY_NAME + ":cohort1"), null);
         assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
-        queryResult = dbAdaptor.get(new Query(STUDY.key(), STUDY_NAME)
+        queryResult = query(new Query(STUDY.key(), STUDY_NAME)
                 .append(COHORT.key(), "cohort1"), null);
         assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
-        queryResult = dbAdaptor.get(new Query(STUDY.key(), 1)
+        queryResult = query(new Query(STUDY.key(), 1)
                 .append(COHORT.key(), "cohort1"), null);
         assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
-        queryResult = dbAdaptor.get(new Query(STUDY.key(), 1)
+        queryResult = query(new Query(STUDY.key(), 1)
                 .append(COHORT.key(), 10), null);
         assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
-        queryResult = dbAdaptor.get(new Query(STUDY.key(), 1)
+        queryResult = query(new Query(STUDY.key(), 1)
                 .append(COHORT.key(), "!cohort1"), null);
         assertEquals(0, queryResult.getNumResults());
 
@@ -1721,15 +1737,15 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         VariantQueryException expected = VariantQueryException.cohortNotFound("cohort5_dont_exists", 1, studyConfiguration.getCohortIds().keySet());
         thrown.expect(expected.getClass());
         thrown.expectMessage(expected.getMessage());
-        queryResult = dbAdaptor.get(new Query(STUDY.key(), 1)
+        queryResult = query(new Query(STUDY.key(), 1)
                 .append(COHORT.key(), "!cohort5_dont_exists"), null);
     }
 
     @Test
     public void testGetAllVariants_missingAllele() throws Exception {
 
-        queryResult = dbAdaptor.get(new Query(MISSING_ALLELES.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + ">4"), null);
-        assertEquals(9, queryResult.getNumTotalResults());
+        queryResult = query(new Query(MISSING_ALLELES.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + ">4"), null);
+        assertEquals(9, queryResult.getNumResults());
         queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get(STUDY_NAME).getStats())
                 .forEach(map -> assertTrue(map.get(StudyEntry.DEFAULT_COHORT).getMissingAlleles() > 4));
 
@@ -1749,7 +1765,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testExcludeChromosome() {
 
-        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "chromosome"));
+        queryResult = query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "chromosome"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertNotNull(variant.getChromosome());
@@ -1758,7 +1774,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testExcludeStudies() {
-        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "studies"));
+        queryResult = query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "studies"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertThat(variant.getStudies(), is(Collections.emptyList()));
@@ -1767,7 +1783,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testReturnNoneStudies() {
-        queryResult = dbAdaptor.get(new Query(INCLUDE_STUDY.key(), VariantQueryUtils.NONE), new QueryOptions());
+        queryResult = query(new Query(INCLUDE_STUDY.key(), VariantQueryUtils.NONE), new QueryOptions());
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertThat(variant.getStudies(), is(Collections.emptyList()));
@@ -1777,7 +1793,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testExcludeStats() {
         for (String exclude : Arrays.asList("studies.stats", "stats")) {
-            queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
+            queryResult = query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
             for (Variant variant : queryResult.getResult()) {
                 assertThat(variant.getStudies().get(0).getStats(), not(is(Collections.emptyList())));
@@ -1789,7 +1805,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testExcludeFiles() {
         for (String exclude : Arrays.asList("studies.files", "files")) {
-            queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
+            queryResult = query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
             for (Variant variant : queryResult.getResult()) {
                 assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
@@ -1800,7 +1816,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testReturnNoneFiles() {
-        queryResult = dbAdaptor.get(new Query(INCLUDE_FILE.key(), VariantQueryUtils.NONE), new QueryOptions());
+        queryResult = query(new Query(INCLUDE_FILE.key(), VariantQueryUtils.NONE), new QueryOptions());
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
@@ -1811,7 +1827,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testExcludeSamples() {
         for (String exclude : Arrays.asList("studies.samplesData", "samplesData", "samples")) {
-            queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
+            queryResult = query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
             for (Variant variant : queryResult.getResult()) {
                 assertThat(variant.getStudies().get(0).getSamplesData(), is(Collections.emptyList()));
@@ -1821,7 +1837,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testReturnNoneSamples() {
-        queryResult = dbAdaptor.get(new Query(INCLUDE_SAMPLE.key(), VariantQueryUtils.NONE), new QueryOptions());
+        queryResult = query(new Query(INCLUDE_SAMPLE.key(), VariantQueryUtils.NONE), new QueryOptions());
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertThat(variant.getStudies().get(0).getSamplesData(), is(Collections.emptyList()));
@@ -1830,7 +1846,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testExcludeAnnotation() {
-        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "annotation"));
+        queryResult = query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "annotation"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         VariantAnnotation defaultAnnotation = new VariantAnnotation();
         defaultAnnotation.setConsequenceTypes(Collections.emptyList());
@@ -1842,8 +1858,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testExcludeAnnotationParts() {
-        List<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true)).getResult();
-        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true).append(QueryOptions.EXCLUDE, VariantField.ANNOTATION_XREFS));
+        List<Variant> allVariants = query(new Query(), new QueryOptions(QueryOptions.SORT, true)).getResult();
+        queryResult = query(new Query(), new QueryOptions(QueryOptions.SORT, true).append(QueryOptions.EXCLUDE, VariantField.ANNOTATION_XREFS));
         assertEquals(allVariants.size(), queryResult.getResult().size());
 
         List<Variant> result = queryResult.getResult();
@@ -1864,7 +1880,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testInclude() {
-        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.INCLUDE, "studies"));
+        queryResult = query(new Query(), new QueryOptions(QueryOptions.INCLUDE, "studies"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertThat(variant.getStudies(), not(is(Collections.emptyList())));
@@ -1874,7 +1890,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertNull(variant.getAnnotation());
         }
 
-        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.INCLUDE, "annotation"));
+        queryResult = query(new Query(), new QueryOptions(QueryOptions.INCLUDE, "annotation"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertThat(variant.getStudies(), is(Collections.emptyList()));
@@ -1885,19 +1901,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testIncludeFormat() {
-        Variant variant = dbAdaptor.get(new Query(INCLUDE_FORMAT.key(), "GT"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        Variant variant = query(new Query(INCLUDE_FORMAT.key(), "GT"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
         assertEquals("GT", variant.getStudies().get(0).getFormatAsString());
 
-        variant = dbAdaptor.get(new Query(INCLUDE_FORMAT.key(), "GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        variant = query(new Query(INCLUDE_FORMAT.key(), "GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
         assertEquals("GL", variant.getStudies().get(0).getFormatAsString());
 
-        variant = dbAdaptor.get(new Query(INCLUDE_FORMAT.key(), "GT,GL,DS"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        variant = query(new Query(INCLUDE_FORMAT.key(), "GT,GL,DS"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
         assertEquals("GT:GL:DS", variant.getStudies().get(0).getFormatAsString());
 
-        variant = dbAdaptor.get(new Query(INCLUDE_FORMAT.key(), "GT,XX,GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        variant = query(new Query(INCLUDE_FORMAT.key(), "GT,XX,GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
         assertEquals("GT:XX:GL", variant.getStudies().get(0).getFormatAsString());
     }
