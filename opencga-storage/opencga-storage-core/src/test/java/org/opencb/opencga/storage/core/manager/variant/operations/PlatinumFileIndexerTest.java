@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.manager.variant.operations;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -23,13 +24,20 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created on 15/07/16
@@ -79,6 +87,33 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
             System.out.println("variant = " + variant);
         });
     }
+
+    @Test
+    public void testBatchFromDirectory() throws Exception {
+
+        List<String> names = new ArrayList<>(17);
+        List<File> files = new ArrayList<>(17);
+        for (int i = 77; i <= 93; i++) {
+            names.add("platinum/1K.end.platinum-genomes-vcf-NA128" + i + "_S1.genome.vcf.gz");
+        }
+        // Use same seed
+        Collections.shuffle(names, new Random(0));
+        for (String name : names) {
+            System.out.println(name);
+            files.add(create(name));
+        }
+
+        File directory = catalogManager.getFileManager().get("" + studyId, "data/vcfs/", null, sessionId).first();
+        List<StoragePipelineResult> results = indexFiles(Collections.singletonList(directory), files, new QueryOptions(), outputId);
+
+        List<String> fileNames = results.stream().map(StoragePipelineResult::getInput).map(URI::toString).collect(Collectors.toList());
+        assertTrue(ArrayUtils.isSorted(fileNames.toArray(new String[]{})));
+
+        variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+            System.out.println("variant = " + variant);
+        });
+    }
+
     @Test
     public void testBatchBySteps() throws Exception {
 
