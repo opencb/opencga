@@ -80,7 +80,8 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
         List<Variant> variants = new ArrayList<>();
         iterator(query, options).forEachRemaining(variants::add);
 
-        return new VariantQueryResult<>("", 0, variants.size(), variants.size(), "", "", variants, null);
+        return new VariantQueryResult<>("", 0, variants.size(), variants.size(), "", "", variants, null,
+                DummyVariantStorageEngine.STORAGE_ENGINE_ID);
     }
 
     @Override

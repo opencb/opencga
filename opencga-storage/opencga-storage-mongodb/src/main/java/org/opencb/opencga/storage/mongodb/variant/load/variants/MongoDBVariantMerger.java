@@ -131,16 +131,20 @@ import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVaria
  *  +-------------+-------+-------+------+           Skip if new study (nonInserted++)
  *
  *
- * ### Depending on how the data is splitted in files, and how the files are sent.
+ * ### Depending on how the data is split in files, and how the files are sent.
  *
- * The data can came splitted by chromosomes and/or by batches of samples. For the
+ * This is specially important when filling gaps (for new or missing variants). Have to
+ * select properly the "indexed files" for each region.
+ *
+ * So, in case of no filling gaps (i.e. default-chromosome is ?/?) none of this scenarios applies.
+ * The only problem may be to load overlapping data, which may corrupt the database.
+ * @see VariantStorageEngine.Options#LOAD_SPLIT_DATA
+ *
+ * The data can came split by chromosomes and/or by batches of samples. For the
  * next tables, columns are batches of samples, and the rows are different regions,
  * for example, chromosomes.
  * The cells represents a file. If the file is already merged on the database uses an X,
  * or if it's being loaded right now, an O.
- *
- * In each scenario, must be aware when filling gaps (for new or missing variants). Have to
- * select properly the "indexed files" for each region.
  *
  * X = File loaded and merged
  * O = To be merged
@@ -257,17 +261,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds));
         studyId = studyConfiguration.getStudyId();
         studyIdStr = String.valueOf(studyId);
-        String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
-        if (defaultGenotype.equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
-            logger.debug("Do not need fill unknown genotype array. DefaultGenotype is UNKNOWN_GENOTYPE({}).",
-                    DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
-            addUnknownGenotypes = false;
-        } else if (excludeGenotypes) {
-            logger.debug("Do not need fill unknown genotype array. Excluding genotypes.");
-            addUnknownGenotypes = false;
-        } else {
-            addUnknownGenotypes = true;
-        }
+        addUnknownGenotypes = loadUnknownGenotypes(studyConfiguration);
 
         checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !indexedFiles.isEmpty());
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(this.studyConfiguration);
@@ -1016,7 +1010,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 queryResult = dbAdaptor.get(new Query()
                                 .append(VariantQueryParam.ID.key(), variant.toString())
                                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".")
-                                .append(VariantQueryParam.RETURNED_STUDIES.key(), studyId),
+                                .append(VariantQueryParam.INCLUDE_STUDY.key(), studyId),
                         new QueryOptions(QueryOptions.TIMEOUT, 30_000));
             } catch (MongoExecutionTimeoutException e) {
                 fails++;
@@ -1292,7 +1286,22 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         return format;
     }
 
-    public boolean getExcludeGenotypes(StudyConfiguration studyConfiguration) {
+    public static boolean loadUnknownGenotypes(StudyConfiguration studyConfiguration) {
+        Logger logger = LoggerFactory.getLogger(MongoDBVariantMerger.class);
+        String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
+        if (defaultGenotype.equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
+            logger.debug("Do not need fill unknown genotype array. DefaultGenotype is UNKNOWN_GENOTYPE({}).",
+                    DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+            return false;
+        } else if (getExcludeGenotypes(studyConfiguration)) {
+            logger.debug("Do not need fill unknown genotype array. Excluding genotypes.");
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public static boolean getExcludeGenotypes(StudyConfiguration studyConfiguration) {
         return studyConfiguration.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
                 VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue());
     }

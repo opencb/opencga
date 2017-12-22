@@ -275,7 +275,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                     "aggregated", "aggregation-mapping-file", "annotate", "annotator", "bgzip", "calculate-stats",
                     "exclude-genotypes", "file", "gvcf", "h", "help", "include-extra-fields", "load", "log-file",
                     "L", "log-level", "merge", "o", "outdir", "overwrite-annotations", "path", "queue", "s", "study",
-                    "transform", "transformed-files", "resume"));
+                    "transform", "transformed-files", "resume", "load-split-data"));
             buildCommandLine(job.getParams(), commandLine, knownParams);
         } else {
             commandLine.append(" alignment index");

@@ -684,9 +684,6 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testDownloadAndHeadFile() throws CatalogException, IOException, InterruptedException {
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
-        long studyId = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser).first().getId();
         FileUtils catalogFileUtils = new FileUtils(catalogManager);
 
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
@@ -1172,12 +1169,8 @@ public class FileManagerTest extends GenericTest {
     // Try to delete files/folders whose status is STAGED, MISSING...
     @Test
     public void testDelete1() throws CatalogException, IOException {
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
-        long studyId = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser).first().getId();
-
         String filePath = "data/";
-        query = new Query()
+        Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), filePath);
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser);
@@ -1208,12 +1201,8 @@ public class FileManagerTest extends GenericTest {
     // It will try to delete a folder in status ready
     @Test
     public void testDelete2() throws CatalogException, IOException {
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
-        long studyId = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser).first().getId();
-
         String filePath = "data/";
-        query = new Query()
+        Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), filePath);
         File file = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser).first();
@@ -1241,12 +1230,8 @@ public class FileManagerTest extends GenericTest {
     // It will try to delete a folder in status ready and skip the trash
     @Test
     public void testDelete3() throws CatalogException, IOException {
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
-        long studyId = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser).first().getId();
-
         String filePath = "data/";
-        query = new Query()
+        Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), filePath);
         File file = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser).first();
@@ -1274,10 +1259,6 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testDeleteFile() throws CatalogException, IOException {
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
-        long studyId = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser).first().getId();
-
         List<File> result = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResult();
         for (File file : result) {
             catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, sessionIdUser);
@@ -1288,7 +1269,6 @@ public class FileManagerTest extends GenericTest {
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
-        long studyId2 = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser).getResult().get(1).getId();
         result = catalogManager.getFileManager().get(studyId2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResult();
         for (File file : result) {
             catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, sessionIdUser);

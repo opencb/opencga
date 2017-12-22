@@ -58,6 +58,7 @@ import java.util.zip.GZIPInputStream;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
 
 /**
  * Created on 06/06/17.
@@ -89,6 +90,11 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
     @Override
     protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
         super.securePreLoad(studyConfiguration, fileMetadata);
+
+        if (options.getBoolean(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(),
+                VariantStorageEngine.Options.LOAD_SPLIT_DATA.defaultValue())) {
+            throw new StorageEngineException("Unable to load split data in " + STORAGE_ENGINE_ID);
+        }
 
         final AtomicInteger ongoingLoads = new AtomicInteger(1); // this
         boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), VariantStorageEngine.Options.RESUME.defaultValue());

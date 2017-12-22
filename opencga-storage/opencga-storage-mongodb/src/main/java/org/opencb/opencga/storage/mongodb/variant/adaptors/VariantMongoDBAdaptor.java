@@ -325,7 +325,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
         Integer studyId = studyConfigurationManager.getStudyId(studyName, null, false);
-        Bson query = queryParser.parseQuery(new Query(STUDIES.key(), studyId));
+        Bson query = queryParser.parseQuery(new Query(STUDY.key(), studyId));
 
         boolean purge = options.getBoolean("purge", true);
 
@@ -423,9 +423,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Query query = new Query(REGION.key(), region)
                 .append(REFERENCE.key(), variant.getReference())
                 .append(ALTERNATE.key(), variant.getAlternate())
-                .append(STUDIES.key(), studyName)
-                .append(RETURNED_STUDIES.key(), studyName)
-                .append(RETURNED_SAMPLES.key(), sampleName);
+                .append(STUDY.key(), studyName)
+                .append(INCLUDE_STUDY.key(), studyName)
+                .append(INCLUDE_SAMPLE.key(), sampleName);
         VariantQueryResult<Variant> queryResult = get(query, new QueryOptions());
         variant = queryResult.first();
         if (variant != null && !variant.getStudies().isEmpty()) {
@@ -440,8 +440,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     region.setEnd(region.getEnd() + windowsSize);
                     query.remove(REFERENCE.key());
                     query.remove(ALTERNATE.key());
-                    query.remove(RETURNED_STUDIES.key());
-                    query.remove(RETURNED_SAMPLES.key());
+                    query.remove(INCLUDE_STUDY.key());
+                    query.remove(INCLUDE_SAMPLE.key());
                     queryResult = get(query, new QueryOptions(QueryOptions.SORT, true));
                     Iterator<Variant> iterator = queryResult.getResult().iterator();
                     while (iterator.hasNext()) {
@@ -463,7 +463,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
         watch.stop();
-        return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null);
+        return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null,
+                MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
     }
 
     @Override

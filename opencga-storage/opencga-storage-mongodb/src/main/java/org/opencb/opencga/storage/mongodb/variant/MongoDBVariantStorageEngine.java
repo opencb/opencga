@@ -61,8 +61,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILES;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
@@ -456,11 +456,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
-        if (isValidParam(query, VariantQueryParam.STUDIES)
+        if (isValidParam(query, VariantQueryParam.STUDY)
                 && studyNames.size() == 1
-                && !isValidParam(query, FILES)
-                && !isValidParam(query, SAMPLES)) {
-            query.remove(VariantQueryParam.STUDIES.key());
+                && !isValidParam(query, FILE)
+                && !isValidParam(query, SAMPLE)) {
+            query.remove(VariantQueryParam.STUDY.key());
         }
 
         convertGoToGeneQuery(query, cellBaseUtils);

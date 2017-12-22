@@ -67,6 +67,7 @@ import java.util.concurrent.TimeUnit;
 public class VariantSearchManager {
 
     public static final String CONF_SET = "OpenCGAConfSet";
+    public static final String SEARCH_ENGINE_ID = "solr";
 
     private SolrClient solrClient;
     private StorageConfiguration storageConfiguration;
@@ -75,8 +76,16 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-    public static final String SKIP_SEARCH = "skipSearch";
-    public static final String QUERY_INTERSECT = "queryIntersect";
+    public static final String USE_SEARCH_INDEX = "useSearchIndex";
+    public enum UseSearchIndex {
+        YES, NO, AUTO;
+        public static UseSearchIndex from(Map<String, Object> options) {
+            return options == null || !options.containsKey(USE_SEARCH_INDEX)
+                    ? AUTO
+                    : UseSearchIndex.valueOf(options.get(USE_SEARCH_INDEX).toString().toUpperCase());
+        }
+    }
+
     private static final int DEFAULT_INSERT_SIZE = 10000;
 
     @Deprecated
@@ -350,7 +359,7 @@ public class VariantSearchManager {
                 results.add(variantSearchToVariantConverter.convertToDataModelType(variantSearchModel));
             }
             return new VariantQueryResult<>("", dbTime,
-                    results.size(), solrResponse.getResults().getNumFound(), "Data from Solr", "", results, null);
+                    results.size(), solrResponse.getResults().getNumFound(), "", "", results, null, SEARCH_ENGINE_ID);
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error fetching from Solr", e);
         }
@@ -377,7 +386,7 @@ public class VariantSearchManager {
             int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
             return new VariantQueryResult<>("", dbTime,
-                    solrResponseBeans.size(), solrResponse.getResults().getNumFound(), "Data from Solr", "", solrResponseBeans, null);
+                    solrResponseBeans.size(), solrResponse.getResults().getNumFound(), "", "", solrResponseBeans, null, SEARCH_ENGINE_ID);
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error fetching from Solr", e);
         }
@@ -819,5 +828,11 @@ public class VariantSearchManager {
     public VariantSearchManager setSolrClient(SolrClient solrClient) {
         this.solrClient = solrClient;
         return this;
+    }
+
+    public void close() throws IOException {
+        if (solrClient != null) {
+            solrClient.close();
+        }
     }
 }

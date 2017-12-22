@@ -137,6 +137,7 @@ storageEngines:
     options:
       #Generic options
       database.name: "opencga"
+      dbadaptor.phoenix.fetch_size : -1
       annotator: cellbase_rest
       annotator.cellbase.exclude: "expression,hgvs,repeats,cytoband"
       annotator.cellbase.use_cache: true

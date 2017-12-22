@@ -172,8 +172,8 @@ public class SolrQueryParser {
 
         // now we continue with the other AND conditions...
         // type (t)
-        String key = VariantQueryParam.STUDIES.key();
-        if (isValidParam(query, VariantQueryParam.STUDIES)) {
+        String key = VariantQueryParam.STUDY.key();
+        if (isValidParam(query, VariantQueryParam.STUDY)) {
             try {
                 String value = query.getString(key);
                 VariantQueryUtils.QueryOperation op = checkOperator(value);
@@ -282,7 +282,7 @@ public class SolrQueryParser {
         }
 
         // traits
-        key = VariantQueryParam.ANNOT_TRAITS.key();
+        key = VariantQueryParam.ANNOT_TRAIT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }

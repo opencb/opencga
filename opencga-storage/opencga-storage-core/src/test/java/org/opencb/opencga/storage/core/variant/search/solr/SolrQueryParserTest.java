@@ -601,7 +601,7 @@ public class SolrQueryParserTest {
         Query query = new Query();
         //query.put(STUDIES.key(), study);
 
-        query.put(ANNOT_TRAITS.key(), "melanoma,recessive");
+        query.put(ANNOT_TRAIT.key(), "melanoma,recessive");
 
         SolrQuery solrQuery = new SolrQueryParser(null).parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
