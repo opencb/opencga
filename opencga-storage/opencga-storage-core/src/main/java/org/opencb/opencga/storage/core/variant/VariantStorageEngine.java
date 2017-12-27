@@ -308,8 +308,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException       If there is any problem related with the StorageEngine
      * @throws IOException                  If there is any IO problem
      */
-    public void annotate(Query query, ObjectMap params)
-            throws VariantAnnotatorException, StorageEngineException, IOException {
+    public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, StorageEngineException, IOException {
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, getStorageEngineId(), params);
         VariantAnnotationManager annotationManager = newVariantAnnotationManager(annotator);
         annotationManager.annotate(query, params);
@@ -326,27 +325,25 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected void annotateLoadedFiles(URI outdirUri, List<URI> files, List<StoragePipelineResult> results, ObjectMap options)
             throws StoragePipelineException {
-
-        if (!files.isEmpty() && options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue())) {
+        if (files != null && !files.isEmpty() && options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue())) {
             try {
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 int studyId = options.getInt(Options.STUDY_ID.key());
-                StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
-                        .getStudyConfiguration(studyId, new QueryOptions(options)).first();
+                StudyConfiguration studyConfiguration =
+                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyId, new QueryOptions(options)).first();
 
-                List<Integer> fileIds = new ArrayList<>();
+                List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {
                     String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
                     fileIds.add(studyConfiguration.getFileIds().get(fileName));
                 }
 
+                // Annotate only the new indexed variants
                 Query annotationQuery = new Query();
                 if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
                     annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
                 }
-                annotationQuery.put(VariantQueryParam.STUDY.key(),
-                        Collections.singletonList(studyId));    // annotate just the indexed variants
-                // annotate just the indexed variants
+                annotationQuery.put(VariantQueryParam.STUDY.key(), Collections.singletonList(studyId));
                 annotationQuery.put(VariantQueryParam.FILE.key(), fileIds);
 
                 QueryOptions annotationOptions = new QueryOptions()
@@ -386,8 +383,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException      If there is any problem related with the StorageEngine
      * @throws IOException                  If there is any IO problem
      */
-    public void calculateStats(String study, List<String> cohorts, QueryOptions options)
-            throws StorageEngineException, IOException {
+    public void calculateStats(String study, List<String> cohorts, QueryOptions options) throws StorageEngineException, IOException {
         VariantStatisticsManager statisticsManager = newVariantStatisticsManager();
         statisticsManager.calculateStatistics(study, cohorts, options);
     }
@@ -403,32 +399,31 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected void calculateStatsForLoadedFiles(URI output, List<URI> files, List<StoragePipelineResult> results, ObjectMap options)
             throws StoragePipelineException {
-
-        if (options.getBoolean(Options.CALCULATE_STATS.key(), Options.CALCULATE_STATS.defaultValue())) {
+        if (files != null && !files.isEmpty() && options != null
+                && options.getBoolean(Options.CALCULATE_STATS.key(), Options.CALCULATE_STATS.defaultValue())) {
             // TODO add filters
             try {
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
-                logger.debug("about to calculate stats");
+                logger.debug("Calculating stats for files: '{}'...", files.toString());
 
                 int studyId = options.getInt(Options.STUDY_ID.key());
                 QueryOptions statsOptions = new QueryOptions(options);
-                StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
-                        .getStudyConfiguration(studyId, new QueryOptions()).first();
+                StudyConfiguration studyConfiguration =
+                        dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyId, new QueryOptions()).first();
 
-                List<Integer> fileIds = new ArrayList<>();
+                List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {
                     String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
                     fileIds.add(studyConfiguration.getFileIds().get(fileName));
                 }
                 Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
                 if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) {
-                    logger.debug("Cohort \"{}\":{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
+                    logger.debug("Cohort '{}':{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
                     statsOptions.append(Options.UPDATE_STATS.key(), true);
                 }
-                URI statsOutputUri = output.resolve(VariantStoragePipeline.buildFilename(studyConfiguration.getStudyName(), fileIds.get(0))
-                        + "." + TimeUtils.getTime());
+                URI statsOutputUri = output.resolve(VariantStoragePipeline
+                        .buildFilename(studyConfiguration.getStudyName(), fileIds.get(0)) + "." + TimeUtils.getTime());
                 statsOptions.put(DefaultVariantStatisticsManager.OUTPUT, statsOutputUri.toString());
-
                 statsOptions.remove(Options.FILE_ID.key());
 
                 List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
@@ -456,8 +451,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param options   Other options
      * @throws StorageEngineException if there is any error
      */
-    public void fillGaps(String study, List<String> samples, ObjectMap options)
-            throws StorageEngineException {
+    public void fillGaps(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 
@@ -465,9 +459,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         searchIndex(new Query(), new QueryOptions());
     }
 
-    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
-            VariantSearchException {
-
+    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, VariantSearchException {
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
         StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
 
@@ -475,7 +467,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         // first, create the collection it it does not exist
         variantSearchManager.create(dbName);
         if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
-
             // then, load variants
             queryOptions = new QueryOptions();
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
@@ -803,12 +794,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return            true if should intersect
      * @throws StorageEngineException StorageEngineException
      */
-    protected boolean doIntersectWithSearch(Query query, QueryOptions options)
-            throws StorageEngineException {
+    protected boolean doIntersectWithSearch(Query query, QueryOptions options) throws StorageEngineException {
         UseSearchIndex useSearchIndex = UseSearchIndex.from(options);
 
-        if (!getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue())
-                || useSearchIndex.equals(UseSearchIndex.NO)) {
+        if (!getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue()) || useSearchIndex.equals(UseSearchIndex.NO)) {
             // If intersect is not active, do not intersect.
             return false;
         } else if (getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue())
@@ -821,8 +810,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         // Count only real params
         Collection<VariantQueryParam> coveredParams = coveredParams(query);
         int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
-        return searchActiveAndAlive()
-                && (coveredParams.size() >= intersectParamsThreshold);
+        return searchActiveAndAlive() && (coveredParams.size() >= intersectParamsThreshold);
     }
 
     public QueryResult distinct(Query query, String field) throws StorageEngineException {
@@ -886,7 +874,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 long numSearchResults = nativeResult.getNumTotalResults();
 
                 Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
-
                 engineQuery.put(ID.key(), variantIds);
                 long numResults = getDBAdaptor().count(engineQuery).first();
                 logger.debug("NumResults: {}, NumSearchResults: {}, NumSamples: {}", numResults, numSearchResults, sampling);
@@ -912,7 +899,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return               A FacetedQueryResult with the result of the query
      */
     public FacetedQueryResult facet(Query query, QueryOptions options) {
-
         if (query == null) {
             query = new Query();
         }
@@ -920,14 +906,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             options = new QueryOptions();
         }
 
-        FacetedQueryResult queryResult;
+        FacetedQueryResult facetedQueryResult;
         try {
-            queryResult = getVariantSearchManager().facetedQuery(dbName, query, options);
+            facetedQueryResult = getVariantSearchManager().facetedQuery(dbName, query, options);
         } catch (IOException | VariantSearchException | StorageEngineException e) {
             throw Throwables.propagate(e);
         }
 
-        return queryResult;
+        return facetedQueryResult;
     }
 
     protected boolean searchActiveAndAlive() throws StorageEngineException {
@@ -973,7 +959,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public void close() throws IOException {
         cellBaseUtils = null;
-        if (variantSearchManager.get() == null) {
+        if (variantSearchManager.get() != null) {
             try {
                 variantSearchManager.get().close();
             } finally {
