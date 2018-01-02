@@ -48,13 +48,13 @@ initOpencgaR <- function(host=NULL, version="v1", user=NULL, opencgaConfig=NULL)
     }
     
     # Download swagger
-    if(!endsWith(x = host, suffix = "/")){
-        host <- paste0(host, "/")
+    if(!endsWith(x = ocga@host, suffix = "/")){
+        ocga@host <- paste0(ocga@host, "/")
     }
-    if (!grepl("webservices/rest", host)){
-        host <- paste0(host, "webservices/rest/")
+    if (!grepl("webservices/rest", ocga@host)){
+        ocga@host <- paste0(ocga@host, "webservices/rest/")
     }
-    baseurl <- paste0(host, "swagger.json")
+    baseurl <- paste0(ocga@host, "swagger.json")
     swagger <- jsonlite::fromJSON(baseurl)
     ocga@swagger <- swagger
     return(ocga)
