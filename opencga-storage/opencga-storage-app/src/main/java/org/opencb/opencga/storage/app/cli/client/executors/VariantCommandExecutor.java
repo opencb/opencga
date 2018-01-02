@@ -237,6 +237,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             params.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
         }
         params.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
+        params.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), indexVariantsCommandOptions.loadSplitData);
 
         if (indexVariantsCommandOptions.aggregationMappingFile != null) {
             // TODO move this options to new configuration.yml
@@ -379,9 +380,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         Query query = new Query();
         if (annotateVariantsCommandOptions.filterRegion != null) {
             query.put(VariantQueryParam.REGION.key(), annotateVariantsCommandOptions.filterRegion);
-        }
-        if (annotateVariantsCommandOptions.filterChromosome != null) {
-            query.put(VariantQueryParam.CHROMOSOME.key(), annotateVariantsCommandOptions.filterChromosome);
         }
         if (annotateVariantsCommandOptions.filterGene != null) {
             query.put(VariantQueryParam.GENE.key(), annotateVariantsCommandOptions.filterGene);

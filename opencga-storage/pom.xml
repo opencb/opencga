@@ -83,6 +83,12 @@
                 <version>${solr.version}</version>
                 <scope>test</scope>
             </dependency>
+            <!--Ensure commons-io with version 2.5. Required for solr-->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.5</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

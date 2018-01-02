@@ -397,7 +397,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 if (i < 0) {
                     filteredSampleData.add(UNKNOWN_SAMPLE_DATA);
                 } else {
-                    filteredSampleData.add(sampleData.get(i));
+                    if (i < sampleData.size()) {
+                        filteredSampleData.add(sampleData.get(i));
+                    } else {
+                        filteredSampleData.add(UNKNOWN_SAMPLE_DATA);
+                    }
                 }
             }
             return filteredSampleData;
@@ -472,6 +476,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 //        calculatePassCallRates(row, attributesMap, loadedSamplesSize);
 
         Integer gtIdx = studyEntry.getFormatPositions().get(VariantMerger.GT_KEY);
+        Integer ftIdx = studyEntry.getFormatPositions().get(VariantMerger.GENOTYPE_FILTER_KEY);
         if (gtIdx != null) {
             Set<Integer> sampleWithVariant = new HashSet<>();
             for (String genotype : row.getGenotypes()) {
@@ -518,7 +523,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
             // Fill gaps (with HOM_REF)
             int gapCounter = 0;
-            List<String> defaultSampleData = Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE);
+            List<String> defaultSampleData;
+            if (ftIdx == null) {
+                defaultSampleData = Collections.singletonList(VariantTableStudyRow.HOM_REF);
+            } else {
+                defaultSampleData = Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE);
+            }
             for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
                 if (studyEntry.getSamplesData().get(i) == null) {
                     gapCounter++;
@@ -548,7 +558,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
         }
 
-        Integer ftIdx = studyEntry.getFormatPositions().get(VariantMerger.GENOTYPE_FILTER_KEY);
         if (ftIdx != null) {
             // Set pass field
             int passCount = loadedSamplesSize;

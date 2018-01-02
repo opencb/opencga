@@ -687,8 +687,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         System.out.println("Query from Archive table");
         dbAdaptor.iterator(
                 new Query()
-                        .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
-                        .append(VariantQueryParam.FILES.key(), fileId),
+                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+                        .append(VariantQueryParam.FILE.key(), fileId),
                 new QueryOptions("archive", true))
                 .forEachRemaining(variant -> {
                     if (VARIANT_TYPES.contains(variant.getType())) {

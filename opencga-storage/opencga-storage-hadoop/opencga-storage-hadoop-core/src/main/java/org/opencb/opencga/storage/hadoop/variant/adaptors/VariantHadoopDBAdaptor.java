@@ -88,6 +88,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final VariantSqlQueryParser queryParser;
     private final VariantHBaseQueryParser hbaseQueryParser;
     private final HadoopVariantFileMetadataDBAdaptor variantFileMetadataDBAdaptor;
+    private final int phoenixFetchSize;
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
@@ -116,6 +117,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
                 studyConfigurationManager.get(), cellBaseUtils, clientSideSkip);
+
+        phoenixFetchSize = options.getInt(HadoopVariantStorageEngine.DBADAPTOR_PHOENIX_FETCH_SIZE, -1);
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
 
@@ -308,7 +311,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 
         if (archiveIterator) {
-            String study = query.getString(STUDIES.key());
+            String study = query.getString(STUDY.key());
             StudyConfiguration studyConfiguration;
             int studyId;
             if (StringUtils.isNumeric(study)) {
@@ -319,7 +322,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 studyId = studyConfiguration.getStudyId();
             }
 
-            int fileId = query.getInt(FILES.key());
+            int fileId = query.getInt(FILE.key());
             if (!studyConfiguration.getFileIds().containsValue(fileId)) {
                 return VariantDBIterator.emptyIterator();
             }
@@ -329,7 +332,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             for (Integer sampleId : samlpeIds) {
                 returnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
             }
-            query.put(RETURNED_SAMPLES.key(), returnedSamples);
+            query.put(INCLUDE_SAMPLE.key(), returnedSamples);
 
             Region region = null;
             if (!StringUtils.isEmpty(query.getString(REGION.key()))) {
@@ -397,7 +400,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 }
 
                 Statement statement = getJdbcConnection().createStatement(); // Statemnet closed by iterator
-                statement.setFetchSize(options.getInt("batchSize", -1));
+                statement.setFetchSize(options.getInt("batchSize", phoenixFetchSize));
                 ResultSet resultSet = statement.executeQuery(sql); // RS closed by iterator
                 List<String> formats = getIncludeFormats(query);
                 String unknownGenotype = null;

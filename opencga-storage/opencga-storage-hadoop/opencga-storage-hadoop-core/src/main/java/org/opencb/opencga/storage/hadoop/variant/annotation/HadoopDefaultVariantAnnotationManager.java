@@ -17,8 +17,11 @@
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
@@ -42,9 +45,12 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
-    protected QueryOptions getIteratorQueryOptions(ObjectMap params) {
-        QueryOptions iteratorQueryOptions = super.getIteratorQueryOptions(params);
-        iteratorQueryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+    protected QueryOptions getIteratorQueryOptions(Query query, ObjectMap params) {
+        QueryOptions iteratorQueryOptions = super.getIteratorQueryOptions(query, params);
+        if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.FILE)
+                || !VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOTATION_EXISTS)) {
+            iteratorQueryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+        }
         return iteratorQueryOptions;
     }
 }

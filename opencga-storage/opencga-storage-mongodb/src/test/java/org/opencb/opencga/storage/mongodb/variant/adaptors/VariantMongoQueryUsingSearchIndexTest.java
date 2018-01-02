@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
 import org.junit.After;
 import org.junit.Before;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUsingSearchIndexTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.io.IOException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements MongoDBVariantStorageTest {
+public class VariantMongoQueryUsingSearchIndexTest extends VariantQueryUsingSearchIndexTest implements MongoDBVariantStorageTest {
 
     @Before
     public void setUpLoggers() throws Exception {

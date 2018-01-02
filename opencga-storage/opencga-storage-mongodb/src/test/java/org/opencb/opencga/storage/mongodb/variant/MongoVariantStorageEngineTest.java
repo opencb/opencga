@@ -839,26 +839,26 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     @Test
     public void checkCanLoadSampleBatchTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 1);
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 1, false);
         studyConfiguration.getIndexedFiles().add(1);
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 2);
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 2, true);
         studyConfiguration.getIndexedFiles().add(2);
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 3);
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 3, false);
         studyConfiguration.getIndexedFiles().add(3);
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 4);
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 4, true);
         studyConfiguration.getIndexedFiles().add(4);
     }
 
     @Test
     public void checkCanLoadSampleBatch2Test() throws StorageEngineException {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 4);
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 4, false);
         studyConfiguration.getIndexedFiles().add(4);
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 3);
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 3, true);
         studyConfiguration.getIndexedFiles().add(3);
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 2);
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 2, false);
         studyConfiguration.getIndexedFiles().add(2);
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 1);
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 1, true);
         studyConfiguration.getIndexedFiles().add(1);
     }
 
@@ -866,18 +866,20 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public void checkCanLoadSampleBatchFailTest() throws StorageEngineException {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
         studyConfiguration.getIndexedFiles().addAll(Arrays.asList(1, 3, 4));
-        thrown.expect(StorageEngineException.class);
-        thrown.expectMessage("Another sample batch has been loaded");
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 2);
+        StorageEngineException e = MongoVariantStorageEngineException.alreadyLoadedSamples(studyConfiguration, 2);
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 2, false);
     }
 
     @Test
     public void checkCanLoadSampleBatchFail2Test() throws StorageEngineException {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
         studyConfiguration.getIndexedFiles().addAll(Arrays.asList(1, 2));
-        thrown.expect(StorageEngineException.class);
-        thrown.expectMessage("There was some already indexed samples, but not all of them");
-        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 5);
+        StorageEngineException e = MongoVariantStorageEngineException.alreadyLoadedSomeSamples(studyConfiguration, 5);
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(studyConfiguration, 5, false);
     }
 
     @SuppressWarnings("unchecked")
@@ -901,6 +903,11 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append("s7", 7)
                 .append("s8", 8)
         ));
+        studyConfiguration.getFileIds().put("file1.vcf", 1);
+        studyConfiguration.getFileIds().put("file2.vcf", 2);
+        studyConfiguration.getFileIds().put("file3.vcf", 3);
+        studyConfiguration.getFileIds().put("file4.vcf", 4);
+        studyConfiguration.getFileIds().put("file5.vcf", 5);
         return studyConfiguration;
     }
 

@@ -227,9 +227,9 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
 
     public static Query buildQuery(Object study, Collection<?> sampleIds, Collection<?> fileIds) {
         return new Query()
-                .append(VariantQueryParam.STUDIES.key(), study)
-                .append(VariantQueryParam.FILES.key(), fileIds)
-                .append(VariantQueryParam.RETURNED_SAMPLES.key(), sampleIds);
+                .append(VariantQueryParam.STUDY.key(), study)
+                .append(VariantQueryParam.FILE.key(), fileIds)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
     }
 
     public static QueryOptions buildQueryOptions() {

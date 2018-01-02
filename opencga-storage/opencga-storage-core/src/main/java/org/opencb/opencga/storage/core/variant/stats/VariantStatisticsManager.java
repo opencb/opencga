@@ -93,10 +93,10 @@ public interface VariantStatisticsManager {
     static Query buildInputQuery(StudyConfiguration studyConfiguration, Collection<?> cohorts, boolean overwrite, boolean updateStats,
                                  ObjectMap options) {
         // TODO: Add RETURNED_FILES and RETURNED_SAMPLES
-        Query readerQuery = new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
-                .append(VariantQueryParam.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
+        Query readerQuery = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), studyConfiguration.getStudyId());
         if (options.containsKey(VariantStorageEngine.Options.FILE_ID.key())) {
-            readerQuery.append(VariantQueryParam.FILES.key(), options.get(VariantStorageEngine.Options.FILE_ID.key()));
+            readerQuery.append(VariantQueryParam.FILE.key(), options.get(VariantStorageEngine.Options.FILE_ID.key()));
         }
         if (options.containsKey(VariantQueryParam.REGION.key())) {
             Object region = options.get(VariantQueryParam.REGION.key());
@@ -104,7 +104,7 @@ public interface VariantStatisticsManager {
         }
         if (updateStats && !overwrite) {
             //Get all variants that not contain any of the required cohorts
-            readerQuery.append(VariantQueryParam.COHORTS.key(),
+            readerQuery.append(VariantQueryParam.COHORT.key(),
                     cohorts.stream().map((cohort) -> NOT + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
                             .joining(AND)));
         }

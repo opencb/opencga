@@ -120,8 +120,8 @@ public class VariantStorageManager extends StorageManager {
      */
     public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String study, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
-        Query query = new Query(VariantQueryParam.RETURNED_STUDIES.key(), study)
-                .append(VariantQueryParam.STUDIES.key(), study);
+        Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), study)
+                .append(VariantQueryParam.STUDY.key(), study);
         return exportData(outputFile, outputFormat, query, new QueryOptions(), sessionId);
     }
 
@@ -179,16 +179,18 @@ public class VariantStorageManager extends StorageManager {
 
     public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, VariantSearchException,
             IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
-        searchIndex(study, new Query(), new QueryOptions(), sessionId);
+        searchIndex(new Query(STUDY.key(), study), new QueryOptions(), sessionId);
     }
 
-    public void searchIndex(String study, Query query, QueryOptions queryOptions, String sessionId) throws StorageEngineException,
+    public void searchIndex(Query query, QueryOptions queryOptions, String sessionId) throws StorageEngineException,
             IOException, VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, study);
+//        String userId = catalogManager.getUserManager().getUserId(sessionId);
+//        long studyId = catalogManager.getStudyManager().getId(userId, study);
+        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
         DataStore dataStore = getDataStore(studyId, sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        catalogUtils.parseQuery(query, sessionId);
         variantStorageEngine.searchIndex(query, queryOptions);
     }
 
@@ -352,7 +354,7 @@ public class VariantStorageManager extends StorageManager {
 
     public VariantQueryResult<Variant> getPhased(Variant variant, String study, String sample, String sessionId, QueryOptions options)
             throws CatalogException, IOException, StorageEngineException {
-        return secure(new Query(VariantQueryParam.STUDIES.key(), study), options, sessionId,
+        return secure(new Query(VariantQueryParam.STUDY.key(), study), options, sessionId,
                 engine -> engine.getPhased(variant.toString(), study, sample, options, 5000));
     }
 
@@ -399,7 +401,7 @@ public class VariantStorageManager extends StorageManager {
     public VariantQueryResult<Variant> intersect(Query query, QueryOptions queryOptions, List<String> studyIds, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query intersectQuery = new Query(query);
-        intersectQuery.put(VariantQueryParam.STUDIES.key(), String.join(VariantQueryUtils.AND, studyIds));
+        intersectQuery.put(VariantQueryParam.STUDY.key(), String.join(VariantQueryUtils.AND, studyIds));
         return get(intersectQuery, queryOptions, sessionId);
     }
 
@@ -493,7 +495,7 @@ public class VariantStorageManager extends StorageManager {
                     samplesMap.put(study.getId(), samplesQueryResult.getResult());
                     samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
                 }
-                query.append(VariantQueryParam.RETURNED_SAMPLES.key(), returnedSamples);
+                query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), returnedSamples);
             }
         }
         return samplesMap;
@@ -531,7 +533,7 @@ public class VariantStorageManager extends StorageManager {
         return regions;
     }
 
-    public static <T extends ObjectMap> Query getVariantQuery(T queryOptions) {
+    public static Query getVariantQuery(Map<String, ?> queryOptions) {
         Query query = new Query();
 
         for (VariantQueryParam queryParams : VariantQueryParam.values()) {
@@ -539,8 +541,8 @@ public class VariantStorageManager extends StorageManager {
                 query.put(queryParams.key(), queryOptions.get(queryParams.key()));
             }
         }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.SAMPLE_FILTER.key())) {
-            query.put(VariantCatalogQueryUtils.SAMPLE_FILTER.key(), queryOptions.get(VariantCatalogQueryUtils.SAMPLE_FILTER.key()));
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.SAMPLE_ANNOTATION.key())) {
+            query.put(VariantCatalogQueryUtils.SAMPLE_ANNOTATION.key(), queryOptions.get(VariantCatalogQueryUtils.SAMPLE_ANNOTATION.key()));
         }
         if (queryOptions.containsKey(VariantCatalogQueryUtils.PROJECT.key())) {
             query.put(VariantCatalogQueryUtils.PROJECT.key(), queryOptions.get(VariantCatalogQueryUtils.PROJECT.key()));
@@ -589,7 +591,7 @@ public class VariantStorageManager extends StorageManager {
 
         for (BeaconResponse.Beacon beacon : beacons) {
             Query query = new Query();
-            query.put(STUDIES.key(), beacon.getId());
+            query.put(STUDY.key(), beacon.getId());
             int position1based = beaconQuery.getPosition() + 1;
             query.put(REGION.key(), new Region(beaconQuery.getChromosome(), position1based, position1based));
             query.putIfNotEmpty(REFERENCE.key(), beaconQuery.getReference());

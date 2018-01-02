@@ -107,9 +107,12 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         }
     }
 
+    /**
+     * Get the next non-empty valid {@link #variantDBIterator}. If none, use {@link #emptyIterator()}
+     */
     private void nextVariantIterator() {
-        terminateIterator();
-        if (queryIterator.hasNext()) {
+        while (!variantDBIterator.hasNext() && queryIterator.hasNext()) {
+            terminateIterator();
             Query query = queryIterator.next();
             QueryOptions options;
             if (maxResults != Integer.MAX_VALUE) {
@@ -120,8 +123,9 @@ public class MultiVariantDBIterator extends VariantDBIterator {
                 options = this.options;
             }
             variantDBIterator = iteratorFactory.apply(query, options);
-        } else {
-            variantDBIterator = emptyIterator();
+        }
+        if (!variantDBIterator.hasNext()) {
+            terminateIterator();
         }
     }
 

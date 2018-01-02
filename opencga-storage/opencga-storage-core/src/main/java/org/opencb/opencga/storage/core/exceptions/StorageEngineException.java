@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -82,9 +83,32 @@ public class StorageEngineException extends Exception {
                 + "Relaunch with " + VariantStorageEngine.Options.RESUME.key() + "=true to finish the operation.");
     }
 
-
     public static StorageEngineException unableToExecute(String message, int fileId, String fileName) {
         return new StorageEngineException("Unable to perform action over file \"" + fileName + "\" (" + fileId + "). " + message);
     }
 
+    public static StorageEngineException alreadyLoadedSamples(StudyConfiguration studyConfiguration, int fileId) {
+        LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Unable to load file '").append(studyConfiguration.getFileIds().inverse().get(fileId)).append("'. ");
+        if (sampleIds != null && sampleIds.size() == 1) {
+            sb.append("Sample '").append(studyConfiguration.getSamplesInFiles().get(fileId).iterator().next()).append("' is ");
+        } else {
+            sb.append("The samples from this file are ");
+        }
+        sb.append("already loaded. "
+                + "This variant storage does not allow to load multiple files from the same sample in the same study. "
+                + "If the variants of the new file does not overlap with the already loaded variants, "
+                + "because they are from a different chromosome, or a different variant type, repeat the operation with the option ")
+                .append("-D").append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key()).append("=true . ")
+                .append("WARNING: Wrong usage of this option may cause a data corruption in the database!");
+        return new StorageEngineException(sb.toString());
+    }
+
+    public static StorageEngineException alreadyLoadedSomeSamples(StudyConfiguration studyConfiguration, int fileId) {
+        return new StorageEngineException(
+                "Unable to load file '" + studyConfiguration.getFileIds().inverse().get(fileId) + "'. "
+                        + "There was some already loaded samples, but not all of them.");
+    }
 }
