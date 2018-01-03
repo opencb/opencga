@@ -3,8 +3,8 @@ title: "Introduction to opencgaR"
 author:
   - Marta Bleda
   - Mohammed Omar Elsiddieg Abdallah
-date: "`r doc_date()`"
-package: "`r pkg_ver('opencgaR')`"
+date: "`r BiocStyle::doc_date()`"
+package: "`r BiocStyle::pkg_ver('opencgaR')`"
 vignette: >
   %\VignetteIndexEntry{"Introduction to opencgaR"}
   %\VignetteEngine{knitr::rmarkdown}

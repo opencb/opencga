@@ -9,6 +9,7 @@
 #' This class initializes the OpencgaR object. It holds the default configuration
 #' required by OpencgaR methods to connect to OpenCGA web services. By defult,
 #' it is configured to query HGVA (http://hgva.opencb.org/).
+#' @importFrom methods new slot
 #' @param host a character specifying the host url, e.g.
 #' "http://bioinfo.hpc.cam.ac.uk/hgva"
 #' @param version a character specifying the API version, e.g. "v1"
@@ -299,6 +300,7 @@ opencgaHelp <- function(opencga, client=NULL, action=NULL){
     }
 }
 
+#' @importFrom utils tail
 getMethodInfo <- function(opencga, categ, subcat, action){
     allApis <- names(opencga@swagger$paths)
     methodsInCategoryLogic <- sapply(strsplit(x = allApis, split = "/"), "[", 3) == categ
