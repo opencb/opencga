@@ -2,34 +2,36 @@
 #' OpencgaR init function
 #' @aliases initOpencgaR
 #' @title initOpencgaR
-#' 
-#' @description  This function inicializes the OpencgaR object with the 
+#'
+#' @description  This function inicializes the OpencgaR object with the
 #' necessary details to generate a connection.
 #' @details
-#' This class initializes the OpencgaR object. It holds the default configuration 
-#' required by OpencgaR methods to connect to OpenCGA web services. By defult, 
+#' This class initializes the OpencgaR object. It holds the default configuration
+#' required by OpencgaR methods to connect to OpenCGA web services. By defult,
 #' it is configured to query HGVA (http://hgva.opencb.org/).
-#' @param host a character specifying the host url, e.g.  
+#' @param host a character specifying the host url, e.g.
 #' "http://bioinfo.hpc.cam.ac.uk/hgva"
 #' @param version a character specifying the API version, e.g. "v1"
 #' @return An object of class OpencgaR
-#' @seealso  \url{https://github.com/opencb/opencga/wiki} 
-#' and the RESTful API documentation 
+#' @seealso  \url{https://github.com/opencb/opencga/wiki}
+#' and the RESTful API documentation
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @examples
-#' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", 
+#' \dontrun{
+#' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1",
 #' user = "user")
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-#' 
+#'
 #' # Configuration in list format
 #' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/",
 #' user="user"))
 #' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-#' 
+#'
 #' # Configuration in file format ("YAML" or "JSON")
 #' conf <- "/path/to/conf/client-configuration.yml"
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' }
 #' @export
 
 initOpencgaR <- function(host=NULL, version="v1", user=NULL, opencgaConfig=NULL){
@@ -46,7 +48,7 @@ initOpencgaR <- function(host=NULL, version="v1", user=NULL, opencgaConfig=NULL)
     }else{
         ocga <- opencgaReadConfig(opencgaConfig)
     }
-    
+
     # Download swagger
     if(!endsWith(x = ocga@host, suffix = "/")){
         ocga@host <- paste0(ocga@host, "/")
@@ -70,24 +72,26 @@ setMethod("show", signature = "OpencgaR", definition = function(object){
 ################################################################################
 #' Read OpenCGA configuration
 #'
-#' @param conf a list or the path to a file (in "JSON" or "YAML" format) 
+#' @param conf a list or the path to a file (in "JSON" or "YAML" format)
 #' containing the host and version configurations to set OpenCGA connection
 #'
 #' @return a OpencgaR object
-#' 
+#'
 #' @examples
+#' \dontrun{
 #' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-#' 
+#'
 #' # Configuration in list format
 #' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
 #' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-#' 
+#'
 #' # Configuration in file format ("YAML" or "JSON")
 #' conf <- "/path/to/conf/client-configuration.yml"
 #' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' }
 
 opencgaReadConfig <- function(conf){
     if (class(conf) == "list"){
@@ -130,17 +134,17 @@ readConfFile <- function(conf){
         type <- configr::get.config.type(conf)
         print(paste("Reading configuration file in", type, "format", sep = " "))
         conf.obj <- configr::read.config(conf, warn = F)
-        
+
         readConfList(conf.obj)
     }
 }
 
 ################################################################################
 #' @title Login to OpenCGA Web Services
-#' 
+#'
 #' @description
 #' A function to login Opencga web services
-#' 
+#'
 #' @aliases OpencgaLogin
 #' @param ocga an object of type OpencgaR generated using initOpencgaR
 #' @param userid a charatcer with the username
@@ -148,22 +152,23 @@ readConfFile <- function(conf){
 #' #@param version a character with the OpenCGA version to use
 #' @param interactive whether to launch a graphical interface, FALSE by default
 #' #@param ... Any other arguments
-#' 
+#'
 #' @return an Opencga class object
 #' @examples
+#' \dontrun{
 #' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-#' 
+#'
 #' # Configuration in list format
 #' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
 #' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-#' 
+#'
 #' # Configuration in file format ("YAML" or "JSON")
 #' conf <- "/path/to/conf/client-configuration.yml"
 #' con <- initOpencgaR(opencgaConfig=conf)
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-#' 
+#' }
 #' @export
 opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
     if (class(opencga) == "OpencgaR"){
@@ -172,7 +177,7 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
     }else{
         stop("Please, provide a valid config object. See initOpencgaR")
     }
-    
+
     if(!endsWith(x = host, suffix = "/")){
         host <- paste0(host, "/")
     }
@@ -180,22 +185,22 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
         host <- paste0(host, "webservices/rest/")
     }
     baseurl <- paste0(host, version,"/users")
-    
+
     if(interactive==TRUE){
         cred <- user_login()
         userid <- cred$user
         passwd <- cred$pass
     }
-    
+
     baseurl <- paste(baseurl, userid, "login", sep="/")
-    
+
     # Send request
     query <- httr::POST(baseurl, body = list(password = passwd), encode = "json")
-    
+
     # check query status
     httr::warn_for_status(query)
     httr::stop_for_status(query)
-    
+
     res <- httr::content(query)
     sessionId <- res$response[[1]]$result[[1]]$sessionId
     opencga@user <- userid
@@ -205,15 +210,16 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
 
 ################################################################################
 #' @title Logout from OpenCGA Web Services
-#' 
+#'
 #' @description
 #' A function to logout from Opencga web services
-#' 
+#'
 #' @aliases OpencgaLogout
 #' @param ocga an object of type OpencgaR generated using opencgaLogin
 #' @examples
+#' \dontrun{
 #' opencgaLogout(con)
-#' 
+#' }
 #' @export
 opencgaLogout <- function(opencga){
   if (class(opencga) != "OpencgaR"){
@@ -225,37 +231,38 @@ opencgaLogout <- function(opencga){
 
 ################################################################################
 #' @title Get help from OpenCGA Web Services
-#' 
+#'
 #' @description
-#' A function extract all the available information from Opencga web services 
+#' A function extract all the available information from Opencga web services
 #' at the defined host
-#' 
+#'
 #' @aliases OpencgaHelp
-#' @param opencga an object of type OpencgaR generated using initOpencga or 
+#' @param opencga an object of type OpencgaR generated using initOpencga or
 #' opencgaLogin
-#' 
-#' @examples 
+#'
+#' @examples
+#' \dontrun{
 #' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1")
 #' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 #' opencgaHelp(con, client="userClient", action="info")
-#' 
+#' }
 #' @export
 opencgaHelp <- function(opencga, client=NULL, action=NULL){
     if (class(opencga) != "OpencgaR"){
         stop("Please, provide a valid config object. See initOpencgaR")
     }
     if(length(opencga@swagger) == 0) {
-        stop("ERROR: Help cannot be displayed. The swagger JSON could not be 
-              downloaded from your host.\nPlease try initialising your session 
+        stop("ERROR: Help cannot be displayed. The swagger JSON could not be
+              downloaded from your host.\nPlease try initialising your session
               again or have a look at the swagger located in your host.")
     }
-    
+
     allApis <- names(opencga@swagger$paths)
 
     # General help: Return all paths
     if (is.null(client) & is.null(action)){
         gsub(pattern="\\/\\{apiVersion\\}", replacement="", x=allApis)
-    
+
     # Client help: return all possible paths within a method (subcategory != NULL)
     # Action help: return all possible params for the action in the client
     }else{
@@ -297,17 +304,17 @@ getMethodInfo <- function(opencga, categ, subcat, action){
     methodsInCategoryLogic <- sapply(strsplit(x = allApis, split = "/"), "[", 3) == categ
     methodsInCategory <- allApis[methodsInCategoryLogic]
     lenParams <- unlist(lapply(X = strsplit(x = allApis, split = "/"), FUN = length))
-    
+
     filterParams <- function(x){
         x <- subset(x, !name %in% c("apiVersion", "version", "sid", "Authorization"))
         x <- x[, c("name", "in", "required", "type", "description")]
         return(x)
     }
-    
+
     if (is.null(subcat)){
         simpleMethodsLogic <- lenParams < 6
         simpleMethodsInCat <- allApis[methodsInCategoryLogic & simpleMethodsLogic]
-        
+
         if(is.null(action)){
             helpResp <- gsub(pattern="\\/\\{apiVersion\\}", replacement="", x=simpleMethodsInCat)
         }else{
@@ -324,12 +331,12 @@ getMethodInfo <- function(opencga, categ, subcat, action){
                 helpResp <- paste0("The action '", action, "' could not be found in the specified client.")
             }
         }
-        
+
     }else{
         complexMethodsLogic <- lenParams >= 6
         subcatInMethodsLogic <- sapply(strsplit(x = allApis, split = "/"), "[", 5) == subcat
         complexMethodsInCat <- allApis[methodsInCategoryLogic & complexMethodsLogic & subcatInMethodsLogic]
-        
+
         if(is.null(action)){
             helpResp <- gsub(pattern="\\/\\{apiVersion\\}", replacement="", x=complexMethodsInCat)
         }else{
@@ -349,4 +356,3 @@ getMethodInfo <- function(opencga, categ, subcat, action){
     }
     print(helpResp)
 }
-

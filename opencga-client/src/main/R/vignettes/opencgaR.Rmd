@@ -1,6 +1,6 @@
 ---
 title: "Introduction to opencgaR"
-author: 
+author:
   - Marta Bleda
   - Mohammed Omar Elsiddieg Abdallah
 date: "`r doc_date()`"
@@ -9,7 +9,7 @@ vignette: >
   %\VignetteIndexEntry{"Introduction to opencgaR"}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}  
-output: 
+output:
    BiocStyle::html_document
 ---
 # Introduction
@@ -27,7 +27,7 @@ The *__initOpencgaR__* function accepts either host and version information or a
 
 The code below shows the different ways to initialise the OpenCGA connection with the REST server.
 
-```r
+```{r, eval=FALSE}
 # Initialise connection specifying host and REST version
 con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1")
 
@@ -42,7 +42,7 @@ con <- initOpencgaR(opencgaConfig=conf)
 
 Once the connection has been initialised users can login specifying their OpenCGA user ID and password.
 
-```r
+```{r, eval=FALSE}
 # Log in
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "pass")
 ```
