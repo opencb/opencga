@@ -198,8 +198,8 @@ parseResponse <- function(resp, content){
         }
     }else{
         print("Query unsuccessful.")
-        print(paste("Category:", http_status(resp)$category))
-        print(paste("Reason:", http_status(resp)$reason))
+        print(paste("Category:", httr::http_status(resp)$category))
+        print(paste("Reason:", httr::http_status(resp)$reason))
         if (js[[1]]$warning != ""){
             print(paste("WARNING:", js[[1]]$warning))
             print()

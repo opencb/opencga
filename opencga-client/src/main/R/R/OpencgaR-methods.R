@@ -186,7 +186,38 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
         host <- paste0(host, "webservices/rest/")
     }
     baseurl <- paste0(host, version,"/users")
-
+    
+    # Interactive login
+    if(requireNamespace("miniUI", quietly = TRUE) & requireNamespace("shiny", quietly = TRUE)){
+        user_login <- function() {
+            ui <- miniUI::miniPage(
+                miniUI::gadgetTitleBar("Please enter your username and password"),
+                miniUI::miniContentPanel(
+                    shiny::textInput("username", "Username"),
+                    shiny::passwordInput("password", "Password")))
+            
+            server <- function(input, output) {
+                shiny::observeEvent(input$done, {
+                    user <- input$username
+                    pass <- input$password
+                    res <- list(user=user, pass=pass)
+                    shiny::stopApp(res)
+                })
+                shiny::observeEvent(input$cancel, {
+                    shiny::stopApp(stop("No password.", call. = FALSE))
+                })
+            }
+            
+            shiny::runGadget(ui, server, viewer=shiny::dialogViewer("user_login"))
+        }
+    }else{
+        print("The 'miniUI' and 'shiny' packages are required to run the 
+           interactive login, please install it and try again.
+           To install 'miniUI': install.packages('miniUI')
+           To install 'shiny': install.packages('shiny')")
+    }
+    # end interactive login
+    
     if(interactive==TRUE){
         cred <- user_login()
         userid <- cred$user
@@ -208,6 +239,7 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE){
     opencga@sessionId <- sessionId
     return(opencga)
 }
+
 
 ################################################################################
 #' @title Logout from OpenCGA Web Services
@@ -308,7 +340,7 @@ getMethodInfo <- function(opencga, categ, subcat, action){
     lenParams <- unlist(lapply(X = strsplit(x = allApis, split = "/"), FUN = length))
 
     filterParams <- function(x){
-        x <- subset(x, !name %in% c("apiVersion", "version", "sid", "Authorization"))
+        x <- subset(x, !"name" %in% c("apiVersion", "version", "sid", "Authorization"))
         x <- x[, c("name", "in", "required", "type", "description")]
         return(x)
     }
@@ -323,10 +355,10 @@ getMethodInfo <- function(opencga, categ, subcat, action){
             availActions <- sapply(strsplit(x = simpleMethodsInCat, split = "/"), tail, 1)
             if (action %in% availActions){
                 selMethodAction <- simpleMethodsInCat[sapply(strsplit(x = simpleMethodsInCat, split = "/"), tail, 1) == action]
-                if(grepl(pattern = "DEPRECATED", x = opencga@swagger$paths[selMethodAction][[names(con@swagger$paths[selMethodAction])]][[1]]$description)){
-                    helpResp <- opencga@swagger$paths[selMethodAction][[names(con@swagger$paths[selMethodAction])]][[1]]$description
+                if(grepl(pattern = "DEPRECATED", x = opencga@swagger$paths[selMethodAction][[names(opencga@swagger$paths[selMethodAction])]][[1]]$description)){
+                    helpResp <- opencga@swagger$paths[selMethodAction][[names(opencga@swagger$paths[selMethodAction])]][[1]]$description
                 }else{
-                    helpResp <- opencga@swagger$paths[selMethodAction][[names(con@swagger$paths[selMethodAction])]][[1]]$parameters
+                    helpResp <- opencga@swagger$paths[selMethodAction][[names(opencga@swagger$paths[selMethodAction])]][[1]]$parameters
                     helpResp <- filterParams(helpResp)
                 }
             }else{
@@ -345,10 +377,10 @@ getMethodInfo <- function(opencga, categ, subcat, action){
             availActions <- sapply(strsplit(x = complexMethodsInCat, split = "/"), tail, 1)
             if (action %in% availActions){
                 selMethodAction <- complexMethodsInCat[sapply(strsplit(x = complexMethodsInCat, split = "/"), tail, 1) == action]
-                if(grepl(pattern = "DEPRECATED", x = opencga@swagger$paths[selMethodAction][[names(con@swagger$paths[selMethodAction])]][[1]]$description)){
-                    helpResp <- opencga@swagger$paths[selMethodAction][[names(con@swagger$paths[selMethodAction])]][[1]]$description
+                if(grepl(pattern = "DEPRECATED", x = opencga@swagger$paths[selMethodAction][[names(opencga@swagger$paths[selMethodAction])]][[1]]$description)){
+                    helpResp <- opencga@swagger$paths[selMethodAction][[names(opencga@swagger$paths[selMethodAction])]][[1]]$description
                 }else{
-                    helpResp <- opencga@swagger$paths[selMethodAction][[names(con@swagger$paths[selMethodAction])]][[1]]$parameters
+                    helpResp <- opencga@swagger$paths[selMethodAction][[names(opencga@swagger$paths[selMethodAction])]][[1]]$parameters
                     helpResp <- filterParams(helpResp)
                 }
             }else{

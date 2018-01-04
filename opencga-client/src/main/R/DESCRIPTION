@@ -21,7 +21,7 @@ Suggests:
     rmarkdown,
     miniUI,
     shiny
-Collate:
+Collate: 
     'AllClasses.R'
     'AllGenerics.R'
     'commons.R'
@@ -38,6 +38,5 @@ Collate:
     'Study-methods.R'
     'User-methods.R'
     'VariableSet-methods.R'
-    'login.R'
 RoxygenNote: 6.0.1
 VignetteBuilder: knitr
