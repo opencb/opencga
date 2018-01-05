@@ -78,10 +78,10 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
             loaded = true;
         }
         solrClient = spy(solr.getSolrClient());
-        doAnswer(invocation -> {
+//        doAnswer(invocation -> {
 //            new Exception().printStackTrace();
-            return invocation.callRealMethod();
-        }).when(solrClient).query(anyString(), any());
+//            return invocation.callRealMethod();
+//        }).when(solrClient).query(anyString(), any());
         variantStorageEngine.getVariantSearchManager().setSolrClient(solrClient);
     }
 
