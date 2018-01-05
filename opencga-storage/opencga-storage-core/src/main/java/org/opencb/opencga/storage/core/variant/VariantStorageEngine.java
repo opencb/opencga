@@ -973,7 +973,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public void close() throws IOException {
         cellBaseUtils = null;
-        if (variantSearchManager.get() == null) {
+        if (variantSearchManager.get() != null) {
             try {
                 variantSearchManager.get().close();
             } finally {
