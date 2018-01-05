@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import com.google.common.base.Throwables;
-import org.apache.solr.client.solrj.SolrClient;
 import org.junit.ClassRule;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
@@ -10,9 +9,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
-
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.spy;
 
 /**
  * Created on 22/12/17.
@@ -23,7 +19,6 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
 
     @ClassRule
     public static SolrExternalResource solr = new SolrExternalResource();
-    private SolrClient solrClient;
 
     @Override
     public void before() throws Exception {
@@ -32,13 +27,6 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
         super.before();
 
         solr.configure(variantStorageEngine);
-        solrClient = spy(solr.getSolrClient());
-//        doAnswer(invocation -> {
-////            new Exception().printStackTrace();
-//            return invocation.callRealMethod();
-//        }).when(solrClient).query(anyString(), any());
-        doAnswer(invocation -> null).when(solrClient).close();
-        variantStorageEngine.getVariantSearchManager().setSolrClient(solrClient);
         if (!preFileIndexed) {
             variantStorageEngine.searchIndex();
         }

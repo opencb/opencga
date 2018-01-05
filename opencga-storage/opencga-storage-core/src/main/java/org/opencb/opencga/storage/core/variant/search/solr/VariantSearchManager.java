@@ -62,21 +62,24 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Created by imedina on 09/11/16.
  * Created by wasim on 09/11/16.
  */
 public class VariantSearchManager {
 
-    public static final String CONF_SET = "OpenCGAConfSet";
-    public static final String SEARCH_ENGINE_ID = "solr";
-
     private SolrClient solrClient;
+    private SolrQueryParser solrQueryParser;
     private StorageConfiguration storageConfiguration;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
-    private SolrQueryParser solrQueryParser;
+    private int insertBatchSize;
 
     private Logger logger;
 
+    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
+    public static final String CONF_SET = "OpenCGAConfSet";
+    public static final String SEARCH_ENGINE_ID = "solr";
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
+
     public enum UseSearchIndex {
         YES, NO, AUTO;
         public static UseSearchIndex from(Map<String, Object> options) {
@@ -86,7 +89,6 @@ public class VariantSearchManager {
         }
     }
 
-    private static final int DEFAULT_INSERT_SIZE = 10000;
 
     @Deprecated
     public VariantSearchManager(String host, String collection) {
@@ -94,14 +96,13 @@ public class VariantSearchManager {
         variantSearchToVariantConverter = new VariantSearchToVariantConverter();
     }
 
-    public VariantSearchManager(StudyConfigurationManager studyConfigurationManager,
-                                StorageConfiguration storageConfiguration) {
+    public VariantSearchManager(StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
 
-        logger = LoggerFactory.getLogger(VariantSearchManager.class);
-
-        this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
         this.solrQueryParser = new SolrQueryParser(studyConfigurationManager);
+        this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
+
+        logger = LoggerFactory.getLogger(VariantSearchManager.class);
 
         init();
     }
@@ -112,6 +113,11 @@ public class VariantSearchManager {
         // The default implementation is HttpSolrClient and we can set up some parameters
         ((HttpSolrClient) this.solrClient).setRequestWriter(new BinaryRequestWriter());
         ((HttpSolrClient) this.solrClient).setSoTimeout(storageConfiguration.getSearch().getTimeout());
+
+        // Set internal insert batch size from configuration and default value
+        insertBatchSize = storageConfiguration.getSearch().getInsertBatchSize() > 0
+                ? storageConfiguration.getSearch().getInsertBatchSize()
+                : DEFAULT_INSERT_BATCH_SIZE;
     }
 
     public boolean isAlive(String collection) {
@@ -129,14 +135,14 @@ public class VariantSearchManager {
     }
 
     public void create(String dbName, String configSet) throws VariantSearchException {
-        String mode = storageConfiguration.getSearch().getMode();
-        if (StringUtils.isEmpty(mode)) {
-            logger.warn("Solr 'mode' is empty, setting default 'cloud'");
-            mode = "cloud";
-        }
-
         if (StringUtils.isEmpty(dbName)) {
             throw new VariantSearchException("We cannot create a Solr for the empty database '" + dbName + "'");
+        }
+
+        String mode = storageConfiguration.getSearch().getMode();
+        if (StringUtils.isEmpty(mode)) {
+            logger.warn("Solr 'mode' is empty, setting default to 'cloud'");
+            mode = "cloud";
         }
 
         if (StringUtils.isEmpty(configSet)) {
@@ -211,14 +217,14 @@ public class VariantSearchManager {
     }
 
     public boolean exists(String dbName) throws VariantSearchException {
+        if (StringUtils.isEmpty(dbName)) {
+            throw new VariantSearchException("We cannot check if Solr database exists '" + dbName + "'");
+        }
+
         String mode = storageConfiguration.getSearch().getMode();
         if (StringUtils.isNotEmpty(mode)) {
             logger.warn("Solr 'mode' is empty, setting default 'cloud'");
             mode = "cloud";
-        }
-
-        if (StringUtils.isEmpty(dbName)) {
-            throw new VariantSearchException("We cannot check if Solr database exists '" + dbName + "'");
         }
 
         switch (mode.toLowerCase()) {
@@ -310,27 +316,29 @@ public class VariantSearchManager {
      */
     public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
             throws IOException, VariantSearchException {
-        if (variantDBIterator != null) {
-            int count = 0;
-            List<Variant> variantList = new ArrayList<>(DEFAULT_INSERT_SIZE);
-            while (variantDBIterator.hasNext()) {
-                Variant variant = variantDBIterator.next();
-                progressLogger.increment(1, () -> "up to position " + variant.toString());
-                variantList.add(variant);
-                count++;
-                if (count % DEFAULT_INSERT_SIZE == 0) {
-                    insert(collection, variantList);
-                    variantList.clear();
-                }
-            }
-
-            // insert the remaining variants
-            if (CollectionUtils.isNotEmpty(variantList)) {
-                insert(collection, variantList);
-            }
-
-            logger.debug("Variant search loading done: {} variants.", count);
+        if (variantDBIterator == null) {
+            throw new VariantSearchException("VariantDBIterator parameter is null");
         }
+
+        int count = 0;
+        List<Variant> variantList = new ArrayList<>(insertBatchSize);
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
+            progressLogger.increment(1, () -> "up to position " + variant.toString());
+            variantList.add(variant);
+            count++;
+            if (count % insertBatchSize == 0) {
+                insert(collection, variantList);
+                variantList.clear();
+            }
+        }
+
+        // Insert the remaining variants
+        if (CollectionUtils.isNotEmpty(variantList)) {
+            insert(collection, variantList);
+        }
+
+        logger.debug("Variant Search loading done: {} variants indexed", count);
     }
 
     /**
@@ -440,8 +448,7 @@ public class VariantSearchManager {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(collection, solrQuery);
             FacetedQueryResultItem item = toFacetedQueryResultItem(queryOptions, response);
-            return new FacetedQueryResult("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS),
-                    1, 1, "Faceted data from Solr", "", item);
+            return new FacetedQueryResult("", (int) stopWatch.getTime(), 1, 1, "Faceted data from Solr", "", item);
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
@@ -451,29 +458,6 @@ public class VariantSearchManager {
     /**-------------------------------------
      *  P R I V A T E    M E T H O D S
      -------------------------------------*/
-    /**
-     * Insert a variant into Solr.
-     *
-     * @param variant Variant to insert
-     * @throws IOException            IOException
-     * @throws VariantSearchException VariantSearchException
-     */
-    private void insert(String collection, Variant variant) throws IOException, VariantSearchException {
-        VariantSearchModel variantSearchModel = variantSearchToVariantConverter.convertToStorageType(variant);
-
-        if (variantSearchModel != null && variantSearchModel.getId() != null) {
-            UpdateResponse updateResponse;
-            try {
-                updateResponse = solrClient.addBean(collection, variantSearchModel);
-                if (updateResponse.getStatus() == 0) {
-                    solrClient.commit(collection);
-                }
-            } catch (SolrServerException e) {
-                throw new VariantSearchException(e.getMessage(), e);
-            }
-        }
-    }
-
     /**
      * Insert a list of variants into Solr.
      *
@@ -509,10 +493,8 @@ public class VariantSearchManager {
     private void loadJson(String collection, Path path) throws IOException, VariantSearchException {
         // This opens json and json.gz files automatically
         try (BufferedReader bufferedReader = FileUtils.newBufferedReader(path)) {
-
             // TODO: get the buffer size from configuration file
-            List<Variant> variants = new ArrayList<>(DEFAULT_INSERT_SIZE);
-
+            List<Variant> variants = new ArrayList<>(insertBatchSize);
             int count = 0;
             String line;
             ObjectReader objectReader = new ObjectMapper().readerFor(Variant.class);
@@ -520,7 +502,8 @@ public class VariantSearchManager {
                 Variant variant = objectReader.readValue(line);
                 variants.add(variant);
                 count++;
-                if (count % DEFAULT_INSERT_SIZE == 0) {
+                if (count % insertBatchSize == 0) {
+                    logger.debug("Loading variants from '{}', {} variants loaded", path.toString(), count);
                     insert(collection, variants);
                     variants.clear();
                 }
@@ -528,6 +511,7 @@ public class VariantSearchManager {
 
             // Insert the remaining variants
             if (CollectionUtils.isNotEmpty(variants)) {
+                logger.debug("Loading remaining variants from '{}', {} variants loaded", path.toString(), count);
                 insert(collection, variants);
             }
         }
@@ -537,11 +521,10 @@ public class VariantSearchManager {
         // reader
         VariantReader reader = VariantReaderUtils.getVariantReader(path, null);
 
-        List<Variant> variants;
-
         // TODO: get the buffer size from configuration file
         int bufferSize = 10000;
 
+        List<Variant> variants;
         do {
             variants = reader.read(bufferSize);
             insert(collection, variants);
@@ -551,8 +534,7 @@ public class VariantSearchManager {
     }
 
 
-    private FacetedQueryResultItem.Field processSolrPivot(String name, int index, Map<String, Set<String>> includes,
-                                                          PivotField pivot) {
+    private FacetedQueryResultItem.Field processSolrPivot(String name, int index, Map<String, Set<String>> includes, PivotField pivot) {
         String countName;
         FacetedQueryResultItem.Field field = null;
         if (pivot.getPivot() != null && CollectionUtils.isNotEmpty(pivot.getPivot())) {
@@ -638,7 +620,6 @@ public class VariantSearchManager {
 
     private FacetedQueryResultItem toFacetedQueryResultItem(QueryOptions queryOptions, QueryResponse response) {
         Map<String, Set<String>> includes = getIncludeMap(queryOptions);
-
         String countName;
 
         // process Solr facet fields
@@ -784,7 +765,7 @@ public class VariantSearchManager {
         return new FacetedQueryResultItem(fields, ranges, intersections);
     }
 
-    Map<String, List<List<String>>> getInputIntersections(QueryOptions queryOptions) {
+    private Map<String, List<List<String>>> getInputIntersections(QueryOptions queryOptions) {
         Map<String, List<List<String>>> inputIntersections = new HashMap<>();
         if (queryOptions.containsKey(QueryOptions.FACET)
                 && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
@@ -810,13 +791,21 @@ public class VariantSearchManager {
         return inputIntersections;
     }
 
+    public void close() throws IOException {
+        if (solrClient != null) {
+            solrClient.close();
+        }
+    }
+
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariantSearchManager{");
         sb.append("solrClient=").append(solrClient);
+        sb.append(", solrQueryParser=").append(solrQueryParser);
         sb.append(", storageConfiguration=").append(storageConfiguration);
         sb.append(", variantSearchToVariantConverter=").append(variantSearchToVariantConverter);
-        sb.append(", solrQueryParser=").append(solrQueryParser);
+        sb.append(", insertBatchSize=").append(insertBatchSize);
         sb.append('}');
         return sb.toString();
     }
@@ -830,9 +819,40 @@ public class VariantSearchManager {
         return this;
     }
 
-    public void close() throws IOException {
-        if (solrClient != null) {
-            solrClient.close();
-        }
+    public SolrQueryParser getSolrQueryParser() {
+        return solrQueryParser;
     }
+
+    public VariantSearchManager setSolrQueryParser(SolrQueryParser solrQueryParser) {
+        this.solrQueryParser = solrQueryParser;
+        return this;
+    }
+
+    public StorageConfiguration getStorageConfiguration() {
+        return storageConfiguration;
+    }
+
+    public VariantSearchManager setStorageConfiguration(StorageConfiguration storageConfiguration) {
+        this.storageConfiguration = storageConfiguration;
+        return this;
+    }
+
+    public VariantSearchToVariantConverter getVariantSearchToVariantConverter() {
+        return variantSearchToVariantConverter;
+    }
+
+    public VariantSearchManager setVariantSearchToVariantConverter(VariantSearchToVariantConverter variantSearchToVariantConverter) {
+        this.variantSearchToVariantConverter = variantSearchToVariantConverter;
+        return this;
+    }
+
+    public int getInsertBatchSize() {
+        return insertBatchSize;
+    }
+
+    public VariantSearchManager setInsertBatchSize(int insertBatchSize) {
+        this.insertBatchSize = insertBatchSize;
+        return this;
+    }
+
 }
