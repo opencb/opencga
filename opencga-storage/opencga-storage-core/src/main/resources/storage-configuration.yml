@@ -44,10 +44,11 @@ cache:
 search:
   host: ${OPENCGA.STORAGE.SEARCH.HOST}
   mode: "cloud"
-  timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
   user: ""
   password: ""
-  rows: 10000
+  timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
+  insertBatchSize: 10000
+  rows: 10000     # This variable is deprecated in favor of 'insertBatchSize' and will be removed in version 2.0
 
 benchmark:
   storageEngine: "mongodb"
