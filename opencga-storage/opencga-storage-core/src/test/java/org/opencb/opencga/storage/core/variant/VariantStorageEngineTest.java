@@ -30,6 +30,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -721,10 +722,13 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         runDefaultETL(input2, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 2));
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertNotNull(variant.toString(), variant.getAnnotation());
+            System.out.println(variant.toJson());
+            if (!variant.getType().equals(VariantType.BREAKEND)) {
+                assertNotNull(variant.toString(), variant.getAnnotation());
+            }
         }
 
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true, 24);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, false, 24 + 6);
     }
 
 }

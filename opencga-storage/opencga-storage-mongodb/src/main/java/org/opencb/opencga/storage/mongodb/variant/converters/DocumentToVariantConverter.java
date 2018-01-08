@@ -20,10 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.StructuralVariantType;
-import org.opencb.biodata.models.variant.avro.StructuralVariation;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -49,12 +46,21 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
     public static final String ALTERNATE_FIELD = "alternate";
     public static final String IDS_FIELD = "ids";
     public static final String TYPE_FIELD = "type";
+
     public static final String SV_FIELD = "sv";
     public static final String SV_CISTART_FIELD = "cistart";
     public static final String SV_CIEND_FIELD = "ciend";
     public static final String SV_CN_FIELD = "cn";
     public static final String SV_INS_SEQ = "ins_seq";
     public static final String SV_TYPE = "type";
+    public static final String SV_BND = "bnd";
+    public static final String SV_BND_ORIENTATION = "orientation";
+    public static final String SV_BND_INS_SEQ = "insSeq";
+    public static final String SV_BND_MATE = "mate";
+    public static final String SV_BND_MATE_CHR = "chr";
+    public static final String SV_BND_MATE_POS = "pos";
+    public static final String SV_BND_MATE_CI_POS_L = "ciPosL";
+    public static final String SV_BND_MATE_CI_POS_R = "ciPosR";
 
     public static final String HGVS_FIELD = "hgvs";
     public static final String HGVS_NAME_FIELD = "name";
@@ -252,6 +258,23 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
                 sv.setType(StructuralVariantType.valueOf(type));
             }
 
+            Document mongoBnd = mongoSv.get(SV_BND, Document.class);
+            if (mongoBnd != null) {
+                Breakend bnd = new Breakend();
+                bnd.setOrientation(BreakendOrientation.valueOf(mongoBnd.getString(SV_BND_ORIENTATION)));
+                bnd.setInsSeq(mongoBnd.getString(SV_BND_INS_SEQ));
+                Document mongoBndMate = mongoBnd.get(SV_BND_MATE, Document.class);
+                if (mongoBndMate != null) {
+                    BreakendMate mate = new BreakendMate();
+                    mate.setChromosome(mongoBndMate.getString(SV_BND_MATE_CHR));
+                    mate.setPosition(mongoBndMate.getInteger(SV_BND_MATE_POS));
+                    mate.setCiPositionLeft(mongoBndMate.getInteger(SV_BND_MATE_CI_POS_L));
+                    mate.setCiPositionRight(mongoBndMate.getInteger(SV_BND_MATE_CI_POS_R));
+                    bnd.setMate(mate);
+                }
+                sv.setBreakend(bnd);
+            }
+
             variant.setSv(sv);
         }
 
@@ -332,6 +355,20 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
             }
             if (sv.getType() != null) {
                 mongoSv.put(SV_TYPE, sv.getType().toString());
+            }
+            if (sv.getBreakend() != null) {
+                Document mongoBnd = new Document();
+                putNotNull(mongoBnd, SV_BND_ORIENTATION, sv.getBreakend().getOrientation().toString());
+                putNotNull(mongoBnd, SV_BND_INS_SEQ, sv.getBreakend().getInsSeq());
+                if (sv.getBreakend().getMate() != null) {
+                    Document mongoBndMate = new Document();
+                    putNotNull(mongoBndMate, SV_BND_MATE_CHR, sv.getBreakend().getMate().getChromosome());
+                    putNotNull(mongoBndMate, SV_BND_MATE_POS, sv.getBreakend().getMate().getPosition());
+                    putNotNull(mongoBndMate, SV_BND_MATE_CI_POS_L, sv.getBreakend().getMate().getCiPositionLeft());
+                    putNotNull(mongoBndMate, SV_BND_MATE_CI_POS_R, sv.getBreakend().getMate().getCiPositionRight());
+                    mongoBnd.append(SV_BND_MATE, mongoBndMate);
+                }
+                mongoSv.append(SV_BND, mongoBnd);
             }
             mongoVariant.put(SV_FIELD, mongoSv);
         }
