@@ -508,10 +508,10 @@ public class SolrQueryParser {
                     d = 1 - d;
 
                     if (operator.contains("<")) {
-                        opValue[0] = operator.replace("<", ">");
+                        opValue[0] = operator.replaceAll("<", ">");
                     } else {
                         if (operator.contains(">")) {
-                            opValue[0] = operator.replace(">", "<");
+                            opValue[0] = operator.replaceAll(">", "<");
                         }
                     }
                 }
@@ -520,10 +520,10 @@ public class SolrQueryParser {
                 break;
             case "REF":
                 if (operator.contains("<")) {
-                    opValue[0] = operator.replace("<", ">");
+                    opValue[0] = operator.replaceAll("<", ">");
                 } else {
                     if (operator.contains(">")) {
-                        opValue[0] = operator.replace(">", "<");
+                        opValue[0] = operator.replaceAll(">", "<");
                     }
                 }
                 opValue[1] = String.valueOf(1 - Double.parseDouble(value));
