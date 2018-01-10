@@ -332,7 +332,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         }
 
         // Check transformed file relations
-        for (File inputFile : files) {
+        for (File inputFile : expectedLoadedFiles) {
             inputFile = catalogManager.getFile(inputFile.getId(), null, sessionId).first();
             assertNotNull(inputFile.getIndex().getTransformedFile());
             File transformedFile = catalogManager.getFile(inputFile.getIndex().getTransformedFile().getId(), new QueryOptions(), sessionId).first();
