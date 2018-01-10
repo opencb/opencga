@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -282,6 +283,24 @@ public class File {
         public RelatedFile setRelation(Relation relation) {
             this.relation = relation;
             return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof RelatedFile)) {
+                return false;
+            }
+            RelatedFile that = (RelatedFile) o;
+            return fileId == that.fileId
+                    && relation == that.relation;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(fileId, relation);
         }
     }
 
