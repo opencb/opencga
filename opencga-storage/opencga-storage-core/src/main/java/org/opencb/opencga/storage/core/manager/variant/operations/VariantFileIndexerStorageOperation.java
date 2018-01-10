@@ -148,8 +148,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             createDefaultCohortIfNeeded(study, sessionId);
         }
 
-        // Update study configuration BEFORE executing the index and fetching files from Catalog
-        updateStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
+        // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
+        updateCatalogFromStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
 
         List<File> inputFiles = new ArrayList<>();
 //        for (Long fileIdLong : fileIds) {
@@ -228,6 +228,18 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             logger.warn("Nothing to do.");
             return Collections.emptyList();
         }
+
+        // Check that we are not indexing two or more files with the same name at the same time
+        Set<String> fileNamesToIndexSet = new HashSet<>();
+        for (File fileToIndex : filesToIndex) {
+            if (!fileNamesToIndexSet.add(fileToIndex.getName())) {
+                throw new CatalogException("Unable to " + step + " multiple files with the same name");
+            }
+        }
+
+        // Update study configuration BEFORE executing the index
+        List<Long> fileIdsToIndex = filesToIndex.stream().map(File::getId).collect(Collectors.toList());
+        updateStudyConfigurationFromCatalog(sessionId, studyIdByInputFileId, dataStore, fileIdsToIndex);
 
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
             for (File file : filesToIndex) {
