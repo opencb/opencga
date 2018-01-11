@@ -476,7 +476,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                             }
                             indexStatusMessage = "Job failed. Restoring status from " + FileIndex.IndexStatus.INDEXING
                                     + " to " + indexStatusName;
-                            logger.warn(indexStatusName);
+                            logger.warn(indexStatusMessage);
                         } else {
                             indexStatusName = FileIndex.IndexStatus.READY;
                             indexStatusMessage = "Job finished. File index ready";
