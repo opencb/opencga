@@ -721,10 +721,12 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         runDefaultETL(input2, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 2));
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertNotNull(variant.toString(), variant.getAnnotation());
+            if (!variant.getAlternate().equals("<DEL:ME:ALU>")) {
+                assertNotNull(variant.toString(), variant.getAnnotation());
+            }
         }
 
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true, 24);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, false, 24);
     }
 
 }

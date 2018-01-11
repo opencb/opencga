@@ -148,7 +148,10 @@ public class VariantStringIdConverter {
         if (alternate.length() > Variant.SV_THRESHOLD) {
             reduce(stringBuilder, alternate, sv);
         } else if (!alternate.equals("-")) {
-            stringBuilder.append(alternate);
+            // Breakend ( A]chr1:1234] ) and Symbolic ( <INS:ALU> ) variants may contain ':' in the alternate allele. Replace with '_'
+            // This value is not intended to be recovered, so it doesn't matter if the alternate already contains the character '_'.
+            // The original alternate is stored separately.
+            stringBuilder.append(alternate.replace(SEPARATOR_CHAR, '_'));
         }
 
         // All symbolic variants have a non null SV.

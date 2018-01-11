@@ -135,14 +135,18 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                 // Check that the skipped variant matches with the expected variant
                 if (queryResult.getResult().isEmpty()) {
                     Variant variant = iterator.next();
-                    Variant variantId = new Variant(queryResult.getId());
-                    if (!variant.getChromosome().equals(variantId.getChromosome())
-                            || !variant.getStart().equals(variantId.getStart())
-                            || !variant.getReference().equals(variantId.getReference())
-                            || !variant.getAlternate().equals(variantId.getAlternate())) {
-                        throw unexpectedVariantOrderException(variant, variantId);
-                    } else {
+                    if (variant.toString().equals(queryResult.getId()) || variant.toStringSimple().equals(queryResult.getId())) {
                         logger.warn("Skip annotation for variant " + variant);
+                    } else {
+                        Variant variantId = new Variant(queryResult.getId());
+                        if (!variant.getChromosome().equals(variantId.getChromosome())
+                                || !variant.getStart().equals(variantId.getStart())
+                                || !variant.getReference().equals(variantId.getReference())
+                                || !variant.getAlternate().equals(variantId.getAlternate())) {
+                            throw unexpectedVariantOrderException(variant, variantId);
+                        } else {
+                            logger.warn("Skip annotation for variant " + variant);
+                        }
                     }
                 }
                 for (VariantAnnotation variantAnnotation : queryResult.getResult()) {
