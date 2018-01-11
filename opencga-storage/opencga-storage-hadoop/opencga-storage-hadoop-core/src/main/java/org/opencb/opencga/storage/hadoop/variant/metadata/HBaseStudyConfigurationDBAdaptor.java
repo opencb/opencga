@@ -29,6 +29,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
+import java.util.zip.DataFormatException;
 
 /**
  * Created on 12/11/15.
@@ -149,13 +151,24 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
                         return Collections.emptyList();
                     } else {
                         byte[] value = result.getValue(genomeHelper.getColumnFamily(), columnQualifier);
+                        // Try to decompress value.
+                        try {
+                            value = CompressionUtils.decompress(value);
+                        } catch (DataFormatException e) {
+                            if (value[0] == '{') {
+                                logger.debug("StudyConfiguration was not compressed", e);
+                            } else {
+                                throw new IllegalStateException("Problem reading StudyConfiguration "
+                                        + studyName + " from table " + tableName, e);
+                            }
+                        }
                         StudyConfiguration studyConfiguration = objectMapper.readValue(value, StudyConfiguration.class);
                         return Collections.singletonList(studyConfiguration);
                     }
                 });
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Problem checking Table " + tableName, e);
+            throw new IllegalStateException("Problem reading StudyConfiguration " + studyName + " from table " + tableName, e);
         }
         return new QueryResult<>("", (int) watch.getTime(),
                 studyConfigurationList.size(), studyConfigurationList.size(), "", error, studyConfigurationList);
@@ -174,6 +187,9 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         try {
             hBaseManager.act(tableName, table -> {
                 byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
+                // Compress json
+                // Avoid "java.lang.IllegalArgumentException: KeyValue size too large"
+                bytes = CompressionUtils.compress(bytes);
                 Put put = new Put(studiesRow);
                 put.addColumn(genomeHelper.getColumnFamily(), columnQualifier, studyConfiguration.getTimeStamp(), bytes);
                 table.put(put);

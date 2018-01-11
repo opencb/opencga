@@ -722,8 +722,9 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         runDefaultETL(input2, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 2));
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            System.out.println(variant.toJson());
-            if (!variant.getType().equals(VariantType.BREAKEND)) {
+            if (variant.getAlternate().equals("<DEL:ME:ALU>") || variant.getType().equals(VariantType.BREAKEND)) {
+                System.err.println("WARN: Variant " + variant + (variant.getAnnotation() == null ? " without annotation" : " with annotation"));
+            } else {
                 assertNotNull(variant.toString(), variant.getAnnotation());
             }
         }
