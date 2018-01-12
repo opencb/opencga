@@ -196,8 +196,12 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected File create(long studyId, URI uri) throws IOException, CatalogException {
+        return create(studyId, uri, "data/vcfs/");
+    }
+
+    protected File create(long studyId, URI uri, String path) throws IOException, CatalogException {
         File file;
-        file = fileMetadataReader.create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
+        file = fileMetadataReader.create(studyId, uri, path, "", true, null, sessionId).first();
 //        File.Format format = FormatDetector.detect(uri);
 //        File.Bioformat bioformat = BioformatDetector.detect(uri);
 //        file = catalogManager.createFile(studyId, format, bioformat, "data/vcfs/", "", true, -1, sessionId).first();
@@ -212,10 +216,18 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
 
     protected File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, StorageEngineException, URISyntaxException {
+        return transformFile(inputFile, queryOptions, "data/index/");
+    }
+
+    protected File transformFile(File inputFile, QueryOptions queryOptions, String path) throws CatalogException, IOException, StorageEngineException, URISyntaxException {
+
+        try {
+            catalogManager.getFileManager().createFolder(studyStr, path, null, true, null, null, sessionId);
+        } catch (CatalogException ignore) {}
 
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, false);
-        queryOptions.append(StorageOperation.CATALOG_PATH, "data/index/");
+        queryOptions.append(StorageOperation.CATALOG_PATH, path);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
         long studyId = catalogManager.getStudyIdByFileId(inputFile.getId());
@@ -226,15 +238,24 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         variantManager.index(null, String.valueOf(inputFile.getId()), outdir, queryOptions, sessionId);
         inputFile = catalogManager.getFile(inputFile.getId(), sessionId).first();
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getIndex().getStatus().getName());
+        assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_STATS));
 
         // Default cohort should not be modified
         assertEquals(defaultCohort, getDefaultCohort(studyId));
 
         //Get transformed file
-        Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), "data/index/")
+        Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), path)
                 .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants.(json|avro)");
         File transformedFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
-        assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_STATS));
+
+        List<File.RelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
+                .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
+                .collect(Collectors.toList());
+        assertEquals(1, relatedFiles.size());
+        assertEquals(inputFile.getId(), relatedFiles.get(0).getFileId());
+
+        assertEquals(transformedFile.getId(), inputFile.getIndex().getTransformedFile().getId());
+
         return transformedFile;
     }
 
@@ -309,6 +330,20 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
             assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
             checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
         }
+
+        // Check transformed file relations
+        for (File inputFile : expectedLoadedFiles) {
+            inputFile = catalogManager.getFile(inputFile.getId(), null, sessionId).first();
+            assertNotNull(inputFile.getIndex().getTransformedFile());
+            File transformedFile = catalogManager.getFile(inputFile.getIndex().getTransformedFile().getId(), new QueryOptions(), sessionId).first();
+
+            List<File.RelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
+                    .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
+                    .collect(Collectors.toList());
+            assertEquals(1, relatedFiles.size());
+            assertEquals(inputFile.getId(), relatedFiles.get(0).getFileId());
+        }
+
 
         return etlResults;
     }

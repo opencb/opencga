@@ -117,7 +117,7 @@ public class CatalogStudyConfigurationFactoryTest {
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
 
         StudyConfigurationManager scm = new StudyConfigurationManager(scAdaptor);
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, scm, new QueryOptions(), sessionId);
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
     }
@@ -127,7 +127,7 @@ public class CatalogStudyConfigurationFactoryTest {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, new QueryOptions(), sessionId);
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, null, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
     }
@@ -146,7 +146,7 @@ public class CatalogStudyConfigurationFactoryTest {
 
 
         StudyConfigurationManager scm = new StudyConfigurationManager(scAdaptor);
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, scm, new QueryOptions(), sessionId);
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
     }

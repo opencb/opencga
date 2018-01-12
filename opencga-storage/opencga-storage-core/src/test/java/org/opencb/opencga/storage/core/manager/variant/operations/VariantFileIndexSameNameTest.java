@@ -1,0 +1,95 @@
+package org.opencb.opencga.storage.core.manager.variant.operations;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
+
+import java.util.Arrays;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
+
+/**
+ * Created on 09/01/18.
+ *
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ */
+public class VariantFileIndexSameNameTest extends AbstractVariantStorageOperationTest {
+
+    private File inputFile1;
+    private File inputFile2;
+
+    @Override
+    protected VariantSource.Aggregation getAggregation() {
+        return VariantSource.Aggregation.NONE;
+    }
+
+    @Before
+    public void before() throws Exception {
+        inputFile1 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "platinum_1/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), "data/platinum_1/");
+        inputFile2 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "platinum_2/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), "data/platinum_2/");
+
+        System.out.println("inputFile1 = " + inputFile1.getId());
+        System.out.println("inputFile2 = " + inputFile2.getId());
+    }
+
+    @Test
+    public void testIndex1() throws Exception {
+        indexFile(inputFile1, new QueryOptions(), outputId);
+    }
+
+    @Test
+    public void testIndex2() throws Exception {
+        indexFile(inputFile2, new QueryOptions(), outputId);
+    }
+
+    @Test
+    public void testTransformTwoFiles() throws Exception {
+        File transformFile1 = transformFile(inputFile1, new QueryOptions(), "data/transform_1/");
+        File transformFile2 = transformFile(inputFile2, new QueryOptions(), "data/transform_2/");
+    }
+
+    @Test
+    public void testTransformThreeFiles() throws Exception {
+        File inputFile3 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "platinum_3/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), "data/platinum_3/");
+        File transformFile1 = transformFile(inputFile1, new QueryOptions(), "data/transform_1/");
+        File transformFile2 = transformFile(inputFile2, new QueryOptions(), "data/transform_2/");
+        File transformFile3 = transformFile(inputFile3, new QueryOptions(), "data/transform_3/");
+    }
+
+    @Test
+    public void testTransformTwoFilesSameFolder() throws Exception {
+        File transformFile1 = transformFile(inputFile1, new QueryOptions(), "data/platinum_1/");
+        File transformFile2 = transformFile(inputFile2, new QueryOptions(), "data/platinum_2/");
+    }
+
+    @Test
+    public void testIndexBoth() throws Exception {
+        indexFile(inputFile1, new QueryOptions(), outputId);
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Unable to index multiple files with the same file name");
+        indexFile(inputFile2, new QueryOptions(), outputId);
+    }
+
+    @Test
+    public void testIndexBothSameTime() throws Exception {
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Unable to INDEX multiple files with the same name");
+        indexFiles(Arrays.asList(inputFile1, inputFile2), new QueryOptions(), outputId);
+    }
+
+    @Test
+    public void testBySteps1() throws Exception {
+        File transformFile = transformFile(inputFile1, new QueryOptions());
+        loadFile(transformFile, new QueryOptions(), outputId);
+    }
+
+    @Test
+    public void testBySteps2() throws Exception {
+        File transformFile = transformFile(inputFile2, new QueryOptions());
+        loadFile(transformFile, new QueryOptions(), outputId);
+    }
+}
