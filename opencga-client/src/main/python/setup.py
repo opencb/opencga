@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='pyCGA',
-    version='1.2.1',
+    version='1.3.0',
     packages=['pyCGA', 'pyCGA.Utils'],
     url='https://github.com/genomicsengland/opencga/tree/pycga-1.0/opencga-client/src/main/python',
     license='',
