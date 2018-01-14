@@ -210,15 +210,11 @@ class Users(_ParentBasicCRUDClient):
     def refresh_token(self, user, **options):
         return self._post('login', data={}, query_id=user, **options)
 
-
-    def logout(self, userId, **options):
+    def logout(self, **options):
         """
         This method logout the user
-
-        :param userId: user id
         """
-
-        return self._get('logout', query_id=userId, **options)
+        self.session_id = None
 
 
 class Projects(_ParentBasicCRUDClient):
@@ -840,7 +836,8 @@ class Meta(_ParentRestClient):
 
 
 class OpenCGAClient(object):
-    def __init__(self, configuration, user=None, pwd=None, session_id=None, on_retry=None, auto_refresh=True):
+    def __init__(self, configuration, user=None, pwd=None, session_id=None,
+                 anonymous=False, on_retry=None, auto_refresh=True):
         """
         :param on_retry: callback to be called with client retries an operation.
             It must accept parameters: client, exc_type, exc_val, exc_tb, call
@@ -850,14 +847,19 @@ class OpenCGAClient(object):
         self.on_retry = on_retry
         self.clients = []
         self.user_id = user  # if user and session_id are supplied, we can log out
-        if user and pwd:
-            self._login_handler = self._make_login_handler(user, pwd)
-            self._login()
-        else:
-            if not session_id:
-                raise Exception("OpenCGAClient: either user and password or session_id must be supplied")
+        if anonymous:
             self._login_handler = None
-            self.session_id = session_id
+            self.session_id = None
+        else:
+            if user and pwd:
+                self._login_handler = self._make_login_handler(user, pwd)
+                self._login()
+            else:
+                if session_id is None:
+                    msg = "User/password or session_id must be supplied"
+                    raise Exception(msg)
+                self._login_handler = None
+                self.session_id = session_id
         self._create_clients()
 
     def __enter__(self):
@@ -919,5 +921,4 @@ class OpenCGAClient(object):
         self._login_handler()
 
     def logout(self):
-        if self.user_id:
-            self.users.logout(userId=self.user_id)
+        self.session_id = None
