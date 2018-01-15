@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
 
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQuery;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQueryOptions;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQuery;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQueryOptions;
 
 /**
  * Created on 30/10/17.

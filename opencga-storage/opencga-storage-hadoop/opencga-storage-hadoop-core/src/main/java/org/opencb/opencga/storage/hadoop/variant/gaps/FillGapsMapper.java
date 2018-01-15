@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class FillGapsMapper extends VariantMapper<ImmutableBytesWritable, Mutation> {
 
     public static final String SAMPLES = "samples";
-    private FillGapsTask fillGapsTask;
+    private FillGapsFromVariantTask fillGapsTask;
 
     public static void setSamples(Job job, Collection<Integer> sampleIds) {
         job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
@@ -51,7 +51,7 @@ public class FillGapsMapper extends VariantMapper<ImmutableBytesWritable, Mutati
 
         StudyConfiguration studyConfiguration = helper.readStudyConfiguration();
 
-        fillGapsTask = new FillGapsTask(hBaseManager, archiveTableName, studyConfiguration, helper, samples);
+        fillGapsTask = new FillGapsFromVariantTask(hBaseManager, archiveTableName, studyConfiguration, helper, samples);
         fillGapsTask.pre();
 
     }

@@ -2,9 +2,8 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
@@ -23,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -53,9 +53,9 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 //        fillGapsMR(variantStorageEngine, studyConfiguration, sampleIds, false);
 //        fillGapsLocal(variantStorageEngine, studyConfiguration, sampleIds);
 //        fillLocalMRDriver(variantStorageEngine, studyConfiguration, sampleIds);
-//        fillGapsLocalFromArchive(variantStorageEngine, studyConfiguration, sampleIds);
+        fillGapsLocalFromArchive(variantStorageEngine, studyConfiguration, sampleIds, false);
 //        variantStorageEngine.fillGaps(studyConfiguration.getStudyName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", false));
-        variantStorageEngine.fillGaps(studyConfiguration.getStudyName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", true));
+//        variantStorageEngine.fillGaps(studyConfiguration.getStudyName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", true));
     }
 
     protected static void fillLocalMRDriver(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration, Collection<Integer> sampleIds) throws Exception {
@@ -75,7 +75,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         String variantTableName = variantStorageEngine.getVariantTableName();
         Table variantsTable = dbAdaptor.getHBaseManager().getConnection().getTable(TableName.valueOf(variantTableName));
-        FillGapsTask fillGapsTask = new FillGapsTask(dbAdaptor.getHBaseManager(),
+        FillGapsFromVariantTask fillGapsTask = new FillGapsFromVariantTask(dbAdaptor.getHBaseManager(),
                 variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId()),
                 studyConfiguration, dbAdaptor.getGenomeHelper(), sampleIds);
         fillGapsTask.pre();
@@ -88,6 +88,38 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
             if (put != null && !put.isEmpty()) {
                 variantsTable.put(put);
             }
+        }
+
+        variantsTable.close();
+        fillGapsTask.post();
+    }
+
+    public static void fillGapsLocalFromArchive(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration,
+                                                Collection<Integer> sampleIds, boolean fillOnlyMissingGenotypes)
+            throws StorageEngineException, IOException {
+        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        String variantTableName = variantStorageEngine.getVariantTableName();
+        Table variantsTable = dbAdaptor.getHBaseManager().getConnection().getTable(TableName.valueOf(variantTableName));
+        FillGapsFromArchiveTask fillGapsTask = new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(),
+                variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId()),
+                studyConfiguration, dbAdaptor.getGenomeHelper(), sampleIds, fillOnlyMissingGenotypes);
+        fillGapsTask.pre();
+
+        try (Table table = dbAdaptor.getConnection().getTable(TableName.valueOf(variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId())))) {
+            Scan scan = new Scan();
+            scan.setFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+            ResultScanner resScan = table.getScanner(scan);
+            for (Result result : resScan) {
+                List<Put> puts = fillGapsTask.apply(Collections.singletonList(result));
+
+                for (Put put : puts) {
+                    if (put != null && !put.isEmpty()) {
+                        variantsTable.put(put);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         variantsTable.close();

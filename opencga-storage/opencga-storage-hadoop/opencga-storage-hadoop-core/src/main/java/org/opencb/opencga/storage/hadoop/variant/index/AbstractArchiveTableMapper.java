@@ -28,8 +28,6 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
@@ -38,6 +36,8 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConver
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
+import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -290,7 +290,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         logger.info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 
-    abstract void map(VariantMapReduceContext ctx) throws IOException, InterruptedException;
+    protected abstract void map(VariantMapReduceContext ctx) throws IOException, InterruptedException;
 
     protected static class VariantMapReduceContext {
         public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIds,
@@ -337,10 +337,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
         public Set<Integer> getFileIds() {
             return fileIds;
-        }
-
-        public String getChr() {
-            return chr;
         }
 
         public long getStartPos() {

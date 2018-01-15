@@ -63,7 +63,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsMapper;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
@@ -88,8 +88,8 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_GAPS_OPERATION_NAME;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQuery;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQueryOptions;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQuery;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQueryOptions;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -430,7 +430,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(4).setBatchSize(10).build();
                 ParallelTaskRunner<Variant, Put> ptr = new ParallelTaskRunner<>(
                         dbReader,
-                        () -> new FillGapsTask(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), studyConfiguration,
+                        () -> new FillGapsFromVariantTask(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), studyConfiguration,
                                 dbAdaptor.getGenomeHelper(), sampleIds)
                                 .then((ParallelTaskRunner.TaskWithException<Put, Put, IOException>) list -> {
                                     progressLogger.increment(list.size(), "variants");
