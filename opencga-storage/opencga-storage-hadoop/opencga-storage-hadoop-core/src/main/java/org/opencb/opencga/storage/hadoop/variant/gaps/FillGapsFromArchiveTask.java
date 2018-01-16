@@ -3,10 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -60,7 +58,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                                    String archiveTableName,
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
-                                   boolean skipReferenceNoVariants) throws IOException {
+                                   boolean skipReferenceNoVariants) {
         this(hBaseManager, archiveTableName, studyConfiguration, helper, null, skipReferenceNoVariants);
     }
 
@@ -69,7 +67,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
                                    Collection<Integer> samples,
-                                   boolean skipReferenceNoVariants) throws IOException {
+                                   boolean skipReferenceNoVariants) {
         this.hBaseManager = hBaseManager;
         this.archiveTableName = archiveTableName;
         this.studyConfiguration = studyConfiguration;
@@ -285,8 +283,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                     }
                 }
 
-                // TODO: Should have debug log level
-                logger.info("Fetch files {}", filesToRead);
+                logger.debug("Fetch files {}", filesToRead);
 
                 Get get = new Get(rowKey);
                 for (Integer fileToRead : filesToRead) {
@@ -342,6 +339,12 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         public void clearVcfSlice(Integer fileId) {
             filesMap.put(fileId, null);
         }
+    }
+
+    public static Scan buildScan() {
+        Scan scan = new Scan();
+        scan.setFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+        return scan;
     }
 
 }

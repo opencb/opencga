@@ -25,8 +25,9 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -52,18 +53,16 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.utils.HBaseDataReader;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsMapper;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask;
+import org.opencb.opencga.storage.hadoop.variant.gaps.*;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
@@ -88,8 +87,6 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_GAPS_OPERATION_NAME;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQuery;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQueryOptions;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -376,8 +373,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
+    public void fillMissing(String study, ObjectMap options) throws StorageEngineException {
+        fillGaps(study, Collections.emptyList(), true, options);
+    }
+
     @Override
-    public void fillGaps(String study, List<String> samples, ObjectMap inputOptions) throws StorageEngineException {
+    public void fillGaps(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+        fillGaps(study, samples, false, options);
+    }
+
+    private void fillGaps(String study, List<String> samples, boolean skipReferenceNoVariants, ObjectMap inputOptions)
+            throws StorageEngineException {
         ObjectMap options = new ObjectMap(getOptions());
         if (inputOptions != null) {
             options.putAll(inputOptions);
@@ -423,28 +429,27 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             if (options.getBoolean("local")) {
                 ProgressLogger progressLogger = new ProgressLogger("Process");
                 VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
-                VariantDBReader dbReader = new VariantDBReader(dbAdaptor,
-                        buildQuery(study, sampleIds, fileIds),
-                        buildQueryOptions());
+                Scan scan = FillGapsFromArchiveTask.buildScan();
+                HBaseDataReader dbReader = new HBaseDataReader(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), scan);
                 DataWriter<Put> writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), getVariantTableName());
                 ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(4).setBatchSize(10).build();
-                ParallelTaskRunner<Variant, Put> ptr = new ParallelTaskRunner<>(
+                ParallelTaskRunner<Result, Put> ptr = new ParallelTaskRunner<>(
                         dbReader,
-                        () -> new FillGapsFromVariantTask(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), studyConfiguration,
-                                dbAdaptor.getGenomeHelper(), sampleIds)
+                        () -> new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), studyConfiguration,
+                                dbAdaptor.getGenomeHelper(), sampleIds, false)
                                 .then((ParallelTaskRunner.TaskWithException<Put, Put, IOException>) list -> {
                                     progressLogger.increment(list.size(), "variants");
                                     return list;
                                 }),
                         writer,
                         config);
-
                 ptr.run();
             } else {
                 String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
                 String jar = getJarWithDependencies(options);
 
-                options.put(FillGapsMapper.SAMPLES, sampleIds);
+                options.put(FillGapsFromArchiveMapper.SAMPLES, sampleIds);
+                options.put(FillGapsFromArchiveMapper.SKIP_REFERENCE_NO_VARIANTS, skipReferenceNoVariants);
 
                 Class execClass = FillGapsDriver.class;
                 String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
