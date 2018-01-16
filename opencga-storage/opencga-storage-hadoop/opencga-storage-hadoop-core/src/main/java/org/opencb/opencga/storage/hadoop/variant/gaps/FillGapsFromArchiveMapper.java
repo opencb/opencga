@@ -5,6 +5,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMapper;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -20,13 +21,16 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
+        Collection<Integer> samples = FillGapsMapper.getSamples(context.getConfiguration());
         task = new FillGapsFromArchiveTask(
-                getHBaseManager(), getHelper().getArchiveTableAsString(), getStudyConfiguration(), getHelper(), false);
+                getHBaseManager(), getHelper().getArchiveTableAsString(), getStudyConfiguration(), getHelper(), samples, true);
+        task.pre();
     }
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         super.cleanup(context);
+        task.post();
     }
 
     @Override
@@ -37,7 +41,6 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         for (Put put : puts) {
             ctx.getContext().write(new ImmutableBytesWritable(put.getRow()), put);
         }
-
     }
 
 

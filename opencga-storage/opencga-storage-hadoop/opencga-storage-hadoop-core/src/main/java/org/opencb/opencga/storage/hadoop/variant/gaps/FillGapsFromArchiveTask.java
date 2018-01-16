@@ -41,15 +41,15 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
             .comparing(Variant::getStart)
             .thenComparing(Variant::getEnd)
             .thenComparing(Variant::compareTo);
-    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 2;
+    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
 
     private final HBaseManager hBaseManager;
     private final String archiveTableName;
     private final StudyConfiguration studyConfiguration;
     private final GenomeHelper helper;
     private final FillGapsTask fillGapsTask;
-    private final Set<Integer> fileIds;
-    private final boolean fillAllFiles;
+    private final SortedSet<Integer> fileIds;
+    private final boolean fillAllVariants;
     private final Map<Integer, byte[]> fileToColumnMap;
     private final Logger logger = LoggerFactory.getLogger(FillGapsFromArchiveTask.class);
     private final ArchiveRowKeyFactory rowKeyFactory;
@@ -60,8 +60,8 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                                    String archiveTableName,
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
-                                   boolean fillOnlyMissingGenotypes) throws IOException {
-        this(hBaseManager, archiveTableName, studyConfiguration, helper, null, fillOnlyMissingGenotypes);
+                                   boolean skipReferenceNoVariants) throws IOException {
+        this(hBaseManager, archiveTableName, studyConfiguration, helper, null, skipReferenceNoVariants);
     }
 
     public FillGapsFromArchiveTask(HBaseManager hBaseManager,
@@ -69,13 +69,13 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
                                    Collection<Integer> samples,
-                                   boolean fillOnlyMissingGenotypes) throws IOException {
+                                   boolean skipReferenceNoVariants) throws IOException {
         this.hBaseManager = hBaseManager;
         this.archiveTableName = archiveTableName;
         this.studyConfiguration = studyConfiguration;
         this.helper = helper;
 
-        fileIds = new HashSet<>();
+        fileIds = new TreeSet<>();
         fileToColumnMap = new HashMap<>();
 //            Map<Integer, Integer> samplesFileMap = new HashMap<>();
         if (samples == null || samples.isEmpty()) {
@@ -96,9 +96,9 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                 }
             }
         }
-        fillAllFiles = fileIds.size() == studyConfiguration.getIndexedFiles().size();
+        fillAllVariants = fileIds.size() == studyConfiguration.getIndexedFiles().size();
 
-        fillGapsTask = new FillGapsTask(studyConfiguration, helper, fillOnlyMissingGenotypes);
+        fillGapsTask = new FillGapsTask(studyConfiguration, helper, skipReferenceNoVariants);
         rowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
     }
 
@@ -131,8 +131,8 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
 
     public List<Put> fillGaps(Context context) throws IOException {
         Map<Variant, Set<Integer>> variantsToFill = new TreeMap<>(VARIANT_COMPARATOR);
-        // If we are filling all the files, is not
-        if (fillAllFiles) {
+        // If we are filling all variants, read variantsToFill from "_V" , i.e. context.getVariants()
+        if (fillAllVariants) {
             // If filling all the files, (i.e. fill missing) we can use the list of already processed variants and files
             if (context.getNewFiles().isEmpty()) {
                 // No files to process. Nothing to do!
@@ -171,43 +171,39 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
             }
         }
 
-        // TODO: Should we flip this loop, so we don't need to retain in memory the VCFSlices from all files?
-        //
-        //  NOW
-        // for variant in variantsToFill
-        //   for file in filesToFill
-        //     XXX
-        //
-        //  DESIRED
-        // for file in filesToFill
-        //   for variant in variantsToFill
-        //     XXX
-
-
-        List<Put> puts = new ArrayList<>(variantsToFill.size());
+        // Use a sorted map to fetch VcfSlice orderly
+        SortedMap<Integer, List<Variant>> fileToVariantsMap = new TreeMap<>();
+        // Invert map variantsToFill -> filesToVariants
         for (Map.Entry<Variant, Set<Integer>> entry : variantsToFill.entrySet()) {
             Variant variant = entry.getKey();
-            Set<Integer> filesToFill = entry.getValue();
+            for (Integer fileId : entry.getValue()) {
+                fileToVariantsMap.computeIfAbsent(fileId, ArrayList::new).add(variant);
+            }
+        }
 
-/*DEBUG*/       List<Integer> filesInVariant = new ArrayList<>(fileIds);
-/*DEBUG*/       filesInVariant.removeAll(filesToFill);
-/*DEBUG*/       logger.debug("Variant " + variant + " with files " + filesInVariant);
+        // Store all PUT operations, one for each variant
+        Map<Variant, Put> putsMap = new TreeMap<>(VARIANT_COMPARATOR);
+        for (Map.Entry<Integer, List<Variant>> entry : fileToVariantsMap.entrySet()) {
+            Integer fileId = entry.getKey();
+            List<Variant> variants = entry.getValue();
 
-            if (filesToFill.isEmpty()) {
-                // Nothing to do!
+            VcfSlice vcfSlice = context.getVcfSlice(fileId);
+            if (vcfSlice == null) {
+                logger.warn("Vcf slice null for file " + fileId + " in RK " + Bytes.toString(context.rowKey));
                 continue;
             }
-            Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
-            for (Integer fileId : filesToFill) {
-                VcfSlice vcfSlice = context.getVcfSlice(fileId);
 
-                if (vcfSlice != null) {
-                    Set<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
-                    fillGapsTask.fillGaps(variant, sampleIds, put, fileId, vcfSlice);
-                } else {
-                    System.out.println("Vcf slice null for file " + fileId + " in RK " + Bytes.toString(context.rowKey));
-                }
+            for (Variant variant : variants) {
+                Put put = putsMap.computeIfAbsent(variant, v -> new Put(VariantPhoenixKeyFactory.generateVariantRowKey(v)));
+
+                Set<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
+                fillGapsTask.fillGaps(variant, sampleIds, put, fileId, vcfSlice);
             }
+            context.clearVcfSlice(fileId);
+        }
+
+        List<Put> puts = new ArrayList<>(variantsToFill.size());
+        for (Put put : putsMap.values()) {
             if (!put.isEmpty()) {
                 puts.add(put);
             }
@@ -231,31 +227,34 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         List<Integer> processedFiles = Collections.emptyList();
         // TODO: Find list of processed variants
         List<Variant> processedVariants = Collections.emptyList();
-        return new Context(new HashMap<>(), variants, processedFiles, processedVariants, result.getRow());
+        return new Context(variants, processedFiles, processedVariants, result.getRow());
     }
 
     public final class Context {
-        private final Map<Integer, VcfSlice> filesMap;
+        /** Empty variants (just chr:pos:ref:alt) for the current region. Read from _V. */
         private final List<Variant> variants;
-
+        /** List of already processed files in this region. */
         private final List<Integer> processedFiles;
+        /** List of already processed variants in this region. */
         private final List<Variant> processedVariants;
-
+        /** Current rowkey from archive table. */
         private final byte[] rowKey;
 
-        private final Set<Integer> newFiles;
-        private final Set<Variant> newVariants;
+        /** Look up map of VcfSlice objects. */
+        private final Map<Integer, VcfSlice> filesMap;
+        private final SortedSet<Integer> newFiles;
+        private final SortedSet<Variant> newVariants;
 
-        private Context(Map<Integer, VcfSlice> filesMap, List<Variant> variants, List<Integer> processedFiles,
+        private Context(List<Variant> variants, List<Integer> processedFiles,
                         List<Variant> processedVariants, byte[] rowKey) {
-            this.filesMap = filesMap;
             this.variants = variants;
             this.processedFiles = processedFiles;
             this.processedVariants = processedVariants;
-
             this.rowKey = rowKey;
 
-            newFiles = new HashSet<>(fileIds);
+            filesMap = new HashMap<>();
+
+            newFiles = new TreeSet<>(fileIds);
             newFiles.removeAll(processedFiles);
 
             // Do not compute Variant::hashCode
@@ -266,7 +265,8 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
 
         public VcfSlice getVcfSlice(int fileId) throws IOException {
             if (!filesMap.containsKey(fileId)) {
-                Set<Integer> allFilesToRead;
+                // Read files in order, so we don't have to keep much objects in memory
+                SortedSet<Integer> allFilesToRead;
                 if (variants != processedVariants) {
                     allFilesToRead = fileIds;
                 } else {
@@ -315,7 +315,6 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         }
 
         public Set<Variant> getNewVariants() {
-            // TODO
 //            return variants - processedVariants;
             return newVariants;
         }
@@ -323,7 +322,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
             return variants;
         }
 
-        public Set<Integer> getNewFiles() {
+        public SortedSet<Integer> getNewFiles() {
 //            return files - processedFiles;
             return newFiles;
         }
@@ -338,6 +337,10 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
 
         public List<Variant> getProcessedVariants() {
             return processedVariants;
+        }
+
+        public void clearVcfSlice(Integer fileId) {
+            filesMap.put(fileId, null);
         }
     }
 

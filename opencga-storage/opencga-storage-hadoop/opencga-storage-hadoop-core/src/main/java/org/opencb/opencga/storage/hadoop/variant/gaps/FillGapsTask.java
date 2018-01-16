@@ -30,13 +30,13 @@ public class FillGapsTask {
     private final Map<Integer, LinkedHashMap<String, Integer>> fileToSamplePositions = new HashMap<>();
     private final VariantMerger variantMerger;
     // fill-gaps-when-missing-gt
-    private final boolean fillOnlyMissingGenotypes;
+    private final boolean skipReferenceNoVariants;
 
     private Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
 
-    public FillGapsTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean fillOnlyMissingGenotypes) {
+    public FillGapsTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean skipReferenceNoVariants) {
         this.studyConfiguration = studyConfiguration;
-        this.fillOnlyMissingGenotypes = fillOnlyMissingGenotypes;
+        this.skipReferenceNoVariants = skipReferenceNoVariants;
 
         studyConverter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), studyConfiguration, true, Collections.singleton("?/?"));
         variantMerger = new VariantMerger(false).configure(studyConfiguration.getVariantHeader());
@@ -60,7 +60,7 @@ public class FillGapsTask {
             String alternate = vcfRecord.getAlternate();
             if (overlapsWith(variant, chromosome, start, end)) {
                 if (VcfRecordProtoToVariantConverter.getVariantType(vcfRecord.getType()).equals(VariantType.NO_VARIATION)) {
-                    if (!fillOnlyMissingGenotypes || hasMissingGenotype(vcfSlice, vcfRecord)) {
+                    if (!skipReferenceNoVariants || hasMissingGenotype(vcfSlice, vcfRecord)) {
                         Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
                         FileEntry fileEntry = archiveVariant.getStudies().get(0).getFiles().get(0);
                         fileEntry.getAttributes().remove(VCFConstants.END_KEY);

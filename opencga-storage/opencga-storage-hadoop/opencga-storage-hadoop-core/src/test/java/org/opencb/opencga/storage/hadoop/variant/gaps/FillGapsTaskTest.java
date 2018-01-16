@@ -95,14 +95,14 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     }
 
     public static void fillGapsLocalFromArchive(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration,
-                                                Collection<Integer> sampleIds, boolean fillOnlyMissingGenotypes)
+                                                Collection<Integer> sampleIds, boolean skipReferenceNoVariants)
             throws StorageEngineException, IOException {
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         String variantTableName = variantStorageEngine.getVariantTableName();
         Table variantsTable = dbAdaptor.getHBaseManager().getConnection().getTable(TableName.valueOf(variantTableName));
         FillGapsFromArchiveTask fillGapsTask = new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(),
                 variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId()),
-                studyConfiguration, dbAdaptor.getGenomeHelper(), sampleIds, fillOnlyMissingGenotypes);
+                studyConfiguration, dbAdaptor.getGenomeHelper(), sampleIds, skipReferenceNoVariants);
         fillGapsTask.pre();
 
         try (Table table = dbAdaptor.getConnection().getTable(TableName.valueOf(variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId())))) {
