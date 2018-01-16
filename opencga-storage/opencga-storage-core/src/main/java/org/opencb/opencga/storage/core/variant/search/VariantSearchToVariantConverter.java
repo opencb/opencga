@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * Created by wasim on 14/11/16.
+ * Created by imedina on 14/11/16.
  */
 public class VariantSearchToVariantConverter implements ComplexTypeConverter<Variant, VariantSearchModel> {
 
@@ -86,6 +86,25 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // process annotation
         VariantAnnotation variantAnnotation = new VariantAnnotation();
+
+        // Xrefs
+        List<Xref> xrefs = new ArrayList<>();
+        if (variantSearchModel.getXrefs() != null) {
+            for (String xref : variantSearchModel.getXrefs()) {
+                if (xref.startsWith("rs")) {
+                    xrefs.add(new Xref(xref, "dbSNP"));
+                    continue;
+                }
+                if (xref.startsWith("ENSG")) {
+                    xrefs.add(new Xref(xref, "ensemblGene"));
+                    continue;
+                }
+                if (xref.startsWith("ENST")) {
+                    xrefs.add(new Xref(xref, "ensemblTranscript"));
+                }
+            }
+        }
+        variantAnnotation.setXrefs(xrefs);
 
         // consequence types
         String gene = null;
