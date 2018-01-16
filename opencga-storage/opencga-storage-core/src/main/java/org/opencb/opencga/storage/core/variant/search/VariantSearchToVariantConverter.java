@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * Created by wasim on 14/11/16.
+ * Created by imedina on 14/11/16.
  */
 public class VariantSearchToVariantConverter implements ComplexTypeConverter<Variant, VariantSearchModel> {
 
@@ -87,19 +87,36 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // process annotation
         VariantAnnotation variantAnnotation = new VariantAnnotation();
 
+        // Xrefs
+        List<Xref> xrefs = new ArrayList<>();
+        if (variantSearchModel.getXrefs() != null) {
+            for (String xref : variantSearchModel.getXrefs()) {
+                if (xref.startsWith("rs")) {
+                    xrefs.add(new Xref(xref, "dbSNP"));
+                    continue;
+                }
+                if (xref.startsWith("ENSG")) {
+                    xrefs.add(new Xref(xref, "ensemblGene"));
+                    continue;
+                }
+                if (xref.startsWith("ENST")) {
+                    xrefs.add(new Xref(xref, "ensemblTranscript"));
+                }
+            }
+        }
+        variantAnnotation.setXrefs(xrefs);
+
         // consequence types
         String gene = null;
         String ensGene = null;
         Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
         for (int i = 0; i < variantSearchModel.getGenes().size(); i++) {
-
             if (!variantSearchModel.getGenes().get(i).startsWith("ENS")) {
                 gene = variantSearchModel.getGenes().get(i);
             }
             if (variantSearchModel.getGenes().get(i).startsWith("ENSG")) {
                 ensGene = variantSearchModel.getGenes().get(i);
             }
-
             if (variantSearchModel.getGenes().get(i).startsWith("ENST")) {
                 ConsequenceType consequenceType = new ConsequenceType();
                 consequenceType.setGeneName(gene);
@@ -129,10 +146,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // and finally, update the SO accession for each consequence type
         // and setProteinVariantAnnotation if SO accession is 1583
+        Set<Integer> geneRelatedSoTerms = new HashSet<>();
         for (String geneToSoAcc : variantSearchModel.getGeneToSoAcc()) {
             String[] fields = geneToSoAcc.split("_");
             if (consequenceTypeMap.containsKey(fields[0])) {
                 int soAcc = Integer.parseInt(fields[1]);
+                geneRelatedSoTerms.add(soAcc);  // we memorise the SO term for next block
+
                 SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
                 sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", soAcc));
                 sequenceOntologyTerm.setName(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
@@ -148,8 +168,28 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
         }
+
+        // We convert the Map into an array
+        ArrayList<ConsequenceType> consequenceTypes = new ArrayList<>(consequenceTypeMap.values());
+
+        // Add non-gene related SO terms
+        for (Integer soAcc : variantSearchModel.getSoAcc()) {
+            // let's process all non-gene related terms such as regulatory_region_variant or intergenic_variant
+            if (!geneRelatedSoTerms.contains(soAcc)) {
+                SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
+                sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", soAcc));
+                sequenceOntologyTerm.setName(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
+
+                ConsequenceType consequenceType = new ConsequenceType();
+                consequenceType.setEnsemblGeneId("");
+                consequenceType.setGeneName("");
+                consequenceType.setEnsemblTranscriptId("");
+                consequenceType.setSequenceOntologyTerms(Collections.singletonList(sequenceOntologyTerm));
+                consequenceTypes.add(consequenceType);
+            }
+        }
         // and update the variant annotation with the consequence types
-        variantAnnotation.setConsequenceTypes(new ArrayList<>(consequenceTypeMap.values()));
+        variantAnnotation.setConsequenceTypes(consequenceTypes);
 
         // set populations
         if (variantSearchModel.getPopFreq() != null && variantSearchModel.getPopFreq().size() > 0) {

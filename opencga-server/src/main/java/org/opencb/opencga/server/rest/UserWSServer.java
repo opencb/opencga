@@ -118,7 +118,8 @@ public class UserWSServer extends OpenCGAWSServer {
                     .append("id", token)
                     .append("token", token);
 
-            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", 0, 1, 1, "", "", Arrays.asList(sessionMap));
+            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", 0, 1, 1,
+                    "'sessionId' and 'id' deprecated", "", Arrays.asList(sessionMap));
 
             return createOkResponse(login);
         } catch (Exception e) {
