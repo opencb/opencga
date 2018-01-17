@@ -153,6 +153,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String STATS_LOCAL = "stats.local";
 
     public static final String DBADAPTOR_PHOENIX_FETCH_SIZE = "dbadaptor.phoenix.fetch_size";
+    public static final String MISSING_GENOTYPES_UPDATED = "missing_genotypes_updated";
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
@@ -481,7 +482,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 StudyConfigurationManager.setStatus(sc,
                         fail ? BatchFileOperation.Status.ERROR : BatchFileOperation.Status.READY,
                         FILL_GAPS_OPERATION_NAME, Collections.emptyList());
-
+                sc.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
                 return sc;
             });
             Runtime.getRuntime().removeShutdownHook(hook);

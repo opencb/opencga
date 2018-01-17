@@ -151,7 +151,8 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     @Test
     public void testFillMissingPlatinumFiles() throws Exception {
         StudyConfiguration studyConfiguration = loadPlatinum(new ObjectMap()
-                        .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 4);
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 12877, 12878);
+        assertFalse(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
 
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
@@ -160,10 +161,32 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
         variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), new ObjectMap("local", false));
         printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
-        checkFillMissing(dbAdaptor);
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
+        checkFillMissing(dbAdaptor, "?/?");
+
+        studyConfiguration = loadPlatinum(new ObjectMap()
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 12879, 12879);
+
+        printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
+        assertFalse(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
+        checkFillMissing(dbAdaptor, "0/0");
+
+        studyConfiguration = loadPlatinum(new ObjectMap()
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 12880, 12880);
+
+        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), new ObjectMap("local", false));
+        printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
+        checkFillMissing(dbAdaptor, "?/?");
     }
 
     private StudyConfiguration loadPlatinum(ObjectMap extraParams, int max) throws Exception {
+        return loadPlatinum(extraParams, 12877, 12877 + max);
+    }
+
+    private StudyConfiguration loadPlatinum(ObjectMap extraParams, int from, int to) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
@@ -171,13 +194,9 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
         List<URI> inputFiles = new LinkedList<>();
 
-        for (int fileId = 12877; fileId <= 12893; fileId++) {
+        for (int fileId = from; fileId <= to; fileId++) {
             String fileName = "platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             inputFiles.add(getResourceUri(fileName));
-            max--;
-            if (max == 0) {
-                break;
-            }
         }
 
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
@@ -222,10 +241,10 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         }
     }
 
-    protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor) {
+    protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, String unexpectedGT) {
         for (Variant variant : dbAdaptor) {
             for (List<String> data : variant.getStudies().get(0).getSamplesData()) {
-                assertFalse(data.get(0).equals("0/0"));
+                assertFalse(data.get(0).equals(unexpectedGT));
             }
         }
     }
