@@ -17,11 +17,17 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.*;
+import org.opencb.opencga.core.common.ArrayUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by imedina on 27/05/16.
@@ -31,6 +37,13 @@ public class OpencgaMain {
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public static void main(String[] args) {
+
+        if ("users".equals(args[0]) && "login".equals(args[1])) {
+            List<String> argsList = new ArrayList<>();
+            argsList.addAll(Arrays.asList(args));
+            argsList.add("--password");
+            args = ArrayUtils.toStringArray(argsList);
+        }
 
         OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
         try {

@@ -19,9 +19,13 @@ package org.opencb.opencga.app.cli.admin;
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.executors.*;
+import org.opencb.opencga.core.common.ArrayUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by imedina on 03/02/15.
@@ -31,6 +35,12 @@ public class AdminMain {
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public static void main(String[] args) {
+
+        // Add password parameter
+        List<String> argsList = new ArrayList<>();
+        argsList.addAll(Arrays.asList(args));
+        argsList.add("--password");
+        args = ArrayUtils.toStringArray(argsList);
 
         AdminCliOptionsParser cliOptionsParser = new AdminCliOptionsParser();
         try {
