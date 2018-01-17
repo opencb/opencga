@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
 
     public static final String SAMPLES = "samples";
-    public static final String SKIP_REFERENCE_NO_VARIANTS = "skipReferenceNoVariants";
+    public static final String SKIP_REFERENCE_VARIANTS = "skipReferenceVariants";
     private FillGapsFromArchiveTask task;
 
     public static void setSamples(Job job, Collection<Integer> sampleIds) {
@@ -38,21 +38,21 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         return samples;
     }
 
-    public static void setSkipReferenceNoVariants(Job job, boolean skipReferenceNoVariants) {
-        job.getConfiguration().setBoolean(SKIP_REFERENCE_NO_VARIANTS, skipReferenceNoVariants);
+    public static void setSkipReferenceVariants(Job job, boolean skipReferenceVariants) {
+        job.getConfiguration().setBoolean(SKIP_REFERENCE_VARIANTS, skipReferenceVariants);
     }
 
-    public static boolean getSkipReferenceNoVariants(Configuration configuration) {
-        return configuration.getBoolean(SKIP_REFERENCE_NO_VARIANTS, false);
+    public static boolean getSkipReferenceVariants(Configuration configuration) {
+        return configuration.getBoolean(SKIP_REFERENCE_VARIANTS, false);
     }
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         Collection<Integer> samples = getSamples(context.getConfiguration());
-        boolean skipReferenceNoVariants = getSkipReferenceNoVariants(context.getConfiguration());
+        boolean skipReferenceVariants = getSkipReferenceVariants(context.getConfiguration());
         task = new FillGapsFromArchiveTask(getHBaseManager(), getHelper().getArchiveTableAsString(), getStudyConfiguration(), getHelper(),
-                samples, skipReferenceNoVariants);
+                samples, skipReferenceVariants);
         task.pre();
     }
 

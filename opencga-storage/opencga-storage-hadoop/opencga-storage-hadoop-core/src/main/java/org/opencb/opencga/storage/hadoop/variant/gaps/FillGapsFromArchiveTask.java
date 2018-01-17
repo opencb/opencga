@@ -58,8 +58,8 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                                    String archiveTableName,
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
-                                   boolean skipReferenceNoVariants) {
-        this(hBaseManager, archiveTableName, studyConfiguration, helper, null, skipReferenceNoVariants);
+                                   boolean skipReferenceVariants) {
+        this(hBaseManager, archiveTableName, studyConfiguration, helper, null, skipReferenceVariants);
     }
 
     public FillGapsFromArchiveTask(HBaseManager hBaseManager,
@@ -67,7 +67,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
                                    Collection<Integer> samples,
-                                   boolean skipReferenceNoVariants) {
+                                   boolean skipReferenceVariants) {
         this.hBaseManager = hBaseManager;
         this.archiveTableName = archiveTableName;
         this.studyConfiguration = studyConfiguration;
@@ -96,7 +96,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         }
         fillAllVariants = fileIds.size() == studyConfiguration.getIndexedFiles().size();
 
-        fillGapsTask = new FillGapsTask(studyConfiguration, helper, skipReferenceNoVariants);
+        fillGapsTask = new FillGapsTask(studyConfiguration, helper, skipReferenceVariants);
         rowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
     }
 
@@ -153,8 +153,8 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                 if (vcfSlice != null) {
                     for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
                         VariantType variantType = VcfRecordProtoToVariantConverter.getVariantType(vcfRecord.getType());
-                        // Get valid variants from this VcfSlice
-                        if (TARGET_VARIANT_TYPE_SET.contains(variantType)) {
+                        // Get loaded variants from this VcfSlice
+                        if (isVariantAlreadyLoaded(vcfSlice, vcfRecord)) {
 
                             int position = vcfSlice.getPosition();
                             int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
@@ -346,5 +346,17 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         scan.setFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
         return scan;
     }
+
+    private static boolean isVariantAlreadyLoaded(VcfSliceProtos.VcfSlice slice, VcfSliceProtos.VcfRecord vcfRecord) {
+        VariantType variantType = VcfRecordProtoToVariantConverter.getVariantType(vcfRecord.getType());
+        // The variant is not loaded if is a NO_VARIATION (fast check first)
+        if (!TARGET_VARIANT_TYPE_SET.contains(variantType)) {
+            return false;
+        }
+
+        // If any of the genotypes is HOM_REF, the variant won't be completely loaded, so there may be a gap.
+        return !FillGapsTask.hasAnyReferenceGenotype(slice, vcfRecord);
+    }
+
 
 }

@@ -88,14 +88,14 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     }
 
     public static void fillGapsLocalFromArchive(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration,
-                                                Collection<Integer> sampleIds, boolean skipReferenceNoVariants)
+                                                Collection<Integer> sampleIds, boolean skipReferenceVariants)
             throws StorageEngineException, IOException {
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         String variantTableName = variantStorageEngine.getVariantTableName();
         Table variantsTable = dbAdaptor.getHBaseManager().getConnection().getTable(TableName.valueOf(variantTableName));
         FillGapsFromArchiveTask fillGapsTask = new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(),
                 variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId()),
-                studyConfiguration, dbAdaptor.getGenomeHelper(), sampleIds, skipReferenceNoVariants);
+                studyConfiguration, dbAdaptor.getGenomeHelper(), sampleIds, skipReferenceVariants);
         fillGapsTask.pre();
 
         try (Table table = dbAdaptor.getConnection().getTable(TableName.valueOf(variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId())))) {
@@ -183,7 +183,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     }
 
     private StudyConfiguration loadPlatinum(ObjectMap extraParams, int max) throws Exception {
-        return loadPlatinum(extraParams, 12877, 12877 + max);
+        return loadPlatinum(extraParams, 12877, 12877 + max - 1);
     }
 
     private StudyConfiguration loadPlatinum(ObjectMap extraParams, int from, int to) throws Exception {

@@ -383,7 +383,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         fillGaps(study, samples, false, options);
     }
 
-    private void fillGaps(String study, List<String> samples, boolean skipReferenceNoVariants, ObjectMap inputOptions)
+    private void fillGaps(String study, List<String> samples, boolean skipReferenceVariants, ObjectMap inputOptions)
             throws StorageEngineException {
         ObjectMap options = new ObjectMap(getOptions());
         if (inputOptions != null) {
@@ -450,7 +450,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 String jar = getJarWithDependencies(options);
 
                 options.put(FillGapsFromArchiveMapper.SAMPLES, sampleIds);
-                options.put(FillGapsFromArchiveMapper.SKIP_REFERENCE_NO_VARIANTS, skipReferenceNoVariants);
+                options.put(FillGapsFromArchiveMapper.SKIP_REFERENCE_VARIANTS, skipReferenceVariants);
 
                 Class execClass = FillGapsDriver.class;
                 String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
