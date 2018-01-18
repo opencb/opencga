@@ -47,12 +47,13 @@ public class VariantMetadataFactory {
             studyConfigurations.add(scm.getStudyConfiguration(studyId, QueryOptions.empty()).first());
         }
 
-        return makeVariantMetadata(studyConfigurations, returnedSamples, returnedFiles);
+        return makeVariantMetadata(studyConfigurations, returnedSamples, returnedFiles, queryOptions);
     }
 
     protected VariantMetadata makeVariantMetadata(List<StudyConfiguration> studyConfigurations,
                                                   Map<Integer, List<Integer>> returnedSamples,
-                                                  Map<Integer, List<Integer>> returnedFiles) throws StorageEngineException {
+                                                  Map<Integer, List<Integer>> returnedFiles, QueryOptions queryOptions)
+            throws StorageEngineException {
         VariantMetadata metadata = new VariantMetadataConverter().toVariantMetadata(studyConfigurations, returnedSamples, returnedFiles);
 
         Map<String, StudyConfiguration> studyConfigurationMap = studyConfigurations.stream()

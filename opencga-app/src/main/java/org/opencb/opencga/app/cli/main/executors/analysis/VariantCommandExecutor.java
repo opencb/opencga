@@ -144,7 +144,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         ObjectMap params = new ObjectMap(query);
-        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(params, new QueryOptions(QueryOptions.EXCLUDE, "files")).firstResult();
+        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(params, new QueryOptions(QueryOptions.EXCLUDE, "files").append("basic", true)).firstResult();
         VcfOutputWriter vcfOutputWriter = new VcfOutputWriter(metadata, annotations, System.out);
 
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
