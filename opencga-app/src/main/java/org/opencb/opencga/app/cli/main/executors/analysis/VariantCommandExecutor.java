@@ -120,9 +120,11 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         queryCommandOptions.genericVariantQueryOptions.returnStudy = resolveStudy(queryCommandOptions.genericVariantQueryOptions.returnStudy);
 
         List<String> studies = new ArrayList<>();
-        for (Map.Entry<String, List<String>> entry : cliSession.getProjectsAndStudies().entrySet()) {
-            for (String s : entry.getValue()) {
-                studies.add(entry.getKey() + ':' + s);
+        if (cliSession != null && cliSession.getProjectsAndStudies() != null) {
+            for (Map.Entry<String, List<String>> entry : cliSession.getProjectsAndStudies().entrySet()) {
+                for (String s : entry.getValue()) {
+                    studies.add(entry.getKey() + ':' + s);
+                }
             }
         }
         Query query = VariantQueryCommandUtils.parseQuery(queryCommandOptions, studies, clientConfiguration);

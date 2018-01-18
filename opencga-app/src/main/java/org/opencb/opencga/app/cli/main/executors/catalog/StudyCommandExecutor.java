@@ -150,7 +150,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 return clientConfiguration.getDefaultStudy();
             } else {
                 // Third, check if there is only one single project and study for this user in the current CLI session file.
-                Map<String, List<String>> projectsAndStudies = cliSession.getProjectsAndStudies();
+                Map<String, List<String>> projectsAndStudies = cliSession == null ? null : cliSession.getProjectsAndStudies();
                 if (projectsAndStudies != null && projectsAndStudies.size() == 1) {
                     List<String> projectAliases = new ArrayList<>(projectsAndStudies.keySet());
                     // Get the study list of the only existing project

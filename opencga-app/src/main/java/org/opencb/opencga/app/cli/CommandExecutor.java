@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,6 +57,7 @@ public abstract class CommandExecutor {
     protected String userId;
     @Deprecated
     protected String sessionId;
+    @Nullable
     protected CliSession cliSession;
 
     protected Configuration configuration;
@@ -152,7 +154,7 @@ public abstract class CommandExecutor {
 
     @Deprecated
     protected String getSessionId(GeneralCliOptions.CommonCommandOptions commonOptions) {
-        if (StringUtils.isBlank(commonOptions.sessionId)) {
+        if (StringUtils.isBlank(commonOptions.sessionId) && cliSession != null) {
             return cliSession.getToken();
         } else {
             return commonOptions.sessionId;
