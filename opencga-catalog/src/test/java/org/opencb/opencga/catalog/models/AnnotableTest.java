@@ -20,7 +20,6 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Annotable;
-import org.opencb.opencga.core.models.Annotation;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 
@@ -37,17 +36,17 @@ public class AnnotableTest {
     public void getAsMapTest() {
         Annotable annotable = new Sample();
 
-        Set<Annotation> annotationList = new HashSet<>(8);
-        annotationList.add(new Annotation("name1", "value1"));
-        annotationList.add(new Annotation("name2", "value2"));
-        annotationList.add(new Annotation("name3", Arrays.asList(1,2,3,4)));
+        Map<String, Object> annotationList = new HashMap<>();
+        annotationList.put("name1", "value1");
+        annotationList.put("name2", "value2");
+        annotationList.put("name3", Arrays.asList(1,2,3,4));
 
-        Set<Annotation> copy = new HashSet<>(6);
-        for (Annotation annotation : annotationList) {
-            copy.add(annotation);
+        Map<String, Object> copy = new HashMap<>();
+        for (Map.Entry<String, Object> annotation : annotationList.entrySet()) {
+            copy.put(annotation.getKey(), annotation.getValue());
         }
 
-        annotationList.add(new Annotation("name4", copy));
+        annotationList.put("name4", copy);
 
         List<AnnotationSet> annotationSetList = new ArrayList<>(2);
         annotationSetList.add(new AnnotationSet("annot1", 1, annotationList, TimeUtils.getTime(), 1, Collections.emptyMap()));

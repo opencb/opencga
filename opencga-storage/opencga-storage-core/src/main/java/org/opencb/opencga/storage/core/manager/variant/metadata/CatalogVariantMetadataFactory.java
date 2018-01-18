@@ -8,13 +8,19 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -103,8 +109,8 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));
         for (AnnotationSet annotationSet : annotationSets) {
             String prefix = annotationSets.size() > 1 ? annotationSet.getName() + '.' : "";
-            Set<Annotation> annotations = annotationSet.getAnnotations();
-            for (Annotation annotation : annotations) {
+            Map<String, Object> annotations = annotationSet.getAnnotations();
+            for (Map.Entry<String, Object> annotation : annotations.entrySet()) {
                 Object value = annotation.getValue();
                 String stringValue;
                 if (value instanceof Collection) {
@@ -112,7 +118,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                 } else {
                     stringValue = value.toString();
                 }
-                sample.getAnnotations().put(prefix + annotation.getName(), stringValue);
+                sample.getAnnotations().put(prefix + annotation.getKey(), stringValue);
             }
         }
     }

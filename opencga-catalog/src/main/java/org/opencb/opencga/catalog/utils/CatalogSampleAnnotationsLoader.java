@@ -76,12 +76,8 @@ public class CatalogSampleAnnotationsLoader {
         //Check VariableSet for all samples
         for (Individual individual : ped.getIndividuals().values()) {
             Map<String, Object> annotation = getAnnotation(individual, sampleMap, variableSet, ped.getFields());
-            HashSet<Annotation> annotationSet = new HashSet<>(annotation.size());
-            for (Map.Entry<String, Object> annotationEntry : annotation.entrySet()) {
-                annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
-            }
             try {
-                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", 1,
+                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation, "", 1,
                         null), null);
             } catch (CatalogException e) {
                 String message = "Validation with the variableSet {id: " + variableSetId + "} over ped File = {id: " + pedFile.getId()

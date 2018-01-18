@@ -17,17 +17,17 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.models.Sample;
 
 /**
  * Created by pfurio on 19/01/16.
  */
-public class SampleConverter extends GenericDocumentComplexConverter<Sample> {
+public class SampleConverter extends AnnotableConverter<Sample> {
 
     public SampleConverter() {
         super(Sample.class);
     }
+
 
     @Override
     public Document convertToStorageType(Sample object) {
@@ -36,5 +36,4 @@ public class SampleConverter extends GenericDocumentComplexConverter<Sample> {
         document.put("individual", new Document());
         return document;
     }
-
 }

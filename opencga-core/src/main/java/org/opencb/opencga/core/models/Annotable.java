@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 07/07/16.
@@ -52,8 +53,8 @@ public abstract class Annotable {
             objectMap.put("attributes", annotationSet.getAttributes());
 
             ObjectMap annotations = new ObjectMap(annotationSet.getAnnotations().size() * 2);
-            for (Annotation annotation : annotationSet.getAnnotations()) {
-                annotations.put(annotation.getName(), recursiveMap(annotation.getValue()));
+            for (Map.Entry<String, Object> annotationEntrySet : annotationSet.getAnnotations().entrySet()) {
+                annotations.put(annotationEntrySet.getKey(), recursiveMap(annotationEntrySet.getValue()));
             }
             objectMap.put("annotations", annotations);
 

@@ -541,9 +541,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         // Audit the changes
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
-                newAnnotations.entrySet().stream()
-                        .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
+                newAnnotations, annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.family, resourceId.getResourceId(), resourceId.getUser(),
                 new ObjectMap("annotationSets", Collections.singletonList(annotationSetUpdate)), "Update annotation", null);
 

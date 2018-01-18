@@ -86,11 +86,14 @@ public class SampleMongoDBAdaptorTest {
     public void testAnnotateSample() throws Exception {
         long sampleId = s1.getId();
 
-        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
-                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
+        Map<String, Object> annotations = new HashMap<>();
+        annotations.put("key", "value");
+        annotations.put("key2", "value2");
+        annotations.put("key3", 3);
+        annotations.put("key4", true);
 
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
-        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", 1, Collections.emptyMap());
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
+        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotations, "", 1, Collections.emptyMap());
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot1);
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot2);
 
@@ -137,17 +140,20 @@ public class SampleMongoDBAdaptorTest {
     private void createAnnotationExample() throws CatalogDBException {
         long sampleId = s1.getId();
 
-        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
-                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
+        Map<String, Object> annotations = new HashMap<>();
+        annotations.put("key", "value");
+        annotations.put("key2", "value2");
+        annotations.put("key3", 3);
+        annotations.put("key4", true);
 
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
-        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", 1, Collections.emptyMap());
-        AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotationSet, "", 1, Collections.emptyMap());
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
+        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotations, "", 1, Collections.emptyMap());
+        AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotations, "", 1, Collections.emptyMap());
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot3);
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot1);
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot2);
 
-        AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotationSet, "", 1, Collections.emptyMap());
+        AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotations, "", 1, Collections.emptyMap());
         catalogSampleDBAdaptor.createAnnotationSet(s2.getId(), annot4);
     }
 
@@ -168,25 +174,24 @@ public class SampleMongoDBAdaptorTest {
     public void testOverwriteAnnotateSample() throws Exception {
         long sampleId = s1.getId();
 
-        Set<Annotation> annotationSet = Arrays.asList(
-                new Annotation("key", "value"),
-                new Annotation("key2", "value2"),
-                new Annotation("key3", 3),
-                new Annotation("key4", true))
-                .stream().collect(Collectors.toSet());
-        AnnotationSet expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
+        Map<String, Object> annotations = new HashMap<>();
+        annotations.put("key", "value");
+        annotations.put("key2", "value2");
+        annotations.put("key3", 3);
+        annotations.put("key4", true);
+
+        AnnotationSet expectedAnnot = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
 
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, expectedAnnot);
         AnnotationSet annot = catalogSampleDBAdaptor.get(sampleId, null).first().getAnnotationSets().get(0);
         assertEquals(expectedAnnot, annot);
 
-        annotationSet = Arrays.asList(
-                new Annotation("key2", "value2"),
-                new Annotation("key3", 8),
-                new Annotation("key4", false),
-                new Annotation("key5", 2.3))
-                .stream().collect(Collectors.toSet());
-        expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
+        annotations = new HashMap<>();
+        annotations.put("key2", "value2");
+        annotations.put("key3", 8);
+        annotations.put("key4", false);
+        annotations.put("key5", 2.3);
+        expectedAnnot = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
         catalogSampleDBAdaptor.updateAnnotationSet(sampleId, expectedAnnot);
         annot = catalogSampleDBAdaptor.get(sampleId, null).first().getAnnotationSets().get(0);
         assertEquals(expectedAnnot, annot);

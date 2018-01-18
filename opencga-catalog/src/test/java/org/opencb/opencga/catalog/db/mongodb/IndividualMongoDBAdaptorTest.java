@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.Annotation;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
@@ -34,9 +33,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -210,8 +207,11 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
-        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
-                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
+        Map<String, Object> annotationSet = new HashMap<>();
+        annotationSet.put("key", "value");
+        annotationSet.put("key2", "value2");
+        annotationSet.put("key3", 3);
+        annotationSet.put("key4", true);
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
         AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", 1, Collections.emptyMap());
@@ -241,10 +241,10 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
-        catalogIndividualDBAdaptor.annotate(individualId, new AnnotationSet("annot1", 3, Collections.<Annotation>emptySet(),
+        catalogIndividualDBAdaptor.annotate(individualId, new AnnotationSet("annot1", 3, Collections.emptyMap(),
                 "", 1, Collections.emptyMap()), false);
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.annotate(individualId, new AnnotationSet("annot1", 3, Collections.<Annotation>emptySet(),
+        catalogIndividualDBAdaptor.annotate(individualId, new AnnotationSet("annot1", 3, Collections.emptyMap(),
                 "", 1, Collections.emptyMap()), false);
     }
 
@@ -254,13 +254,17 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v"), new Annotation("k2",
-                "v2"))), "", 1, Collections.emptyMap());
+        Map <String, Object> annotations = new HashMap<>();
+        annotations.put("k", "v");
+        annotations.put("k2", "v2");
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
         QueryResult<AnnotationSet> queryResult = catalogIndividualDBAdaptor.annotate(individualId, annot1, false);
         assertEquals(annot1, queryResult.first());
 
-        annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v2"), new Annotation("k3", "v3"))), "",
-                1, Collections.emptyMap());
+        annotations = new HashMap<>();
+        annotations.put("k", "v2");
+        annotations.put("k3", "v3");
+        annot1 = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
         queryResult = catalogIndividualDBAdaptor.annotate(individualId, annot1, true);
         assertEquals(annot1, queryResult.first());
     }
@@ -271,8 +275,10 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v"), new Annotation("k2",
-                "v2"))), "", 1, Collections.emptyMap());
+        Map<String, Object> annotations = new HashMap<>();
+        annotations.put("k", "v");
+        annotations.put("k2", "v2");
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.annotate(individualId, annot1, true);
     }

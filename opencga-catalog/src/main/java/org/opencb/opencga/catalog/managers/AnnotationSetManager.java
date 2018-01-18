@@ -26,13 +26,12 @@ import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.core.models.Annotation;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.VariableSet;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -300,13 +299,8 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
         ParamUtils.checkAlias(annotationSetName, "annotationSetName", -1);
 
         // Create empty annotation set
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSet.getId(), new HashSet<>(), TimeUtils.getTime(),
+        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSet.getId(), annotations, TimeUtils.getTime(),
                 release, attributes);
-
-        // Fill the annotation set object with the annotations
-        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
-            annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
-        }
 
         // Obtain all the annotationSets the object had in order to check for duplicities
         QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(id, null);
@@ -323,6 +317,37 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
         // Register the annotation set in the database
         return dbAdaptor.createAnnotationSet(id, annotationSet);
     }
+//    protected QueryResult<AnnotationSet> createAnnotationSet(long id, VariableSet variableSet, String annotationSetName,
+//                                                             Map<String, Object> annotations, int release,
+//                                                             Map<String, Object> attributes, AnnotationSetDBAdaptor dbAdaptor)
+//            throws CatalogException {
+//
+//        ParamUtils.checkAlias(annotationSetName, "annotationSetName", -1);
+//
+//        // Create empty annotation set
+//        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSet.getId(), new HashSet<>(), TimeUtils.getTime(),
+//                release, attributes);
+//
+//        // Fill the annotation set object with the annotations
+//        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
+//            annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
+//        }
+//
+//        // Obtain all the annotationSets the object had in order to check for duplicities
+//        QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(id, null);
+//        List<AnnotationSet> annotationSets;
+//        if (annotationSetQueryResult == null || annotationSetQueryResult.getNumResults() == 0) {
+//            annotationSets = Collections.emptyList();
+//        } else {
+//            annotationSets = annotationSetQueryResult.getResult();
+//        }
+//
+//        // Check validity of annotations and duplicities
+//        CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+//
+//        // Register the annotation set in the database
+//        return dbAdaptor.createAnnotationSet(id, annotationSet);
+//    }
 
     /**
      * Update the annotation set.

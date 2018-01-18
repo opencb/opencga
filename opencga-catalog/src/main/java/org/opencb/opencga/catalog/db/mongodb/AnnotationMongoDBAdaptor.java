@@ -34,7 +34,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.core.models.Annotable;
-import org.opencb.opencga.core.models.Annotation;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -466,7 +465,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
     public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
         long startTime = startQuery();
 
-        Annotation annotation = new Annotation(variable.getName(), variable.getDefaultValue());
+        Document annotation = new Document(variable.getName(), variable.getDefaultValue());
 
         // Obtain the annotation names of the annotations that are using the variableSet variableSetId
         List<Bson> aggregation = new ArrayList<>(4);
@@ -541,7 +540,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
                 Object value = ((Document) annotationSet.get(AnnotationSetParams.ANNOTATIONS.key())).get(AnnotationSetParams.VALUE.key());
 
                 // Create a new annotation with the new id and the former value
-                Annotation annotation = new Annotation(newName, value);
+                Document annotation = new Document(newName, value);
 
                 bsonQuery = Filters.and(
                         Filters.eq(PRIVATE_ID, entityId),
