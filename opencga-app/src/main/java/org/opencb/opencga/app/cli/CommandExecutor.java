@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.JCommander;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.ConsoleAppender;
@@ -287,7 +288,8 @@ public abstract class CommandExecutor {
     protected void loadCliSessionFile() throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
         if (Files.exists(sessionPath)) {
-            this.cliSession = new ObjectMapper().readValue(sessionPath.toFile(), CliSession.class);
+            this.cliSession = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .readValue(sessionPath.toFile(), CliSession.class);
         }
     }
 
