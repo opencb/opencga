@@ -94,7 +94,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
         configuration.setOpenRegister(true);
 
-        configuration.getAdmin().setPassword("demo");
+        configuration.getAdmin().setPassword(adminPassword);
         configuration.getAdmin().setSecretKey("demo");
         configuration.getAdmin().setAlgorithm("HS256");
 

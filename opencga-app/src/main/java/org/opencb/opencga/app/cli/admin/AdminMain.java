@@ -32,6 +32,9 @@ public class AdminMain {
 
     public static void main(String[] args) {
 
+        // Add password parameter
+        args = org.apache.commons.lang3.ArrayUtils.addAll(args, "--password");
+
         AdminCliOptionsParser cliOptionsParser = new AdminCliOptionsParser();
         try {
             cliOptionsParser.parse(args);

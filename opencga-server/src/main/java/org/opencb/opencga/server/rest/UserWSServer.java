@@ -200,19 +200,19 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{user}/delete")
-    @ApiOperation(value = "Delete a user [WARNING]",
-            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-                    "planned to be fully implemented and tested in version 1.4.0")
-    public Response delete(@ApiParam(value = "Comma separated list of user ids", required = true) @PathParam("user") String userId) {
-        try {
-            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager().delete(userId, queryOptions, sessionId);
-            return createOkResponse(deletedUsers);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{user}/delete")
+//    @ApiOperation(value = "Delete a user [WARNING]",
+//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+//                    "planned to be fully implemented and tested in version 1.4.0")
+//    public Response delete(@ApiParam(value = "Comma separated list of user ids", required = true) @PathParam("user") String userId) {
+//        try {
+//            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager().delete(userId, queryOptions, sessionId);
+//            return createOkResponse(deletedUsers);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{user}/configs/create")
