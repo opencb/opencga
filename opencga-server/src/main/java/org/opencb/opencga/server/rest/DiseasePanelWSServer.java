@@ -37,6 +37,7 @@ import java.io.IOException;
 @Path("/{apiVersion}/panels")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Panels", hidden = true, position = 10, description = "Methods for working with 'panels' endpoint")
+@Deprecated
 public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     public DiseasePanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)

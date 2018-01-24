@@ -52,6 +52,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringPar
 /**
  * Created by pfurio on 01/06/16.
  */
+@Deprecated
 public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdaptor {
 
     private final MongoDBCollection panelCollection;
