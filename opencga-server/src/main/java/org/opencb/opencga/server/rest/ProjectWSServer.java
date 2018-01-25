@@ -188,14 +188,14 @@ public class ProjectWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{project}/delete")
-//    @ApiOperation(value = "Delete a project [WARNING]", position = 5,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response delete(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectId) {
-//        return createErrorResponse("delete", "PENDING");
-//    }
+    @GET
+    @Path("/{project}/delete")
+    @ApiOperation(value = "Delete a project [WARNING]", position = 5,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
+    public Response delete(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectId) {
+        return createErrorResponse("delete", "PENDING");
+    }
 
     protected static class ProjectParams {
         public String name;

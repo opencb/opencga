@@ -239,23 +239,23 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{samples}/delete")
-//    @ApiOperation(value = "Delete a sample [WARNING]", position = 9,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names up to a maximum of 100", required = true) @PathParam("samples")
-//                                   String sampleStr,
-//                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                           @QueryParam("study") String studyStr,
-//                           @QueryParam("silent") boolean silent) {
-//        try {
-//            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(studyStr, sampleStr, queryOptions, sessionId);
-//            return createOkResponse(delete);
-//        } catch (CatalogException | IOException e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @GET
+    @Path("/{samples}/delete")
+    @ApiOperation(value = "Delete a sample [WARNING]", position = 9,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
+    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names up to a maximum of 100", required = true) @PathParam("samples")
+                                   String sampleStr,
+                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                           @QueryParam("study") String studyStr,
+                           @QueryParam("silent") boolean silent) {
+        try {
+            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(studyStr, sampleStr, queryOptions, sessionId);
+            return createOkResponse(delete);
+        } catch (CatalogException | IOException e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/groupBy")

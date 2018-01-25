@@ -253,23 +253,23 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{cohorts}/delete")
-//    @ApiOperation(value = "Delete cohort. [WARNING]", position = 5,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response deleteCohort(@ApiParam(value = "Comma separated list of cohort Ids", required = true) @PathParam("cohorts") String cohortsStr,
-//                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                                 @QueryParam("study") String studyStr,
-//                                 @QueryParam("silent") boolean silent) {
-//        try {
-////            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
-//            List<QueryResult<Cohort>> delete = cohortManager.delete(studyStr, cohortsStr, queryOptions, sessionId);
-//            return createOkResponse(delete);
-//        } catch (CatalogException e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @GET
+    @Path("/{cohorts}/delete")
+    @ApiOperation(value = "Delete cohort. [WARNING]", position = 5,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
+    public Response deleteCohort(@ApiParam(value = "Comma separated list of cohort Ids", required = true) @PathParam("cohorts") String cohortsStr,
+                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                 @QueryParam("study") String studyStr,
+                                 @QueryParam("silent") boolean silent) {
+        try {
+//            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
+            List<QueryResult<Cohort>> delete = cohortManager.delete(studyStr, cohortsStr, queryOptions, sessionId);
+            return createOkResponse(delete);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/{cohort}/annotationsets/search")
