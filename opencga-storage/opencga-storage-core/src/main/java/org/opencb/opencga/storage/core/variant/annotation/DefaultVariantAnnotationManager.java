@@ -82,8 +82,8 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     public static final String NUM_WRITERS = "numWriters";
     public static final String NUM_THREADS = "numThreads";
 
-    private VariantDBAdaptor dbAdaptor;
-    private VariantAnnotator variantAnnotator;
+    protected VariantDBAdaptor dbAdaptor;
+    protected VariantAnnotator variantAnnotator;
     private long numAnnotationsToLoad = 0;
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
 
@@ -253,14 +253,19 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         reader = newVariantAnnotationDataReader(uri);
         try {
             ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ", numAnnotationsToLoad);
-            ParallelTaskRunner<VariantAnnotation, Object> ptr = new ParallelTaskRunner<>(reader,
-                    () -> newVariantAnnotationDBWriter(dbAdaptor, new QueryOptions(params))
-                            .setProgressLogger(progressLogger), null, config);
+            ParallelTaskRunner<VariantAnnotation, ?> ptr = buildLoadAnnotationParallelTaskRunner(reader, config, progressLogger, params);
             ptr.run();
         } catch (ExecutionException e) {
             throw new StorageEngineException("Error loading variant annotation", e);
         }
 
+    }
+
+    protected ParallelTaskRunner<VariantAnnotation, ?> buildLoadAnnotationParallelTaskRunner(
+            DataReader<VariantAnnotation> reader, ParallelTaskRunner.Config config, ProgressLogger progressLogger, ObjectMap params) {
+        return new ParallelTaskRunner<>(reader,
+                        () -> newVariantAnnotationDBWriter(dbAdaptor, new QueryOptions(params))
+                                .setProgressLogger(progressLogger), null, config);
     }
 
     protected DataReader<VariantAnnotation> newVariantAnnotationDataReader(URI uri) {
