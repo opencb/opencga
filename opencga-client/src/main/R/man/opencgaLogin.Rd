@@ -25,6 +25,7 @@ an Opencga class object
 A function to login Opencga web services
 }
 \examples{
+\dontrun{
 con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
@@ -37,5 +38,5 @@ con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 conf <- "/path/to/conf/client-configuration.yml"
 con <- initOpencgaR(opencgaConfig=conf)
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-
+}
 }

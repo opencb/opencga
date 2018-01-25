@@ -121,6 +121,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
         public boolean resume;
+
+        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)")
+        public boolean loadSplitData;
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -258,11 +261,10 @@ public class StorageVariantCommandOptions {
 //        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
 //        public String study;
 
-        @Parameter(names = {"--gt", "--genotype"}, description = "A comma separated list of samples from the SAME study, example: " +
-                "NA0001:0/0,0/1;NA0002:0/1", arity = 1)
+        @Parameter(names = {"--gt", "--genotype"}, description = VariantQueryParam.GENOTYPE_DESCR, arity = 1)
         public String sampleGenotype;
 
-        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLES_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
         public String samples;
 
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)
@@ -271,7 +273,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR, arity = 1)
         public String filter;
 
-        @Parameter(names = {"--gene-biotype"}, description = "Biotype CSV", arity = 1)
+        @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR, arity = 1)
         public String geneBiotype;
 
         @Parameter(names = {"--pmaf", "--population-maf"}, description = "Population minor allele frequency: " +
@@ -384,6 +386,8 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters")
         public boolean summary;
 
+        @Parameter(names = {"--sort"}, description = "Sort the output elements.")
+        public boolean sort;
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
@@ -466,10 +470,6 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         public String filterRegion;
-
-        @Deprecated
-        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
-        public String filterChromosome;
 
         @Deprecated
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)

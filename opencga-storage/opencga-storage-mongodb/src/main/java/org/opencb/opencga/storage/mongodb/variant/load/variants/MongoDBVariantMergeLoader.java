@@ -30,12 +30,12 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.regex.Matcher;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
@@ -44,8 +44,6 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSt
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.ID_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.STUDY_FILE_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.DUP_KEY_WRITE_RESULT_ERROR_PATTERN;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.NEW_STUDY_FIELD;
 
 /**
@@ -56,7 +54,7 @@ import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVaria
  *   New study in a existing variant
  *   New data in a existing study
  * Cleans (if needed/wanted) the STAGE collection.
- *   Removes the files from the indexed field. {@link STUDY_FILE_FIELD}
+ *   Removes the files from the indexed field. {@link StageDocumentToVariantConverter#STUDY_FILE_FIELD}
  *   Sets {studyId}.{fileId} fields to NULL.
  *   Do NOT remove ($unset) the field. See {@link MongoDBVariantMerger#alreadyProcessedStageDocument}
  *
@@ -111,7 +109,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
             // Can not unset value!
             cleanStageDuplicatedList.add(set(studyId + "." + fileId, null));
         }
-        cleanStageDuplicatedList.add(pullAll(STUDY_FILE_FIELD, studyFileToPull));
+        cleanStageDuplicatedList.add(pullAll(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyFileToPull));
 
         List<Bson> cleanStageList = new ArrayList<>(cleanStageDuplicatedList.size() + 1);
         cleanStageList.addAll(cleanStageDuplicatedList);
@@ -276,26 +274,20 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
             newVariants += e.getWriteResult().getUpserts().size();
             Set<String> duplicatedNonInsertedId = new HashSet<>();
             for (BulkWriteError writeError : e.getWriteErrors()) {
-                if (!ErrorCategory.fromErrorCode(writeError.getCode()).equals(ErrorCategory.DUPLICATE_KEY)) {
-                    throw e;
+                if (ErrorCategory.fromErrorCode(writeError.getCode()).equals(ErrorCategory.DUPLICATE_KEY)) {
+                    String id = newStudy.getIds().get(writeError.getIndex());
+                    duplicatedNonInsertedId.add(id);
+                    logger.warn("Catch error : {}. DupKey exception inserting '{}'. Retry!",
+                            writeError.toString(), id);
                 } else {
-                    Matcher matcher = DUP_KEY_WRITE_RESULT_ERROR_PATTERN.matcher(writeError.getMessage());
-                    if (matcher.find()) {
-                        String id = matcher.group(1);
-                        duplicatedNonInsertedId.add(id);
-                        logger.warn("Catch error : {}",  writeError.toString());
-                        logger.warn("DupKey exception inserting '{}'. Retry!", id);
-                    } else {
-                        logger.error("WriteError with code {} does not match with the pattern {}",
-                                writeError.getCode(), DUP_KEY_WRITE_RESULT_ERROR_PATTERN.pattern());
-                        throw e;
-                    }
+                    throw e;
                 }
             }
             if (retry) {
                 // Retry once!
                 // With UPSERT=true, this command should never throw DuplicatedKeyException.
                 // See https://jira.mongodb.org/browse/SERVER-14322
+                // Assume unordered bulk
                 // Remove inserted variants
                 logger.warn("Retry! " + e);
                 Iterator<String> iteratorId = newStudy.getIds().iterator();

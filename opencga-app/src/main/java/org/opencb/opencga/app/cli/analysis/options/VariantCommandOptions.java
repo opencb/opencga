@@ -27,6 +27,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.List;
@@ -36,7 +37,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.PROJECT_DESC;
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_FILTER_DESC;
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -122,6 +123,20 @@ public class VariantCommandOptions {
         @Parameter(names = {"--project-id"}, description = "Project to index. DEPRECATED: Use --project", arity = 1)
         public String projectId;
 
+        @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
+        public String region;
+
+        @Parameter(names = {"-g", "--gene"}, description = VariantQueryParam.GENE_DESCR)
+        public String gene;
+
+        @Parameter(names = {"--file"}, description = VariantQueryParam.FILE_DESCR, arity = 1)
+        public String file;
+
+        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
+        public String sample;
+
+        @Parameter(names = {"--cohort"}, description = VariantQueryParam.COHORT_DESCR, arity = 1)
+        public String cohort;
     }
 
     @Deprecated
@@ -404,7 +419,7 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
+        @Parameter(names = {"--sample-filter"}, description = SAMPLE_ANNOTATION_DESC)
         public String sampleFilter;
 
         // FIXME: This param should not be in the ANALYSIS command line!

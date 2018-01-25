@@ -20,7 +20,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.util.*;
-import java.util.function.Supplier;
+
+import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -541,13 +542,6 @@ public class Individual extends Annotable {
             this.propagate = propagate;
             return this;
         }
-    }
-
-    public static <O> O defaultObject(O object, Supplier<O> supplier) {
-        if (object == null) {
-            object = supplier.get();
-        }
-        return object;
     }
 
 }

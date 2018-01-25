@@ -127,15 +127,15 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{studies}/delete")
-    @ApiOperation(value = "Delete a study [WARNING]", response = Study.class,
-            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-                    "planned to be fully implemented and tested in version 1.4.0")
-    public Response delete(@ApiParam(value = "Comma separated list of study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("studies") String studyStr, @QueryParam("silent") boolean silent) {
-        return createOkResponse("PENDING");
-    }
+//    @GET
+//    @Path("/{studies}/delete")
+//    @ApiOperation(value = "Delete a study [WARNING]", response = Study.class,
+//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+//                    "planned to be fully implemented and tested in version 1.4.0")
+//    public Response delete(@ApiParam(value = "Comma separated list of study [[user@]project:]study where study and project can be either the id or alias",
+//            required = true) @PathParam("studies") String studyStr, @QueryParam("silent") boolean silent) {
+//        return createOkResponse("PENDING");
+//    }
 
     @GET
     @Path("/{studies}/info")
@@ -465,6 +465,62 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             isSingleId(studyStr);
             return createOkResponse(catalogManager.getStudyManager().deleteGroup(studyStr, groupId, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{study}/permissionRules")
+    @ApiOperation(value = "Fetch permission rules")
+    public Response getPermissionRules(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
+            @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @QueryParam("entry")
+                    Study.Entry entry) {
+        try {
+            isSingleId(studyStr);
+            return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entry, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/permissionRules/{entry}/create")
+    @ApiOperation(value = "Create a new permission rule")
+    public Response createPermissionRules(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
+            @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @PathParam("entry")
+                    Study.Entry entry,
+            @ApiParam(value = "JSON containing the permission rule", required = true) PermissionRule params) {
+        try {
+            isSingleId(studyStr);
+            return createOkResponse(catalogManager.getStudyManager().createPermissionRule(studyStr, entry, params, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("/{study}/permissionRules/{entry}/delete")
+    @ApiOperation(value = "Delete an existing permission rule")
+    public Response deletePermissionRules(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+            @PathParam("study") String studyStr,
+            @ApiParam(value = "Entry where the permission rules should be applied to", required = true) @PathParam("entry")
+                    Study.Entry entry,
+            @ApiParam(value = "Permission rule id to be deleted", required = true) @QueryParam("permissionRuleId")
+                    String permissionRuleId,
+            @ApiParam(value = "Extra action to be performed when removing the permission rule: REMOVE - Remove all permissions assigned "
+                    + "by the permission rule (even if it overlaps any manual permission); REVERT - Remove all permissions assigned by the"
+                    + " permission rule (keep manual overlaps); NONE - Don't touch any permissions assigned by the permission rule.",
+                    defaultValue = "REMOVE") @QueryParam("action") PermissionRule.DeleteAction action) {
+        try {
+            isSingleId(studyStr);
+            catalogManager.getStudyManager().markDeletedPermissionRule(studyStr, entry, permissionRuleId, action, sessionId);
+            return createOkResponse(new QueryResult<>(permissionRuleId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

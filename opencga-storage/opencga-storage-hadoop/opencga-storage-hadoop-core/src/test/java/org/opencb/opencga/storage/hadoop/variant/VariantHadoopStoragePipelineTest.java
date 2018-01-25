@@ -122,7 +122,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     public void queryVariantTable() {
         System.out.println("Query from Variant table");
         VariantDBIterator iterator = dbAdaptor.iterator(
-                new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId()),
+                new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId()),
                 new QueryOptions());
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
@@ -188,8 +188,8 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("Query from Archive table");
         dbAdaptor.iterator(
                 new Query()
-                        .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
-                        .append(VariantQueryParam.FILES.key(), FILE_ID),
+                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+                        .append(VariantQueryParam.FILE.key(), FILE_ID),
                 new QueryOptions("archive", true)).forEachRemaining(variant -> {
             System.out.println("Variant from archive = " + variant.toJson());
             numVariants[0]++;

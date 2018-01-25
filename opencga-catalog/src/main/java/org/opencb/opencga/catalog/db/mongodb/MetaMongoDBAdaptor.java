@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -26,13 +27,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.core.config.Admin;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Metadata;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.config.Admin;
+import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.Metadata;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -191,17 +192,24 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     @Override
-    public void updateAdmin(Admin admin) throws CatalogDBException {
+    public void updateJWTParameters(ObjectMap params) throws CatalogDBException {
         Bson query = METADATA_QUERY;
 
         Document adminDocument = new Document();
-        if (admin.getSecretKey() != null) {
-            adminDocument.append("admin.secretKey", admin.getSecretKey());
+        if (StringUtils.isNotEmpty(params.getString(SECRET_KEY))) {
+            adminDocument.append("admin.secretKey", params.getString(SECRET_KEY));
         }
 
-        if (admin.getAlgorithm() != null) {
-            adminDocument.append("admin.algorithm", admin.getAlgorithm());
-        }
+//        if (StringUtils.isNotEmpty(params.getString(ALGORITHM))) {
+//            String signature = params.getString(ALGORITHM);
+//            try {
+//                SignatureAlgorithm.valueOf(signature);
+//            } catch (Exception e) {
+//                logger.error("{}", e.getMessage(), e);
+//                throw new CatalogDBException("Unknown signature algorithm " + signature);
+//            }
+//            adminDocument.append("admin.algorithm", params.getString(ALGORITHM));
+//        }
 
         if (adminDocument.size() > 0) {
             Bson update = new Document("$set", adminDocument);

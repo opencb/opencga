@@ -30,12 +30,12 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
@@ -684,8 +684,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         MyResourceIds resourceIds = getIds(familyList, studyStr, sessionId);
         authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
-        String collectionName = MongoDBAdaptorFactory.FAMILY_COLLECTION;
-
         // Validate that the members are actually valid members
         List<String> members;
         if (memberIds != null && !memberIds.isEmpty()) {
@@ -700,14 +698,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         switch (familyAclParams.getAction()) {
             case SET:
                 return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.FAMILY);
             case ADD:
                 return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.FAMILY);
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, Entity.FAMILY);
             case RESET:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, Entity.FAMILY);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }

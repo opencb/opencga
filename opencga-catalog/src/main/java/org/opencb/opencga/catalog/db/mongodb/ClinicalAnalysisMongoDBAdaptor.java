@@ -36,16 +36,15 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverte
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
@@ -197,6 +196,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
 
         return endQuery("removeInterpretation", startTime, Arrays.asList(updateResult.first().getModifiedCount()));
+    }
+
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        unmarkPermissionRule(clinicalCollection, studyId, permissionRuleId);
     }
 
     @Override
@@ -426,6 +430,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         Document clinicalObject = clinicalConverter.convertToStorageType(clinicalAnalysis);
         clinicalObject.put(PRIVATE_STUDY_ID, studyId);
         clinicalObject.put(PRIVATE_ID, clinicalAnalysisId);
+        clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
+        clinicalObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         clinicalCollection.insert(clinicalObject, null);
 
         return endQuery("createClinicalAnalysis", startTime, get(clinicalAnalysisId, options));
@@ -490,7 +496,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         return parseQuery(query, isolated, null);
     }
 
-    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
         if (isolated) {
@@ -528,6 +534,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     // Other parameter that can be queried.
                     case NAME:
                     case TYPE:
@@ -536,7 +545,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case FAMILY_ID:
                     case GERMLINE_ID:
                     case SOMATIC_ID:
-                    case CREATION_DATE:
                     case DESCRIPTION:
                     case RELEASE:
                     case STATUS:

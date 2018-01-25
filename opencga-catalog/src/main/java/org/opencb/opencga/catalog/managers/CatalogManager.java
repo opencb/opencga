@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
@@ -34,7 +35,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +69,7 @@ public class CatalogManager implements AutoCloseable {
 
     private Configuration configuration;
 
-    private static final String ADMIN = "admin";
+    private static final String ROOT = "admin";
 
     public CatalogManager(Configuration configuration) throws CatalogException {
         this.configuration = configuration;
@@ -90,7 +90,7 @@ public class CatalogManager implements AutoCloseable {
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
         this.initializeAdmin();
-        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor());
+        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory, this.configuration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
@@ -115,7 +115,6 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void initializeAdmin() throws CatalogDBException {
-
         if (StringUtils.isEmpty(this.configuration.getAdmin().getSecretKey())) {
             this.configuration.getAdmin().setSecretKey(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey());
         }
@@ -125,9 +124,16 @@ public class CatalogManager implements AutoCloseable {
         }
     }
 
-    public void insertUpdatedAdmin(Admin admin) throws CatalogDBException {
+    public void updateJWTParameters(ObjectMap params, String token) throws CatalogException {
+        if (!ROOT.equals(userManager.getUserId(token))) {
+            throw new CatalogException("Operation only allowed for the OpenCGA admin");
+        }
 
-        this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().updateAdmin(admin);
+        if (params == null || params.size() == 0) {
+            return;
+        }
+
+        catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().updateJWTParameters(params);
     }
 
     public ObjectMap getDatabaseStatus() {
@@ -159,7 +165,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installIndexes(String token) throws CatalogException {
-        if (!ADMIN.equals(userManager.getUserId(token))) {
+        if (!ROOT.equals(userManager.getUserId(token))) {
             throw new CatalogAuthorizationException("Only the admin can install new indexes");
         }
         catalogDBAdaptorFactory.createIndexes();
@@ -274,5 +280,9 @@ public class CatalogManager implements AutoCloseable {
 
     public AuthorizationManager getAuthorizationManager() {
         return authorizationManager;
+    }
+
+    public AuditManager getAuditManager() {
+        return auditManager;
     }
 }

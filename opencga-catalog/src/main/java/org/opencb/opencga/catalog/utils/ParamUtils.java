@@ -102,6 +102,12 @@ public class ParamUtils {
         }
     }
 
+    public static void checkIdentifier(String identifier, String name) throws CatalogParameterException {
+        if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+            throw new CatalogParameterException("Error in identifier: Invalid identifier format for '" + name + "'.");
+        }
+    }
+
     public static long getAsLong(Object value) throws CatalogException {
         try {
             return (Long) value;

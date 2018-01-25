@@ -94,7 +94,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
         configuration.setOpenRegister(true);
 
-        configuration.getAdmin().setPassword("demo");
+        configuration.getAdmin().setPassword(adminPassword);
         configuration.getAdmin().setSecretKey("demo");
         configuration.getAdmin().setAlgorithm("HS256");
 
@@ -128,7 +128,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(catalogCommandOptions.installCatalogCommandOptions, catalogCommandOptions.commonOptions);
 
         this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
-        this.configuration.getAdmin().setAlgorithm(this.catalogCommandOptions.installCatalogCommandOptions.algorithm);
+        this.configuration.getAdmin().setAlgorithm("HS256");
+//        this.configuration.getAdmin().setAlgorithm(this.catalogCommandOptions.installCatalogCommandOptions.algorithm);
 
         if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
             throw new CatalogException("No admin password found. Please, insert your password.");

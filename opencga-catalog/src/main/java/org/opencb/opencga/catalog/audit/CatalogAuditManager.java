@@ -20,10 +20,20 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 import static org.opencb.opencga.catalog.audit.AuditRecord.Resource;
 
@@ -36,9 +46,13 @@ public class CatalogAuditManager implements AuditManager {
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogAuditManager.class);
     private final AuditDBAdaptor auditDBAdaptor;
+    private final AuthenticationManager authenticationManager;
 
-    public CatalogAuditManager(AuditDBAdaptor auditDBAdaptor) {
-        this.auditDBAdaptor = auditDBAdaptor;
+    private static final String ROOT = "admin";
+
+    public CatalogAuditManager(DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        this.auditDBAdaptor = catalogDBAdaptorFactory.getCatalogAuditDbAdaptor();
+        this.authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration);
     }
 
     /**
@@ -67,4 +81,11 @@ public class CatalogAuditManager implements AuditManager {
         }
     }
 
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
+        if (ROOT.equals(authenticationManager.getUserId(token))) {
+            return auditDBAdaptor.groupBy(query, fields, options);
+        }
+        throw new CatalogAuthorizationException("Only root of OpenCGA can query the audit database");
+    }
 }

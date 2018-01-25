@@ -17,19 +17,20 @@ initOpencgaR(host = NULL, version = "v1", user = NULL,
 An object of class OpencgaR
 }
 \description{
-This function inicializes the OpencgaR object with the 
+This function inicializes the OpencgaR object with the
 necessary details to generate a connection.
 }
 \details{
 OpencgaR init function
 
 
-This class initializes the OpencgaR object. It holds the default configuration 
-required by OpencgaR methods to connect to OpenCGA web services. By defult, 
+This class initializes the OpencgaR object. It holds the default configuration
+required by OpencgaR methods to connect to OpenCGA web services. By defult,
 it is configured to query HGVA (http://hgva.opencb.org/).
 }
 \examples{
-con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", 
+\dontrun{
+con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1",
 user = "user")
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 
@@ -43,8 +44,9 @@ con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 conf <- "/path/to/conf/client-configuration.yml"
 con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
 }
+}
 \seealso{
-\url{https://github.com/opencb/opencga/wiki} 
-and the RESTful API documentation 
+\url{https://github.com/opencb/opencga/wiki}
+and the RESTful API documentation
 \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 }

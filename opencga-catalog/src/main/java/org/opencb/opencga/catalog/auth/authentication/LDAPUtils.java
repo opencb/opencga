@@ -46,14 +46,14 @@ public class LDAPUtils {
                 try {
                     dctx = new InitialDirContext(env);
                 } catch (NamingException e) {
-                    if (count == 5) {
-                        // After 5 attempts, we will raise an error.
+                    if (count == 3) {
+                        // After 3 attempts, we will raise an error.
                         throw e;
                     }
                     count++;
                     try {
-                        // Sleep 10 seconds
-                        Thread.sleep(10000);
+                        // Sleep 1 seconds
+                        Thread.sleep(1000);
                     } catch (InterruptedException e1) {
                         e1.printStackTrace();
                     }
@@ -77,8 +77,6 @@ public class LDAPUtils {
     }
 
     public static List<String> getUsersFromLDAPGroup(String host, String groupName, String groupBase) throws NamingException {
-
-
         String groupFilter = "(cn=" + groupName + ")";
 
         String[] attributeFilter = {"uniqueMember"};
@@ -109,6 +107,18 @@ public class LDAPUtils {
         }
 
         return users;
+    }
+
+    public static boolean existsLDAPGroup(String host, String groupName, String groupBase) throws NamingException {
+        String groupFilter = "(cn=" + groupName + ")";
+        SearchControls sc = new SearchControls();
+        sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        NamingEnumeration<SearchResult> search = getDirContext(host).search(groupBase, groupFilter, sc);
+
+        if (search.hasMore()) {
+            return true;
+        }
+        return false;
     }
 
     public static List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase) throws NamingException {

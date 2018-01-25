@@ -71,7 +71,7 @@ public class SolrExternalResource extends ExternalResource {
     protected void after() {
         super.after();
         try {
-            solrClient.close();
+            ((MyEmbeddedSolrServer) solrClient).realClose();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -135,7 +135,7 @@ public class SolrExternalResource extends ExternalResource {
                 .setConfigSetBaseDirectory(configSetPath.toString())
                 .build();
 
-        final EmbeddedSolrServer embeddedSolrServer = new EmbeddedSolrServer(config, coreName);
+        final EmbeddedSolrServer embeddedSolrServer = new MyEmbeddedSolrServer(config, coreName);
 
 //        final CoreAdminRequest.Create createRequest = new CoreAdminRequest.Create();
 //        createRequest.setCoreName(coreName);
@@ -143,5 +143,19 @@ public class SolrExternalResource extends ExternalResource {
 //        embeddedSolrServer.request(createRequest);
 
         return embeddedSolrServer;
+    }
+
+    private static class MyEmbeddedSolrServer extends EmbeddedSolrServer {
+        public MyEmbeddedSolrServer(NodeConfig config, String coreName) {
+            super(config, coreName);
+        }
+
+        @Override
+        public void close() throws IOException {
+        }
+
+        private void realClose() throws IOException {
+            super.close();
+        }
     }
 }

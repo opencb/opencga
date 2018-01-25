@@ -21,6 +21,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.opencb.opencga.catalog.monitor.daemons.AuthorizationDaemon;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -48,10 +49,12 @@ public class MonitorService {
     private ExecutionDaemon executionDaemon;
     private IndexDaemon indexDaemon;
     private FileDaemon fileDaemon;
+    private AuthorizationDaemon authorizationDaemon;
 
     private Thread executionThread;
     private Thread indexThread;
     private Thread fileThread;
+    private Thread authorizationThread;
 
     private boolean exit;
 
@@ -73,16 +76,17 @@ public class MonitorService {
             this.catalogManager = new CatalogManager(this.configuration);
             String sessionId = this.catalogManager.getUserManager().getSystemTokenForUser("admin", password);
 
-            executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId,
-                    catalogManager, appHome);
-            indexDaemon = new IndexDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager,
+            executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager,
                     appHome);
-            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
-                    configuration.getMonitor().getDaysToRemove(), sessionId, catalogManager);
+            indexDaemon = new IndexDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager, appHome);
+            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(), configuration.getMonitor().getDaysToRemove(),
+                    sessionId, catalogManager);
+            authorizationDaemon = new AuthorizationDaemon(10000, sessionId, catalogManager);
 
             executionThread = new Thread(executionDaemon, "execution-thread");
             indexThread = new Thread(indexDaemon, "index-thread");
             fileThread = new Thread(fileDaemon, "file-thread");
+            authorizationThread = new Thread(authorizationDaemon, "authorization-thread");
 
             this.port = configuration.getMonitor().getPort();
         } catch (CatalogException e) {
@@ -95,6 +99,7 @@ public class MonitorService {
         // Launching the two daemons in two different threads
         executionThread.start();
         indexThread.start();
+        authorizationThread.start();
 //        fileThread.start();
 
         // Preparing the REST server configuration
@@ -150,6 +155,7 @@ public class MonitorService {
         fileDaemon.setExit(true);
         indexDaemon.setExit(true);
         executionDaemon.setExit(true);
+        authorizationDaemon.setExit(true);
 
         // By setting exit to true the monitor thread will close the Jetty server
         exit = true;

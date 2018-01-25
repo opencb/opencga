@@ -30,11 +30,11 @@ import org.opencb.opencga.analysis.old.execution.plugins.hist.VariantHistogramAn
 import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
@@ -262,6 +262,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         }
         queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantIndexOptions.overwriteAnnotations);
         queryOptions.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantIndexOptions.resume);
+        queryOptions.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), cliOptions.genericVariantIndexOptions.loadSplitData);
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -278,15 +279,17 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
-        String study = cliOptions.study;
         String project = StringUtils.isEmpty(cliOptions.project) ? cliOptions.projectId : cliOptions.project;
-        if (StringUtils.isEmpty(study) && StringUtils.isNotEmpty(project)) {
-            QueryResult<Study> result = catalogManager.getStudyManager().get(project, new Query(), new QueryOptions(), sessionId);
-            if (!result.getResult().isEmpty()) {
-                study = String.valueOf(result.first().getId());
-            }
-        }
-        variantManager.searchIndex(study, new Query(), queryOptions, sessionId);
+
+        Query query = new Query();
+        query.putIfNotEmpty(VariantCatalogQueryUtils.PROJECT.key(), project);
+        query.putIfNotEmpty(VariantQueryParam.STUDY.key(), cliOptions.study);
+        query.putIfNotEmpty(VariantQueryParam.REGION.key(), cliOptions.region);
+        query.putIfNotEmpty(VariantQueryParam.GENE.key(), cliOptions.gene);
+        query.putIfNotEmpty(VariantQueryParam.SAMPLE.key(), cliOptions.sample);
+        query.putIfNotEmpty(VariantQueryParam.FILE.key(), cliOptions.file);
+        query.putIfNotEmpty(VariantQueryParam.COHORT.key(), cliOptions.cohort);
+        variantManager.searchIndex(query, queryOptions, sessionId);
     }
 
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
@@ -328,7 +331,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         Query query = new Query()
                 .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantAnnotateOptions.filterRegion)
-                .append(VariantQueryParam.CHROMOSOME.key(), cliOptions.genericVariantAnnotateOptions.filterChromosome)
                 .append(VariantQueryParam.GENE.key(), cliOptions.genericVariantAnnotateOptions.filterGene)
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), cliOptions.genericVariantAnnotateOptions.filterAnnotConsequenceType);
 
@@ -370,10 +372,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(sessionId));
 
         if (StringUtils.isNotEmpty(cliOptions.samples)) {
-            query.append(VariantQueryParam.RETURNED_SAMPLES.key(), Arrays.asList(cliOptions.samples.split(",")));
+            query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), Arrays.asList(cliOptions.samples.split(",")));
         }
         if (StringUtils.isNotEmpty(cliOptions.study)) {
-            query.append(VariantQueryParam.STUDIES.key(), cliOptions.study);
+            query.append(VariantQueryParam.STUDY.key(), cliOptions.study);
         }
 
         List<String> genotypes = Arrays.asList(cliOptions.genotypes.split(","));

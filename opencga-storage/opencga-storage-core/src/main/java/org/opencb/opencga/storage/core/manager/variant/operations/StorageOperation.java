@@ -112,18 +112,35 @@ public abstract class StorageOperation {
     public StudyConfiguration updateStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
             throws IOException, CatalogException, StorageEngineException {
 
+        updateStudyConfigurationFromCatalog(sessionId, studyId, dataStore, null);
+        return updateCatalogFromStudyConfiguration(sessionId, studyId, dataStore);
+    }
+
+    public void updateStudyConfigurationFromCatalog(String sessionId, long studyId, DataStore dataStore, List<Long> filesToIndex)
+            throws IOException, CatalogException, StorageEngineException {
+
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
         StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
         try {
             // Update StudyConfiguration. Add new elements and so
-            studyConfigurationFactory.updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
-            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
-            // Update Catalog file and cohort status.
-            studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, null, sessionId);
-            return studyConfiguration;
+            studyConfigurationFactory.updateStudyConfigurationFromCatalog(studyId, filesToIndex, studyConfigurationManager, sessionId);
         } catch (StorageEngineException e) {
             throw new StorageEngineException("Unable to update StudyConfiguration", e);
         }
+    }
+
+    public StudyConfiguration updateCatalogFromStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
+            throws IOException, CatalogException, StorageEngineException {
+
+        CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
+        StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
+
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
+        if (studyConfiguration != null) {
+            // Update Catalog file and cohort status.
+            studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, sessionId);
+        }
+        return studyConfiguration;
     }
 
     protected Thread buildHook(Path outdir) {

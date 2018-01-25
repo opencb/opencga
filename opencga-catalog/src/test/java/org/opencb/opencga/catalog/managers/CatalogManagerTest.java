@@ -34,7 +34,6 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
 import java.io.ByteArrayInputStream;
@@ -113,9 +112,9 @@ public class CatalogManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.FULL, null, null);
 
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
@@ -264,7 +263,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
     }
 
     @Test
@@ -365,10 +364,10 @@ public class CatalogManagerTest extends GenericTest {
         ObjectMap params = new ObjectMap()
                 .append("users", "pfurio,imedina");
 
-        LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params,
+        QueryResult<User> ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params,
                 getAdminToken());
 
-        assertEquals(2, ldapImportResult.getResult().getUserSummary().getTotal());
+        assertEquals(2, ldapImportResult.getNumResults());
     }
 
     // To make this test work we will need to add a correct user and password to be able to login
@@ -659,6 +658,51 @@ public class CatalogManagerTest extends GenericTest {
         studyManager.syncGroupWith(Long.toString(studyId), "group2", syncFrom, sessionIdUser);
     }
 
+    @Test
+    public void testCreatePermissionRules() throws CatalogException {
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
+                Arrays.asList("VIEW", "UPDATE"));
+        QueryResult<PermissionRule> permissionRulesQueryResult = catalogManager.getStudyManager().createPermissionRule(
+                String.valueOf(studyId), Study.Entry.SAMPLES, rules, sessionIdUser);
+        assertEquals(1, permissionRulesQueryResult.getNumResults());
+        assertEquals("rules1", permissionRulesQueryResult.first().getId());
+        assertEquals(1, permissionRulesQueryResult.first().getQuery().size());
+        assertEquals(2, permissionRulesQueryResult.first().getMembers().size());
+        assertEquals(2, permissionRulesQueryResult.first().getPermissions().size());
+
+        // Add new permission rules object
+        rules.setId("rules2");
+        permissionRulesQueryResult = catalogManager.getStudyManager().createPermissionRule(String.valueOf(studyId), Study.Entry.SAMPLES, rules,
+                sessionIdUser);
+        assertEquals(2, permissionRulesQueryResult.getNumResults());
+    }
+
+    @Test
+    public void testUpdatePermissionRulesIncorrectPermission() throws CatalogException {
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
+                Arrays.asList("VV", "UPDATE"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Detected unsupported");
+        catalogManager.getStudyManager().createPermissionRule(String.valueOf(studyId), Study.Entry.SAMPLES, rules, sessionIdUser);
+    }
+
+    @Test
+    public void testUpdatePermissionRulesNonExistingUser() throws CatalogException {
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user20"),
+                Arrays.asList("VIEW", "UPDATE"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("does not exist");
+        catalogManager.getStudyManager().createPermissionRule(String.valueOf(studyId), Study.Entry.SAMPLES, rules, sessionIdUser);
+    }
+
+    @Test
+    public void testUpdatePermissionRulesNonExistingGroup() throws CatalogException {
+        PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "@group"),
+                Arrays.asList("VIEW", "UPDATE"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getStudyManager().createPermissionRule(String.valueOf(studyId), Study.Entry.SAMPLES, rules, sessionIdUser);
+    }
 
     @Test
     public void removeAllPermissionsToMember() throws CatalogException {

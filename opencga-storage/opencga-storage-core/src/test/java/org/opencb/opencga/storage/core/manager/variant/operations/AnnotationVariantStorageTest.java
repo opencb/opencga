@@ -80,11 +80,11 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
     @Test
     public void testAnnotateRegion() throws Exception {
 
-        annotate(new Query(VariantQueryParam.CHROMOSOME.key(), "22"), new QueryOptions());
+        annotate(new Query(VariantQueryParam.REGION.key(), "22"), new QueryOptions());
 
         checkAnnotation(v -> v.getChromosome().equals("22"));
 
-        annotate(new Query(VariantQueryParam.CHROMOSOME.key(), "1"), new QueryOptions());
+        annotate(new Query(VariantQueryParam.REGION.key(), "1"), new QueryOptions());
 
         checkAnnotation(v -> v.getChromosome().equals("22") || v.getChromosome().equals("1"));
     }

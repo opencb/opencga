@@ -29,13 +29,13 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
@@ -956,13 +956,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         checkMembers(resourceIds.getStudyId(), members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
-        String collectionName = MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION;
-
         List<QueryResult<IndividualAclEntry>> queryResults;
         switch (aclParams.getAction()) {
             case SET:
                 queryResults = authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.INDIVIDUAL);
                 if (aclParams.isPropagate()) {
                     List<String> sampleIds = getSamplesFromIndividuals(resourceIds);
                     if (sampleIds.size() > 0) {
@@ -974,7 +972,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 break;
             case ADD:
                 queryResults = authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.INDIVIDUAL);
                 if (aclParams.isPropagate()) {
                     List<String> sampleIds = getSamplesFromIndividuals(resourceIds);
                     if (sampleIds.size() > 0) {
@@ -985,7 +983,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 }
                 break;
             case REMOVE:
-                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, Entity.INDIVIDUAL);
                 if (aclParams.isPropagate()) {
                     List<String> sampleIds = getSamplesFromIndividuals(resourceIds);
                     if (CollectionUtils.isNotEmpty(sampleIds)) {
@@ -996,7 +994,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 }
                 break;
             case RESET:
-                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
+                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, Entity.INDIVIDUAL);
                 if (aclParams.isPropagate()) {
                     List<String> sampleIds = getSamplesFromIndividuals(resourceIds);
                     if (CollectionUtils.isNotEmpty(sampleIds)) {

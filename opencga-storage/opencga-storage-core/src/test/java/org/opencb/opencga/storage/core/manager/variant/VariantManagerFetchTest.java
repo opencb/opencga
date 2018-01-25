@@ -54,14 +54,14 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testCount() throws Exception {
-        Query query = new Query(VariantQueryParam.STUDIES.key(), studyId)
-                .append(VariantQueryParam.RETURNED_SAMPLES.key(), Collections.singletonList("NA19600"));
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), Collections.singletonList("NA19600"));
         variantManager.count(query, sessionId);
     }
 
     @Test
     public void testQuery() throws Exception {
-        Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
         QueryResult<Variant> result = variantManager.get(query, new QueryOptions(), sessionId);
         System.out.println("result.getNumResults() = " + result.getNumResults());
         System.out.println("result.getResult().size() = " + result.getResult().size());
@@ -91,14 +91,14 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
         Assert.assertEquals(Collections.singletonMap(studyId, Collections.emptyList()), longListMap);
 
         // With studies
-        query.append(VariantQueryParam.STUDIES.key(), studyId);
+        query.append(VariantQueryParam.STUDY.key(), studyId);
         longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getStudyConfigurationManager(), sessionId);
         Assert.assertEquals(Collections.singletonMap(studyId, Collections.emptyList()), longListMap);
     }
 
     @Test
     public void testQueryExcludeStudies() throws Exception {
-        Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES);
 
         Map<Long, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getStudyConfigurationManager(), sessionId);
@@ -111,7 +111,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
 
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "s1");
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "p1:s1");
-        Query query = new Query(VariantQueryParam.STUDIES.key(), userId + "@p1:s1");
+        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
         QueryResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
         System.out.println("result.getNumResults() = " + result.getNumResults());
@@ -123,7 +123,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testQueryAnonymousWithoutPermissions() throws Exception {
-        Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
         thrown.expectMessage("cannot view study");
         thrown.expect(CatalogAuthorizationException.class);
         variantManager.get(query, new QueryOptions(), null);

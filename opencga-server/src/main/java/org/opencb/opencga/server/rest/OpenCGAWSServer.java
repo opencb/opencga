@@ -303,7 +303,6 @@ public class OpenCGAWSServer {
             switch (entry.getKey()) {
                 case QueryOptions.INCLUDE:
                 case QueryOptions.EXCLUDE:
-                case QueryOptions.SORT:
                     queryOptions.put(entry.getKey(), new LinkedList<>(Splitter.on(",").splitToList(value)));
                     break;
                 case QueryOptions.LIMIT:
@@ -316,6 +315,7 @@ public class OpenCGAWSServer {
                     int skip = Integer.parseInt(value);
                     queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
                     break;
+                case QueryOptions.SORT:
                 case QueryOptions.ORDER:
                     queryOptions.put(entry.getKey(), value);
                     break;
