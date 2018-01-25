@@ -127,15 +127,15 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{studies}/delete")
-//    @ApiOperation(value = "Delete a study [WARNING]", response = Study.class,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response delete(@ApiParam(value = "Comma separated list of study [[user@]project:]study where study and project can be either the id or alias",
-//            required = true) @PathParam("studies") String studyStr, @QueryParam("silent") boolean silent) {
-//        return createOkResponse("PENDING");
-//    }
+    @GET
+    @Path("/{studies}/delete")
+    @ApiOperation(value = "Delete a study [WARNING]", response = Study.class,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
+    public Response delete(@ApiParam(value = "Comma separated list of study [[user@]project:]study where study and project can be either the id or alias",
+            required = true) @PathParam("studies") String studyStr, @QueryParam("silent") boolean silent) {
+        return createOkResponse("PENDING");
+    }
 
     @GET
     @Path("/{studies}/info")

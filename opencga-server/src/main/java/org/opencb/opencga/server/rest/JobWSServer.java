@@ -219,26 +219,26 @@ public class JobWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-//
-//    @GET
-//    @Path("/{jobIds}/delete")
-//    @ApiOperation(value = "Delete job [WARNING]", position = 4,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response delete(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true) @PathParam("jobIds")
-//                                   String jobIds,
-//                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                           @QueryParam("study") String studyStr) {
-////                           @ApiParam(value = "deleteFiles", required = false) @DefaultValue("true")
-////                                @QueryParam("deleteFiles") boolean deleteFiles) {
-//        try {
-////            QueryOptions options = new QueryOptions(JobManager.DELETE_FILES, deleteFiles);
-//            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(studyStr, jobIds, queryOptions, sessionId);
-//            return createOkResponse(delete);
-//        } catch (CatalogException | IOException e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+
+    @GET
+    @Path("/{jobIds}/delete")
+    @ApiOperation(value = "Delete job [WARNING]", position = 4,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0")
+    public Response delete(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true) @PathParam("jobIds")
+                                   String jobIds,
+                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                           @QueryParam("study") String studyStr) {
+//                           @ApiParam(value = "deleteFiles", required = false) @DefaultValue("true")
+//                                @QueryParam("deleteFiles") boolean deleteFiles) {
+        try {
+//            QueryOptions options = new QueryOptions(JobManager.DELETE_FILES, deleteFiles);
+            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(studyStr, jobIds, queryOptions, sessionId);
+            return createOkResponse(delete);
+        } catch (CatalogException | IOException e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/groupBy")
