@@ -24,7 +24,7 @@ public class Panel {
 
     private String id;
     private String name;
-    private int version;
+    private String version;
 
     private String author;
     private String status;
@@ -34,16 +34,22 @@ public class Panel {
     private List<OntologyTerm> phenotypes;
 
     private List<String> variants;
-    private List<String> genes;
-    private List<String> regions;
+    private List<GenePanel> genes;
+    private List<RegionPanel> regions;
 
     private Map<String, Object> attributes;
 
     public Panel() {
     }
 
-    public Panel(String id, String name, int version, String author, String status, Date date, String description, List<OntologyTerm>
-            phenotypes, List<String> variants, List<String> genes, List<String> regions, Map<String, Object> attributes) {
+    public Panel(String id, String name, String version) {
+        this.id = id;
+        this.name = name;
+        this.version = version;
+    }
+
+    public Panel(String id, String name, String version, String author, String status, Date date, String description, List<OntologyTerm>
+            phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.version = version;
@@ -58,12 +64,108 @@ public class Panel {
         this.attributes = attributes;
     }
 
+    public class GenePanel {
+
+        /**
+         * Ensembl ID is used as id
+         */
+        private String id;
+
+        /**
+         * HGNC Gene Symbol is used as name
+         */
+        private String name;
+        private float score;
+
+        public GenePanel(String id, String name, float score) {
+            this.id = id;
+            this.name = name;
+            this.score = score;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("GenePanel{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", name='").append(name).append('\'');
+            sb.append(", score=").append(score);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public GenePanel setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public GenePanel setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public float getScore() {
+            return score;
+        }
+
+        public GenePanel setScore(float score) {
+            this.score = score;
+            return this;
+        }
+    }
+
+    public class RegionPanel {
+
+        private String location;
+        private float score;
+
+        public RegionPanel(String location, float score) {
+            this.location = location;
+            this.score = score;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("RegionPanel{");
+            sb.append("location='").append(location).append('\'');
+            sb.append(", score=").append(score);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getLocation() {
+            return location;
+        }
+
+        public RegionPanel setLocation(String location) {
+            this.location = location;
+            return this;
+        }
+
+        public float getScore() {
+            return score;
+        }
+
+        public RegionPanel setScore(float score) {
+            this.score = score;
+            return this;
+        }
+    }
+
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Panel{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", version=").append(version);
+        sb.append(", version='").append(version).append('\'');
         sb.append(", author='").append(author).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", date=").append(date);
@@ -95,11 +197,11 @@ public class Panel {
         return this;
     }
 
-    public int getVersion() {
+    public String getVersion() {
         return version;
     }
 
-    public Panel setVersion(int version) {
+    public Panel setVersion(String version) {
         this.version = version;
         return this;
     }
@@ -158,20 +260,20 @@ public class Panel {
         return this;
     }
 
-    public List<String> getGenes() {
+    public List<GenePanel> getGenes() {
         return genes;
     }
 
-    public Panel setGenes(List<String> genes) {
+    public Panel setGenes(List<GenePanel> genes) {
         this.genes = genes;
         return this;
     }
 
-    public List<String> getRegions() {
+    public List<RegionPanel> getRegions() {
         return regions;
     }
 
-    public Panel setRegions(List<String> regions) {
+    public Panel setRegions(List<RegionPanel> regions) {
         this.regions = regions;
         return this;
     }
