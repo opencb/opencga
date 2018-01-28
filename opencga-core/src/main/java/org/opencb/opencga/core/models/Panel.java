@@ -28,7 +28,7 @@ public class Panel {
 
     private String author;
     private String status;
-    private Date date;
+    private String date;
     private String description;
 
     private List<OntologyTerm> phenotypes;
@@ -48,7 +48,7 @@ public class Panel {
         this.version = version;
     }
 
-    public Panel(String id, String name, String version, String author, String status, Date date, String description, List<OntologyTerm>
+    public Panel(String id, String name, String version, String author, String status, String date, String description, List<OntologyTerm>
             phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -75,12 +75,12 @@ public class Panel {
          * HGNC Gene Symbol is used as name
          */
         private String name;
-        private float score;
+        private String confidence;
 
-        public GenePanel(String id, String name, float score) {
+        public GenePanel(String id, String name, String confidence) {
             this.id = id;
             this.name = name;
-            this.score = score;
+            this.confidence = confidence;
         }
 
         @Override
@@ -88,7 +88,7 @@ public class Panel {
             final StringBuilder sb = new StringBuilder("GenePanel{");
             sb.append("id='").append(id).append('\'');
             sb.append(", name='").append(name).append('\'');
-            sb.append(", score=").append(score);
+            sb.append(", confidence='").append(confidence).append('\'');
             sb.append('}');
             return sb.toString();
         }
@@ -111,12 +111,12 @@ public class Panel {
             return this;
         }
 
-        public float getScore() {
-            return score;
+        public String getConfidence() {
+            return confidence;
         }
 
-        public GenePanel setScore(float score) {
-            this.score = score;
+        public GenePanel setConfidence(String confidence) {
+            this.confidence = confidence;
             return this;
         }
     }
@@ -224,11 +224,11 @@ public class Panel {
         return this;
     }
 
-    public Date getDate() {
+    public String getDate() {
         return date;
     }
 
-    public Panel setDate(Date date) {
+    public Panel setDate(String date) {
         this.date = date;
         return this;
     }
