@@ -1,11 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
@@ -15,6 +17,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
@@ -342,8 +345,19 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
     }
 
     public static Scan buildScan() {
+        return buildScan(null, null);
+    }
+
+    public static Scan buildScan(String regionStr, Configuration conf) {
         Scan scan = new Scan();
-        scan.setFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+        Region region;
+        if (StringUtils.isNotEmpty(regionStr)) {
+            region = Region.parseRegion(regionStr);
+        } else {
+            region = null;
+        }
+        ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
+        VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveRowKeyFactory);
         return scan;
     }
 

@@ -349,7 +349,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
             Scan scan = new Scan();
             scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
-            VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
+            VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper.getKeyFactory());
             scan.setMaxResultSize(options.getInt("limit"));
             String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
 

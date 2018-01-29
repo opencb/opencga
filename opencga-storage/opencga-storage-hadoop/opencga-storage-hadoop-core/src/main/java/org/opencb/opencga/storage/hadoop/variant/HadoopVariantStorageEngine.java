@@ -442,7 +442,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             if (options.getBoolean("local")) {
                 ProgressLogger progressLogger = new ProgressLogger("Process");
                 VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
-                Scan scan = FillGapsFromArchiveTask.buildScan();
+                Scan scan = FillGapsFromArchiveTask.buildScan(
+                        options.getString(VariantQueryParam.REGION.key()), dbAdaptor.getConfiguration());
                 HBaseDataReader dbReader = new HBaseDataReader(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), scan);
                 DataWriter<Put> writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), getVariantTableName());
                 ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(4).setBatchSize(10).build();
@@ -494,7 +495,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 StudyConfigurationManager.setStatus(sc,
                         fail ? BatchFileOperation.Status.ERROR : BatchFileOperation.Status.READY,
                         FILL_GAPS_OPERATION_NAME, Collections.emptyList());
-                sc.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
+                if (StringUtils.isEmpty(options.getString(VariantQueryParam.REGION.key()))) {
+                    sc.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
+                }
                 return sc;
             });
             Runtime.getRuntime().removeShutdownHook(hook);
