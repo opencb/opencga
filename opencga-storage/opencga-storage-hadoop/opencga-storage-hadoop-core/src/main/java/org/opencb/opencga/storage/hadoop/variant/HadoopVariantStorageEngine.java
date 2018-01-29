@@ -62,7 +62,9 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.gaps.*;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveTask;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
@@ -154,6 +156,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     public static final String DBADAPTOR_PHOENIX_FETCH_SIZE = "dbadaptor.phoenix.fetch_size";
     public static final String MISSING_GENOTYPES_UPDATED = "missing_genotypes_updated";
+    public static final int FILL_GAPS_MAX_SAMPLES = 100;
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
@@ -374,12 +377,21 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
+    @Override
     public void fillMissing(String study, ObjectMap options) throws StorageEngineException {
+        logger.info("FillMissing: Study " + study);
         fillGaps(study, Collections.emptyList(), true, options);
     }
 
     @Override
     public void fillGaps(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+        if (samples == null || samples.size() < 2) {
+            throw new IllegalArgumentException("Fill gaps operation requires at least two samples.");
+        } else if (samples.size() > FILL_GAPS_MAX_SAMPLES) {
+            throw new IllegalArgumentException("Unable to execute fill gaps operation with more than "
+                    + FILL_GAPS_MAX_SAMPLES + " samples.");
+        }
+        logger.info("FillGaps: Study " + study + ", samples " + samples);
         fillGaps(study, samples, false, options);
     }
 
@@ -437,7 +449,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 ParallelTaskRunner<Result, Put> ptr = new ParallelTaskRunner<>(
                         dbReader,
                         () -> new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), studyConfiguration,
-                                dbAdaptor.getGenomeHelper(), sampleIds, false)
+                                dbAdaptor.getGenomeHelper(), sampleIds, skipReferenceVariants)
                                 .then((ParallelTaskRunner.TaskWithException<Put, Put, IOException>) list -> {
                                     progressLogger.increment(list.size(), "variants");
                                     return list;
