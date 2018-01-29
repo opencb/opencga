@@ -24,7 +24,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
-import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
@@ -81,10 +81,10 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         String disease = panelsCommandOptions.createCommandOptions.disease;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(PanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.createCommandOptions.description);
-        params.putIfNotEmpty(PanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.createCommandOptions.genes);
-        params.putIfNotEmpty(PanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.createCommandOptions.regions);
-        params.putIfNotEmpty(PanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
+        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.createCommandOptions.description);
+        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.createCommandOptions.genes);
+        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.createCommandOptions.regions);
+        params.putIfNotEmpty(DiseasePanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
         return openCGAClient.getPanelClient().create(resolveStudy(panelsCommandOptions.createCommandOptions.studyId), name, disease, params);
     }
 

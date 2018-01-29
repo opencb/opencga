@@ -65,7 +65,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final IndividualDBAdaptor individualDBAdaptor;
     private final CohortDBAdaptor cohortDBAdaptor;
     private final DatasetDBAdaptor datasetDBAdaptor;
-    private final PanelDBAdaptor panelDBAdaptor;
+    private final DiseasePanelDBAdaptor diseasePanelDBAdaptor;
     private final FamilyDBAdaptor familyDBAdaptor;
     private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
     private final AuditManager auditManager;
@@ -96,7 +96,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         individualDBAdaptor = dbFactory.getCatalogIndividualDBAdaptor();
         cohortDBAdaptor = dbFactory.getCatalogCohortDBAdaptor();
         datasetDBAdaptor = dbFactory.getCatalogDatasetDBAdaptor();
-        panelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
+        diseasePanelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
         familyDBAdaptor = dbFactory.getCatalogFamilyDBAdaptor();
         clinicalAnalysisDBAdaptor = dbFactory.getClinicalAnalysisDBAdaptor();
     }
@@ -476,8 +476,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkDiseasePanelPermission(long studyId, long panelId, String userId,
                                             DiseasePanelAclEntry.DiseasePanelPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(PanelDBAdaptor.QueryParams.ID.key(), panelId)
-                .append(PanelDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(DiseasePanelDBAdaptor.QueryParams.ID.key(), panelId)
+                .append(DiseasePanelDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -493,7 +493,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (checkUserPermission(userId, query, studyPermission, panelDBAdaptor)) {
+        if (checkUserPermission(userId, query, studyPermission, diseasePanelDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Panel", panelId, null);

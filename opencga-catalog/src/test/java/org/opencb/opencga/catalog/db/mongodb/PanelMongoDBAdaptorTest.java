@@ -39,7 +39,7 @@ public class PanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
         DiseasePanel diseasePanel = new DiseasePanel(-1, "panel1", "cancer", ".....", Arrays.asList("BRCA2","PEPE","JUAN","RET"),
                 Collections.emptyList(), Collections.emptyList(), new DiseasePanel.PanelStatus());
 
-        QueryResult<DiseasePanel> panel = catalogPanelDBAdaptor.insert(diseasePanel, studyId, new QueryOptions());
+        QueryResult<DiseasePanel> panel = catalogDiseasePanelDBAdaptor.insert(diseasePanel, studyId, new QueryOptions());
         assertEquals(1, panel.getNumResults());
     }
 
@@ -48,9 +48,9 @@ public class PanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         DiseasePanel diseasePanel = new DiseasePanel(-1, "panel1", "cancer", ".....", Arrays.asList("BRCA2,PEPE,JUAN,RET"),
                 Collections.emptyList(), Collections.emptyList(), new DiseasePanel.PanelStatus());
-        QueryResult<DiseasePanel> panel = catalogPanelDBAdaptor.insert(diseasePanel, studyId, new QueryOptions());
+        QueryResult<DiseasePanel> panel = catalogDiseasePanelDBAdaptor.insert(diseasePanel, studyId, new QueryOptions());
 
-        QueryResult<DiseasePanel> panel1 = catalogPanelDBAdaptor.get(panel.first().getId(), new QueryOptions());
+        QueryResult<DiseasePanel> panel1 = catalogDiseasePanelDBAdaptor.get(panel.first().getId(), new QueryOptions());
         assertEquals(1, panel1.getNumResults());
     }
 }

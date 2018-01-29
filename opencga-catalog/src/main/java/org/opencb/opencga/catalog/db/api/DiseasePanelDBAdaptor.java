@@ -32,7 +32,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  * Created by pfurio on 01/06/16.
  */
 @Deprecated
-public interface PanelDBAdaptor extends DBAdaptor<DiseasePanel> {
+public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER, ""),

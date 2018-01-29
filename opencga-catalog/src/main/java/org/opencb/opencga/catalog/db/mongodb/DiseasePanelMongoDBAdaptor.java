@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.PanelConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
@@ -53,12 +53,12 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringPar
  * Created by pfurio on 01/06/16.
  */
 @Deprecated
-public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdaptor {
+public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements DiseasePanelDBAdaptor {
 
     private final MongoDBCollection panelCollection;
     private PanelConverter panelConverter;
 
-    public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public DiseasePanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;

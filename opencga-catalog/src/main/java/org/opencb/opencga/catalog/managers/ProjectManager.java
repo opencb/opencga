@@ -797,7 +797,7 @@ public class ProjectManager extends AbstractManager {
         if (jobDBAdaptor.count(query).first() > 0) {
             return true;
         }
-//        if (panelDBAdaptor.count(query).first() > 0) {
+//        if (diseasePanelDBAdaptor.count(query).first() > 0) {
 //            return true;
 //        }
         if (clinicalDBAdaptor.count(query).first() > 0) {

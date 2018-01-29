@@ -27,10 +27,7 @@ import org.opencb.opencga.catalog.auth.authentication.LDAPUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
@@ -964,10 +961,10 @@ public class StudyManager extends AbstractManager {
         List<Long> studyIds = getStudyIds(parsedPanelStr);
         String panelName = parsedPanelStr.getString("featureName");
 
-        Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                .append(PanelDBAdaptor.QueryParams.NAME.key(), panelName);
+        Query query = new Query(DiseasePanelDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(DiseasePanelDBAdaptor.QueryParams.NAME.key(), panelName);
         QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.panels.id");
-        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.get(query, qOptions);
+        QueryResult<DiseasePanel> queryResult = diseasePanelDBAdaptor.get(query, qOptions);
         if (queryResult.getNumResults() > 1) {
             throw new CatalogException("Error: More than one panel id found based on " + panelName);
         } else if (queryResult.getNumResults() == 0) {
@@ -977,6 +974,23 @@ public class StudyManager extends AbstractManager {
         }
     }
 
+//    public QueryResult<Panel> createDiseasePanel(String study, List<Panel> panels, String token) throws CatalogException {
+//        ParamUtils.checkParameter(study, "study");
+//        ParamUtils.checkObj(panels, "panels");
+//
+//        String userId = catalogManager.getUserManager().getUserId(token);
+//        long studyId = getId(userId, study);
+//
+//        for (Panel panel : panels) {
+//            QueryResult<Panel> queryResult = diseasePanelDBAdaptor.insert(panel, studyId, QueryOptions.empty());
+//
+//        }
+//        auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//
+//        return queryResult;
+//    }
+
+    @Deprecated
     public QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description,
                                                         String genes, String regions, String variants,
                                                         QueryOptions options, String sessionId) throws CatalogException {
@@ -1007,19 +1021,18 @@ public class StudyManager extends AbstractManager {
         DiseasePanel diseasePanel = new DiseasePanel(-1, name, disease, description, geneList, regionList, variantList,
                 new DiseasePanel.PanelStatus());
 
-        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.insert(diseasePanel, studyId, options);
+        QueryResult<DiseasePanel> queryResult = diseasePanelDBAdaptor.insert(diseasePanel, studyId, options);
         auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
         return queryResult;
-
     }
 
     public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Long panelId = getDiseasePanelId(userId, panelStr);
-        long studyId = panelDBAdaptor.getStudyId(panelId);
+        long studyId = diseasePanelDBAdaptor.getStudyId(panelId);
         authorizationManager.checkDiseasePanelPermission(studyId, panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.VIEW);
-        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.get(panelId, options);
+        QueryResult<DiseasePanel> queryResult = diseasePanelDBAdaptor.get(panelId, options);
         return queryResult;
     }
 
@@ -1027,7 +1040,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkObj(parameters, "Parameters");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Long diseasePanelId = getDiseasePanelId(userId, panelStr);
-        long studyId = panelDBAdaptor.getStudyId(diseasePanelId);
+        long studyId = diseasePanelDBAdaptor.getStudyId(diseasePanelId);
         authorizationManager.checkDiseasePanelPermission(studyId, diseasePanelId, userId,
                 DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE);
 
@@ -1037,7 +1050,7 @@ public class StudyManager extends AbstractManager {
             }
         }
 
-        QueryResult<DiseasePanel> result = panelDBAdaptor.update(diseasePanelId, parameters, QueryOptions.empty());
+        QueryResult<DiseasePanel> result = diseasePanelDBAdaptor.update(diseasePanelId, parameters, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.panel, diseasePanelId, userId, parameters, null, null);
         return result;
     }
