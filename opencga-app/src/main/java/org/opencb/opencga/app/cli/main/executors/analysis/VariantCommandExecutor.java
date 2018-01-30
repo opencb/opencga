@@ -120,9 +120,11 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         queryCommandOptions.genericVariantQueryOptions.returnStudy = resolveStudy(queryCommandOptions.genericVariantQueryOptions.returnStudy);
 
         List<String> studies = new ArrayList<>();
-        for (Map.Entry<String, List<String>> entry : cliSession.getProjectsAndStudies().entrySet()) {
-            for (String s : entry.getValue()) {
-                studies.add(entry.getKey() + ':' + s);
+        if (cliSession != null && cliSession.getProjectsAndStudies() != null) {
+            for (Map.Entry<String, List<String>> entry : cliSession.getProjectsAndStudies().entrySet()) {
+                for (String s : entry.getValue()) {
+                    studies.add(entry.getKey() + ':' + s);
+                }
             }
         }
         Query query = VariantQueryCommandUtils.parseQuery(queryCommandOptions, studies, clientConfiguration);
@@ -142,7 +144,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         ObjectMap params = new ObjectMap(query);
-        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(params, new QueryOptions(QueryOptions.EXCLUDE, "files")).firstResult();
+        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(params, new QueryOptions(QueryOptions.EXCLUDE, "files").append("basic", true)).firstResult();
         VcfOutputWriter vcfOutputWriter = new VcfOutputWriter(metadata, annotations, System.out);
 
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);

@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
+import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor;
@@ -31,6 +32,10 @@ public class OpencgaMain {
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public static void main(String[] args) {
+
+        if (args.length > 1 && "users".equals(args[0]) && "login".equals(args[1])) {
+            args = ArrayUtils.addAll(args, "--password");
+        }
 
         OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
         try {

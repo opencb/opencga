@@ -99,7 +99,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 printTreeFile(queryResponse);
                 break;
             default:
-                System.err.println(ANSI_RED + "Error: " + clazz + " not yet supported in text format" + ANSI_RESET);
+                System.err.println(ANSI_YELLOW + "Warning: " + clazz + " results not yet supported in text format. Using YAML format"
+                        + ANSI_RESET);
                 YamlOutputWriter yamlOutputWriter = new YamlOutputWriter(writerConfiguration);
                 yamlOutputWriter.print(queryResponse);
                 break;

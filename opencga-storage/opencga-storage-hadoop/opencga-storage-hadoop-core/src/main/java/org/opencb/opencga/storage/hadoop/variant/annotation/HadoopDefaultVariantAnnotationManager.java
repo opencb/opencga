@@ -16,16 +16,24 @@
 
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
+import org.apache.hadoop.hbase.client.Put;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataReader;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
+import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 
 /**
  * Created on 23/11/16.
@@ -36,6 +44,21 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
     public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
         super(variantAnnotator, dbAdaptor);
+    }
+
+    @Override
+    protected ParallelTaskRunner<VariantAnnotation, ?> buildLoadAnnotationParallelTaskRunner(
+            DataReader<VariantAnnotation> reader, ParallelTaskRunner.Config config, ProgressLogger progressLogger, ObjectMap params) {
+
+        if (params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
+            VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) this.dbAdaptor;
+            VariantAnnotationToHBaseConverter task = new VariantAnnotationToHBaseConverter(dbAdaptor.getGenomeHelper(), progressLogger);
+            HBaseDataWriter<Put> writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
+
+            return new ParallelTaskRunner<>(reader, task, writer, config);
+        } else {
+            return super.buildLoadAnnotationParallelTaskRunner(reader, config, progressLogger, params);
+        }
     }
 
     @Override

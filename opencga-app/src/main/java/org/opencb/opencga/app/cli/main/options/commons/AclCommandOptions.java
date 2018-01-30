@@ -66,7 +66,8 @@ public class AclCommandOptions {
                 arity = 1)
         public String permissions;
 
-        @Parameter(names = {"-a", "--action"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
+        @Parameter(names = {"-a", "--action"}, description = "Action to be applied with the permissions (SET, ADD, REMOVE or RESET)",
+                arity = 1)
         public AclParams.Action action = AclParams.Action.SET;
 
     }

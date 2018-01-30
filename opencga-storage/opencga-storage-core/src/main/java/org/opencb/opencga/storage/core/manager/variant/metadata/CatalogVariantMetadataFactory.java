@@ -24,6 +24,25 @@ import java.util.stream.Collectors;
  */
 public final class CatalogVariantMetadataFactory extends VariantMetadataFactory {
 
+    private static final QueryOptions SAMPLE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
+            Arrays.asList(
+                    SampleDBAdaptor.QueryParams.ID.key(),
+                    SampleDBAdaptor.QueryParams.NAME.key(),
+                    SampleDBAdaptor.QueryParams.DESCRIPTION.key(),
+                    SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()
+            ));
+    private static final QueryOptions INDIVIDUAL_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
+            Arrays.asList(
+                    IndividualDBAdaptor.QueryParams.ID.key(),
+                    IndividualDBAdaptor.QueryParams.NAME.key(),
+                    IndividualDBAdaptor.QueryParams.SEX.key(),
+                    IndividualDBAdaptor.QueryParams.FAMILY.key(),
+                    IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
+                    IndividualDBAdaptor.QueryParams.MOTHER_ID.key(),
+                    IndividualDBAdaptor.QueryParams.FATHER_ID.key()
+            ));
+    public static final int CATALOG_QUERY_BATCH_SIZE = 1000;
+    public static final String BASIC_METADATA = "basic";
     private final CatalogManager catalogManager;
     private final String sessionId;
 
@@ -36,9 +55,14 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
     @Override
     protected VariantMetadata makeVariantMetadata(List<StudyConfiguration> studyConfigurations,
                                                   Map<Integer, List<Integer>> returnedSamples,
-                                                  Map<Integer, List<Integer>> returnedFiles) throws StorageEngineException {
-        VariantMetadata metadata = super.makeVariantMetadata(studyConfigurations, returnedSamples, returnedFiles);
-
+                                                  Map<Integer, List<Integer>> returnedFiles,
+                                                  QueryOptions queryOptions) throws StorageEngineException {
+        VariantMetadata metadata = super.makeVariantMetadata(studyConfigurations, returnedSamples, returnedFiles, queryOptions);
+        if (queryOptions != null) {
+            if (queryOptions.getBoolean(BASIC_METADATA, false)) {
+                return metadata;
+            }
+        }
         Map<String, Integer> studyConfigurationMap = studyConfigurations.stream()
                 .collect(Collectors.toMap(StudyConfiguration::getStudyName, StudyConfiguration::getStudyId));
         try {
@@ -47,12 +71,20 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
 
                 fillStudy(studyId, studyMetadata);
 
-                for (org.opencb.biodata.models.metadata.Individual individual : studyMetadata.getIndividuals()) {
-
-                    fillIndividual(studyId, individual);
-
-                    for (org.opencb.biodata.models.metadata.Sample sample : individual.getSamples()) {
-                        fillSample(studyId, sample);
+                List<org.opencb.biodata.models.metadata.Individual> individuals = new ArrayList<>(CATALOG_QUERY_BATCH_SIZE);
+                List<org.opencb.biodata.models.metadata.Sample> samples = new ArrayList<>(CATALOG_QUERY_BATCH_SIZE);
+                Iterator<org.opencb.biodata.models.metadata.Individual> iterator = studyMetadata.getIndividuals().iterator();
+                while (iterator.hasNext()) {
+                    org.opencb.biodata.models.metadata.Individual individual = iterator.next();
+                    individuals.add(individual);
+                    samples.addAll(individual.getSamples());
+                    if (individuals.size() >= CATALOG_QUERY_BATCH_SIZE || !iterator.hasNext()) {
+                        fillIndividuals(studyId, individuals);
+                        individuals.clear();
+                    }
+                    if (samples.size() >= CATALOG_QUERY_BATCH_SIZE || !iterator.hasNext()) {
+                        fillSamples(studyId, samples);
+                        samples.clear();
                     }
                 }
             }
@@ -70,11 +102,18 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         studyMetadata.setDescription(study.getDescription());
     }
 
-    private void fillIndividual(Integer studyId, org.opencb.biodata.models.metadata.Individual individual) throws CatalogException {
-        Query query = new Query(IndividualDBAdaptor.QueryParams.NAME.key(), individual.getId());
+    private void fillIndividuals(Integer studyId, List<org.opencb.biodata.models.metadata.Individual> individuals) throws CatalogException {
+        Map<String, org.opencb.biodata.models.metadata.Individual> individualMap = individuals
+                .stream()
+                .collect(Collectors.toMap(org.opencb.biodata.models.metadata.Individual::getId, i -> i));
+        Query query = new Query(IndividualDBAdaptor.QueryParams.NAME.key(), new ArrayList<>(individualMap.keySet()));
 
-        Individual catalogIndividual = catalogManager.getIndividualManager().get(studyId, query, null, sessionId).first();
-        if (catalogIndividual != null) {
+        List<Individual> catalogIndividuals = catalogManager.getIndividualManager().get(studyId, query, INDIVIDUAL_QUERY_OPTIONS, sessionId)
+                .getResult();
+
+        for (Individual catalogIndividual : catalogIndividuals) {
+            org.opencb.biodata.models.metadata.Individual individual = individualMap.get(catalogIndividual.getName());
+
             individual.setSex(catalogIndividual.getSex().name());
             individual.setFamily(catalogIndividual.getFamily());
             individual.setPhenotype(catalogIndividual.getAffectationStatus().toString());
@@ -93,26 +132,33 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         }
     }
 
-    private void fillSample(int studyId, org.opencb.biodata.models.metadata.Sample sample) throws CatalogException {
+    private void fillSamples(int studyId, List<org.opencb.biodata.models.metadata.Sample> samples) throws CatalogException {
+        Map<String, org.opencb.biodata.models.metadata.Sample> samplesMap = samples
+                .stream()
+                .collect(Collectors.toMap(org.opencb.biodata.models.metadata.Sample::getId, i -> i));
         Query query = new Query(2)
-                .append(SampleDBAdaptor.QueryParams.NAME.key(), sample.getId())
+                .append(SampleDBAdaptor.QueryParams.NAME.key(), new ArrayList<>(samplesMap.keySet()))
                 .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        Sample catalogSample = catalogManager.getSampleManager().get(studyId, query, null, sessionId).first();
-        List<AnnotationSet> annotationSets = catalogSample.getAnnotationSets();
-        sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));
-        for (AnnotationSet annotationSet : annotationSets) {
-            String prefix = annotationSets.size() > 1 ? annotationSet.getName() + '.' : "";
-            Set<Annotation> annotations = annotationSet.getAnnotations();
-            for (Annotation annotation : annotations) {
-                Object value = annotation.getValue();
-                String stringValue;
-                if (value instanceof Collection) {
-                    stringValue = ((Collection<?>) value).stream().map(Object::toString).collect(Collectors.joining(","));
-                } else {
-                    stringValue = value.toString();
+        List<Sample> catalogSamples = catalogManager.getSampleManager().get(studyId, query, SAMPLE_QUERY_OPTIONS, sessionId).getResult();
+        for (Sample catalogSample : catalogSamples) {
+            org.opencb.biodata.models.metadata.Sample sample = samplesMap.get(catalogSample.getName());
+
+            List<AnnotationSet> annotationSets = catalogSample.getAnnotationSets();
+            sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));
+            for (AnnotationSet annotationSet : annotationSets) {
+                String prefix = annotationSets.size() > 1 ? annotationSet.getName() + '.' : "";
+                Set<Annotation> annotations = annotationSet.getAnnotations();
+                for (Annotation annotation : annotations) {
+                    Object value = annotation.getValue();
+                    String stringValue;
+                    if (value instanceof Collection) {
+                        stringValue = ((Collection<?>) value).stream().map(Object::toString).collect(Collectors.joining(","));
+                    } else {
+                        stringValue = value.toString();
+                    }
+                    sample.getAnnotations().put(prefix + annotation.getName(), stringValue);
                 }
-                sample.getAnnotations().put(prefix + annotation.getName(), stringValue);
             }
         }
     }
