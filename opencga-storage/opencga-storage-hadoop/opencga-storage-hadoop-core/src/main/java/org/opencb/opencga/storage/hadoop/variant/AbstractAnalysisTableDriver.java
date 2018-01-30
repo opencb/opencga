@@ -23,9 +23,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.ConnectionConfiguration;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
-import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
-import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
@@ -195,8 +193,8 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         // specify return columns (file IDs)
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         for (Integer id : files) {
-            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true,
-                    Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true));
+            filter.addFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
+                    new BinaryComparator(Bytes.toBytes(ArchiveTableHelper.getColumnName(id)))));
         }
         filter.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
         scan.setFilter(filter);
@@ -252,13 +250,17 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     protected List<Integer> getFiles() {
         if (fileIds == null) {
-            String[] fileArr = getConf().getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
-            fileIds = Arrays.stream(fileArr)
+            fileIds = getFiles(getConf());
+        }
+        return fileIds;
+    }
+
+    public static List<Integer> getFiles(Configuration conf) {
+        String[] fileArr = conf.getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
+        return Arrays.stream(fileArr)
                     .filter(s -> StringUtils.isNotEmpty(s) && !s.equals("."))
                     .map(Integer::parseInt)
                     .collect(Collectors.toList());
-        }
-        return fileIds;
     }
 
     protected int getStudyId() {
