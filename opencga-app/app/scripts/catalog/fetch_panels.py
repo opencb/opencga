@@ -50,7 +50,7 @@ for panel in panels['result']:
         opencga_panel = {
             'id': panel['Panel_Id'],
             'name': panel['Name'],
-            'version': panel_info['version'],
+            'version': 1,
             'author': 'PanelApp (GEL)',
             'status': 'READY',
             'date': datetime.date.today().isoformat(),
@@ -61,7 +61,8 @@ for panel in panels['result']:
             'regions': [],
             'attributes': {
                 'DiseaseGroup': panel_info['DiseaseGroup'],
-                'DiseaseSubGroup': panel_info['DiseaseSubGroup']
+                'DiseaseSubGroup': panel_info['DiseaseSubGroup'],
+                'panelAppVersion': panel_info['version']
             }
         }
 
