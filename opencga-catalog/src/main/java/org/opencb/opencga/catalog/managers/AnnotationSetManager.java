@@ -342,8 +342,6 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             String valueString;
             if (matcher.find()) {
                 variableSet = matcher.group(1);
-                // Remove the : at the end of the variableSet
-                variableSet = variableSet.replace(":", "");
                 key = matcher.group(2);
                 valueString = matcher.group(3);
 
@@ -351,6 +349,9 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
                     // Obtain the variable set for the annotations
                     variableSet = searchVariableSetForVariable(variableTypeMap, key);
                 } else {
+                    // Remove the : at the end of the variableSet
+                    variableSet = variableSet.replace(":", "");
+
                     // Check if the variable set and the variable exist
                     if (!variableTypeMap.containsKey(variableSet)) {
                         throw new CatalogException("The variable " + variableSet + " does not exist in the study " + studyId);
@@ -384,7 +385,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             Map<String, QueryParam.Type> variableMap = variableTypeMapEntry.getValue();
             if (variableMap.containsKey(variableKey)) {
                 if (variableId == null) {
-                    variableId = variableKey;
+                    variableId = variableTypeMapEntry.getKey();
                 } else {
                     throw new CatalogException("Found more than one Variable Set for the variable " + variableKey);
                 }

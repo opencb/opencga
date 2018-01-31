@@ -42,6 +42,7 @@ import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
 import org.slf4j.Logger;
 
@@ -939,53 +940,47 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
     public QueryResult<VariableSummary> getAnnotationSummary(long studyId, long variableSetId) throws CatalogDBException {
         long startTime = startQuery();
 
-//        List<Bson> aggregation = new ArrayList<>(6);
-//        aggregation.add(new Document("$match", new Document(PRIVATE_STUDY_ID, studyId)));
-//        aggregation.add(new Document("$project", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), 1)));
-//        aggregation.add(new Document("$unwind", "$" + AnnotationSetParams.ANNOTATION_SETS.key()));
+        List<Bson> aggregation = new ArrayList<>(6);
+        aggregation.add(new Document("$match", new Document(PRIVATE_STUDY_ID, studyId)));
+        aggregation.add(new Document("$project", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), 1)));
+        aggregation.add(new Document("$unwind", "$" + AnnotationSetParams.ANNOTATION_SETS.key()));
 //        aggregation.add(new Document("$unwind", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS.key()));
-//        // TODO: Include annotations of type object
-//        // At the moment, we are excluding the annotations of type Object.
-//        aggregation.add(new Document("$match",
-//                new Document(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), variableSetId)
-//                    .append(AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_VALUE.key(),
-//                            new Document("$not", new Document("$type", "object"))
-//                    )
-//                )
-//        );
-//        aggregation.add(new Document("$group",
-//                new Document(
-//                        "_id", new Document("name", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key())
-//                            .append("value", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_VALUE.key()))
-//                        .append("count", new Document("$sum", 1))
-//                )
-//        );
-//        aggregation.add(new Document("$sort", new Document("_id.name", -1).append("count", -1)));
-//
-//        List<Document> result = getCollection().aggregate(aggregation, new QueryOptions()).getResult();
-//
-//        List<VariableSummary> variableSummaryList = new ArrayList<>();
-//
-//        List<FeatureCount> featureCountList = new ArrayList<>();
-//        VariableSummary v = new VariableSummary();
-//
-//        for (Document document : result) {
-//            Document id = (Document) document.get("_id");
-//            String name = id.getString("name");
-//            Object value = id.get("value");
-//            int count = document.getInteger("count");
-//
-//            if (!name.equals(v.getName())) {
-//                featureCountList = new ArrayList<>();
-//                v = new VariableSummary(name, featureCountList);
-//                variableSummaryList.add(v);
-//            }
-//
-//            featureCountList.add(new FeatureCount(value, count));
-//        }
 
-//        return endQuery("Get Annotation summary", startTime, variableSummaryList);
-        return endQuery("Get Annotation summary", startTime, Collections.emptyList());
+        aggregation.add(new Document("$match",
+                new Document(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), variableSetId))
+        );
+        aggregation.add(new Document("$group",
+                new Document("_id", new Document()
+                        .append("name", "$" + AnnotationSetParams.ANNOTATION_SETS_ID.key())
+                        .append("value", "$" + AnnotationSetParams.ANNOTATION_SETS_VALUE.key()))
+                        .append("count", new Document("$sum", 1))
+                )
+        );
+        aggregation.add(new Document("$sort", new Document("_id.name", -1).append("count", -1)));
+
+        List<Document> result = getCollection().aggregate(aggregation, new QueryOptions()).getResult();
+
+        List<VariableSummary> variableSummaryList = new ArrayList<>();
+
+        List<FeatureCount> featureCountList = new ArrayList<>();
+        VariableSummary v = new VariableSummary();
+
+        for (Document document : result) {
+            Document id = (Document) document.get("_id");
+            String name = id.getString("name");
+            Object value = id.get("value");
+            int count = document.getInteger("count");
+
+            if (!name.equals(v.getName())) {
+                featureCountList = new ArrayList<>();
+                v = new VariableSummary(name, featureCountList);
+                variableSummaryList.add(v);
+            }
+
+            featureCountList.add(new FeatureCount(value, count));
+        }
+
+        return endQuery("Get Annotation summary", startTime, variableSummaryList);
     }
 
     public Document createAnnotationQuery(String annotations, ObjectMap variableTypeMap) throws CatalogDBException {

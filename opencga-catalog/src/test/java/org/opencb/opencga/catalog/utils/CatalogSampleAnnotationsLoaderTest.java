@@ -118,26 +118,21 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
         long variableSetId = sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
 
-//        Query query = new Query("variableSetId", variableSetId).append("annotation", "family:GB84");
-        Query query = new Query("variableSetId", variableSetId)
-                .append("annotation.family", "GB84");
+        Query query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";family=GB84");
         QueryOptions options = new QueryOptions("limit", 2);
 
         QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, allSamples.getNumResults());
-        query.remove("annotation.family");
 
-        query.put("annotation.sex", "2");
-        query.put("annotation.Population","ITU");
+        query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=2;Population=ITU");
         QueryResult<Sample> femaleIta = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, femaleIta.getNumResults());
 
-        query.put("annotation.sex", "1");
-        query.put("annotation.Population", "ITU");
+        query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=1;Population=ITU");
         QueryResult<Sample> maleIta = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, maleIta.getNumResults());
 
-        query.remove("annotation.sex");
+        query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";Population=ITU");
         QueryResult<Sample> ita = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, ita.getNumResults());
 
