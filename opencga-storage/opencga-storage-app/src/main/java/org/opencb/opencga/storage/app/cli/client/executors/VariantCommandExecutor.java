@@ -71,6 +71,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
@@ -159,6 +160,11 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.fillGapsCommandOptions.commonOptions,
                         variantCommandOptions.fillGapsCommandOptions.dbName);
                 fillGaps();
+                break;
+            case FILL_MISSING_COMMAND:
+                configure(variantCommandOptions.fillGapsCommandOptions.commonOptions,
+                        variantCommandOptions.fillGapsCommandOptions.dbName);
+                fillMissing();
                 break;
             case "export":
                 configure(variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonOptions,
@@ -531,6 +537,15 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.putAll(fillGapsCommandOptions.commonOptions.params);
 
         variantStorageEngine.fillGaps(fillGapsCommandOptions.study, fillGapsCommandOptions.samples, options);
+    }
+
+    private void fillMissing() throws StorageEngineException {
+        StorageVariantCommandOptions.FillMissingCommandOptions cliOptions = variantCommandOptions.fillMissingCommandOptions;
+
+        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantStorageEngine.fillMissing(cliOptions.study, options);
     }
 
     private void export() throws URISyntaxException, StorageEngineException, IOException {

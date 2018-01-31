@@ -135,12 +135,16 @@ public class VariantTableHelper extends GenomeHelper {
         }
     }
 
-    public byte[] getAnalysisTable() {
-        return analysisTable.get();
-    }
-
     public byte[] getArchiveTable() {
         return archiveTable.get();
+    }
+
+    public String getArchiveTableAsString() {
+        return Bytes.toString(getArchiveTable());
+    }
+
+    public byte[] getAnalysisTable() {
+        return analysisTable.get();
     }
 
     public String getAnalysisTableAsString() {

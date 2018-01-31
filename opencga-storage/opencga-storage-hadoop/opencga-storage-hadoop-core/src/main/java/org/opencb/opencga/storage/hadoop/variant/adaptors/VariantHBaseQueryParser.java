@@ -45,9 +45,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.HOM_REF;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.STUDY_COLUMNS;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.buildColumnKey;
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.buildFileColumnKey;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.buildSampleColumnKey;
@@ -385,16 +383,19 @@ public class VariantHBaseQueryParser {
         filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, valueFilters));
     }
 
-    public static void addArchiveRegionFilter(Scan scan, Region region, ArchiveTableHelper archiveHelper) {
+    public static void addArchiveRegionFilter(Scan scan, Region region, ArchiveTableHelper helper) {
+        addArchiveRegionFilter(scan, region, helper.getFileId(), helper.getKeyFactory());
+    }
+
+    public static void addArchiveRegionFilter(Scan scan, Region region, int fileId, ArchiveRowKeyFactory keyFactory) {
         if (region == null) {
             addDefaultRegionFilter(scan);
         } else {
-            ArchiveRowKeyFactory keyFactory = archiveHelper.getKeyFactory();
-            scan.setStartRow(keyFactory.generateBlockIdAsBytes(archiveHelper.getFileId(), region.getChromosome(), region.getStart()));
+            scan.setStartRow(keyFactory.generateBlockIdAsBytes(fileId, region.getChromosome(), region.getStart()));
             long endSlice = keyFactory.getSliceId((long) region.getEnd()) + 1;
             // +1 because the stop row is exclusive
             scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(
-                    archiveHelper.getFileId(), region.getChromosome(), endSlice)));
+                    fileId, region.getChromosome(), endSlice)));
         }
     }
 
@@ -408,7 +409,8 @@ public class VariantHBaseQueryParser {
     }
 
     public static Scan addDefaultRegionFilter(Scan scan) {
-        return scan.setStopRow(Bytes.toBytes(String.valueOf(GenomeHelper.METADATA_PREFIX)));
+//        return scan.setStopRow(Bytes.toBytes(String.valueOf(GenomeHelper.METADATA_PREFIX)));
+        return scan.setFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
     }
 
 }

@@ -291,7 +291,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         logger.info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 
-    abstract void map(VariantMapReduceContext ctx) throws IOException, InterruptedException;
+    protected abstract void map(VariantMapReduceContext ctx) throws IOException, InterruptedException;
 
     protected static class VariantMapReduceContext {
         public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIdsInResult,

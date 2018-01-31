@@ -455,6 +455,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new UnsupportedOperationException();
     }
 
+    /**
+     *
+     * @param study     Study
+     * @param options   Other options
+     * @throws StorageEngineException if there is any error
+     */
+    public void fillMissing(String study, ObjectMap options) throws StorageEngineException {
+        throw new UnsupportedOperationException();
+    }
+
     public void searchIndex() throws StorageEngineException, IOException, VariantSearchException {
         searchIndex(new Query(), new QueryOptions());
     }

@@ -35,20 +35,21 @@ import java.util.Map;
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
 public class StorageVariantCommandOptions {
 
-    public VariantIndexCommandOptions indexVariantsCommandOptions;
-    public VariantRemoveCommandOptions variantRemoveCommandOptions;
-    public VariantQueryCommandOptions variantQueryCommandOptions;
-    public ImportVariantsCommandOptions importVariantsCommandOptions;
-    public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
-    public VariantStatsCommandOptions statsVariantsCommandOptions;
-    public FillGapsCommandOptions fillGapsCommandOptions;
-    public VariantExportCommandOptions exportVariantsCommandOptions;
-    public VariantSearchCommandOptions searchVariantsCommandOptions;
+    public final VariantIndexCommandOptions indexVariantsCommandOptions;
+    public final VariantRemoveCommandOptions variantRemoveCommandOptions;
+    public final VariantQueryCommandOptions variantQueryCommandOptions;
+    public final ImportVariantsCommandOptions importVariantsCommandOptions;
+    public final VariantAnnotateCommandOptions annotateVariantsCommandOptions;
+    public final VariantStatsCommandOptions statsVariantsCommandOptions;
+    public final FillGapsCommandOptions fillGapsCommandOptions;
+    public final FillMissingCommandOptions fillMissingCommandOptions;
+    public final VariantExportCommandOptions exportVariantsCommandOptions;
+    public final VariantSearchCommandOptions searchVariantsCommandOptions;
 
-    public JCommander jCommander;
-    public GeneralCliOptions.CommonOptions commonCommandOptions;
-    public GeneralCliOptions.IndexCommandOptions indexCommandOptions;
-    public GeneralCliOptions.QueryCommandOptions queryCommandOptions;
+    public final JCommander jCommander;
+    public final GeneralCliOptions.CommonOptions commonCommandOptions;
+    public final GeneralCliOptions.IndexCommandOptions indexCommandOptions;
+    public final GeneralCliOptions.QueryCommandOptions queryCommandOptions;
 
     public StorageVariantCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
                                         GeneralCliOptions.QueryCommandOptions queryCommandOptions, JCommander jCommander) {
@@ -64,6 +65,7 @@ public class StorageVariantCommandOptions {
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
         this.fillGapsCommandOptions = new FillGapsCommandOptions();
+        this.fillMissingCommandOptions = new FillMissingCommandOptions();
         this.exportVariantsCommandOptions = new VariantExportCommandOptions();
         this.searchVariantsCommandOptions = new VariantSearchCommandOptions();
     }
@@ -516,6 +518,22 @@ public class StorageVariantCommandOptions {
 
         public static final String FILL_GAPS_COMMAND = "fill-gaps";
         public static final String FILL_GAPS_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study", arity = 1)
+        public String study;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+    }
+
+    @Parameters(commandNames = {FillMissingCommandOptions.FILL_MISSING_COMMAND}, commandDescription = FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION)
+    public class FillMissingCommandOptions {
+
+        public static final String FILL_MISSING_COMMAND = "fill-missing";
+        public static final String FILL_MISSING_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
