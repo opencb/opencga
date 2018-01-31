@@ -31,9 +31,11 @@ public class AnnotationSet {
     private String name;
     private long variableSetId;
     private Map<String, Object> annotations;
+    @Deprecated
     private String creationDate;
-
+    @Deprecated
     private int release;
+    @Deprecated
     private Map<String, Object> attributes;
 
 

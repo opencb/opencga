@@ -152,13 +152,13 @@ public class CatalogAnnotationsValidator {
             variableMap.put(variable.getName(), variable);
         }
 
-        //Remove null values
-        for (Iterator<Map.Entry<String, Object>> iterator = annotationSet.getAnnotations().entrySet().iterator(); iterator.hasNext();) {
-            Map.Entry<String, Object> annotation = iterator.next();
-            if (annotation.getValue() == null) {
-                iterator.remove();
-            }
-        }
+//        //Remove null values
+//        for (Iterator<Map.Entry<String, Object>> iterator = annotationSet.getAnnotations().entrySet().iterator(); iterator.hasNext();) {
+//            Map.Entry<String, Object> annotation = iterator.next();
+//            if (annotation.getValue() == null) {
+//                iterator.remove();
+//            }
+//        }
 
         //Check for missing values
         Map<String, Object> defaultAnnotations = new HashMap<>();
@@ -175,22 +175,22 @@ public class CatalogAnnotationsValidator {
         annotationSet.getAnnotations().putAll(defaultAnnotations);
 
         //Check annotations
-        for (Map.Entry<String, Object> annotation : annotationSet.getAnnotations().entrySet()) {
-            checkAnnotation(variableMap, annotation);
-        }
+        checkAnnotations(variableMap, annotationSet.getAnnotations());
 
     }
 
-    public static void checkAnnotation(Map<String, Variable> variableMap, Map.Entry<String, Object> annotation) throws CatalogException {
-        String id = annotation.getKey();
-        if (!variableMap.containsKey(id)) {
-            throw new CatalogException("Annotation id '" + id + "' is not an accepted id");
-        } else {
-            Variable variable = variableMap.get(id);
-            annotation.setValue(getValue(variable.getType(), annotation.getValue()));
-            checkAllowedValue(variable, annotation.getValue(), "Annotation");
+    public static void checkAnnotations(Map<String, Variable> variableMap, Map<String, Object> annotations)
+            throws CatalogException {
+        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
+            String id = entry.getKey();
+            if (!variableMap.containsKey(id)) {
+                throw new CatalogException("Annotation id '" + id + "' is not an accepted id");
+            } else {
+                Variable variable = variableMap.get(id);
+                annotations.put(id, getValue(variable.getType(), entry.getValue()));
+                checkAllowedValue(variable, entry.getValue(), "Annotation");
+            }
         }
-
     }
 
 //    public static void checkAnnotation(Map<String, Variable> variableMap, Annotation annotation) throws CatalogException {
@@ -504,16 +504,17 @@ public class CatalogAnnotationsValidator {
     }
 
     public static void mergeNewAnnotations(AnnotationSet annotationSet, Map<String, Object> newAnnotations) {
-        Map<String, Object> annotations = annotationSet.getAnnotations();
-
-        for (Map.Entry<String, Object> entry : newAnnotations.entrySet()) {
-            if (entry.getValue() != null) {
-                // Replace the annotation
-                annotations.put(entry.getKey(), entry.getValue());
-            } else {
-                //Remove the old value (if present)
-                annotations.remove(entry.getKey());
-            }
-        }
+        annotationSet.getAnnotations().putAll(newAnnotations);
+//        Map<String, Object> annotations = annotationSet.getAnnotations();
+//
+//        for (Map.Entry<String, Object> entry : newAnnotations.entrySet()) {
+//            if (entry.getValue() != null) {
+//                // Replace the annotation
+//                annotations.put(entry.getKey(), entry.getValue());
+//            } else {
+//                //Remove the old value (if present)
+//                annotations.remove(entry.getKey());
+//            }
+//        }
     }
 }

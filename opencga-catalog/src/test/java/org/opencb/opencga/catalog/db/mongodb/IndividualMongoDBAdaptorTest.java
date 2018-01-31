@@ -25,9 +25,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.*;
 
 import java.util.*;
 import java.util.function.Function;
@@ -202,10 +202,17 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void testAnnotateIndividual() throws Exception {
+    public void testSeveralAnnotationsInUniqueVariableSet() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
+
+        Set<Variable> variableSet = new HashSet<>();
+        variableSet.add(new Variable().setName("key").setType(Variable.VariableType.TEXT));
+        variableSet.add(new Variable().setName("key2").setType(Variable.VariableType.TEXT));
+        variableSet.add(new Variable().setName("key3").setType(Variable.VariableType.INTEGER));
+        variableSet.add(new Variable().setName("key4").setType(Variable.VariableType.BOOLEAN));
+        VariableSet vs = new VariableSet().setId(3L).setVariables(variableSet).setUnique(true);
 
         Map<String, Object> annotationSet = new HashMap<>();
         annotationSet.put("key", "value");
@@ -215,24 +222,54 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
         AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", 1, Collections.emptyMap());
-        catalogIndividualDBAdaptor.annotate(individualId, annot1, false);
-        catalogIndividualDBAdaptor.annotate(individualId, annot2, false);
+        catalogIndividualDBAdaptor.createAnnotationSet(individualId, vs, annot1);
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("unique VariableSet");
+        catalogIndividualDBAdaptor.createAnnotationSet(individualId, vs, annot2);
+    }
 
-        Individual individual = catalogIndividualDBAdaptor.get(individualId, new QueryOptions()).first();
+    @Test
+    public void testAnnotateIndividual() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
+                .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
+
+        Set<Variable> variableSet = new HashSet<>();
+        variableSet.add(new Variable().setName("key").setType(Variable.VariableType.TEXT));
+        variableSet.add(new Variable().setName("key2").setType(Variable.VariableType.TEXT));
+        variableSet.add(new Variable().setName("key3").setType(Variable.VariableType.INTEGER));
+        variableSet.add(new Variable().setName("key4").setType(Variable.VariableType.BOOLEAN));
+        VariableSet vs = new VariableSet().setId(3L).setVariables(variableSet);
+
+        Map<String, Object> annotationSet = new HashMap<>();
+        annotationSet.put("key", "value");
+        annotationSet.put("key2", "value2");
+        annotationSet.put("key3", 3);
+        annotationSet.put("key4", true);
+
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
+        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", 1, Collections.emptyMap());
+        catalogIndividualDBAdaptor.createAnnotationSet(individualId, vs, annot1);
+        catalogIndividualDBAdaptor.createAnnotationSet(individualId, vs, annot2);
+
+        Individual individual = catalogIndividualDBAdaptor.get(individualId,
+                new QueryOptions(QueryOptions.INCLUDE, Constants.VARIABLE_SET + "." + 3)).first();
         Map<String, AnnotationSet> annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap
                 (AnnotationSet::getName, Function.identity()));
         assertEquals(2, annotationSets.size());
-        assertEquals(annot1, annotationSets.get(annot1.getName()));
-        assertEquals(annot2, annotationSets.get(annot2.getName()));
 
-        catalogIndividualDBAdaptor.deleteAnnotation(individualId, annot1.getName());
+        // TODO: Remove setCreationDate("") when we completely remove creationDate from the data model
+        assertEquals(annot1, annotationSets.get(annot1.getName()).setCreationDate(""));
+        assertEquals(annot2, annotationSets.get(annot2.getName()).setCreationDate(""));
+
+        catalogIndividualDBAdaptor.deleteAnnotationSet(individualId, annot1.getName());
 
         individual = catalogIndividualDBAdaptor.get(individualId, new QueryOptions()).first();
         annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getName, Function.identity()));
         assertEquals(1, annotationSets.size());
         assertFalse(annotationSets.containsKey(annot1.getName()));
-        assertEquals(annot2, annotationSets.get(annot2.getName()));
-
+        // TODO: Remove setCreationDate("") when we completely remove creationDate from the data model
+        assertEquals(annot2, annotationSets.get(annot2.getName()).setCreationDate(""));
     }
 
     @Test
@@ -241,48 +278,17 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
-        catalogIndividualDBAdaptor.annotate(individualId, new AnnotationSet("annot1", 3, Collections.emptyMap(),
-                "", 1, Collections.emptyMap()), false);
+        Set<Variable> variableSet = new HashSet<>();
+        variableSet.add(new Variable().setName("key").setType(Variable.VariableType.TEXT));
+        VariableSet vs = new VariableSet().setId(3L).setVariables(variableSet);
+
+        catalogIndividualDBAdaptor.createAnnotationSet(individualId, vs,
+                new AnnotationSet("annot1", 3, new ObjectMap("key", "hello"), "", 1, Collections.emptyMap()));
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.annotate(individualId, new AnnotationSet("annot1", 3, Collections.emptyMap(),
-                "", 1, Collections.emptyMap()), false);
+        thrown.expectMessage("already exists");
+        catalogIndividualDBAdaptor.createAnnotationSet(individualId, vs,
+                new AnnotationSet("annot1", 3, new ObjectMap("key", "hello"), "", 1, Collections.emptyMap()));
     }
-
-    @Test
-    public void testAnnotateIndividualOverwriteExistingAnnotationId() throws Exception {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
-                .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
-
-        Map <String, Object> annotations = new HashMap<>();
-        annotations.put("k", "v");
-        annotations.put("k2", "v2");
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
-        QueryResult<AnnotationSet> queryResult = catalogIndividualDBAdaptor.annotate(individualId, annot1, false);
-        assertEquals(annot1, queryResult.first());
-
-        annotations = new HashMap<>();
-        annotations.put("k", "v2");
-        annotations.put("k3", "v3");
-        annot1 = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
-        queryResult = catalogIndividualDBAdaptor.annotate(individualId, annot1, true);
-        assertEquals(annot1, queryResult.first());
-    }
-
-    @Test
-    public void testAnnotateIndividualOverwriteNonExistingAnnotationId() throws Exception {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
-                .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
-
-        Map<String, Object> annotations = new HashMap<>();
-        annotations.put("k", "v");
-        annotations.put("k2", "v2");
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotations, "", 1, Collections.emptyMap());
-        thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.annotate(individualId, annot1, true);
-    }
-
 
     @Test
     public void testDeleteIndividual() throws Exception {

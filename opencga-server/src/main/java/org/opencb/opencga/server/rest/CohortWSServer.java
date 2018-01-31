@@ -22,10 +22,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CohortManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -178,12 +180,15 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response searchCohorts(@ApiParam(value = "Study [[user@]project:]study where study and project can be either "
             + "the id or alias") @QueryParam("study") String studyStr,
                                   @ApiParam(value = "Name of the cohort") @QueryParam("name") String name,
                                   @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
                                   @ApiParam(value = "Status") @QueryParam("status") String status,
+                                  @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
                                   @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
                                   @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
                                   @ApiParam(value = "Release value") @QueryParam("release") String release) {
@@ -277,18 +282,35 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            if (StringUtils.isNotEmpty(variableSetId)) {
-                variableSet = variableSetId;
-            }
-            if (asMap) {
-                return createOkResponse(cohortManager.searchAnnotationSetAsMap(cohortStr, studyStr, variableSet, annotation, sessionId));
+            AbstractManager.MyResourceId resourceId = cohortManager.getId(cohortStr, studyStr, sessionId);
+
+            Query query = new Query()
+                    .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
+                    .append(CohortDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+
+            String variableSetId = String.valueOf(catalogManager.getStudyManager()
+                    .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
+
+            if (StringUtils.isEmpty(annotation)) {
+                annotation = Constants.VARIABLE_SET + "=" + variableSetId;
             } else {
-                return createOkResponse(cohortManager.searchAnnotationSet(cohortStr, studyStr, variableSet, annotation, sessionId));
+                annotation += ";" + Constants.VARIABLE_SET + "=" + variableSetId;
+            }
+            query.append(Constants.ANNOTATION, annotation);
+
+            QueryResult<Cohort> search = cohortManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
+                    sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
+                        search.first().getAnnotationSets()));
+            } else {
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -305,52 +327,25 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<String> idList = getIdList(cohortsStr);
-            if (asMap) {
-                return createOkResponse(cohortManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName, silent, sessionId));
-            } else {
-                return createOkResponse(cohortManager.getAnnotationSet(idList, studyStr, annotationsetName, silent, sessionId));
-            }
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
+            AbstractManager.MyResourceIds resourceIds = cohortManager.getIds(cohortsStr, studyStr, sessionId);
 
-    @GET
-    @Path("/{cohort}/annotationsets/info")
-    @ApiOperation(value = "Return all the annotation sets of the cohort [DEPRECATED]", position = 12, hidden = true,
-            notes = "Use /{cohort}/annotationsets instead")
-    public Response infoAnnotationSetGET(
-            @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(cohortManager.getAllAnnotationSetsAsMap(cohortStr, studyStr, sessionId));
-            } else {
-                return createOkResponse(cohortManager.getAllAnnotationSets(cohortStr, studyStr, sessionId));
-            }
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
+            Query query = new Query()
+                    .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                    .append(CohortDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
 
-    @GET
-    @Path("/{cohort}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [DEPRECATED]", hidden = true, position = 16,
-            notes = "Use /{cohort}/annotationsets/info instead")
-    public Response infoAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
-                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
-                                              + "alias") @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName")
-                                              String annotationsetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false")
-                                      @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(cohortManager.getAnnotationSetAsMap(cohortStr, studyStr, annotationsetName, sessionId));
+            if (StringUtils.isNotEmpty(annotationsetName)) {
+                query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+            }
+
+            QueryResult<Cohort> search = cohortManager.search(String.valueOf(resourceIds.getStudyId()), query, new QueryOptions(),
+                    sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
+                        search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
+                        search.getErrorMsg(), search.first().getAnnotationSets()));
             } else {
-                return createOkResponse(cohortManager.getAnnotationSet(cohortStr, studyStr, annotationsetName, sessionId));
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);

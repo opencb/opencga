@@ -17,10 +17,12 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Cohort;
 
 import java.util.Map;
@@ -48,9 +50,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         SAMPLE_IDS("samples.id", INTEGER, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
-        VARIABLE_SET_ID("variableSetId", INTEGER, ""),
-        VARIABLE_NAME("variableName", TEXT, ""),
-        ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
+//        VARIABLE_NAME("variableName", TEXT, ""),
 
         ANNOTATION("annotation", TEXT_ARRAY, ""),
 
@@ -128,12 +128,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
     QueryResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> annotate(long cohortId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> deleteAnnotation(long cohortId, String annotationId) throws CatalogDBException;
 
     long getStudyId(long cohortId) throws CatalogDBException;
 

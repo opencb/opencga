@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Sample;
 
 import java.util.Map;
@@ -67,7 +68,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
-        ANNOTATION("annotation", TEXT_ARRAY, "");
+        ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
         static {

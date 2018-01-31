@@ -151,10 +151,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.FATHER.key(), familyCommandOptions.searchCommandOptions.father);
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MOTHER.key(), familyCommandOptions.searchCommandOptions.mother);
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MEMBER.key(), familyCommandOptions.searchCommandOptions.member);
-        query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), familyCommandOptions.searchCommandOptions.variableSetId);
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.ANNOTATION.key(), familyCommandOptions.searchCommandOptions.annotation);
-        query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
-                familyCommandOptions.searchCommandOptions.annotationSetName);
         query.putIfNotNull(FamilyDBAdaptor.QueryParams.MEMBERS_PARENTAL_CONSANGUINITY.key(),
                 familyCommandOptions.searchCommandOptions.parentalConsanguinity);
 

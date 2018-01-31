@@ -20,27 +20,27 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.AnnotableMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
@@ -69,7 +69,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     }
 
     @Override
-    protected GenericDocumentComplexConverter<? extends Annotable> getConverter() {
+    protected AnnotableConverter<? extends Annotable> getConverter() {
         return cohortConverter;
     }
 
@@ -97,7 +97,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Document cohortObject = cohortConverter.convertToStorageType(cohort);
         cohortObject.append(PRIVATE_STUDY_ID, studyId);
         cohortObject.append(PRIVATE_ID, newId);
-        cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
+        if (StringUtils.isNotEmpty(cohort.getCreationDate())) {
+            cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
+        } else {
+            cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
         cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         try {
@@ -119,77 +123,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         long startTime = startQuery();
         update(new Query(QueryParams.ID.key(), cohortId), parameters, QueryOptions.empty());
         return endQuery("Update cohort", startTime, get(cohortId, queryOptions));
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult<AnnotationSet> annotate(long cohortId, AnnotationSet annotationSet, boolean overwrite)
-            throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryResult<Long> count = cohortCollection.count(new Document("annotationSets.name", annotationSet.getName())
-                .append(PRIVATE_ID, cohortId));
-        if (overwrite) {
-            if (count.getResult().get(0) == 0) {
-                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getName());
-            }
-        } else {
-            if (count.getResult().get(0) > 0) {
-                throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
-            }
-        }
-
-        Document object = getMongoDBDocument(annotationSet, "AnnotationSet");
-
-        Bson query = new Document(PRIVATE_ID, cohortId);
-        if (overwrite) {
-            ((Document) query).put("annotationSets.name", annotationSet.getName());
-        } else {
-            ((Document) query).put("annotationSets.name", new Document("$ne", annotationSet.getName()));
-        }
-
-        Bson update;
-        if (overwrite) {
-            update = Updates.set("annotationSets.$", object);
-        } else {
-            update = Updates.push("annotationSets", object);
-        }
-
-        QueryResult<UpdateResult> queryResult = cohortCollection.update(query, update, null);
-
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
-        }
-
-        return endQuery("", startTime, Collections.singletonList(annotationSet));
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult<AnnotationSet> deleteAnnotation(long cohortId, String annotationId) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Cohort cohort = get(cohortId, new QueryOptions("include", "projects.studies.cohorts.annotationSets")).first();
-        AnnotationSet annotationSet = null;
-        for (AnnotationSet as : cohort.getAnnotationSets()) {
-            if (as.getName().equals(annotationId)) {
-                annotationSet = as;
-                break;
-            }
-        }
-
-        if (annotationSet == null) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
-        }
-
-        Bson query = new Document(PRIVATE_ID, cohortId);
-        Bson update = Updates.pull("annotationSets", new Document("name", annotationId));
-        QueryResult<UpdateResult> resultQueryResult = cohortCollection.update(query, update, null);
-        if (resultQueryResult.first().getModifiedCount() < 1) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
-        }
-
-        return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
 
     @Override
@@ -461,13 +394,13 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     @Override
     public DBIterator<Cohort> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor, cohortConverter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, cohortConverter, options);
     }
 
     @Override
     public DBIterator<Document> nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor);
+        return new AnnotableMongoDBIterator<>(mongoCursor, options);
     }
 
     @Override
@@ -478,7 +411,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
-        return new MongoDBIterator<>(mongoCursor, cohortConverter, iteratorFilter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, cohortConverter, iteratorFilter, options);
     }
 
     @Override
@@ -489,7 +422,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
-        return new MongoDBIterator<>(mongoCursor, iteratorFilter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, iteratorFilter, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -515,10 +448,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
-            qOptions = options;
+            qOptions = new QueryOptions(options);
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
 
         return cohortCollection.nativeQuery().find(bson, qOptions).iterator();
@@ -601,9 +535,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
     protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-        List<Bson> annotationList = new ArrayList<>();
-        // We declare variableMap here just in case we have different annotation queries
-        Map<String, Variable> variableMap = null;
+        Document annotationDocument = null;
 
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
@@ -640,21 +572,14 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case VARIABLE_SET_ID:
-                        addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
-                        break;
                     case ANNOTATION:
-                        if (variableMap == null) {
-                            long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
-                            if (variableSetId > 0) {
-                                variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                        .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
-                            }
+                        if (annotationDocument == null) {
+                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
+                                    query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
+//                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
+//                                    query.getLong(QueryParams.VARIABLE_SET_ID.key()),
+//                                    query.getString(QueryParams.ANNOTATION_SET_NAME.key()));
                         }
-                        addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
-                        break;
-                    case ANNOTATION_SET_NAME:
-                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     case SAMPLE_IDS:
                         addQueryFilter(queryParam.key(), queryParam.key(), query, queryParam.type(),
@@ -671,7 +596,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     case STATUS_DATE:
                     case DESCRIPTION:
                     case ANNOTATION_SETS:
-                    case VARIABLE_NAME:
+//                    case VARIABLE_NAME:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
@@ -682,9 +607,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
             }
         }
 
-        if (annotationList.size() > 0) {
-            Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
-            andBsonList.add(projection);
+        if (annotationDocument != null && !annotationDocument.isEmpty()) {
+            andBsonList.add(annotationDocument);
         }
         if (authorisation != null && authorisation.size() > 0) {
             andBsonList.add(authorisation);

@@ -75,6 +75,7 @@ class MongoDBUtils {
             "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    @Deprecated
     public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^=^<>~!$]+)([=^<>~!$]+.*)$");
     static final String TO_REPLACE_DOTS = "&#46;";
     private static ObjectMapper jsonObjectMapper;
@@ -672,6 +673,14 @@ class MongoDBUtils {
             queryKey = "";
         }
         return addCompQueryFilter(option.type(), queryKey, optionsList, andQuery);
+    }
+
+    public static String getOperator(String queryValue) {
+        Matcher matcher = OPERATION_PATTERN.matcher(queryValue);
+        if (matcher.find()) {
+            return matcher.group(2);
+        }
+        return null;
     }
 
     public static List<Document> addCompQueryFilter(QueryParam.Type type, String queryKey, List<String> optionsList,

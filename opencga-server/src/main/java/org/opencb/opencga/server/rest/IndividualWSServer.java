@@ -19,9 +19,12 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -34,7 +37,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -112,7 +118,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
                     paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response searchIndividuals(
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
@@ -141,12 +149,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
                     Individual.AffectationStatus affectationStatus,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId")
-                    String variableSetId,
-            @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
-                    String annotationsetName,
-            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+                @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+                @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
             @QueryParam("release") String release,
@@ -154,6 +161,20 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     int snapshot) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+
+            List<String> annotationList = new ArrayList<>();
+            if (StringUtils.isNotEmpty(annotation)) {
+                annotationList.add(annotation);
+            }
+            if (StringUtils.isNotEmpty(variableSet)) {
+                annotationList.add(Constants.VARIABLE_SET + "=" + variableSet);
+            }
+            if (StringUtils.isNotEmpty(annotationsetName)) {
+                annotationList.add(Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+            }
+            if (!annotationList.isEmpty()) {
+                query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
+            }
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -184,20 +205,35 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            if (StringUtils.isNotEmpty(variableSetId)) {
-                variableSet = variableSetId;
-            }
-            if (asMap) {
-                return createOkResponse(individualManager.searchAnnotationSetAsMap(individualStr, studyStr, variableSet, annotation,
-                        sessionId));
+            AbstractManager.MyResourceId resourceId = individualManager.getId(individualStr, studyStr, sessionId);
+
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
+                    .append(IndividualDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+
+            String variableSetId = String.valueOf(catalogManager.getStudyManager()
+                    .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
+
+            if (StringUtils.isEmpty(annotation)) {
+                annotation = Constants.VARIABLE_SET + "=" + variableSetId;
             } else {
-                return createOkResponse(individualManager.searchAnnotationSet(individualStr, studyStr, variableSet, annotation,
-                        sessionId));
+                annotation += ";" + Constants.VARIABLE_SET + "=" + variableSetId;
+            }
+            query.append(Constants.ANNOTATION, annotation);
+
+            QueryResult<Individual> search = individualManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
+                    sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
+                        search.first().getAnnotationSets()));
+            } else {
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -214,52 +250,25 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<String> idList = getIdList(individualsStr);
-            if (asMap) {
-                return createOkResponse(individualManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName, silent, sessionId));
-            } else {
-                return createOkResponse(individualManager.getAnnotationSet(idList, studyStr, annotationsetName, silent, sessionId));
-            }
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
+            AbstractManager.MyResourceIds resourceIds = individualManager.getIds(individualsStr, studyStr, sessionId);
 
-    @GET
-    @Path("/{individual}/annotationsets/info")
-    @ApiOperation(value = "Return all the annotation sets of the individual [DEPRECATED]", position = 12, hidden = true,
-            notes = "Use /{individual}/annotationsets instead")
-    public Response infoAnnotationSetGET(
-            @ApiParam(value = "Individual id or name", required = true) @PathParam("individual") String individualStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(individualManager.getAllAnnotationSetsAsMap(individualStr, studyStr, sessionId));
-            } else {
-                return createOkResponse(individualManager.getAllAnnotationSets(individualStr, studyStr, sessionId));
-            }
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                    .append(IndividualDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
 
-    @GET
-    @Path("/{individual}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, hidden = true,
-            notes = "Use /{individual}/annotationsets instead")
-    public Response infoAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
-                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
-                                              + "alias") @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName")
-                                              String annotationsetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false,
-                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(individualManager.getAnnotationSetAsMap(individualStr, studyStr, annotationsetName, sessionId));
+            if (StringUtils.isNotEmpty(annotationsetName)) {
+                query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+            }
+
+            QueryResult<Individual> search = individualManager.search(String.valueOf(resourceIds.getStudyId()), query, new QueryOptions(),
+                    sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
+                        search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
+                        search.getErrorMsg(), search.first().getAnnotationSets()));
             } else {
-                return createOkResponse(individualManager.getAnnotationSet(individualStr, studyStr, annotationsetName, sessionId));
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);

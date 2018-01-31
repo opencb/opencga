@@ -24,7 +24,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Individual;
 
 import java.util.Map;
@@ -153,10 +152,10 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 //    @Deprecated
 //    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
 
-    QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
-            CatalogDBException;
+//    QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
+//            CatalogDBException;
 
-    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
+//    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
 
     long getStudyId(long individualId) throws CatalogDBException;
 

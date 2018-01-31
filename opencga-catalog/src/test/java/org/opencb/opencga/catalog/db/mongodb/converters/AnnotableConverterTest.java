@@ -4,6 +4,7 @@ import org.bson.Document;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 
@@ -24,14 +25,16 @@ public class AnnotableConverterTest {
         myMap.put("b", "nothing");
 
         AnnotationConverter annotableConverter = new AnnotationConverter();
-        List<Document> document1 = annotableConverter.annotationToDB(variableSet, myMap);
+        List<Document> document1 = annotableConverter.annotationToDB(variableSet, "annotName", myMap);
         assertTrue(document1.isEmpty());
 
         myMap.put("a", "hello");
-        List<Document> document2 = annotableConverter.annotationToDB(variableSet, myMap);
+        List<Document> document2 = annotableConverter.annotationToDB(variableSet, "annotName", myMap);
         assertEquals(1, document2.size());
-        assertEquals(3, document2.get(0).size());
-        assertEquals("1__a", document2.get(0).get(AnnotationConverter.ID));
+        assertEquals(4, document2.get(0).size());
+        assertEquals("a", document2.get(0).get(AnnotationConverter.ID));
+        assertEquals("annotName", document2.get(0).get(AnnotationConverter.ANNOTATION_SET_NAME));
+        assertEquals(1L, document2.get(0).get(AnnotationConverter.VARIABLE_SET));
         assertEquals("hello", document2.get(0).get(AnnotationConverter.VALUE));
     }
 
@@ -66,16 +69,18 @@ public class AnnotableConverterTest {
         ));
 
         AnnotationConverter annotableConverter = new AnnotationConverter();
-        List<Document> document = annotableConverter.annotationToDB(vs, myMap);
+        List<Document> document = annotableConverter.annotationToDB(vs, "annotName", myMap);
 
         assertEquals(1, document.size());
-        assertEquals(5, document.get(0).size());
+        assertEquals(6, document.get(0).size());
         assertEquals(5, ((List) document.get(0).get(AnnotationConverter.VALUE)).size());
         assertEquals(Arrays.asList(true, false, false, true, true), document.get(0).get(AnnotationConverter.VALUE));
         assertEquals(Arrays.asList(Arrays.asList(1, 1), Arrays.asList(1, 1), 0, Arrays.asList(0, 1)),
                 document.get(0).get(AnnotationConverter.COUNT_ELEMENTS));
         assertEquals(Arrays.asList(0, 1), document.get(0).get(AnnotationConverter.ARRAY_LEVEL));
-        assertEquals("1__a.b.c", document.get(0).get(AnnotationConverter.ID));
+        assertEquals("annotName", document.get(0).get(AnnotationConverter.ANNOTATION_SET_NAME));
+        assertEquals("a.b.c", document.get(0).get(AnnotationConverter.ID));
+        assertEquals(1L, document.get(0).get(AnnotationConverter.VARIABLE_SET));
     }
 
     @Test
@@ -105,15 +110,17 @@ public class AnnotableConverterTest {
         ));
 
         AnnotationConverter annotableConverter = new AnnotationConverter();
-        List<Document> document = annotableConverter.annotationToDB(vs, myMap);
+        List<Document> document = annotableConverter.annotationToDB(vs, "annotName", myMap);
 
         assertEquals(1, document.size());
-        assertEquals(5, document.get(0).size());
+        assertEquals(6, document.get(0).size());
         assertEquals(5, ((List) document.get(0).get(AnnotationConverter.VALUE)).size());
         assertEquals(Arrays.asList(true, false, false, false, true), document.get(0).get(AnnotationConverter.VALUE));
         assertEquals(Arrays.asList(Arrays.asList(2), 0, 0, Arrays.asList(3)), document.get(0).get(AnnotationConverter.COUNT_ELEMENTS));
         assertEquals(Arrays.asList(0, 2), document.get(0).get(AnnotationConverter.ARRAY_LEVEL));
-        assertEquals("1__a.b.c", document.get(0).get(AnnotationConverter.ID));
+        assertEquals("annotName", document.get(0).get(AnnotationConverter.ANNOTATION_SET_NAME));
+        assertEquals("a.b.c", document.get(0).get(AnnotationConverter.ID));
+        assertEquals(1L, document.get(0).get(AnnotationConverter.VARIABLE_SET));
     }
 
     @Test
@@ -187,12 +194,16 @@ public class AnnotableConverterTest {
         );
 
         AnnotationConverter annotableConverter = new AnnotationConverter();
-        List<Document> documentList = annotableConverter.annotationToDB(vs, myMap);
+        List<Document> documentList = annotableConverter.annotationToDB(vs, "annotName", myMap);
 
         // We convert it back
-        Map<String, Object> stringObjectMap = annotableConverter.fromDBToAnnotation(documentList, new QueryOptions());
+        List<AnnotationSet> annotationSets = annotableConverter.fromDBToAnnotation(documentList, new QueryOptions());
+        assertEquals(1, annotationSets.size());
+        assertEquals("annotName", annotationSets.get(0).getName());
+        assertEquals(vs.getId(), annotationSets.get(0).getVariableSetId());
+
         // And back again to the mongo properties
-        List<Document> documentList2 = annotableConverter.annotationToDB(vs, stringObjectMap);
+        List<Document> documentList2 = annotableConverter.annotationToDB(vs, "annotName", annotationSets.get(0).getAnnotations());
 
         // And now we check if the conversion to mongo and the conversion map -> mongo -> map -> mongo gives the expected result
         for (List<Document> myDocList : Arrays.asList(documentList, documentList2)) {
@@ -200,40 +211,40 @@ public class AnnotableConverterTest {
             assertEquals(6, myDocList.size());
             for (Document document : myDocList) {
                 switch ((String) document.get(AnnotationConverter.ID)) {
-                    case "1__a.ab1.ab1c1":
-                        assertEquals(5, document.size());
+                    case "a.ab1.ab1c1":
+                        assertEquals(6, document.size());
                         assertEquals(Arrays.asList(true, false, false), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(3), document.get(AnnotationConverter.COUNT_ELEMENTS));
                         assertEquals(Arrays.asList(2), document.get(AnnotationConverter.ARRAY_LEVEL));
                         break;
-                    case "1__a.ab1.ab1c2":
-                        assertEquals(3, document.size());
+                    case "a.ab1.ab1c2":
+                        assertEquals(4, document.size());
                         assertEquals("hello world", document.get(AnnotationConverter.VALUE));
                         break;
-                    case "1__a.ab2.ab2c1.ab2c1d1":
-                        assertEquals(5, document.size());
+                    case "a.ab2.ab2c1.ab2c1d1":
+                        assertEquals(6, document.size());
                         assertEquals(Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(Arrays.asList(4), Arrays.asList(4), Arrays.asList(1)),
                                 document.get(AnnotationConverter.COUNT_ELEMENTS));
 
                         assertEquals(Arrays.asList(1, 3), document.get(AnnotationConverter.ARRAY_LEVEL));
                         break;
-                    case "1__a.ab2.ab2c1.ab2c1d2":
-                        assertEquals(5, document.size());
+                    case "a.ab2.ab2c1.ab2c1d2":
+                        assertEquals(6, document.size());
                         assertEquals(Arrays.asList("hello ab2c1d2 1", "hello ab2c1d2 2"), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(1, 1, 0), document.get(AnnotationConverter.COUNT_ELEMENTS));
                         assertEquals(Arrays.asList(1), document.get(AnnotationConverter.ARRAY_LEVEL));
                         break;
-                    case "1__a.ab3.ab3c1.ab3c1d1":
-                        assertEquals(5, document.size());
+                    case "a.ab3.ab3c1.ab3c1d1":
+                        assertEquals(6, document.size());
                         assertEquals(Arrays.asList(Arrays.asList("hello"), Arrays.asList("hello2", "bye2"),
                                 Arrays.asList("byeee2", "hellooo2")), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(Arrays.asList(1, 0), Arrays.asList(1, 1)), document.get(AnnotationConverter
                                 .COUNT_ELEMENTS));
                         assertEquals(Arrays.asList(1, 2), document.get(AnnotationConverter.ARRAY_LEVEL));
                         break;
-                    case "1__a.ab3.ab3c1.ab3c1d2":
-                        assertEquals(5, document.size());
+                    case "a.ab3.ab3c1.ab3c1d2":
+                        assertEquals(6, document.size());
                         assertEquals(Arrays.asList(2.0, 4.0, 24.0), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(Arrays.asList(1, 1), Arrays.asList(0, 1)),
                                 document.get(AnnotationConverter.COUNT_ELEMENTS));

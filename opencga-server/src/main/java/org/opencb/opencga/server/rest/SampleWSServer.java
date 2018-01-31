@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -33,12 +34,16 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
+import scala.collection.immutable.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -157,7 +162,9 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute (this replaces old lazy parameter)",
-                    defaultValue = "false", dataType = "boolean", paramType = "query")
+                    defaultValue = "false", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response search(@ApiParam(value = "DEPRECATED: use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
                            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
@@ -171,10 +178,11 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
                            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-                           @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-                           @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
-                           @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-                           @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+                           @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+                               @QueryParam("annotationsetName") String annotationsetName,
+                           @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+                               @QueryParam("variableSet") String variableSet,
+                           @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
                            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
                            @QueryParam("nattributes") String nattributes,
@@ -188,6 +196,20 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
+            }
+
+            List<String> annotationList = new ArrayList<>();
+            if (StringUtils.isNotEmpty(annotation)) {
+                annotationList.add(annotation);
+            }
+            if (StringUtils.isNotEmpty(variableSet)) {
+                annotationList.add(Constants.VARIABLE_SET + "=" + variableSet);
+            }
+            if (StringUtils.isNotEmpty(annotationsetName)) {
+                annotationList.add(Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+            }
+            if (!annotationList.isEmpty()) {
+                query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
             }
 
             // TODO: individualId is deprecated. Remember to remove this if after next release
@@ -310,18 +332,35 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(
             @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            if (StringUtils.isNotEmpty(variableSetId)) {
-                variableSet = variableSetId;
-            }
-            if (asMap) {
-                return createOkResponse(sampleManager.searchAnnotationSetAsMap(sampleStr, studyStr, variableSet, annotation, sessionId));
+            AbstractManager.MyResourceId resourceId = sampleManager.getId(sampleStr, studyStr, sessionId);
+
+            Query query = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+
+            String variableSetId = String.valueOf(catalogManager.getStudyManager()
+                    .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
+
+            if (StringUtils.isEmpty(annotation)) {
+                annotation = Constants.VARIABLE_SET + "=" + variableSetId;
             } else {
-                return createOkResponse(sampleManager.searchAnnotationSet(sampleStr, studyStr, variableSet, annotation, sessionId));
+                annotation += ";" + Constants.VARIABLE_SET + "=" + variableSetId;
+            }
+            query.append(Constants.ANNOTATION, annotation);
+
+            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
+                    sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
+                        search.first().getAnnotationSets()));
+            } else {
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -336,56 +375,28 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
+            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
+                @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<String> idList = getIdList(samplesStr);
-            if (asMap) {
-                return createOkResponse(sampleManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName, silent, sessionId));
-            } else {
-                return createOkResponse(sampleManager.getAnnotationSet(idList, studyStr, annotationsetName, silent, sessionId));
+            AbstractManager.MyResourceIds resourceIds = sampleManager.getIds(samplesStr, studyStr, sessionId);
+
+            Query query = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+
+            if (StringUtils.isNotEmpty(annotationsetName)) {
+                query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
             }
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
 
-    @GET
-    @Path("/{sample}/annotationsets/info")
-    @ApiOperation(value = "Return the annotation sets of the sample [DEPRECATED]", position = 12, hidden = true,
-            notes = "Use /{sample}/annotationsets instead")
-    public Response infoAnnotationSetGET(
-            @ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(sampleManager.getAllAnnotationSetsAsMap(sampleStr, studyStr, sessionId));
+            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceIds.getStudyId()), query, new QueryOptions(),
+                    sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
+                        search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
+                        search.getErrorMsg(), search.first().getAnnotationSets()));
             } else {
-                return createOkResponse(sampleManager.getAllAnnotationSets(sampleStr, studyStr, sessionId));
-            }
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-
-    @GET
-    @Path("/{sample}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, hidden = true,
-            notes = "Use /{sample}/annotationsets/info instead")
-    public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
-                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                      @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(catalogManager.getSampleManager().getAnnotationSetAsMap(sampleStr, studyStr, annotationsetName,
-                        sessionId));
-            } else {
-                return createOkResponse(catalogManager.getSampleManager().getAnnotationSet(sampleStr, studyStr, annotationsetName,
-                        sessionId));
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);

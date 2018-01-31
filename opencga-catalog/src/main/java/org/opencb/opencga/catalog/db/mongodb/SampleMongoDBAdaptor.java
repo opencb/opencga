@@ -23,17 +23,18 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.AnnotableMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -69,7 +70,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    protected GenericDocumentComplexConverter<? extends Annotable> getConverter() {
+    protected AnnotableConverter<? extends Annotable> getConverter() {
         return sampleConverter;
     }
 
@@ -117,7 +118,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
         sampleObject.put(LAST_OF_VERSION, true);
         sampleObject.put(LAST_OF_RELEASE, true);
-        sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(sample.getCreationDate()));
+        if (StringUtils.isNotEmpty(sample.getCreationDate())) {
+            sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(sample.getCreationDate()));
+        } else {
+            sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
         sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         sampleCollection.insert(sampleObject, null);
@@ -541,13 +546,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Override
     public DBIterator<Sample> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor, sampleConverter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, sampleConverter, options);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor);
+        return new AnnotableMongoDBIterator<>(mongoCursor, options);
     }
 
     @Override
@@ -558,7 +563,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
-        return new MongoDBIterator<>(mongoCursor, sampleConverter, iteratorFilter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, sampleConverter, iteratorFilter, options);
     }
 
     @Override
@@ -569,7 +574,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
-        return new MongoDBIterator<>(mongoCursor, iteratorFilter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, iteratorFilter, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -595,10 +600,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
-            qOptions = options;
+            qOptions = new QueryOptions(options);
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
 
         logger.debug("Sample get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -689,15 +695,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
     protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-        List<Bson> annotationList = new ArrayList<>();
-        // We declare variableMap here just in case we have different annotation queries
-        Map<String, Variable> variableMap = null;
+        Document annotationDocument = null;
 
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
         }
 
-        fixComplexQueryParam(QueryParams.ANNOTATION.key(), query);
+//        fixComplexQueryParam(QueryParams.ANNOTATION.key(), query);
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
@@ -731,21 +735,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case PHENOTYPES:
                         addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
                         break;
-                    case VARIABLE_SET_ID:
-                        addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
-                        break;
                     case ANNOTATION:
-                        if (variableMap == null) {
-                            long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
-                            if (variableSetId > 0) {
-                                variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                        .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
-                            }
+                        if (annotationDocument == null) {
+                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
+                                    query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
                         }
-                        addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
-                        break;
-                    case ANNOTATION_SET_NAME:
-                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     case SNAPSHOT:
                         addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
@@ -766,7 +760,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
                     case PHENOTYPES_SOURCE:
-                    case ANNOTATION_SETS:
+//                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
@@ -792,9 +786,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             }
         }
 
-        if (annotationList.size() > 0) {
-            Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
-            andBsonList.add(projection);
+        if (annotationDocument != null && !annotationDocument.isEmpty()) {
+            andBsonList.add(annotationDocument);
         }
         if (authorisation != null && authorisation.size() > 0) {
             andBsonList.add(authorisation);

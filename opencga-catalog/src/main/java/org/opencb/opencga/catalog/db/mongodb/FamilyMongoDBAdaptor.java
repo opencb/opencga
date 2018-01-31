@@ -22,26 +22,30 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.AnnotableMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Annotable;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
@@ -110,7 +114,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         familyObject.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
         familyObject.put(LAST_OF_VERSION, true);
         familyObject.put(LAST_OF_RELEASE, true);
-        familyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(family.getCreationDate()));
+        if (StringUtils.isNotEmpty(family.getCreationDate())) {
+            familyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(family.getCreationDate()));
+        } else {
+            familyObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
         familyObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         familyCollection.insert(familyObject, null);
@@ -453,13 +461,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     @Override
     public DBIterator<Family> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor, familyConverter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, familyConverter, options);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor);
+        return new AnnotableMongoDBIterator<>(mongoCursor, options);
     }
 
     @Override
@@ -470,7 +478,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
 
-        return new MongoDBIterator<>(mongoCursor, familyConverter, iteratorFilter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, familyConverter, iteratorFilter, options);
     }
 
     @Override
@@ -482,7 +490,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
 
-        return new MongoDBIterator<>(mongoCursor, iteratorFilter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, iteratorFilter, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -508,10 +516,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
-            qOptions = options;
+            qOptions = new QueryOptions(options);
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = removeAnnotationProjectionOptions(qOptions);
 
         return familyCollection.nativeQuery().find(bson, qOptions).iterator();
     }
@@ -581,7 +590,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
-    protected GenericDocumentComplexConverter<? extends Annotable> getConverter() {
+    protected AnnotableConverter<? extends Annotable> getConverter() {
         return this.familyConverter;
     }
 
@@ -638,9 +647,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
     protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-        List<Bson> annotationList = new ArrayList<>();
-        // We declare variableMap here just in case we have different annotation queries
-        Map<String, Variable> variableMap = null;
+        Document annotationDocument = null;
 
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
@@ -680,21 +687,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case PHENOTYPES:
                         addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
                         break;
-                    case VARIABLE_SET_ID:
-                        addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
-                        break;
                     case ANNOTATION:
-                        if (variableMap == null) {
-                            long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
-                            if (variableSetId > 0) {
-                                variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                        .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
-                            }
+                        if (annotationDocument == null) {
+                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
+                                    query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
+//                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
+//                                    query.getLong(QueryParams.VARIABLE_SET_ID.key()),
+//                                    query.getString(QueryParams.ANNOTATION_SET_NAME.key()));
                         }
-                        addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
-                        break;
-                    case ANNOTATION_SET_NAME:
-                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     case SNAPSHOT:
                         addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
@@ -715,7 +715,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
-                    case ANNOTATION_SETS:
+//                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
@@ -741,9 +741,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             }
         }
 
-        if (!annotationList.isEmpty()) {
-            Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
-            andBsonList.add(projection);
+        if (annotationDocument != null && !annotationDocument.isEmpty()) {
+            andBsonList.add(annotationDocument);
         }
         if (authorisation != null && authorisation.size() > 0) {
             andBsonList.add(authorisation);

@@ -19,9 +19,12 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -34,7 +37,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 03/05/17.
@@ -82,7 +88,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response search(
             @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or alias.")
@@ -93,16 +101,31 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
-            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+                @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+                @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
+            List<String> annotationList = new ArrayList<>();
+            if (StringUtils.isNotEmpty(annotation)) {
+                annotationList.add(annotation);
+            }
+            if (StringUtils.isNotEmpty(variableSet)) {
+                annotationList.add(Constants.VARIABLE_SET + "=" + variableSet);
+            }
+            if (StringUtils.isNotEmpty(annotationsetName)) {
+                annotationList.add(Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+            }
+            if (!annotationList.isEmpty()) {
+                query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
+            }
+
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             QueryResult<Family> queryResult;
             if (count) {
@@ -199,18 +222,35 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            if (StringUtils.isNotEmpty(variableSetId)) {
-                variableSet = variableSetId;
-            }
-            if (asMap) {
-                return createOkResponse(familyManager.searchAnnotationSetAsMap(familyStr, studyStr, variableSet, annotation, sessionId));
+            AbstractManager.MyResourceId resourceId = familyManager.getId(familyStr, studyStr, sessionId);
+
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
+                    .append(FamilyDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+
+            String variableSetId = String.valueOf(catalogManager.getStudyManager()
+                    .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
+
+            if (StringUtils.isEmpty(annotation)) {
+                annotation = Constants.VARIABLE_SET + "=" + variableSetId;
             } else {
-                return createOkResponse(familyManager.searchAnnotationSet(familyStr, studyStr, variableSet, annotation, sessionId));
+                annotation += ";" + Constants.VARIABLE_SET + "=" + variableSetId;
+            }
+            query.append(Constants.ANNOTATION, annotation);
+
+            QueryResult<Family> search = familyManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
+                    sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
+                        search.first().getAnnotationSets()));
+            } else {
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -227,11 +267,25 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<String> idList = getIdList(familiesStr);
-            if (asMap) {
-                return createOkResponse(familyManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName, silent, sessionId));
+            AbstractManager.MyResourceIds resourceIds = familyManager.getIds(familiesStr, studyStr, sessionId);
+
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                    .append(FamilyDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+
+            if (StringUtils.isNotEmpty(annotationsetName)) {
+                query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+            }
+
+            QueryResult<Family> search = familyManager.search(String.valueOf(resourceIds.getStudyId()), query, new QueryOptions(),
+                    sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
+                        search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
+                        search.getErrorMsg(), search.first().getAnnotationSets()));
             } else {
-                return createOkResponse(familyManager.getAnnotationSet(idList, studyStr, annotationsetName, silent, sessionId));
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);

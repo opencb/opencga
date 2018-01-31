@@ -41,21 +41,19 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixComplexQueryParam;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseUser;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 /**
  * Created by imedina on 08/01/16.
@@ -112,7 +110,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson query = Filters.and(Filters.eq("id", userId), Filters.ne("projects.alias", project.getAlias()));
 
         Document projectDocument = projectConverter.convertToStorageType(project);
-        projectDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(project.getCreationDate()));
+        if (StringUtils.isNotEmpty(project.getCreationDate())) {
+            projectDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(project.getCreationDate()));
+        } else {
+            projectDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
 
         Bson update = Updates.push("projects", projectDocument);
 

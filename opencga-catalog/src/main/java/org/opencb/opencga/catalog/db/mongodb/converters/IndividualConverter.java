@@ -17,17 +17,18 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 19/01/16.
  */
-public class IndividualConverter extends GenericDocumentComplexConverter<Individual> {
+public class IndividualConverter extends AnnotableConverter<Individual> {
 
     public IndividualConverter() {
         super(Individual.class);

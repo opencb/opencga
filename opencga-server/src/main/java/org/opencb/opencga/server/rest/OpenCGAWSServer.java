@@ -332,6 +332,9 @@ public class OpenCGAWSServer {
                     count = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), count);
                     break;
+                case Constants.FLATTENED_ANNOTATIONS:
+                    queryOptions.put(Constants.FLATTENED_ANNOTATIONS, Boolean.parseBoolean(value));
+                    break;
                 case "includeIndividual": // SampleWS
                     lazy = !Boolean.parseBoolean(value);
                     queryOptions.put("lazy", lazy);

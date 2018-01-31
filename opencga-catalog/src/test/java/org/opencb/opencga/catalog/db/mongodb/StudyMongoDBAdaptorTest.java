@@ -84,7 +84,12 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException {
         QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1", false);
-        catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetQueryResult.first().getId(), "NAME", user3.getId());
+        QueryResult<VariableSet> queryResult =
+                catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetQueryResult.first().getId(), "NAME", user3.getId());
+        assertTrue(queryResult.first().getVariables()
+                .stream()
+                .filter(v -> "NAME".equals(v.getName()))
+                .collect(Collectors.toList()).isEmpty());
     }
 
     @Test
