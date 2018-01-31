@@ -230,7 +230,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         int studyId = getStudyConfiguration().getStudyId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
 
-        rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getChunkSize(), getHelper().getSeparator());
+        rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getConf());
     }
 
     @Override

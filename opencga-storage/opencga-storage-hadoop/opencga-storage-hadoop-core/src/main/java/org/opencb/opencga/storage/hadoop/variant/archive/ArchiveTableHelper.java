@@ -31,7 +31,6 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -41,9 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -58,30 +55,31 @@ public class ArchiveTableHelper extends GenomeHelper {
     private final byte[] column;
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
+    private int fileId;
 
     public ArchiveTableHelper(Configuration conf) throws IOException {
         super(conf);
-        int fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
+        fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
         try (HadoopVariantFileMetadataDBAdaptor metadataManager = new HadoopVariantFileMetadataDBAdaptor(conf)) {
             VariantFileMetadata meta = metadataManager.getVariantFileMetadata(getStudyId(), fileId, null);
             this.meta.set(meta);
             column = Bytes.toBytes(getColumnName(meta));
         }
-        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
+        keyFactory = new ArchiveRowKeyFactory(conf);
     }
 
     public ArchiveTableHelper(GenomeHelper helper, int studyId, VariantFileMetadata meta) {
         super(helper, studyId);
         this.meta.set(meta);
         column = Bytes.toBytes(getColumnName(meta));
-        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
+        keyFactory = new ArchiveRowKeyFactory(helper.getConf());
     }
 
     public ArchiveTableHelper(Configuration conf, int studyId, VariantFileMetadata meta) {
         super(conf, studyId);
         this.meta.set(meta);
         column = Bytes.toBytes(getColumnName(meta));
-        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
+        keyFactory = new ArchiveRowKeyFactory(conf);
     }
 
     public ArchiveRowKeyFactory getKeyFactory() {
@@ -96,6 +94,10 @@ public class ArchiveTableHelper extends GenomeHelper {
      */
     public static String getColumnName(int fileId) {
         return Integer.toString(fileId);
+    }
+
+    public int getFileId() {
+        return fileId;
     }
 
     /**
@@ -128,8 +130,9 @@ public class ArchiveTableHelper extends GenomeHelper {
         Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(
                 genomeHelper.getConf().get(HadoopVariantStorageEngine.ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
         int nSplits = genomeHelper.getConf().getInt(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 100);
-        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(genomeHelper.getChunkSize(), genomeHelper.getSeparator());
-        List<byte[]> preSplits = generateBootPreSplitsHuman(nSplits, rowKeyFactory::generateBlockIdAsBytes);
+        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(genomeHelper.getConf());
+        // TODO: Create preSplits for more than one file batch
+        List<byte[]> preSplits = generateBootPreSplitsHuman(nSplits, (chr, start) -> rowKeyFactory.generateBlockIdAsBytes(0, chr, start));
         return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
     }
 
@@ -143,43 +146,6 @@ public class ArchiveTableHelper extends GenomeHelper {
 
     public byte[] getColumn() {
         return column;
-    }
-
-    @Deprecated
-    public VcfSlice join(byte[] key, Iterable<VcfSlice> input) throws InvalidProtocolBufferException {
-        Builder sliceBuilder = VcfSlice.newBuilder();
-        boolean isFirst = true;
-        List<VcfRecord> vcfRecordLst = new ArrayList<VcfRecord>();
-        for (VcfSlice slice : input) {
-
-            byte[] skey = getKeyFactory().generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
-            // Consistency check
-            if (!Bytes.equals(skey, key)) { // Address doesn't match up -> should never happen
-                throw new IllegalStateException(String.format("Row keys don't match up!!! %s != %s", Bytes.toString(key),
-                        Bytes.toString(skey)));
-            }
-
-            if (isFirst) { // init new slice
-                sliceBuilder.setChromosome(slice.getChromosome()).setPosition(slice.getPosition());
-                isFirst = false;
-            }
-            vcfRecordLst.addAll(slice.getRecordsList());
-        }
-
-        // Sort records
-        try {
-            Collections.sort(vcfRecordLst, getVcfComparator());
-        } catch (IllegalArgumentException e) {
-            logger.error("Issue with comparator: ");
-            for (VcfRecord r : vcfRecordLst) {
-                logger.error(r.toString());
-            }
-            throw e;
-        }
-
-        // Add all
-        sliceBuilder.addAllRecords(vcfRecordLst);
-        return sliceBuilder.build();
     }
 
     private VcfSlice extractSlice(Put put) throws InvalidProtocolBufferException {
@@ -210,7 +176,7 @@ public class ArchiveTableHelper extends GenomeHelper {
     public Put wrap(VcfSlice slice) {
 //        byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), (long) slice.getPosition() + slice.getRecords(0).getRelativeStart
 // () * 100);
-        byte[] rowId = keyFactory.generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
+        byte[] rowId = keyFactory.generateBlockIdAsBytes(getFileId(), slice.getChromosome(), slice.getPosition());
         return wrapAsPut(getColumn(), rowId, slice);
     }
 

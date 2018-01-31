@@ -319,7 +319,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        ObjectMap otherParams = new ObjectMap(VariantMergerTableMapperFail.SLICE_TO_FAIL, "1_000000000011");
+        ObjectMap otherParams = new ObjectMap(VariantMergerTableMapperFail.SLICE_TO_FAIL, "00000_1_000000000011");
         otherParams.putAll(notCollapseDeletions);
         try {
             loadFile("s1.genome.vcf", studyConfiguration, otherParams);

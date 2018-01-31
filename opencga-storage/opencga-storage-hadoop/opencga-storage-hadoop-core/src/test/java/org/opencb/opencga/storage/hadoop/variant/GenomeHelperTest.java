@@ -55,14 +55,21 @@ public class GenomeHelperTest {
         GenomeHelper.setChunkSize(conf, CHUNK_SIZE);
         genomeHelper = new GenomeHelper(conf);
 
-        keyFactory = new ArchiveRowKeyFactory(CHUNK_SIZE, '_');
+        keyFactory = new ArchiveRowKeyFactory(CHUNK_SIZE, '_', 100);
     }
 
     @Test
     public void testBlockRowKey() throws Exception {
-        Assert.assertEquals("2", keyFactory.extractChromosomeFromBlockId("2_222"));
-        Assert.assertEquals(222, keyFactory.extractSliceFromBlockId("2_222").longValue());
-        Assert.assertEquals(222 * CHUNK_SIZE, keyFactory.extractPositionFromBlockId("2_222").longValue());
+        Assert.assertEquals("2", keyFactory.extractChromosomeFromBlockId("0001_2_00000222"));
+        // Parse complex contigs
+        Assert.assertEquals("NC_007605", keyFactory.extractChromosomeFromBlockId("0001_NC_007605_00000222"));
+        Assert.assertEquals(1, keyFactory.extractFileBatchFromBlockId("0001_NC_007605_00000222"));
+        Assert.assertEquals(222, keyFactory.extractSliceFromBlockId("0001_2_222").longValue());
+        Assert.assertEquals(222 * CHUNK_SIZE, keyFactory.extractPositionFromBlockId("0001_2_222").longValue());
+        Assert.assertEquals(0, keyFactory.getFileBatch(1));
+        Assert.assertEquals(0, keyFactory.getFileBatch(99));
+        Assert.assertEquals(1, keyFactory.getFileBatch(100));
+        Assert.assertEquals(1, keyFactory.getFileBatch(101));
     }
 
     @Test
@@ -85,12 +92,12 @@ public class GenomeHelperTest {
 
     @Test
     public void testGenerateSplitArchive() throws Exception {
-        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, keyFactory::generateBlockIdAsBytes));
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, (chr, pos) -> keyFactory.generateBlockIdAsBytes(0, chr, pos)));
     }
 
     @Test
     public void testGenerateSplitVariants() throws Exception {
-        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, (chrom, position) -> VariantPhoenixKeyFactory.generateVariantRowKey(chrom, position)));
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, VariantPhoenixKeyFactory::generateVariantRowKey));
     }
 
     void assertOrder(List<byte[]> bytes) {
@@ -107,7 +114,6 @@ public class GenomeHelperTest {
             prev = key;
         }
     }
-
 
     public byte[] generateVariantRowKeyPhoenix(String chrom, int position, String ref, String alt) {
         PTableImpl table;

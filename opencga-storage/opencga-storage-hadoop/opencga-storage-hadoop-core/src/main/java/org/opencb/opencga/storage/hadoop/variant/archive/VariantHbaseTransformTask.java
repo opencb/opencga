@@ -71,7 +71,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         buffer = new HashMap<>();
         lookupOrder = new LinkedList<>();
         this.tableName = table == null ? null : TableName.valueOf(table);
-        keyFactory = new ArchiveRowKeyFactory(helper.getChunkSize(), helper.getSeparator());
+        keyFactory = helper.getKeyFactory();
     }
 
     public void setBufferSize(Integer size) {
@@ -173,7 +173,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         String chromosome = var.getChromosome();
         long[] coveredSlicePositions = getCoveredSlicePositions(var);
         for (long slicePos : coveredSlicePositions) {
-            String blockKey = keyFactory.generateBlockId(chromosome, slicePos);
+            String blockKey = keyFactory.generateBlockId(helper.getFileId(), chromosome, slicePos);
             addVariant(blockKey, var);
         }
     }

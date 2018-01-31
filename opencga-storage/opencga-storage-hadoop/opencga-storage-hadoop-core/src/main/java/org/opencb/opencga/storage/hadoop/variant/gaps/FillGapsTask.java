@@ -54,6 +54,7 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
     private final StudyEntryToHBaseConverter studyConverter;
     private final Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
     private final VariantMerger variantMerger;
+    private final Integer anyFileId;
 
     public FillGapsTask(HBaseManager hBaseManager,
                         String archiveTableName,
@@ -64,7 +65,7 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
         this.archiveTableName = archiveTableName;
         this.studyConfiguration = studyConfiguration;
         this.helper = helper;
-        archiveRowKeyFactory = new ArchiveRowKeyFactory(helper.getChunkSize(), helper.getSeparator());
+        archiveRowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
         this.samples = samples;
         samplesFileMap = new HashMap<>();
         for (Integer sample : samples) {
@@ -77,7 +78,12 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
                 }
             }
         }
+        anyFileId = fileToColumnMap.keySet().iterator().next();
         for (Integer fileId : fileToColumnMap.keySet()) {
+            // FIXME !!
+            if (archiveRowKeyFactory.getFileBatch(anyFileId) != archiveRowKeyFactory.getFileBatch(fileId)) {
+                throw new IllegalStateException("Unable to fill gaps for files from different batches in archive!");
+            }
             LinkedHashMap<String, Integer> map = new LinkedHashMap<>();
             for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
                 map.put(studyConfiguration.getSampleIds().inverse().get(sampleId), map.size());
@@ -148,7 +154,7 @@ public class FillGapsTask implements TaskWithException<Variant, Put, IOException
         for (Integer missingSample : missingSamples) {
             fileIds.add(samplesFileMap.get(missingSample));
         }
-        Get get = new Get(Bytes.toBytes(archiveRowKeyFactory.generateBlockId(variant)));
+        Get get = new Get(Bytes.toBytes(archiveRowKeyFactory.generateBlockId(variant, anyFileId)));
         for (Integer fileId : fileIds) {
             get.addColumn(helper.getColumnFamily(), fileToColumnMap.get(fileId));
         }

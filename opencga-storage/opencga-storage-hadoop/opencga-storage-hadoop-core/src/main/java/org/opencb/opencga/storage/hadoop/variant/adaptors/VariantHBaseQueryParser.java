@@ -390,10 +390,11 @@ public class VariantHBaseQueryParser {
             addDefaultRegionFilter(scan);
         } else {
             ArchiveRowKeyFactory keyFactory = archiveHelper.getKeyFactory();
-            scan.setStartRow(keyFactory.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
+            scan.setStartRow(keyFactory.generateBlockIdAsBytes(archiveHelper.getFileId(), region.getChromosome(), region.getStart()));
             long endSlice = keyFactory.getSliceId((long) region.getEnd()) + 1;
             // +1 because the stop row is exclusive
-            scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(region.getChromosome(), endSlice)));
+            scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(
+                    archiveHelper.getFileId(), region.getChromosome(), endSlice)));
         }
     }
 
