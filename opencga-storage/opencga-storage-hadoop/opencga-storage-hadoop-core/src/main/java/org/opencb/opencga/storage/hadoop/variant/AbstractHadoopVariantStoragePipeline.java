@@ -203,7 +203,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         long start = System.currentTimeMillis();
         long end;
         // FIXME
-        if (options.getBoolean("transform.proto.parallel")) {
+        if (options.getBoolean("transform.proto.parallel", true)) {
             VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader,
                     helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()));
 
@@ -229,7 +229,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             }
             end = System.currentTimeMillis();
         } else {
-            VariantHbaseTransformTask transformTask = new VariantHbaseTransformTask(helper, null);
+            VariantHbaseTransformTask transformTask = new VariantHbaseTransformTask(helper);
             long[] t = new long[]{0, 0, 0};
             long last = System.nanoTime();
 
