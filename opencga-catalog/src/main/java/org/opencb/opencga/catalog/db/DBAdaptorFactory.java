@@ -95,7 +95,9 @@ public interface DBAdaptorFactory {
 
     DatasetDBAdaptor getCatalogDatasetDBAdaptor();
 
-    DiseasePanelDBAdaptor getCatalogPanelDBAdaptor();
+    DiseasePanelDBAdaptor getCatalogDiseasePanelDBAdaptor();
+
+    PanelDBAdaptor getCatalogPanelDBAdaptor();
 
     FamilyDBAdaptor getCatalogFamilyDBAdaptor();
 

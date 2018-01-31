@@ -20,7 +20,6 @@ import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -30,39 +29,36 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.DiseasePanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.converters.DiseasePanelConverter;
+import org.opencb.opencga.catalog.db.mongodb.converters.PanelConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.DiseasePanel;
-import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterOptions;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringParams;
 
-/**
- * Created by pfurio on 01/06/16.
- */
-@Deprecated
-public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements DiseasePanelDBAdaptor {
+
+public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdaptor {
 
     private final MongoDBCollection panelCollection;
-    private DiseasePanelConverter diseasePanelConverter;
+    private PanelConverter diseasePanelConverter;
 
-    public DiseasePanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
-        this.diseasePanelConverter = new DiseasePanelConverter();
+        this.diseasePanelConverter = new PanelConverter();
     }
 
     public MongoDBCollection getCollection() {
@@ -70,15 +66,37 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     }
 
     @Override
-    public QueryResult<DiseasePanel> get(long diseasePanelId, QueryOptions options) throws CatalogDBException {
-        checkId(diseasePanelId);
+    public QueryResult<Panel> insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+
+        //new Panel Id
+        long newPanelId = getNewId();
+//        panel.setId(newPanelId);
+
+        Document panelDocument = diseasePanelConverter.convertToStorageType(panel);
+        panelDocument.append(PRIVATE_STUDY_ID, studyId);
+        panelDocument.append(PRIVATE_ID, newPanelId);
+
+        try {
+            panelCollection.insert(panelDocument, null);
+        } catch (DuplicateKeyException e) {
+            throw CatalogDBException.alreadyExists("Panel", studyId, "name", panel.getName());
+        }
+
+        return endQuery("Create panel", startTime, get(newPanelId, options));    }
+
+    @Override
+    public QueryResult<Panel> get(long diseasePanelId, QueryOptions options) throws CatalogDBException {
+//        checkId(diseasePanelId);
         Query query = new Query(QueryParams.ID.key(), diseasePanelId);
         return get(query, options);
     }
 
     @Override
     public long getStudyId(long panelId) throws CatalogDBException {
-        checkId(panelId);
+//        checkId(panelId);
         QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), panelId),
                 new QueryOptions(QueryOptions.INCLUDE, PRIVATE_STUDY_ID));
         if (queryResult.getResult().isEmpty()) {
@@ -88,28 +106,28 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         }
     }
 
-    @Override
-    public QueryResult<DiseasePanel> insert(long studyId, DiseasePanel diseasePanel, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-
-        //new Panel Id
-        long newPanelId = getNewId();
-        diseasePanel.setId(newPanelId);
-
-        Document panelDocument = diseasePanelConverter.convertToStorageType(diseasePanel);
-        panelDocument.append(PRIVATE_STUDY_ID, studyId);
-        panelDocument.append(PRIVATE_ID, newPanelId);
-
-        try {
-            panelCollection.insert(panelDocument, null);
-        } catch (DuplicateKeyException e) {
-            throw CatalogDBException.alreadyExists("Panel", studyId, "name", diseasePanel.getName());
-        }
-
-        return endQuery("Create panel", startTime, get(newPanelId, options));
-    }
+//    @Override
+//    public QueryResult<Panel> insert(Panel diseasePanel, long studyId, QueryOptions options) throws CatalogDBException {
+//        long startTime = startQuery();
+//
+//        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+//
+//        //new Panel Id
+//        long newPanelId = getNewId();
+//        diseasePanel.setId(newPanelId);
+//
+//        Document panelDocument = diseasePanelConverter.convertToStorageType(diseasePanel);
+//        panelDocument.append(PRIVATE_STUDY_ID, studyId);
+//        panelDocument.append(PRIVATE_ID, newPanelId);
+//
+//        try {
+//            panelCollection.insert(panelDocument, null);
+//        } catch (DuplicateKeyException e) {
+//            throw CatalogDBException.alreadyExists("Panel", studyId, "name", diseasePanel.getName());
+//        }
+//
+//        return endQuery("Create panel", startTime, get(newPanelId, options));
+//    }
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
@@ -119,9 +137,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     @Override
     public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+//        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+//            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+//        }
 
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_PANELS : studyPermissions);
@@ -151,41 +169,42 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     }
 
     @Override
-    public QueryResult<DiseasePanel> get(Query query, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Panel> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
-        Bson bson;
+//        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+//            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+//        }
+        QueryResult<Panel> panelQueryResult;
         try {
-            bson = parseQuery(query, false);
+            Bson queryBson = parseQuery(query, false);
+
+            QueryOptions queryOptions;
+            if (options != null) {
+                queryOptions = options;
+            } else {
+                queryOptions = QueryOptions.empty();
+            }
+            queryOptions = filterOptions(queryOptions, FILTER_ROUTE_PANELS);
+
+            panelQueryResult = panelCollection.find(queryBson, diseasePanelConverter, queryOptions);
+            logger.debug("Panel get: query : {}, project: {}, dbTime: {}", queryBson, queryOptions.toJson(), panelQueryResult.getDbTime());
         } catch (NumberFormatException e) {
             throw new CatalogDBException("Get panel: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
         }
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
-        }
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_PANELS);
 
-        QueryResult<DiseasePanel> panelQueryResult = panelCollection.find(bson, diseasePanelConverter, qOptions);
-        logger.debug("Panel get: query : {}, project: {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
-                panelQueryResult.getDbTime());
         return endQuery("get Panel", startTime, panelQueryResult);
     }
 
     @Override
-    public QueryResult<DiseasePanel> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public QueryResult<Panel> get(Query query, QueryOptions options, String user) throws CatalogDBException {
         throw new NotImplementedException("Get not implemented for panel");
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+//        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+//            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+//        }
         Bson bson;
         try {
             bson = parseQuery(query, false);
@@ -204,7 +223,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     }
 
     @Override
-    public QueryResult<DiseasePanel> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<Panel> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, QueryOptions.empty());
         if (update.getNumTotalResults() != 1) {
@@ -215,55 +234,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-        Document updateOperations = new Document();
-        Map<String, Object> panelSetParameters = new HashMap<>();
-
-        // We read the string parameters
-//        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DISEASE.key(), QueryParams.DESCRIPTION.key()};
-        final String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
-        filterStringParams(parameters, panelSetParameters, acceptedParams);
-
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            panelSetParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            panelSetParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
-        }
-        // Create the update with set
-        if (!panelSetParameters.isEmpty()) {
-            updateOperations.put("$set", panelSetParameters);
-        }
-
-        // We read the list parameters (variants, genes & regions)
-        Document panelAddToSetParameters = new Document();
-        if (parameters.containsKey(QueryParams.GENES.key())) {
-            List<String> genes = parameters.getAsStringList(QueryParams.GENES.key());
-            if (genes.size() > 0) {
-                panelAddToSetParameters.put(QueryParams.GENES.key(), new Document("$each", genes));
-            }
-        }
-        if (parameters.containsKey(QueryParams.REGIONS.key())) {
-            List<String> regions = parameters.getAsStringList(QueryParams.REGIONS.key());
-            if (regions.size() > 0) {
-                panelAddToSetParameters.put(QueryParams.REGIONS.key(), new Document("$each", regions));
-            }
-        }
-        if (parameters.containsKey(QueryParams.VARIANTS.key())) {
-            List<String> variants = parameters.getAsStringList(QueryParams.VARIANTS.key());
-            if (variants.size() > 0) {
-                panelAddToSetParameters.put(QueryParams.VARIANTS.key(), new Document("$each", variants));
-            }
-        }
-        // Create the update with addToSet
-        if (panelAddToSetParameters.size() > 0) {
-            updateOperations.put("$addToSet", panelAddToSetParameters);
-        }
-
-        if (updateOperations.size() > 0) {
-            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query, false), updateOperations, null);
-            return endQuery("Update panel", startTime, Arrays.asList(update.getNumTotalResults()));
-        }
-
-        return endQuery("Update sample", startTime, new QueryResult<>());
+        throw new UnsupportedOperationException("update() not implemented in Panel");
     }
 
     @Override
@@ -282,7 +253,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     }
 
     @Override
-    public QueryResult<DiseasePanel> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<Panel> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Delete not yet implemented.");
     }
 
@@ -292,7 +263,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     }
 
     @Override
-    public QueryResult<DiseasePanel> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<Panel> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
@@ -302,7 +273,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     }
 
     @Override
-    public QueryResult<DiseasePanel> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<Panel> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Restore not yet implemented.");
     }
 
@@ -312,7 +283,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     }
 
     @Override
-    public DBIterator<DiseasePanel> iterator(Query query, QueryOptions options) throws CatalogDBException {
+    public DBIterator<Panel> iterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = panelCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator, diseasePanelConverter);
@@ -326,7 +297,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     }
 
     @Override
-    public DBIterator<DiseasePanel> iterator(Query query, QueryOptions options, String user)
+    public DBIterator<Panel> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
@@ -370,7 +341,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
-        try (DBIterator<DiseasePanel> catalogDBIterator = iterator(query, options)) {
+        try (DBIterator<Panel> catalogDBIterator = iterator(query, options)) {
             while (catalogDBIterator.hasNext()) {
                 action.accept(catalogDBIterator.next());
             }
@@ -390,12 +361,13 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
-            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
+            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null
+                    ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             try {
                 switch (queryParam) {
-                    case ID:
-                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                    case UID:
+                        addOrQuery("_uid", queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_ID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
@@ -414,6 +386,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         if (authorisation != null && authorisation.size() > 0) {
             andBsonList.add(authorisation);
         }
+
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);
         } else {

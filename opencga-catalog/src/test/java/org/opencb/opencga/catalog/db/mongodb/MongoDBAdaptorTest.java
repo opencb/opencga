@@ -110,7 +110,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         catalogFileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
         catalogJobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
         catalogIndividualDBAdaptor = catalogDBAdaptor.getCatalogIndividualDBAdaptor();
-        catalogDiseasePanelDBAdaptor = catalogDBAdaptor.getCatalogPanelDBAdaptor();
+        catalogDiseasePanelDBAdaptor = catalogDBAdaptor.getCatalogDiseasePanelDBAdaptor();
         initDefaultCatalogDB();
     }
 

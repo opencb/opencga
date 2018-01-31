@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -24,11 +23,12 @@ public class Panel {
 
     private String id;
     private String name;
-    private String version;
+    private int version;
 
     private String author;
-    private String status;
     private String date;
+    private String status;
+    private SourcePanel source;
     private String description;
 
     private List<OntologyTerm> phenotypes;
@@ -42,26 +42,81 @@ public class Panel {
     public Panel() {
     }
 
-    public Panel(String id, String name, String version) {
+    public Panel(String id, String name, int version) {
         this.id = id;
         this.name = name;
         this.version = version;
     }
 
-    public Panel(String id, String name, String version, String author, String status, String date, String description, List<OntologyTerm>
-            phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions, Map<String, Object> attributes) {
+    public Panel(String id, String name, int version, String author, String date, String status, SourcePanel source, String description,
+                 List<OntologyTerm> phenotypes, List<String> variants, List<GenePanel> genes, List<RegionPanel> regions,
+                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.version = version;
         this.author = author;
-        this.status = status;
         this.date = date;
+        this.status = status;
+        this.source = source;
         this.description = description;
         this.phenotypes = phenotypes;
         this.variants = variants;
         this.genes = genes;
         this.regions = regions;
         this.attributes = attributes;
+    }
+
+    public class SourcePanel {
+
+        private String id;
+        private String project;
+        private String version;
+
+        public SourcePanel() {
+        }
+
+        public SourcePanel(String id, String project, String version) {
+            this.id = id;
+            this.project = project;
+            this.version = version;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("SourcePanel{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", project='").append(project).append('\'');
+            sb.append(", version='").append(version).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public SourcePanel setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public String getProject() {
+            return project;
+        }
+
+        public SourcePanel setProject(String project) {
+            this.project = project;
+            return this;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+
+        public SourcePanel setVersion(String version) {
+            this.version = version;
+            return this;
+        }
     }
 
     public class GenePanel {
@@ -159,16 +214,16 @@ public class Panel {
         }
     }
 
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Panel{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", version='").append(version).append('\'');
+        sb.append(", version=").append(version);
         sb.append(", author='").append(author).append('\'');
+        sb.append(", date='").append(date).append('\'');
         sb.append(", status='").append(status).append('\'');
-        sb.append(", date=").append(date);
+        sb.append(", source=").append(source);
         sb.append(", description='").append(description).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", variants=").append(variants);
@@ -197,11 +252,11 @@ public class Panel {
         return this;
     }
 
-    public String getVersion() {
+    public int getVersion() {
         return version;
     }
 
-    public Panel setVersion(String version) {
+    public Panel setVersion(int version) {
         this.version = version;
         return this;
     }
@@ -215,6 +270,15 @@ public class Panel {
         return this;
     }
 
+    public String getDate() {
+        return date;
+    }
+
+    public Panel setDate(String date) {
+        this.date = date;
+        return this;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -224,12 +288,12 @@ public class Panel {
         return this;
     }
 
-    public String getDate() {
-        return date;
+    public SourcePanel getSource() {
+        return source;
     }
 
-    public Panel setDate(String date) {
-        this.date = date;
+    public Panel setSource(SourcePanel source) {
+        this.source = source;
         return this;
     }
 

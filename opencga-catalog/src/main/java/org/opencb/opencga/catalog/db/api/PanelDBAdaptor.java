@@ -16,42 +16,42 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.Panel;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
-/**
- * Created by pfurio on 01/06/16.
- */
-@Deprecated
-public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
+
+public interface PanelDBAdaptor extends DBAdaptor<Panel> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER, ""),
+        ID("id", TEXT, ""),
         NAME("name", TEXT, ""),
-        DISEASE("disease", TEXT, ""),
+        VERSION("id", INTEGER, ""),
         DESCRIPTION("description", TEXT, ""),
 
+        VARIANTS("variants", TEXT_ARRAY, ""),
         GENES("genes", TEXT_ARRAY, ""),
         REGIONS("regions", TEXT_ARRAY, ""),
-        VARIANTS("variants", TEXT_ARRAY, ""),
 
-        STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
-        STATUS_DATE("status.date", TEXT, ""),
+        AUTHOR("author", TEXT, ""),
+        STATUS("status", TEXT, ""),
 
+        UID("UID", INTEGER, ""),
         STUDY_ID("studyId", INTEGER_ARRAY, "");
 
-        private static Map<String, QueryParams> map = new HashMap<>();
+        private static Map<String, QueryParams> map;
+
         static {
+            map = new HashMap<>();
             for (QueryParams params : QueryParams.values()) {
                 map.put(params.key(), params);
             }
@@ -91,23 +91,23 @@ public interface DiseasePanelDBAdaptor extends DBAdaptor<DiseasePanel> {
         }
     }
 
-    default boolean exists(long panelId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), panelId)).first() > 0;
+    default boolean exists(String id) throws CatalogDBException {
+        return count(new Query(QueryParams.ID.key(), id)).first() > 0;
     }
 
-    default void checkId(long panelId) throws CatalogDBException {
-        if (panelId < 0) {
-            throw CatalogDBException.newInstance("Panel id '{}' is not valid: ", panelId);
+    default void checkId(String id) throws CatalogDBException {
+        if (StringUtils.isEmpty(id)) {
+            throw CatalogDBException.newInstance("Panel id '{}' is not valid: ", id);
         }
 
-        if (!exists(panelId)) {
-            throw CatalogDBException.newInstance("Panel id '{}' does not exist", panelId);
+        if (!exists(id)) {
+            throw CatalogDBException.newInstance("Panel id '{}' does not exist", id);
         }
     }
 
-    QueryResult<DiseasePanel> insert(long studyId, DiseasePanel diseasePanel, QueryOptions options) throws CatalogDBException;
+    QueryResult<Panel> insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<DiseasePanel> get(long diseasePanelId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Panel> get(long panelId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long panelId) throws CatalogDBException;
 

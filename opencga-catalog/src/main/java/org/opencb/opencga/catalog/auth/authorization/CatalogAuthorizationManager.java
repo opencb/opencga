@@ -96,7 +96,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         individualDBAdaptor = dbFactory.getCatalogIndividualDBAdaptor();
         cohortDBAdaptor = dbFactory.getCatalogCohortDBAdaptor();
         datasetDBAdaptor = dbFactory.getCatalogDatasetDBAdaptor();
-        diseasePanelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
+        diseasePanelDBAdaptor = dbFactory.getCatalogDiseasePanelDBAdaptor();
         familyDBAdaptor = dbFactory.getCatalogFamilyDBAdaptor();
         clinicalAnalysisDBAdaptor = dbFactory.getClinicalAnalysisDBAdaptor();
     }

@@ -51,18 +51,22 @@ for panel in panels['result']:
             'id': panel['Panel_Id'],
             'name': panel['Name'],
             'version': 1,
-            'author': 'PanelApp (GEL)',
-            'status': 'READY',
+            'author': '',
             'date': datetime.date.today().isoformat(),
-            'description': '',
+            'status': 'READY',
+            'source': {
+                'id': panel['Panel_Id'],
+                'project': 'PanelApp (GEL)',
+                'version': panel_info['version']
+            },
+            'description': panel_info['DiseaseSubGroup'] + ' (' + panel_info['DiseaseGroup'] + ')',
             'phenotypes': phenotypes,
             'variants': [],
             'genes': genes,
             'regions': [],
             'attributes': {
                 'DiseaseGroup': panel_info['DiseaseGroup'],
-                'DiseaseSubGroup': panel_info['DiseaseSubGroup'],
-                'panelAppVersion': panel_info['version']
+                'DiseaseSubGroup': panel_info['DiseaseSubGroup']
             }
         }
 

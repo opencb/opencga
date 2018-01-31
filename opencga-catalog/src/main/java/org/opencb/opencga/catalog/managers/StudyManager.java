@@ -974,21 +974,21 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-//    public QueryResult<Panel> createDiseasePanel(String study, List<Panel> panels, String token) throws CatalogException {
-//        ParamUtils.checkParameter(study, "study");
-//        ParamUtils.checkObj(panels, "panels");
-//
-//        String userId = catalogManager.getUserManager().getUserId(token);
-//        long studyId = getId(userId, study);
-//
-//        for (Panel panel : panels) {
-//            QueryResult<Panel> queryResult = diseasePanelDBAdaptor.insert(panel, studyId, QueryOptions.empty());
-//
-//        }
+    public QueryResult<Panel> createDiseasePanel(String study, List<Panel> panels, String token) throws CatalogException {
+        ParamUtils.checkParameter(study, "study");
+        ParamUtils.checkObj(panels, "panels");
+
+        String userId = catalogManager.getUserManager().getUserId(token);
+        long studyId = getId(userId, study);
+
+        for (Panel panel : panels) {
+            QueryResult<Panel> queryResult = panelDBAdaptor.insert(studyId, panel, QueryOptions.empty());
+
+        }
 //        auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
-//
-//        return queryResult;
-//    }
+
+        return null;
+    }
 
     @Deprecated
     public QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description,
@@ -1021,7 +1021,7 @@ public class StudyManager extends AbstractManager {
         DiseasePanel diseasePanel = new DiseasePanel(-1, name, disease, description, geneList, regionList, variantList,
                 new DiseasePanel.PanelStatus());
 
-        QueryResult<DiseasePanel> queryResult = diseasePanelDBAdaptor.insert(diseasePanel, studyId, options);
+        QueryResult<DiseasePanel> queryResult = diseasePanelDBAdaptor.insert(studyId, diseasePanel, options);
         auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
         return queryResult;
