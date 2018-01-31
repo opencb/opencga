@@ -93,6 +93,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
         long newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         cohort.setId(newId);
+        cohort.setAnnotationSets(null);
 
         Document cohortObject = cohortConverter.convertToStorageType(cohort);
         cohortObject.append(PRIVATE_STUDY_ID, studyId);

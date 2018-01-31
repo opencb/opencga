@@ -110,6 +110,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         long sampleId = getNewId();
         sample.setId(sampleId);
         sample.setVersion(1);
+        sample.setAnnotationSets(null);
 
         Document sampleObject = sampleConverter.convertToStorageType(sample);
         sampleObject.put(PRIVATE_STUDY_ID, studyId);

@@ -106,6 +106,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         long familyId = getNewId();
         family.setId(familyId);
         family.setVersion(1);
+        family.setAnnotationSets(null);
 
         Document familyObject = familyConverter.convertToStorageType(family);
         familyObject.put(PRIVATE_STUDY_ID, studyId);

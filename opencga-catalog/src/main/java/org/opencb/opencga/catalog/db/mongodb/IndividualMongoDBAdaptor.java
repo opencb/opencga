@@ -111,6 +111,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
         individual.setId(individualId);
         individual.setVersion(1);
+        individual.setAnnotationSets(null);
 
         Document individualDocument = individualConverter.convertToStorageType(individual);
         individualDocument.put(PRIVATE_STUDY_ID, studyId);
