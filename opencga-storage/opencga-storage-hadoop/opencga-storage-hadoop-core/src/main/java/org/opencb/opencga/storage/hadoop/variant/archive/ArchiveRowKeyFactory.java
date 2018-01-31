@@ -70,8 +70,8 @@ public class ArchiveRowKeyFactory {
                 : position;
     }
 
-    public long getFileBatch(int fileId) {
-        return fileId / (long) fileBatchSize;
+    public int getFileBatch(int fileId) {
+        return fileId / fileBatchSize;
     }
 
     public String generateBlockId(Variant variant, int fileId) {
@@ -99,9 +99,12 @@ public class ArchiveRowKeyFactory {
     }
 
     public String generateBlockIdFromSlice(int fileId, String chrom, long slice) {
+        return generateBlockIdFromSliceAndBatch(getFileBatch(fileId), chrom, slice);
+    }
+    public String generateBlockIdFromSliceAndBatch(int fileBatch, String chrom, long slice) {
         String chromosome = Region.normalizeChromosome(chrom);
         StringBuilder sb = new StringBuilder(FILE_BATCH_PAD + 1 + chromosome.length() + 1 + POSITION_PAD);
-        sb.append(StringUtils.leftPad(String.valueOf(getFileBatch(fileId)), FILE_BATCH_PAD, '0'));
+        sb.append(StringUtils.leftPad(String.valueOf(fileBatch), FILE_BATCH_PAD, '0'));
         sb.append(getSeparator());
         sb.append(chromosome);
         sb.append(getSeparator());

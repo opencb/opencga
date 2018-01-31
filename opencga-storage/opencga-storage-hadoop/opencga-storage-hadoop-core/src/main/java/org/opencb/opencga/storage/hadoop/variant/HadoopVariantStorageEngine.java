@@ -135,6 +135,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     public static final String HBASE_NAMESPACE = "opencga.storage.hadoop.variant.hbase.namespace";
     public static final String HBASE_COLUMN_FAMILY = "opencga.hbase.column_family";
+    public static final String EXPECTED_FILES_NUMBER = "expected_files_number";
+    public static final int DEFAULT_EXPECTED_FILES_NUMBER = 5000;
 
     // Variant table configuration
     public static final String VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
@@ -147,6 +149,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String DEFAULT_ARCHIVE_TABLE_PREFIX = "opencga_study_";
     public static final String ARCHIVE_TABLE_COMPRESSION = "opencga.archive.table.compression";
     public static final String ARCHIVE_TABLE_PRESPLIT_SIZE = "opencga.archive.table.presplit.size";
+    public static final int DEFAULT_ARCHIVE_TABLE_PRESPLIT_SIZE = 100;
     public static final String ARCHIVE_CHUNK_SIZE = "opencga.archive.chunk_size";
     public static final int DEFAULT_ARCHIVE_CHUNK_SIZE = 1000;
     public static final String ARCHIVE_ROW_KEY_SEPARATOR = "opencga.archive.row_key_sep";

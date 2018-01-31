@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
 import java.sql.SQLException;
@@ -92,15 +93,24 @@ public class GenomeHelperTest {
 
     @Test
     public void testGenerateSplitArchive() throws Exception {
-        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, (chr, pos) -> keyFactory.generateBlockIdAsBytes(0, chr, pos)));
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, (chr, pos) -> keyFactory.generateBlockIdAsBytes(0, chr, pos)), 30);
+    }
+
+    @Test
+    public void testGenerateSplitArchiveMultipleBatches() throws Exception {
+        Configuration conf = new Configuration();
+        conf.setInt(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 10);
+        conf.setInt(HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER, 4500);
+        conf.setInt(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 1000);
+        assertOrder(ArchiveTableHelper.generateArchiveTableBootPreSplitHuman(conf), 50);
     }
 
     @Test
     public void testGenerateSplitVariants() throws Exception {
-        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, VariantPhoenixKeyFactory::generateVariantRowKey));
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, VariantPhoenixKeyFactory::generateVariantRowKey), 30);
     }
 
-    void assertOrder(List<byte[]> bytes) {
+    void assertOrder(List<byte[]> bytes, int expectedSize) {
         String prev = "0";
         for (byte[] bytesKey : bytes) {
             String key = new String(bytesKey);
@@ -113,6 +123,7 @@ public class GenomeHelperTest {
             assertTrue(prev.compareTo(key) < 0);
             prev = key;
         }
+        assertEquals(expectedSize, bytes.size());
     }
 
     public byte[] generateVariantRowKeyPhoenix(String chrom, int position, String ref, String alt) {

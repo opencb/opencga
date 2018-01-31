@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -129,11 +130,28 @@ public class ArchiveTableHelper extends GenomeHelper {
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
         Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(
                 genomeHelper.getConf().get(HadoopVariantStorageEngine.ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
-        int nSplits = genomeHelper.getConf().getInt(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 100);
-        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(genomeHelper.getConf());
-        // TODO: Create preSplits for more than one file batch
-        List<byte[]> preSplits = generateBootPreSplitsHuman(nSplits, (chr, start) -> rowKeyFactory.generateBlockIdAsBytes(0, chr, start));
+        final List<byte[]> preSplits = generateArchiveTableBootPreSplitHuman(genomeHelper.getConf());
         return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
+    }
+
+    public static List<byte[]> generateArchiveTableBootPreSplitHuman(Configuration conf) {
+        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(conf);
+
+        int nSplits = conf.getInt(
+                HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE,
+                HadoopVariantStorageEngine.DEFAULT_ARCHIVE_TABLE_PRESPLIT_SIZE);
+        int expectedNumBatches = rowKeyFactory.getFileBatch(conf.getInt(
+                HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER,
+                HadoopVariantStorageEngine.DEFAULT_EXPECTED_FILES_NUMBER));
+
+        System.out.println("expectedNumBatches = " + expectedNumBatches);
+        final List<byte[]> preSplits = new ArrayList<>(nSplits * expectedNumBatches);
+        for (int batch = 0; batch <= expectedNumBatches; batch++) {
+            int finalBatch = batch;
+            preSplits.addAll(generateBootPreSplitsHuman(nSplits, (chr, start) ->
+                    Bytes.toBytes(rowKeyFactory.generateBlockIdFromSliceAndBatch(finalBatch, chr, start))));
+        }
+        return preSplits;
     }
 
     public VariantFileMetadata getFileMetadata() {
