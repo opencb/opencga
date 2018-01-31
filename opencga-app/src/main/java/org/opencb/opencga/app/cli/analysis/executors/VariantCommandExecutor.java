@@ -54,6 +54,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
@@ -112,6 +113,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case FILL_GAPS_COMMAND:
                 fillGaps();
+                break;
+            case FILL_MISSING_COMMAND:
+                fillMissing();
                 break;
             case "samples":
                 samples();
@@ -354,10 +358,22 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         ObjectMap options = new ObjectMap();
-//        options.put("excludeHomRef", cliOptions.excludeHomRef);
+//        options.put("skipReferenceVariants", cliOptions.genericFillGapsOptions.excludeHomRef);
         options.putAll(cliOptions.commonOptions.params);
 
         variantManager.fillGaps(cliOptions.study, cliOptions.genericFillGapsOptions.samples, options, sessionId);
+    }
+
+    private void fillMissing() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
+            AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+
+        VariantCommandOptions.FillMissingCommandOptions cliOptions = variantCommandOptions.fillMissingCommandOptions;
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        ObjectMap options = new ObjectMap();
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantManager.fillMissing(cliOptions.study, options, sessionId);
     }
 
     private void samples() throws Exception {
