@@ -194,7 +194,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         for (Integer id : files) {
             filter.addFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
-                    new BinaryComparator(Bytes.toBytes(ArchiveTableHelper.getColumnName(id)))));
+                    new BinaryComparator(Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(id)))));
         }
         filter.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
         scan.setFilter(filter);

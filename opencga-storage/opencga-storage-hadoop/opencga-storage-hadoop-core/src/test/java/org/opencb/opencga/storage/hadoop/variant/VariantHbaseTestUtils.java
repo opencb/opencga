@@ -25,10 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.IllegalDataException;
 import org.apache.phoenix.schema.types.*;
@@ -46,13 +43,12 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
@@ -284,19 +280,47 @@ public class VariantHbaseTestUtils {
 
     public static void printArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
                                                            StudyConfiguration studyConfiguration, int fileId, OutputStream os) throws Exception {
-        VariantHadoopArchiveDBIterator archive = (VariantHadoopArchiveDBIterator) dbAdaptor.iterator(
-                new Query()
-                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
-                        .append(VariantQueryParam.FILE.key(), fileId),
-                new QueryOptions("archive", true));
+//        VariantHadoopArchiveDBIterator archive = (VariantHadoopArchiveDBIterator) dbAdaptor.iterator(
+//                new Query()
+//                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
+//                        .append(VariantQueryParam.FILE.key(), fileId),
+//                new QueryOptions("archive", true));
 
         ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), fileId);
-        for (Result result : archive.getResultScanner()) {
-            byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getColumn());
-            VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(value);
-            os.write(vcfSlice.toString().getBytes());
-        }
+        Scan scan = new Scan();
+        scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
+        scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
+        VariantHBaseQueryParser.addArchiveRegionFilter(scan, null, archiveHelper);
 
+        String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId(), archiveHelper.getConf());
+
+        dbAdaptor.getHBaseManager().act(tableName, (table) -> {
+            ResultScanner scanner = table.getScanner(scan);
+            for (Result result : scanner) {
+                os.write("--------------------\n".getBytes());
+                os.write((Bytes.toString(result.getRow()) + "\n").getBytes());
+
+                os.write(("\t" + Bytes.toString(archiveHelper.getNonRefColumnName()) + "\n").getBytes());
+                byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
+                if (value != null) {
+                    VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(value);
+                    os.write("\t\t".getBytes());
+                    os.write(vcfSlice.toString().replace("\n", "\n\t\t").getBytes());
+                } else {
+                    os.write("\t\tNULL\n".getBytes());
+                }
+
+                os.write(("\t" + Bytes.toString(archiveHelper.getRefColumnName()) + "\n").getBytes());
+                value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
+                if (value != null) {
+                    VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(value);
+                    os.write("\t\t".getBytes());
+                    os.write(vcfSlice.toString().replace("\n", "\n\t\t").getBytes());
+                } else {
+                    os.write("\t\tNULL\n".getBytes());
+                }
+            }
+        });
     }
 
     private static void printArchiveMetadata(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {

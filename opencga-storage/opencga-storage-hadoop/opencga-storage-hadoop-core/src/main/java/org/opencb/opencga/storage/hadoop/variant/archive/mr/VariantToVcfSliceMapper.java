@@ -65,7 +65,7 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
     }
 
     public byte[] getColumn() {
-        return getHelper().getColumn();
+        return getHelper().getNonRefColumnName();
     }
 
     /**

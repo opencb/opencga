@@ -99,7 +99,7 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
             get.addFamily(genomeHelper.getColumnFamily());
         } else {
             for (Integer fileId : fileIds) {
-                byte[] columnName = Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId));
+                byte[] columnName = Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId));
                 get.addColumn(genomeHelper.getColumnFamily(), columnName);
             }
         }
@@ -161,10 +161,10 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
         });
     }
 
-    public static Put wrapAsPut(VariantFileMetadata variantSource, GenomeHelper helper) {
+    public static Put wrapAsPut(VariantFileMetadata fileMetadata, GenomeHelper helper) {
         Put put = new Put(helper.getMetaRowKey());
-        put.addColumn(helper.getColumnFamily(), Bytes.toBytes(variantSource.getId()),
-                variantSource.getImpl().toString().getBytes());
+        put.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileMetadata)),
+                fileMetadata.getImpl().toString().getBytes());
         return put;
     }
 

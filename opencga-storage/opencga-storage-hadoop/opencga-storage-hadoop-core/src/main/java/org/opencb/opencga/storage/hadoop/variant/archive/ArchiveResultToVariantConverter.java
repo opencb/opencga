@@ -117,7 +117,7 @@ public class ArchiveResultToVariantConverter {
             } catch (InvalidProtocolBufferException e) {
                 throw new IllegalStateException(e);
             }
-            int fileId = ArchiveTableHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c));
+            int fileId = ArchiveTableHelper.getFileIdFromNonRefColumnName(CellUtil.cloneQualifier(c));
             VcfSliceToVariantListConverter converter = getConverter(fileId);
             long startConvert = System.nanoTime();
             List<Variant> variants = converter.convert(vcfSlice, vcfRecordFilter);

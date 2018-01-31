@@ -333,8 +333,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         Scan scan = new Scan();
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         for (Integer id : fileIds) {// specify return columns (file IDs)
-            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true,
-                    Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true));
+            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(id)), true,
+                    Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(id)), true));
         }
         filter.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
         scan.setFilter(filter);

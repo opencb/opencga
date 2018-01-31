@@ -89,7 +89,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     // Variants that are wrong in the platinum files that should not be included
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>();
-    private Map<String, Object> notCollapseDeletions = new ObjectMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false).append(VariantStorageEngine.Options.ANNOTATE.key(), true);
+    private Map<String, Object> notCollapseDeletions = new ObjectMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
 
     @Before
     public void setUp() throws Exception {
@@ -138,6 +138,31 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         checkArchiveTableTimeStamp(dbAdaptor);
         printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
+
+        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
+
+    }
+
+    @Test
+    public void testTwoFilesBasicFillMissing() throws Exception {
+        ObjectMap params = new ObjectMap(this.notCollapseDeletions);
+        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        loadFile("s1.genome.vcf", studyConfiguration, params);
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        loadFile("s2.genome.vcf", studyConfiguration, params);
+
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+        getVariantStorageEngine().fillMissing(studyConfiguration.getStudyName(), new ObjectMap("local", true));
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
         checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 

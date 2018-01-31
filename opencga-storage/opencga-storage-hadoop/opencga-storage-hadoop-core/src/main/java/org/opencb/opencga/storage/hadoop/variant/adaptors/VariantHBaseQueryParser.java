@@ -410,7 +410,8 @@ public class VariantHBaseQueryParser {
 
     public static Scan addDefaultRegionFilter(Scan scan) {
 //        return scan.setStopRow(Bytes.toBytes(String.valueOf(GenomeHelper.METADATA_PREFIX)));
-        return scan.setFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+        return scan.setFilter(new RowFilter(CompareFilter.CompareOp.NOT_EQUAL,
+                new BinaryComparator(Bytes.toBytes(GenomeHelper.DEFAULT_METADATA_ROW_KEY))));
     }
 
 }

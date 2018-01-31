@@ -21,7 +21,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -348,7 +347,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
 
             Scan scan = new Scan();
-            scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
+            scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
+            scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
             VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
             String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());

@@ -26,6 +26,7 @@ import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,10 @@ public class VariantHBaseArchiveDataWriter extends AbstractHBaseDataWriter<VcfSl
         }
         List<Put> putLst = new ArrayList<>(batch.size());
         for (VcfSlice slice : batch) {
-            Put put = helper.wrap(slice);
+            // TODO: Modify input to have slices already sorted
+            Put put = helper.wrap(slice, isRefSlice(slice));
+
+            // TODO: REMOVE THIS
             if (writeVariantsColumn) {
                 for (int i = 0; i < slice.getRecordsCount(); i++) {
                     VcfSliceProtos.VcfRecord record = slice.getRecords(i);
@@ -77,6 +81,15 @@ public class VariantHBaseArchiveDataWriter extends AbstractHBaseDataWriter<VcfSl
             putLst.add(put);
         }
         return putLst;
+    }
+
+    public static boolean isRefSlice(VcfSlice slice) {
+        for (String gt : slice.getFields().getGtsList()) {
+            if (!VariantToVcfSliceConverterTask.isHomRef(gt)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

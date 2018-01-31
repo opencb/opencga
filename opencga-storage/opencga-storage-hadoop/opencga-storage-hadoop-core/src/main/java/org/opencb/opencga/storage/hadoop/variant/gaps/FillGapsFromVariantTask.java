@@ -63,7 +63,7 @@ public class FillGapsFromVariantTask implements TaskWithException<Variant, Put, 
                 if (entry.getValue().contains(sample)) {
                     Integer fileId = entry.getKey();
                     samplesFileMap.put(sample, fileId);
-                    fileToColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
+                    fileToColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
                     break;
                 }
             }

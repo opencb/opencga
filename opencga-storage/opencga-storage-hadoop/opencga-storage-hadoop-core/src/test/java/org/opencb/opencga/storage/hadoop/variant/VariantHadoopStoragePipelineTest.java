@@ -245,7 +245,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                 if (Arrays.equals(result.getRow(), archiveHelper.getMetaRowKey())) {
                     continue;
                 }
-                byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getColumn());
+                byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
                 VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(
                         value);
                 System.out.println(vcfSlice);

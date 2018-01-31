@@ -82,7 +82,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         if (samples == null || samples.isEmpty()) {
             fileIds.addAll(studyConfiguration.getIndexedFiles());
             for (Integer fileId : fileIds) {
-                fileToColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
+                fileToColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
             }
         } else {
             for (Integer sample : samples) {
@@ -90,7 +90,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                     if (entry.getValue().contains(sample)) {
                         Integer fileId = entry.getKey();
 //                        samplesFileMap.put(sample, fileId);
-                        fileToColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
+                        fileToColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
                         fileIds.add(fileId);
                         break;
                     }
@@ -308,7 +308,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                     } else {
                         vcfSlice = null;
                     }
-                    filesMap.put(ArchiveTableHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(cell)), vcfSlice);
+                    filesMap.put(ArchiveTableHelper.getFileIdFromNonRefColumnName(CellUtil.cloneQualifier(cell)), vcfSlice);
                 }
             }
             return filesMap.get(fileId);

@@ -82,7 +82,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         return Arrays.stream(value.rawCells())
                 .filter(c -> Bytes.equals(CellUtil.cloneFamily(c), getHelper().getColumnFamily()))
                 .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
-                .map(c -> ArchiveTableHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c)))
+                .map(c -> ArchiveTableHelper.getFileIdFromNonRefColumnName(CellUtil.cloneQualifier(c)))
                 .collect(Collectors.toSet());
     }
 

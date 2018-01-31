@@ -59,7 +59,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         this.resultScanner = resultScanner;
         this.iterator = this.resultScanner.iterator();
         this.columnFamily = archiveHelper.getColumnFamily();
-        this.fileIdBytes = archiveHelper.getColumn();
+        this.fileIdBytes = archiveHelper.getNonRefColumnName();
         VariantFileMetadata fileMetadata = archiveHelper.getFileMetadata();
         converter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(fileMetadata.getSamplesPosition()),
                 String.valueOf(archiveHelper.getStudyId()), fileMetadata.getId());
