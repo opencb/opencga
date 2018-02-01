@@ -117,7 +117,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
 
             String catalogCli = "mongo " + authentication + configuration.getCatalog().getDatabase().getHosts().get(0) + "/"
-                    + catalogManager.getCatalogDatabase() + " opencga_catalog_v1.2.x_to_1.3.0.js";
+                    + catalogManager.getCatalogDatabase() + " opencga_catalog_v1.3.x_to_1.4.0.js";
 
             logger.info("Migrating Catalog. Running {} from {}", catalogCli, basePath);
             ProcessBuilder processBuilder = new ProcessBuilder(catalogCli.split(" "));

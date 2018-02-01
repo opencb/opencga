@@ -11,9 +11,14 @@ import java.util.List;
 public class AnnotableForMigration {
 
     private long id;
-    private List<AnnotationSet> annotationSets;
+    private List<OldAnnotationSet> annotationSets;
 
     public AnnotableForMigration() {
+    }
+
+    public AnnotableForMigration(long id, List<OldAnnotationSet> annotationSets) {
+        this.id = id;
+        this.annotationSets = annotationSets;
     }
 
     public long getId() {
@@ -25,20 +30,29 @@ public class AnnotableForMigration {
         return this;
     }
 
-    public List<AnnotationSet> getAnnotationSets() {
+    public List<OldAnnotationSet> getAnnotationSets() {
         return annotationSets;
     }
 
-    public AnnotableForMigration setAnnotationSets(List<AnnotationSet> annotationSets) {
+    public AnnotableForMigration setAnnotationSets(List<OldAnnotationSet> annotationSets) {
         this.annotationSets = annotationSets;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("AnnotableForMigration{");
+        sb.append("id=").append(id);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append('}');
+        return sb.toString();
     }
 
     @JsonIgnore
     public List<ObjectMap> getAnnotationSetAsMap() {
         List<ObjectMap> objectMapList = new ArrayList<>(annotationSets.size());
 
-        for (AnnotationSet annotationSet : annotationSets) {
+        for (OldAnnotationSet annotationSet : annotationSets) {
             ObjectMap objectMap = new ObjectMap(10);
 
             objectMap.put("name", annotationSet.getName());
@@ -76,46 +90,4 @@ public class AnnotableForMigration {
         }
     }
 
-    public class AnnotationSet {
-        private String name;
-        private long variableSetId;
-        private List<Annotation> annotations;
-
-        public AnnotationSet() {
-        }
-
-        public AnnotationSet(String name, long variableSetId, List<Annotation> annotations) {
-            this.name = name;
-            this.variableSetId = variableSetId;
-            this.annotations = annotations;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public AnnotationSet setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public long getVariableSetId() {
-            return variableSetId;
-        }
-
-        public AnnotationSet setVariableSetId(long variableSetId) {
-            this.variableSetId = variableSetId;
-            return this;
-        }
-
-        public List<Annotation> getAnnotations() {
-            return annotations;
-        }
-
-        public AnnotationSet setAnnotations(List<Annotation> annotations) {
-            this.annotations = annotations;
-            return this;
-        }
-
-    }
 }

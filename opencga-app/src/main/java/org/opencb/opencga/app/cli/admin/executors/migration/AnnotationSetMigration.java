@@ -70,29 +70,42 @@ public class AnnotationSetMigration {
             Document next = iterator.next();
             AnnotableForMigration annotable = converter.convertToDataModelType(next);
 
-            List<ObjectMap> annotationSetAsMap = annotable.getAnnotationSetAsMap();
-
-            for (ObjectMap annotationSetMap : annotationSetAsMap) {
-                String annotationSetName = annotationSetMap.getString("name");
-                long variableSetId = annotationSetMap.getLong("variableSetId");
-                Map<String, Object> annotations = annotationSetMap.getMap("annotations");
-
-                VariableSet variableSet = getVariableSet(variableSetId);
-
-                AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, annotations, Collections.emptyMap());
-                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, null);
-
-                QueryResult<AnnotationSet> annotationSetQR = dbAdaptor.createAnnotationSet(annotable.getId(), variableSet, annotationSet);
-
-                if (annotationSetQR.getNumResults() == 0) {
-                    throw new CatalogException("Migration of annotation set " + annotationSetName + " from entry " + annotable.getId()
-                            + "failed.");
-                }
-            }
-
             // Remove old annotationSets field from the entry
             Document query = new Document("id", annotable.getId());
             collection.update(query, update, new QueryOptions("multi", true));
+
+            List<ObjectMap> annotationSetAsMap = annotable.getAnnotationSetAsMap();
+
+            try {
+                for (ObjectMap annotationSetMap : annotationSetAsMap) {
+                    String annotationSetName = annotationSetMap.getString("name");
+                    long variableSetId = annotationSetMap.getLong("variableSetId");
+                    Map<String, Object> annotations = annotationSetMap.getMap("annotations");
+
+                    VariableSet variableSet = getVariableSet(variableSetId);
+
+                    AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, annotations, Collections.emptyMap());
+                    CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, null);
+
+                    QueryResult<AnnotationSet> annotationSetQR = dbAdaptor.createAnnotationSet(annotable.getId(), variableSet,
+                            annotationSet);
+
+
+                    if (annotationSetQR.getNumResults() == 0) {
+                        throw new CatalogException("Migration of annotation set " + annotationSetName + " from entry " + annotable.getId()
+                                + "failed.");
+                    }
+                }
+            } catch (CatalogException e) {
+                update = new Document()
+                        .append("$set", new Document("annotationSets", next.get("annotationSets")))
+                        .append("$unset", AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key());
+                // Restore annotations
+                collection.update(query, update, new QueryOptions("multi", true));
+
+                throw e;
+            }
+
         }
     }
 
