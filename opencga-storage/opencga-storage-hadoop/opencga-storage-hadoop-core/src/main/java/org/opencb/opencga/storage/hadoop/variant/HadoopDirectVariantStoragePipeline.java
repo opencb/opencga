@@ -100,14 +100,7 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
         String fileName = input.getFileName().toString();
         Path sourcePath = input.getParent().resolve(VariantReaderUtils.getMetaFromTransformedFile(fileName));
 
-        Integer fileId;
-        if (options.getBoolean(
-                Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(),
-                Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.defaultValue())) {
-            fileId = Options.FILE_ID.defaultValue();
-        } else {
-            fileId = options.getInt(Options.FILE_ID.key());
-        }
+        Integer fileId = options.getInt(Options.FILE_ID.key());
         int studyId = getStudyId();
 
         VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(sourcePath, null);

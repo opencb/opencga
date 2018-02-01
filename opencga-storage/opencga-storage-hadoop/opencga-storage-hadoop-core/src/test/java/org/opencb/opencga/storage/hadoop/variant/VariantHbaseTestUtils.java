@@ -272,14 +272,14 @@ public class VariantHbaseTestUtils {
     public static void printArchiveTable(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws Exception {
         String archiveTableName = HadoopVariantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration());
         for (Integer fileId : studyConfiguration.getIndexedFiles()) {
-            try (OutputStream os = new FileOutputStream(outDir.resolve("archive." + fileId + "." + archiveTableName + "." + TimeUtils.getTimeMillis() + ".txt").toFile())) {
+            try (PrintStream os = new PrintStream(new FileOutputStream(outDir.resolve("archive." + fileId + "." + archiveTableName + "." + TimeUtils.getTimeMillis() + ".txt").toFile()))) {
                 printArchiveTable(dbAdaptor, studyConfiguration, fileId, os);
             }
         }
     }
 
     public static void printArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
-                                                           StudyConfiguration studyConfiguration, int fileId, OutputStream os) throws Exception {
+                                                           StudyConfiguration studyConfiguration, int fileId, PrintStream os) throws Exception {
 //        VariantHadoopArchiveDBIterator archive = (VariantHadoopArchiveDBIterator) dbAdaptor.iterator(
 //                new Query()
 //                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
@@ -297,27 +297,29 @@ public class VariantHbaseTestUtils {
         dbAdaptor.getHBaseManager().act(tableName, (table) -> {
             ResultScanner scanner = table.getScanner(scan);
             for (Result result : scanner) {
-                os.write("--------------------\n".getBytes());
-                os.write((Bytes.toString(result.getRow()) + "\n").getBytes());
+                os.println("--------------------");
+                os.println(Bytes.toString(result.getRow()));
 
-                os.write(("\t" + Bytes.toString(archiveHelper.getNonRefColumnName()) + "\n").getBytes());
+                os.println("\t" + Bytes.toString(archiveHelper.getNonRefColumnName()));
                 byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
                 if (value != null) {
                     VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(value);
-                    os.write("\t\t".getBytes());
-                    os.write(vcfSlice.toString().replace("\n", "\n\t\t").getBytes());
+                    for (String s : vcfSlice.toString().split("\n")) {
+                        os.println("\t\t" + s);
+                    }
                 } else {
-                    os.write("\t\tNULL\n".getBytes());
+                    os.println("\t\tNULL");
                 }
 
-                os.write(("\t" + Bytes.toString(archiveHelper.getRefColumnName()) + "\n").getBytes());
+                os.println("\t" + Bytes.toString(archiveHelper.getRefColumnName()));
                 value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
                 if (value != null) {
                     VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(value);
-                    os.write("\t\t".getBytes());
-                    os.write(vcfSlice.toString().replace("\n", "\n\t\t").getBytes());
+                    for (String s : vcfSlice.toString().split("\n")) {
+                        os.println("\t\t" + s);
+                    }
                 } else {
-                    os.write("\t\tNULL\n".getBytes());
+                    os.println("\t\tNULL");
                 }
             }
         });

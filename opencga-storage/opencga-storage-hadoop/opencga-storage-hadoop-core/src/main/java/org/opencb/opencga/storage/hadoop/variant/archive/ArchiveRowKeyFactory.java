@@ -71,6 +71,9 @@ public class ArchiveRowKeyFactory {
     }
 
     public int getFileBatch(int fileId) {
+        if (fileId <= 0) {
+            throw new IllegalArgumentException("FileId must be greater than 0. Got " + fileId);
+        }
         return fileId / fileBatchSize;
     }
 
@@ -95,7 +98,7 @@ public class ArchiveRowKeyFactory {
      * @return {@link String} Row key string
      */
     public String generateBlockId(int fileId, String chrom, long position) {
-        return generateBlockIdFromSlice(fileId, chrom, getSliceId(position));
+        return generateBlockIdFromSliceAndBatch(getFileBatch(fileId), chrom, getSliceId(position));
     }
 
     public String generateBlockIdFromSlice(int fileId, String chrom, long slice) {

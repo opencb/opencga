@@ -37,7 +37,6 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -674,8 +673,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 if (dbAdaptor.get() == null) {
                     HBaseCredentials credentials = getDbCredentials();
                     try {
-                        StorageEngineConfiguration storageEngine = this.configuration.getStorageEngine(STORAGE_ENGINE_ID);
-                        Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
+                        Configuration configuration = getHadoopConfiguration();
                         configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
                         dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration), credentials,
                                 this.configuration, configuration, getCellBaseUtils()));
@@ -747,7 +745,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             Integer port;
             String zookeeperPath;
             if (target == null || target.isEmpty()) {
-                Configuration conf = getHadoopConfiguration(getOptions());
+                Configuration conf = getHadoopConfiguration();
                 server = conf.get(HConstants.ZOOKEEPER_QUORUM);
                 port = 60000;
                 zookeeperPath = conf.get(HConstants.ZOOKEEPER_ZNODE_PARENT);
@@ -789,9 +787,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
         ObjectMap options = getOptions();
         HBaseCredentials dbCredentials = getDbCredentials();
-        Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options), dbCredentials);
+        Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(), dbCredentials);
         return new StudyConfigurationManager(
                 new HBaseStudyConfigurationDBAdaptor(dbCredentials.getTable(), configuration, options, getHBaseManager(configuration)));
+    }
+
+    private Configuration getHadoopConfiguration() throws StorageEngineException {
+        return getHadoopConfiguration(getOptions());
     }
 
     private Configuration getHadoopConfiguration(ObjectMap options) throws StorageEngineException {

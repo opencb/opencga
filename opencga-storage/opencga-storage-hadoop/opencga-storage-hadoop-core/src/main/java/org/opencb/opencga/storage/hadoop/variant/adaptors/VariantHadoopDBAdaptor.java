@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.phoenix.util.SchemaUtil;
@@ -167,7 +166,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public static Configuration getHbaseConfiguration(Configuration configuration, HBaseCredentials credentials) {
 
         // HBase configuration
-        configuration = HBaseConfiguration.create(configuration);
         configuration = HBaseManager.addHBaseSettings(configuration, credentials);
 
         return configuration;

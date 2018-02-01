@@ -377,6 +377,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
         options.put(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 5);
         options.put(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 5);
+        options.put(HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER, 10);
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;

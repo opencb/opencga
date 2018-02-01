@@ -23,6 +23,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.PrefixFilter;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -54,6 +55,8 @@ import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTaskTest;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
@@ -72,6 +75,7 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.VARIANT_COLUMN_B_PREFIX;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromVariantsTable;
 
@@ -102,7 +106,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true).append(VariantStorageEngine.Options.ANNOTATE.key(), true);
+        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true).append(VariantStorageEngine.Options.ANNOTATE.key(), false);
     }
 
     public VariantFileMetadata loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
@@ -278,6 +282,39 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                 .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_BATCH_SIZE, 5)
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 5));
+    }
+
+    @Test
+    public void testMultipleFilesConcurrentMergeBasicMultipleBatches() throws Exception {
+        testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_BATCH_SIZE, 5)
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 5)
+                .append(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 5));
+
+        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(1000, '_', 5);
+
+        HadoopVariantStorageEngine engine = getVariantStorageEngine();
+        VariantHadoopDBAdaptor dbAdaptor = engine.getDBAdaptor();
+        Integer count = dbAdaptor.getHBaseManager().act(engine.getArchiveTableName(STUDY_ID), table -> {
+            int numBlocks = 0;
+            for (Result result : table.getScanner(dbAdaptor.getGenomeHelper().getColumnFamily())) {
+                if (!Bytes.toString(result.getRow()).equals(GenomeHelper.DEFAULT_METADATA_ROW_KEY)) {
+                    numBlocks++;
+                    int batch = rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(result.getRow()));
+                    for (byte[] column : result.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).keySet()) {
+                        if (!Bytes.startsWith(column, VARIANT_COLUMN_B_PREFIX)) {
+                            int fileId = ArchiveTableHelper.getFileIdFromNonRefColumnName(column);
+                            int expectedBatch = rowKeyFactory.getFileBatch(fileId);
+                            assertEquals(expectedBatch, batch);
+                        }
+                    }
+                }
+            }
+            return numBlocks;
+        });
+        assertTrue(count > 0);
+
     }
 
     public void testMultipleFilesConcurrent(ObjectMap extraParams) throws Exception {

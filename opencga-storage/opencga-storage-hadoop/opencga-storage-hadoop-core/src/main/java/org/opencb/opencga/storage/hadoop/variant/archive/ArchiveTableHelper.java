@@ -55,7 +55,7 @@ public class ArchiveTableHelper extends GenomeHelper {
     private final byte[] nonRefColumn;
     private final byte[] refColumn;
 
-    private int fileId;
+    private final int fileId;
 
     public ArchiveTableHelper(Configuration conf) throws IOException {
         super(conf);
@@ -72,6 +72,7 @@ public class ArchiveTableHelper extends GenomeHelper {
     public ArchiveTableHelper(GenomeHelper helper, int studyId, VariantFileMetadata meta) {
         super(helper, studyId);
         this.meta.set(meta);
+        fileId = Integer.valueOf(meta.getId());
         nonRefColumn = Bytes.toBytes(getNonRefColumnName(meta));
         refColumn = Bytes.toBytes(getRefColumnName(meta));
         keyFactory = new ArchiveRowKeyFactory(helper.getConf());
@@ -80,6 +81,7 @@ public class ArchiveTableHelper extends GenomeHelper {
     public ArchiveTableHelper(Configuration conf, int studyId, VariantFileMetadata meta) {
         super(conf, studyId);
         this.meta.set(meta);
+        fileId = Integer.valueOf(meta.getId());
         nonRefColumn = Bytes.toBytes(getNonRefColumnName(meta));
         refColumn = Bytes.toBytes(getRefColumnName(meta));
         keyFactory = new ArchiveRowKeyFactory(conf);
