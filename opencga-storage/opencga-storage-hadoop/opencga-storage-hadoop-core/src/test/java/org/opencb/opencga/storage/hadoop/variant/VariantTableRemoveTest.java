@@ -70,7 +70,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         String studyName = studyConfiguration.getStudyName();
 
         ObjectMap options = new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
         loadFile("s1.genome.vcf", studyConfiguration, options);
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         Map<String, Variant> variants = buildVariantsIdx();

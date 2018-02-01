@@ -145,7 +145,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
      */
     public class AdminCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
-        @Parameter(names = {"-p", "--password"}, description = "Admin password", required = false, password = true, arity = 0)
+        @Parameter(names = {"-p", "--password"}, description = "Admin password", hidden = true, password = true, arity = 0)
         public String adminPassword;
 
     }

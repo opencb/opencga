@@ -33,7 +33,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
@@ -58,7 +58,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
     private VariantAnnotator variantAnnotator;
     private byte[] studiesRow;
     private boolean forceAnnotation;
-    private VariantAnnotationToHBaseConverter annotationConverter;
+    private VariantAnnotationToPhoenixConverter annotationConverter;
     private VariantPhoenixHelper.VariantColumn[] columnsOrdered;
 
     @Override
@@ -68,7 +68,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
         studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
 
         /* Annotation -> Phoenix converter */
-        annotationConverter = new VariantAnnotationToHBaseConverter(getHelper());
+        annotationConverter = new VariantAnnotationToPhoenixConverter(getHelper().getColumnFamily());
         columnsOrdered = VariantPhoenixHelper.VariantColumn.values();
 
         /* Annotator config */

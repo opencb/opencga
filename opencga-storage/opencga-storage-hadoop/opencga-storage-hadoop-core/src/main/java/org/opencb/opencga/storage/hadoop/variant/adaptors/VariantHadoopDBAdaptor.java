@@ -47,7 +47,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
-import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
@@ -349,7 +349,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
             Scan scan = new Scan();
             scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
-            VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
+            VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper.getKeyFactory());
             scan.setMaxResultSize(options.getInt("limit"));
             String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
 
@@ -508,7 +508,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         long start = System.currentTimeMillis();
 
-        VariantAnnotationToHBaseConverter converter = new VariantAnnotationToHBaseConverter(new GenomeHelper(configuration));
+        final GenomeHelper genomeHelper1 = new GenomeHelper(configuration);
+        VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(genomeHelper1.getColumnFamily());
         Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);
 
         try (java.sql.Connection conn = phoenixHelper.newJdbcConnection(this.configuration);

@@ -192,8 +192,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantAnnotation.setConsequenceTypes(consequenceTypes);
 
         // set populations
+        List<PopulationFrequency> populationFrequencies = new ArrayList<>();
         if (variantSearchModel.getPopFreq() != null && variantSearchModel.getPopFreq().size() > 0) {
-            List<PopulationFrequency> populationFrequencies = new ArrayList<>();
             for (String key : variantSearchModel.getPopFreq().keySet()) {
                 PopulationFrequency populationFrequency = new PopulationFrequency();
                 String[] fields = key.split("__");
@@ -202,8 +202,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 populationFrequency.setAltAlleleFreq(variantSearchModel.getPopFreq().get(key));
                 populationFrequencies.add(populationFrequency);
             }
-            variantAnnotation.setPopulationFrequencies(populationFrequencies);
         }
+        variantAnnotation.setPopulationFrequencies(populationFrequencies);
 
         // Set conservations scores
         scores = new ArrayList<>();

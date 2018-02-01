@@ -89,7 +89,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     // Variants that are wrong in the platinum files that should not be included
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>();
-    private Map<String, Object> notCollapseDeletions = Collections.singletonMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
+    private Map<String, Object> notCollapseDeletions = new ObjectMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false).append(VariantStorageEngine.Options.ANNOTATE.key(), true);
 
     @Before
     public void setUp() throws Exception {
@@ -102,7 +102,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
+        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true).append(VariantStorageEngine.Options.ANNOTATE.key(), true);
     }
 
     public VariantFileMetadata loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {

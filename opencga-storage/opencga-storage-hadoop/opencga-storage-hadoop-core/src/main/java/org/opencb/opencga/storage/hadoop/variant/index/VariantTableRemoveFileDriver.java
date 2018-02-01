@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.KeyOnlyFilter;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Job;
@@ -53,7 +55,10 @@ public class VariantTableRemoveFileDriver extends AbstractAnalysisTableDriver {
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         // QUERY design
         Scan scan = createArchiveTableScan(getFiles());
-
+        if (VariantStorageEngine.MergeMode.from(readStudyConfiguration().getAttributes()).equals(VariantStorageEngine.MergeMode.BASIC)) {
+            // If basic, add "KeyOnlyFilter" as we don't care about the content of the VCFSlices
+            scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL, new KeyOnlyFilter(), scan.getFilter()));
+        }
         // set other scan attrs
         initMapReduceJob(job, getMapperClass(), archiveTable, variantTable, scan);
         job.setOutputFormatClass(MultiTableOutputFormat.class);

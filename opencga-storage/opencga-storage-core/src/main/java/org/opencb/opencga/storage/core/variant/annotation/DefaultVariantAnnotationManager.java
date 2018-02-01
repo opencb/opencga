@@ -62,6 +62,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
@@ -82,9 +83,9 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     public static final String NUM_WRITERS = "numWriters";
     public static final String NUM_THREADS = "numThreads";
 
-    private VariantDBAdaptor dbAdaptor;
-    private VariantAnnotator variantAnnotator;
-    private long numAnnotationsToLoad = 0;
+    protected VariantDBAdaptor dbAdaptor;
+    protected VariantAnnotator variantAnnotator;
+    private final AtomicLong numAnnotationsToLoad = new AtomicLong(0);
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
@@ -163,15 +164,18 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
         try {
             DataReader<Variant> variantDataReader = new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
-            ProgressLogger progressLogger = new ProgressLogger("Annotated variants:", () -> {
-                int limit = iteratorQueryOptions.getInt(QueryOptions.LIMIT, 0);
-                if (limit > 0) {
-                    return (long) limit;
-                }
-                Long count = dbAdaptor.count(query).first();
-                numAnnotationsToLoad = count;
-                return count;
-            }, 200);
+            ProgressLogger progressLogger;
+            if (params != null && params.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+                progressLogger = new ProgressLogger("Annotated variants:", iteratorQueryOptions.getLong(QueryOptions.LIMIT, 0), 200);
+            } else {
+                progressLogger = new ProgressLogger("Annotated variants:", () -> {
+                    long limit = iteratorQueryOptions.getLong(QueryOptions.LIMIT, 0);
+                    if (limit > 0) {
+                        return limit;
+                    }
+                    return dbAdaptor.count(query).first();
+                }, 200);
+            }
             ParallelTaskRunner.TaskWithException<Variant, VariantAnnotation, VariantAnnotatorException> annotationTask = variantList -> {
                 List<VariantAnnotation> variantAnnotationList;
                 long start = System.currentTimeMillis();
@@ -179,6 +183,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
                 variantAnnotationList = variantAnnotator.annotate(variantList);
                 progressLogger.increment(variantList.size(),
                         () -> ", up to position " + variantList.get(variantList.size() - 1).toString());
+                numAnnotationsToLoad.addAndGet(variantList.size());
 
                 logger.debug("Annotated batch of {} genomic variants. Time: {}s", variantList.size(),
                         (System.currentTimeMillis() - start) / 1000.0);
@@ -252,15 +257,20 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
         reader = newVariantAnnotationDataReader(uri);
         try {
-            ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ", numAnnotationsToLoad);
-            ParallelTaskRunner<VariantAnnotation, Object> ptr = new ParallelTaskRunner<>(reader,
-                    () -> newVariantAnnotationDBWriter(dbAdaptor, new QueryOptions(params))
-                            .setProgressLogger(progressLogger), null, config);
+            ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ", numAnnotationsToLoad.get());
+            ParallelTaskRunner<VariantAnnotation, ?> ptr = buildLoadAnnotationParallelTaskRunner(reader, config, progressLogger, params);
             ptr.run();
         } catch (ExecutionException e) {
             throw new StorageEngineException("Error loading variant annotation", e);
         }
 
+    }
+
+    protected ParallelTaskRunner<VariantAnnotation, ?> buildLoadAnnotationParallelTaskRunner(
+            DataReader<VariantAnnotation> reader, ParallelTaskRunner.Config config, ProgressLogger progressLogger, ObjectMap params) {
+        return new ParallelTaskRunner<>(reader,
+                        () -> newVariantAnnotationDBWriter(dbAdaptor, new QueryOptions(params))
+                                .setProgressLogger(progressLogger), null, config);
     }
 
     protected DataReader<VariantAnnotation> newVariantAnnotationDataReader(URI uri) {
