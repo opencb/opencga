@@ -99,7 +99,7 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
             get.addFamily(genomeHelper.getColumnFamily());
         } else {
             for (Integer fileId : fileIds) {
-                byte[] columnName = Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId));
+                byte[] columnName = getMetadataColumn(fileId);
                 get.addColumn(genomeHelper.getColumnFamily(), columnName);
             }
         }
@@ -163,9 +163,21 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
 
     public static Put wrapAsPut(VariantFileMetadata fileMetadata, GenomeHelper helper) {
         Put put = new Put(helper.getMetaRowKey());
-        put.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileMetadata)),
+        put.addColumn(helper.getColumnFamily(), getMetadataColumn(fileMetadata),
                 fileMetadata.getImpl().toString().getBytes());
         return put;
+    }
+
+    public static byte[] getMetadataColumn(VariantFileMetadata metadata) {
+        Integer fileId = Integer.valueOf(metadata.getId());
+        return getMetadataColumn(fileId);
+    }
+
+    public static byte[] getMetadataColumn(int fileId) {
+        if (fileId <= 0) {
+            throw new IllegalArgumentException("FileId must be greater than 0. Got " + fileId);
+        }
+        return Bytes.toBytes(String.valueOf(fileId));
     }
 
     public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
