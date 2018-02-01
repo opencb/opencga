@@ -429,21 +429,6 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Get annotation set", startTime, annotationSets);
     }
 
-    public QueryResult<ObjectMap> getAnnotationSetAsMap(AbstractManager.MyResourceId resource, @Nullable String annotationSetName,
-                                                        String studyPermission) throws CatalogDBException, CatalogAuthorizationException {
-        long startTime = startQuery();
-
-        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(resource, null, annotationSetName, studyPermission,
-                new QueryOptions());
-
-        List<ObjectMap> annotationSets = new ArrayList<>(aggregate.getNumResults());
-        for (Annotable annotable : aggregate.getResult()) {
-            annotationSets.add(annotable.getAnnotationSetAsMap().get(0));
-        }
-
-        return endQuery("Get annotation set", startTime, annotationSets);
-    }
-
     // TODO: Continuar por aqui
     private QueryResult<? extends Annotable> commonGetAnnotationSet(long id, Document queryAnnotation, @Nullable String annotationSetName,
                                                                     QueryOptions options) {
