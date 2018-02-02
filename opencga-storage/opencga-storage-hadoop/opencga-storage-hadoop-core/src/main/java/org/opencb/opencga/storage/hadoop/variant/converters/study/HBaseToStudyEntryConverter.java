@@ -70,9 +70,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private static final String UNKNOWN_SAMPLE_DATA = VCFConstants.MISSING_VALUE_v4;
     public static final int FILE_CALL_IDX = 0;
     public static final int FILE_SEC_ALTS_IDX = 1;
-    public static final int FILE_QUAL_IDX = 2;
-    public static final int FILE_FILTER_IDX = 3;
-    public static final int FILE_INFO_START_IDX = 4;
+    public static final int FILE_VARIANT_OVERLAPPING_STATUS_IDX = 2;
+    public static final int FILE_QUAL_IDX = 3;
+    public static final int FILE_FILTER_IDX = 4;
+    public static final int FILE_INFO_START_IDX = 5;
 
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;

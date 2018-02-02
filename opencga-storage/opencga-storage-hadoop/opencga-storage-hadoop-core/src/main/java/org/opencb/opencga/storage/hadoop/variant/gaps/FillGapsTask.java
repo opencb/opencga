@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus.*;
+
 /**
  * Created on 15/01/18.
  *
@@ -109,7 +111,7 @@ public class FillGapsTask {
             if (StringUtils.isEmpty(fileEntry.getCall())) {
                 fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":.:0");
             }
-            studyConverter.convert(archiveVariant, put, missingSamples);
+            studyConverter.convert(archiveVariant, put, missingSamples, REFERENCE);
         } else {
             Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
             Variant mergedVariant = new Variant(
@@ -127,7 +129,7 @@ public class FillGapsTask {
             mergedVariant.setType(variant.getType());
 
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
-            studyConverter.convert(mergedVariant, put, missingSamples);
+            studyConverter.convert(mergedVariant, put, missingSamples, VARIANT);
         }
     }
 
