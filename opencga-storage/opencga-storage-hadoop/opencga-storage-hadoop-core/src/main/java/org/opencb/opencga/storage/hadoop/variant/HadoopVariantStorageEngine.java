@@ -453,7 +453,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(4).setBatchSize(10).build();
                 ParallelTaskRunner<Result, Put> ptr = new ParallelTaskRunner<>(
                         dbReader,
-                        () -> new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), studyConfiguration,
+                        () -> new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(),
+                                getVariantTableName(), getArchiveTableName(studyId), studyConfiguration,
                                 dbAdaptor.getGenomeHelper(), sampleIds, skipReferenceVariants)
                                 .then((ParallelTaskRunner.TaskWithException<Put, Put, IOException>) list -> {
                                     progressLogger.increment(list.size(), "variants");

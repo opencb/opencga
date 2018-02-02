@@ -27,9 +27,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET;
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.HOM_REF;
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.buildColumnKey;
 
 /**
  * Created on 31/10/17.
@@ -46,6 +47,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
 
     private final HBaseManager hBaseManager;
     private final String archiveTableName;
+    private final String variantsTableName;
     private final StudyConfiguration studyConfiguration;
     private final GenomeHelper helper;
     private final FillGapsTask fillGapsTask;
@@ -55,17 +57,11 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
     private final Logger logger = LoggerFactory.getLogger(FillGapsFromArchiveTask.class);
     private final ArchiveRowKeyFactory rowKeyFactory;
 
+    private Table variantsTable;
     private Table archiveTable;
 
     public FillGapsFromArchiveTask(HBaseManager hBaseManager,
-                                   String archiveTableName,
-                                   StudyConfiguration studyConfiguration,
-                                   GenomeHelper helper,
-                                   boolean skipReferenceVariants) {
-        this(hBaseManager, archiveTableName, studyConfiguration, helper, null, skipReferenceVariants);
-    }
-
-    public FillGapsFromArchiveTask(HBaseManager hBaseManager,
+                                   String variantsTableName,
                                    String archiveTableName,
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
@@ -73,6 +69,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                                    boolean skipReferenceVariants) {
         this.hBaseManager = hBaseManager;
         this.archiveTableName = archiveTableName;
+        this.variantsTableName = variantsTableName;
         this.studyConfiguration = studyConfiguration;
         this.helper = helper;
 
@@ -107,6 +104,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
     public void pre() {
         try {
             archiveTable = hBaseManager.getConnection().getTable(TableName.valueOf(archiveTableName));
+            variantsTable = hBaseManager.getConnection().getTable(TableName.valueOf(variantsTableName));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -116,6 +114,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
     public void post() {
         try {
             archiveTable.close();
+            variantsTable.close();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -212,13 +211,24 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         return puts;
     }
 
-    public Context buildContext(Result result) {
-        String chromosome = rowKeyFactory.extractChromosomeFromBlockId(Bytes.toString(result.getRow()));
+    public Context buildContext(Result result) throws IOException {
+        List<Variant> variants = new ArrayList<>();
 
-        List<Variant> variants = Arrays.stream(result.rawCells())
-                .filter(c -> Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
-                .map(c -> GenomeHelper.getVariantFromArchiveVariantColumn(chromosome, CellUtil.cloneQualifier(c)))
-                .collect(Collectors.toList());
+        // If fill all variants from the study, get variant ids from variants table
+        if (fillAllVariants) {
+            Region region = rowKeyFactory.extractRegionFromBlockId(Bytes.toString(result.getRow()));
+
+            // Build scan. Only get variants from the needed region, from this study
+            Scan scan = new Scan();
+            VariantHBaseQueryParser.addRegionFilter(scan, region);
+            scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(buildColumnKey(studyConfiguration.getStudyId(), HOM_REF)));
+
+            try (ResultScanner scanner = variantsTable.getScanner(scan)) {
+                for (Result variantResult : scanner) {
+                    variants.add(VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(variantResult.getRow()));
+                }
+            }
+        } // else { TODO: Extract variants from result! }
 
         // TODO: Find list of processed files.
         // TODO: If fillAllFiles == true, (global fill operation), this can be stored in the StudyConfiguration

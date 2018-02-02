@@ -65,8 +65,8 @@ public class GenomeHelperTest {
         // Parse complex contigs
         Assert.assertEquals("NC_007605", keyFactory.extractChromosomeFromBlockId("0001_NC_007605_00000222"));
         Assert.assertEquals(1, keyFactory.extractFileBatchFromBlockId("0001_NC_007605_00000222"));
-        Assert.assertEquals(222, keyFactory.extractSliceFromBlockId("0001_2_222").longValue());
-        Assert.assertEquals(222 * CHUNK_SIZE, keyFactory.extractPositionFromBlockId("0001_2_222").longValue());
+        Assert.assertEquals(222, keyFactory.extractSliceFromBlockId("0001_2_222"));
+        Assert.assertEquals(222 * CHUNK_SIZE, keyFactory.extractPositionFromBlockId("0001_2_222"));
         Assert.assertEquals(0, keyFactory.getFileBatch(1));
         Assert.assertEquals(0, keyFactory.getFileBatch(99));
         Assert.assertEquals(1, keyFactory.getFileBatch(100));

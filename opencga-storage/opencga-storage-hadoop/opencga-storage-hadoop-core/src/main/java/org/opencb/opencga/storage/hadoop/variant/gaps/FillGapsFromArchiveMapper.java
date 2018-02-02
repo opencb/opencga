@@ -51,7 +51,8 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         super.setup(context);
         Collection<Integer> samples = getSamples(context.getConfiguration());
         boolean skipReferenceVariants = getSkipReferenceVariants(context.getConfiguration());
-        task = new FillGapsFromArchiveTask(getHBaseManager(), getHelper().getArchiveTableAsString(), getStudyConfiguration(), getHelper(),
+        task = new FillGapsFromArchiveTask(getHBaseManager(), getHelper().getAnalysisTableAsString(), getHelper().getArchiveTableAsString(),
+                getStudyConfiguration(), getHelper(),
                 samples, skipReferenceVariants);
         task.pre();
     }

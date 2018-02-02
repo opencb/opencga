@@ -16,6 +16,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -26,6 +27,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
@@ -94,6 +96,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         String variantTableName = variantStorageEngine.getVariantTableName();
         Table variantsTable = dbAdaptor.getHBaseManager().getConnection().getTable(TableName.valueOf(variantTableName));
         FillGapsFromArchiveTask fillGapsTask = new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(),
+                variantStorageEngine.getVariantTableName(),
                 variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId()),
                 studyConfiguration, dbAdaptor.getGenomeHelper(), sampleIds, skipReferenceVariants);
         fillGapsTask.pre();
@@ -151,7 +154,8 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     @Test
     public void testFillMissingPlatinumFiles() throws Exception {
         StudyConfiguration studyConfiguration = loadPlatinum(new ObjectMap()
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 12877, 12878);
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 2), 12877, 12878);
         assertFalse(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
 
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
@@ -159,7 +163,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         List<Integer> sampleIds = new ArrayList<>(studyConfiguration.getSampleIds().values());
         sampleIds.sort(Integer::compareTo);
 
-        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), new ObjectMap("local", false));
+        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), new ObjectMap("local", true));
         printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
@@ -175,11 +179,21 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         studyConfiguration = loadPlatinum(new ObjectMap()
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 12880, 12880);
 
-        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), new ObjectMap("local", false));
+        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), new ObjectMap("local", true));
         printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, "?/?");
+
+        Variant v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10297:C:G"), null).first();
+        assertEquals(1, v.getStudies().get(0).getSecondaryAlternates().size());
+        assertEquals("0/1", v.getStudies().get(0).getSampleData("NA12877", "GT"));
+        assertEquals("0/2", v.getStudies().get(0).getSampleData("NA12878", "GT"));
+
+        v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10297:C:T"), null).first();
+        assertEquals(1, v.getStudies().get(0).getSecondaryAlternates().size());
+        assertEquals("0/2", v.getStudies().get(0).getSampleData("NA12877", "GT"));
+        assertEquals("0/1", v.getStudies().get(0).getSampleData("NA12878", "GT"));
     }
 
     private StudyConfiguration loadPlatinum(ObjectMap extraParams, int max) throws Exception {

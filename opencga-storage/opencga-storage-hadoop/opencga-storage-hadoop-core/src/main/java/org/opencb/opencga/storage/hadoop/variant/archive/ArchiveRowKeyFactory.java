@@ -139,16 +139,28 @@ public class ArchiveRowKeyFactory {
         return strings[CHROMOSOME_IDX];
     }
 
-    public Long extractSliceFromBlockId(String blockId) {
-        return Long.valueOf(splitBlockId(blockId)[SLICE_IDX]);
+    public long extractSliceFromBlockId(String blockId) {
+        return Long.parseLong(splitBlockId(blockId)[SLICE_IDX]);
     }
 
     public long getStartPositionFromSlice(long slice) {
         return slice * (long) getChunkSize();
     }
 
-    public Long extractPositionFromBlockId(String blockId) {
-        return Long.valueOf(splitBlockId(blockId)[SLICE_IDX]) * getChunkSize();
+    public long extractPositionFromBlockId(String blockId) {
+        return extractPositionFromBlockId(splitBlockId(blockId));
+    }
+
+    public long extractPositionFromBlockId(String[] strings) {
+        return Long.parseLong(strings[SLICE_IDX]) * getChunkSize();
+    }
+
+    public Region extractRegionFromBlockId(String blockId) {
+        String[] split = splitBlockId(blockId);
+        String chr = extractChromosomeFromBlockId(split);
+        long position = extractPositionFromBlockId(split);
+
+        return new Region(chr, (int) position, (int) (position + getChunkSize()));
     }
 
     public String[] splitBlockId(String blockId) {
