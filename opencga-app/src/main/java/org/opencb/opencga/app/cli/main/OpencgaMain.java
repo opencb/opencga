@@ -33,8 +33,17 @@ public class OpencgaMain {
 
     public static void main(String[] args) {
 
-        if (args.length > 1 && "users".equals(args[0]) && "login".equals(args[1])) {
-            args = ArrayUtils.addAll(args, "--password");
+        if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1])) {
+            // Check there is no --help either
+            boolean helpFound = false;
+            for (String arg : args) {
+                if ("--help".equals(arg) || "-h".equals(arg)) {
+                    helpFound = true;
+                }
+            }
+            if (!helpFound) {
+                args = ArrayUtils.addAll(args, "--password");
+            }
         }
 
         OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();

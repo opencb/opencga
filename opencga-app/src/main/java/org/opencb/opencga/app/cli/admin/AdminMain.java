@@ -33,7 +33,18 @@ public class AdminMain {
     public static void main(String[] args) {
 
         // Add password parameter
-        args = org.apache.commons.lang3.ArrayUtils.addAll(args, "--password");
+        if (args.length > 1) {
+            // Check there is no --help
+            boolean helpFound = false;
+            for (String arg : args) {
+                if ("--help".equals(arg) || "-h".equals(arg)) {
+                    helpFound = true;
+                }
+            }
+            if (!helpFound) {
+                args = org.apache.commons.lang3.ArrayUtils.addAll(args, "--password");
+            }
+        }
 
         AdminCliOptionsParser cliOptionsParser = new AdminCliOptionsParser();
         try {
