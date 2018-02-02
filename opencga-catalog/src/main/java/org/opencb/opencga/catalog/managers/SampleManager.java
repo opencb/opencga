@@ -82,7 +82,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setType(ParamUtils.defaultString(sample.getType(), ""));
         sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
-        sample.setAnnotationSets(validateAnnotationSets(sample.getAnnotationSets()));
         sample.setStats(ParamUtils.defaultObject(sample.getStats(), Collections.emptyMap()));
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
         sample.setStatus(new Status());
@@ -93,6 +92,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        List<VariableSet> variableSetList = validateAnnotationSetsAndFetchAssociatedVariableSets(studyId, sample.getAnnotationSets());
 
         // 1. We check everything can be done
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
@@ -134,7 +135,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         // 2. We create the sample
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
-        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(studyId, sample, options);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(studyId, sample, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
         // 3. We update or create an individual if any..

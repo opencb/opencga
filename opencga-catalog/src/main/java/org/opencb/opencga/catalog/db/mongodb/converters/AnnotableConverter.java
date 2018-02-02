@@ -8,7 +8,10 @@ import org.opencb.opencga.core.models.Annotable;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.VariableSet;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AnnotableConverter<T extends Annotable> extends GenericDocumentComplexConverter<T> {
 
@@ -21,9 +24,31 @@ public class AnnotableConverter<T extends Annotable> extends GenericDocumentComp
         annotationConverter = new AnnotationConverter();
     }
 
-    public Document convertToStorageType(T object, VariableSet variableSet) {
-        // TODO: This method cannot exist because the object will have an array of annotationSets that could be from different variablesets
-        return super.convertToStorageType(object);
+    public Document convertToStorageType(T object, List<VariableSet> variableSetList) {
+        List<Document> documentList = new ArrayList<>();
+
+        if (variableSetList != null && !variableSetList.isEmpty() && object.getAnnotationSets() != null
+                && !object.getAnnotationSets().isEmpty()) {
+
+            Map<Long, VariableSet> variableSetMap = new HashMap<>();
+            for (VariableSet variableSet : variableSetList) {
+                variableSetMap.put(variableSet.getId(), variableSet);
+            }
+
+            for (AnnotationSet annotationSet : object.getAnnotationSets()) {
+                VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
+                if (variableSet != null) {
+                    documentList.addAll(annotationConverter.annotationToDB(variableSet, annotationSet));
+                }
+            }
+        }
+
+        object.setAnnotationSets(null);
+        Document document = super.convertToStorageType(object);
+
+        document.put(ANNOTATION_SETS, documentList);
+
+        return document;
     }
 
     public T convertToDataModelType(Document document, QueryOptions queryOptions) {

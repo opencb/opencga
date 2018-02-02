@@ -85,7 +85,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     }
 
     @Override
-    public QueryResult<Cohort> insert(Cohort cohort, long studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Cohort> insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
@@ -93,9 +94,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
         long newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         cohort.setId(newId);
-        cohort.setAnnotationSets(null);
 
-        Document cohortObject = cohortConverter.convertToStorageType(cohort);
+        Document cohortObject = cohortConverter.convertToStorageType(cohort, variableSetList);
         cohortObject.append(PRIVATE_STUDY_ID, studyId);
         cohortObject.append(PRIVATE_ID, newId);
         if (StringUtils.isNotEmpty(cohort.getCreationDate())) {

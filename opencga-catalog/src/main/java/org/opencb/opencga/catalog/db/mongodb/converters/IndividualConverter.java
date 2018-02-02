@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.VariableSet;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,8 +36,9 @@ public class IndividualConverter extends AnnotableConverter<Individual> {
     }
 
     @Override
-    public Document convertToStorageType(Individual object) {
-        Document document = super.convertToStorageType(object);
+    public Document convertToStorageType(Individual object, List<VariableSet> variableSetList) {
+        Document document = super.convertToStorageType(object, variableSetList);
+
         document.put("id", document.getInteger("id").longValue());
 
         Document father = (Document) document.get("father");

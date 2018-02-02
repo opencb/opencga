@@ -327,8 +327,7 @@ public class SampleMongoDBAdaptorTest {
                 .setName(individualName)
                 .setFamily(individualFamily)
                 .setSamples(Arrays.asList(new Sample().setId(sampleId)));
-        QueryResult<Individual> individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(individual, studyId,
-                queryOptions);
+        QueryResult<Individual> individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(studyId, individual, queryOptions);
 
         // Get the sample
         Query query = new Query()
@@ -387,8 +386,8 @@ public class SampleMongoDBAdaptorTest {
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description", 1);
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(new Cohort("Cohort", Study.Type.COLLECTION, "", "",
-                Collections.singletonList(createResult.first()), 1, null), studyId, null);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort("Cohort", Study.Type.COLLECTION, "", "",
+                Collections.singletonList(createResult.first()), 1, null), null);
 
         thrown.expect(CatalogDBException.class);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
@@ -408,8 +407,8 @@ public class SampleMongoDBAdaptorTest {
             for (int i = 0; i < numThreads; i++) {
                 threads.add(new Thread(() -> {
                     try {
-                        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(new Cohort(cohortName, Study.Type.COLLECTION,
-                                "", "", Collections.emptyList(), 1, null), studyId, null);
+                        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort(cohortName, Study.Type.COLLECTION,
+                                "", "", Collections.emptyList(), 1, null), null);
                     } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();
                     }

@@ -25,7 +25,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.VariableSet;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -137,7 +140,13 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
     void nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
 
-    QueryResult<Individual> insert(Individual individual, long studyId, QueryOptions options) throws CatalogDBException;
+    default QueryResult<Individual> insert(long studyId, Individual individual, QueryOptions options) throws CatalogDBException {
+        individual.setAnnotationSets(Collections.emptyList());
+        return insert(studyId, individual, Collections.emptyList(), options);
+    }
+
+    QueryResult<Individual> insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException;
 
     QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
 

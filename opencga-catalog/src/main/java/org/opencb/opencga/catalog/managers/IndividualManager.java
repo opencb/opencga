@@ -115,7 +115,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(), Individual.AffectationStatus.UNKNOWN));
         individual.setPhenotypes(ParamUtils.defaultObject(individual.getPhenotypes(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
-        individual.setAnnotationSets(validateAnnotationSets(individual.getAnnotationSets()));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
         individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), Collections.emptyList()));
         individual.setStatus(new Status());
@@ -124,6 +123,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
+
+        List<VariableSet> variableSetList = validateAnnotationSetsAndFetchAssociatedVariableSets(studyId, individual.getAnnotationSets());
 
         individual.setRelease(studyManager.getCurrentRelease(studyId));
 
@@ -176,7 +177,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setSamples(sampleList);
 
         // Create the individual
-        QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
+        QueryResult<Individual> queryResult = individualDBAdaptor.insert(studyId, individual, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
         addSampleInformation(queryResult, studyId, userId);

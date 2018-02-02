@@ -92,7 +92,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Individual> insert(Individual individual, long studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Individual> insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException {
         long startQuery = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
@@ -111,9 +112,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
         individual.setId(individualId);
         individual.setVersion(1);
-        individual.setAnnotationSets(null);
 
-        Document individualDocument = individualConverter.convertToStorageType(individual);
+        Document individualDocument = individualConverter.convertToStorageType(individual, variableSetList);
         individualDocument.put(PRIVATE_STUDY_ID, studyId);
 
         // Versioning private parameters

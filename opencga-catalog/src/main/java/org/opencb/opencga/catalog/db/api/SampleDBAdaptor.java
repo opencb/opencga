@@ -25,7 +25,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.VariableSet;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -128,7 +131,13 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
     void nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
 
-    QueryResult<Sample> insert(long studyId, Sample sample, QueryOptions options) throws CatalogDBException;
+    default QueryResult<Sample> insert(long studyId, Sample sample, QueryOptions options) throws CatalogDBException {
+        sample.setAnnotationSets(Collections.emptyList());
+        return insert(studyId, sample, Collections.emptyList(), options);
+    }
+
+    QueryResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException;
 
     QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException;
 

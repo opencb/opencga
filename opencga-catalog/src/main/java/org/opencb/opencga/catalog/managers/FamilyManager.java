@@ -218,10 +218,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
         family.setStatus(new Family.FamilyStatus());
         family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
-        family.setAnnotationSets(validateAnnotationSets(family.getAnnotationSets()));
         family.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
         family.setVersion(1);
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
+
+        List<VariableSet> variableSetList = validateAnnotationSetsAndFetchAssociatedVariableSets(studyId, family.getAnnotationSets());
 
         autoCompleteFamilyMembers(family, studyId, sessionId);
         validateFamily(family);
@@ -230,7 +231,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         createMissingMembers(family, studyId, sessionId);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        QueryResult<Family> queryResult = familyDBAdaptor.insert(family, studyId, options);
+        QueryResult<Family> queryResult = familyDBAdaptor.insert(studyId, family, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.family, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
         addMemberInformation(queryResult, studyId, sessionId);

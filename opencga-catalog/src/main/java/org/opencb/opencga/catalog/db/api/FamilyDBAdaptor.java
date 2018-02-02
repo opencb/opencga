@@ -24,7 +24,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.VariableSet;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -130,7 +133,13 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     void nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
-    QueryResult<Family> insert(Family family, long studyId, QueryOptions options) throws CatalogDBException;
+    default QueryResult<Family> insert(long studyId, Family family, QueryOptions options) throws CatalogDBException {
+        family.setAnnotationSets(Collections.emptyList());
+        return insert(studyId, family, Collections.emptyList(), options);
+    }
+
+    QueryResult<Family> insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException;
 
     QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;
 

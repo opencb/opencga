@@ -89,9 +89,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setCreationDate(TimeUtils.getTime());
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
-        cohort.setAnnotationSets(validateAnnotationSets(cohort.getAnnotationSets()));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
         cohort.setRelease(studyManager.getCurrentRelease(studyId));
+
+        List<VariableSet> variableSetList = validateAnnotationSetsAndFetchAssociatedVariableSets(studyId, cohort.getAnnotationSets());
 
         if (!cohort.getSamples().isEmpty()) {
             Query query = new Query()
@@ -105,7 +106,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
         }
 
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(cohort, studyId, null);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(studyId, cohort, variableSetList, null);
         auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
     }

@@ -91,7 +91,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    public QueryResult<Sample> insert(long studyId, Sample sample, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
@@ -110,9 +111,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         long sampleId = getNewId();
         sample.setId(sampleId);
         sample.setVersion(1);
-        sample.setAnnotationSets(null);
 
-        Document sampleObject = sampleConverter.convertToStorageType(sample);
+        Document sampleObject = sampleConverter.convertToStorageType(sample, variableSetList);
         sampleObject.put(PRIVATE_STUDY_ID, studyId);
 
         // Versioning private parameters

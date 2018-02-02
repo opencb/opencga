@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.VariableSet;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,8 +35,8 @@ public class CohortConverter extends AnnotableConverter<Cohort> {
     }
 
     @Override
-    public Document convertToStorageType(Cohort object) {
-        Document document = super.convertToStorageType(object);
+    public Document convertToStorageType(Cohort object, List<VariableSet> variableSetList) {
+        Document document = super.convertToStorageType(object, variableSetList);
         document.put("id", document.getInteger("id").longValue());
         document.put("samples", convertSamplesToDocument(object.getSamples()));
         return document;

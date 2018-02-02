@@ -481,29 +481,76 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
         return variableTypeMap;
     }
 
-    protected List<AnnotationSet> validateAnnotationSets(List<AnnotationSet> annotationSetList) throws CatalogException {
-        List<AnnotationSet> retAnnotationSetList = new ArrayList<>(annotationSetList.size());
+//    protected List<AnnotationSet> validateAnnotationSets(List<AnnotationSet> annotationSetList) throws CatalogException {
+//        List<AnnotationSet> retAnnotationSetList = new ArrayList<>(annotationSetList.size());
+//
+//        Iterator<AnnotationSet> iterator = annotationSetList.iterator();
+//        while (iterator.hasNext()) {
+//            AnnotationSet originalAnnotSet = iterator.next();
+//            String annotationSetName = originalAnnotSet.getName();
+//            ParamUtils.checkAlias(annotationSetName, "annotationSetName", -1);
+//
+//            // Get the variable set
+//            VariableSet variableSet = studyDBAdaptor.getVariableSet(originalAnnotSet.getVariableSetId(), QueryOptions.empty()).first();
+//
+//            // All the annotationSets the object had in order to check for duplicities assuming all annotationsets have been provided
+//            List<AnnotationSet> annotationSets = retAnnotationSetList;
+//
+//            // Check validity of annotations and duplicities
+//            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, originalAnnotSet, annotationSets);
+//
+//            // Add the annotation to the list of annotations
+//            retAnnotationSetList.add(originalAnnotSet);
+//        }
+//
+//        return retAnnotationSetList;
+//    }
+
+    protected List<VariableSet> validateAnnotationSetsAndFetchAssociatedVariableSets(long studyId, List<AnnotationSet> annotationSetList)
+            throws CatalogException {
+        if (annotationSetList == null || annotationSetList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Get all variableSets
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(studyId,
+                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        if (studyQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Unexpected error: Study " + studyId + " not found");
+        }
+
+        List<VariableSet> variableSetList = studyQueryResult.first().getVariableSets();
+        if (variableSetList == null || variableSetList.isEmpty()) {
+            throw new CatalogException("Impossible annotating variables from a study without VariableSets defined");
+        }
+
+        Map<Long, VariableSet> variableSetMap = new HashMap<>();
+        for (VariableSet variableSet : variableSetList) {
+            variableSetMap.put(variableSet.getId(), variableSet);
+        }
+
+        List<AnnotationSet> consideredAnnotationSetsList = new ArrayList<>(annotationSetList.size());
 
         Iterator<AnnotationSet> iterator = annotationSetList.iterator();
         while (iterator.hasNext()) {
-            AnnotationSet originalAnnotSet = iterator.next();
-            String annotationSetName = originalAnnotSet.getName();
+            AnnotationSet annotationSet = iterator.next();
+            String annotationSetName = annotationSet.getName();
             ParamUtils.checkAlias(annotationSetName, "annotationSetName", -1);
 
             // Get the variable set
-            VariableSet variableSet = studyDBAdaptor.getVariableSet(originalAnnotSet.getVariableSetId(), QueryOptions.empty()).first();
-
-            // All the annotationSets the object had in order to check for duplicities assuming all annotationsets have been provided
-            List<AnnotationSet> annotationSets = retAnnotationSetList;
+            if (!variableSetMap.containsKey(annotationSet.getVariableSetId())) {
+                throw new CatalogException("VariableSetId " + annotationSet.getVariableSetId() + " not found in study " + studyId);
+            }
+            VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
 
             // Check validity of annotations and duplicities
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, originalAnnotSet, annotationSets);
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, consideredAnnotationSetsList);
 
             // Add the annotation to the list of annotations
-            retAnnotationSetList.add(originalAnnotSet);
+            consideredAnnotationSetsList.add(annotationSet);
         }
 
-        return retAnnotationSetList;
+        return variableSetList;
     }
 
     /**

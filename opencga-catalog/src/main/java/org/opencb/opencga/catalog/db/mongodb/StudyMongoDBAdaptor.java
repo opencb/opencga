@@ -159,7 +159,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         for (Cohort cohort : cohorts) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(cohort, study.getId(), options).getErrorMsg();
+            String fileErrorMsg = dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(study.getId(), cohort, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg += cohort.getName() + ":" + fileErrorMsg + ", ";
             }

@@ -24,7 +24,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Cohort;
+import org.opencb.opencga.core.models.VariableSet;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -123,7 +126,13 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     void nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
 
-    QueryResult<Cohort> insert(Cohort cohort, long studyId, QueryOptions options) throws CatalogDBException;
+    default QueryResult<Cohort> insert(long studyId, Cohort cohort, QueryOptions options) throws CatalogDBException {
+        cohort.setAnnotationSets(Collections.emptyList());
+        return insert(studyId, cohort, Collections.emptyList(), options);
+    }
+
+    QueryResult<Cohort> insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException;
 
     QueryResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;
 
