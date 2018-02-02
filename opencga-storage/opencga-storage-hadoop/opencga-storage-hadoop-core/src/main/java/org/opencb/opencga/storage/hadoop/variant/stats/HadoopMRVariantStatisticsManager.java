@@ -59,8 +59,8 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         Class execClass = VariantStatsDriver.class;
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
         String args = VariantStatsDriver.buildCommandLineArgs(
-                HadoopVariantStorageEngine.getArchiveTableName(sc.getStudyId(), dbAdaptor.getConfiguration()),
-                dbAdaptor.getVariantTable(),
+                dbAdaptor.getTableNameGenerator().getArchiveTableName(sc.getStudyId()),
+                dbAdaptor.getTableNameGenerator().getVariantTableName(),
                 sc.getStudyId(), Collections.emptyList(), options);
 
         long startTime = System.currentTimeMillis();

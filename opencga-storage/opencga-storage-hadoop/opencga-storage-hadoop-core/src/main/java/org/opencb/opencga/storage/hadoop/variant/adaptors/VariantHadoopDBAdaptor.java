@@ -55,6 +55,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +82,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final HBaseCredentials credentials;
     private final AtomicReference<StudyConfigurationManager> studyConfigurationManager = new AtomicReference<>(null);
     private final Configuration configuration;
+    private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final GenomeHelper genomeHelper;
     private final AtomicReference<java.sql.Connection> phoenixCon = new AtomicReference<>();
     private final VariantSqlQueryParser queryParser;
@@ -90,15 +92,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
-    public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageConfiguration configuration,
-                                  Configuration conf, CellBaseUtils cellBaseUtils) throws IOException {
-        this(null, credentials, configuration, getHbaseConfiguration(conf, credentials), cellBaseUtils);
-    }
-
     public VariantHadoopDBAdaptor(HBaseManager hBaseManager, HBaseCredentials credentials, StorageConfiguration configuration,
-                                  Configuration conf, CellBaseUtils cellBaseUtils) throws IOException {
+                                  Configuration conf, CellBaseUtils cellBaseUtils, HBaseVariantTableNameGenerator tableNameGenerator)
+            throws IOException {
         this.credentials = credentials;
         this.configuration = conf;
+        this.tableNameGenerator = tableNameGenerator;
         if (hBaseManager == null) {
             this.hBaseManager = new HBaseManager(conf);
         } else {
@@ -110,7 +109,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
         this.studyConfigurationManager.set(
                 new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(credentials.getTable(), conf, options, hBaseManager)));
-        this.variantFileMetadataDBAdaptor = new HadoopVariantFileMetadataDBAdaptor(genomeHelper, hBaseManager);
+        this.variantFileMetadataDBAdaptor = new HadoopVariantFileMetadataDBAdaptor(genomeHelper, hBaseManager, tableNameGenerator);
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
@@ -161,6 +160,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     public String getVariantTable() {
         return variantTable;
+    }
+
+    public String getArchiveTableName(int studyId) {
+        return tableNameGenerator.getArchiveTableName(studyId);
+    }
+
+    public HBaseVariantTableNameGenerator getTableNameGenerator() {
+        return tableNameGenerator;
     }
 
     public static Configuration getHbaseConfiguration(Configuration configuration, HBaseCredentials credentials) {
@@ -349,7 +356,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
             VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
-            String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
+            String tableName = getTableNameGenerator().getArchiveTableName(studyId);
 
             logger.debug("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
             logger.debug("Table name = " + tableName);

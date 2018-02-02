@@ -769,7 +769,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = scm.getStudyConfiguration(STUDY_ID, new QueryOptions()).first();
 
-        String tableName = HadoopVariantStorageEngine.getArchiveTableName(STUDY_ID, dbAdaptor.getConfiguration());
+        String tableName = dbAdaptor.getArchiveTableName(STUDY_ID);
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
 

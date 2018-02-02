@@ -479,7 +479,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
                 if (!pendingFiles.contains(fileId)) {
                     throw new StorageEngineException("File " + fileId + " is not loaded in archive table "
-                            + getArchiveTableName(studyId, options) + "");
+                            + dbAdaptor.getTableNameGenerator().getArchiveTableName(studyId) + "");
                 }
             } else {
                 //If don't skip archive, input fileId must not be pending, because must not be in the archive table.

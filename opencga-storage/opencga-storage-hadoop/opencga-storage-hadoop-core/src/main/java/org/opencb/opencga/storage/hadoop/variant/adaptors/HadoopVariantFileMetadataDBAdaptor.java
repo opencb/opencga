@@ -31,8 +31,9 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,15 +52,20 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantFileMetadataDBAdaptor.class);
 
     private final GenomeHelper genomeHelper;
+    private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final HBaseManager hBaseManager;
     private final ObjectMapper objectMapper;
 
     public HadoopVariantFileMetadataDBAdaptor(Configuration configuration) {
-        this(new GenomeHelper(configuration), null);
+        // FIXME
+        this(new GenomeHelper(configuration), null, new HBaseVariantTableNameGenerator(HBaseVariantTableNameGenerator
+                .getDBNameFromVariantsTableName(new VariantTableHelper(configuration).getAnalysisTableAsString()), configuration));
     }
 
-    public HadoopVariantFileMetadataDBAdaptor(GenomeHelper genomeHelper, HBaseManager hBaseManager) {
+    public HadoopVariantFileMetadataDBAdaptor(GenomeHelper genomeHelper, HBaseManager hBaseManager,
+                                              HBaseVariantTableNameGenerator tableNameGenerator) {
         this.genomeHelper = genomeHelper;
+        this.tableNameGenerator = tableNameGenerator;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         if (hBaseManager == null) {
@@ -92,7 +98,7 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
     }
 
     public Iterator<VariantFileMetadata> iterator(int studyId, List<Integer> fileIds, QueryOptions options) throws IOException {
-        String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
+        String tableName = tableNameGenerator.getArchiveTableName(studyId);
         long start = System.currentTimeMillis();
         Get get = new Get(genomeHelper.getMetaRowKey());
         if (fileIds == null || fileIds.isEmpty()) {
@@ -150,8 +156,7 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
 
     public void update(String studyId, VariantFileMetadata metadata) throws IOException {
         Objects.requireNonNull(metadata);
-        String tableName = HadoopVariantStorageEngine.getArchiveTableName(Integer.parseInt(studyId),
-                genomeHelper.getConf());
+        String tableName = tableNameGenerator.getArchiveTableName(Integer.parseInt(studyId));
         if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
@@ -181,7 +186,7 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
     }
 
     public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
-        String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
+        String tableName = tableNameGenerator.getArchiveTableName(studyId);
         if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
@@ -200,7 +205,7 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
 
     @Override
     public void delete(int study, int file) throws IOException {
-        String tableName = HadoopVariantStorageEngine.getArchiveTableName(study, genomeHelper.getConf());
+        String tableName = tableNameGenerator.getArchiveTableName(study);
 
         Set<Integer> loadedFiles = getLoadedFiles(study);
         loadedFiles.remove(file);
@@ -229,7 +234,7 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
     }
 
     public Set<Integer> getLoadedFiles(int studyId) throws IOException {
-        String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
+        String tableName = tableNameGenerator.getArchiveTableName(studyId);
         if (!hBaseManager.tableExists(tableName)) {
             return new HashSet<>();
         } else {

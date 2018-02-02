@@ -23,7 +23,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
@@ -69,6 +68,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,8 +144,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String VARIANT_TABLE_INDEXES_SKIP = "opencga.variant.table.indexes.skip";
 
     // Archive table configuration
-    public static final String ARCHIVE_TABLE_PREFIX = "opencga.storage.hadoop.variant.archive.table.prefix";
-    public static final String DEFAULT_ARCHIVE_TABLE_PREFIX = "opencga_study_";
     public static final String ARCHIVE_TABLE_COMPRESSION = "opencga.archive.table.compression";
     public static final String ARCHIVE_TABLE_PRESPLIT_SIZE = "opencga.archive.table.presplit.size";
     public static final int DEFAULT_ARCHIVE_TABLE_PRESPLIT_SIZE = 100;
@@ -168,6 +166,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     private HBaseManager hBaseManager;
     private final AtomicReference<VariantHadoopDBAdaptor> dbAdaptor = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(HadoopVariantStorageEngine.class);
+    private HBaseVariantTableNameGenerator tableNameGenerator;
 
     public HadoopVariantStorageEngine() {
 //        variantReaderUtils = new HdfsVariantReaderUtils(conf);
@@ -523,7 +522,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
 
         int studyId = options.getInt(Options.STUDY_ID.key());
-        HBaseCredentials archiveCredentials = buildCredentials(getArchiveTableName(studyId, options));
+        HBaseCredentials archiveCredentials = buildCredentials(getArchiveTableName(studyId));
         MergeMode mergeMode;
         if (connected) {
             StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, null).first();
@@ -594,7 +593,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
 
-            String archiveTable = getArchiveTableName(studyId, options);
+            String archiveTable = getArchiveTableName(studyId);
             HBaseCredentials variantsTable = getDbCredentials();
             String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
             String jar = getJarWithDependencies(options);
@@ -677,7 +676,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         Configuration configuration = getHadoopConfiguration();
                         configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
                         dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration), credentials,
-                                this.configuration, configuration, getCellBaseUtils()));
+                                this.configuration, configuration, getCellBaseUtils(), getTableNameGenerator()));
                     } catch (IOException e) {
                         throw new StorageEngineException("Error creating DB Adapter", e);
                     }
@@ -845,60 +844,18 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * @return Table name
      */
     public String getArchiveTableName(int studyId) {
-        String prefix = getOptions().getString(ARCHIVE_TABLE_PREFIX);
-        if (StringUtils.isEmpty(prefix)) {
-            prefix = DEFAULT_ARCHIVE_TABLE_PREFIX;
-        }
-        return buildTableName(getOptions().getString(HBASE_NAMESPACE, ""),
-                prefix, studyId);
-    }
-
-    /**
-     * Get the archive table name given a StudyId.
-     *
-     * @param studyId Numerical study identifier
-     * @param conf Hadoop configuration with the OpenCGA values.
-     * @return Table name
-     */
-    public static String getArchiveTableName(int studyId, Configuration conf) {
-        String prefix = conf.get(ARCHIVE_TABLE_PREFIX);
-        if (StringUtils.isEmpty(prefix)) {
-            prefix = DEFAULT_ARCHIVE_TABLE_PREFIX;
-        }
-        return buildTableName(conf.get(HBASE_NAMESPACE, ""),
-                prefix, studyId);
-    }
-
-    /**
-     * Get the archive table name given a StudyId.
-     *
-     * @param studyId Numerical study identifier
-     * @param options Options
-     * @return Table name
-     */
-    public static String getArchiveTableName(int studyId, ObjectMap options) {
-        String prefix = options.getString(ARCHIVE_TABLE_PREFIX);
-        if (StringUtils.isEmpty(prefix)) {
-            prefix = DEFAULT_ARCHIVE_TABLE_PREFIX;
-        }
-        return buildTableName(options.getString(HBASE_NAMESPACE, ""),
-                prefix, studyId);
+        return getTableNameGenerator().getArchiveTableName(studyId);
     }
 
     public String getVariantTableName() {
-        return getVariantTableName(dbName, getOptions());
+        return getTableNameGenerator().getVariantTableName();
     }
 
-    public static String getVariantTableName(String table, ObjectMap options) {
-        return buildTableName(options.getString(HBASE_NAMESPACE, ""), "", table);
-    }
-
-    public static String getVariantTableName(String table, Configuration conf) {
-        return buildTableName(conf.get(HBASE_NAMESPACE, ""), "", table);
-    }
-
-    protected static String buildTableName(String namespace, String prefix, int studyId) {
-        return buildTableName(namespace, prefix, String.valueOf(studyId));
+    private HBaseVariantTableNameGenerator getTableNameGenerator() {
+        if (tableNameGenerator == null) {
+            tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, getOptions());
+        }
+        return tableNameGenerator;
     }
 
     public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
@@ -910,33 +867,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             jar = System.getProperty("app.home", "") + "/" + jar;
         }
         return jar;
-    }
-
-    protected static String buildTableName(String namespace, String prefix, String tableName) {
-        StringBuilder sb = new StringBuilder();
-
-        if (StringUtils.isNotEmpty(namespace)) {
-            if (tableName.contains(":")) {
-                if (!tableName.startsWith(namespace + ":")) {
-                    throw new IllegalArgumentException("Wrong namespace : '" + tableName + "'."
-                            + " Namespace mismatches with the read from configuration:" + namespace);
-                } else {
-                    tableName = tableName.substring(tableName.indexOf(':') + 1); // Remove '<namespace>:'
-                }
-            }
-            sb.append(namespace).append(":");
-        }
-        if (StringUtils.isNotEmpty(prefix)) {
-            sb.append(prefix);
-            if (!prefix.endsWith("_")) {
-                sb.append("_");
-            }
-        }
-        sb.append(tableName);
-
-        String fullyQualified = sb.toString();
-        TableName.isLegalFullyQualifiedTableName(fullyQualified.getBytes());
-        return fullyQualified;
     }
 
     public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
