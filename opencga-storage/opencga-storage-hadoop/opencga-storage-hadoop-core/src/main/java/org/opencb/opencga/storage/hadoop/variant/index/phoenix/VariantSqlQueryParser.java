@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
+import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
@@ -548,23 +549,35 @@ public class VariantSqlQueryParser {
                 String file = iterator.next();
                 Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration);
 
-                if (filterValues == null || filterValues.isEmpty()) {
+                sb.append(" ( ");
+                if (isNegated(file)) {
+                    // ( "FILE" IS NULL OR "FILE"[3] != 'N' )
+
+                    sb.append('"');
+                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append("\" IS NULL ");
+
+                    sb.append(" OR ");
+
                     sb.append('"');
                     buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
                     sb.append('"');
-                    if (isNegated(file)) {
-                        sb.append(" IS NULL ");
-                    } else {
-                        sb.append(" IS NOT NULL ");
-                    }
+                    // Arrays in SQL are 1-based.
+                    sb.append('[').append(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX + 1).append(']');
+                    sb.append(" != '").append(VariantOverlappingStatus.NONE.toString()).append('\'');
+
                 } else {
-                    if (isNegated(file)) {
-                        sb.append('"');
-                        buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
-                        sb.append('"');
-                        sb.append(" IS NULL ");
-                    } else {
-                        sb.append(" ( ");
+                    // ( "FILE"[3] = 'N' )
+                    sb.append('"');
+                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append('"');
+                    // Arrays in SQL are 1-based.
+                    sb.append('[').append(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX + 1).append(']');
+                    sb.append(" = '").append(VariantOverlappingStatus.NONE.toString()).append('\'');
+
+                    if (filterValues != null && !filterValues.isEmpty()) {
+                        // ( "FILE"[3] = 'N' AND ( "FILE"[5] = 'FILTER_1' OR "FILE"[5] = 'FILTER_2' ) )
+                        sb.append(" AND ( ");
                         for (int i = 0; i < filterValues.size(); i++) {
                             String filter = checkStringValue(filterValues.get(i));
                             boolean negated = isNegated(filter);
@@ -599,6 +612,7 @@ public class VariantSqlQueryParser {
                         sb.append(" ) ");
                     }
                 }
+                sb.append(" ) ");
                 if (iterator.hasNext()) {
                     if (operation == null) {
                         // This should never happen!

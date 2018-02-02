@@ -435,6 +435,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
             i++;
         }
+        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
         studyEntry.getFiles().add(new FileEntry(fileId, (String) (fileColumn.getElement(FILE_CALL_IDX)), attributes));
     }
 

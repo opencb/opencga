@@ -55,6 +55,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 URI inputFile = getResourceUri("platinum/" + fileName);
                 inputFiles.add(inputFile);
                 studyConfiguration.getFileIds().put(fileName, fileId);
+                studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
                 if (inputFiles.size() == 4) {
                     dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
                     options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyId);
