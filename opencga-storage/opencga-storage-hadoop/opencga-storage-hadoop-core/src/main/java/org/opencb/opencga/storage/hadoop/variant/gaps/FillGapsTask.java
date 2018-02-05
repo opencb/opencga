@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -48,38 +50,30 @@ public class FillGapsTask {
 
     }
 
-    public void fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId, VcfSliceProtos.VcfSlice vcfSlice) {
-        String chromosome = vcfSlice.getChromosome();
-        int position = vcfSlice.getPosition();
+    public void fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId, VcfSliceProtos.VcfSlice nonRefVcfSlice,
+                         VcfSliceProtos.VcfSlice refVcfSlice) {
 
         // Three scenarios:
         //  Overlap with NO_VARIATION,
         //  Overlap with another variant
         //  No overlap
 
-        List<VcfSliceProtos.VcfRecord> overlappingRecords = new ArrayList<>(1);
-        for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
-            int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
-            int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, position);
-            String reference = vcfRecord.getReference();
-            String alternate = vcfRecord.getAlternate();
-            if (overlapsWith(variant, chromosome, start, end)) {
-                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
-                    // Skip this variant
-                    continue;
-                }
-
-                // If the same variant is present for this file in the VcfSlice, the variant is already loaded
-                if (isVariantAlreadyLoaded(variant, vcfSlice, vcfRecord, chromosome, start, end, reference, alternate)) {
-                    // Variant already loaded. Nothing to do!
-                    return;
-                }
-
-                overlappingRecords.add(vcfRecord);
+        List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> overlappingRecords = new ArrayList<>(1);
+        if (nonRefVcfSlice != null) {
+            boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, nonRefVcfSlice, overlappingRecords);
+            if (isVariantAlreadyLoaded) {
+                return;
+            }
+        }
+        if (refVcfSlice != null) {
+            boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, refVcfSlice, overlappingRecords);
+            if (isVariantAlreadyLoaded) {
+                throw new IllegalStateException("Found that the variant " + variant + " was already loaded in refVcfSlice!");
             }
         }
 
         VcfSliceProtos.VcfRecord vcfRecord;
+        VcfSliceProtos.VcfSlice vcfSlice;
         if (overlappingRecords.isEmpty()) {
             // TODO: There was a gap in the gVCF?
             // May happen that the variant to fill is an insertion, and there is no overlapping
@@ -91,18 +85,23 @@ public class FillGapsTask {
             // TODO: What if multiple overlaps?
 
             // Discard ref_blocks
-            List<VcfSliceProtos.VcfRecord> realVariants = overlappingRecords
+            List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> realVariants = overlappingRecords
                     .stream()
-                    .filter(record -> record.getType() != VariantProto.VariantType.NO_VARIATION)
+                    .filter(pair -> pair.getRight().getType() != VariantProto.VariantType.NO_VARIATION)
                     .collect(Collectors.toList());
             // If there is only one real variant, use it
             if (realVariants.size() == 1) {
-                vcfRecord = realVariants.get(0);
+                vcfRecord = realVariants.get(0).getRight();
+                vcfSlice = realVariants.get(0).getLeft();
             } else {
-                throw new IllegalStateException("Found multiple overlaps for variant " + variant + " in file " + fileId);
+                String msg = "Found multiple overlaps for variant " + variant + " in file " + fileId;
+//                throw new IllegalStateException(msg);
+                logger.warn(msg);
+                return;
             }
         } else {
-            vcfRecord = overlappingRecords.get(0);
+            vcfRecord = overlappingRecords.get(0).getRight();
+            vcfSlice = overlappingRecords.get(0).getLeft();
         }
         if (VcfRecordProtoToVariantConverter.getVariantType(vcfRecord.getType()).equals(VariantType.NO_VARIATION)) {
             Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
@@ -131,6 +130,33 @@ public class FillGapsTask {
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
             studyConverter.convert(mergedVariant, put, missingSamples, VARIANT);
         }
+    }
+
+    public boolean getOverlappingVariants(Variant variant, VcfSliceProtos.VcfSlice vcfSlice,
+                                          List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> overlappingRecords) {
+        String chromosome = vcfSlice.getChromosome();
+        int position = vcfSlice.getPosition();
+        for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
+            int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
+            int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, position);
+            String reference = vcfRecord.getReference();
+            String alternate = vcfRecord.getAlternate();
+            if (overlapsWith(variant, chromosome, start, end)) {
+                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
+                    // Skip this variant
+                    continue;
+                }
+
+                // If the same variant is present for this file in the VcfSlice, the variant is already loaded
+                if (isVariantAlreadyLoaded(variant, vcfSlice, vcfRecord, chromosome, start, end, reference, alternate)) {
+                    // Variant already loaded. Nothing to do!
+                    return true;
+                }
+
+                overlappingRecords.add(ImmutablePair.of(vcfSlice, vcfRecord));
+            }
+        }
+        return false;
     }
 
     /**

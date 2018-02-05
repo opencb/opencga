@@ -437,16 +437,18 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             Runtime.getRuntime().addShutdownHook(hook);
 
             // Get files
-            Set<String> fileIds = new HashSet<>();
+            Set<Integer> fileIds = new HashSet<>();
             for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
                 if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
-                    fileIds.add(entry.getKey().toString());
+                    fileIds.add(entry.getKey());
                 }
             }
             if (options.getBoolean("local")) {
                 ProgressLogger progressLogger = new ProgressLogger("Process");
                 VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
                 Scan scan = FillGapsFromArchiveTask.buildScan(
+                        fileIds,
+                        skipReferenceVariants,
                         options.getString(VariantQueryParam.REGION.key()), dbAdaptor.getConfiguration());
                 HBaseDataReader dbReader = new HBaseDataReader(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), scan);
                 DataWriter<Put> writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), getVariantTableName());

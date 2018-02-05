@@ -47,7 +47,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ArchiveTableHelper extends GenomeHelper {
 
     public static final String NON_REF_COLUMN_SUFIX = "_N";
+    public static final byte[] NON_REF_COLUMN_SUFIX_BYTES = Bytes.toBytes(NON_REF_COLUMN_SUFIX);
     public static final String REF_COLUMN_SUFIX = "_R";
+    public static final byte[] REF_COLUMN_SUFIX_BYTES = Bytes.toBytes(REF_COLUMN_SUFIX);
 
     private final Logger logger = LoggerFactory.getLogger(ArchiveTableHelper.class);
     private final AtomicReference<VariantFileMetadata> meta = new AtomicReference<>();
@@ -114,6 +116,22 @@ public class ArchiveTableHelper extends GenomeHelper {
     public static int getFileIdFromNonRefColumnName(byte[] columnName) {
         return Integer.parseInt(Bytes.toString(columnName, 0, columnName.length - NON_REF_COLUMN_SUFIX.length()));
     }
+
+    public static boolean isNonRefColumn(byte[] columnName) {
+        return endsWith(columnName, NON_REF_COLUMN_SUFIX_BYTES);
+    }
+
+    public static boolean isRefColumn(byte[] columnName) {
+        return endsWith(columnName, REF_COLUMN_SUFIX_BYTES);
+    }
+
+    private static boolean endsWith(byte[] columnName, byte[] sufixBytes) {
+        return columnName.length > sufixBytes.length && Bytes.equals(
+                columnName, columnName.length - sufixBytes.length, sufixBytes.length,
+                sufixBytes, 0, sufixBytes.length
+        );
+    }
+
 
     /**
      * Get the archive column name for a file given a VariantFileMetadata.

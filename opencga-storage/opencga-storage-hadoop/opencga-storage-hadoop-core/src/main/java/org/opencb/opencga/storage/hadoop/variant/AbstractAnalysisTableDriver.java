@@ -124,7 +124,10 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         }
 
         postExecution(succeed);
-        getStudyConfigurationManager().close();
+        if (scm != null) {
+            scm.close();
+            scm = null;
+        }
         return succeed ? 0 : 1;
     }
 

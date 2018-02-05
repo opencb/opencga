@@ -231,7 +231,11 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                     remappedSampleData.add(studyEntry.getFiles().get(0).getAttributes().get(StudyEntry.FILTER));
                     break;
                 default:
-                    remappedSampleData.add(sampleData.get(i));
+                    if (sampleData.size() > i) {
+                        remappedSampleData.add(sampleData.get(i));
+                    } else {
+                        remappedSampleData.add("");
+                    }
                     break;
             }
         }
