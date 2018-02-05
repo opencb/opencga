@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -36,8 +37,10 @@ import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,9 +52,18 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
 
     public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^:=^<>~!$]+:)?([^=^<>~!:$]+)([=^<>~!$]+.+)$");
 
+    public static final String ANNOTATION_SETS = "annotationSets";
     public static final String ANNOTATIONS = "annotationSets.annotations";
     public static final String ANNOTATION_SET_NAME = "annotationSets.name";
     public static final String VARIABLE_SET = "annotationSets.variableSetId";
+
+    // Variables used to store additional information in the ObjectMap parameters variable containing the actual action to be performed
+    // over the different AnnotationSets
+    public static final String ANNOTATION_SET_ACTION = "_annotationSetAction";
+    public enum Action {
+        CREATE,
+        UPDATE
+    }
 
     AnnotationSetManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -506,7 +518,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
 //        return retAnnotationSetList;
 //    }
 
-    protected List<VariableSet> validateAnnotationSetsAndFetchAssociatedVariableSets(long studyId, List<AnnotationSet> annotationSetList)
+    protected List<VariableSet> validateNewAnnotationSetsAndExtractVariableSets(long studyId, List<AnnotationSet> annotationSetList)
             throws CatalogException {
         if (annotationSetList == null || annotationSetList.isEmpty()) {
             return Collections.emptyList();
@@ -550,6 +562,145 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             consideredAnnotationSetsList.add(annotationSet);
         }
 
+        return variableSetList;
+    }
+
+    protected List<VariableSet> checkUpdateAnnotationsAndExtractVariableSets(MyResourceId resource, ObjectMap parameters,
+                                                                             AnnotationSetDBAdaptor dbAdaptor)
+            throws CatalogException {
+        List<VariableSet> variableSetList = null;
+
+        if (parameters.containsKey(ANNOTATION_SETS)) {
+            Object annotationSetsObject = parameters.get(ANNOTATION_SETS);
+            if (annotationSetsObject != null) {
+                if (annotationSetsObject instanceof List) {
+                    // This variable will contain the annotationSet list to be updated after applying minor fixes to the data (if required)
+                    List<AnnotationSet> finalAnnotationList = new ArrayList<>();
+
+                    // This variable will contain the actual action to be performed over every different annotation set (update or create)
+                    // AnnotationSetName - Action (CREATE, UPDATE). This will be used by the AnnotationMongoDBAdaptor
+                    Map<String, Action> annotationSetAction = new HashMap<>();
+
+                    // Obtain all the variable sets from the study
+                    QueryResult<Study> studyQueryResult = studyDBAdaptor.get(resource.getStudyId(),
+                            new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+                    if (studyQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("Internal error: Study " + resource.getStudyId() + " not found. Update could not be "
+                                + "performed.");
+                    }
+                    variableSetList = studyQueryResult.first().getVariableSets();
+                    if (variableSetList == null || variableSetList.isEmpty()) {
+                        throw new CatalogException("Cannot annotate anything until at least a VariableSet has been defined in the study");
+                    }
+                    // Create a map variableSetId - VariableSet
+                    Map<Long, VariableSet> variableSetMap = new HashMap<>();
+                    for (VariableSet variableSet : variableSetList) {
+                        variableSetMap.put(variableSet.getId(), variableSet);
+                    }
+
+                    // Get all the annotation sets from the entry
+                    QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(resource.getResourceId(), null,
+                            QueryOptions.empty());
+                    // Create a map annotationSetName - AnnotationSet
+                    Map<String, AnnotationSet> annotationSetMap = new HashMap<>();
+                    List<AnnotationSet> annotationSetList = new ArrayList<>();
+                    if (annotationSetQueryResult != null && annotationSetQueryResult.getNumResults() > 0) {
+                        for (AnnotationSet annotationSet : annotationSetQueryResult.getResult()) {
+                            annotationSetMap.put(annotationSet.getName(), annotationSet);
+                        }
+                        annotationSetList.addAll(annotationSetQueryResult.getResult());
+                    }
+
+
+                    ObjectMapper jsonObjectMapper = new ObjectMapper();
+                    for (Object annotationSetObject : ((List) annotationSetsObject)) {
+                        AnnotationSet annotationSet;
+                        try {
+                            annotationSet = jsonObjectMapper.readValue(jsonObjectMapper.writeValueAsString(annotationSetObject),
+                                    AnnotationSet.class);
+                            annotationSetList.add(annotationSet);
+                        } catch (IOException e) {
+                            logger.error("Could not parse annotation set object {} to annotation set class", annotationSetObject);
+                            throw new CatalogException("Internal error: Could not parse AnnotationSet object to AnnotationSet class. "
+                                    + "Update could not be performed.");
+                        }
+
+                        // Validate that the annotation changes will still keep the annotation sets persistent (if already existed)
+
+                        if (annotationSetMap.containsKey(annotationSet.getName())) {
+                            // The annotationSet already exists so user wants to perform an update of the annotations
+
+                            AnnotationSet annotationSetDB = annotationSetMap.get(annotationSet.getName());
+                            if (annotationSet.getVariableSetId() > 0
+                                    && annotationSet.getVariableSetId() != annotationSetDB.getVariableSetId()) {
+                                throw new CatalogException("The VariableSetId and the AnnotationSetName of the annotation to be updated "
+                                        + "do not match any of the AnnotationSets stored in the DB");
+                            }
+
+                            VariableSet variableSet = variableSetMap.get(annotationSetDB.getVariableSetId());
+                            if (variableSet == null) {
+                                logger.error("Critical error. The AnnotationSet {} from the sample {} from the DB points to "
+                                                + "the non-existing VariableSet {}!!", annotationSet.getName(), resource.getResourceId(),
+                                        annotationSet.getVariableSetId());
+                                throw new CatalogException("Internal error: Something unexpected happened. Please, report the error to "
+                                        + "the OpenCGA admins");
+                            }
+
+                            if (variableSet.isConfidential()) {
+                                authorizationManager.checkStudyPermission(resource.getStudyId(), resource.getUser(),
+                                        StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS, "");
+                            }
+
+                            // Merge the new annotations with the DB annotations
+                            CatalogAnnotationsValidator.mergeNewAnnotations(annotationSetDB, annotationSet.getAnnotations());
+                            // And validate the annotationSet would still be valid
+                            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSetDB, null);
+
+                            // We only keep the annotations that will actually be updated
+                            annotationSetDB.getAnnotations().entrySet()
+                                    .removeIf(annotationEntry -> !annotationSet.getAnnotations().containsKey(annotationEntry.getKey()));
+
+                            // Add the new annotationSet to the list of annotations to be updated
+                            finalAnnotationList.add(annotationSetDB);
+
+                            annotationSetAction.put(annotationSetDB.getName(), Action.UPDATE);
+
+                        } else if (variableSetMap.containsKey(annotationSet.getVariableSetId())) {
+                            // Create new annotationSet
+
+                            if (variableSetMap.get(annotationSet.getVariableSetId()).isConfidential()) {
+                                authorizationManager.checkStudyPermission(resource.getStudyId(), resource.getUser(),
+                                        StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS, "");
+                            }
+
+                            // Validate the new annotationSet
+                            CatalogAnnotationsValidator.checkAnnotationSet(variableSetMap.get(annotationSet.getVariableSetId()),
+                                    annotationSet, annotationSetList);
+
+                            // Add the new annotationSet to the annotationSetList for validation of other annotationSets (if any)
+                            annotationSetList.add(annotationSet);
+
+                            // Add the new annotationSet to the list of annotations to be updated
+                            finalAnnotationList.add(annotationSet);
+
+                            annotationSetAction.put(annotationSet.getName(), Action.CREATE);
+                        } else {
+                            throw new CatalogException("Neither the annotationSetName nor the variableSetId matches an existing "
+                                    + "AnnotationSet to perform an update or a VariableSet to create a new annotation.");
+                        }
+                    }
+
+                    parameters.put(ANNOTATION_SETS, finalAnnotationList);
+                    parameters.put(ANNOTATION_SET_ACTION, annotationSetAction);
+
+                } else {
+                    throw new CatalogException(ANNOTATION_SETS + " must be a list of AnnotationSets");
+                }
+            } else {
+                // Remove AnnotationSets from the parameters
+                parameters.remove(ANNOTATION_SETS);
+            }
+        }
         return variableSetList;
     }
 

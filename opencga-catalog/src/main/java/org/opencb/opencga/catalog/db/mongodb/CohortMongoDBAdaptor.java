@@ -121,8 +121,14 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
     @Override
     public QueryResult<Cohort> update(long cohortId, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(cohortId, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<Cohort> update(long cohortId, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
-        update(new Query(QueryParams.ID.key(), cohortId), parameters, QueryOptions.empty());
+        update(new Query(QueryParams.ID.key(), cohortId), parameters, variableSetList, QueryOptions.empty());
         return endQuery("Update cohort", startTime, get(cohortId, queryOptions));
     }
 
@@ -186,6 +192,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(query, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> cohortParams = new HashMap<>();
 
@@ -223,10 +235,14 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     + "\" instead of \"status\"");
         }
 
+        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.ID.key(), -1L), parameters, variableSetList);
+
         if (!cohortParams.isEmpty()) {
             QueryResult<UpdateResult> update = cohortCollection.update(parseQuery(query, false), new Document("$set", cohortParams), null);
             return endQuery("Update cohort", startTime, Arrays.asList(update.getNumTotalResults()));
         }
+
+        applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, false);
 
         return endQuery("Update cohort", startTime, new QueryResult<>());
     }

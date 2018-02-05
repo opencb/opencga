@@ -222,7 +222,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         family.setVersion(1);
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
-        List<VariableSet> variableSetList = validateAnnotationSetsAndFetchAssociatedVariableSets(studyId, family.getAnnotationSets());
+        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(studyId, family.getAnnotationSets());
 
         autoCompleteFamilyMembers(family, studyId, sessionId);
         validateFamily(family);
@@ -370,8 +370,18 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         MyResourceId resource = getId(entryStr, studyStr, sessionId);
         long familyId = resource.getResourceId();
 
-        authorizationManager.checkFamilyPermission(resource.getStudyId(), familyId, resource.getUser(),
-                FamilyAclEntry.FamilyPermissions.UPDATE);
+        // Check permissions...
+        // Only check write annotation permissions if the user wants to update the annotation sets
+        if (parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            authorizationManager.checkFamilyPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+                    FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS);
+        }
+        // Only check update permissions if the user wants to update anything apart from the annotation sets
+        if ((parameters.size() == 1 && !parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                || parameters.size() > 1) {
+            authorizationManager.checkFamilyPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+                    FamilyAclEntry.FamilyPermissions.UPDATE);
+        }
 
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(familyId, new QueryOptions());
         addMemberInformation(familyQueryResult, resource.getStudyId(), sessionId);
@@ -406,6 +416,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     break;
                 case DESCRIPTION:
                 case ATTRIBUTES:
+                case ANNOTATION_SETS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
@@ -446,12 +457,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, familyDBAdaptor);
+
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudyId()));
         }
 
-        QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters, options);
+        QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.family, familyId, resource.getUser(), parameters, null, null);
 
         addMemberInformation(queryResult, resource.getStudyId(), sessionId);

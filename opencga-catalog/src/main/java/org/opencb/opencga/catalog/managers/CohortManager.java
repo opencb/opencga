@@ -92,7 +92,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
         cohort.setRelease(studyManager.getCurrentRelease(studyId));
 
-        List<VariableSet> variableSetList = validateAnnotationSetsAndFetchAssociatedVariableSets(studyId, cohort.getAnnotationSets());
+        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(studyId, cohort.getAnnotationSets());
 
         if (!cohort.getSamples().isEmpty()) {
             Query query = new Query()
@@ -371,6 +371,20 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkObj(parameters, "Update parameters");
         MyResourceId resource = getId(entryStr, studyStr, sessionId);
 
+        // Check permissions...
+        // Only check write annotation permissions if the user wants to update the annotation sets
+        if (parameters.containsKey(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+                    CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS);
+        }
+        // Only check update permissions if the user wants to update anything apart from the annotation sets
+        if ((parameters.size() == 1 && !parameters.containsKey(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                || parameters.size() > 1) {
+            authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+                    CohortAclEntry.CohortPermissions.UPDATE);
+        }
+
+
         authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 CohortAclEntry.CohortPermissions.UPDATE);
 
@@ -385,6 +399,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 case DESCRIPTION:
                 case SAMPLES:
                 case ATTRIBUTES:
+                case ANNOTATION_SETS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
@@ -410,7 +425,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
         }
 
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.update(resource.getResourceId(), parameters, options);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, cohortDBAdaptor);
+
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.update(resource.getResourceId(), parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, resource.getResourceId(), resource.getUser(), parameters, null, null);
         return queryResult;
     }

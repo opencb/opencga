@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -28,6 +29,7 @@ import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * Created by pfurio on 06/07/16.
@@ -95,6 +97,12 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
      * @throws CatalogDBException when the update could not be done.
      */
     QueryResult<AnnotationSet> updateAnnotationSet(long id, VariableSet variableSet, AnnotationSet annotationSet) throws CatalogDBException;
+
+    QueryResult<T> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException;
+
+    QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException;
 
     /**
      * Deletes the annotation set from the entity.

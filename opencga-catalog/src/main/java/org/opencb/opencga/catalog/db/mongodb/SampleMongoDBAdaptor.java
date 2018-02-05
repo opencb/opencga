@@ -141,8 +141,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
     @Override
     public QueryResult<Sample> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(id, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<Sample> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, queryOptions);
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
         if (update.getNumTotalResults() != 1 && parameters.size() > 0) {
             throw new CatalogDBException("Could not update sample with id " + id);
         }
@@ -154,14 +160,23 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(query, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         Document sampleParameters = parseAndValidateUpdateParams(parameters, query);
+        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.ID.key(), -1L), parameters, variableSetList);
+
         if (sampleParameters.containsKey(QueryParams.STATUS_NAME.key())) {
             query.put(Constants.ALL_VERSIONS, true);
             QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
                     new Document("$set", sampleParameters), new QueryOptions("multi", true));
 
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
             return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
@@ -169,18 +184,19 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             if (!sampleParameters.isEmpty()) {
                 QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
                         new Document("$set", sampleParameters), new QueryOptions("multi", true));
+                applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
 
                 return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {
-            return updateAndCreateNewVersion(query, sampleParameters, queryOptions);
+            return updateAndCreateNewVersion(query, sampleParameters, annotationUpdateMap, queryOptions);
         }
 
         return endQuery("Update sample", startTime, new QueryResult<>());
     }
 
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document sampleParameters, QueryOptions queryOptions)
-            throws CatalogDBException {
+    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document sampleParameters, ObjectMap annotationUpdateMap,
+                                                        QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
@@ -229,6 +245,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
             // Insert the new version document
             sampleCollection.insert(sampleDocument, QueryOptions.empty());
+
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
         }
 
         return endQuery("Update sample", startTime, Arrays.asList(queryResult.getNumTotalResults()));
@@ -329,8 +347,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         if (fileQueryResult.getNumResults() != 0) {
             String msg = "Can't delete Sample " + sampleId + ", still in use in \"sampleId\" array of files : "
                     + fileQueryResult.getResult().stream()
-                            .map(file -> "{ id: " + file.getId() + ", path: \"" + file.getPath() + "\" }")
-                            .collect(Collectors.joining(", ", "[", "]"));
+                    .map(file -> "{ id: " + file.getId() + ", path: \"" + file.getPath() + "\" }")
+                    .collect(Collectors.joining(", ", "[", "]"));
             throw new CatalogDBException(msg);
         }
 
@@ -342,8 +360,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         if (cohortQueryResult.getNumResults() != 0) {
             String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : "
                     + cohortQueryResult.getResult().stream()
-                            .map(cohort -> "{ id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" }")
-                            .collect(Collectors.joining(", ", "[", "]"));
+                    .map(cohort -> "{ id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" }")
+                    .collect(Collectors.joining(", ", "[", "]"));
             throw new CatalogDBException(msg);
         }
     }

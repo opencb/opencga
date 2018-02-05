@@ -323,8 +323,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
     @Override
     public QueryResult<Individual> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(id, parameters, null, queryOptions);
+    }
+
+    @Override
+    public QueryResult<Individual> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, queryOptions);
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
         if (update.getNumTotalResults() != 1 && parameters.size() > 0) {
             throw new CatalogDBException("Could not update individual with id " + id);
         }
@@ -336,17 +342,25 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(query, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
         if (queryOptions.getBoolean(Constants.REFRESH)) {
             updateToLastSampleVersions(query, parameters);
         }
 
         Document individualParameters = parseAndValidateUpdateParams(parameters, query);
+        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.ID.key(), -1L), parameters, variableSetList);
         if (individualParameters.containsKey(QueryParams.STATUS_NAME.key())) {
             query.put(Constants.ALL_VERSIONS, true);
             QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
                     new Document("$set", individualParameters), new QueryOptions("multi", true));
 
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
             return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
@@ -356,10 +370,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                 QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
                         new Document("$set", individualParameters), new QueryOptions("multi", true));
 
+                applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
                 return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {
-            return updateAndCreateNewVersion(query, individualParameters, queryOptions);
+            return updateAndCreateNewVersion(query, individualParameters, annotationUpdateMap, queryOptions);
         }
 
         return endQuery("Update individual", startTime, new QueryResult<Long>());
@@ -397,8 +412,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         parameters.put(QueryParams.SAMPLES.key(), sampleQueryResult.getResult());
     }
 
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document individualParameters, QueryOptions queryOptions)
-            throws CatalogDBException {
+    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document individualParameters, ObjectMap annotationUpdateMap,
+                                                        QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
@@ -446,6 +461,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
             // Insert the new version document
             individualCollection.insert(individualDocument, QueryOptions.empty());
+
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
         }
 
         return endQuery("Update individual", startTime, Arrays.asList(queryResult.getNumTotalResults()));

@@ -124,7 +124,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         long studyId = studyManager.getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
-        List<VariableSet> variableSetList = validateAnnotationSetsAndFetchAssociatedVariableSets(studyId, individual.getAnnotationSets());
+        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(studyId, individual.getAnnotationSets());
 
         individual.setRelease(studyManager.getCurrentRelease(studyId));
 
@@ -467,7 +467,18 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         long studyId = resource.getStudyId();
         long individualId = resource.getResourceId();
 
-        authorizationManager.checkIndividualPermission(studyId, individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE);
+        // Check permissions...
+        // Only check write annotation permissions if the user wants to update the annotation sets
+        if (parameters.containsKey(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), userId,
+                    IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
+        }
+        // Only check update permissions if the user wants to update anything apart from the annotation sets
+        if ((parameters.size() == 1 && !parameters.containsKey(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                || parameters.size() > 1) {
+            authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), userId,
+                    IndividualAclEntry.IndividualPermissions.UPDATE);
+        }
 
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             IndividualDBAdaptor.QueryParams queryParam = IndividualDBAdaptor.QueryParams.getParam(param.getKey());
@@ -551,6 +562,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 case PHENOTYPES:
                 case LIFE_STATUS:
                 case AFFECTATION_STATUS:
+                case ANNOTATION_SETS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
@@ -570,12 +582,14 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), tmpResource.getResourceId());
         }
 
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, individualDBAdaptor);
+
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudyId()));
         }
 
-        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, parameters, options);
+        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
 
         // Add sample information

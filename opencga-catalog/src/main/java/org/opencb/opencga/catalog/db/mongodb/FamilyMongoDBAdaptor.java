@@ -30,10 +30,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.AnnotableMongoDBIterator;
@@ -172,8 +169,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
     @Override
     public QueryResult<Family> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(id, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<Family> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, queryOptions);
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
         if (update.getNumTotalResults() != 1 && parameters.size() > 0) {
             throw new CatalogDBException("Could not update family with id " + id);
         }
@@ -185,17 +188,25 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(query, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
         if (queryOptions.getBoolean(Constants.REFRESH)) {
             updateToLastIndividualVersions(query, parameters);
         }
 
         Document familyParameters = parseAndValidateUpdateParams(parameters, query);
+        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.ID.key(), -1L), parameters, variableSetList);
         if (familyParameters.containsKey(QueryParams.STATUS_NAME.key())) {
             query.put(Constants.ALL_VERSIONS, true);
             QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
                     new Document("$set", familyParameters), new QueryOptions("multi", true));
 
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
             return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
@@ -204,10 +215,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                 QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
                         new Document("$set", familyParameters), new QueryOptions("multi", true));
 
+                applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
                 return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {
-            return updateAndCreateNewVersion(query, familyParameters, queryOptions);
+            return updateAndCreateNewVersion(query, familyParameters, annotationUpdateMap, queryOptions);
         }
 
         return endQuery("Update family", startTime, new QueryResult<>());
@@ -245,7 +257,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         parameters.put(QueryParams.MEMBERS.key(), individualQueryResult.getResult());
     }
 
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document familyParameters, QueryOptions queryOptions)
+    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document familyParameters, ObjectMap annotationUpdateMap, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
 
@@ -293,6 +305,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
             // Insert the new version document
             familyCollection.insert(familyDocument, QueryOptions.empty());
+
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
         }
 
         return endQuery("Update family", startTime, Arrays.asList(queryResult.getNumTotalResults()));

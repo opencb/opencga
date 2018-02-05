@@ -27,6 +27,8 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.AnnotationMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.SampleMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -93,7 +95,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-        List<VariableSet> variableSetList = validateAnnotationSetsAndFetchAssociatedVariableSets(studyId, sample.getAnnotationSets());
+        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(studyId, sample.getAnnotationSets());
 
         // 1. We check everything can be done
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
@@ -474,8 +476,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String userId = userManager.getUserId(sessionId);
         MyResourceId resource = getId(entryStr, studyStr, sessionId);
 
-        authorizationManager.checkSamplePermission(resource.getStudyId(), resource.getResourceId(), userId,
-                SampleAclEntry.SamplePermissions.UPDATE);
+        // Check permissions...
+        // Only check write annotation permissions if the user wants to update the annotation sets
+        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            authorizationManager.checkSamplePermission(resource.getStudyId(), resource.getResourceId(), userId,
+                    SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
+        }
+        // Only check update permissions if the user wants to update anything apart from the annotation sets
+        if ((parameters.size() == 1 && !parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                || parameters.size() > 1) {
+            authorizationManager.checkSamplePermission(resource.getStudyId(), resource.getResourceId(), userId,
+                    SampleAclEntry.SamplePermissions.UPDATE);
+        }
 
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             SampleDBAdaptor.QueryParams queryParam = SampleDBAdaptor.QueryParams.getParam(param.getKey());
@@ -491,6 +503,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 case PHENOTYPES:
                 case STATS:
                 case ATTRIBUTES:
+                case ANNOTATION_SETS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
@@ -581,12 +594,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             parameters.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, sampleDBAdaptor);
+
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudyId()));
         }
 
-        QueryResult<Sample> queryResult = sampleDBAdaptor.update(resource.getResourceId(), parameters, options);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.update(resource.getResourceId(), parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.sample, resource.getResourceId(), userId, parameters, null, null);
 
         addIndividualInformation(queryResult, resource.getStudyId(), options, sessionId);
