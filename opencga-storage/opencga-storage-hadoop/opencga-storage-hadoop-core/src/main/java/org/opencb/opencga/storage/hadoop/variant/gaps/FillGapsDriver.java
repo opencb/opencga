@@ -30,6 +30,7 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariant
 public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
     public static final String FILL_GAPS_OPERATION_NAME = "fill_gaps";
+    public static final String FILL_MISSING_OPERATION_NAME = "fill_missing";
     public static final String FILL_GAPS_INPUT = "fill-gaps.input";
     public static final String FILL_GAPS_INPUT_DEFAULT = "archive";
     private Collection<Integer> samples;
@@ -100,7 +101,7 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected String getJobOperationName() {
-        return FILL_GAPS_OPERATION_NAME;
+        return FillGapsFromArchiveMapper.isFillGaps(getConf()) ? FILL_GAPS_OPERATION_NAME : FILL_MISSING_OPERATION_NAME;
     }
 
     public static void main(String[] args) throws Exception {

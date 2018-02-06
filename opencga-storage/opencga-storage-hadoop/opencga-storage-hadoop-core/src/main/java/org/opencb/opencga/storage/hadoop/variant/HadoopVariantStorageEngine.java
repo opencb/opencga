@@ -86,6 +86,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_GAPS_OPERATION_NAME;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_MISSING_OPERATION_NAME;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -386,7 +387,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         StudyConfigurationManager scm = getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = scm.getStudyConfiguration(study, null).first();
 
-        fillGaps(study, studyConfiguration, studyConfiguration.getIndexedFiles(), Collections.emptyList(), false, options);
+        fillGapsOrMissing(study, studyConfiguration, studyConfiguration.getIndexedFiles(), Collections.emptyList(), false, options);
     }
 
     @Override
@@ -419,11 +420,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         logger.info("FillGaps: Study " + study + ", samples " + samples);
-        fillGaps(study, studyConfiguration, fileIds, sampleIds, true, options);
+        fillGapsOrMissing(study, studyConfiguration, fileIds, sampleIds, true, options);
     }
 
-    private void fillGaps(String study, StudyConfiguration studyConfiguration, Set<Integer> fileIds, List<Integer> sampleIds,
-                          boolean fillGaps, ObjectMap inputOptions) throws StorageEngineException {
+    private void fillGapsOrMissing(String study, StudyConfiguration studyConfiguration, Set<Integer> fileIds, List<Integer> sampleIds,
+                                   boolean fillGaps, ObjectMap inputOptions) throws StorageEngineException {
         ObjectMap options = new ObjectMap(getOptions());
         if (inputOptions != null) {
             options.putAll(inputOptions);
@@ -432,14 +433,20 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         StudyConfigurationManager scm = getStudyConfigurationManager();
         int studyId = studyConfiguration.getStudyId();
 
+        String jobOperationName = fillGaps ? FILL_GAPS_OPERATION_NAME : FILL_MISSING_OPERATION_NAME;
+        List<Integer> fileIdsList = new ArrayList<>(fileIds);
+        fileIdsList.sort(Integer::compareTo);
+
         scm.lockAndUpdate(study, sc -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             StudyConfigurationManager.addBatchOperation(
                     sc,
-                    FILL_GAPS_OPERATION_NAME,
-                    Collections.emptyList(),
+                    jobOperationName,
+                    fileIdsList,
                     resume,
-                    BatchFileOperation.Type.OTHER);
+                    BatchFileOperation.Type.OTHER,
+                    // Allow concurrent operations if fillGaps.
+                    (v) -> fillGaps);
 
             return sc;
         });
@@ -504,7 +511,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
                 long startTime = System.currentTimeMillis();
                 logger.info("------------------------------------------------------");
-                logger.info("Fill gaps of samples {} into variants table '{}'", sampleIds, getVariantTableName());
+                logger.info("Fill gaps of samples {} into variants table '{}'",
+                        fillGaps ? sampleIds.toString() : "\"ALL\"", getVariantTableName());
                 logger.debug(executable + ' ' + args);
                 logger.info("------------------------------------------------------");
                 int exitValue = getMRExecutor(options).run(executable, args);
@@ -524,7 +532,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             scm.lockAndUpdate(study, sc -> {
                 StudyConfigurationManager.setStatus(sc,
                         fail ? BatchFileOperation.Status.ERROR : BatchFileOperation.Status.READY,
-                        FILL_GAPS_OPERATION_NAME, Collections.emptyList());
+                        jobOperationName, fileIdsList);
                 if (StringUtils.isEmpty(options.getString(VariantQueryParam.REGION.key()))) {
                     sc.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
                 }
