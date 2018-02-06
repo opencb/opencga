@@ -382,7 +382,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void fillMissing(String study, ObjectMap options) throws StorageEngineException {
         logger.info("FillMissing: Study " + study);
-        fillGaps(study, Collections.emptyList(), false, options);
+
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        StudyConfiguration studyConfiguration = scm.getStudyConfiguration(study, null).first();
+
+        fillGaps(study, studyConfiguration, studyConfiguration.getIndexedFiles(), Collections.emptyList(), false, options);
     }
 
     @Override
@@ -393,20 +397,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             throw new IllegalArgumentException("Unable to execute fill gaps operation with more than "
                     + FILL_GAPS_MAX_SAMPLES + " samples.");
         }
-        logger.info("FillGaps: Study " + study + ", samples " + samples);
-        fillGaps(study, samples, true, options);
-    }
-
-    private void fillGaps(String study, List<String> samples, boolean fillGaps, ObjectMap inputOptions)
-            throws StorageEngineException {
-        ObjectMap options = new ObjectMap(getOptions());
-        if (inputOptions != null) {
-            options.putAll(inputOptions);
-        }
 
         StudyConfigurationManager scm = getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = scm.getStudyConfiguration(study, null).first();
-        int studyId = studyConfiguration.getStudyId();
         List<Integer> sampleIds = new ArrayList<>(samples.size());
         for (String sample : samples) {
             Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, studyConfiguration);
@@ -416,6 +409,28 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getStudyName());
             }
         }
+
+        // Get files
+        Set<Integer> fileIds = new HashSet<>();
+        for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+            if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
+                fileIds.add(entry.getKey());
+            }
+        }
+
+        logger.info("FillGaps: Study " + study + ", samples " + samples);
+        fillGaps(study, studyConfiguration, fileIds, sampleIds, true, options);
+    }
+
+    private void fillGaps(String study, StudyConfiguration studyConfiguration, Set<Integer> fileIds, List<Integer> sampleIds,
+                          boolean fillGaps, ObjectMap inputOptions) throws StorageEngineException {
+        ObjectMap options = new ObjectMap(getOptions());
+        if (inputOptions != null) {
+            options.putAll(inputOptions);
+        }
+
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        int studyId = studyConfiguration.getStudyId();
 
         scm.lockAndUpdate(study, sc -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
@@ -434,23 +449,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
 
-            // Get files
-            Set<Integer> fileIds = new HashSet<>();
-            for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-                if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
-                    fileIds.add(entry.getKey());
-                }
-            }
             if (options.getBoolean("local")) {
                 ProgressLogger progressLogger = new ProgressLogger("Process");
                 VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
                 Scan scan;
                 if (fillGaps) {
-                    scan = FillGapsFromArchiveTask2.buildScan(
+                    scan = FillGapsFromArchiveTask.buildScan(
                             fileIds,
                             options.getString(VariantQueryParam.REGION.key()), dbAdaptor.getConfiguration());
                 } else {
                     scan = FillMissingFromArchiveTask.buildScan(
+                            fileIds,
                             options.getString(VariantQueryParam.REGION.key()), dbAdaptor.getConfiguration());
                 }
                 logger.info("Scan archive table " + getArchiveTableName(studyId) + " with scan " + scan.toString(50));
@@ -462,7 +471,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         () -> {
                             AbstractFillFromArchiveTask task;
                             if (fillGaps) {
-                                task = new FillGapsFromArchiveTask2(dbAdaptor.getHBaseManager(),
+                                task = new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(),
                                         getVariantTableName(), getArchiveTableName(studyId), studyConfiguration,
                                         dbAdaptor.getGenomeHelper(), sampleIds);
                             } else {
@@ -495,7 +504,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
                 long startTime = System.currentTimeMillis();
                 logger.info("------------------------------------------------------");
-                logger.info("Fill gaps of samples {} into variants table '{}'", samples, getVariantTableName());
+                logger.info("Fill gaps of samples {} into variants table '{}'", sampleIds, getVariantTableName());
                 logger.debug(executable + ' ' + args);
                 logger.info("------------------------------------------------------");
                 int exitValue = getMRExecutor(options).run(executable, args);
@@ -503,13 +512,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 logger.info("Exit value: {}", exitValue);
                 logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
                 if (exitValue != 0) {
-                    throw new StorageEngineException("Error filling gaps for samples " + samples);
+                    throw new StorageEngineException("Error filling gaps for samples " + sampleIds);
                 }
             }
 
         } catch (RuntimeException | ExecutionException e) {
             exception = e;
-            throw new StorageEngineException("Error filling gaps for samples " + samples, e);
+            throw new StorageEngineException("Error filling gaps for samples " + sampleIds, e);
         } finally {
             boolean fail = exception != null;
             scm.lockAndUpdate(study, sc -> {

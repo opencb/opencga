@@ -22,16 +22,16 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillGapsFromArchiveTask2 extends AbstractFillFromArchiveTask {
+public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
     protected final Map<Integer, byte[]> fileToRefColumnMap;
 
-    public FillGapsFromArchiveTask2(HBaseManager hBaseManager,
-                                    String variantsTableName,
-                                    String archiveTableName,
-                                    StudyConfiguration studyConfiguration,
-                                    GenomeHelper helper,
-                                    Collection<Integer> samples) {
+    public FillGapsFromArchiveTask(HBaseManager hBaseManager,
+                                   String variantsTableName,
+                                   String archiveTableName,
+                                   StudyConfiguration studyConfiguration,
+                                   GenomeHelper helper,
+                                   Collection<Integer> samples) {
         super(hBaseManager, variantsTableName, archiveTableName, studyConfiguration, helper, samples, false);
 
 

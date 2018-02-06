@@ -12,10 +12,12 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -86,8 +88,16 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
         }
     }
 
-    public static Scan buildScan(String regionStr, Configuration conf) {
-        return AbstractFillFromArchiveTask.buildScan(regionStr, conf);
+    public static Scan buildScan(Collection<Integer> fileIds, String regionStr, Configuration conf) {
+        Scan scan = AbstractFillFromArchiveTask.buildScan(regionStr, conf);
+
+
+        GenomeHelper helper = new GenomeHelper(conf);
+        for (Integer fileId : fileIds) {
+            scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
+        }
+
+        return scan;
     }
 
 }

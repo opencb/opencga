@@ -68,7 +68,9 @@ public class FillGapsTask {
         if (refVcfSlice != null) {
             boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, refVcfSlice, overlappingRecords);
             if (isVariantAlreadyLoaded) {
-                throw new IllegalStateException("Found that the variant " + variant + " was already loaded in refVcfSlice!");
+                String msg = "Found that the variant " + variant + " was already loaded in refVcfSlice!";
+//                throw new IllegalStateException(msg);
+                logger.warn(msg);
             }
         }
 

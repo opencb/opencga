@@ -59,9 +59,9 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
             // scan
             Scan scan;
             if (FillGapsFromArchiveMapper.isFillGaps(getConf())) {
-                scan = FillGapsFromArchiveTask2.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
+                scan = FillGapsFromArchiveTask.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
             } else {
-                scan = FillMissingFromArchiveTask.buildScan(getConf().get(VariantQueryParam.REGION.key()), getConf());
+                scan = FillMissingFromArchiveTask.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
             }
             logger.info("Scan archive table " + archiveTableName + " with scan " + scan.toString(50));
 
