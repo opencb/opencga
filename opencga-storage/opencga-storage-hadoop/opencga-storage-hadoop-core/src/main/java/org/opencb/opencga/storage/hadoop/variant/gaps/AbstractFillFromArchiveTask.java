@@ -134,7 +134,7 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             // New variants?
             for (Variant variant : context.getNewVariants()) {
                 // New variants has to be filled with all files
-                variantsToFill.put(variant, new HashSet<>(context.getFileIds()));
+                variantsToFill.put(variant, new HashSet<>(context.getAllFiles()));
             }
         }
 
@@ -159,10 +159,10 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
                 continue;
             }
 
+            Set<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
             for (Variant variant : variants) {
                 Put put = putsMap.computeIfAbsent(variant, v -> new Put(VariantPhoenixKeyFactory.generateVariantRowKey(v)));
 
-                Set<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
                 fillGapsTask.fillGaps(variant, sampleIds, put, fileId, vcfSlicePair.getNonRefVcfSlice(), vcfSlicePair.getRefVcfSlice());
             }
             context.clearVcfSlice(fileId);
@@ -222,7 +222,7 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             newFiles = new TreeSet<>(fileIdsInBatch);
             newFiles.removeAll(processedFiles);
 
-            variants = getVariantsToFill();
+            variants = extractVariantsToFill();
 
             // Do not compute Variant::hashCode
             newVariants = new TreeSet<>(VARIANT_COMPARATOR);
@@ -230,68 +230,27 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             newVariants.removeAll(processedVariants);
         }
 
-        protected abstract List<Variant> getVariantsToFill() throws IOException;
+        protected abstract List<Variant> extractVariantsToFill() throws IOException;
 
         public VcfSlicePair getVcfSlice(int fileId) throws IOException {
             if (!filesMap.containsKey(fileId)) {
+                VcfSlicePair pair = getVcfSlicePairFromResult(fileId);
                 // Check if fileBatch matches with current fileBatch
-                if (fileBatch != rowKeyFactory.getFileBatch(fileId)) {
-                    // This should never happen
-                    logger.warn("Skip VcfSlice for file " + fileId + " in RK " + Bytes.toString(rowKey));
-                    return null;
-                }
-                VcfSlicePair pair = getVcfSlicePairFromResult(result, fileId);
-                if (pair != null) {
-                    logger.debug("Read pair from result for fileId " + fileId + " in RK " + Bytes.toString(rowKey));
-                    filesMap.put(fileId, pair);
-                    return pair;
-                } else {
+                if (pair == null) {
+                    if (fileBatch != rowKeyFactory.getFileBatch(fileId)) {
+                        // This should never happen
+                        logger.warn("Skip VcfSlice for file " + fileId + " in RK " + Bytes.toString(rowKey));
+                    }
                     vcfSliceNotFound(fileId);
                 }
-//
-//                // Read files in order, so we don't have to keep much objects in memory
-//                SortedSet<Integer> allFilesToRead;
-//                if (variants != processedVariants) {
-//                    allFilesToRead = fileIds;
-//                } else {
-//                    allFilesToRead = getNewFiles();
-//                }
-//
-//                List<Integer> filesToRead = new ArrayList<>(ARCHIVE_FILES_READ_BATCH_SIZE);
-//                filesToRead.add(fileId);
-//
-//                for (Integer fileToRead : allFilesToRead) {
-//                    if (!filesMap.containsKey(fileToRead) && fileId != fileToRead) {
-//                        filesToRead.add(fileToRead);
-//                        if (filesToRead.size() >= ARCHIVE_FILES_READ_BATCH_SIZE) {
-//                            break;
-//                        }
-//                    }
-//                }
-//
-//                logger.debug("Fetch files {}", filesToRead);
-//
-//                Get get = new Get(rowKey);
-//                for (Integer fileToRead : filesToRead) {
-//                    get.addColumn(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileToRead));
-//                    if (!skipReferenceVariants) {
-//                        get.addColumn(helper.getColumnFamily(), fileToRefColumnMap.get(fileToRead));
-//                    }
-//                }
-//
-//                Result result = archiveTable.get(get);
-//
-//                for (Integer fileToRead : filesToRead) {
-//                    pair = getVcfSlicePairFromResult(result, fileToRead);
-//                    filesMap.put(fileToRead, pair);
-//                }
+                filesMap.put(fileId, pair);
             }
             return filesMap.get(fileId);
         }
 
         protected abstract void vcfSliceNotFound(int fileId);
 
-        protected abstract VcfSlicePair getVcfSlicePairFromResult(Result result, Integer fileId) throws IOException;
+        protected abstract VcfSlicePair getVcfSlicePairFromResult(Integer fileId) throws IOException;
 
         public VcfSlice parseVcfSlice(byte[] data) throws IOException {
             VcfSlice vcfSlice;
@@ -320,9 +279,7 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             return newFiles;
         }
 
-        public Set<Integer> getFileIds() {
-            return fileIdsInBatch;
-        }
+        public abstract Set<Integer> getAllFiles();
 
         public List<Integer> getProcessedFiles() {
             return processedFiles;

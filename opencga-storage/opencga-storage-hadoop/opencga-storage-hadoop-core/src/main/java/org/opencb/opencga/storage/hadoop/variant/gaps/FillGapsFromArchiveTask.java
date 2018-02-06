@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -11,6 +12,7 @@ import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariant
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 
 import java.io.IOException;
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
     protected final Map<Integer, byte[]> fileToRefColumnMap;
+    private final Integer mainFileBatch;
+    private final Map<Integer, List<Integer>> otherFilesGroupByFilesBatch;
 
     public FillGapsFromArchiveTask(HBaseManager hBaseManager,
                                    String variantsTableName,
@@ -40,12 +44,23 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
             fileToRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getRefColumnName(fileId)));
         }
 
-        Map<Integer, List<Integer>> groupFilesByBatch = fileIds.stream().collect(Collectors.groupingBy(rowKeyFactory::getFileBatch));
-        Integer fileBatch = groupFilesByBatch.entrySet()
-                .stream()
-                .max(Comparator.comparingInt(entry -> entry.getValue().size()))
-                .map(Map.Entry::getKey)
-                .get();
+        mainFileBatch = getMainFileBatch(fileIds, rowKeyFactory);
+
+        otherFilesGroupByFilesBatch = groupFilesByBatch(fileIds, rowKeyFactory);
+        otherFilesGroupByFilesBatch.remove(mainFileBatch);
+    }
+
+    private static Integer getMainFileBatch(Collection<Integer> fileIds, ArchiveRowKeyFactory rowKeyFactory) {
+        Map<Integer, List<Integer>> groupFilesByBatch = groupFilesByBatch(fileIds, rowKeyFactory);
+
+        Integer maxNumFilesInBatch = groupFilesByBatch.values().stream().map(List::size).max(Integer::compareTo).get();
+        // In case of having more than one batch with the same num of files, get the smallest batchFile
+        return groupFilesByBatch.entrySet().stream().filter(entry -> entry.getValue().size() == maxNumFilesInBatch)
+                .min(Comparator.comparingInt(Map.Entry::getKey)).get().getKey();
+    }
+
+    private static Map<Integer, List<Integer>> groupFilesByBatch(Collection<Integer> fileIds, ArchiveRowKeyFactory rowKeyFactory) {
+        return fileIds.stream().collect(Collectors.groupingBy(rowKeyFactory::getFileBatch));
     }
 
     @Override
@@ -55,19 +70,43 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
     private class FillGapsContext extends Context {
 
+        private Map<Integer, Result> results;
+
         protected FillGapsContext(Result result) throws IOException {
             super(result);
         }
 
         @Override
-        protected List<Variant> getVariantsToFill() throws IOException {
+        protected List<Variant> extractVariantsToFill() throws IOException {
+            // If there are files not in the main batch, make an specific get to that batch
+            if (!otherFilesGroupByFilesBatch.isEmpty()) {
+                List<Get> gets = new ArrayList<>(otherFilesGroupByFilesBatch.size());
+                String chromosome = rowKeyFactory.extractChromosomeFromBlockId(Bytes.toString(rowKey));
+                long slice = rowKeyFactory.extractSliceFromBlockId(Bytes.toString(rowKey));
+                for (Map.Entry<Integer, List<Integer>> entry : otherFilesGroupByFilesBatch.entrySet()) {
+                    Integer fileBatch = entry.getKey();
+                    String otherRowKey = rowKeyFactory.generateBlockIdFromSliceAndBatch(fileBatch, chromosome, slice);
+                    Get get = new Get(Bytes.toBytes(otherRowKey));
+                    for (Integer fileId : entry.getValue()) {
+                        get.addColumn(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileId));
+                        get.addColumn(helper.getColumnFamily(), fileToRefColumnMap.get(fileId));
+                    }
+                    gets.add(get);
+                }
+                results = new HashMap<>();
+                for (Result result : archiveTable.get(gets)) {
+                    results.put(rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(result.getRow())), result);
+                }
+                results.put(mainFileBatch, result);
+            } else {
+                results = Collections.singletonMap(mainFileBatch, result);
+            }
+
             // We should fill only the variants from any of the files to fill
             List<Variant> variants = new ArrayList<>();
             for (Integer fileId : fileIds) {
                 VcfSlicePair vcfSlicePair = getVcfSlice(fileId);
-                if (vcfSlicePair == null && rowKeyFactory.getFileBatch(fileId) != fileBatch) {
-                    throw new UnsupportedOperationException("TODO: Read file from a different batch!");
-                }
+
                 if (vcfSlicePair != null && vcfSlicePair.getNonRefVcfSlice() != null) {
                     VcfSliceProtos.VcfSlice vcfSlice = vcfSlicePair.getNonRefVcfSlice();
                     for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
@@ -96,11 +135,16 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
         }
 
         @Override
-        protected VcfSlicePair getVcfSlicePairFromResult(Result result, Integer fileId) throws IOException {
-            VcfSliceProtos.VcfSlice nonRefVcfSlice = parseVcfSlice(result.getValue(helper.getColumnFamily(),
-                    fileToNonRefColumnMap.get(fileId)));
-            VcfSliceProtos.VcfSlice refVcfSlice = parseVcfSlice(result.getValue(helper.getColumnFamily(),
-                    fileToRefColumnMap.get(fileId)));
+        protected VcfSlicePair getVcfSlicePairFromResult(Integer fileId) throws IOException {
+            int thisFileBatch = rowKeyFactory.getFileBatch(fileId);
+            return getVcfSlicePairFromResult(fileId, results.get(thisFileBatch));
+        }
+
+        protected VcfSlicePair getVcfSlicePairFromResult(Integer fileId, Result result) throws IOException {
+            VcfSliceProtos.VcfSlice nonRefVcfSlice = parseVcfSlice(
+                    result.getValue(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileId)));
+            VcfSliceProtos.VcfSlice refVcfSlice = parseVcfSlice(
+                    result.getValue(helper.getColumnFamily(), fileToRefColumnMap.get(fileId)));
 
             if (nonRefVcfSlice == null && refVcfSlice == null) {
                 return null;
@@ -108,16 +152,28 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
                 return new VcfSlicePair(nonRefVcfSlice, refVcfSlice);
             }
         }
+
+        @Override
+        public Set<Integer> getAllFiles() {
+            return fileIds;
+        }
+
     }
 
 
     public static Scan buildScan(Collection<Integer> fileIds, String regionStr, Configuration conf) {
         Scan scan = AbstractFillFromArchiveTask.buildScan(regionStr, conf);
 
+        ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
+        Integer mainFileBatch = getMainFileBatch(fileIds, archiveRowKeyFactory);
+
         GenomeHelper helper = new GenomeHelper(conf);
         for (Integer fileId : fileIds) {
-            scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
-            scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getRefColumnName(fileId)));
+            // Scan files only from the main file batch
+            if (mainFileBatch == archiveRowKeyFactory.getFileBatch(fileId)) {
+                scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
+                scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getRefColumnName(fileId)));
+            }
         }
         return scan;
     }

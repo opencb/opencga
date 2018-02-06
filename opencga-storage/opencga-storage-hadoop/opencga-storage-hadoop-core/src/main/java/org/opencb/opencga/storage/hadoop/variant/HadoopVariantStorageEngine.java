@@ -533,7 +533,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 StudyConfigurationManager.setStatus(sc,
                         fail ? BatchFileOperation.Status.ERROR : BatchFileOperation.Status.READY,
                         jobOperationName, fileIdsList);
-                if (StringUtils.isEmpty(options.getString(VariantQueryParam.REGION.key()))) {
+                if (!fillGaps && StringUtils.isEmpty(options.getString(VariantQueryParam.REGION.key()))) {
                     sc.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
                 }
                 return sc;

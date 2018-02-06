@@ -16,10 +16,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.HOM_REF;
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.buildColumnKey;
@@ -49,7 +46,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
         }
 
         @Override
-        protected List<Variant> getVariantsToFill() throws IOException {
+        protected List<Variant> extractVariantsToFill() throws IOException {
             // Fill all variants from the study. Get variant ids from variants table
 
             List<Variant> variants = new ArrayList<>();
@@ -76,7 +73,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
         }
 
         @Override
-        protected VcfSlicePair getVcfSlicePairFromResult(Result result, Integer fileId) throws IOException {
+        protected VcfSlicePair getVcfSlicePairFromResult(Integer fileId) throws IOException {
             VcfSliceProtos.VcfSlice nonRefVcfSlice = parseVcfSlice(result.getValue(helper.getColumnFamily(),
                     fileToNonRefColumnMap.get(fileId)));
 
@@ -85,6 +82,11 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
             } else {
                 return new VcfSlicePair(nonRefVcfSlice, null);
             }
+        }
+
+        @Override
+        public Set<Integer> getAllFiles() {
+            return fileIdsInBatch;
         }
     }
 

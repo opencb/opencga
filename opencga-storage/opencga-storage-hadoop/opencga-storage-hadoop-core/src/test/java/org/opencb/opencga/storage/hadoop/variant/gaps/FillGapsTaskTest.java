@@ -1,10 +1,11 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
@@ -27,9 +28,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.*;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 
 /**
@@ -39,8 +38,8 @@ import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.pr
  */
 public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
-    @ClassRule
-    public static ExternalResource externalResource = new HadoopExternalResource();
+    @Rule
+    public ExternalResource externalResource = new HadoopExternalResource();
 
     public static void fillGaps(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration,
                                 Collection<Integer> sampleIds) throws Exception {
@@ -126,6 +125,9 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         fillGaps(variantStorageEngine, studyConfiguration, subSamples);
         printVariants(dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first(), dbAdaptor, newOutputUri());
         checkFillGaps(studyConfiguration, dbAdaptor, subSamples);
+
+        checkNewMultiAllelicVariants(dbAdaptor);
+        checkNewMissingPositions(dbAdaptor);
     }
 
 
@@ -163,15 +165,32 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, "?/?");
 
-        Variant v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10297:C:G"), null).first();
+        checkNewMultiAllelicVariants(dbAdaptor);
+        checkNewMissingPositions(dbAdaptor);
+    }
+
+    public void checkNewMultiAllelicVariants(VariantHadoopDBAdaptor dbAdaptor) {
+        Variant v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10297:C:G").append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "?"), null).first();
         assertEquals(1, v.getStudies().get(0).getSecondaryAlternates().size());
         assertEquals("0/1", v.getStudies().get(0).getSampleData("NA12877", "GT"));
         assertEquals("0/2", v.getStudies().get(0).getSampleData("NA12878", "GT"));
 
-        v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10297:C:T"), null).first();
+        v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10297:C:T").append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "?"), null).first();
         assertEquals(1, v.getStudies().get(0).getSecondaryAlternates().size());
         assertEquals("0/2", v.getStudies().get(0).getSampleData("NA12877", "GT"));
         assertEquals("0/1", v.getStudies().get(0).getSampleData("NA12878", "GT"));
+    }
+
+    public void checkNewMissingPositions(VariantHadoopDBAdaptor dbAdaptor) {
+        Variant v;
+        v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10821:T:A").append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "?"), null).first();
+        assertEquals(0, v.getStudies().get(0).getSecondaryAlternates().size());
+        assertEquals("./.", v.getStudies().get(0).getSampleData("NA12878", "GT"));
+        assertEquals("./.", v.getStudies().get(0).getSampleData("NA12880", "GT"));
+
+        v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10635:C:G").append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "?"), null).first();
+        assertEquals(0, v.getStudies().get(0).getSecondaryAlternates().size());
+        assertEquals("./.", v.getStudies().get(0).getSampleData("NA12880", "GT"));
     }
 
     private StudyConfiguration loadPlatinum(ObjectMap extraParams, int max) throws Exception {
