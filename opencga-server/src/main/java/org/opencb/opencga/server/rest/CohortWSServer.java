@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CohortManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
@@ -246,11 +247,22 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohort}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some cohort attributes", position = 4)
-    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
-                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                 @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+    public Response updateByPost(
+            @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Delete a specific annotation set") @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotationSet,
+            @ApiParam(value = "Delete a specific annotation. Format: annotationSetName:variable")
+                @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotation,
+            @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
+            ObjectMap privateMap = new ObjectMap();
+            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), deleteAnnotationSet);
+            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), deleteAnnotation);
+            if (!privateMap.isEmpty()) {
+                params.put(CohortDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), privateMap);
+            }
+
             return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortStr, new ObjectMap(params), queryOptions,
                     sessionId));
         } catch (Exception e) {
@@ -364,7 +376,8 @@ public class CohortWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{cohort}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the cohort", position = 13)
+    @ApiOperation(value = "Create an annotation set for the cohort [DEPRECATED]", position = 13,
+            notes = "Use /{cohort}/update instead")
     public Response annotateSamplePOST(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -411,7 +424,8 @@ public class CohortWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{cohort}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations", position = 15)
+    @ApiOperation(value = "Update the annotations [DEPRECATED]", position = 15,
+            notes = "Use /{cohort}/update instead")
     public Response updateAnnotationGET(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")

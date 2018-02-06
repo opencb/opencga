@@ -73,7 +73,9 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
-        ANNOTATION("annotation", TEXT_ARRAY, "");
+        ANNOTATION("annotation", TEXT_ARRAY, ""),
+
+        PRIVATE_FIELDS(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), TEXT_ARRAY, ""); // Map of other fields
 
         private static Map<String, QueryParams> map;
         static {

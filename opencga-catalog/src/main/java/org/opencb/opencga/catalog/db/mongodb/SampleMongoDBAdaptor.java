@@ -149,7 +149,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumTotalResults() != 1 && parameters.size() > 0) {
+        if (update.getNumTotalResults() != 1 && parameters.size() > 0
+                && !(parameters.size() == 2 && parameters.containsKey(QueryParams.ANNOTATION_SETS.key()))) {
             throw new CatalogDBException("Could not update sample with id " + id);
         }
         Query query = new Query()
@@ -181,11 +182,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         }
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
+
             if (!sampleParameters.isEmpty()) {
                 QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
                         new Document("$set", sampleParameters), new QueryOptions("multi", true));
-                applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
-
                 return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {

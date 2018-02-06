@@ -52,4 +52,15 @@ public class Constants {
      * Boolean indicating if the annotations have to be returned flattened or not. Default: false
      */
     public static final String FLATTENED_ANNOTATIONS = "flattenedAnnotations";
+
+    /**
+     * String containing the annotation set to be removed from a specific entry. /{entry}/update webservices
+     */
+    public static final String DELETE_ANNOTATION_SET = "deleteAnnotationSet";
+
+    /**
+     * String containing the annotation to be removed from a specific entry. /{entry}/update webservices
+     * Usage: annotationSetName:variable
+     */
+    public static final String DELETE_ANNOTATION = "deleteAnnotation";
 }

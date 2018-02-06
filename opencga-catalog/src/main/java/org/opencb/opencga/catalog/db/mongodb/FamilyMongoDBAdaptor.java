@@ -30,7 +30,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.AnnotableMongoDBIterator;
@@ -177,7 +180,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumTotalResults() != 1 && parameters.size() > 0) {
+        if (update.getNumTotalResults() != 1 && parameters.size() > 0
+                && !(parameters.size() == 2 && parameters.containsKey(QueryParams.ANNOTATION_SETS.key()))) {
             throw new CatalogDBException("Could not update family with id " + id);
         }
         Query query = new Query()
@@ -211,11 +215,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         }
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
             if (!familyParameters.isEmpty()) {
                 QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
                         new Document("$set", familyParameters), new QueryOptions("multi", true));
-
-                applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
                 return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {

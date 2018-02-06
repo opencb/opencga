@@ -331,7 +331,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumTotalResults() != 1 && parameters.size() > 0) {
+        if (update.getNumTotalResults() != 1 && parameters.size() > 0
+                && !(parameters.size() == 2 && parameters.containsKey(QueryParams.ANNOTATION_SETS.key()))) {
             throw new CatalogDBException("Could not update individual with id " + id);
         }
         Query query = new Query()
@@ -356,21 +357,19 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         Document individualParameters = parseAndValidateUpdateParams(parameters, query);
         ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.ID.key(), -1L), parameters, variableSetList);
         if (individualParameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
             query.put(Constants.ALL_VERSIONS, true);
             QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
                     new Document("$set", individualParameters), new QueryOptions("multi", true));
-
-            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
             return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
             if (!individualParameters.isEmpty()) {
                 QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
                         new Document("$set", individualParameters), new QueryOptions("multi", true));
-
-                applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
                 return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {

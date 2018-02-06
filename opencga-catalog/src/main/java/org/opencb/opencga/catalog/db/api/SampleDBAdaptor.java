@@ -71,7 +71,9 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
-        ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, "");
+        ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, ""),
+
+        PRIVATE_FIELDS("private", TEXT_ARRAY, ""); // Map of other fields
 
         private static Map<String, QueryParams> map;
         static {

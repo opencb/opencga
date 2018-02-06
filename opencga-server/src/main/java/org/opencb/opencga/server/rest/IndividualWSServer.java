@@ -23,8 +23,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -278,7 +280,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{individual}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the individual", position = 13)
+    @ApiOperation(value = "Create an annotation set for the individual [DEPRECATED]", position = 13,
+            notes = "Use /{individual}/update instead")
     public Response annotateSamplePOST(
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -325,7 +328,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{individual}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations", position = 15)
+    @ApiOperation(value = "Update the annotations [DEPRECATED]", position = 15, notes = "User /{individual}/update instead")
     public Response updateAnnotationGET(
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
@@ -348,6 +351,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
+            @ApiParam(value = "Delete a specific annotation set") @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotationSet,
+            @ApiParam(value = "Delete a specific annotation. Format: annotationSetName:variable")
+                @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotation,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
@@ -359,6 +365,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
             query.remove("updateSampleVersion");
 
             ObjectMap params = new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams));
+
+            ObjectMap privateMap = new ObjectMap();
+            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), deleteAnnotationSet);
+            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), deleteAnnotation);
+            if (!privateMap.isEmpty()) {
+                params.put(IndividualDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), privateMap);
+            }
+
             QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualStr, params,
                     queryOptions, sessionId);
             return createOkResponse(queryResult);

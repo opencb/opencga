@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -49,6 +50,7 @@ import org.slf4j.Logger;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -340,9 +342,18 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             }
         }
 
-        return new ObjectMap()
+        ObjectMap retMap = new ObjectMap()
                 .append(AnnotationSetManager.Action.CREATE.name(), createAnnotations)
                 .append(AnnotationSetManager.Action.UPDATE.name(), updateAnnotations);
+
+        if (parameters.containsKey(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key())) {
+            Map<String, Object> map = parameters.getMap(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key());
+            retMap.put(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), map.get(AnnotationSetManager.Action.DELETE_ANNOTATION.name()));
+            retMap.put(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(),
+                    map.get(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name()));
+        }
+
+        return retMap;
     }
 
     @Deprecated
@@ -471,12 +482,11 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
 
         QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, null, annotationSetName, options);
 
-        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
-        for (Annotable annotable : aggregate.getResult()) {
-            annotationSets.add(annotable.getAnnotationSets().get(0));
+        if (aggregate.getNumResults() == 0) {
+            return endQuery("Get annotation set", startTime, Collections.emptyList());
+        } else {
+            return endQuery("Get annotation set", startTime, aggregate.first().getAnnotationSets());
         }
-
-        return endQuery("Get annotation set", startTime, annotationSets);
     }
 
     public QueryResult<AnnotationSet> getAnnotationSet(AbstractManager.MyResourceId resource, @Nullable String annotationSetName,
@@ -494,7 +504,6 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Get annotation set", startTime, annotationSets);
     }
 
-    // TODO: Continuar por aqui
     private QueryResult<? extends Annotable> commonGetAnnotationSet(long id, Document queryAnnotation, @Nullable String annotationSetName,
                                                                     QueryOptions options) {
         if (options == null) {
@@ -644,7 +653,7 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             return;
         }
 
-        List<Document> documentList = (List<Document>) annotationUpdateMap.get(AnnotationSetManager.Action.CREATE);
+        List<Document> documentList = (List<Document>) annotationUpdateMap.get(AnnotationSetManager.Action.CREATE.name());
         if (documentList != null && !documentList.isEmpty()) {
             // Insert the annotation set in the database
             Document query = new Document(PRIVATE_ID, entryId);
@@ -656,7 +665,7 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             getCollection().update(query, update, null);
         }
 
-        documentList = (List<Document>) annotationUpdateMap.get(AnnotationSetManager.Action.UPDATE);
+        documentList = (List<Document>) annotationUpdateMap.get(AnnotationSetManager.Action.UPDATE.name());
         if (documentList != null && !documentList.isEmpty()) {
             // We go annotation per annotation
             for (Document document : documentList) {
@@ -706,6 +715,48 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
                         throw new CatalogDBException("Internal error. Could not add new annotation to annotationSet");
                     }
                 }
+            }
+        }
+
+        String annotationSetToRemove = (String) annotationUpdateMap.get(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name());
+        if (StringUtils.isNotEmpty(annotationSetToRemove)) {
+            Document queryDocument = new Document(PRIVATE_ID, entryId);
+            if (isVersioned) {
+                queryDocument.append(LAST_OF_VERSION, true);
+            }
+
+            Bson pull = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key(),
+                    new Document(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSetToRemove));
+
+            QueryResult<UpdateResult> update = getCollection().update(queryDocument, pull, new QueryOptions("multi", true));
+            if (update.first().getModifiedCount() < 1) {
+                throw new CatalogDBException("Could not delete the annotation set");
+            }
+        }
+
+        annotationSetToRemove = (String) annotationUpdateMap.get(AnnotationSetManager.Action.DELETE_ANNOTATION.name());
+        if (StringUtils.isNotEmpty(annotationSetToRemove)) {
+            String[] split = StringUtils.split(annotationSetToRemove, ":");
+            if (split.length != 2) {
+                throw new CatalogDBException("Cannot delete annotation " + annotationSetToRemove
+                        + ". The format is annotationSetName:variable.");
+            }
+            String annotationSetName = split[0];
+            String variable = split[1];
+
+            Document queryDocument = new Document(PRIVATE_ID, entryId);
+            if (isVersioned) {
+                queryDocument.append(LAST_OF_VERSION, true);
+            }
+
+            Bson pull = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key(), new Document()
+                    .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSetName)
+                    .append(AnnotationSetParams.ID.key(), Pattern.compile("^" + variable))
+            );
+
+            QueryResult<UpdateResult> update = getCollection().update(queryDocument, pull, new QueryOptions("multi", true));
+            if (update.first().getModifiedCount() < 1) {
+                throw new CatalogDBException("Could not delete the annotation " + annotationSetToRemove);
             }
 
         }

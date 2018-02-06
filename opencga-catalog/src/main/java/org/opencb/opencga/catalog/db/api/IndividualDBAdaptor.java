@@ -80,7 +80,9 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT, ""),
-        ANNOTATION("annotation", TEXT, "");
+        ANNOTATION("annotation", TEXT, ""),
+
+        PRIVATE_FIELDS(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), TEXT_ARRAY, ""); // Map of other fields
 
         private static Map<String, QueryParams> map;
         static {

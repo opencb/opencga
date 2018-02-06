@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -167,6 +168,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the individual references from the family to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
+            @ApiParam(value = "Delete a specific annotation set") @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotationSet,
+            @ApiParam(value = "Delete a specific annotation. Format: annotationSetName:variable")
+                @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotation,
             @ApiParam(value = "params", required = true) FamilyPOST parameters) {
         try {
             queryOptions.put(Constants.REFRESH, refresh);
@@ -174,6 +178,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("updateIndividualVersion");
 
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            ObjectMap privateMap = new ObjectMap();
+            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), deleteAnnotationSet);
+            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), deleteAnnotation);
+            if (!privateMap.isEmpty()) {
+                params.put(FamilyDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), privateMap);
+            }
 
             QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, params, queryOptions,
                     sessionId);
@@ -295,7 +305,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{family}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the family", position = 13)
+    @ApiOperation(value = "Create an annotation set for the family [DEPRECATED]", position = 13,
+            notes = "Use /{family}/update instead")
     public Response annotateFamilyPOST(
             @ApiParam(value = "FamilyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -340,7 +351,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{family}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations", position = 15)
+    @ApiOperation(value = "Update the annotations [DEPRECATED]", position = 15,
+            notes = "Use /{family}/update instead")
     public Response updateAnnotationGET(
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
