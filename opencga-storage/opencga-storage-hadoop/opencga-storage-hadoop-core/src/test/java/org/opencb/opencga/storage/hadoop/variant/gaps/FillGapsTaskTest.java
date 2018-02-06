@@ -89,44 +89,22 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         fillGapsTask.post();
     }
 
-    public static void fillGapsLocalFromArchive(HadoopVariantStorageEngine variantStorageEngine, StudyConfiguration studyConfiguration,
-                                                Collection<Integer> sampleIds, boolean skipReferenceVariants)
-            throws StorageEngineException, IOException {
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        String variantTableName = variantStorageEngine.getVariantTableName();
-        Table variantsTable = dbAdaptor.getHBaseManager().getConnection().getTable(TableName.valueOf(variantTableName));
-        FillGapsFromArchiveTask fillGapsTask = new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(),
-                variantStorageEngine.getVariantTableName(),
-                variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId()),
-                studyConfiguration, dbAdaptor.getGenomeHelper(), sampleIds, skipReferenceVariants);
-        fillGapsTask.pre();
-
-        try (Table table = dbAdaptor.getConnection().getTable(TableName.valueOf(variantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId())))) {
-            Scan scan = FillGapsFromArchiveTask.buildScan();
-            ResultScanner resScan = table.getScanner(scan);
-            for (Result result : resScan) {
-                List<Put> puts = fillGapsTask.apply(Collections.singletonList(result));
-
-                for (Put put : puts) {
-                    if (put != null && !put.isEmpty()) {
-                        variantsTable.put(put);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        variantsTable.close();
-        fillGapsTask.post();
+    @Test
+    public void testFillGapsPlatinumFiles() throws Exception {
+        testFillGapsPlatinumFiles(new ObjectMap());
     }
 
     @Test
-    public void testFillGapsPlatinumFiles() throws Exception {
-        StudyConfiguration studyConfiguration = loadPlatinum(new ObjectMap()
+    public void testFillGapsPlatinumFilesMultiFileBatch() throws Exception {
+        testFillGapsPlatinumFiles(new ObjectMap(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 2));
+    }
+
+    public void testFillGapsPlatinumFiles(ObjectMap options) throws Exception {
+        StudyConfiguration studyConfiguration = loadPlatinum(options
                         .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 4);
 
-        HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
+
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         List<Integer> sampleIds = new ArrayList<>(studyConfiguration.getSampleIds().values());
         sampleIds.sort(Integer::compareTo);

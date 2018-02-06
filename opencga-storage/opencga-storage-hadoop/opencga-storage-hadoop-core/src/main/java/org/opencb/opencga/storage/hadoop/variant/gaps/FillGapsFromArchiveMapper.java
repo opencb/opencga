@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -21,8 +22,8 @@ import java.util.stream.Collectors;
 public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
 
     public static final String SAMPLES = "samples";
-    public static final String SKIP_REFERENCE_VARIANTS = "skipReferenceVariants";
-    private FillGapsFromArchiveTask task;
+    public static final String FILL_GAPS = "fillGaps";
+    private AbstractFillFromArchiveTask task;
 
     public static void setSamples(Job job, Collection<Integer> sampleIds) {
         job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
@@ -38,22 +39,29 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         return samples;
     }
 
-    public static void setSkipReferenceVariants(Job job, boolean skipReferenceVariants) {
-        job.getConfiguration().setBoolean(SKIP_REFERENCE_VARIANTS, skipReferenceVariants);
-    }
-
-    public static boolean getSkipReferenceVariants(Configuration configuration) {
-        return configuration.getBoolean(SKIP_REFERENCE_VARIANTS, false);
+    public static boolean isFillGaps(Configuration configuration) {
+        if (StringUtils.isEmpty(configuration.get(FILL_GAPS))) {
+            throw new IllegalArgumentException("Missing param " + FILL_GAPS);
+        }
+        return configuration.getBoolean(FILL_GAPS, false);
     }
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
-        Collection<Integer> samples = getSamples(context.getConfiguration());
-        boolean skipReferenceVariants = getSkipReferenceVariants(context.getConfiguration());
-        task = new FillGapsFromArchiveTask(getHBaseManager(), getHelper().getAnalysisTableAsString(), getHelper().getArchiveTableAsString(),
-                getStudyConfiguration(), getHelper(),
-                samples, skipReferenceVariants);
+        if (isFillGaps(context.getConfiguration())) {
+            Collection<Integer> samples = getSamples(context.getConfiguration());
+            task = new FillGapsFromArchiveTask2(getHBaseManager(),
+                    getHelper().getAnalysisTableAsString(),
+                    getHelper().getArchiveTableAsString(),
+                    getStudyConfiguration(), getHelper(),
+                    samples);
+        } else {
+            task = new FillMissingFromArchiveTask(getHBaseManager(),
+                    getHelper().getAnalysisTableAsString(),
+                    getHelper().getArchiveTableAsString(),
+                    getStudyConfiguration(), getHelper());
+        }
         task.pre();
     }
 

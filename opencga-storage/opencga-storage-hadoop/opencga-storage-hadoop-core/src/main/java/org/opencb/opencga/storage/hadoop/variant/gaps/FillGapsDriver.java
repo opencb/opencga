@@ -57,9 +57,14 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
         String input = getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT);
         if (input.equalsIgnoreCase("archive")) {
             // scan
-            Scan scan = FillGapsFromArchiveTask.buildScan(getFiles(),
-                    FillGapsFromArchiveMapper.getSkipReferenceVariants(getConf()),
-                    getConf().get(VariantQueryParam.REGION.key()), getConf());
+            Scan scan;
+            if (FillGapsFromArchiveMapper.isFillGaps(getConf())) {
+                scan = FillGapsFromArchiveTask2.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
+            } else {
+                scan = FillMissingFromArchiveTask.buildScan(getConf().get(VariantQueryParam.REGION.key()), getConf());
+            }
+            logger.info("Scan archive table " + archiveTableName + " with scan " + scan.toString(50));
+
             // input
             initMapReduceJob(job, FillGapsFromArchiveMapper.class, archiveTableName, variantTableName, scan);
             job.getConfiguration().setInt(AbstractAnalysisTableDriver.TIMESTAMP, 5); // Not used, but must be defined

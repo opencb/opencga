@@ -28,78 +28,63 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.HOM_REF;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.buildColumnKey;
 
 /**
  * Created on 31/10/17.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithException<Result, Put, IOException> {
+public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.TaskWithException<Result, Put, IOException> {
 
     private static final Comparator<Variant> VARIANT_COMPARATOR = Comparator
             .comparing(Variant::getStart)
             .thenComparing(Variant::getEnd)
             .thenComparing(Variant::compareTo);
-    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
+//    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
 
-    private final HBaseManager hBaseManager;
-    private final String archiveTableName;
-    private final String variantsTableName;
-    private final StudyConfiguration studyConfiguration;
-    private final GenomeHelper helper;
-    private final FillGapsTask fillGapsTask;
-    private final SortedSet<Integer> fileIds;
-    private final boolean fillAllVariants;
-    private final Map<Integer, byte[]> fileToNonRefColumnMap;
-    private final Map<Integer, byte[]> fileToRefColumnMap;
-    private final Logger logger = LoggerFactory.getLogger(FillGapsFromArchiveTask.class);
-    private final ArchiveRowKeyFactory rowKeyFactory;
-    private final boolean skipReferenceVariants;
+    protected final HBaseManager hBaseManager;
+    protected final String archiveTableName;
+    protected final String variantsTableName;
+    protected final StudyConfiguration studyConfiguration;
+    protected final GenomeHelper helper;
+    protected final FillGapsTask fillGapsTask;
+    protected final SortedSet<Integer> fileIds;
+    protected final Map<Integer, byte[]> fileToNonRefColumnMap;
+    protected final Logger logger = LoggerFactory.getLogger(AbstractFillFromArchiveTask.class);
+    protected final ArchiveRowKeyFactory rowKeyFactory;
 
-    private Table variantsTable;
-    private Table archiveTable;
+    protected Table variantsTable;
+    protected Table archiveTable;
 
-    public FillGapsFromArchiveTask(HBaseManager hBaseManager,
-                                   String variantsTableName,
-                                   String archiveTableName,
-                                   StudyConfiguration studyConfiguration,
-                                   GenomeHelper helper,
-                                   Collection<Integer> samples,
-                                   boolean skipReferenceVariants) {
+    protected AbstractFillFromArchiveTask(HBaseManager hBaseManager,
+                                       String variantsTableName,
+                                       String archiveTableName,
+                                       StudyConfiguration studyConfiguration,
+                                       GenomeHelper helper,
+                                       Collection<Integer> samples,
+                                       boolean skipReferenceVariants) {
         this.hBaseManager = hBaseManager;
         this.archiveTableName = archiveTableName;
         this.variantsTableName = variantsTableName;
         this.studyConfiguration = studyConfiguration;
         this.helper = helper;
-        this.skipReferenceVariants = skipReferenceVariants;
 
         fileIds = new TreeSet<>();
         fileToNonRefColumnMap = new HashMap<>();
-        fileToRefColumnMap = new HashMap<>();
-//            Map<Integer, Integer> samplesFileMap = new HashMap<>();
         if (samples == null || samples.isEmpty()) {
             fileIds.addAll(studyConfiguration.getIndexedFiles());
             for (Integer fileId : fileIds) {
                 fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
-                fileToRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getRefColumnName(fileId)));
             }
         } else {
-            for (Integer sample : samples) {
-                for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-                    if (entry.getValue().contains(sample)) {
-                        Integer fileId = entry.getKey();
-//                        samplesFileMap.put(sample, fileId);
-                        fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
-                        fileToRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getRefColumnName(fileId)));
-                        fileIds.add(fileId);
-                        break;
-                    }
+            for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+                Integer fileId = entry.getKey();
+                if (studyConfiguration.getIndexedFiles().contains(fileId) && !Collections.disjoint(entry.getValue(), samples)) {
+                    fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
+                    fileIds.add(fileId);
                 }
             }
         }
-        fillAllVariants = fileIds.size() == studyConfiguration.getIndexedFiles().size();
 
         fillGapsTask = new FillGapsTask(studyConfiguration, helper, skipReferenceVariants);
         rowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
@@ -136,10 +121,6 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
 
     public List<Put> fillGaps(Context context) throws IOException {
         Map<Variant, Set<Integer>> variantsToFill = new TreeMap<>(VARIANT_COMPARATOR);
-//        // If we are filling all variants, read variantsToFill from "_V" , i.e. context.getVariants()
-//        if (fillAllVariants) {
-//
-//        }
 
         // If filling all the files, (i.e. fill missing) we can use the list of already processed variants and files
         if (context.getNewFiles().isEmpty()) {
@@ -196,97 +177,52 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         return puts;
     }
 
-    public Context buildContext(Result result) throws IOException {
+    protected abstract Context buildContext(Result result) throws IOException;
 
-        // TODO: Find list of processed files.
-        // TODO: If fillAllFiles == true, (global fill operation), this can be stored in the StudyConfiguration
-        // if fillAllFiles == true
-        //     processedFiles = studyConfiguration.getXXXX()
-        // TODO: Should we store this for each chunk? Or should we store a timestamp to indicate how updated is this chunk?
-        List<Integer> processedFiles = Collections.emptyList();
-        // TODO: Find list of processed variants
-        List<Variant> processedVariants = Collections.emptyList();
-        return new Context(processedFiles, processedVariants, result);
-    }
-
-    public final class Context {
+    public abstract class Context {
         /** Empty variants (just chr:pos:ref:alt) for the current region. Read from _V. */
-        private final List<Variant> variants;
+        protected final List<Variant> variants;
         /** List of already processed files in this region. */
-        private final List<Integer> processedFiles;
+        protected final List<Integer> processedFiles;
         /** List of already processed variants in this region. */
-        private final List<Variant> processedVariants;
+        protected final List<Variant> processedVariants;
         /** Current rowkey from archive table. */
-        private final byte[] rowKey;
+        protected final byte[] rowKey;
 
         /** Look up map of VcfSlice objects. */
-        private final Map<Integer, VcfSlicePair> filesMap;
-        private final SortedSet<Integer> fileIds;
-        private final SortedSet<Integer> newFiles;
-        private final SortedSet<Variant> newVariants;
-        private final Result result;
-        private final int fileBatch;
+        protected final Map<Integer, VcfSlicePair> filesMap;
+        protected final SortedSet<Integer> fileIdsInBatch;
+        protected final SortedSet<Integer> newFiles;
+        protected final SortedSet<Variant> newVariants;
+        protected final Result result;
+        protected final int fileBatch;
 
-        private Context(List<Integer> processedFiles,
-                        List<Variant> processedVariants, Result result) throws IOException {
-            this.processedFiles = processedFiles;
-            this.processedVariants = processedVariants;
-            this.rowKey = result.getRow();
+        protected Context(Result result) throws IOException {
+             this.rowKey = result.getRow();
             this.result = result;
             fileBatch = rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(rowKey));
-            this.fileIds = new TreeSet<>();
-            for (Integer fileId : FillGapsFromArchiveTask.this.fileIds) {
+            this.fileIdsInBatch = new TreeSet<>();
+            for (Integer fileId : AbstractFillFromArchiveTask.this.fileIds) {
                 if (rowKeyFactory.getFileBatch(fileId) == fileBatch) {
-                    fileIds.add(fileId);
+                    fileIdsInBatch.add(fileId);
                 }
             }
 
             filesMap = new HashMap<>();
 
-            newFiles = new TreeSet<>(fileIds);
+            // TODO: Find list of processed files.
+            // TODO: If fillAllFiles == true, (global fill operation), this can be stored in the StudyConfiguration
+            // if fillAllFiles == true
+            //     processedFiles = studyConfiguration.getXXXX()
+            // TODO: Should we store this for each chunk? Or should we store a timestamp to indicate how updated is this chunk?
+            this.processedFiles = Collections.emptyList();
+            // TODO: Find list of processed variants
+            this.processedVariants = Collections.emptyList();
+
+            newFiles = new TreeSet<>(fileIdsInBatch);
             newFiles.removeAll(processedFiles);
 
-            variants = new ArrayList<>();
-            // If fill all variants from the study, get variant ids from variants table
-            if (fillAllVariants) {
-                Region region = rowKeyFactory.extractRegionFromBlockId(Bytes.toString(result.getRow()));
-
-                // Build scan. Only get variants from the needed region, from this study
-                Scan scan = new Scan();
-                VariantHBaseQueryParser.addRegionFilter(scan, region);
-                scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(buildColumnKey(studyConfiguration.getStudyId(), HOM_REF)));
-
-                try (ResultScanner scanner = variantsTable.getScanner(scan)) {
-                    for (Result variantResult : scanner) {
-                        variants.add(VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(variantResult.getRow()));
-                    }
-                }
-            } else {
-                // Otherwise, we should fill only the variants from any of the files to fill
-                for (Integer fileId : fileIds) {
-                    VcfSlicePair vcfSlicePair = getVcfSlice(fileId);
-                    if (vcfSlicePair == null && rowKeyFactory.getFileBatch(fileId) != fileBatch) {
-                        throw new UnsupportedOperationException("TODO: Read file from a different batch!");
-                    }
-                    if (vcfSlicePair != null && vcfSlicePair.getNonRefVcfSlice() != null) {
-                        VcfSlice vcfSlice = vcfSlicePair.getNonRefVcfSlice();
-                        for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
-                            VariantType variantType = VcfRecordProtoToVariantConverter.getVariantType(vcfRecord.getType());
-                            // Get loaded variants from this VcfSlice
-                            if (isVariantAlreadyLoaded(vcfSlice, vcfRecord)) {
-                                int position = vcfSlice.getPosition();
-                                int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
-                                int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, position);
-
-                                Variant variant = new Variant(vcfSlice.getChromosome(), start, end, vcfRecord.getReference(),
-                                        vcfRecord.getAlternate()).setType(variantType);
-                                variants.add(variant);
-//                                variantsToFill.computeIfAbsent(variant, v -> new HashSet<>(fileIds)).remove(fileId);
-                            }
-                        }
-                    }
-                }
-            }
+            variants = getVariantsToFill();
 
             // Do not compute Variant::hashCode
             newVariants = new TreeSet<>(VARIANT_COMPARATOR);
@@ -294,9 +230,11 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
             newVariants.removeAll(processedVariants);
         }
 
+        protected abstract List<Variant> getVariantsToFill() throws IOException;
+
         public VcfSlicePair getVcfSlice(int fileId) throws IOException {
             if (!filesMap.containsKey(fileId)) {
-                // Check if fileBatch matches with current fileBatch only if
+                // Check if fileBatch matches with current fileBatch
                 if (fileBatch != rowKeyFactory.getFileBatch(fileId)) {
                     // This should never happen
                     logger.warn("Skip VcfSlice for file " + fileId + " in RK " + Bytes.toString(rowKey));
@@ -308,13 +246,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
                     filesMap.put(fileId, pair);
                     return pair;
                 } else {
-                    if (skipReferenceVariants) {
-                        // Not reading Ref column. It may have information, but only reference information
-                        logger.debug("Nothing to read for fileId " + fileId + " in RK " + Bytes.toString(rowKey));
-                    } else {
-                        // We are trying to read Ref and NonRef from this file. There was a gap?
-                        logger.warn("Nothing found for fileId " + fileId + " in RK " + Bytes.toString(rowKey));
-                    }
+                    vcfSliceNotFound(fileId);
                 }
 //
 //                // Read files in order, so we don't have to keep much objects in memory
@@ -357,18 +289,9 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
             return filesMap.get(fileId);
         }
 
-        public VcfSlicePair getVcfSlicePairFromResult(Result result, Integer fileId) throws IOException {
-            VcfSlice nonRefVcfSlice = parseVcfSlice(result.getValue(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileId)));
-            VcfSlice refVcfSlice = null;
-            if (!skipReferenceVariants) {
-                refVcfSlice = parseVcfSlice(result.getValue(helper.getColumnFamily(), fileToRefColumnMap.get(fileId)));
-            }
-            if (nonRefVcfSlice == null && refVcfSlice == null) {
-                return null;
-            } else {
-                return new VcfSlicePair(nonRefVcfSlice, refVcfSlice);
-            }
-        }
+        protected abstract void vcfSliceNotFound(int fileId);
+
+        protected abstract VcfSlicePair getVcfSlicePairFromResult(Result result, Integer fileId) throws IOException;
 
         public VcfSlice parseVcfSlice(byte[] data) throws IOException {
             VcfSlice vcfSlice;
@@ -398,7 +321,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         }
 
         public Set<Integer> getFileIds() {
-            return fileIds;
+            return fileIdsInBatch;
         }
 
         public List<Integer> getProcessedFiles() {
@@ -414,7 +337,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         }
     }
 
-    public class VcfSlicePair {
+    public static class VcfSlicePair {
         private final VcfSlice nonRefVcfSlice;
         private final VcfSlice refVcfSlice;
 
@@ -432,11 +355,7 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         }
     }
 
-    public static Scan buildScan() {
-        return buildScan(Collections.emptyList(), false, null, null);
-    }
-
-    public static Scan buildScan(Collection<Integer> fileIds, boolean skipReferenceVariants, String regionStr, Configuration conf) {
+    protected static Scan buildScan(String regionStr, Configuration conf) {
         Scan scan = new Scan();
         Region region;
         if (StringUtils.isNotEmpty(regionStr)) {
@@ -444,19 +363,14 @@ public class FillGapsFromArchiveTask implements ParallelTaskRunner.TaskWithExcep
         } else {
             region = null;
         }
-        GenomeHelper helper = new GenomeHelper(conf);
-        for (Integer fileId : fileIds) {
-            scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
-            if (!skipReferenceVariants) {
-                scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getRefColumnName(fileId)));
-            }
-        }
+
+        scan.setCacheBlocks(false);
         ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
         VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, 0, archiveRowKeyFactory);
         return scan;
     }
 
-    private static boolean isVariantAlreadyLoaded(VcfSliceProtos.VcfSlice slice, VcfSliceProtos.VcfRecord vcfRecord) {
+    protected static boolean isVariantAlreadyLoaded(VcfSliceProtos.VcfSlice slice, VcfSliceProtos.VcfRecord vcfRecord) {
         VariantType variantType = VcfRecordProtoToVariantConverter.getVariantType(vcfRecord.getType());
         // The variant is not loaded if is a NO_VARIATION (fast check first)
         if (!TARGET_VARIANT_TYPE_SET.contains(variantType)) {
