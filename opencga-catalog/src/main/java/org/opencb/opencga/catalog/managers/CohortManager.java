@@ -369,6 +369,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public QueryResult<Cohort> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Update parameters");
+        parameters = new ObjectMap(parameters);
         MyResourceId resource = getId(entryStr, studyStr, sessionId);
 
         // Check permissions...
@@ -400,6 +401,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 case SAMPLES:
                 case ATTRIBUTES:
                 case ANNOTATION_SETS:
+                case PRIVATE_FIELDS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);

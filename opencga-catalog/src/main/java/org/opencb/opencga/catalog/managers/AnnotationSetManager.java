@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.AnnotationMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -761,6 +762,90 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
                 parameters.remove(ANNOTATION_SETS);
             }
         }
+
+        // Are there any annotations to be deleted?
+        if (parameters.containsKey(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key())
+                && StringUtils.isNotEmpty(
+                        (String) parameters.getMap(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key())
+                                .get(Action.DELETE_ANNOTATION.name()))) {
+            // There are some annotations to be deleted
+            String deleteAnnotationString = (String) parameters.getMap(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key())
+                    .get(Action.DELETE_ANNOTATION.name());
+
+            if (variableSetList == null) {
+                // Obtain all the variable sets from the study
+                QueryResult<Study> studyQueryResult = studyDBAdaptor.get(resource.getStudyId(),
+                        new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+                if (studyQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Internal error: Study " + resource.getStudyId() + " not found. Update could not be "
+                            + "performed.");
+                }
+                variableSetList = studyQueryResult.first().getVariableSets();
+                if (variableSetList == null || variableSetList.isEmpty()) {
+                    throw new CatalogException("Cannot annotate anything until at least a VariableSet has been defined in the study");
+                }
+            }
+
+            // Create a map variableSetId - VariableSet
+            Map<Long, VariableSet> variableSetMap = new HashMap<>();
+            for (VariableSet variableSet : variableSetList) {
+                variableSetMap.put(variableSet.getId(), variableSet);
+            }
+
+            // Get all the annotation sets from the entry
+            QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(resource.getResourceId(), null,
+                    QueryOptions.empty());
+            // Create a map annotationSetName - AnnotationSet
+            Map<String, AnnotationSet> annotationSetMap = new HashMap<>();
+            if (annotationSetQueryResult != null && annotationSetQueryResult.getNumResults() > 0) {
+                for (AnnotationSet annotationSet : annotationSetQueryResult.getResult()) {
+                    annotationSetMap.put(annotationSet.getName(), annotationSet);
+                }
+            }
+
+            for (String deleteAnnotation : StringUtils.split(deleteAnnotationString, ",")) {
+                String[] split = StringUtils.split(deleteAnnotation, ":");
+                if (split.length != 2) {
+                    throw new CatalogException("Cannot delete annotation " + deleteAnnotation
+                            + ". The format is annotationSetName:variable.");
+                }
+
+                String annotationSetName = split[0];
+                AnnotationSet annotationSet = annotationSetMap.get(annotationSetName);
+                if (annotationSet == null) {
+                    throw new CatalogException("Cannot delete annotation from annotationSet " + annotationSetName + ". AnnotationSet not "
+                            + "found");
+                }
+
+                Map<String, Object> annotations = annotationSet.getAnnotations();
+                String[] annotationKeys = StringUtils.split(split[1], ".");
+                for (int i = 0; i < annotationKeys.length; i++) {
+                    String annotationKey = annotationKeys[i];
+
+                    if (i + 1 == annotationKeys.length) {
+                        annotations.remove(annotationKey);
+                    } else {
+                        annotations = (Map<String, Object>) annotations.get(annotationKey);
+                        if (annotations == null) {
+                            throw new CatalogException("Cannot delete annotation " + deleteAnnotation + ". Annotation not found");
+                        }
+                    }
+                }
+            }
+
+            // After applying all the deletions, we now check if all the annotationSets would still be valid
+            for (Map.Entry<String, AnnotationSet> stringAnnotationSetEntry : annotationSetMap.entrySet()) {
+                AnnotationSet annotationSet = stringAnnotationSetEntry.getValue();
+                try {
+                    CatalogAnnotationsValidator.checkAnnotationSet(variableSetMap.get(annotationSet.getVariableSetId()), annotationSet,
+                            null);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot remove required annotation: " + e.getMessage(), e);
+                }
+            }
+        }
+
+
         return variableSetList;
     }
 //

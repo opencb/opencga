@@ -365,6 +365,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     public QueryResult<Family> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Missing parameters");
+        parameters = new ObjectMap(parameters);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         MyResourceId resource = getId(entryStr, studyStr, sessionId);
@@ -417,6 +418,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 case DESCRIPTION:
                 case ATTRIBUTES:
                 case ANNOTATION_SETS:
+                case PRIVATE_FIELDS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);

@@ -460,6 +460,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     public QueryResult<Individual> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "parameters");
+        parameters = new ObjectMap(parameters);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         MyResourceId resource = getId(entryStr, studyStr, sessionId);
@@ -563,6 +564,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 case LIFE_STATUS:
                 case AFFECTATION_STATUS:
                 case ANNOTATION_SETS:
+                case PRIVATE_FIELDS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);

@@ -744,7 +744,12 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             String annotationSetName = split[0];
             String variable = split[1];
 
-            Document queryDocument = new Document(PRIVATE_ID, entryId);
+            Document queryDocument = new Document()
+                    .append(PRIVATE_ID, entryId)
+                    .append(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$elemMatch", new Document()
+                            .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSetName)
+                            .append(AnnotationSetParams.ID.key(), Pattern.compile("^" + variable))
+                    ));
             if (isVersioned) {
                 queryDocument.append(LAST_OF_VERSION, true);
             }
@@ -755,7 +760,7 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             );
 
             QueryResult<UpdateResult> update = getCollection().update(queryDocument, pull, new QueryOptions("multi", true));
-            if (update.first().getModifiedCount() < 1) {
+            if (update.first().getMatchedCount() > 0 && update.first().getModifiedCount() < 1) {
                 throw new CatalogDBException("Could not delete the annotation " + annotationSetToRemove);
             }
 

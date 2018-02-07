@@ -332,7 +332,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
         if (update.getNumTotalResults() != 1 && parameters.size() > 0
-                && !(parameters.size() == 2 && parameters.containsKey(QueryParams.ANNOTATION_SETS.key()))) {
+                && !(parameters.size() <= 3 && parameters.containsKey(QueryParams.ANNOTATION_SETS.key()))) {
             throw new CatalogDBException("Could not update individual with id " + id);
         }
         Query query = new Query()
