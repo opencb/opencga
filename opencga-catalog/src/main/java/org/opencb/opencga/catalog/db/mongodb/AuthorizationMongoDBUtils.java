@@ -109,7 +109,7 @@ public class AuthorizationMongoDBUtils {
         boolean hasStudyPermission = checkUserHasPermission(study, user, groups, studyPermission, false);
 
         if (!checkUserHasPermission(entry, user, groups, entryPermission, hasStudyPermission)) {
-            entry.remove(ANNOTATION_SETS);
+            entry.put(ANNOTATION_SETS, Collections.emptyList());
         } else {
             // Check if the user has the CONFIDENTIAL PERMISSION
             boolean confidential =

@@ -237,7 +237,6 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             }
         }
 
-
         return options;
     }
 

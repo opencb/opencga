@@ -174,6 +174,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
      * @throws CatalogException when the session id is not valid, the user does not have permissions to delete the annotationSet or
      *                          the annotation set name is not valid.
      */
+    @Deprecated
     public QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
                                                                    String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(annotationSetName)) {
@@ -200,6 +201,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
      * @throws CatalogException when the session id is not valid, the user does not have permissions to delete the annotationSet,
      *                          the annotation set name is not valid or any of the annotation names are not valid.
      */
+    @Deprecated
     public QueryResult<AnnotationSet> deleteAnnotations(String id, @Nullable String studyStr, String annotationSetName, String annotations,
                                                         String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(annotations)) {

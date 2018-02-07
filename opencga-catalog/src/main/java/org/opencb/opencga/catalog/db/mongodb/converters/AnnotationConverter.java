@@ -107,7 +107,9 @@ public class AnnotationConverter {
     }
 
     public List<AnnotationSet> fromDBToAnnotation(List<Document> annotationList, QueryOptions options) {
-        if (annotationList == null || annotationList.isEmpty()) {
+        if (annotationList == null) {
+            return null;
+        } else if (annotationList.isEmpty()) {
             return Collections.emptyList();
         }
         if (options == null) {
