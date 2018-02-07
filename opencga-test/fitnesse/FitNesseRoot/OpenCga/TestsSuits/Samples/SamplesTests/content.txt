@@ -37,11 +37,11 @@
 
 !3 Create Second Sample Including Individual And Annotation (Deprecated)
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$sName2", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSet": "$gVariableSetId",  "annotations": {"var_int": "10"}}]}|
+| setBody | {"name" : "$sName2", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSetId": "$gVariableSetId",  "annotations": {"var_int": "10"}}]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/create?sid=$sessionId&study=$study&lazy=false |200|  Content-Type: application/json ||
 |let|sampleId2|js|response.jsonbody.response[0].result[0].id||
-|let||js|response.jsonbody.response[0].result[0].annotationSets[0].annotations[1].value|10|
+|let||js|response.jsonbody.response[0].result[0].annotationSets[0].annotations["var_int"]|10|
 
 !3 Search Individual Created Inside the Sample Using Individual Name
 !|Table: Rest Fixture | $baseURL |
@@ -50,13 +50,13 @@
 
 !3 (Negative) Create Sample Including Individual And Annotation With Invalid Variable Set 
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$sName3", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSet": "variableSetId",  "annotations": {"var_int": "10"}}]}|
+| setBody | {"name" : "$sName3", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSetId": "-10",  "annotations": {"var_int": "10"}}]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/create?sid=$sessionId&study=$study |500|  Content-Type: application/json ||
 
 !3 (Negative) Create Sample Including Annotation With Missing Mandatory Variable
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$sName3", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSet": "$gVariableSetId",  "annotations": {"var_double": "100.5"}}]}|
+| setBody | {"name" : "$sName3", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSetId": "$gVariableSetId",  "annotations": {"var_double": "100.5"}}]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/create?sid=$sessionId&study=$study |500|  Content-Type: application/json |jsonbody.error == 'Missing required variable var_int'|
 
@@ -281,7 +281,7 @@
 !3 Get Sample (Annotation Set MUST NOT Present)
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
-|let||js|!-res="noAnnotationSet";if(response.jsonbody.response[0].result[0]["annotationSets"]) {res = response.jsonbody.response[0].result[0]["annotationSets"];}res;-!|noAnnotationSet|
+|let||js|!-res="noAnnotationSet";if(response.jsonbody.response[0].result[0].annotationSets.length) {res = response.jsonbody.response[0].result[0].annotationSets.length;}res;-!|noAnnotationSet|
 
 !3 Update Sample ACL (add)
 !|Table: Rest Fixture | $baseURL |
@@ -303,7 +303,7 @@
 !3 Get Sample (Annotation Set MUST NOT Present)
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
-|let||js|!-res="noAnnotationSet";if(response.jsonbody.response[0].result[0]["annotationSets"]) {res = response.jsonbody.response[0].result[0]["annotationSets"];}res;-!|noAnnotationSet|
+|let||js|!-res="noAnnotationSet";if(response.jsonbody.response[0].result[0].annotationSets.length) {res = response.jsonbody.response[0].result[0].annotationSets.length;}res;-!|noAnnotationSet|
 
 !3 Update (SET) ACL Sample 2 And Connecting Individual
 !|Table: Rest Fixture | $baseURL |
