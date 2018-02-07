@@ -66,7 +66,9 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute (this replaces old lazy parameter)",
-                    defaultValue = "false", dataType = "boolean", paramType = "query")
+                    defaultValue = "false", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response infoSample(
             @ApiParam(value = "Comma separated list of sample IDs or names up to a maximum of 100", required = true) @PathParam("samples") String samplesStr,
@@ -595,7 +597,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String source;
         public boolean somatic;
         public List<OntologyTerm> phenotypes;
-        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<AnnotationSet> annotationSets;
         public Map<String, Object> stats;
         public Map<String, Object> attributes;
     }
@@ -610,17 +612,17 @@ public class SampleWSServer extends OpenCGAWSServer {
         public IndividualWSServer.IndividualPOST individual;
 
         public Sample toSample(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            List<AnnotationSet> annotationSetList = new ArrayList<>();
-            if (annotationSets != null) {
-                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-                    if (annotationSet != null) {
-                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-                    }
-                }
-            }
+//            List<AnnotationSet> annotationSetList = new ArrayList<>();
+//            if (annotationSets != null) {
+//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+//                    if (annotationSet != null) {
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+//                    }
+//                }
+//            }
 
             return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, type, somatic, 1, 1, annotationSetList, phenotypes, stats, attributes);
+                    description, type, somatic, 1, 1, annotationSets, phenotypes, stats, attributes);
         }
     }
 }

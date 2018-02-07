@@ -115,6 +115,7 @@ public class AnnotationConverter {
         if (options == null) {
             options = new QueryOptions();
         }
+        boolean flattened = options.getBoolean(Constants.FLATTENED_ANNOTATIONS, false);
 
         // Store the include y exclude in HashSet to search efficiently
         Set<String> includeSet = new HashSet<>(options.getAsStringList(QueryOptions.INCLUDE, ","));
@@ -124,143 +125,136 @@ public class AnnotationConverter {
 
         for (Document annotationDocument : annotationList) {
             if (passTheFilters(annotationDocument, includeSet, excludeSet)) {
-                Queue<FromDBToMap> myQueue = new LinkedList<>();
 
-                String[] split = StringUtils.split(annotationDocument.getString(ID), ".");
-                List<Integer> arrayLevel = annotationDocument.get(ARRAY_LEVEL) != null
-                        ? (List<Integer>) annotationDocument.get(ARRAY_LEVEL) : Collections.emptyList();
-                List<Object> countElems = annotationDocument.get(COUNT_ELEMENTS) != null
-                        ? (List<Object>) annotationDocument.get(COUNT_ELEMENTS) : Collections.emptyList();
+                if (flattened) {
+                    // Flattened annotations
+                    String annSetName =
+                            (String) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SET_NAME.key());
+                    long variableSetId = (Long) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
+                    String compoundKey = annSetName + INTERNAL_DELIMITER + variableSetId;
 
-                // We create a new annotation set if the map doesn't still contain the key
-                String annSetName = (String) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SET_NAME.key());
-                long variableSetId = (Long) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
-                String compoundKey = annSetName + INTERNAL_DELIMITER + variableSetId;
+                    if (!annotationSetMap.containsKey(compoundKey)) {
+                        annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>(),
+                                Collections.emptyMap()));
+                    }
 
-                if (!annotationSetMap.containsKey(compoundKey)) {
-                    annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>(),
-                            Collections.emptyMap()));
-                }
+                    annotationSetMap.get(compoundKey).getAnnotations().put(annotationDocument.getString(ID), annotationDocument.get(VALUE));
+                } else {
+                    // Not flattened
+                    Queue<FromDBToMap> myQueue = new LinkedList<>();
 
-                // We provide the map from the annotation set in order to be automatically filled in
-                myQueue.add(new FromDBToMap(Arrays.asList(split), arrayLevel, countElems, annotationDocument.get(VALUE), 0,
-                        annotationSetMap.get(compoundKey).getAnnotations()));
+                    String[] split = StringUtils.split(annotationDocument.getString(ID), ".");
+                    List<Integer> arrayLevel = annotationDocument.get(ARRAY_LEVEL) != null
+                            ? (List<Integer>) annotationDocument.get(ARRAY_LEVEL)
+                            : Collections.emptyList();
 
-                while (!myQueue.isEmpty()) {
-                    FromDBToMap fromDBToMap = myQueue.remove();
-                    Map<String, Object> annotation = fromDBToMap.getAnnotation();
+                    List<Object> countElems = annotationDocument.get(COUNT_ELEMENTS) != null
+                            ? (List<Object>) annotationDocument.get(COUNT_ELEMENTS)
+                            : Collections.emptyList();
 
-                    String key = fromDBToMap.getKeys().get(0);
-                    if (fromDBToMap.getArrayLevel().size() > 0 && fromDBToMap.getArrayLevel().get(0) == fromDBToMap.getDepth()) {
-                        // It is an array
-                        if (fromDBToMap.getKeys().size() == 1) { // It is the last key
-                            Object value = getAnnotationValue(fromDBToMap);
-                            if (value != null) {
-                                annotation.put(key, value);
-                            }
-                        } else {
-                            if (!annotation.containsKey(key)) {
-                                annotation.put(key, new ArrayList<>());
-                            }
-                            // Initialize the required maps inside the array
-                            for (int i = 0; i < ((List) fromDBToMap.getCount()).size(); i++) {
-                                Map<String, Object> auxMap;
-                                if (((List) annotation.get(key)).size() < ((List) fromDBToMap.getCount()).size()) {
-                                    // It is the first time the array is initialised so we create new empty maps
-                                    auxMap = new HashMap<>();
-                                    // We add the map to the list
-                                    ((List) annotation.get(key)).add(auxMap);
-                                } else {
-                                    // We get the map from the position i
-                                    auxMap = (Map<String, Object>) ((List) annotation.get(key)).get(i);
+                    // We create a new annotation set if the map doesn't still contain the key
+                    String annSetName = (String) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SET_NAME
+                            .key());
+                    long variableSetId = (Long) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
+                    String compoundKey = annSetName + INTERNAL_DELIMITER + variableSetId;
+
+                    if (!annotationSetMap.containsKey(compoundKey)) {
+                        annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>(),
+                                Collections.emptyMap()));
+                    }
+
+                    // We provide the map from the annotation set in order to be automatically filled in
+                    myQueue.add(new FromDBToMap(Arrays.asList(split), arrayLevel, countElems, annotationDocument.get(VALUE), 0,
+                            annotationSetMap.get(compoundKey).getAnnotations()));
+
+
+                    while (!myQueue.isEmpty()) {
+                        FromDBToMap fromDBToMap = myQueue.remove();
+                        Map<String, Object> annotation = fromDBToMap.getAnnotation();
+
+                        String key = fromDBToMap.getKeys().get(0);
+                        if (fromDBToMap.getArrayLevel().size() > 0 && fromDBToMap.getArrayLevel().get(0) == fromDBToMap.getDepth()) {
+                            // It is an array
+                            if (fromDBToMap.getKeys().size() == 1) { // It is the last key
+                                Object value = getAnnotationValue(fromDBToMap);
+                                if (value != null) {
+                                    annotation.put(key, value);
                                 }
-
-                                Object value;
-                                List annotationValue = (List) fromDBToMap.getAnnotationValue();
-
-                                Object count = ((List) fromDBToMap.getCount()).get(i);
-                                // count can be a futher list of integers or an integer containing the number of elements to be
-                                // retrieved from the annotation value list
-
-                                if (count instanceof List) {
-                                    // count is a list of integers indicating the number of elements from the annotation value array
-                                    // that goes to every different element of the array
-                                    int total = 0;
-                                    for (Object o : ((List) count)) {
-                                        total += (int) o;
-                                    }
-                                    count = total;
+                            } else {
+                                if (!annotation.containsKey(key)) {
+                                    annotation.put(key, new ArrayList<>());
                                 }
-                                int numberOfElements = (Integer) count;
-
-                                if (numberOfElements > 0) {
-                                    if (fromDBToMap.getArrayLevel().size() > 1) {
-                                        value = annotationValue.subList(0, numberOfElements);
-                                        fromDBToMap.setAnnotationValue(annotationValue.subList(numberOfElements, annotationValue.size()));
+                                // Initialize the required maps inside the array
+                                for (int i = 0; i < ((List) fromDBToMap.getCount()).size(); i++) {
+                                    Map<String, Object> auxMap;
+                                    if (((List) annotation.get(key)).size() < ((List) fromDBToMap.getCount()).size()) {
+                                        // It is the first time the array is initialised so we create new empty maps
+                                        auxMap = new HashMap<>();
+                                        // We add the map to the list
+                                        ((List) annotation.get(key)).add(auxMap);
                                     } else {
-                                        if (numberOfElements > 1) {
-                                            logger.warn("Weird behaviour detected. numberOfElements should never have a value above 1: {}",
-                                                    fromDBToMap);
-                                        }
-                                        value = annotationValue.get(0);
-                                        fromDBToMap.setAnnotationValue(annotationValue.subList(1, annotationValue.size()));
+                                        // We get the map from the position i
+                                        auxMap = (Map<String, Object>) ((List) annotation.get(key)).get(i);
                                     }
 
-                                    myQueue.add(new FromDBToMap(fromDBToMap.getKeys().subList(1, fromDBToMap.getKeys().size()),
-                                            fromDBToMap.getArrayLevel().subList(1, fromDBToMap.getArrayLevel().size()),
-                                            ((List) fromDBToMap.getCount()).get(i), value, fromDBToMap.getDepth() + 1, auxMap));
+                                    Object value;
+                                    List annotationValue = (List) fromDBToMap.getAnnotationValue();
+
+                                    Object count = ((List) fromDBToMap.getCount()).get(i);
+                                    // count can be a futher list of integers or an integer containing the number of elements to be
+                                    // retrieved from the annotation value list
+
+                                    if (count instanceof List) {
+                                        // count is a list of integers indicating the number of elements from the annotation value array
+                                        // that goes to every different element of the array
+                                        int total = 0;
+                                        for (Object o : ((List) count)) {
+                                            total += (int) o;
+                                        }
+                                        count = total;
+                                    }
+                                    int numberOfElements = (Integer) count;
+
+                                    if (numberOfElements > 0) {
+                                        if (fromDBToMap.getArrayLevel().size() > 1) {
+                                            value = annotationValue.subList(0, numberOfElements);
+                                            fromDBToMap.setAnnotationValue(annotationValue.subList(numberOfElements,
+                                                    annotationValue.size()));
+                                        } else {
+                                            if (numberOfElements > 1) {
+                                                logger.warn("Strange behaviour detected. numberOfElements should never have a value above"
+                                                        + " 1: {}", fromDBToMap);
+                                            }
+                                            value = annotationValue.get(0);
+                                            fromDBToMap.setAnnotationValue(annotationValue.subList(1, annotationValue.size()));
+                                        }
+
+                                        myQueue.add(new FromDBToMap(fromDBToMap.getKeys().subList(1, fromDBToMap.getKeys().size()),
+                                                fromDBToMap.getArrayLevel().subList(1, fromDBToMap.getArrayLevel().size()),
+                                                ((List) fromDBToMap.getCount()).get(i), value, fromDBToMap.getDepth() + 1, auxMap));
+
+                                    }
 
                                 }
-
-                            }
-                        }
-                    } else {
-                        // This is the last key
-                        if (fromDBToMap.getKeys().size() == 1) {
-                            Object value = getAnnotationValue(fromDBToMap);
-                            if (value != null) {
-                                annotation.put(key, value);
                             }
                         } else {
-                            if (!annotation.containsKey(key)) {
-                                annotation.put(key, new HashMap<>());
+                            // This is the last key
+                            if (fromDBToMap.getKeys().size() == 1) {
+                                Object value = getAnnotationValue(fromDBToMap);
+                                if (value != null) {
+                                    annotation.put(key, value);
+                                }
+                            } else {
+                                if (!annotation.containsKey(key)) {
+                                    annotation.put(key, new HashMap<>());
+                                }
+                                myQueue.add(new FromDBToMap(fromDBToMap.getKeys().subList(1, fromDBToMap.getKeys().size()),
+                                        fromDBToMap.getArrayLevel(), fromDBToMap.getCount(), fromDBToMap.getAnnotationValue(),
+                                        fromDBToMap.getDepth() + 1, (Map<String, Object>) annotation.get(key)));
                             }
-                            myQueue.add(new FromDBToMap(fromDBToMap.getKeys().subList(1, fromDBToMap.getKeys().size()),
-                                    fromDBToMap.getArrayLevel(), fromDBToMap.getCount(), fromDBToMap.getAnnotationValue(),
-                                    fromDBToMap.getDepth() + 1, (Map<String, Object>) annotation.get(key)));
                         }
                     }
                 }
-
-            }
-        }
-
-        return annotationSetMap.entrySet().stream().map(Map.Entry::getValue).collect(Collectors.toList());
-    }
-
-    public List<AnnotationSet> fromDBToFlattenedAnnotation(List<Document> annotationList, QueryOptions options) {
-        Map<String, AnnotationSet> annotationSetMap = new HashMap<>();
-
-        if (options == null) {
-            options = new QueryOptions();
-        }
-
-        // Store the include y exclude in HashSet to search efficiently
-        Set<String> includeSet = new HashSet<>(options.getAsStringList(QueryOptions.INCLUDE, ","));
-        Set<String> excludeSet = new HashSet<>(options.getAsStringList(QueryOptions.EXCLUDE, ","));
-
-        for (Document annotationDocument : annotationList) {
-            if (passTheFilters(annotationDocument, includeSet, excludeSet)) {
-                String annSetName = (String) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SET_NAME.key());
-                long variableSetId = (Long) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
-                String compoundKey = annSetName + INTERNAL_DELIMITER + variableSetId;
-
-                if (!annotationSetMap.containsKey(compoundKey)) {
-                    annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>(),
-                            Collections.emptyMap()));
-                }
-
-                annotationSetMap.get(compoundKey).getAnnotations().put(annotationDocument.getString(ID), annotationDocument.get(VALUE));
             }
         }
 

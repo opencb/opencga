@@ -26,6 +26,7 @@ import java.util.Map;
 /**
  * Created by pfurio on 12/05/17.
  */
+@Deprecated
 public class CommonModels {
 
     public static class AnnotationSetParams {

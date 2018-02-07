@@ -63,6 +63,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response infoFamily(
             @ApiParam(value = "Comma separated list of family IDs or names up to a maximum of 100", required = true) @PathParam("families") String familyStr,
@@ -440,25 +442,25 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public Individual.KaryotypicSex karyotypicSex;
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
-        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<AnnotationSet> annotationSets;
         public List<OntologyTerm> phenotypes;
         public Map<String, Object> attributes;
 
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            List<AnnotationSet> annotationSetList = new ArrayList<>();
-            if (annotationSets != null) {
-                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-                    if (annotationSet != null) {
-                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-                    }
-                }
-            }
+//            List<AnnotationSet> annotationSetList = new ArrayList<>();
+//            if (annotationSets != null) {
+//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+//                    if (annotationSet != null) {
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+//                    }
+//                }
+//            }
 
             return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
                     mother != null ? new Individual().setName(mother) : null, multiples != null ? multiples.toMultiples() : null, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
         }
     }
 
@@ -474,24 +476,24 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     private static class CreateFamilyPOST extends FamilyPOST {
 
-        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<AnnotationSet> annotationSets;
 
         public Family toFamily(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            List<AnnotationSet> annotationSetList = new ArrayList<>();
-            if (annotationSets != null) {
-                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-                    if (annotationSet != null) {
-                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-                    }
-                }
-            }
+//            List<AnnotationSet> annotationSetList = new ArrayList<>();
+//            if (annotationSets != null) {
+//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+//                    if (annotationSet != null) {
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+//                    }
+//                }
+//            }
 
             List<Individual> relatives = new ArrayList<>(members.size());
             for (IndividualPOST member : members) {
                 relatives.add(member.toIndividual(studyStr, studyManager, sessionId));
             }
 
-            return new Family(name, phenotypes, relatives, description, annotationSetList, attributes);
+            return new Family(name, phenotypes, relatives, description, annotationSets, attributes);
         }
     }
 

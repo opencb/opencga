@@ -88,6 +88,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response infoIndividual(@ApiParam(value = "Comma separated list of individual names or ids up to a maximum of 100", required = true)
                                    @PathParam("individuals") String individualStr,
@@ -576,23 +578,23 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.KaryotypicSex karyotypicSex;
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
-        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<AnnotationSet> annotationSets;
         public List<OntologyTerm> phenotypes;
         public Map<String, Object> attributes;
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            List<AnnotationSet> annotationSetList = new ArrayList<>();
-            if (annotationSets != null) {
-                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-                    if (annotationSet != null) {
-                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-                    }
-                }
-            }
+//            List<AnnotationSet> annotationSetList = new ArrayList<>();
+//            if (annotationSets != null) {
+//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+//                    if (annotationSet != null) {
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+//                    }
+//                }
+//            }
 
             return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
         }
     }
 
@@ -600,14 +602,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public List<SampleWSServer.CreateSamplePOST> samples;
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            List<AnnotationSet> annotationSetList = new ArrayList<>();
-            if (annotationSets != null) {
-                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-                    if (annotationSet != null) {
-                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-                    }
-                }
-            }
+//            List<AnnotationSet> annotationSetList = new ArrayList<>();
+//            if (annotationSets != null) {
+//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+//                    if (annotationSet != null) {
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+//                    }
+//                }
+//            }
 
             List<Sample> sampleList = null;
             if (samples != null) {
@@ -618,7 +620,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
             return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
         }
     }
 

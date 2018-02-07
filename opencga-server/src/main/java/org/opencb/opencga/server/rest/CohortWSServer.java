@@ -131,17 +131,17 @@ public class CohortWSServer extends OpenCGAWSServer {
                 variableSet = variableSetId;
             }
 
-            List<AnnotationSet> annotationSetList = new ArrayList<>();
-            if (params.annotationSets != null) {
-                for (CommonModels.AnnotationSetParams annotationSet : params.annotationSets) {
-                    if (annotationSet != null) {
-                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, catalogManager.getStudyManager(), sessionId));
-                    }
-                }
-            }
+//            List<AnnotationSet> annotationSetList = new ArrayList<>();
+//            if (params.annotationSets != null) {
+//                for (CommonModels.AnnotationSetParams annotationSet : params.annotationSets) {
+//                    if (annotationSet != null) {
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, catalogManager.getStudyManager(), sessionId));
+//                    }
+//                }
+//            }
 
             return createCohort(studyStr, params.name, params.type, variableSet, params.description, params.samples,
-                    annotationSetList, variableName);
+                    params.annotationSets, variableName);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -155,6 +155,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                     example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response infoSample(@ApiParam(value = "Comma separated list of cohort names or ids up to a maximum of 100", required = true) @PathParam("cohorts")
                                        String cohortsStr,
@@ -552,7 +554,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         public Study.Type type;
         public String description;
         public String samples;
-        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<AnnotationSet> annotationSets;
         public Map<String, Object> attributes;
     }
 
