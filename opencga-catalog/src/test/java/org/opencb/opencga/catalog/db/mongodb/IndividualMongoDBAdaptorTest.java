@@ -255,19 +255,6 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Map<String, AnnotationSet> annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap
                 (AnnotationSet::getName, Function.identity()));
         assertEquals(2, annotationSets.size());
-
-        // TODO: Remove setCreationDate("") when we completely remove creationDate from the data model
-        assertEquals(annot1, annotationSets.get(annot1.getName()).setCreationDate(""));
-        assertEquals(annot2, annotationSets.get(annot2.getName()).setCreationDate(""));
-
-        catalogIndividualDBAdaptor.deleteAnnotationSet(individualId, annot1.getName());
-
-        individual = catalogIndividualDBAdaptor.get(individualId, new QueryOptions()).first();
-        annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getName, Function.identity()));
-        assertEquals(1, annotationSets.size());
-        assertFalse(annotationSets.containsKey(annot1.getName()));
-        // TODO: Remove setCreationDate("") when we completely remove creationDate from the data model
-        assertEquals(annot2, annotationSets.get(annot2.getName()).setCreationDate(""));
     }
 
     @Test

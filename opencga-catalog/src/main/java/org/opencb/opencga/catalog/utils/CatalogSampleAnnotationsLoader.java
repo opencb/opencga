@@ -129,7 +129,7 @@ public class CatalogSampleAnnotationsLoader {
             Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
                     .getFields());
             catalogManager.getSampleManager().createAnnotationSet(Long.toString(entry.getValue().getId()), Long.toString(studyId),
-                    Long.toString(variableSetId), "pedigreeAnnotation", annotations, Collections.emptyMap(), sessionId);
+                    Long.toString(variableSetId), "pedigreeAnnotation", annotations, sessionId);
         }
         logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 

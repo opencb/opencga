@@ -222,22 +222,22 @@ public class CatalogManagerTest extends GenericTest {
                 , sessionIdUser).first().getId();
 
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_1), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_1").append("AGE", 6).append("ALIVE", true)
-                .append("PHEN", "CONTROL"), null, sessionIdUser);
+                .append("PHEN", "CONTROL"), sessionIdUser);
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_2), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_2").append("AGE", 10).append("ALIVE", false)
 
-                .append("PHEN", "CASE"), null, sessionIdUser);
+                .append("PHEN", "CASE"), sessionIdUser);
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_3), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_3").append("AGE", 15).append("ALIVE", true)
-                .append("PHEN", "CONTROL"), null, sessionIdUser);
+                .append("PHEN", "CONTROL"), sessionIdUser);
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_4), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_4").append("AGE", 22).append("ALIVE", false)
-                .append("PHEN", "CONTROL"), null, sessionIdUser);
+                .append("PHEN", "CONTROL"), sessionIdUser);
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_5), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_5").append("AGE", 29).append("ALIVE", true)
-                .append("PHEN", "CASE"), null, sessionIdUser);
+                .append("PHEN", "CASE"), sessionIdUser);
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_6), null, Long.toString(vs.getId()), "annot2", new ObjectMap("NAME", "s_6").append("AGE", 38).append("ALIVE", true)
-                .append("PHEN", "CONTROL"), null, sessionIdUser);
+                .append("PHEN", "CONTROL"), sessionIdUser);
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_7), null, Long.toString(vs.getId()), "annot2", new ObjectMap("NAME", "s_7").append("AGE", 46).append("ALIVE", false)
-                .append("PHEN", "CASE"), null, sessionIdUser);
+                .append("PHEN", "CASE"), sessionIdUser);
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_8), null, Long.toString(vs.getId()), "annot2", new ObjectMap("NAME", "s_8").append("AGE", 72).append("ALIVE", true)
-                .append("PHEN", "CONTROL"), null, sessionIdUser);
+                .append("PHEN", "CONTROL"), sessionIdUser);
 
 
         catalogManager.getFileManager().update(test01k.getId(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
@@ -1010,7 +1010,7 @@ public class CatalogManagerTest extends GenericTest {
         Map<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "LINUS");
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(sampleId1), null, Long.toString(vs1.getId()), "annotationId",
-                annotations, null, sessionIdUser);
+                annotations, sessionIdUser);
 
         try {
             catalogManager.getStudyManager().deleteVariableSet(Long.toString(studyId), Long.toString(vs1.getId()), sessionIdUser).first();
@@ -1258,12 +1258,11 @@ public class CatalogManagerTest extends GenericTest {
                 .first().getId();
 
         catalogManager.getIndividualManager().createAnnotationSet(Long.toString(individualId1), null, Long.toString(variableSet.getId()),
-                "annot1", new ObjectMap("NAME", "INDIVIDUAL_1").append("AGE", 5).append("PHEN", "CASE").append("ALIVE", true),
-                null, sessionIdUser);
+                "annot1", new ObjectMap("NAME", "INDIVIDUAL_1").append("AGE", 5).append("PHEN", "CASE").append("ALIVE", true), sessionIdUser);
         catalogManager.getIndividualManager().createAnnotationSet(Long.toString(individualId2), null, Long.toString(variableSet.getId()), "annot1", new ObjectMap("NAME", "INDIVIDUAL_2").append
-                ("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true), null, sessionIdUser);
+                ("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true), sessionIdUser);
         catalogManager.getIndividualManager().createAnnotationSet(Long.toString(individualId3), null, Long.toString(variableSet.getId()), "annot1", new ObjectMap("NAME", "INDIVIDUAL_3").append
-                ("AGE", 25).append("PHEN", "CASE").append("ALIVE", true), null, sessionIdUser);
+                ("AGE", 25).append("PHEN", "CASE").append("ALIVE", true), sessionIdUser);
 
         List<String> individuals;
         individuals = catalogManager.getIndividualManager().get(studyId, new Query(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),

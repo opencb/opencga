@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
@@ -40,7 +39,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -295,7 +293,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 variableSet = variableSetId;
             }
             QueryResult<AnnotationSet> queryResult = individualManager.createAnnotationSet(individualStr, studyStr, variableSet,
-                    params.name, params.annotations, Collections.emptyMap(), sessionId);
+                    params.name, params.annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);

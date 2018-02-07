@@ -35,14 +35,12 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
-import scala.collection.immutable.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -432,7 +430,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 variableSet = variableSetId;
             }
             QueryResult<AnnotationSet> queryResult = sampleManager.createAnnotationSet(sampleStr, studyStr, variableSet, params.name,
-                    params.annotations, Collections.emptyMap(), sessionId);
+                    params.annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -441,7 +439,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set", position = 14)
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [DEPRECATED]", position = 14,
+        notes = "Use /{sample}/update instead")
     public Response deleteAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,

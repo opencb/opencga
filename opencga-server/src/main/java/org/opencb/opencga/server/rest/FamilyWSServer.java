@@ -39,7 +39,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -320,7 +319,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 variableSet = variableSetId;
             }
             QueryResult<AnnotationSet> queryResult = familyManager.createAnnotationSet(familyStr, studyStr, variableSet, params.name,
-                    params.annotations, Collections.emptyMap(), sessionId);
+                    params.annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);

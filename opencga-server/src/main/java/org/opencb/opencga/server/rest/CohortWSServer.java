@@ -391,7 +391,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 variableSet = variableSetId;
             }
             QueryResult<AnnotationSet> queryResult = cohortManager.createAnnotationSet(cohortStr, studyStr, variableSet,
-                    params.name, params.annotations, Collections.emptyMap(), sessionId);
+                    params.name, params.annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
