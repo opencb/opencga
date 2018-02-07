@@ -254,8 +254,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Delete a specific annotation set") @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotationSet,
-            @ApiParam(value = "Delete a specific annotation. Format: annotationSetName:variable")
-                @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotation,
+            @ApiParam(value = "Delete a specific annotation. Format: annotationSetName:variable[,annotationSetName:variable...]")
+                @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
             @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
             ObjectMap privateMap = new ObjectMap();
