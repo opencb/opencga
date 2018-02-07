@@ -260,8 +260,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         parameters.put(QueryParams.MEMBERS.key(), individualQueryResult.getResult());
     }
 
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document familyParameters, ObjectMap annotationUpdateMap, QueryOptions queryOptions)
-            throws CatalogDBException {
+    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document familyParameters, ObjectMap annotationUpdateMap,
+                                                        QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
