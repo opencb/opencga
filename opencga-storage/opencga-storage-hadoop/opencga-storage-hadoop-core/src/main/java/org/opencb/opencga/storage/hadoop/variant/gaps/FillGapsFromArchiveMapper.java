@@ -6,12 +6,10 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -62,13 +60,18 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
                     getHelper().getArchiveTableAsString(),
                     getStudyConfiguration(), getHelper());
         }
+        task.setQuiet(true);
         task.pre();
     }
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         super.cleanup(context);
-        task.post();
+        try {
+            task.post();
+        } finally {
+            updateStats(context);
+        }
     }
 
     @Override
@@ -79,7 +82,12 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         for (Put put : puts) {
             ctx.getContext().write(new ImmutableBytesWritable(put.getRow()), put);
         }
+        updateStats(ctx.getContext());
     }
 
-
+    private void updateStats(Context context) {
+        for (Map.Entry<String, Long> entry : task.takeStats().entrySet()) {
+            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, entry.getKey()).increment(entry.getValue());
+        }
+    }
 }

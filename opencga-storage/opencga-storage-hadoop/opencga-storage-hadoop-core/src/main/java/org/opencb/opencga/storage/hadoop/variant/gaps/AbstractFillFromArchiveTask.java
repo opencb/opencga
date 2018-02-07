@@ -4,8 +4,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.util.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -26,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET;
 
@@ -56,13 +61,15 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
     protected Table variantsTable;
     protected Table archiveTable;
 
+    private final Map<String, Long> stats = new HashMap<>();
+
     protected AbstractFillFromArchiveTask(HBaseManager hBaseManager,
-                                       String variantsTableName,
-                                       String archiveTableName,
-                                       StudyConfiguration studyConfiguration,
-                                       GenomeHelper helper,
-                                       Collection<Integer> samples,
-                                       boolean skipReferenceVariants) {
+                                          String variantsTableName,
+                                          String archiveTableName,
+                                          StudyConfiguration studyConfiguration,
+                                          GenomeHelper helper,
+                                          Collection<Integer> samples,
+                                          boolean skipReferenceVariants) {
         this.hBaseManager = hBaseManager;
         this.archiveTableName = archiveTableName;
         this.variantsTableName = variantsTableName;
@@ -88,6 +95,10 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
 
         fillGapsTask = new FillGapsTask(studyConfiguration, helper, skipReferenceVariants);
         rowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
+    }
+
+    public void setQuiet(boolean quiet) {
+        fillGapsTask.setQuiet(quiet);
     }
 
     @Override
@@ -124,6 +135,7 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
 
         // If filling all the files, (i.e. fill missing) we can use the list of already processed variants and files
         if (context.getNewFiles().isEmpty()) {
+            increment("NO_NEW_FILES", context.fileBatch, 1);
             // No files to process. Nothing to do!
             return Collections.emptyList();
         } else { // New files
@@ -163,7 +175,11 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             for (Variant variant : variants) {
                 Put put = putsMap.computeIfAbsent(variant, v -> new Put(VariantPhoenixKeyFactory.generateVariantRowKey(v)));
 
-                fillGapsTask.fillGaps(variant, sampleIds, put, fileId, vcfSlicePair.getNonRefVcfSlice(), vcfSlicePair.getRefVcfSlice());
+                StopWatch stopWatch = new StopWatch().start();
+                VariantOverlappingStatus overlappingStatus = fillGapsTask.fillGaps(variant, sampleIds, put, fileId,
+                        vcfSlicePair.getNonRefVcfSlice(), vcfSlicePair.getRefVcfSlice());
+                increment("OVERLAPPING_STATUS_" + String.valueOf(overlappingStatus), context.fileBatch, 1);
+                increment("OVERLAPPING_STATUS_" + String.valueOf(overlappingStatus), context.fileBatch, stopWatch);
             }
             context.clearVcfSlice(fileId);
         }
@@ -174,13 +190,18 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
                 puts.add(put);
             }
         }
+        if (puts.isEmpty()) {
+            increment("PUTS_NONE", context.fileBatch, 1);
+        } else {
+            increment("PUTS", context.fileBatch, puts.size());
+        }
         return puts;
     }
 
     protected abstract Context buildContext(Result result) throws IOException;
 
     public abstract class Context {
-        /** Empty variants (just chr:pos:ref:alt) for the current region. Read from _V. */
+        /** Empty variants (just chr:pos:ref:alt) for the current region. */
         protected final List<Variant> variants;
         /** List of already processed files in this region. */
         protected final List<Integer> processedFiles;
@@ -198,7 +219,7 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
         protected final int fileBatch;
 
         protected Context(Result result) throws IOException {
-             this.rowKey = result.getRow();
+            this.rowKey = result.getRow();
             this.result = result;
             fileBatch = rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(rowKey));
             this.fileIdsInBatch = new TreeSet<>();
@@ -206,6 +227,10 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
                 if (rowKeyFactory.getFileBatch(fileId) == fileBatch) {
                     fileIdsInBatch.add(fileId);
                 }
+            }
+            if (fileIdsInBatch.isEmpty()) {
+                throw new IllegalStateException("Read data from RK " + Bytes.toString(rowKey) + " from file batch " + fileBatch
+                        + " without any file from " + AbstractFillFromArchiveTask.this.fileIds);
             }
 
             filesMap = new HashMap<>();
@@ -222,12 +247,18 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             newFiles = new TreeSet<>(fileIdsInBatch);
             newFiles.removeAll(processedFiles);
 
+            StopWatch stopWatch = new StopWatch().start();
             variants = extractVariantsToFill();
+            increment("EXTRACT_VARIANTS_TO_FILL", fileBatch, stopWatch);
 
             // Do not compute Variant::hashCode
             newVariants = new TreeSet<>(VARIANT_COMPARATOR);
             newVariants.addAll(variants);
             newVariants.removeAll(processedVariants);
+
+            increment("RESULTS", 1);
+            increment("RESULTS", fileBatch, 1);
+            increment("VARIANTS_TO_FILL", fileBatch, variants.size());
         }
 
         protected abstract List<Variant> extractVariantsToFill() throws IOException;
@@ -256,7 +287,10 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             VcfSlice vcfSlice;
             if (data != null && data.length != 0) {
                 try {
+                    StopWatch stopWatch = new StopWatch().start();
                     vcfSlice = VcfSlice.parseFrom(data);
+                    increment("PARSE_VCF_SLICE", fileBatch, stopWatch);
+                    increment("PARSE_VCF_SLICE", fileBatch, 1);
                 } catch (InvalidProtocolBufferException | RuntimeException e) {
                     throw new IOException("Error parsing data from row " + Bytes.toString(rowKey), e);
                 }
@@ -338,5 +372,23 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
         return !FillGapsTask.hasAnyReferenceGenotype(slice, vcfRecord);
     }
 
+    public Map<String, Long> takeStats() {
+        HashMap<String, Long> copy = new HashMap<>(stats);
+        stats.clear();
+        return copy;
+    }
+
+    protected long increment(String name, long delta) {
+        return stats.compute(name, (key, value) -> value == null ? delta : value + delta);
+    }
+
+    protected long increment(String name, int fileBatch, long delta) {
+        return stats.compute(name + "_(fb=" + fileBatch + ')', (key, value) -> value == null ? delta : value + delta);
+    }
+
+    protected long increment(String name, int fileBatch, StopWatch stopWatch) {
+        long delta = stopWatch.now(TimeUnit.NANOSECONDS);
+        return stats.compute(name + "_TIME_NS_(fb=" + fileBatch + ')', (key, value) -> value == null ? delta : value + delta);
+    }
 
 }

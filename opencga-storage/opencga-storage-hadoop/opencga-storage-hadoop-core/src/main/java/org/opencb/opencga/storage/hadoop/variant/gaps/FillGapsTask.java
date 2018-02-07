@@ -39,6 +39,7 @@ public class FillGapsTask {
     private final boolean skipReferenceVariants;
 
     private Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
+    private boolean ignoreMultipleOverlaps = false;
 
     public FillGapsTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean skipReferenceVariants) {
         this.studyConfiguration = studyConfiguration;
@@ -47,11 +48,16 @@ public class FillGapsTask {
 
         studyConverter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), studyConfiguration, true, Collections.singleton("?/?"));
         variantMerger = new VariantMerger(false).configure(studyConfiguration.getVariantHeader());
-
     }
 
-    public void fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId, VcfSliceProtos.VcfSlice nonRefVcfSlice,
-                         VcfSliceProtos.VcfSlice refVcfSlice) {
+    public FillGapsTask setQuiet(boolean quiet) {
+        this.ignoreMultipleOverlaps = quiet;
+        return this;
+    }
+
+    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
+                                             VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
+        VariantOverlappingStatus overlappingStatus;
 
         // Three scenarios:
         //  Overlap with NO_VARIATION,
@@ -62,7 +68,7 @@ public class FillGapsTask {
         if (nonRefVcfSlice != null) {
             boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, nonRefVcfSlice, overlappingRecords);
             if (isVariantAlreadyLoaded) {
-                return;
+                return VariantOverlappingStatus.NONE;
             }
         }
         if (refVcfSlice != null) {
@@ -82,7 +88,7 @@ public class FillGapsTask {
             // Should write "./." ? "0/0" for insertions?
             logger.debug("Not overlap for fileId " + fileId + " in variant " + variant);
             // Nothing to do!
-            return;
+            return null;
         } else if (overlappingRecords.size() > 1) {
             // TODO: What if multiple overlaps?
 
@@ -97,9 +103,11 @@ public class FillGapsTask {
                 vcfSlice = realVariants.get(0).getLeft();
             } else {
                 String msg = "Found multiple overlaps for variant " + variant + " in file " + fileId;
-//                throw new IllegalStateException(msg);
-                logger.warn(msg);
-                return;
+                if (ignoreMultipleOverlaps) {
+//                    throw new IllegalStateException(msg);
+                    logger.warn(msg);
+                }
+                return null;
             }
         } else {
             vcfRecord = overlappingRecords.get(0).getRight();
@@ -112,7 +120,8 @@ public class FillGapsTask {
             if (StringUtils.isEmpty(fileEntry.getCall())) {
                 fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":.:0");
             }
-            studyConverter.convert(archiveVariant, put, missingSamples, REFERENCE);
+            overlappingStatus = REFERENCE;
+            studyConverter.convert(archiveVariant, put, missingSamples, overlappingStatus);
         } else {
             Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
             Variant mergedVariant = new Variant(
@@ -130,8 +139,10 @@ public class FillGapsTask {
             mergedVariant.setType(variant.getType());
 
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
-            studyConverter.convert(mergedVariant, put, missingSamples, VARIANT);
+            overlappingStatus = VARIANT;
+            studyConverter.convert(mergedVariant, put, missingSamples, overlappingStatus);
         }
+        return overlappingStatus;
     }
 
     public boolean getOverlappingVariants(Variant variant, VcfSliceProtos.VcfSlice vcfSlice,

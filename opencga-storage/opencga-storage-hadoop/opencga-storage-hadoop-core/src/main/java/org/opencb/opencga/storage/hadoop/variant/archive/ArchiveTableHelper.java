@@ -117,6 +117,16 @@ public class ArchiveTableHelper extends GenomeHelper {
         return Integer.parseInt(Bytes.toString(columnName, 0, columnName.length - NON_REF_COLUMN_SUFIX.length()));
     }
 
+    /**
+     * Get the archive column name for a file given a FileId.
+     *
+     * @param columnName Column name
+     * @return Related fileId
+     */
+    public static int getFileIdFromRefColumnName(byte[] columnName) {
+        return Integer.parseInt(Bytes.toString(columnName, 0, columnName.length - REF_COLUMN_SUFIX.length()));
+    }
+
     public static boolean isNonRefColumn(byte[] columnName) {
         return endsWith(columnName, NON_REF_COLUMN_SUFIX_BYTES);
     }

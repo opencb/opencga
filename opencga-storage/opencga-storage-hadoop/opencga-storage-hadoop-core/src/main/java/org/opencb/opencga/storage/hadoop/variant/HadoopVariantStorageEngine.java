@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
@@ -80,6 +81,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
@@ -473,6 +475,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 HBaseDataReader dbReader = new HBaseDataReader(dbAdaptor.getHBaseManager(), getArchiveTableName(studyId), scan);
                 DataWriter<Put> writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), getVariantTableName());
                 ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(4).setBatchSize(10).build();
+                List<AbstractFillFromArchiveTask> tasks = new ArrayList<>();
                 ParallelTaskRunner<Result, Put> ptr = new ParallelTaskRunner<>(
                         dbReader,
                         () -> {
@@ -486,6 +489,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                                         getVariantTableName(), getArchiveTableName(studyId), studyConfiguration,
                                         dbAdaptor.getGenomeHelper());
                             }
+                            tasks.add(task);
                             return task
                                     .then((ParallelTaskRunner.TaskWithException<Put, Put, IOException>) list -> {
                                         progressLogger.increment(list.size(), "variants");
@@ -495,6 +499,25 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         writer,
                         config);
                 ptr.run();
+                Map<String, Long> stats = tasks.stream()
+                        .map(AbstractFillFromArchiveTask::takeStats)
+                        .flatMap(map -> map.entrySet().stream())
+                        .collect(Collectors.groupingBy(
+                                Map.Entry::getKey,
+                                TreeMap::new,
+                                Collectors.reducing(0L, Map.Entry::getValue, Long::sum)));
+                logger.info(jobOperationName + " stats:");
+                stats.entrySet().stream()
+                        .map(entry -> {
+                            if (entry.getKey().contains("TIME_NS")) {
+                                return ImmutablePair.of(
+                                        StringUtils.replace(entry.getKey(), "TIME_NS", "TIME_MS"),
+                                        TimeUnit.NANOSECONDS.toMillis(entry.getValue()));
+                            } else {
+                                return entry;
+                            }
+                        })
+                        .forEach((entry) -> logger.info('\t' + entry.getKey() + " = " + entry.getValue()));
             } else {
                 String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
                 String jar = getJarWithDependencies(options);
