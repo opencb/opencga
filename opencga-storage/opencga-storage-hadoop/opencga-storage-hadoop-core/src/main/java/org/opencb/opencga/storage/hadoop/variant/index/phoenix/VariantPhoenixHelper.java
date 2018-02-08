@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -251,34 +252,38 @@ public class VariantPhoenixHelper {
         return phoenixHelper;
     }
 
-    public void updateAnnotationColumns(Connection con, String tableName) throws SQLException {
+    public void updateAnnotationColumns(Connection con, String variantsTableName) throws SQLException {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         List<Column> annotColumns = Arrays.asList(VariantColumn.values());
-        phoenixHelper.addMissingColumns(con, tableName, annotColumns, true);
+        phoenixHelper.addMissingColumns(con, variantsTableName, annotColumns, true);
     }
 
-    public void updateStatsColumns(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
+    public void updateStatsColumns(Connection con, String variantsTableName, StudyConfiguration studyConfiguration) throws SQLException {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         List<Column> columns = new ArrayList<>();
         for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
             for (Column column : getStatsColumns(studyConfiguration.getStudyId(), cohortId)) {
                 columns.add(column);
             }
         }
-        phoenixHelper.addMissingColumns(con, tableName, columns, true);
+        phoenixHelper.addMissingColumns(con, variantsTableName, columns, true);
     }
 
-    public void registerNewStudy(Connection con, String table, Integer studyId) throws SQLException {
-        createTableIfNeeded(con, table);
-        addColumns(con, table, studyId, PUnsignedInt.INSTANCE, VariantTableStudyRow.HOM_REF, VariantTableStudyRow.PASS_CNT,
+    public void registerNewStudy(Connection con, String variantsTableName, Integer studyId) throws SQLException {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
+        createTableIfNeeded(con, variantsTableName);
+        addColumns(con, variantsTableName, studyId, PUnsignedInt.INSTANCE, VariantTableStudyRow.HOM_REF, VariantTableStudyRow.PASS_CNT,
                 VariantTableStudyRow.CALL_CNT);
-        addColumns(con, table, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
+        addColumns(con, variantsTableName, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
                 VariantTableStudyRow.OTHER, VariantTableStudyRow.NOCALL);
-        addColumns(con, table, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX, VariantTableStudyRow.FILTER_OTHER);
+        addColumns(con, variantsTableName, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX, VariantTableStudyRow.FILTER_OTHER);
         con.commit();
     }
 
-    public void registerNewFiles(Connection con, String table, Integer studyId, Collection<Integer> fileIds, Collection<Integer> sampleIds)
-            throws SQLException {
-        createTableIfNeeded(con, table);
+    public void registerNewFiles(Connection con, String variantsTableName, Integer studyId, Collection<Integer> fileIds,
+                                 Collection<Integer> sampleIds) throws SQLException {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
+        createTableIfNeeded(con, variantsTableName);
         List<Column> columns = new ArrayList<>(fileIds.size() + sampleIds.size() + 1);
         for (Integer fileId : fileIds) {
             columns.add(getFileColumn(studyId, fileId));
@@ -287,12 +292,13 @@ public class VariantPhoenixHelper {
             columns.add(getSampleColumn(studyId, sampleId));
         }
         columns.add(getStudyColumn(studyId));
-        phoenixHelper.addMissingColumns(con, table, columns, true);
+        phoenixHelper.addMissingColumns(con, variantsTableName, columns, true);
         con.commit();
     }
 
-    public void dropFiles(Connection con, String table, Integer studyId, Collection<Integer> fileIds, Collection<Integer> sampleIds)
-            throws SQLException {
+    public void dropFiles(Connection con, String variantsTableName, Integer studyId, Collection<Integer> fileIds,
+                          Collection<Integer> sampleIds) throws SQLException {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         List<CharSequence> columns = new ArrayList<>(fileIds.size() + sampleIds.size());
         for (Integer fileId : fileIds) {
             columns.add(buildFileColumnKey(studyId, fileId, new StringBuilder()));
@@ -300,7 +306,7 @@ public class VariantPhoenixHelper {
         for (Integer sampleId : sampleIds) {
             columns.add(buildSampleColumnKey(studyId, sampleId, new StringBuilder()));
         }
-        phoenixHelper.dropColumns(con, table, columns);
+        phoenixHelper.dropColumns(con, variantsTableName, columns);
         con.commit();
     }
 
@@ -337,38 +343,39 @@ public class VariantPhoenixHelper {
         }
     }
 
-    private void addColumns(Connection con, String tableName, Integer studyId, PDataType<?> dataType, String... columns)
+    private void addColumns(Connection con, String variantsTableName, Integer studyId, PDataType<?> dataType, String... columns)
             throws SQLException {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         for (String col : columns) {
-            String sql = phoenixHelper.buildAlterAddColumn(tableName,
+            String sql = phoenixHelper.buildAlterAddColumn(variantsTableName,
                     VariantTableStudyRow.buildColumnKey(studyId, col), dataType.getSqlTypeName());
             phoenixHelper.execute(con, sql);
         }
     }
 
-    public String buildCreate(String tableName) {
-        return buildCreate(tableName, Bytes.toString(genomeHelper.getColumnFamily()), PhoenixHelper.DEFAULT_TABLE_TYPE);
+    private String buildCreate(String variantsTableName) {
+        return buildCreate(variantsTableName, Bytes.toString(genomeHelper.getColumnFamily()), PhoenixHelper.DEFAULT_TABLE_TYPE);
     }
 
-    public String buildCreateView(String tableName) {
-        return buildCreateView(tableName, Bytes.toString(genomeHelper.getColumnFamily()));
+    private String buildCreateView(String variantsTableName) {
+        return buildCreateView(variantsTableName, Bytes.toString(genomeHelper.getColumnFamily()));
     }
 
-    public static String buildCreateView(String tableName, String columnFamily) {
-        return buildCreate(tableName, columnFamily, PTableType.VIEW);
+    private static String buildCreateView(String variantsTableName, String columnFamily) {
+        return buildCreate(variantsTableName, columnFamily, PTableType.VIEW);
     }
 
-    public String buildCreateTable(String tableName) {
-        return buildCreateTable(tableName, Bytes.toString(genomeHelper.getColumnFamily()));
+    private String buildCreateTable(String variantsTableName) {
+        return buildCreateTable(variantsTableName, Bytes.toString(genomeHelper.getColumnFamily()));
     }
 
-    public static String buildCreateTable(String tableName, String columnFamily) {
-        return buildCreate(tableName, columnFamily, PTableType.TABLE);
+    private static String buildCreateTable(String variantsTableName, String columnFamily) {
+        return buildCreate(variantsTableName, columnFamily, PTableType.TABLE);
     }
 
-    public static String buildCreate(String tableName, String columnFamily, PTableType tableType) {
+    private static String buildCreate(String variantsTableName, String columnFamily, PTableType tableType) {
         StringBuilder sb = new StringBuilder().append("CREATE ").append(tableType).append(" IF NOT EXISTS ")
-                .append(SchemaUtil.getEscapedFullTableName(tableName)).append(" ").append("(");
+                .append(SchemaUtil.getEscapedFullTableName(variantsTableName)).append(" ").append("(");
         for (VariantColumn variantColumn : VariantColumn.values()) {
             switch (variantColumn) {
                 case CHROMOSOME:
@@ -393,17 +400,20 @@ public class VariantPhoenixHelper {
                 .append(ALTERNATE).append(") ").append(") ").toString();
     }
 
-    public void createVariantIndexes(Connection con, String tableName) throws SQLException {
-        List<PhoenixHelper.Index> indices = getIndices(tableName);
-        phoenixHelper.createIndexes(con, tableName, indices, false);
+    public void createVariantIndexes(Connection con, String variantsTableName) throws SQLException {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
+        List<PhoenixHelper.Index> indices = getIndices(variantsTableName);
+        phoenixHelper.createIndexes(con, variantsTableName, indices, false);
     }
 
-    public static List<PhoenixHelper.Index> getPopFreqIndices(String tableName) {
-        return Arrays.asList(getPopFreqIndex(tableName, "1kG_phase3", "ALL"), getPopFreqIndex(tableName, "EXAC", "ALL"));
+    public static List<PhoenixHelper.Index> getPopFreqIndices(String variantsTableName) {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
+        return Arrays.asList(getPopFreqIndex(variantsTableName, "1kG_phase3", "ALL"), getPopFreqIndex(variantsTableName, "EXAC", "ALL"));
     }
 
-    public static PhoenixHelper.Index getPopFreqIndex(String tableName, String study, String population) {
-        TableName table = TableName.valueOf(tableName);
+    public static PhoenixHelper.Index getPopFreqIndex(String variantsTableName, String study, String population) {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
+        TableName table = TableName.valueOf(variantsTableName);
         Column column = getPopulationFrequencyColumn(study, population);
         List<Column> defaultInclude = Arrays.asList(GENES, SO);
         return new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(
@@ -411,8 +421,8 @@ public class VariantPhoenixHelper {
                 "\"" + column.column() + "\"[1]"), defaultInclude);
     }
 
-    public static List<PhoenixHelper.Index> getIndices(String tableName) {
-        TableName table = TableName.valueOf(tableName);
+    private static List<PhoenixHelper.Index> getIndices(String variantsTableName) {
+        TableName table = TableName.valueOf(variantsTableName);
         List<Column> defaultInclude = Arrays.asList(GENES, SO);
         return Arrays.asList(
                 new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(PHASTCONS), defaultInclude),
