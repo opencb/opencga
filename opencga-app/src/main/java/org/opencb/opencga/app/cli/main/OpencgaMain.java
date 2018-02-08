@@ -23,6 +23,8 @@ import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecut
 import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by imedina on 27/05/16.
@@ -34,14 +36,23 @@ public class OpencgaMain {
     public static void main(String[] args) {
 
         if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1])) {
-            // Check there is no --help either
-            boolean helpFound = false;
+            // Check there is no --help or --version
+            boolean passwordRequired = true;
             for (String arg : args) {
-                if ("--help".equals(arg) || "-h".equals(arg)) {
-                    helpFound = true;
+                switch (arg) {
+                    case "--password":
+                    case "-p":
+                        Logger logger = LoggerFactory.getLogger(OpencgaMain.class);
+                        logger.warn("Argument " + arg + " no longer required. It will be forbidden in future releases.");
+                    case "--help":
+                    case "-h":
+                        passwordRequired = false;
+                        break;
+                    default:
+                        break;
                 }
             }
-            if (!helpFound) {
+            if (passwordRequired) {
                 args = ArrayUtils.addAll(args, "--password");
             }
         }
