@@ -440,7 +440,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         fileIdsList.sort(Integer::compareTo);
 
         scm.lockAndUpdate(study, sc -> {
-            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+            boolean resume = options.getBoolean(RESUME.key(), RESUME.defaultValue());
             StudyConfigurationManager.addBatchOperation(
                     sc,
                     jobOperationName,
