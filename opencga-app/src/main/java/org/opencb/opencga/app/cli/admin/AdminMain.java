@@ -36,7 +36,7 @@ public class AdminMain {
 
         // Add password parameter
         if (args.length > 1) {
-            // Check there is no --help or --version
+            // Check there is no --help
             boolean passwordRequired = true;
             for (String arg : args) {
                 switch (arg) {

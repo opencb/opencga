@@ -36,7 +36,7 @@ public class OpencgaMain {
     public static void main(String[] args) {
 
         if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1])) {
-            // Check there is no --help or --version
+            // Check there is no --help
             boolean passwordRequired = true;
             for (String arg : args) {
                 switch (arg) {
