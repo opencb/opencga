@@ -20,6 +20,8 @@ import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -35,13 +37,22 @@ public class AdminMain {
         // Add password parameter
         if (args.length > 1) {
             // Check there is no --help
-            boolean helpFound = false;
+            boolean passwordRequired = true;
             for (String arg : args) {
-                if ("--help".equals(arg) || "-h".equals(arg)) {
-                    helpFound = true;
+                switch (arg) {
+                    case "--password":
+                    case "-p":
+                        Logger logger = LoggerFactory.getLogger(AdminMain.class);
+                        logger.warn("Argument " + arg + " no longer required. It will be forbidden in future releases.");
+                    case "--help":
+                    case "-h":
+                        passwordRequired = false;
+                        break;
+                    default:
+                        break;
                 }
             }
-            if (!helpFound) {
+            if (passwordRequired) {
                 args = org.apache.commons.lang3.ArrayUtils.addAll(args, "--password");
             }
         }
