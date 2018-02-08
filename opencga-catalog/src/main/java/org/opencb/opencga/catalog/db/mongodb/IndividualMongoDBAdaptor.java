@@ -980,7 +980,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             andBsonList.add(new Document("$isolated", 1));
         }
 
-        fixComplexQueryParam(QueryParams.ANNOTATION.key(), query);
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);

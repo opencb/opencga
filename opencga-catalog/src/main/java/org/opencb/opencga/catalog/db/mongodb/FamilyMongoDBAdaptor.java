@@ -670,7 +670,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             andBsonList.add(new Document("$isolated", 1));
         }
 
-        fixComplexQueryParam(QueryParams.ANNOTATION.key(), query);
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
@@ -708,9 +707,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                         if (annotationDocument == null) {
                             annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
                                     query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
-//                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
-//                                    query.getLong(QueryParams.VARIABLE_SET_ID.key()),
-//                                    query.getString(QueryParams.ANNOTATION_SET_NAME.key()));
                         }
                         break;
                     case SNAPSHOT:
