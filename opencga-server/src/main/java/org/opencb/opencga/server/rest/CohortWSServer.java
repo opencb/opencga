@@ -358,13 +358,14 @@ public class CohortWSServer extends OpenCGAWSServer {
                     .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
                     .append(CohortDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
                     .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+            QueryOptions queryOptions = new QueryOptions();
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
                 query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+                queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Cohort> search = cohortManager.search(String.valueOf(resourceIds.getStudyId()), query, new QueryOptions(),
-                    sessionId);
+            QueryResult<Cohort> search = cohortManager.search(String.valueOf(resourceIds.getStudyId()), query, queryOptions, sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
                         search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),

@@ -268,12 +268,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
                     .append(IndividualDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
                     .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+            QueryOptions queryOptions = new QueryOptions();
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
                 query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+                queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Individual> search = individualManager.search(String.valueOf(resourceIds.getStudyId()), query, new QueryOptions(),
+            QueryResult<Individual> search = individualManager.search(String.valueOf(resourceIds.getStudyId()), query, queryOptions,
                     sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),

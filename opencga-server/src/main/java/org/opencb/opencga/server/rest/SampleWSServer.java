@@ -402,13 +402,14 @@ public class SampleWSServer extends OpenCGAWSServer {
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
                     .append(SampleDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
                     .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+            QueryOptions queryOptions = new QueryOptions();
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
                 query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+                queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceIds.getStudyId()), query, new QueryOptions(),
-                    sessionId);
+            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceIds.getStudyId()), query, queryOptions, sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
                         search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
