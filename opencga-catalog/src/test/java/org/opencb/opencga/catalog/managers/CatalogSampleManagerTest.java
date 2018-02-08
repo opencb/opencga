@@ -149,7 +149,7 @@ public class CatalogSampleManagerTest extends GenericTest {
         variables.addAll(Arrays.asList(
                 new Variable("NAME", "", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
                         Collections.<String, Object>emptyMap()),
-                new Variable("AGE", "", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:130"), 1, "", "",
+                new Variable("AGE", "", "", Variable.VariableType.INTEGER, null, true, false, Collections.singletonList("0:130"), 1, "", "",
                         null, Collections.<String, Object>emptyMap()),
                 new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "1.5", false, false, Collections.singletonList("0:"), 2, "",
                         "", null, Collections.<String, Object>emptyMap()),
@@ -807,7 +807,7 @@ public class CatalogSampleManagerTest extends GenericTest {
 
             assertEquals(5, auxAnnotations.size());
             assertEquals("SAMPLE1", auxAnnotations.get("NAME"));
-            assertEquals(38.0, auxAnnotations.get("AGE"));
+            assertEquals(38, auxAnnotations.get("AGE"));
             assertEquals("extra", auxAnnotations.get("EXTRA"));
         };
 

@@ -845,8 +845,13 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
 
                         }
 
-                        List<Document> valueList = addCompQueryFilter(type, AnnotationSetParams.VALUE.key(),
-                                Arrays.asList(valueString.split(",")), new ArrayList<>());
+                        List<Document> valueList;
+                        try {
+                             valueList = addCompQueryFilter(type, AnnotationSetParams.VALUE.key(), Arrays.asList(valueString.split(",")),
+                                     new ArrayList<>());
+                        } catch (CatalogDBException e) {
+                            throw new CatalogDBException("Variable " + key + ": " + e.getMessage(), e);
+                        }
 
                         Document queryDocument = new Document()
                                 .append(AnnotationSetParams.ID.key(), key)

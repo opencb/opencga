@@ -698,12 +698,6 @@ class MongoDBUtils {
                 filter = option;
             } else {
                 operator = matcher.group(2);
-//                if (queryKey.isEmpty()) {
-//                    key = matcher.group(1);
-//                } else {
-//                    String separatorDot = matcher.group(1).isEmpty() ? "" : ".";
-//                    key = queryKey + separatorDot + matcher.group(1);
-//                }
                 key = queryKey;
                 filter = matcher.group(3);
             }
@@ -717,7 +711,7 @@ class MongoDBUtils {
                         int intValue = Integer.parseInt(filter);
                         or.add(addNumberOperationQueryFilter(key, operator, intValue));
                     } catch (NumberFormatException e) {
-                        throw new CatalogDBException(e);
+                        throw new CatalogDBException("Expected an integer value - " + e.getMessage(), e);
                     }
                     break;
                 case DECIMAL:
@@ -727,7 +721,7 @@ class MongoDBUtils {
                         double doubleValue = Double.parseDouble(filter);
                         or.add(addNumberOperationQueryFilter(key, operator, doubleValue));
                     } catch (NumberFormatException e) {
-                        throw new CatalogDBException(e);
+                        throw new CatalogDBException("Expected a double value - " + e.getMessage(), e);
                     }
                     break;
                 case TEXT:
