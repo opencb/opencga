@@ -236,7 +236,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 }
                 annotation = StringUtils.join(annotationList, ";");
             }
-            query.append(Constants.ANNOTATION, annotation);
+            query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
             QueryResult<Individual> search = individualManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
                     sessionId);

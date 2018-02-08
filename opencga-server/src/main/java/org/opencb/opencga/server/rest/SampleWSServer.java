@@ -374,7 +374,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 }
                 annotation = StringUtils.join(annotationList, ";");
             }
-            query.append(Constants.ANNOTATION, annotation);
+            query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
             QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
                     sessionId);

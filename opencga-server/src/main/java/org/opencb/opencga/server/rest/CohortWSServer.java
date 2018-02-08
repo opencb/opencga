@@ -326,7 +326,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 }
                 annotation = StringUtils.join(annotationList, ";");
             }
-            query.append(Constants.ANNOTATION, annotation);
+            query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
             QueryResult<Cohort> search = cohortManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
                     sessionId);

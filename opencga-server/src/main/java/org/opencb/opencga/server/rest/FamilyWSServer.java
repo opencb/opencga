@@ -263,7 +263,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 }
                 annotation = StringUtils.join(annotationList, ";");
             }
-            query.append(Constants.ANNOTATION, annotation);
+            query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
             QueryResult<Family> search = familyManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
                     sessionId);
