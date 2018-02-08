@@ -62,5 +62,5 @@ public class Constants {
      * String containing the annotation to be removed from a specific entry. /{entry}/update webservices
      * Usage: annotationSetName:variable
      */
-    public static final String DELETE_ANNOTATION = "deleteAnnotation";
+    public static final String DELETE_ANNOTATION = "deleteVariable";
 }
