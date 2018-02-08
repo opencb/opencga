@@ -463,6 +463,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
         filterOutDeleted(query);
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        logger.debug("Cohort get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
         QueryOptions qOptions;
         if (options != null) {
             qOptions = new QueryOptions(options);
