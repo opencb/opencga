@@ -32,13 +32,17 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -481,94 +485,82 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     IndividualAclEntry.IndividualPermissions.UPDATE);
         }
 
-        for (Map.Entry<String, Object> param : parameters.entrySet()) {
-            IndividualDBAdaptor.QueryParams queryParam = IndividualDBAdaptor.QueryParams.getParam(param.getKey());
-            switch (queryParam) {
-                case NAME:
-                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
+        try {
+            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> IndividualDBAdaptor.UpdateParams.getParam(a) != null);
+        } catch (CatalogParameterException e) {
+            throw new CatalogException("Could not update: " + e.getMessage(), e);
+        }
 
-                    String myName = parameters.getString(IndividualDBAdaptor.QueryParams.NAME.key());
-                    Query query = new Query()
-                            .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                            .append(IndividualDBAdaptor.QueryParams.NAME.key(), myName);
-                    if (individualDBAdaptor.count(query).first() > 0) {
-                        throw new CatalogException("Individual name " + myName + " already in use");
-                    }
-                    break;
-                case DATE_OF_BIRTH:
-                    if (StringUtils.isEmpty((String) param.getValue())) {
-                        parameters.put(param.getKey(), "");
-                    } else {
-                        if (!TimeUtils.isValidFormat("yyyyMMdd", (String) param.getValue())) {
-                            throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
-                        }
-                    }
-                    break;
-                case KARYOTYPIC_SEX:
-                    try {
-                        Individual.KaryotypicSex.valueOf(String.valueOf(param.getValue()));
-                    } catch (IllegalArgumentException e) {
-                        logger.error("Invalid karyotypic sex found: {}", e.getMessage(), e);
-                        throw new CatalogException("Invalid karyotypic sex detected");
-                    }
-                    break;
-                case SEX:
-                    try {
-                        Individual.Sex.valueOf(String.valueOf(param.getValue()));
-                    } catch (IllegalArgumentException e) {
-                        logger.error("Invalid sex found: {}", e.getMessage(), e);
-                        throw new CatalogException("Invalid sex detected");
-                    }
-                    break;
-                case MULTIPLES:
-                    // Check individual names exist
-                    Map<String, Object> multiples = (Map<String, Object>) param.getValue();
-                    List<String> siblingList = (List<String>) multiples.get("siblings");
-                    query = new Query()
-                            .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                            .append(IndividualDBAdaptor.QueryParams.NAME.key(), StringUtils.join(siblingList, ","));
-                    QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-                    QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
-                    if (individualQueryResult.getNumResults() < siblingList.size()) {
-                        int missing = siblingList.size() - individualQueryResult.getNumResults();
-                        throw new CatalogDBException("Missing " + missing + " siblings in the database.");
-                    }
-                    break;
-                case SAMPLES:
-                    // Check those samples can be used
-                    List<String> samples = parameters.getAsStringList(param.getKey());
-                    MyResourceIds sampleResource = catalogManager.getSampleManager().getIds(samples, String.valueOf(studyId), sessionId);
-                    checkSamplesNotInUseInOtherIndividual(new HashSet<>(sampleResource.getResourceIds()), studyId, individualId);
+        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.NAME.key())) {
+            ParamUtils.checkAlias(parameters.getString(IndividualDBAdaptor.UpdateParams.NAME.key()), "name",
+                    configuration.getCatalog().getOffset());
 
-                    // Fetch the samples to obtain the latest version as well
-                    Query sampleQuery = new Query()
-                            .append(SampleDBAdaptor.QueryParams.ID.key(), sampleResource.getResourceIds());
-                    QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                            SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.VERSION.key()));
-                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleQuery, sampleOptions);
-
-                    if (sampleQueryResult.getNumResults() < sampleResource.getResourceIds().size()) {
-                        throw new CatalogException("Internal error: Could not obtain all the samples to be updated.");
-                    }
-
-                    // Update the parameters with the proper list of samples
-                    parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleQueryResult.getResult());
-                    break;
-                case FATHER:
-                case MOTHER:
-                case ETHNICITY:
-                case POPULATION_DESCRIPTION:
-                case POPULATION_NAME:
-                case POPULATION_SUBPOPULATION:
-                case PHENOTYPES:
-                case LIFE_STATUS:
-                case AFFECTATION_STATUS:
-                case ANNOTATION_SETS:
-                case PRIVATE_FIELDS:
-                    break;
-                default:
-                    throw new CatalogException("Cannot update " + queryParam);
+            String myName = parameters.getString(IndividualDBAdaptor.QueryParams.NAME.key());
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), myName);
+            if (individualDBAdaptor.count(query).first() > 0) {
+                throw new CatalogException("Individual name " + myName + " already in use");
             }
+        }
+        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.DATE_OF_BIRTH.key())) {
+            if (StringUtils.isEmpty(parameters.getString(IndividualDBAdaptor.UpdateParams.DATE_OF_BIRTH.key()))) {
+                parameters.put(IndividualDBAdaptor.UpdateParams.DATE_OF_BIRTH.key(), "");
+            } else {
+                if (!TimeUtils.isValidFormat("yyyyMMdd", parameters.getString(IndividualDBAdaptor.UpdateParams.DATE_OF_BIRTH.key()))) {
+                    throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
+                }
+            }
+        }
+        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.KARYOTYPIC_SEX.key())) {
+            try {
+                Individual.KaryotypicSex.valueOf(parameters.getString(IndividualDBAdaptor.UpdateParams.KARYOTYPIC_SEX.key()));
+            } catch (IllegalArgumentException e) {
+                logger.error("Invalid karyotypic sex found: {}", e.getMessage(), e);
+                throw new CatalogException("Invalid karyotypic sex detected");
+            }
+        }
+        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.SEX.key())) {
+            try {
+                Individual.Sex.valueOf(parameters.getString(IndividualDBAdaptor.UpdateParams.SEX.key()));
+            } catch (IllegalArgumentException e) {
+                logger.error("Invalid sex found: {}", e.getMessage(), e);
+                throw new CatalogException("Invalid sex detected");
+            }
+        }
+        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.MULTIPLES.key())) {
+            // Check individual names exist
+            Map<String, Object> multiples = parameters.getMap(IndividualDBAdaptor.UpdateParams.MULTIPLES.key());
+            List<String> siblingList = (List<String>) multiples.get("siblings");
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), StringUtils.join(siblingList, ","));
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+            if (individualQueryResult.getNumResults() < siblingList.size()) {
+                int missing = siblingList.size() - individualQueryResult.getNumResults();
+                throw new CatalogDBException("Missing " + missing + " siblings in the database.");
+            }
+        }
+        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.SAMPLES.key())) {
+            // Check those samples can be used
+            List<String> samples = parameters.getAsStringList(IndividualDBAdaptor.UpdateParams.SAMPLES.key());
+            MyResourceIds sampleResource = catalogManager.getSampleManager().getIds(samples, String.valueOf(studyId), sessionId);
+            checkSamplesNotInUseInOtherIndividual(new HashSet<>(sampleResource.getResourceIds()), studyId, individualId);
+
+            // Fetch the samples to obtain the latest version as well
+            Query sampleQuery = new Query()
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleResource.getResourceIds());
+            QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                    SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.VERSION.key()));
+            QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleQuery, sampleOptions);
+
+            if (sampleQueryResult.getNumResults() < sampleResource.getResourceIds().size()) {
+                throw new CatalogException("Internal error: Could not obtain all the samples to be updated.");
+            }
+
+            // Update the parameters with the proper list of samples
+            parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleQueryResult.getResult());
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {

@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -31,13 +32,17 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.OntologyTerm;
+import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -389,38 +394,33 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw new CatalogException("Family " + familyId + " not found");
         }
 
+        try {
+            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> FamilyDBAdaptor.UpdateParams.getParam(a) != null);
+        } catch (CatalogParameterException e) {
+            throw new CatalogException("Could not update: " + e.getMessage(), e);
+        }
+
         // In case the user is updating members or phenotype list, we will create the family variable. If it is != null, it will mean that
         // all or some of those parameters have been passed to be updated, and we will need to call the private validator to check if the
         // fields are valid.
         Family family = null;
-        Iterator<Map.Entry<String, Object>> iterator = parameters.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, Object> param = iterator.next();
-            FamilyDBAdaptor.QueryParams queryParam = FamilyDBAdaptor.QueryParams.getParam(param.getKey());
-            switch (queryParam) {
-                case NAME:
-                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
-                    break;
-                case PHENOTYPES:
-                case MEMBERS:
-                    if (family == null) {
-                        // We parse the parameters to a family object
-                        try {
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            family = objectMapper.readValue(objectMapper.writeValueAsString(parameters), Family.class);
-                        } catch (IOException e) {
-                            logger.error("{}", e.getMessage(), e);
-                            throw new CatalogException(e);
-                        }
-                    }
-                    break;
-                case DESCRIPTION:
-                case ATTRIBUTES:
-                case ANNOTATION_SETS:
-                case PRIVATE_FIELDS:
-                    break;
-                default:
-                    throw new CatalogException("Cannot update " + queryParam);
+
+        if (parameters.containsKey(FamilyDBAdaptor.QueryParams.NAME.key())) {
+            ParamUtils.checkAlias(parameters.getString(FamilyDBAdaptor.QueryParams.NAME.key()), "name",
+                    configuration.getCatalog().getOffset());
+        }
+        if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())
+                || parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
+            // We parse the parameters to a family object
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+
+                family = objectMapper.readValue(objectMapper.writeValueAsString(parameters), Family.class);
+            } catch (IOException e) {
+                logger.error("{}", e.getMessage(), e);
+                throw new CatalogException(e);
             }
         }
 

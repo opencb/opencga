@@ -794,9 +794,7 @@ public class CatalogSampleManagerTest extends GenericTest {
                         new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))
                 ))
                 // Delete the annotation made for the variable HEIGHT
-                .append(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(),
-                        new ObjectMap(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), annotationSet.getName() + ":HEIGHT")
-                );
+                .append(Constants.DELETE_ANNOTATION, annotationSet.getName() + ":HEIGHT");
 
         // Update annotation set
         catalogManager.getIndividualManager().update(String.valueOf(studyId), String.valueOf(ind.getId()), updateAnnotation,
@@ -832,9 +830,7 @@ public class CatalogSampleManagerTest extends GenericTest {
                         new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))
                 ))
                 // Delete the annotation made for the variable HEIGHT
-                .append(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(),
-                        new ObjectMap(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), annotationSet.getName() + ":EXTRA")
-                );
+                .append(Constants.DELETE_ANNOTATION, annotationSet.getName() + ":EXTRA");
         catalogManager.getIndividualManager().update(String.valueOf(studyId), String.valueOf(ind.getId()), updateAnnotation,
                 new QueryOptions(), sessionIdUser);
         catalogManager.getSampleManager().update(String.valueOf(studyId), String.valueOf(s_1), updateAnnotation,
@@ -859,11 +855,8 @@ public class CatalogSampleManagerTest extends GenericTest {
         Sample sample = catalogManager.getSampleManager().get(s_1, null, sessionIdUser).first();
         AnnotationSet annotationSet = sample.getAnnotationSets().get(0);
 
-        ObjectMap updateAnnotation = new ObjectMap()
-                // Delete required annotation
-                .append(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(),
-                        new ObjectMap(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), annotationSet.getName() + ":NAME")
-                );
+        // Delete required annotation
+        ObjectMap updateAnnotation = new ObjectMap(Constants.DELETE_ANNOTATION, annotationSet.getName() + ":NAME");
 
         thrown.expect(CatalogException.class); //Can not delete required fields
         thrown.expectMessage("required annotation");

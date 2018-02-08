@@ -298,18 +298,11 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             }
         }
 
-        ObjectMap retMap = new ObjectMap()
+        return new ObjectMap()
                 .append(AnnotationSetManager.Action.CREATE.name(), createAnnotations)
-                .append(AnnotationSetManager.Action.UPDATE.name(), updateAnnotations);
-
-        if (parameters.containsKey(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key())) {
-            Map<String, Object> map = parameters.getMap(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key());
-            retMap.put(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), map.get(AnnotationSetManager.Action.DELETE_ANNOTATION.name()));
-            retMap.put(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(),
-                    map.get(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name()));
-        }
-
-        return retMap;
+                .append(AnnotationSetManager.Action.UPDATE.name(), updateAnnotations)
+                .append(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), parameters.getString(Constants.DELETE_ANNOTATION))
+                .append(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), parameters.getString(Constants.DELETE_ANNOTATION_SET));
     }
 
     public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName, QueryOptions options)

@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CohortManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
@@ -259,11 +258,11 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
             @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
-            ObjectMap privateMap = new ObjectMap();
-            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), deleteAnnotationSet);
-            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), deleteAnnotation);
-            if (!privateMap.isEmpty()) {
-                params.put(CohortDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), privateMap);
+            if (StringUtils.isNotEmpty(deleteAnnotation)) {
+                params.put(CohortDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
+            }
+            if (StringUtils.isNotEmpty(deleteAnnotationSet)) {
+                params.put(CohortDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
             }
 
             return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortStr, new ObjectMap(params), queryOptions,

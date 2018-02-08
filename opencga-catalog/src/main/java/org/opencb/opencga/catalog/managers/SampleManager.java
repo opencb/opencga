@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -487,26 +488,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     SampleAclEntry.SamplePermissions.UPDATE);
         }
 
-        for (Map.Entry<String, Object> param : parameters.entrySet()) {
-            SampleDBAdaptor.QueryParams queryParam = SampleDBAdaptor.QueryParams.getParam(param.getKey());
-            switch (queryParam) {
-                case NAME:
-                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
-                    break;
-                case SOURCE:
-                case INDIVIDUAL:
-                case TYPE:
-                case SOMATIC:
-                case DESCRIPTION:
-                case PHENOTYPES:
-                case STATS:
-                case ATTRIBUTES:
-                case ANNOTATION_SETS:
-                case PRIVATE_FIELDS:
-                    break;
-                default:
-                    throw new CatalogException("Cannot update " + queryParam);
-            }
+        try {
+            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> SampleDBAdaptor.UpdateParams.getParam(a) != null);
+        } catch (CatalogParameterException e) {
+            throw new CatalogException("Could not update: " + e.getMessage(), e);
+        }
+        if (parameters.containsKey(SampleDBAdaptor.UpdateParams.NAME.key())) {
+            ParamUtils.checkAlias(parameters.getString(SampleDBAdaptor.UpdateParams.NAME.key()), "name",
+                    configuration.getCatalog().getOffset());
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {

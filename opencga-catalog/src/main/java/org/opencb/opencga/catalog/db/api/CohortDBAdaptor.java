@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.VariableSet;
 
@@ -66,9 +67,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         BSTATS("bstats", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
 
         STUDY_ID("studyId", DECIMAL, ""),
-        STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
-
-        PRIVATE_FIELDS(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), TEXT_ARRAY, ""); // Map of other fields
+        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
         private static Map<String, QueryParams> map;
         static {
@@ -108,6 +107,39 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         }
 
         public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    enum UpdateParams {
+        NAME(QueryParams.NAME.key()),
+        CREATION_DATE(QueryParams.CREATION_DATE.key()),
+        DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        SAMPLES(QueryParams.SAMPLES.key()),
+        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
+        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
+        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
+        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
             return map.get(key);
         }
     }

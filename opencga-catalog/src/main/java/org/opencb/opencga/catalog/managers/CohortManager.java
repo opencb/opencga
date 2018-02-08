@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
@@ -385,27 +386,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     CohortAclEntry.CohortPermissions.UPDATE);
         }
 
-
         authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 CohortAclEntry.CohortPermissions.UPDATE);
 
-        for (Map.Entry<String, Object> param : parameters.entrySet()) {
-            CohortDBAdaptor.QueryParams queryParam = CohortDBAdaptor.QueryParams.getParam(param.getKey());
-            if (queryParam == null) {
-                throw new CatalogException("Cannot update " + param.getKey());
-            }
-            switch (queryParam) {
-                case NAME:
-                case CREATION_DATE:
-                case DESCRIPTION:
-                case SAMPLES:
-                case ATTRIBUTES:
-                case ANNOTATION_SETS:
-                case PRIVATE_FIELDS:
-                    break;
-                default:
-                    throw new CatalogException("Cannot update " + queryParam);
-            }
+        try {
+            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> CohortDBAdaptor.UpdateParams.getParam(a) != null);
+        } catch (CatalogParameterException e) {
+            throw new CatalogException("Could not update: " + e.getMessage(), e);
         }
 
         Cohort cohort = cohortDBAdaptor.get(resource.getResourceId(),

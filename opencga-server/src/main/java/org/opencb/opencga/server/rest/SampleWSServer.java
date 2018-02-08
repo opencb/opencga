@@ -26,7 +26,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
@@ -250,12 +249,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "params", required = true) UpdateSamplePOST parameters) {
         try {
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
-            ObjectMap privateMap = new ObjectMap();
-            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), deleteAnnotationSet);
-            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), deleteAnnotation);
-            if (!privateMap.isEmpty()) {
-                params.put(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), privateMap);
-            }
+            params.putIfNotEmpty(SampleDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
+            params.putIfNotEmpty(SampleDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
 
             if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
                 if (!params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {

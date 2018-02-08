@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.VariableSet;
 
@@ -80,9 +81,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT, ""),
-        ANNOTATION("annotation", TEXT, ""),
-
-        PRIVATE_FIELDS(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), TEXT_ARRAY, ""); // Map of other fields
+        ANNOTATION("annotation", TEXT, "");
 
         private static Map<String, QueryParams> map;
         static {
@@ -122,6 +121,49 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         }
 
         public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    enum UpdateParams {
+        NAME(QueryParams.NAME.key()),
+        DATE_OF_BIRTH(QueryParams.DATE_OF_BIRTH.key()),
+        KARYOTYPIC_SEX(QueryParams.KARYOTYPIC_SEX.key()),
+        SEX(QueryParams.SEX.key()),
+        MULTIPLES(QueryParams.MULTIPLES.key()),
+        SAMPLES(QueryParams.SAMPLES.key()),
+        FATHER(QueryParams.FATHER.key()),
+        MOTHER(QueryParams.MOTHER.key()),
+        ETHNICITY(QueryParams.ETHNICITY.key()),
+        POPULATION_DESCRIPTION(QueryParams.POPULATION_DESCRIPTION.key()),
+        POPULATION_NAME(QueryParams.POPULATION_NAME.key()),
+        POPULATION_SUBPOPULATION(QueryParams.POPULATION_SUBPOPULATION.key()),
+        PHENOTYPES(QueryParams.PHENOTYPES.key()),
+        LIFE_STATUS(QueryParams.LIFE_STATUS.key()),
+        AFFECTATION_STATUS(QueryParams.AFFECTATION_STATUS.key()),
+        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
+        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
+        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
             return map.get(key);
         }
     }

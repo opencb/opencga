@@ -24,7 +24,6 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -181,8 +180,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             throw new CatalogException("Missing annotationSetName field");
         }
 
-        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(),
-                new ObjectMap(Action.DELETE_ANNOTATION_SET.name(), annotationSetName));
+        ObjectMap params = new ObjectMap(Constants.DELETE_ANNOTATION_SET, annotationSetName);
 
         QueryResult<R> update = update(studyStr, id, params, new QueryOptions(), sessionId);
         return new QueryResult<>("Delete annotationSet", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
@@ -217,8 +215,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             annotationList.add(annotationSetName + ":" + annotation);
         }
 
-        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key(),
-                new ObjectMap(Action.DELETE_ANNOTATION.name(), StringUtils.join(annotationList, ",")));
+        ObjectMap params = new ObjectMap(Constants.DELETE_ANNOTATION, StringUtils.join(annotationList, ","));
 
         QueryResult<R> update = update(studyStr, id, params, new QueryOptions(), sessionId);
         return new QueryResult<>("Delete annotation", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
@@ -633,13 +630,9 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
         }
 
         // Are there any annotations to be deleted?
-        if (parameters.containsKey(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key())
-                && StringUtils.isNotEmpty(
-                        (String) parameters.getMap(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key())
-                                .get(Action.DELETE_ANNOTATION.name()))) {
+        if (StringUtils.isNotEmpty(parameters.getString(Constants.DELETE_ANNOTATION))) {
             // There are some annotations to be deleted
-            String deleteAnnotationString = (String) parameters.getMap(SampleDBAdaptor.QueryParams.PRIVATE_FIELDS.key())
-                    .get(Action.DELETE_ANNOTATION.name());
+            String deleteAnnotationString = parameters.getString(Constants.DELETE_ANNOTATION);
 
             if (variableSetList == null) {
                 // Obtain all the variable sets from the study

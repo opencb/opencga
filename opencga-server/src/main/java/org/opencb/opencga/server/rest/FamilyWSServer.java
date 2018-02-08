@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -180,12 +179,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("updateIndividualVersion");
 
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
-            ObjectMap privateMap = new ObjectMap();
-            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), deleteAnnotationSet);
-            privateMap.putIfNotEmpty(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), deleteAnnotation);
-            if (!privateMap.isEmpty()) {
-                params.put(FamilyDBAdaptor.QueryParams.PRIVATE_FIELDS.key(), privateMap);
-            }
+            params.putIfNotEmpty(FamilyDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
+            params.putIfNotEmpty(FamilyDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
 
             QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, params, queryOptions,
                     sessionId);

@@ -71,9 +71,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
-        ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, ""),
-
-        PRIVATE_FIELDS("private", TEXT_ARRAY, ""); // Map of other fields
+        ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
         static {
@@ -113,6 +111,43 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         }
 
         public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    enum UpdateParams {
+        NAME(QueryParams.NAME.key()),
+        SOURCE(QueryParams.SOURCE.key()),
+        INDIVIDUAL(QueryParams.INDIVIDUAL.key()),
+        TYPE(QueryParams.TYPE.key()),
+        SOMATIC(QueryParams.SOMATIC.key()),
+        DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        PHENOTYPES(QueryParams.PHENOTYPES.key()),
+        STATS(QueryParams.STATS.key()),
+        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
+        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
+        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
+        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
             return map.get(key);
         }
     }
