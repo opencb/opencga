@@ -448,8 +448,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     resume,
                     BatchFileOperation.Type.OTHER,
                     // Allow concurrent operations if fillGaps.
-                    (v) -> fillGaps);
-
+                    (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
             return sc;
         });
 
