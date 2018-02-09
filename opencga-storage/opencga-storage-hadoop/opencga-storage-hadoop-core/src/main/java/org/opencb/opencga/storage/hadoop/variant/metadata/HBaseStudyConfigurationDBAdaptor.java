@@ -24,6 +24,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
@@ -65,6 +66,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     private final ObjectMapper objectMapper;
     private final String tableName;
     private final HBaseLock lock;
+    private Boolean tableExists = null; // unknown
 
 
     public HBaseStudyConfigurationDBAdaptor(VariantTableHelper helper) {
@@ -106,7 +108,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     @Override
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
         try {
-            VariantTableHelper.createVariantTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection());
+            ensureTableExists();
             return lock.lock(getStudyConfigurationRowKey(studyId), getLockColumn(), lockDuration, timeout);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -146,7 +148,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         }
 
         try {
-            if (hBaseManager.act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+            if (hBaseManager.tableExists(tableName)) {
                 studyConfigurationList = hBaseManager.act(tableName, table -> {
                     Result result = table.get(get);
                     if (result.isEmpty()) {
@@ -208,7 +210,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     public BiMap<String, Integer> getStudies(QueryOptions options) {
         Get get = new Get(getStudiesSummaryRowKey());
         try {
-            if (!hBaseManager.act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+            if (!hBaseManager.tableExists(tableName)) {
                 logger.debug("Get StudyConfiguration summary TABLE_NO_EXISTS");
                 return HashBiMap.create();
             }
@@ -247,8 +249,8 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
 
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
         try {
+            ensureTableExists();
             Connection connection = hBaseManager.getConnection();
-            VariantTableHelper.createVariantTableIfNeeded(genomeHelper, tableName, connection);
             try (Table table = connection.getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(getStudiesSummaryRowKey());
@@ -269,6 +271,15 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
             hBaseManager.close();
         } catch (Exception e) {
             throw new IOException(e);
+        }
+    }
+
+    private void ensureTableExists() throws IOException {
+        if (tableExists == null || !tableExists) {
+            if (createMetaTableIfNeeded(hBaseManager, tableName, genomeHelper)) {
+                logger.info("Create table '{}' in hbase!", tableName);
+            }
+            tableExists = true;
         }
     }
 }

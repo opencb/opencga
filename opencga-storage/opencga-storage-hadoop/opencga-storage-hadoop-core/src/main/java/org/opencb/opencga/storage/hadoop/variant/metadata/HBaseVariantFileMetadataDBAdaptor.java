@@ -22,6 +22,7 @@ import com.google.common.collect.Iterators;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
@@ -34,7 +35,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAda
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -61,6 +61,7 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
     private final HBaseManager hBaseManager;
     private final ObjectMapper objectMapper;
     private final String tableName;
+    private Boolean tableExists = null; // unknown
 
     public HBaseVariantFileMetadataDBAdaptor(Configuration configuration) {
         // FIXME
@@ -178,11 +179,9 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
         }
     }
 
-    public void update(String studyId, VariantFileMetadata metadata) throws IOException {
+    private void update(String studyId, VariantFileMetadata metadata) throws IOException {
         Objects.requireNonNull(metadata);
-        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection())) {
-            logger.info("Create table '{}' in hbase!", tableName);
-        }
+        ensureTableExists();
         Integer fileId = Integer.valueOf(metadata.getId());
         checkFileId(fileId);
         Put put = new Put(getVariantFileMetadataRowKey(Integer.valueOf(studyId), fileId));
@@ -200,9 +199,7 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
     }
 
     public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
-        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection())) {
-            logger.info("Create table '{}' in hbase!", tableName);
-        }
+        ensureTableExists();
         StringBuilder sb = new StringBuilder();
         for (Integer newLoadedFile : newLoadedFiles) {
             sb.append(',').append(newLoadedFile);
@@ -262,10 +259,10 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
                     for (String s : Bytes.toString(value).split(",")) {
                         if (!s.isEmpty()) {
                             if (s.startsWith("[")) {
-                                s = s.replaceFirst("\\[", "");
+                                s = s.substring(1);
                             }
                             if (s.endsWith("]")) {
-                                s = s.replaceAll("\\]", "");
+                                s = s.substring(0, s.length() - 1);
                             }
                             set.add(Integer.parseInt(s));
                         }
@@ -273,8 +270,30 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
                 } else {
                     set = new LinkedHashSet<>();
                 }
+//                Set<Integer> set = new TreeSet<>();
+//                Scan scan = new Scan();
+//                scan.setRowPrefixFilter(getVariantFileMetadataRowKeyPrefix(studyId));
+//                scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL,
+//                        new FirstKeyOnlyFilter(),
+//                        new RowFilter(CompareFilter.CompareOp.NOT_EQUAL, new BinaryComparator(getFilesSummaryRowKey(studyId)))));
+//                scan.setFilter(new FirstKeyOnlyFilter());
+//                for (Result result : table.getScanner(scan)) {
+//                    Pair<Integer, Integer> pair = parseVariantFileMetadataRowKey(result.getRow());
+//                    Integer fileId = pair.getValue();
+//                    set.add(fileId);
+//                }
                 return set;
             });
         }
     }
+
+    private void ensureTableExists() throws IOException {
+        if (tableExists == null || !tableExists) {
+            if (createMetaTableIfNeeded(hBaseManager, tableName, genomeHelper)) {
+                logger.info("Create table '{}' in hbase!", tableName);
+            }
+            tableExists = true;
+        }
+    }
+
 }
