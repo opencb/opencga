@@ -39,7 +39,7 @@ public class FillGapsTask {
     private final boolean skipReferenceVariants;
 
     private Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
-    private boolean ignoreMultipleOverlaps = false;
+    private boolean quiet = false;
 
     public FillGapsTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean skipReferenceVariants) {
         this.studyConfiguration = studyConfiguration;
@@ -51,7 +51,7 @@ public class FillGapsTask {
     }
 
     public FillGapsTask setQuiet(boolean quiet) {
-        this.ignoreMultipleOverlaps = quiet;
+        this.quiet = quiet;
         return this;
     }
 
@@ -103,7 +103,7 @@ public class FillGapsTask {
                 vcfSlice = realVariants.get(0).getLeft();
             } else {
                 String msg = "Found multiple overlaps for variant " + variant + " in file " + fileId;
-                if (ignoreMultipleOverlaps) {
+                if (!quiet) {
 //                    throw new IllegalStateException(msg);
                     logger.warn(msg);
                 }
