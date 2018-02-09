@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -195,7 +194,7 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             List<String> finalProjectionList = new ArrayList<>();
 
             for (String projection : projectionList) {
-                if (projection.equals(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+                if (ANNOTATION_SETS.equals(projection)) {
                     finalProjectionList.add(AnnotationSetParams.ANNOTATION_SETS.key());
                 } else if (!projection.startsWith(Constants.ANNOTATION + ".")
                         && !projection.startsWith(Constants.ANNOTATION_SET_NAME + ".")
@@ -219,13 +218,17 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             for (String projection : projectionList) {
                 if (!projection.startsWith(Constants.ANNOTATION + ".") && !projection.startsWith(Constants.ANNOTATION_SET_NAME + ".")
                         && !projection.startsWith(Constants.VARIABLE_SET + ".")) {
-                    finalProjectionList.add(projection);
+                    if (ANNOTATION_SETS.equals(projection)) {
+                        includeAnnotation = true;
+                    } else {
+                        finalProjectionList.add(projection);
+                    }
                 } else {
                     includeAnnotation = true;
                 }
             }
 
-            if (includeAnnotation && !finalProjectionList.isEmpty()) {
+            if (includeAnnotation) {
                 // We need to specify we need to include the annotation sets in order to filter them properly afterwards with the converters
                 finalProjectionList.add(AnnotationSetParams.ANNOTATION_SETS.key());
             }
@@ -242,13 +245,17 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
 
     public ObjectMap prepareAnnotationUpdate(long entryId, ObjectMap parameters, List<VariableSet> variableSetList)
             throws CatalogDBException {
+        ObjectMap retMap = new ObjectMap()
+                .append(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), parameters.getString(Constants.DELETE_ANNOTATION))
+                .append(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), parameters.getString(Constants.DELETE_ANNOTATION_SET));
+
         if (!parameters.containsKey(ANNOTATION_SETS) || parameters.get(ANNOTATION_SETS) == null) {
-            return new ObjectMap();
+            return retMap;
         }
 
         List<AnnotationSet> annotationSetList = (List<AnnotationSet>) parameters.get(ANNOTATION_SETS);
-        if (annotationSetList.isEmpty() || variableSetList.isEmpty()) {
-            return new ObjectMap();
+        if (annotationSetList == null || annotationSetList.isEmpty() || variableSetList.isEmpty()) {
+            return retMap;
         }
 
         Map<String, AnnotationSetManager.Action> annotationSetAction =
@@ -298,11 +305,9 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             }
         }
 
-        return new ObjectMap()
+        return retMap
                 .append(AnnotationSetManager.Action.CREATE.name(), createAnnotations)
-                .append(AnnotationSetManager.Action.UPDATE.name(), updateAnnotations)
-                .append(AnnotationSetManager.Action.DELETE_ANNOTATION.name(), parameters.getString(Constants.DELETE_ANNOTATION))
-                .append(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name(), parameters.getString(Constants.DELETE_ANNOTATION_SET));
+                .append(AnnotationSetManager.Action.UPDATE.name(), updateAnnotations);
     }
 
     public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName, QueryOptions options)

@@ -20,6 +20,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,6 +41,10 @@ public class AnnotationSet {
 
 
     public AnnotationSet() {
+    }
+
+    public AnnotationSet(String name, long variableSetId, Map<String, Object> annotations) {
+        this(name, variableSetId, annotations, TimeUtils.getTime(), 1, Collections.emptyMap());
     }
 
     public AnnotationSet(String name, long variableSetId, Map<String, Object> annotations, Map<String, Object> attributes) {

@@ -149,8 +149,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumTotalResults() != 1 && parameters.size() > 0
-                && !(parameters.size() <= 3 && parameters.containsKey(QueryParams.ANNOTATION_SETS.key()))) {
+        if (update.getNumTotalResults() != 1 && parameters.size() > 0 && !(parameters.size() <= 3
+                && (parameters.containsKey(QueryParams.ANNOTATION_SETS.key()) || parameters.containsKey(Constants.DELETE_ANNOTATION_SET)
+                || parameters.containsKey(Constants.DELETE_ANNOTATION)))) {
             throw new CatalogDBException("Could not update sample with id " + id);
         }
         Query query = new Query()
