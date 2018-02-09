@@ -44,6 +44,8 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
     private static final Comparator<Variant> VARIANT_COMPARATOR = Comparator
             .comparing(Variant::getStart)
             .thenComparing(Variant::getEnd)
+            .thenComparing(Variant::getReference)
+            .thenComparing(Variant::getAlternate)
             .thenComparing(Variant::compareTo);
 //    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
 
@@ -125,7 +127,10 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
     public List<Put> apply(List<Result> list) throws IOException {
         List<Put> puts = new ArrayList<>(list.size());
         for (Result result : list) {
-            puts.addAll(fillGaps(buildContext(result)));
+            StopWatch stopWatch = new StopWatch().start();
+            Context context = buildContext(result);
+            increment("BUILD_CONTEXT", context.fileBatch, stopWatch);
+            puts.addAll(fillGaps(context));
         }
         return puts;
     }
@@ -383,12 +388,20 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
     }
 
     protected long increment(String name, int fileBatch, long delta) {
-        return stats.compute(name + "_(fb=" + fileBatch + ')', (key, value) -> value == null ? delta : value + delta);
+        if (fileBatch <= 1) {
+            return stats.compute(name + "_(fb=" + fileBatch + ')', (key, value) -> value == null ? delta : value + delta);
+        } else {
+            return -1;
+        }
     }
 
     protected long increment(String name, int fileBatch, StopWatch stopWatch) {
-        long delta = stopWatch.now(TimeUnit.NANOSECONDS);
-        return stats.compute(name + "_TIME_NS_(fb=" + fileBatch + ')', (key, value) -> value == null ? delta : value + delta);
+        if (fileBatch <= 1) {
+            long delta = stopWatch.now(TimeUnit.NANOSECONDS);
+            return stats.compute(name + "_TIME_NS_(fb=" + fileBatch + ')', (key, value) -> value == null ? delta : value + delta);
+        } else {
+            return -1;
+        }
     }
 
 }
