@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.phoenix.exception.SQLExceptionCode;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -55,6 +56,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +89,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final AtomicReference<java.sql.Connection> phoenixCon = new AtomicReference<>();
     private final VariantSqlQueryParser queryParser;
     private final VariantHBaseQueryParser hbaseQueryParser;
-    private final HadoopVariantFileMetadataDBAdaptor variantFileMetadataDBAdaptor;
+    private final HBaseVariantFileMetadataDBAdaptor variantFileMetadataDBAdaptor;
     private final int phoenixFetchSize;
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
@@ -108,8 +110,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.variantTable = credentials.getTable();
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
         this.studyConfigurationManager.set(
-                new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(credentials.getTable(), conf, options, hBaseManager)));
-        this.variantFileMetadataDBAdaptor = new HadoopVariantFileMetadataDBAdaptor(genomeHelper, hBaseManager, tableNameGenerator);
+                new StudyConfigurationManager(
+                        new HBaseStudyConfigurationDBAdaptor(tableNameGenerator.getMetaTableName(), conf, hBaseManager)));
+        this.variantFileMetadataDBAdaptor = new HBaseVariantFileMetadataDBAdaptor(genomeHelper, hBaseManager, tableNameGenerator);
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
@@ -188,12 +191,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public VariantFileMetadata getVariantFileMetadata(int studyId, int fileId, QueryOptions options) throws IOException {
-        HadoopVariantFileMetadataDBAdaptor manager = getVariantFileMetadataDBAdaptor();
+        HBaseVariantFileMetadataDBAdaptor manager = getVariantFileMetadataDBAdaptor();
         return manager.getVariantFileMetadata(studyId, fileId, options);
     }
 
     @Override
-    public HadoopVariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
+    public HBaseVariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
         return variantFileMetadataDBAdaptor;
     }
 
@@ -426,6 +429,17 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 }
                 return iterator;
             } catch (SQLException e) {
+                if (e.getErrorCode() == SQLExceptionCode.COLUMN_NOT_FOUND.getErrorCode()) {
+                    try {
+                        logger.error(e.getMessage());
+                        logger.info("Available columns from table " + variantTable + " :");
+                        for (PhoenixHelper.Column column : phoenixHelper.getPhoenixHelper().getColumns(getJdbcConnection(), variantTable)) {
+                            logger.info(" - " + column.toColumnInfo());
+                        }
+                    } catch (SQLException e1) {
+                        logger.error("Error reading columns for table " + variantTable, e1);
+                    }
+                }
                 throw new RuntimeException(e);
             }
         }

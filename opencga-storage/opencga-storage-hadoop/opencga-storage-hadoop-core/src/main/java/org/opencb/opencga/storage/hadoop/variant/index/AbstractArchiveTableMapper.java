@@ -248,9 +248,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             return; // TODO search backwards?
         }
 
-        if (Bytes.equals(key.get(), getHelper().getMetaRowKey())) {
-            return; // ignore metadata column
-        }
         context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_BLOCK_READ").increment(1);
 
 

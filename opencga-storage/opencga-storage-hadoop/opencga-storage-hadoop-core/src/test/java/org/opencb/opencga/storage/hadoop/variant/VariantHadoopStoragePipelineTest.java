@@ -209,14 +209,9 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
             int num = 0;
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {
-                if (Bytes.toString(result.getRow()).startsWith(genomeHelper.getMetaRowKeyString())) {
-                    continue;
-                }
                 Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
                 System.out.println("Variant = " + variant);
-                if (!variant.getChromosome().equals(genomeHelper.getMetaRowKeyString())) {
-                    num++;
-                }
+                num++;
             }
             resultScanner.close();
             return num;
@@ -242,9 +237,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {
                 System.out.println("VcfSlice = " + Bytes.toString(result.getRow()));
-                if (Arrays.equals(result.getRow(), archiveHelper.getMetaRowKey())) {
-                    continue;
-                }
+
                 byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
                 VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(
                         value);

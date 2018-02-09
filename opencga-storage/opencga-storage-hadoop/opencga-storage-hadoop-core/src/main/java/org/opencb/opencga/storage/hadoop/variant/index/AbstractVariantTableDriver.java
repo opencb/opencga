@@ -274,8 +274,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     protected StudyConfigurationManager getStudyConfigurationManager() throws IOException {
         if (scm == null) {
-            byte[] outTable = getHelper().getAnalysisTable();
-            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(Bytes.toString(outTable), getConf(), null));
+            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(getHelper()));
         }
         return scm;
     }

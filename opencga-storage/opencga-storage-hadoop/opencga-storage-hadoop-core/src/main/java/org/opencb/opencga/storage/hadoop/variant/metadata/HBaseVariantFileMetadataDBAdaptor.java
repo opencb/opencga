@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant.adaptors;
+package org.opencb.opencga.storage.hadoop.variant.metadata;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Iterators;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
@@ -29,10 +31,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,30 +46,31 @@ import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
+
 /**
  * Created on 16/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDBAdaptor {
+public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBAdaptor {
 
-    protected static Logger logger = LoggerFactory.getLogger(HadoopVariantFileMetadataDBAdaptor.class);
+    protected static Logger logger = LoggerFactory.getLogger(HBaseVariantFileMetadataDBAdaptor.class);
 
     private final GenomeHelper genomeHelper;
-    private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final HBaseManager hBaseManager;
     private final ObjectMapper objectMapper;
+    private final String tableName;
 
-    public HadoopVariantFileMetadataDBAdaptor(Configuration configuration) {
+    public HBaseVariantFileMetadataDBAdaptor(Configuration configuration) {
         // FIXME
         this(new GenomeHelper(configuration), null, new HBaseVariantTableNameGenerator(HBaseVariantTableNameGenerator
                 .getDBNameFromVariantsTableName(new VariantTableHelper(configuration).getAnalysisTableAsString()), configuration));
     }
 
-    public HadoopVariantFileMetadataDBAdaptor(GenomeHelper genomeHelper, HBaseManager hBaseManager,
-                                              HBaseVariantTableNameGenerator tableNameGenerator) {
+    public HBaseVariantFileMetadataDBAdaptor(GenomeHelper genomeHelper, HBaseManager hBaseManager,
+                                             HBaseVariantTableNameGenerator tableNameGenerator) {
         this.genomeHelper = genomeHelper;
-        this.tableNameGenerator = tableNameGenerator;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         if (hBaseManager == null) {
@@ -74,6 +79,7 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
             // Create a new instance of HBaseManager to close only if needed
             this.hBaseManager = new HBaseManager(hBaseManager);
         }
+        tableName = tableNameGenerator.getMetaTableName();
     }
 
     @Override
@@ -83,7 +89,12 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
 
     public VariantFileMetadata getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
             throws IOException {
-        return iterator(studyId, Collections.singletonList(fileId), options).next();
+        Iterator<VariantFileMetadata> iterator = iterator(studyId, Collections.singletonList(fileId), options);
+        if (iterator.hasNext()) {
+            return iterator.next();
+        } else {
+            throw VariantQueryException.fileNotFound(fileId, studyId);
+        }
     }
 
     @Override
@@ -98,43 +109,56 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
     }
 
     public Iterator<VariantFileMetadata> iterator(int studyId, List<Integer> fileIds, QueryOptions options) throws IOException {
-        String tableName = tableNameGenerator.getArchiveTableName(studyId);
-        long start = System.currentTimeMillis();
-        Get get = new Get(genomeHelper.getMetaRowKey());
-        if (fileIds == null || fileIds.isEmpty()) {
-            get.addFamily(genomeHelper.getColumnFamily());
-        } else {
-            for (Integer fileId : fileIds) {
-                byte[] columnName = getMetadataColumn(fileId);
-                get.addColumn(genomeHelper.getColumnFamily(), columnName);
-            }
-        }
+        logger.debug("Get VariantFileMetadata from : {}", fileIds);
+
         if (!hBaseManager.act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
             return Collections.emptyIterator();
         }
-        HBaseManager.HBaseTableFunction<Result> resultHBaseTableFunction = table -> table.get(get);
-        Result result = hBaseManager.act(tableName, resultHBaseTableFunction);
-        logger.debug("Get VcfMeta from : {}", fileIds);
-        if (result.isEmpty()) {
-            return Collections.emptyIterator();
+
+        if (fileIds != null && fileIds.size() == 1) {
+            Get get = new Get(getVariantFileMetadataRowKey(studyId, fileIds.get(0)));
+            get.addColumn(genomeHelper.getColumnFamily(), getValueColumn());
+            Result result = hBaseManager.act(tableName, (HBaseManager.HBaseTableFunction<Result>) table -> table.get(get));
+            VariantFileMetadata value = resultToVariantFileMetadata(result);
+            if (value == null) {
+                return Collections.emptyIterator();
+            } else {
+                return Iterators.singletonIterator(value);
+            }
         } else {
-            return result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()
-                    .stream()
-                    .filter(entry -> !Arrays.equals(entry.getKey(), genomeHelper.getMetaRowKey()))
-                    .map(entry -> {
-                        try {
-                            return objectMapper.readValue(entry.getValue(), VariantFileMetadata.class);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException("Problem with " + Bytes.toString(entry.getKey()), e);
-                        }
-                    })
-                    .iterator();
+            Scan scan = new Scan();
+            scan.setRowPrefixFilter(getVariantFileMetadataRowKeyPrefix(studyId));
+            if (fileIds != null && !fileIds.isEmpty()) {
+                FilterList filterList = new FilterList();
+                for (Integer fileId : fileIds) {
+                    filterList.addFilter(new RowFilter(CompareFilter.CompareOp.EQUAL,
+                            new BinaryComparator(getVariantFileMetadataRowKey(studyId, fileId))));
+                }
+                scan.setFilter(filterList);
+            } else {
+                scan.setFilter(
+                        new SingleColumnValueFilter(
+                                genomeHelper.getColumnFamily(), getTypeColumn(),
+                                CompareFilter.CompareOp.EQUAL, Type.VARIANT_FILE_METADATA.bytes()));
+
+            }
+            ResultScanner scanner = hBaseManager.act(tableName,
+                    (HBaseManager.HBaseTableFunction<ResultScanner>) table -> table.getScanner(scan));
+
+            return Iterators.transform(scanner.iterator(), this::resultToVariantFileMetadata);
         }
-//        } catch (IOException e) {
-//            throw new StorageEngineException("Error fetching VariantSources from study " + studyId
-//                    + ", from table \"" + tableName + "\""
-//                    + " for files " + fileIds, e);
-//        }
+    }
+
+    private VariantFileMetadata resultToVariantFileMetadata(Result result) {
+        if (result == null || result.isEmpty()) {
+            return null;
+        }
+        byte[] value = result.getValue(genomeHelper.getColumnFamily(), getValueColumn());
+        try {
+            return objectMapper.readValue(value, VariantFileMetadata.class);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Problem with " + Bytes.toString(result.getRow()), e);
+        }
     }
 
     @Override
@@ -156,68 +180,58 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
 
     public void update(String studyId, VariantFileMetadata metadata) throws IOException {
         Objects.requireNonNull(metadata);
-        String tableName = tableNameGenerator.getArchiveTableName(Integer.parseInt(studyId));
         if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
-        Put put = wrapAsPut(metadata, this.genomeHelper);
+        Integer fileId = Integer.valueOf(metadata.getId());
+        checkFileId(fileId);
+        Put put = new Put(getVariantFileMetadataRowKey(Integer.valueOf(studyId), fileId));
+        put.addColumn(this.genomeHelper.getColumnFamily(), getValueColumn(), metadata.getImpl().toString().getBytes());
+        put.addColumn(this.genomeHelper.getColumnFamily(), getTypeColumn(), Type.VARIANT_FILE_METADATA.bytes());
         hBaseManager.act(tableName, table -> {
             table.put(put);
         });
     }
 
-    public static Put wrapAsPut(VariantFileMetadata fileMetadata, GenomeHelper helper) {
-        Put put = new Put(helper.getMetaRowKey());
-        put.addColumn(helper.getColumnFamily(), getMetadataColumn(fileMetadata),
-                fileMetadata.getImpl().toString().getBytes());
-        return put;
-    }
-
-    public static byte[] getMetadataColumn(VariantFileMetadata metadata) {
-        Integer fileId = Integer.valueOf(metadata.getId());
-        return getMetadataColumn(fileId);
-    }
-
-    public static byte[] getMetadataColumn(int fileId) {
+    public static void checkFileId(int fileId) {
         if (fileId <= 0) {
             throw new IllegalArgumentException("FileId must be greater than 0. Got " + fileId);
         }
-        return Bytes.toBytes(String.valueOf(fileId));
     }
 
     public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
-        String tableName = tableNameGenerator.getArchiveTableName(studyId);
         if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         StringBuilder sb = new StringBuilder();
         for (Integer newLoadedFile : newLoadedFiles) {
-            sb.append(",").append(newLoadedFile);
+            sb.append(',').append(newLoadedFile);
         }
 
-        Append append = new Append(genomeHelper.getMetaRowKey());
-        append.add(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey(),
-                Bytes.toBytes(sb.toString()));
+        Append append = new Append(getFilesSummaryRowKey(studyId));
+        append.add(genomeHelper.getColumnFamily(), getValueColumn(), Bytes.toBytes(sb.toString()));
+        Put put = new Put(getFilesSummaryRowKey(studyId));
+        put.addColumn(genomeHelper.getColumnFamily(), getTypeColumn(), Type.FILES.bytes());
+
         hBaseManager.act(tableName, table -> {
             table.append(append);
+            table.put(put);
         });
     }
 
     @Override
     public void delete(int study, int file) throws IOException {
-        String tableName = tableNameGenerator.getArchiveTableName(study);
 
         Set<Integer> loadedFiles = getLoadedFiles(study);
         loadedFiles.remove(file);
         String loadedFilesStr = loadedFiles.stream().map(Object::toString).collect(Collectors.joining(","));
 
         // Remove from loaded files
-        Put putLoadedFiles = new Put(genomeHelper.getMetaRowKey());
-        putLoadedFiles.addColumn(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey(),
-                Bytes.toBytes(loadedFilesStr));
+        Put putLoadedFiles = new Put(getFilesSummaryRowKey(study));
+        putLoadedFiles.addColumn(genomeHelper.getColumnFamily(), getValueColumn(), Bytes.toBytes(loadedFilesStr));
 
-        Delete delete = new Delete(genomeHelper.getMetaRowKey())
-                .addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(String.valueOf(file)));
+        Delete delete = new Delete(getVariantFileMetadataRowKey(study, file));
+
         hBaseManager.act(tableName, table -> {
             table.delete(delete);
             table.put(putLoadedFiles);
@@ -234,17 +248,17 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
     }
 
     public Set<Integer> getLoadedFiles(int studyId) throws IOException {
-        String tableName = tableNameGenerator.getArchiveTableName(studyId);
         if (!hBaseManager.tableExists(tableName)) {
             return new HashSet<>();
         } else {
             return hBaseManager.act(tableName, table -> {
-                Get get = new Get(genomeHelper.getMetaRowKey());
-                get.addColumn(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey());
-                byte[] value = table.get(get).getValue(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey());
+                Get get = new Get(getFilesSummaryRowKey(studyId));
+                get.addColumn(genomeHelper.getColumnFamily(), getValueColumn());
+
+                byte[] value = table.get(get).getValue(genomeHelper.getColumnFamily(), getValueColumn());
                 Set<Integer> set;
                 if (value != null) {
-                    set = new LinkedHashSet<Integer>();
+                    set = new LinkedHashSet<>();
                     for (String s : Bytes.toString(value).split(",")) {
                         if (!s.isEmpty()) {
                             if (s.startsWith("[")) {
@@ -257,7 +271,7 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
                         }
                     }
                 } else {
-                    set = new LinkedHashSet<Integer>();
+                    set = new LinkedHashSet<>();
                 }
                 return set;
             });

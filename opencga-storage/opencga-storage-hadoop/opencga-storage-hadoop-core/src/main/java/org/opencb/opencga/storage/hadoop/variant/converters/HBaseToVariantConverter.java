@@ -27,7 +27,6 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
@@ -73,9 +72,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     protected boolean failOnEmptyVariants = false;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
-        this(variantTableHelper, new StudyConfigurationManager(
-                new HBaseStudyConfigurationDBAdaptor(
-                        variantTableHelper.getAnalysisTableAsString(), variantTableHelper.getConf(), new ObjectMap())));
+        this(variantTableHelper, new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(variantTableHelper)));
     }
 
     public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {

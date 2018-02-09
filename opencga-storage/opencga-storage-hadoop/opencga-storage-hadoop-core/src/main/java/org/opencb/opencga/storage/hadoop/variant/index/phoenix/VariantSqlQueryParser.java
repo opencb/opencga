@@ -340,10 +340,10 @@ public class VariantSqlQueryParser {
         }
 //        addQueryFilter(query, GENE, VariantColumn.GENES, regionFilters);
 
-        if (regionFilters.isEmpty()) {
-            // chromosome != _METADATA
-            regionFilters.add(VariantColumn.CHROMOSOME + " != '" + genomeHelper.getMetaRowKeyString() + "'");
-        }
+//        if (regionFilters.isEmpty()) {
+//            // chromosome != _METADATA
+//            regionFilters.add(VariantColumn.CHROMOSOME + " != '" + genomeHelper.getMetaRowKeyString() + "'");
+//        }
         return regionFilters;
     }
 

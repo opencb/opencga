@@ -53,7 +53,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -299,15 +299,13 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         Integer count = dbAdaptor.getHBaseManager().act(engine.getArchiveTableName(STUDY_ID), table -> {
             int numBlocks = 0;
             for (Result result : table.getScanner(dbAdaptor.getGenomeHelper().getColumnFamily())) {
-                if (!Bytes.toString(result.getRow()).equals(GenomeHelper.DEFAULT_METADATA_ROW_KEY)) {
-                    numBlocks++;
-                    int batch = rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(result.getRow()));
-                    for (byte[] column : result.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).keySet()) {
-                        if (!Bytes.startsWith(column, VARIANT_COLUMN_B_PREFIX)) {
-                            int fileId = ArchiveTableHelper.getFileIdFromNonRefColumnName(column);
-                            int expectedBatch = rowKeyFactory.getFileBatch(fileId);
-                            assertEquals(expectedBatch, batch);
-                        }
+                numBlocks++;
+                int batch = rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(result.getRow()));
+                for (byte[] column : result.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).keySet()) {
+                    if (!Bytes.startsWith(column, VARIANT_COLUMN_B_PREFIX)) {
+                        int fileId = ArchiveTableHelper.getFileIdFromNonRefColumnName(column);
+                        int expectedBatch = rowKeyFactory.getFileBatch(fileId);
+                        assertEquals(expectedBatch, batch);
                     }
                 }
             }
@@ -358,7 +356,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         System.out.println("StudyConfiguration = " + studyConfiguration);
 
-        HadoopVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
+        HBaseVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
         Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles(studyConfiguration.getStudyId());
         System.out.println("loadedFiles = " + loadedFiles);
         for (int fileId = 1; fileId <= 17; fileId++) {

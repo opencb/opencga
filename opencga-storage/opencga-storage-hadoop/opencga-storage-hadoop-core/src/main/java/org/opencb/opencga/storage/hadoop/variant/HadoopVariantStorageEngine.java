@@ -789,7 +789,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         HBaseCredentials dbCredentials = getDbCredentials();
         Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(), dbCredentials);
         return new StudyConfigurationManager(
-                new HBaseStudyConfigurationDBAdaptor(dbCredentials.getTable(), configuration, options, getHBaseManager(configuration)));
+                new HBaseStudyConfigurationDBAdaptor(
+                        getTableNameGenerator().getMetaTableName(), configuration, getHBaseManager(configuration)));
     }
 
     private Configuration getHadoopConfiguration() throws StorageEngineException {

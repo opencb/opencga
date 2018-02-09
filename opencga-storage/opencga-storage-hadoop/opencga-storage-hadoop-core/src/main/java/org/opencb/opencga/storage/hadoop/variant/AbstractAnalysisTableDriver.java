@@ -287,7 +287,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     protected StudyConfigurationManager getStudyConfigurationManager() throws IOException {
         if (scm == null) {
-            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(getAnalysisTable(), getConf(), null));
+            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(getHelper()));
         }
         return scm;
     }
@@ -309,7 +309,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         VariantTableHelper.setStudyId(conf, studyId);
         VariantTableHelper.setAnalysisTable(conf, analysisTable);
         VariantTableHelper.setArchiveTable(conf, archiveTable);
-        variantTablehelper = new VariantTableHelper(conf, archiveTable, analysisTable, null);
+        variantTablehelper = new VariantTableHelper(conf, archiveTable, analysisTable);
         return variantTablehelper;
     }
 

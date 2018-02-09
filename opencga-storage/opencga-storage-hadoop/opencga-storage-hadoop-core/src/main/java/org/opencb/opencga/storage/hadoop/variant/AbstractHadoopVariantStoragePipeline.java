@@ -25,6 +25,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -55,7 +56,6 @@ import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJs
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
@@ -64,7 +64,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
@@ -436,7 +436,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             boolean missingFilesDetected = false;
 
 
-            HadoopVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
+            HBaseVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
             Set<Integer> files = null;
             try {
                 files = fileMetadataManager.getLoadedFiles(studyId);
@@ -648,11 +648,12 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
 
-        String tableName = variantsTableCredentials.getTable();
+
+        String metaTableName = dbAdaptor.getTableNameGenerator().getMetaTableName();
+        String variantsTableName = dbAdaptor.getTableNameGenerator().getVariantTableName();
         try (Connection jdbcConnection = phoenixHelper.newJdbcConnection()) {
-            HBaseLock hBaseLock = new HBaseLock(dbAdaptor.getHBaseManager(), tableName,
-                    dbAdaptor.getGenomeHelper().getColumnFamily(),
-                    VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0));
+            HBaseLock hBaseLock = new HBaseLock(dbAdaptor.getHBaseManager(), metaTableName,
+                    dbAdaptor.getGenomeHelper().getColumnFamily(), Bytes.toBytes(String.valueOf(studyConfiguration.getStudyId())));
             Long lock;
             try {
                 long lockDuration = TimeUnit.MINUTES.toMillis(5);
@@ -660,7 +661,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                     lock = hBaseLock.lock(GenomeHelper.PHOENIX_LOCK_COLUMN, lockDuration, TimeUnit.SECONDS.toMillis(5));
                 } catch (TimeoutException e) {
                     int duration = 10;
-                    logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", tableName, duration);
+                    logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", metaTableName, duration);
                     lock = hBaseLock.lock(GenomeHelper.PHOENIX_LOCK_COLUMN, lockDuration, TimeUnit.MINUTES.toMillis(duration));
                 }
                 logger.debug("Winning lock {}", lock);
@@ -674,7 +675,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             try {
                 if (MergeMode.from(studyConfiguration.getAttributes()).equals(MergeMode.ADVANCED)) {
                     try {
-                        phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyConfiguration.getStudyId());
+                        phoenixHelper.registerNewStudy(jdbcConnection, variantsTableName, studyConfiguration.getStudyId());
                     } catch (SQLException e) {
                         throw new StorageEngineException("Unable to register study in Phoenix", e);
                     }
@@ -691,7 +692,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                                 }
                             }
                         }
-                        phoenixHelper.registerNewFiles(jdbcConnection, tableName, studyConfiguration.getStudyId(), fileIds, newSamples);
+                        phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyConfiguration.getStudyId(), fileIds,
+                                newSamples);
 
                     } catch (SQLException e) {
                         throw new StorageEngineException("Unable to register samples in Phoenix", e);
@@ -711,11 +713,11 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                     lock = hBaseLock.lock(PHOENIX_INDEX_LOCK_COLUMN, TimeUnit.MINUTES.toMillis(60), TimeUnit.SECONDS.toMillis(5));
                     if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
                         List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
-                        phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, tableName, columns, true);
-                        List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(tableName);
-                        phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, tableName, popFreqIndices, false);
+                        phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, variantsTableName, columns, true);
+                        List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(variantsTableName);
+                        phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, variantsTableName, popFreqIndices, false);
                     }
-                    phoenixHelper.createVariantIndexes(jdbcConnection, tableName);
+                    phoenixHelper.createVariantIndexes(jdbcConnection, variantsTableName);
                 } catch (SQLException e) {
                     throw new StorageEngineException("Unable to create Phoenix Indexes", e);
                 } catch (InterruptedException e) {
