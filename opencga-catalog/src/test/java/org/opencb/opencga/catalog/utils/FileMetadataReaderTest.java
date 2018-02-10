@@ -111,6 +111,9 @@ public class FileMetadataReaderTest {
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
+        assertNotNull(((Map) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds"));
+        assertEquals(4, ((List) ((Map) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds")).size());
+        assertNotNull(((Map) file.getAttributes().get(VARIANT_FILE_METADATA)).get("header"));
         assertEquals(4, file.getSamples().size());
         assertEquals(21499, file.getSize());
     }

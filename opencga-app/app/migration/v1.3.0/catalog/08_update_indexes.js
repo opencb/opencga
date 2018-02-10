@@ -24,6 +24,11 @@ db.clinical.dropIndex({"_acl": 1});
 
 
 // Add new indexes
+db.file.createIndex({"id": 1}, {"background": true});
+db.clinical.createIndex({"id": 1}, {"background": true});
+db.cohort.createIndex({"id": 1}, {"background": true});
+db.job.createIndex({"id": 1}, {"background": true});
+db.study.createIndex({"id": 1}, {"background": true});
 
 db.cohort.createIndex({"_acl": 1, "_studyId": 1}, {"background": true});
 db.family.createIndex({"_acl": 1, "_studyId": 1}, {"background": true});

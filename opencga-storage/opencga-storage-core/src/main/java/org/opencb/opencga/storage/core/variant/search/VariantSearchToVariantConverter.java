@@ -72,13 +72,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             for (String key : variantSearchModel.getStats().keySet()) {
                 // key consists of 'stats' + "__" + studyId + "__" + cohort
                 String[] fields = key.split("__");
-                if (fields[1].contains("_")) {
-                    String[] split = fields[1].split("_");
-                    fields[1] = split[split.length - 1];
-                }
+//                if (fields[1].contains("_")) {
+//                    String[] split = fields[1].split("_");
+//                    fields[1] = split[split.length - 1];
+//                }
                 if (studyEntryMap.containsKey(fields[1])) {
                     VariantStats variantStats = new VariantStats();
+                    variantStats.setRefAlleleFreq(1 - variantSearchModel.getStats().get(key));
                     variantStats.setAltAlleleFreq(variantSearchModel.getStats().get(key));
+                    variantStats.setMaf(Math.min(variantSearchModel.getStats().get(key), 1 - variantSearchModel.getStats().get(key)));
                     studyEntryMap.get(fields[1]).setStats(fields[2], variantStats);
                 }
             }
@@ -199,6 +201,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 String[] fields = key.split("__");
                 populationFrequency.setStudy(fields[1]);
                 populationFrequency.setPopulation(fields[2]);
+                populationFrequency.setRefAlleleFreq(1 - variantSearchModel.getPopFreq().get(key));
                 populationFrequency.setAltAlleleFreq(variantSearchModel.getPopFreq().get(key));
                 populationFrequencies.add(populationFrequency);
             }
