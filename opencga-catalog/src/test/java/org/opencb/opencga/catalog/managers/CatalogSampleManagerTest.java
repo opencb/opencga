@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,8 +33,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.ANNOTATION;
 
 public class CatalogSampleManagerTest extends GenericTest {
@@ -712,6 +712,36 @@ public class CatalogSampleManagerTest extends GenericTest {
 //        thrown.expectMessage("Wrong annotation query");
 //        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
 //    }
+
+    @Test
+    public void testGroupByAnnotations() throws Exception {
+        AbstractManager.MyResourceId vs1 = catalogManager.getStudyManager().getVariableSetId("vs", String.valueOf(studyId), sessionIdUser);
+
+        QueryResult queryResult = catalogManager.getSampleManager().groupBy(String.valueOf(studyId), new Query(),
+                Collections.singletonList(Constants.ANNOTATION + ":" + vs1.getResourceId() + ":annot1:PHEN"), QueryOptions.empty(),
+                sessionIdUser);
+
+        assertEquals(3, queryResult.getNumResults());
+        for (Document document : (List<Document>) queryResult.getResult()) {
+            Document id = (Document) document.get("_id");
+            List<String> value = ((ArrayList<String>) id.values().iterator().next());
+
+            List<String> items = (List<String>) document.get("items");
+
+            if (value.isEmpty()) {
+                assertEquals(4, items.size());
+                assertTrue(items.containsAll(Arrays.asList("s_6", "s_7", "s_8", "s_9")));
+            } else if ("CONTROL".equals(value.get(0))) {
+                assertEquals(3, items.size());
+                assertTrue(items.containsAll(Arrays.asList("s_1", "s_3", "s_4")));
+            } else if ("CASE".equals(value.get(0))) {
+                assertEquals(2, items.size());
+                assertTrue(items.containsAll(Arrays.asList("s_2", "s_5")));
+            } else {
+                fail("It should not get into this condition");
+            }
+        }
+    }
 
     @Test
     public void testIteratorSamples() throws CatalogException {

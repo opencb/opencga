@@ -467,6 +467,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(studyId, userId, query, true);
+        fixQueryOptionAnnotation(options);
+
         // Add study id to the query
         query.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
@@ -550,6 +554,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
+
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(studyId, userId, query, true);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;

@@ -579,8 +579,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES
-                .name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+        Document queryForAuthorisedEntries;
+        if (containsAnnotationQuery(query)) {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(),
+                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+        } else {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+        }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(familyCollection, bsonQuery, field, QueryParams.NAME.key(), options);
@@ -590,8 +597,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES
-                .name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+        Document queryForAuthorisedEntries;
+        if (containsAnnotationQuery(query)) {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(),
+                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+        } else {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+        }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(familyCollection, bsonQuery, fields, QueryParams.NAME.key(), options);

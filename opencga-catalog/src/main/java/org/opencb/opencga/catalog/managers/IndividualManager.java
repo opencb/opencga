@@ -677,6 +677,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
 
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(studyId, userId, query, true);
+
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
 //        query.append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -698,6 +701,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
+
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(studyId, userId, query, true);
+        fixQueryOptionAnnotation(options);
 
         // Add study id to the query
         query.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);

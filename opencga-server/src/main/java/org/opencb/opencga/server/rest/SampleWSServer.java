@@ -297,24 +297,25 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
                     paramType = "query", defaultValue = "50")
     })
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
-                            @QueryParam("fields") String fields,
-                            @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId")
-                                    String studyIdStr,
-                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                            @QueryParam("study") String studyStr,
-                            @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
-                            @ApiParam(value = "source") @QueryParam("source") String source,
-                            @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
-                            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
-                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
-                            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-                            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
-                            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
-                            @QueryParam("release") String release,
-                            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
-                                    int snapshot) {
+    public Response groupBy(
+            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
+                @QueryParam("fields") String fields,
+            @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
+            @ApiParam(value = "source") @QueryParam("source") String source,
+            @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
+            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+                @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+                @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
+                @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
+                    int snapshot) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;

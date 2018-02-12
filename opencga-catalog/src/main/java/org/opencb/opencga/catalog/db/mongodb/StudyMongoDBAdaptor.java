@@ -625,50 +625,53 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        long startTime = startQuery();
-
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
-        checkVariableNotInVariableSet(variableSet.first(), newName);
-
-        // The field can be changed if we arrive to this point.
-        // 1. we obtain the variable
-        Variable variable = getVariable(variableSet.first(), oldName);
-        if (variable == null) {
-            throw new CatalogDBException("VariableSet {id: " + variableSet.getId() + "}. The variable {id: " + oldName + "} does not "
-                    + "exist.");
-        }
-
-        // 2. we take it out from the array.
-        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-        Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(), Filters.eq("name", oldName));
-        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
-
-        if (queryResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Could not rename the field " + oldName);
-        }
-        if (queryResult.first().getModifiedCount() > 1) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - An unexpected error happened when extracting the "
-                    + "variable from the variableSet to do the rename. Please, report this error to the OpenCGA developers.");
-        }
-
-        // 3. we change the name in the variable object and push it again in the array.
-        variable.setName(newName);
-        update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
-                getMongoDBDocument(variable, "Variable"));
-        queryResult = studyCollection.update(bsonQuery, update, null);
-
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - A critical error happened when trying to rename one "
-                    + "of the variables of the variableSet object. Please, report this error to the OpenCGA developers.");
-        }
-
-        // 4. Change the field id in the annotations
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
-        dbAdaptorFactory.getCatalogFamilyDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
-        dbAdaptorFactory.getCatalogIndividualDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
-
-        return endQuery("Rename field in variableSet", startTime, getVariableSet(variableSetId, null));
+        // TODO
+        throw new UnsupportedOperationException("Operation not yet supported");
+//        long startTime = startQuery();
+//
+//        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
+//        checkVariableNotInVariableSet(variableSet.first(), newName);
+//
+//        // The field can be changed if we arrive to this point.
+//        // 1. we obtain the variable
+//        Variable variable = getVariable(variableSet.first(), oldName);
+//        if (variable == null) {
+//            throw new CatalogDBException("VariableSet {id: " + variableSet.getId() + "}. The variable {id: " + oldName + "} does not "
+//                    + "exist.");
+//        }
+//
+//        // 2. we take it out from the array.
+//        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+//        Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
+// Filters.eq("name", oldName));
+//        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
+//
+//        if (queryResult.first().getModifiedCount() == 0) {
+//            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Could not rename the field " + oldName);
+//        }
+//        if (queryResult.first().getModifiedCount() > 1) {
+//            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - An unexpected error happened when extracting the "
+//                    + "variable from the variableSet to do the rename. Please, report this error to the OpenCGA developers.");
+//        }
+//
+//        // 3. we change the name in the variable object and push it again in the array.
+//        variable.setName(newName);
+//        update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
+//                getMongoDBDocument(variable, "Variable"));
+//        queryResult = studyCollection.update(bsonQuery, update, null);
+//
+//        if (queryResult.first().getModifiedCount() != 1) {
+//            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - A critical error happened when trying to rename one "
+//                    + "of the variables of the variableSet object. Please, report this error to the OpenCGA developers.");
+//        }
+//
+//        // 4. Change the field id in the annotations
+//        dbAdaptorFactory.getCatalogSampleDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+//        dbAdaptorFactory.getCatalogCohortDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+//        dbAdaptorFactory.getCatalogFamilyDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+//        dbAdaptorFactory.getCatalogIndividualDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+//
+//        return endQuery("Rename field in variableSet", startTime, getVariableSet(variableSetId, null));
     }
 
     @Override

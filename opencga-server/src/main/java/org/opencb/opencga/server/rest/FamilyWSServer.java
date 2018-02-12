@@ -209,10 +209,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
-            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+                @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+                @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot) {
         try {

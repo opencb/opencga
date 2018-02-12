@@ -512,8 +512,15 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS
-                .name(), CohortAclEntry.CohortPermissions.VIEW.name());
+        Document queryForAuthorisedEntries;
+        if (containsAnnotationQuery(query)) {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(),
+                    CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
+        } else {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), CohortAclEntry.CohortPermissions.VIEW.name());
+        }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(cohortCollection, bsonQuery, field, QueryParams.NAME.key(), options);
@@ -523,8 +530,15 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS
-                .name(), CohortAclEntry.CohortPermissions.VIEW.name());
+        Document queryForAuthorisedEntries;
+        if (containsAnnotationQuery(query)) {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(),
+                    CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
+        } else {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), CohortAclEntry.CohortPermissions.VIEW.name());
+        }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(cohortCollection, bsonQuery, fields, QueryParams.NAME.key(), options);

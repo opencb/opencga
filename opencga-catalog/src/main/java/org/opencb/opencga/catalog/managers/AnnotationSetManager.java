@@ -132,7 +132,8 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
      *                          the newAnnotations are not correct or the annotationSetName is not valid.
      */
     public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr,
-               String annotationSetName, Map<String, Object> newAnnotations, String sessionId) throws CatalogException {
+                                                          String annotationSetName, Map<String, Object> newAnnotations, String sessionId)
+            throws CatalogException {
         MyResourceId resourceId = getId(id, studyStr, sessionId);
         AnnotationSet annotationSet = new AnnotationSet(annotationSetName, -1, newAnnotations, Collections.emptyMap());
         ObjectMap parameters;
@@ -175,7 +176,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
      */
     @Deprecated
     public QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
-                                                                   String sessionId) throws CatalogException {
+                                                          String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(annotationSetName)) {
             throw new CatalogException("Missing annotationSetName field");
         }
@@ -272,35 +273,66 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
      * @throws CatalogException if there are unknown variables being queried, non-existing variable sets...
      */
     public void fixQueryAnnotationSearch(long studyId, Query query) throws CatalogException {
+        fixQueryAnnotationSearch(studyId, null, query, false);
+    }
+
+    /**
+     * Fixes any field that might be missing from the annotation built by the user so it is perfectly ready for the dbAdaptors to be parsed.
+     *
+     * @param studyId study id corresponding to the entry that is being queried.
+     * @param user for which the confidential permission should be checked.
+     * @param query query object containing the annotation.
+     * @param checkConfidentialPermission check confidential permission if querying by a confidential annotation.
+     * @throws CatalogException if there are unknown variables being queried, non-existing variable sets...
+     */
+    public void fixQueryAnnotationSearch(long studyId, String user, Query query, boolean checkConfidentialPermission)
+            throws CatalogException {
         if (query == null || query.isEmpty() || !query.containsKey(Constants.ANNOTATION)) {
             return;
         }
 
         List<String> originalAnnotationList = query.getAsStringList(Constants.ANNOTATION, ";");
-        Map<String, Map<String, QueryParam.Type>> variableTypeMap = null;
+        Map<String, VariableSet> variableSetMap = null;
+        Map<String, Map<String, QueryParam.Type>> variableTypeMap = new HashMap<>();
 
         List<String> annotationList = new ArrayList<>(originalAnnotationList.size());
         ObjectMap queriedVariableTypeMap = new ObjectMap();
 
+        boolean confidentialPermissionChecked = false;
+
         for (String annotation : originalAnnotationList) {
-            if (annotation.startsWith(Constants.VARIABLE_SET) || annotation.startsWith(Constants.ANNOTATION_SET_NAME)) {
+            if (variableSetMap == null) {
+                variableSetMap = getVariableSetMap(studyId);
+                for (VariableSet variableSet : variableSetMap.values()) {
+                    variableTypeMap.put(String.valueOf(variableSet.getId()), getVariableMap(variableSet));
+                }
+            }
+
+            if (annotation.startsWith(Constants.ANNOTATION_SET_NAME)) {
                 annotationList.add(annotation);
                 continue;
             }
 
-            if (variableTypeMap == null) {
-                variableTypeMap = getVariableTypeMap(studyId);
-            }
-
             // Split the annotation by key - value
             Matcher matcher = ANNOTATION_PATTERN.matcher(annotation);
-            String variableSet;
-            String key;
-            String valueString;
             if (matcher.find()) {
-                variableSet = matcher.group(1);
-                key = matcher.group(2);
-                valueString = matcher.group(3);
+
+                if (annotation.startsWith(Constants.VARIABLE_SET)) {
+                    String variableSet = matcher.group(3);
+
+                    if (checkConfidentialPermission && !confidentialPermissionChecked && variableSetMap.get(variableSet).isConfidential()) {
+                        // We only check the confidential permission if needed once
+                        authorizationManager.checkStudyPermission(studyId, user,
+                                StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
+                        confidentialPermissionChecked = true;
+                    }
+                    annotationList.add(annotation);
+                    continue;
+                }
+
+                String variableSet = matcher.group(1);
+                String key = matcher.group(2);
+                String valueString = matcher.group(3);
 
                 if (StringUtils.isEmpty(variableSet)) {
                     // Obtain the variable set for the annotations
@@ -317,6 +349,13 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
                         throw new CatalogException("Variable " + key + " from variableSet " + variableSet + " does not exist. Cannot "
                                 + "perform query " + annotation);
                     }
+                }
+
+                if (checkConfidentialPermission && !confidentialPermissionChecked && variableSetMap.get(variableSet).isConfidential()) {
+                    // We only check the confidential permission if needed once
+                    authorizationManager.checkStudyPermission(studyId, user,
+                            StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
+                    confidentialPermissionChecked = true;
                 }
 
                 annotationList.add(variableSet + ":" + key + valueString);
@@ -356,7 +395,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
         return variableId;
     }
 
-    private Map<String, Map<String, QueryParam.Type>> getVariableTypeMap(long studyId) throws CatalogDBException {
+    private Map<String, VariableSet> getVariableSetMap(long studyId) throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
         QueryResult<Study> studyQueryResult = studyDBAdaptor.get(studyId, options);
 
@@ -364,16 +403,35 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             throw new CatalogDBException("Unexpected error: Study id " + studyId + " not found");
         }
 
-        Map<String, Map<String, QueryParam.Type>> variableTypeMap = new HashMap<>();
+        Map<String, VariableSet> variableSetMap = new HashMap<>();
         List<VariableSet> variableSets = studyQueryResult.first().getVariableSets();
         if (variableSets != null) {
             for (VariableSet variableSet : variableSets) {
-                variableTypeMap.put(String.valueOf(variableSet.getId()), getVariableMap(variableSet));
+                variableSetMap.put(String.valueOf(variableSet.getId()), variableSet);
             }
         }
 
-        return variableTypeMap;
+        return variableSetMap;
     }
+
+//    private Map<String, Map<String, QueryParam.Type>> getVariableTypeMap(long studyId) throws CatalogDBException {
+//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
+//        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(studyId, options);
+//
+//        if (studyQueryResult.getNumResults() == 0) {
+//            throw new CatalogDBException("Unexpected error: Study id " + studyId + " not found");
+//        }
+//
+//        Map<String, Map<String, QueryParam.Type>> variableTypeMap = new HashMap<>();
+//        List<VariableSet> variableSets = studyQueryResult.first().getVariableSets();
+//        if (variableSets != null) {
+//            for (VariableSet variableSet : variableSets) {
+//                variableTypeMap.put(String.valueOf(variableSet.getId()), getVariableMap(variableSet));
+//            }
+//        }
+//
+//        return variableTypeMap;
+//    }
 
     private Map<String, QueryParam.Type> getVariableMap(VariableSet variableSet) throws CatalogDBException {
         Map<String, QueryParam.Type> variableTypeMap = new HashMap<>();

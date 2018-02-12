@@ -357,6 +357,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         fixQueryObject(query, studyId, sessionId);
 
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(studyId, userId, query, true);
+        fixQueryOptionAnnotation(options);
+
         // Add study id to the query
         query.put(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 

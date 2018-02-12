@@ -652,6 +652,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String userId = userManager.getUserId(sessionId);
         Long studyId = studyManager.getId(userId, studyStr);
 
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(studyId, userId, query, true);
+
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -677,6 +680,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        // Fix query if it contains any annotation
+        fixQueryAnnotationSearch(studyId, userId, query, true);
+        fixQueryOptionAnnotation(options);
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);

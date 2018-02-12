@@ -375,6 +375,18 @@ public class AnnotationConverter {
         return document;
     }
 
+    /**
+     * Generates a unique id for the annotation that will be used mainly to be able to perform groupBy operations.
+     *
+     * @param variableSet Variable set id.
+     * @param annotationSet Annotation set name.
+     * @param variable Variable id. (a.b.c for instance)
+     * @return A unique id for the annotation.
+     */
+    public String getAnnotationPrivateId(String variableSet, String annotationSet, String variable) {
+        return variableSet + INTERNAL_DELIMITER + annotationSet + INTERNAL_DELIMITER + variable.replaceAll("\\.", INTERNAL_DELIMITER);
+    }
+
     private Object getAnnotationValue(FromDBToMap fromDBToMap) {
         if (fromDBToMap.getArrayLevel().size() == 0) {
             return fromDBToMap.getAnnotationValue();
@@ -401,6 +413,8 @@ public class AnnotationConverter {
             document.put(ID, StringUtils.join(variableLevel.getKeys(), "."));
             document.put(VARIABLE_SET, variableSet.getId());
             document.put(ANNOTATION_SET_NAME, annotationSetName);
+            document.put(getAnnotationPrivateId(String.valueOf(variableSet.getId()), annotationSetName, document.getString(ID)),
+                    document.get(VALUE));
             documentList.add(document);
         }
     }

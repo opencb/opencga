@@ -73,17 +73,17 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
      */
     QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
 
-    /**
-     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
-     * This method cannot be called by any of the managers and will be only called when the user wants to rename the field of a variable
-     * from a variableSet.
-     * @param variableSetId Id of the variable to be renamed.
-     * @param oldName Name of the field to be renamed.
-     * @param newName New name that will be set.
-     * @return the number of annotations that renamed the name.
-     * @throws CatalogDBException when there is an error with database transactions.
-     */
-    QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
+//    /**
+//     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
+//     * This method cannot be called by any of the managers and will be only called when the user wants to rename the field of a variable
+//     * from a variableSet.
+//     * @param variableSetId Id of the variable to be renamed.
+//     * @param oldName Name of the field to be renamed.
+//     * @param newName New name that will be set.
+//     * @return the number of annotations that renamed the name.
+//     * @throws CatalogDBException when there is an error with database transactions.
+//     */
+//    QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
 
     /**
      * Remove the annotation with annotationName from the annotation set.
