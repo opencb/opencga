@@ -294,6 +294,11 @@
 | GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
 |let||js|!-res="Nothing";if(response.jsonbody.response[0].result[0]["annotationSets"]) {res = response.jsonbody.response[0].result[0].annotationSets.length;}res;-!|1.0|
 
+!3 Search Annotation Set By Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId2/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=var_int=10|200|  Content-Type: application/json ||
+
+
 !3 Update Sample ACL (remove)
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"remove": "VIEW_ANNOTATIONS"}|

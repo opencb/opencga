@@ -240,14 +240,15 @@
 !|Table: Rest Fixture  | $baseURL |
 | setBody | {  "name": "$asName",  "annotations": {"var_int": "10"}}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSetId=$gVariableSetId&study=$studyId |200| Content-Type : application/json|jsonbody.response[0].result[0].annotations.length == '2.0'|
+| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSetId=$gVariableSetId&study=$studyId |200|Content-Type : application/json|jsonbody.response[0].result.length == 1 && jsonbody.response[0].result[0].annotations["var_int"] == '10' &&  jsonbody.response[0].result[0].annotations["var_double"] == '20.5'|
 |let|annotationSetName|js|response.jsonbody.response[0].result[0].name||
 
 !3 Create Annotation Set Using Variable Set Name
 !|Table: Rest Fixture  | $baseURL |
 | setBody | {  "name": "$asName2",  "annotations": {"var_int": "50"}}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSet=$gvsName&study=$studyId |200| Content-Type : application/json|jsonbody.response[0].result[0].annotations.length == '2.0'|
+| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSet=$gvsName&study=$studyId |200| Content-Type : application/json|jsonbody.response[0].result.length == 1 && jsonbody.response[0].result[0].annotations["var_int"] == '50' &&  jsonbody.response[0].result[0].annotations["var_double"] == '20.5'|
+
 
 !3 (Negative) Create Annotation Set with Invalid Data Type
 !|Table: Rest Fixture  | $baseURL |
@@ -257,15 +258,18 @@
 
 !3 Get Annotation Set 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/families/$familyId/annotationsets/?name=$annotationSetName&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].annotations.length == '2.0'|
+| GET | /v1/families/$familyId/annotationsets/?name=$annotationSetName&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == '$annotationSetName'|
 
 !3 Search Annotation Set 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == '$annotationSetName'|
+| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId|500|  Content-Type: application/json |jsonbody.error == 'Missing variableSet parameter'|
+| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '2'|
 
 !3 Search Annotation Set By Annotation
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=var_int=10|200|  Content-Type: application/json |jsonbody.response[0].result[0].annotations[1].name == 'var_int'|
+| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=var_int=9|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0'|
+| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=var_int=10|200|  Content-Type: application/json |jsonbody.response[0].result.length == '2'|
+| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=var_int=20.5|500|  Content-Type: application/json |jsonbody.response[0].error != ''|
 
 !3 Update Annotation Set
 !|Table: Rest Fixture  | $baseURL |
@@ -282,12 +286,12 @@
 
 !3 Get Annotation Set After Update
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/families/$familyId/annotationsets?name=$annotationSetName&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].annotations[1].value == '100.5'|
+| GET | /v1/families/$familyId/annotationsets?name=$annotationSetName&sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].annotations["var_double"] == '100.5'|
 
 !3 Delete Annotation Set
 !|Table: Rest Fixture  | $baseURL |
 | setHeader|Content-Type:application/json|
-| GET | /v1/families/$familyId/annotationsets/$asName2/delete?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
+| GET | /v1/families/$familyId/annotationsets/$asName2/delete?sid=$sessionId&study=$studyId || Content-Type : application/json||
 
 !3 Delete Annotation Set Created With VS Name
 !|Table: Rest Fixture  | $baseURL |
@@ -296,7 +300,8 @@
 
 !3 Search Annotation Set After Delete
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0.0'|
+| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId||  Content-Type: application/json ||
+| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0.0'|
 
 #       -------------------- 
 #      | Release1 |Release2 | 
