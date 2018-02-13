@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -38,6 +40,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -51,7 +54,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     private FamilyManager familyManager;
 
-    public FamilyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public FamilyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         familyManager = catalogManager.getFamilyManager();
     }
@@ -146,8 +150,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response createFamilyPOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "JSON containing family information", required = true) CreateFamilyPOST family) {
+            @ApiParam(value = "JSON containing family information", required = true) FamilyPOST family) {
         try {
+            ObjectUtils.defaultIfNull(family, new FamilyPOST());
             QueryResult<Family> queryResult = familyManager.create(studyStr,
                     family.toFamily(studyStr, catalogManager.getStudyManager(), sessionId), queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -174,11 +179,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
             @ApiParam(value = "params", required = true) FamilyPOST parameters) {
         try {
+            ObjectUtils.defaultIfNull(parameters, new FamilyPOST());
+
             queryOptions.put(Constants.REFRESH, refresh);
             queryOptions.remove("updateIndividualVersion");
             query.remove("updateIndividualVersion");
 
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            ObjectMap params = parameters.toFamilyObjectMap();
             params.putIfNotEmpty(FamilyDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
             params.putIfNotEmpty(FamilyDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
 
@@ -408,6 +415,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyWSServer.FamilyAcl params) {
         try {
+            ObjectUtils.defaultIfNull(params, new FamilyAcl());
             AclParams familyAclParams = new AclParams(params.getPermissions(), params.getAction());
             List<String> idList = getIdList(params.family);
             return createOkResponse(familyManager.updateAcl(studyStr, idList, memberId, familyAclParams, sessionId));
@@ -416,21 +424,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
-    protected static class MultiplesParameters {
-        private String type;
-        private List<String> siblings;
-
-        public Multiples toMultiples() {
-            return new Multiples(type, siblings);
-        }
-    }
-
     protected static class IndividualPOST {
         public String name;
 
         public String father;
         public String mother;
-        public MultiplesParameters multiples;
+        public Multiples multiples;
 
         public Individual.Sex sex;
         public String ethnicity;
@@ -456,9 +455,28 @@ public class FamilyWSServer extends OpenCGAWSServer {
 //            }
 
             return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
-                    mother != null ? new Individual().setName(mother) : null, multiples != null ? multiples.toMultiples() : null, sex,
+                    mother != null ? new Individual().setName(mother) : null, multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
+        }
+
+        public Individual toIndividualUpdate() {
+            Individual individual = new Individual()
+                    .setName(name)
+                    .setFather(father != null ? new Individual().setName(father) : null)
+                    .setMother(mother != null ? new Individual().setName(mother) : null)
+                    .setMultiples(multiples)
+                    .setSex(sex)
+                    .setKaryotypicSex(karyotypicSex)
+                    .setEthnicity(ethnicity)
+                    .setPopulation(population)
+                    .setLifeStatus(lifeStatus)
+                    .setAffectationStatus(affectationStatus)
+                    .setDateOfBirth(dateOfBirth)
+                    .setParentalConsanguinity(parentalConsanguinity != null ? parentalConsanguinity : false)
+                    .setPhenotypes(phenotypes);
+            individual.setAnnotationSets(annotationSets);
+            return individual;
         }
     }
 
@@ -470,10 +488,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public List<IndividualPOST> members;
 
         public Map<String, Object> attributes;
-    }
-
-    private static class CreateFamilyPOST extends FamilyPOST {
-
         public List<AnnotationSet> annotationSets;
 
         public Family toFamily(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
@@ -486,13 +500,43 @@ public class FamilyWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            List<Individual> relatives = new ArrayList<>(members.size());
-            for (IndividualPOST member : members) {
-                relatives.add(member.toIndividual(studyStr, studyManager, sessionId));
+            List<Individual> relatives = null;
+            if (members != null) {
+                relatives = new ArrayList<>(members.size());
+                for (IndividualPOST member : members) {
+                    relatives.add(member.toIndividual(studyStr, studyManager, sessionId));
+                }
             }
 
             return new Family(name, phenotypes, relatives, description, annotationSets, attributes);
         }
-    }
 
+        public ObjectMap toFamilyObjectMap() throws CatalogException, JsonProcessingException {
+            List<ObjectMap> relatives = null;
+            if (members != null) {
+                relatives = new ArrayList<>(members.size());
+                for (IndividualPOST member : members) {
+                    Individual individual = member.toIndividualUpdate();
+                    ObjectMap objectMap = new ObjectMap(jsonObjectMapper.writeValueAsString(individual));
+                    if (member.parentalConsanguinity == null) {
+                        objectMap.remove("parentalConsanguinity");
+                    }
+                    relatives.add(objectMap);
+                }
+            }
+
+            Family family = new Family()
+                    .setName(name)
+                    .setPhenotypes(phenotypes)
+                    .setMembers(null)
+                    .setDescription(description)
+                    .setAttributes(attributes);
+            family.setAnnotationSets(annotationSets);
+
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
+            params.putIfNotNull("members", relatives);
+
+            return params;
+        }
+    }
 }

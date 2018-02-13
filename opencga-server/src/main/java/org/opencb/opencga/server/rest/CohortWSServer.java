@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -123,6 +124,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Variable name") @QueryParam("variable") String variableName,
             @ApiParam(value = "JSON containing cohort information", required = true) CohortParameters params) {
         try {
+            ObjectUtils.defaultIfNull(params, new CohortParameters());
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
@@ -258,6 +260,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
             @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
+            ObjectUtils.defaultIfNull(params, new HashMap<>());
+
             if (StringUtils.isNotEmpty(deleteAnnotation)) {
                 params.put(CohortDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
             }
@@ -540,6 +544,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) CohortAcl params) {
         try {
+            ObjectUtils.defaultIfNull(params, new CohortAcl());
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
             List<String> idList = getIdList(params.cohort);
             return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));

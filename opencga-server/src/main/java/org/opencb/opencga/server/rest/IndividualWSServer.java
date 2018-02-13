@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -67,6 +69,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "JSON containing individual information", required = true) IndividualCreatePOST params) {
         try {
+            ObjectUtils.defaultIfNull(params, new IndividualCreatePOST());
+
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
@@ -374,11 +378,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = "params", required = true) IndividualUpdatePOST updateParams) {
         try {
+            ObjectUtils.defaultIfNull(updateParams, new IndividualUpdatePOST());
+
             queryOptions.put(Constants.REFRESH, refresh);
             queryOptions.remove("updateSampleVersion");
             query.remove("updateSampleVersion");
 
-            ObjectMap params = new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams));
+            ObjectMap params = updateParams.toIndividualObjectMap();
             params.putIfNotEmpty(IndividualDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
             params.putIfNotEmpty(IndividualDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
 
@@ -550,6 +556,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     + "propagate the permissions defined to the samples that are associated to the matching individuals",
                     required = true) IndividualAcl params) {
         try {
+            ObjectUtils.defaultIfNull(params, new IndividualAcl());
+
             Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(params.getPermissions(), params.getAction(),
                     params.sample, params.propagate);
             List<String> idList = getIdList(params.individual);
@@ -624,6 +632,32 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     protected static class IndividualUpdatePOST extends IndividualPOST {
         public List<String> samples;
+
+        public ObjectMap toIndividualObjectMap() throws JsonProcessingException {
+            Individual individual = new Individual()
+                    .setName(name)
+                    .setFather(father != null ? new Individual().setName(father) : null)
+                    .setMother(mother != null ? new Individual().setName(mother) : null)
+                    .setMultiples(multiples)
+                    .setSex(sex)
+                    .setKaryotypicSex(karyotypicSex)
+                    .setEthnicity(ethnicity)
+                    .setPopulation(population)
+                    .setLifeStatus(lifeStatus)
+                    .setAffectationStatus(affectationStatus)
+                    .setDateOfBirth(dateOfBirth)
+                    .setParentalConsanguinity(parentalConsanguinity != null ? parentalConsanguinity : false)
+                    .setPhenotypes(phenotypes);
+            individual.setAnnotationSets(annotationSets);
+
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(individual));
+            if (parentalConsanguinity == null) {
+                params.remove("parentalConsanguinity");
+            }
+            params.putIfNotNull("samples", samples);
+
+            return params;
+        }
     }
 
 

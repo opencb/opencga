@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -100,6 +101,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Individual id or name to whom the sample will correspond.") @QueryParam("individual") String individual,
             @ApiParam(value = "JSON containing sample information", required = true) CreateSamplePOST params) {
         try {
+            ObjectUtils.defaultIfNull(params, new CreateSamplePOST());
+
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
@@ -248,6 +251,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
             @ApiParam(value = "params", required = true) UpdateSamplePOST parameters) {
         try {
+            ObjectUtils.defaultIfNull(parameters, new UpdateSamplePOST());
+
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
             params.putIfNotEmpty(SampleDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
             params.putIfNotEmpty(SampleDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
@@ -579,6 +584,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)
                     SampleAcl params) {
         try {
+            ObjectUtils.defaultIfNull(params, new SampleAcl());
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
                     params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort, params.propagate);
             List<String> idList = getIdList(params.sample);
