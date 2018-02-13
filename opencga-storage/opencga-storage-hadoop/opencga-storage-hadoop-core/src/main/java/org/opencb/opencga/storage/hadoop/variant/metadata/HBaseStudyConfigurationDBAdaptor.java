@@ -21,11 +21,11 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.util.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -47,6 +47,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.DataFormatException;
 
@@ -123,12 +124,12 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
 
     @Override
     protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
-        StopWatch watch = StopWatch.createStarted();
+        StopWatch watch = new StopWatch().start();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
         logger.debug("Get StudyConfiguration {} from DB {}", studyName, tableName);
         if (StringUtils.isEmpty(studyName)) {
-            return new QueryResult<>("", (int) watch.getTime(),
+            return new QueryResult<>("", (int) watch.now(TimeUnit.MILLISECONDS),
                     studyConfigurationList.size(), studyConfigurationList.size(), "", "", studyConfigurationList);
         }
         Get get = new Get(studiesRow);
@@ -170,7 +171,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         } catch (IOException e) {
             throw new IllegalStateException("Problem reading StudyConfiguration " + studyName + " from table " + tableName, e);
         }
-        return new QueryResult<>("", (int) watch.getTime(),
+        return new QueryResult<>("", (int) watch.now(TimeUnit.MILLISECONDS),
                 studyConfigurationList.size(), studyConfigurationList.size(), "", error, studyConfigurationList);
     }
 
