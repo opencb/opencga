@@ -40,7 +40,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Family;
@@ -115,7 +114,6 @@ public class OpenCGAWSServer {
 
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
 
-
     protected static AtomicBoolean initialized;
 
     protected static Configuration configuration;
@@ -127,7 +125,6 @@ public class OpenCGAWSServer {
 
     private static final int DEFAULT_LIMIT = 2000;
     private static final int MAX_LIMIT = 5000;
-
     private static final int MAX_ID_SIZE = 100;
 
     static {
@@ -144,7 +141,6 @@ public class OpenCGAWSServer {
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectWriter = jsonObjectMapper.writer();
 
-
         //Disable MongoDB useless logging
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
@@ -157,7 +153,7 @@ public class OpenCGAWSServer {
     }
 
     public OpenCGAWSServer(@PathParam("apiVersion") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
-            throws IOException, VersionException {
+            throws VersionException {
         this.apiVersion = version;
         this.uriInfo = uriInfo;
         this.httpServletRequest = httpServletRequest;
@@ -180,11 +176,8 @@ public class OpenCGAWSServer {
             throw new IllegalStateException(e);
         }
 
-        query = new
-                Query();
-
-        queryOptions = new
-                QueryOptions();
+        query = new Query();
+        queryOptions = new QueryOptions();
 
         parseParams();
         // take the time for calculating the whole duration of the call
@@ -221,7 +214,7 @@ public class OpenCGAWSServer {
 
             // Required for reading the analysis.properties file.
             // TODO: Remove when analysis.properties is totally migrated to configuration.yml
-            Config.setOpenCGAHome(configDirPath.getParent().toString());
+//            Config.setOpenCGAHome(configDirPath.getParent().toString());
 
             // TODO use configuration.yml for getting the server.log, for now is hardcoded
             logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
@@ -557,9 +550,7 @@ public class OpenCGAWSServer {
     }
 
     private void verifyHeaders(HttpHeaders httpHeaders) throws CatalogAuthenticationException {
-
         List<String> authorization = httpHeaders.getRequestHeader("Authorization");
-
         if (authorization != null && authorization.get(0).length() > 7) {
             String token = authorization.get(0);
             if (!token.startsWith("Bearer ")) {
