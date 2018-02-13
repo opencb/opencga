@@ -75,8 +75,11 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     @Override
     public int run(String[] args) throws Exception {
-        configFromArgs(args);
         Configuration conf = getConf();
+        HBaseConfiguration.addHbaseResources(conf);
+        getConf().setClassLoader(AbstractAnalysisTableDriver.class.getClassLoader());
+        configFromArgs(args);
+
         String archiveTable = getArchiveTable();
         String variantTable = getAnalysisTable();
         Integer studyId = getStudyId();
@@ -355,10 +358,9 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     public int privateMain(String[] args, Configuration conf) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        if (conf == null) {
-            conf = HBaseConfiguration.create();
+        if (conf != null) {
+            setConf(conf);
         }
-        setConf(conf);
         return ToolRunner.run(this, args);
     }
 

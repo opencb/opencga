@@ -345,7 +345,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             }
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupted();
+            Thread.currentThread().interrupt();
             throw new StoragePipelineException("Interrupted!", e, concurrResult);
         } catch (ExecutionException e) {
             throw new StoragePipelineException("Execution exception!", e, concurrResult);
