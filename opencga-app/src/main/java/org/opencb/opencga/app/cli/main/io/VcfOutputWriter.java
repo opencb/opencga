@@ -1,9 +1,12 @@
 package org.opencb.opencga.app.cli.main.io;
 
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.results.VariantQueryResult;
@@ -54,13 +57,31 @@ public class VcfOutputWriter extends AbstractOutputWriter {
 //            List<String> formats = getFormats(study);
 
         if (variantQueryResult != null) {
+            if (metadata.getStudies().isEmpty()) {
+                // If excluding studies, we need to create a dummy study.
+                metadata.getStudies().add(VariantStudyMetadata
+                        .newBuilder()
+                        .setId("any")
+                        .setSampleSetType(SampleSetType.UNKNOWN)
+                        .setAggregatedHeader(VariantFileHeader
+                                .newBuilder()
+                                .setVersion("")
+                                .build())
+                        .build());
+            }
             String study = metadata.getStudies().get(0).getId();
             VcfDataWriter<Variant> writer = VcfDataWriter.newWriterForAvro(metadata, annotations, outputStream);
             writer.open();
             writer.pre();
             for (Variant variant : variantQueryResult.getResult()) {
+                // FIXME: The server may be returning the StudyEntry with a different name
+                String shortStudy = study.substring(study.lastIndexOf(':') + 1, study.length());
+                if (variant.getStudy(study) == null && variant.getStudy(shortStudy) != null) {
+                    variant.addStudyEntry(variant.getStudy(shortStudy).setStudyId(study));
+                }
+
                 // FIXME: This should not be needed! VariantAvroToVariantContextConverter must be fixed
-                if (variant.getStudies().isEmpty()) {
+                if (variant.getStudy(study) == null) {
                     StudyEntry studyEntry = new StudyEntry(study);
                     studyEntry.getFiles().add(new FileEntry("", null, Collections.emptyMap()));
                     variant.addStudyEntry(studyEntry);

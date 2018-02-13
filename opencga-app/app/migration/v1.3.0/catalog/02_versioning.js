@@ -3,7 +3,7 @@
 var version = {
     version: 1,
     _lastOfVersion: true,
-    _releaseFromVersion: true,
+    _releaseFromVersion: [],
     _lastOfRelease: true
 };
 
@@ -22,7 +22,7 @@ migrateCollection("individual", {version: {$exists: false}}, {id: 1, _studyId: 1
         samples: doc.samples,
         version: 1,
         _lastOfVersion: true,
-        _releaseFromVersion: true,
+        _releaseFromVersion: [],
         _lastOfRelease: true
     };
     bulk.find({"_id": doc._id}).updateOne({"$set": params});
@@ -39,7 +39,7 @@ migrateCollection("family", {version: {$exists: false}}, {id: 1, _studyId: 1, me
         members: doc.members,
         version: 1,
         _lastOfVersion: true,
-        _releaseFromVersion: true,
+        _releaseFromVersion: [],
         _lastOfRelease: true
     };
     bulk.find({"_id": doc._id}).updateOne({"$set": params});

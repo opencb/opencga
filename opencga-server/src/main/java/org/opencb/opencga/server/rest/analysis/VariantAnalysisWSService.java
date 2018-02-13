@@ -298,7 +298,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     })
     public Response getVariants(@ApiParam(value = "Group variants by: [ct, gene, ensemblGene]") @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Calculate histogram. Requires one region.") @DefaultValue("false") @QueryParam("histogram") boolean histogram,
-                                @ApiParam(value = "Histogram interval size") @DefaultValue("2000") @QueryParam("interval") int interval
+                                @ApiParam(value = "Histogram interval size") @DefaultValue("2000") @QueryParam("interval") int interval,
+                                @ApiParam(value = "Ranks different entities with the most number of variants. Rank by: [ct, gene, ensemblGene]") @QueryParam("rank") String rank
                                 // @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge
                                 ) {
 
@@ -308,10 +309,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             // Get all query options
 
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            System.out.println("queryOptions = " + queryOptions.toJson());
-
             Query query = getVariantQuery(queryOptions);
-            System.out.println("query = " + query.toJson());
 
             if (count) {
                 queryResult = variantManager.count(query, sessionId);
@@ -319,6 +317,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 queryResult = variantManager.getFrequency(query, interval, sessionId);
             } else if (StringUtils.isNotEmpty(groupBy)) {
                 queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
+            } else if (StringUtils.isNotEmpty(rank)) {
+                queryResult = variantManager.rank(query, rank,  limit, true, sessionId);
             } else {
                 queryResult = variantManager.get(query, queryOptions, sessionId);
 //                System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
