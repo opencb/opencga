@@ -18,7 +18,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKey
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.HOM_REF;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.HOM_REF;
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.buildColumnKey;
 
 /**

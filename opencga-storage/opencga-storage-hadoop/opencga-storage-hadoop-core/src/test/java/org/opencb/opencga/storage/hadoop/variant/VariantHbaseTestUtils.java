@@ -201,7 +201,7 @@ public class VariantHbaseTestUtils {
                             || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.NOCALL)
                             || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.OTHER)) {
                         os.println("\t" + key + " = " +  PUnsignedIntArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.HOM_REF)
+                    } else if (key.endsWith(COLUMN_KEY_SEPARATOR + VariantPhoenixHelper.HOM_REF)
                             || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.CALL_CNT)
                             || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.PASS_CNT)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));

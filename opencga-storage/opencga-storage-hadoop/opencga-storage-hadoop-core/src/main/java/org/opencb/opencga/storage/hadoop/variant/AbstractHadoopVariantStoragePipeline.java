@@ -558,6 +558,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     protected abstract void loadArch(URI input) throws StorageEngineException;
 
+    @Deprecated
     public void merge(int studyId, List<Integer> pendingFiles) throws StorageEngineException {
         // Check if status is "DONE"
         if (options.get(HADOOP_LOAD_VARIANT_STATUS, BatchFileOperation.Status.class).equals(BatchFileOperation.Status.DONE)) {

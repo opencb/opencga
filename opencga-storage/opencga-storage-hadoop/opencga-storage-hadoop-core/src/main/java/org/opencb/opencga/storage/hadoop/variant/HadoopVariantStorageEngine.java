@@ -99,7 +99,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String HADOOP_BIN = "hadoop.bin";
     public static final String HADOOP_ENV = "hadoop.env";
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
+    @Deprecated
     public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
+    @Deprecated
     public static final String HADOOP_LOAD_VARIANT = "hadoop.load.variant";
     // Resume merge variants if the current status is RUNNING or DONE
     /**

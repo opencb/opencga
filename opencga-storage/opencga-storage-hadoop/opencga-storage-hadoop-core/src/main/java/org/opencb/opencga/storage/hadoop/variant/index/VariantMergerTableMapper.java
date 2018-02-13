@@ -60,6 +60,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
+@Deprecated
 public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
 
     private Logger logger = LoggerFactory.getLogger(VariantMergerTableMapper.class);

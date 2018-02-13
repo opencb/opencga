@@ -173,7 +173,7 @@ public class VariantHBaseQueryParser {
                     studyColumns = STUDY_COLUMNS;
                 } else {
                     // If samples are not required, do not fetch all the fields
-                    studyColumns = Collections.singletonList(HOM_REF);
+                    studyColumns = Collections.singletonList(VariantPhoenixHelper.HOM_REF);
                 }
                 for (String studyColumn : studyColumns) {
                     scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(buildColumnKey(studyId, studyColumn)));
@@ -224,7 +224,7 @@ public class VariantHBaseQueryParser {
             List<Integer> nonNegatedStudies = new ArrayList<>();
             for (String studyStr : values) {
                 Integer studyId = studyConfigurationManager.getStudyId(studyStr, null);
-                byte[] column = Bytes.toBytes(buildColumnKey(studyId, HOM_REF));
+                byte[] column = Bytes.toBytes(buildColumnKey(studyId, VariantPhoenixHelper.HOM_REF));
                 if (isNegated(studyStr)) {
                     subFilters.addFilter(missingColumnFilter(column));
                 } else {

@@ -35,6 +35,7 @@ import java.util.Collection;
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
+@Deprecated
 public class VariantTableDriver extends AbstractAnalysisTableDriver {
     protected static final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 

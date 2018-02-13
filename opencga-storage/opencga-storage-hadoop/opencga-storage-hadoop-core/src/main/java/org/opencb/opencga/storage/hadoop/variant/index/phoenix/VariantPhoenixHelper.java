@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.NamespaceExistException;
 import org.apache.hadoop.hbase.TableName;
@@ -63,6 +64,8 @@ public class VariantPhoenixHelper {
     public static final String MGF_SUFIX = "_MGF";
     public static final char COLUMN_KEY_SEPARATOR = '_';
     public static final String COLUMN_KEY_SEPARATOR_STR = String.valueOf(COLUMN_KEY_SEPARATOR);
+    public static final String HOM_REF = "0/0";
+    public static final byte[] HOM_REF_BYTES = Bytes.toBytes(HOM_REF);
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
     private final PhoenixHelper phoenixHelper;
     private final GenomeHelper genomeHelper;
@@ -268,7 +271,7 @@ public class VariantPhoenixHelper {
 
     public void registerNewStudy(Connection con, String table, Integer studyId) throws SQLException {
         createTableIfNeeded(con, table);
-        addColumns(con, table, studyId, PUnsignedInt.INSTANCE, VariantTableStudyRow.HOM_REF, VariantTableStudyRow.PASS_CNT,
+        addColumns(con, table, studyId, PUnsignedInt.INSTANCE, HOM_REF, VariantTableStudyRow.PASS_CNT,
                 VariantTableStudyRow.CALL_CNT);
         addColumns(con, table, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
                 VariantTableStudyRow.OTHER, VariantTableStudyRow.NOCALL);
@@ -512,7 +515,24 @@ public class VariantPhoenixHelper {
     }
 
     public static Column getStudyColumn(int studyId) {
-        return Column.build(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HOM_REF), PUnsignedInt.INSTANCE);
+        return Column.build(String.valueOf(studyId) + VariantPhoenixHelper.COLUMN_KEY_SEPARATOR + HOM_REF, PUnsignedInt.INSTANCE);
+    }
+
+    public static Integer extractStudyId(String columnKey, boolean failOnMissing) {
+        int endIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR);
+        if (endIndex > 0) {
+            String study = columnKey.substring(0, endIndex);
+            if (StringUtils.isNotBlank(columnKey)
+                    && Character.isDigit(columnKey.charAt(0))
+                    && StringUtils.isNumeric(study)) {
+                return Integer.parseInt(study);
+            }
+        }
+        if (failOnMissing) {
+            throw new IllegalStateException(String.format("Integer expected for study ID from %s ", columnKey));
+        } else {
+            return null;
+        }
     }
 
     public static Column getMafColumn(int studyId, int cohortId) {

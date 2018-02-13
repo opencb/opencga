@@ -40,7 +40,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -484,10 +483,10 @@ public class VariantSqlQueryParser {
                 String study = iterator.next();
                 Integer studyId = studyConfigurationManager.getStudyId(study, false, studies);
                 if (isNegated(study)) {
-                    sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NULL ");
+                    sb.append("\"").append(buildColumnKey(studyId, HOM_REF)).append("\" IS NULL ");
                 } else {
                     notNullStudies.add(studyId);
-                    sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NOT NULL ");
+                    sb.append("\"").append(buildColumnKey(studyId, HOM_REF)).append("\" IS NOT NULL ");
                 }
                 if (iterator.hasNext()) {
                     if (operation == null || operation.equals(QueryOperation.AND)) {
