@@ -374,7 +374,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             Map<String, Long> myIds = new HashMap<>();
             for (String individualstrAux : individualList) {
-                if (StringUtils.isNumeric(individualstrAux)) {
+                if (StringUtils.isNumeric(individualstrAux) && Long.parseLong(individualstrAux) > configuration.getCatalog().getOffset()) {
                     long individualId = getIndividualId(silent, individualstrAux);
                     myIds.put(individualstrAux, individualId);
                 }

@@ -150,7 +150,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             Map<String, Long> myIds = new HashMap<>();
             for (String familiestrAux : familyList) {
-                if (StringUtils.isNumeric(familiestrAux)) {
+                if (StringUtils.isNumeric(familiestrAux) && Long.parseLong(familiestrAux) > configuration.getCatalog().getOffset()) {
                     long familyId = getFamilyId(silent, familiestrAux);
                     myIds.put(familiestrAux, familyId);
                 }

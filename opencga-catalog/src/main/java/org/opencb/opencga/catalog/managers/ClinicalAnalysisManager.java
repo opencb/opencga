@@ -137,7 +137,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             Map<String, Long> myIds = new HashMap<>();
             for (String clinicalStrAux : clinicalList) {
-                if (StringUtils.isNumeric(clinicalStrAux)) {
+                if (StringUtils.isNumeric(clinicalStrAux) && Long.parseLong(clinicalStrAux) > configuration.getCatalog().getOffset()) {
                     long clinicalId = getClinicalId(silent, clinicalStrAux);
                     myIds.put(clinicalStrAux, clinicalId);
                 }
