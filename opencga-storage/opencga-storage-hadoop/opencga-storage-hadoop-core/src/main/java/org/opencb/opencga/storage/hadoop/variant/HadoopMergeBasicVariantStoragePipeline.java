@@ -272,7 +272,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         }
 
         @Override
-        public void pre() {
+        public void pre() throws Exception {
             archiveWriter.open();
             archiveWriter.pre();
 
@@ -294,7 +294,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         }
 
         @Override
-        public void post() {
+        public void post() throws Exception {
             archiveWriter.post();
             archiveWriter.close();
 

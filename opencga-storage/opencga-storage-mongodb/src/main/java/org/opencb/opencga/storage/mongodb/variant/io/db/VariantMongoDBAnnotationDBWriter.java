@@ -36,13 +36,13 @@ public class VariantMongoDBAnnotationDBWriter extends VariantAnnotationDBWriter 
     }
 
     @Override
-    public void pre() {
+    public void pre() throws Exception {
         super.pre();
         options.put(INDEXES_CREATED, false);
     }
 
     @Override
-    public synchronized void post() {
+    public synchronized void post() throws Exception {
         super.post();
         if (!options.getBoolean(INDEXES_CREATED)) {
             dbAdaptor.createIndexes(new QueryOptions());
