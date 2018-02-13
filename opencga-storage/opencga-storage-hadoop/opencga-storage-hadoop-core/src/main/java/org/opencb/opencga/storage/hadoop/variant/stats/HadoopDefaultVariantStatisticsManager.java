@@ -17,13 +17,18 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantStatsDBWriter;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
+import java.io.IOException;
+import java.net.URI;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created on 07/12/16.
@@ -34,6 +39,17 @@ public class HadoopDefaultVariantStatisticsManager extends DefaultVariantStatist
     public HadoopDefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
         super(dbAdaptor);
     }
+
+    @Override
+    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds,
+                           StudyConfiguration studyConfiguration, QueryOptions options) throws IOException, StorageEngineException {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
+        return super.createStats(variantDBAdaptor, output, cohorts, cohortIds, studyConfiguration, options);
+    }
+
 
     @Override
     protected VariantStatsDBWriter newVariantStatisticsDBWriter(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,

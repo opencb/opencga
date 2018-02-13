@@ -375,7 +375,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        if (getOptions().getBoolean(STATS_LOCAL, true)) {
+        // By default, execute a MR to calculate statistics
+        if (getOptions().getBoolean(STATS_LOCAL, false)) {
             return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
         } else {
             return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(getOptions()), getOptions());
@@ -618,6 +619,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return variantReaderUtils;
     }
 
+    @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
