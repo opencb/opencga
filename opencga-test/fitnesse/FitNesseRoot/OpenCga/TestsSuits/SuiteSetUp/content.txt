@@ -20,7 +20,8 @@
 |let|study|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|userA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|userB|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|gvsName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|gvsName|js|Math.ceil(Math.random() * (50000 - 100) + 100).toString()||
+|let|gvsName2|js|Math.ceil(Math.random() * (50000 - 100) + 100).toString()||
 |let|baseURL|const|http://${TEST_HOST}/${OPENCGA_VERSION}/webservices/rest/||
 
 !3 Create User
@@ -61,6 +62,13 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
 |let|gVariableSetId|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Global Nested Variable Set 2
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  {  "unique": false, "confidential" : "false",  "name": "$gvsName2",  "description": "string",  "variables": [{"name": "outer_var", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"name": "inner_first_var", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"name": "inner_second_var", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
+|let|gVariableSetId2|js|response.jsonbody.response[0].result[0].id||
 
 #userA has Full Permissions
 !3 Create userA  
