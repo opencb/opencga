@@ -117,7 +117,7 @@ public class FileScannerTest {
 
     public File getFile(long id) throws CatalogException {
         return catalogManager.getFileManager().get(study.getId(), new Query(FileDBAdaptor.QueryParams.ID.key(), id).append(FileDBAdaptor
-                .QueryParams.STATUS_NAME.key(), Status.DELETED + "," + Status.TRASHED + "," + Status.READY), null, sessionIdUser)
+                .QueryParams.STATUS_NAME.key(), Status.DELETED + "," + File.FileStatus.TRASHED + "," + Status.READY), null, sessionIdUser)
                 .first();
     }
 

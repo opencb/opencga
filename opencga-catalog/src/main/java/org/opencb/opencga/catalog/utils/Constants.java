@@ -2,7 +2,14 @@ package org.opencb.opencga.catalog.utils;
 
 public class Constants {
 
-    // Variable constants for versioning
+    /* ****************************************    Additional QueryOptions parameters    ************************************************/
+    /**
+     * Boolean used when passing a list of entries. If silent is true, it will try to perform all the actions for all the entries possible.
+     * Otherwise, if one of them fails for whatever reason, the response will be an error.
+     */
+    public static final String SILENT = "silent";
+
+    /* ****************************************    Variable constants for versioning     ************************************************/
     /**
      * Boolean indicating whether to create a new version of the document containing the updates or update the same document.
      */
@@ -23,7 +30,8 @@ public class Constants {
      */
     public static final String ALL_VERSIONS = "allVersions";
 
-    // Variable constants for annotations
+
+    /* ****************************************    Variable constants for annotations       ********************************************/
     /**
      * String used to include/exclude fields in the query option. It should be used like ANNOTATION.a.b where a.b will be the variable to
      * be included/excluded from the results.

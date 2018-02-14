@@ -2371,7 +2371,7 @@ public class FileManager extends ResourceManager<File> {
         // Check if the path already exists and is not external
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), false);
@@ -2383,7 +2383,7 @@ public class FileManager extends ResourceManager<File> {
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.URI.key(), normalizedUri)
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
@@ -2414,7 +2414,7 @@ public class FileManager extends ResourceManager<File> {
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.URI.key(), normalizedUri)
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
         if (fileDBAdaptor.count(query).first() > 0) {
@@ -2651,7 +2651,7 @@ public class FileManager extends ResourceManager<File> {
             query = new Query()
                     .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + normalizedUri)
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
+                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                             + File.FileStatus.REMOVED)
                     .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
 
@@ -2725,7 +2725,6 @@ public class FileManager extends ResourceManager<File> {
                             break;
                         case FileIndex.IndexStatus.NONE:
                         case FileIndex.IndexStatus.DELETED:
-                        case FileIndex.IndexStatus.TRASHED:
                             break;
                         default:
                             throw new CatalogException("Cannot delete files that are in use in storage.");

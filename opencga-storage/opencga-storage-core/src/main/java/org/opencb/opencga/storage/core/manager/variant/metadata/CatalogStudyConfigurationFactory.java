@@ -298,7 +298,7 @@ public class CatalogStudyConfigurationFactory {
                 }
                 catalogManager.getCohortManager().update(String.valueOf(studyConfiguration.getStudyId()), String.valueOf(cohortId),
                         new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortFromStorage),
-                        null, sessionId);
+                        true, null, sessionId);
             }
         }
 

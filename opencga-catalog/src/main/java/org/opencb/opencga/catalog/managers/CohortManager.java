@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,6 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -369,6 +371,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     @Override
     public QueryResult<Cohort> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
+        return update(studyStr, entryStr, parameters, false, options, sessionId);
+    }
+
+    public QueryResult<Cohort> update(String studyStr, String entryStr, ObjectMap parameters, boolean allowModifyCohortAll,
+                                      QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(parameters, "Update parameters");
         parameters = new ObjectMap(parameters);
         MyResourceId resource = getId(entryStr, studyStr, sessionId);
@@ -396,7 +403,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         Cohort cohort = cohortDBAdaptor.get(resource.getResourceId(),
-                new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.STATUS_NAME.key())).first();
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.NAME.key(),
+                        CohortDBAdaptor.QueryParams.STATUS_NAME.key()))).first();
+        if (!allowModifyCohortAll) {
+            if (StudyEntry.DEFAULT_COHORT.equals(cohort.getName())) {
+                throw new CatalogException("Cannot modify cohort " + StudyEntry.DEFAULT_COHORT);
+            }
+        }
+
         if (parameters.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())
                 || parameters.containsKey(CohortDBAdaptor.QueryParams.NAME.key())/* || params.containsKey("type")*/) {
             switch (cohort.getStatus().getName()) {
@@ -422,36 +436,70 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public List<QueryResult<Cohort>> delete(@Nullable String studyStr, String cohortIdStr, ObjectMap options, String sessionId)
+    public List<QueryResult<Cohort>> delete(@Nullable String studyStr, String cohortIdStr, ObjectMap params, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(cohortIdStr, "id");
-        options = ParamUtils.defaultObject(options, ObjectMap::new);
+        params = ParamUtils.defaultObject(params, ObjectMap::new);
+        boolean silent = params.getBoolean(Constants.SILENT, false);
 
-        MyResourceIds resource = getIds(Arrays.asList(StringUtils.split(cohortIdStr, ",")), studyStr, sessionId);
+        MyResourceIds resource = getIds(Arrays.asList(StringUtils.split(cohortIdStr, ",")), studyStr, silent, sessionId);
         List<Long> cohortIds = resource.getResourceIds();
         String userId = resource.getUser();
 
         // Check all the cohorts can be deleted
+        List<Cohort> cohortsToDelete = new ArrayList<>(cohortIds.size());
         for (Long cohortId : cohortIds) {
-            authorizationManager.checkCohortPermission(resource.getStudyId(), cohortId, userId, CohortAclEntry.CohortPermissions.DELETE);
+            try {
+                authorizationManager.checkCohortPermission(resource.getStudyId(), cohortId, userId,
+                        CohortAclEntry.CohortPermissions.DELETE);
 
-            QueryResult<Cohort> myCohortQR = cohortDBAdaptor.get(cohortId, new QueryOptions());
-            if (myCohortQR.getNumResults() == 0) {
-                throw new CatalogException("Internal error: Cohort " + cohortId + "not found");
-            }
-            // Check if the cohort can be deleted
-            if (myCohortQR.first().getStatus() != null && myCohortQR.first().getStatus().getName() != null
-                    && !myCohortQR.first().getStatus().getName().equals(Cohort.CohortStatus.NONE)) {
-                throw new CatalogException("Cannot delete cohort " + cohortId + ". The cohort is used in storage.");
+                Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), cohortId);
+                QueryResult<Cohort> myCohortQR = cohortDBAdaptor.get(query, new QueryOptions(), userId);
+                if (myCohortQR.getNumResults() == 0) {
+                    throw CatalogAuthorizationException.deny(userId, "VIEW", "Cohort", cohortId, null);
+                }
+
+                // Check if the cohort is different from DEFAULT_COHORT
+                if (StudyEntry.DEFAULT_COHORT.equals(myCohortQR.first().getName())) {
+                    throw new CatalogException("Cohort " + StudyEntry.DEFAULT_COHORT + " cannot be deleted");
+                }
+
+                // Check if the cohort can be deleted
+                if (myCohortQR.first().getStatus() != null && myCohortQR.first().getStatus().getName() != null
+                        && !myCohortQR.first().getStatus().getName().equals(Cohort.CohortStatus.NONE)) {
+                    throw new CatalogException("Cannot delete cohort " + cohortId + ". The cohort is used in storage.");
+                }
+
+                // Add cohort to the list of cohorts that can be deleted
+                cohortsToDelete.add(myCohortQR.first());
+            } catch (CatalogException e) {
+                if (silent) {
+                    logger.warn("Cohort " + cohortId + " could not be deleted: " + e.getMessage());
+                } else {
+                    throw e;
+                }
             }
         }
 
         // Delete the cohorts
-        List<QueryResult<Cohort>> queryResultList = new ArrayList<>(cohortIds.size());
-        for (Long cohortId : cohortIds) {
-            QueryResult<Cohort> queryResult = cohortDBAdaptor.delete(cohortId, QueryOptions.empty());
-            auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
-            queryResultList.add(queryResult);
+        List<QueryResult<Cohort>> queryResultList = new ArrayList<>(cohortsToDelete.size());
+        for (Cohort cohort : cohortsToDelete) {
+            // Rename cohort
+            String cohortName = cohort.getName() + INTERNAL_DELIMITER + Status.DELETED + INTERNAL_DELIMITER + TimeUtils.getTime();
+
+            // Create update parameter
+            ObjectMap updateParams = new ObjectMap()
+                    .append(CohortDBAdaptor.QueryParams.NAME.key(), cohortName)
+                    .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+
+            cohortDBAdaptor.update(cohort.getId(), updateParams, QueryOptions.empty());
+            auditManager.recordDeletion(AuditRecord.Resource.cohort, cohort.getId(), userId, null, updateParams, null, null);
+
+            Query query = new Query()
+                    .append(CohortDBAdaptor.QueryParams.ID.key(), cohort.getId())
+                    .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+
+            queryResultList.add(cohortDBAdaptor.get(query, QueryOptions.empty(), userId));
         }
 
         return queryResultList;

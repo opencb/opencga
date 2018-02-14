@@ -1236,7 +1236,7 @@ public class CatalogManagerTest extends GenericTest {
                 .append(CohortDBAdaptor.QueryParams.ID.key(), myCohort.getId())
                 .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Cohort.CohortStatus.READY);
         Cohort cohort = catalogManager.getCohortManager().get(studyId, query, null, sessionIdUser).first();
-        assertEquals(Status.TRASHED, cohort.getStatus().getName());
+        assertEquals(Status.DELETED, cohort.getStatus().getName());
     }
 
     /**

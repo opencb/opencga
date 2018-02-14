@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.net.URI;
 import java.util.Collections;
@@ -124,6 +124,11 @@ public class File {
 
     public static class FileStatus extends Status {
 
+        /**
+         * TRASHED name means that the object is marked as deleted although is still available in the database.
+         */
+        public static final String TRASHED = "TRASHED";
+
         public static final String STAGE = "STAGE";
         public static final String MISSING = "MISSING";
         public static final String PENDING_DELETE = "PENDING_DELETE";
@@ -150,7 +155,8 @@ public class File {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status != null && (status.equals(STAGE) || status.equals(MISSING))) {
+            if (status != null && (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED)
+                    || status.equals(PENDING_DELETE) || status.equals(DELETING) || status.equals(REMOVED))) {
                 return true;
             }
             return false;

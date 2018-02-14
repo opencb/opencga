@@ -405,7 +405,6 @@ public class JobManager extends ResourceManager<Job> {
                 }
 
                 switch (jobQueryResult.first().getStatus().getName()) {
-                    case Job.JobStatus.TRASHED:
                     case Job.JobStatus.DELETED:
                         throw new CatalogException("The job {" + jobId + "} was already " + jobQueryResult.first().getStatus().getName());
                     case Job.JobStatus.PREPARED:

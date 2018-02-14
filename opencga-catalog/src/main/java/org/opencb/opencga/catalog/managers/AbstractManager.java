@@ -69,6 +69,8 @@ public abstract class AbstractManager {
     protected static final String ROOT = "admin";
     protected static final String ANONYMOUS = "*";
 
+    protected static final String INTERNAL_DELIMITER = "__";
+
     AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                            DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                            Configuration configuration) {

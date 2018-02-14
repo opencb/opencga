@@ -325,9 +325,12 @@ public class OpenCGAWSServer {
                 case Constants.REFRESH:
                     queryOptions.put(Constants.REFRESH, Boolean.parseBoolean(value));
                     break;
-                case "count":
+                case QueryOptions.COUNT:
                     count = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), count);
+                    break;
+                case Constants.SILENT:
+                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
                     break;
                 case Constants.FLATTENED_ANNOTATIONS:
                     queryOptions.put(Constants.FLATTENED_ANNOTATIONS, Boolean.parseBoolean(value));
