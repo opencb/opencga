@@ -240,6 +240,32 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing&exclude=annotationSet.Testing||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 1 && jsonbody.response[0].result[0].annotationSets[0].name == "string"|
 
+
+!3 Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"annotationSets":[{"name": "string", "variableSetId": "$gVariableSetId",  "annotations": {"var_int": "545"}}]}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/cohorts/$cohortId/update?sid=$sessionId |200|  Content-Type: application/json ||
+
+!3 (Negative) Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"annotationSets":[{"name": "string", "variableSetId": "$gVariableSetId",  "annotations": {"var_int": "542.5"}}]}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/cohorts/$cohortId/update?sid=$sessionId |500|  Content-Type: application/json |jsonbody.error == 'Value 542.5 is not an integer number'|
+
+!3 (Negative) Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"annotationSets":[{"name": "string", "variableSetId": "$gVariableSetId",  "annotations": {"var_double": "ABC"}}]}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/cohorts/$cohortId/update?sid=$sessionId |500|  Content-Type: application/json |jsonbody.error == 'Value ABC is not a number'|
+
+!3 Update Variable in An Annotation
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"annotationSets":[{"name": "string", "variableSetId": "$gVariableSetId",  "annotations": {"var_double": "2065.35"}}]}|
+|setHeader|Content-Type:application/json|
+|POST| /v1/cohorts/$cohortId/update?sid=$sessionId |200|  Content-Type: application/json ||
+
+
 !3 Delete Variable In Annotation
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"annotationSets":[{"name": "string", "variableSetId": "$gVariableSetId",  "annotations": {"var_int": "10"}}]}|
