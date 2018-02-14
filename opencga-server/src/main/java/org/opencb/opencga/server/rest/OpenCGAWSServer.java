@@ -135,8 +135,6 @@ public class OpenCGAWSServer {
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        jsonObjectMapper.addMixIn(Individual.class, IndividualMixin.class);
-        jsonObjectMapper.addMixIn(Family.class, FamilyMixin.class);
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectWriter = jsonObjectMapper.writer();

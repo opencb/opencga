@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +36,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
+import org.opencb.opencga.server.rest.json.mixin.IndividualMixin;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -634,6 +637,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public List<String> samples;
 
         public ObjectMap toIndividualObjectMap() throws JsonProcessingException {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.addMixIn(Individual.class, IndividualMixin.class);
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
             Individual individual = new Individual()
                     .setName(name)
                     .setFather(father != null ? new Individual().setName(father) : null)
@@ -650,7 +657,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     .setPhenotypes(phenotypes);
             individual.setAnnotationSets(annotationSets);
 
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(individual));
+            ObjectMap params = new ObjectMap(mapper.writeValueAsString(individual));
             if (parentalConsanguinity == null) {
                 params.remove("parentalConsanguinity");
             }
