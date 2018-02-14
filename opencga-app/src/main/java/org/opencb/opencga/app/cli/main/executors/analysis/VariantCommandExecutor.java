@@ -133,6 +133,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         options.putIfNotEmpty("groupBy", queryCommandOptions.genericVariantQueryOptions.groupBy);
         options.put("histogram", queryCommandOptions.genericVariantQueryOptions.histogram);
         options.put("interval", queryCommandOptions.genericVariantQueryOptions.interval);
+        options.put("rank", queryCommandOptions.genericVariantQueryOptions.rank);
 
         List<String> annotations = queryCommandOptions.genericVariantQueryOptions.annotations == null
                 ? Collections.singletonList("gene")
@@ -144,7 +145,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         ObjectMap params = new ObjectMap(query);
-        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(params, new QueryOptions(QueryOptions.EXCLUDE, "files").append("basic", true)).firstResult();
+        QueryOptions metadataQueryOptions = new QueryOptions(options);
+        metadataQueryOptions.addToListOption(QueryOptions.EXCLUDE, "files");
+        metadataQueryOptions.append("basic", true);
+        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(params, metadataQueryOptions).firstResult();
         VcfOutputWriter vcfOutputWriter = new VcfOutputWriter(metadata, annotations, System.out);
 
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
@@ -153,7 +157,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             if (queryCommandOptions.numericOptions.count) {
                 return openCGAClient.getVariantClient().count(params, options);
             } else if (StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.groupBy)
-                    || queryCommandOptions.genericVariantQueryOptions.histogram) {
+                    || queryCommandOptions.genericVariantQueryOptions.histogram
+                    || StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.rank)) {
                 return openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
                 options.put(QueryOptions.SKIP_COUNT, true);

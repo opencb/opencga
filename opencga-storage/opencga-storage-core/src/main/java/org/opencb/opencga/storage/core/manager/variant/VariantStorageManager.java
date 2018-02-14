@@ -264,9 +264,24 @@ public class VariantStorageManager extends StorageManager {
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        catalogManager.getSampleManager().getIds(String.join(",", samples), study, sessionId);
+        if (samples == null || samples.size() < 2) {
+            throw new IllegalArgumentException("Fill gaps operation requires at least two samples!");
+        }
+        String sampleIds = String.join(",", samples);
+        catalogManager.getSampleManager().getIds(sampleIds, study, sessionId);
 
         variantStorageEngine.fillGaps(String.valueOf(studyId), samples, config);
+    }
+
+    public void fillMissing(String study, ObjectMap config, String sessionId)
+            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, study);
+        DataStore dataStore = getDataStore(studyId, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        variantStorageEngine.fillMissing(String.valueOf(studyId), config);
     }
 
     // ---------------------//

@@ -400,6 +400,12 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     }
 
+    @Override
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
+        super.securePostLoad(fileIds, studyConfiguration);
+        studyConfiguration.getAttributes().put(MISSING_GENOTYPES_UPDATED, false);
+    }
+
     protected void preMerge(URI input) throws StorageEngineException {
         int studyId = getStudyId();
 

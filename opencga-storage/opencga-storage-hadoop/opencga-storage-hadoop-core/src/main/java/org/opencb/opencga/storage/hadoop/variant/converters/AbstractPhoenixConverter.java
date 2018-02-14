@@ -20,6 +20,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.phoenix.schema.types.*;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 
+import java.sql.Array;
 import java.util.Collection;
 
 /**
@@ -74,7 +75,13 @@ public abstract class AbstractPhoenixConverter {
 
     protected <T> void add(Put put, byte[] column, T value, PDataType<T> dataType) {
         if (dataType.isArrayType()) {
-            throw new IllegalArgumentException("Not expected array phoenix data type");
+            if (value instanceof Collection) {
+                addArray(put, column, ((Collection) value), ((PArrayDataType) dataType));
+                return;
+            }
+            if (!(value instanceof Array)) {
+                throw new IllegalArgumentException("Not expected array phoenix data type");
+            }
         }
         byte[] bytes = dataType.toBytes(value);
         put.addColumn(columnFamily, column, bytes);

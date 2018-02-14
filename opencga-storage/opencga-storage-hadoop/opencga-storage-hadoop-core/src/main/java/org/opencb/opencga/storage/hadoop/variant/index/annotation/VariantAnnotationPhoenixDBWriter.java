@@ -23,7 +23,7 @@ import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
 
     private final Connection connection;
     private final VariantAnnotationUpsertExecutor upsertExecutor;
-    private final VariantAnnotationToHBaseConverter converter;
+    private final VariantAnnotationToPhoenixConverter converter;
     private final boolean closeConnection;
     private String variantTable;
     private GenomeHelper genomeHelper;
@@ -60,7 +60,7 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
 
         this.genomeHelper = dbAdaptor.getGenomeHelper();
         this.closeConnection = closeConnection;
-        this.converter = new VariantAnnotationToHBaseConverter(genomeHelper);
+        this.converter = new VariantAnnotationToPhoenixConverter(genomeHelper.getColumnFamily());
         this.variantTable = variantTable;
         List<PhoenixHelper.Column> columns = new ArrayList<>();
         Collections.addAll(columns, VariantPhoenixHelper.VariantColumn.values());

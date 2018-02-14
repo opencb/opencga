@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
+import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,13 +69,17 @@ public class VariantHbaseTransformTaskTest {
 
 
         return () -> {
-            List<Variant> read = Collections.emptyList();
-            while( !(read = reader.read(100)).isEmpty()) {
-                List<VcfSliceProtos.VcfSlice> slices = task.apply(read);
-                if (!slices.isEmpty())
-                    collector.write(slices);
+            try {
+                List<Variant> read = Collections.emptyList();
+                while( !(read = reader.read(100)).isEmpty()) {
+                    List<VcfSliceProtos.VcfSlice> slices = task.apply(read);
+                    if (!slices.isEmpty())
+                        collector.write(slices);
+                }
+                collector.write(task.drain());
+            } catch (Exception e) {
+                throw Throwables.propagate(e);
             }
-            collector.write(task.drain());
         };
     }
 

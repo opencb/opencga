@@ -24,7 +24,6 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
-import org.opencb.opencga.core.common.Config;
 
 import java.io.FileOutputStream;
 import java.nio.file.Files;
@@ -77,7 +76,7 @@ public class WSTestServer {
         //Create test environment. Override OpenCGA_Home
         Path opencgaHome = Paths.get("/tmp/opencga-server-test");
         System.setProperty("app.home", opencgaHome.toString());
-        Config.setOpenCGAHome(opencgaHome.toString());
+//        Config.setOpenCGAHome(opencgaHome.toString());
 
         Files.createDirectories(opencgaHome);
         Files.createDirectories(opencgaHome.resolve("conf"));

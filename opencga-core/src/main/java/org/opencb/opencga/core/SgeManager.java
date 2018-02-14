@@ -17,10 +17,11 @@
 package org.opencb.opencga.core;
 
 import com.google.common.base.Splitter;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
-import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.core.exec.Command;
-import org.opencb.opencga.core.exec.SingleProcess;
+import org.opencb.commons.exec.Command;
+import org.opencb.commons.exec.SingleProcess;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -53,8 +54,9 @@ public class  SgeManager {
     public static final String EXECUTION_ERROR = "execution error";
 
     protected static Logger logger = LoggerFactory.getLogger(SgeManager.class);
-    @Deprecated
-    private static Properties analysisProperties = Config.getAnalysisProperties();
+//    @Deprecated
+//    private static Properties analysisProperties = Config.getAnalysisProperties();
+    private static Configuration configuration;
 
     static {
         stateDic = new HashMap<String, String>();
@@ -62,6 +64,10 @@ public class  SgeManager {
         stateDic.put("t", TRANSFERRED);
         stateDic.put("qw", QUEUED);
         stateDic.put("Eqw", ERROR);
+    }
+
+    public SgeManager(Configuration configuration) {
+        this.configuration = Objects.requireNonNull(configuration, "Configuration object cannot be null");
     }
 
     public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine)
@@ -105,7 +111,7 @@ public class  SgeManager {
         logger.info("SgeManager: Enqueuing job: " + Commandline.toString(cmdArray));
 
         // thrown command to shell
-        Command sgeCommand = new Command(cmdArray, null);
+        Command sgeCommand = new Command(cmdArray, Collections.EMPTY_LIST);
         SingleProcess sp = new SingleProcess(sgeCommand);
         sp.getRunnableProcess().run();
         if (sgeCommand.getExitValue() != 0 || sgeCommand.getException() != null) {
@@ -128,12 +134,10 @@ public class  SgeManager {
 
         // search corresponding queue
         String selectedQueue = defaultQueue;
-        String queueProperty;
         for (String queue : queueList) {
             if (!queue.equalsIgnoreCase(defaultQueue)) {
-                queueProperty = "OPENCGA.SGE." + queue.toUpperCase() + ".TOOLS";
-                if (analysisProperties.containsKey(queueProperty)) {
-                    if (belongsTheToolToQueue(analysisProperties.getProperty(queueProperty), toolName)) {
+                if (configuration.getExecution().getToolsPerQueue().get(queue) != null) {
+                    if (belongsTheToolToQueue(configuration.getExecution().getToolsPerQueue().get(queue), toolName)) {
                         selectedQueue = queue;
                     }
                 }
@@ -144,18 +148,18 @@ public class  SgeManager {
     }
 
     private static String getDefaultQueue() throws Exception {
-        if (analysisProperties.containsKey("OPENCGA.SGE.DEFAULT.QUEUE")) {
-            return analysisProperties.getProperty("OPENCGA.SGE.DEFAULT.QUEUE");
-        } else {
-            throw new Exception("OPENCGA.SGE.DEFAULT.QUEUE is not defined!");
+        if (StringUtils.isEmpty(configuration.getExecution().getDefaultQueue())) {
+            throw new Exception("Execution default queue is not defined!");
         }
+        return configuration.getExecution().getDefaultQueue();
     }
 
     private static List<String> getQueueList() {
-        if (analysisProperties.containsKey("OPENCGA.SGE.AVAILABLE.QUEUES")) {
-            return Splitter.on(",").splitToList(analysisProperties.getProperty("OPENCGA.SGE.AVAILABLE.QUEUES"));
+        if (configuration.getExecution().getAvailableQueues() != null) {
+            String[] queueArray = configuration.getExecution().getAvailableQueues().split(",");
+            return Arrays.asList(queueArray);
         } else {
-            return new ArrayList<String>();
+            return new ArrayList<>();
         }
     }
 

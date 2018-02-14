@@ -28,6 +28,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -81,7 +82,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         return Arrays.stream(value.rawCells())
                 .filter(c -> Bytes.equals(CellUtil.cloneFamily(c), getHelper().getColumnFamily()))
                 .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
-                .map(c -> Integer.parseInt(Bytes.toString(CellUtil.cloneQualifier(c))))
+                .map(c -> ArchiveTableHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c)))
                 .collect(Collectors.toSet());
     }
 
@@ -290,15 +291,15 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         logger.info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 
-    abstract void map(VariantMapReduceContext ctx) throws IOException, InterruptedException;
+    protected abstract void map(VariantMapReduceContext ctx) throws IOException, InterruptedException;
 
     protected static class VariantMapReduceContext {
-        public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIds,
+        public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIdsInResult,
                                        Set<Integer> sampleIds, String chr, long startPos, long nextStartPos) {
             this.currRowKey = currRowKey;
             this.context = context;
             this.value = value;
-            this.fileIds = fileIds;
+            this.fileIdsInResult = fileIdsInResult;
             this.sampleIds = sampleIds;
             this.chr = chr;
             this.startPos = startPos;
@@ -308,7 +309,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         protected final byte[] currRowKey;
         protected final Context context;
         protected final Result value;
-        protected final Set<Integer> fileIds;
+        private final Set<Integer> fileIdsInResult;
         protected final Set<Integer> sampleIds;
         private final String chr;
         protected final long startPos;
@@ -335,12 +336,8 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             return chr;
         }
 
-        public Set<Integer> getFileIds() {
-            return fileIds;
-        }
-
-        public String getChr() {
-            return chr;
+        public Set<Integer> getFileIdsInResult() {
+            return fileIdsInResult;
         }
 
         public long getStartPos() {
