@@ -2,12 +2,14 @@
 {"collection": "user", "fields": {"projects.id": 1}, "options": {"background": true}}
 {"collection": "user", "fields": {"projects.alias": 1, "id": 1}, "options": {"background": true}}
 
+{"collection": "study", "fields": {"id": 1}, "options": {"background": true}}
 {"collection": "study", "fields": {"name": 1, "_projectId": 1}, "options": {"background": true}}
 {"collection": "study", "fields": {"alias": 1, "_projectId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "study", "fields": {"status.name": 1}, "options": {"background": true}}
 {"collection": "study", "fields": {"_acl": 1}, "options": {"background": true}}
 {"collection": "study", "fields": {"_projectId": 1}, "options": {"background": true}}
 
+{"collection": "job", "fields": {"id": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"name": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"toolId": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
@@ -16,6 +18,7 @@
 {"collection": "job", "fields": {"tags": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 
+{"collection": "file", "fields": {"id": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"name": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"type": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"format": 1, "_studyId": 1}, "options": {"background": true}}
@@ -52,6 +55,7 @@
 {"collection": "individual", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"_studyId": 1}, "options": {"background": true}}
 
+{"collection": "cohort", "fields": {"id": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "cohort", "fields": {"type": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
@@ -60,6 +64,7 @@
 {"collection": "cohort", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {"background": true}}
 
+{"collection": "dataset", "fields": {"id": 1}, "options": {"background": true}}
 {"collection": "dataset", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "dataset", "fields": {"files": 1}, "options": {"background": true}}
 {"collection": "dataset", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}

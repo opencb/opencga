@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
-import org.opencb.opencga.core.common.Config;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -117,7 +116,7 @@ public class WSServerTestUtils {
         Path opencgaHome = catalogManagerResource.getOpencgaHome();
         configDir = opencgaHome.resolve("conf");
         System.setProperty("app.home", opencgaHome.toString());
-        Config.setOpenCGAHome(opencgaHome.toString());
+//        Config.setOpenCGAHome(opencgaHome.toString());
 
         Files.createDirectories(opencgaHome);
         Files.createDirectories(opencgaHome.resolve("conf"));
