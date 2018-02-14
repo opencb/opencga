@@ -17,11 +17,12 @@ import java.io.IOException;
 class HBaseVariantMetadataUtils {
 
     private static final byte[] STUDIES_RK = Bytes.toBytes("studies");
-    private static final String FILES_SUMMARY_SUFIX_RK = "_files";
+    private static final String FILE_METADATA_SEPARATOR = "_F_";
 
     private static final byte[] VALUE_COLUMN = Bytes.toBytes("value");
     private static final byte[] TYPE_COLUMN = Bytes.toBytes("type");
     private static final byte[] LOCK_COLUMN = Bytes.toBytes("lock");
+    private static final byte[] STATUS_COLUMN = Bytes.toBytes("status");
 
     public enum Type {
         STUDY_CONFIGURATION, STUDIES, VARIANT_FILE_METADATA, FILES;
@@ -29,6 +30,20 @@ class HBaseVariantMetadataUtils {
         private final byte[] bytes;
 
         Type() {
+            bytes = Bytes.toBytes(name());
+        }
+
+        public byte[] bytes() {
+            return bytes;
+        }
+    }
+
+    public enum Status {
+        READY, INVALID, DELETED, NONE;
+
+        private final byte[] bytes;
+
+        Status() {
             bytes = Bytes.toBytes(name());
         }
 
@@ -50,24 +65,20 @@ class HBaseVariantMetadataUtils {
     }
 
     static byte[] getVariantFileMetadataRowKey(int studyId, int fileId) {
-        return Bytes.toBytes(studyId + "_" + fileId);
+        return Bytes.toBytes(studyId + FILE_METADATA_SEPARATOR + fileId);
     }
 
     static byte[] getVariantFileMetadataRowKeyPrefix(int studyId) {
-        return Bytes.toBytes(studyId + "_");
-    }
-
-    static byte[] getFilesSummaryRowKey(int studyId) {
-        return Bytes.toBytes(studyId + FILES_SUMMARY_SUFIX_RK);
+        return Bytes.toBytes(studyId + FILE_METADATA_SEPARATOR);
     }
 
     static Pair<Integer, Integer> parseVariantFileMetadataRowKey(byte[] rk) {
         String s = Bytes.toString(rk);
-        String[] split = s.split("_");
-        if (split.length != 2) {
+        int idx = s.indexOf(FILE_METADATA_SEPARATOR);
+        if (idx < 0) {
             throw new IllegalArgumentException("RowKey " + s + " is not a valid VariantFileMetadata RowKey!");
         }
-        return Pair.of(Integer.valueOf(split[0]), Integer.valueOf(split[1]));
+        return Pair.of(Integer.valueOf(s.substring(0, idx)), Integer.valueOf(s.substring(idx + FILE_METADATA_SEPARATOR.length())));
     }
 
     static byte[] getLockColumn() {
@@ -80,6 +91,10 @@ class HBaseVariantMetadataUtils {
 
     static byte[] getValueColumn() {
         return VALUE_COLUMN;
+    }
+
+    static byte[] getStatusColumn() {
+        return STATUS_COLUMN;
     }
 
     static boolean createMetaTableIfNeeded(HBaseManager hBaseManager, String tableName, GenomeHelper genomeHelper) throws IOException {

@@ -19,10 +19,14 @@ package org.opencb.opencga.storage.hadoop.variant.metadata;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterators;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.*;
-import org.apache.hadoop.hbase.io.compress.Compression;
+import org.apache.hadoop.hbase.filter.BinaryComparator;
+import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
+import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.RowFilter;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
@@ -44,7 +48,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
 
@@ -61,6 +64,7 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
     private final HBaseManager hBaseManager;
     private final ObjectMapper objectMapper;
     private final String tableName;
+    private final byte[] family;
     private Boolean tableExists = null; // unknown
 
     public HBaseVariantFileMetadataDBAdaptor(Configuration configuration) {
@@ -81,6 +85,7 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
             this.hBaseManager = new HBaseManager(hBaseManager);
         }
         tableName = tableNameGenerator.getMetaTableName();
+        family = genomeHelper.getColumnFamily();
     }
 
     @Override
@@ -118,7 +123,7 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
 
         if (fileIds != null && fileIds.size() == 1) {
             Get get = new Get(getVariantFileMetadataRowKey(studyId, fileIds.get(0)));
-            get.addColumn(genomeHelper.getColumnFamily(), getValueColumn());
+            get.addColumn(family, getValueColumn());
             Result result = hBaseManager.act(tableName, (HBaseManager.HBaseTableFunction<Result>) table -> table.get(get));
             VariantFileMetadata value = resultToVariantFileMetadata(result);
             if (value == null) {
@@ -132,15 +137,15 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
             if (fileIds != null && !fileIds.isEmpty()) {
                 FilterList filterList = new FilterList();
                 for (Integer fileId : fileIds) {
-                    filterList.addFilter(new RowFilter(CompareFilter.CompareOp.EQUAL,
+                    filterList.addFilter(new RowFilter(CompareOp.EQUAL,
                             new BinaryComparator(getVariantFileMetadataRowKey(studyId, fileId))));
                 }
                 scan.setFilter(filterList);
             } else {
                 scan.setFilter(
                         new SingleColumnValueFilter(
-                                genomeHelper.getColumnFamily(), getTypeColumn(),
-                                CompareFilter.CompareOp.EQUAL, Type.VARIANT_FILE_METADATA.bytes()));
+                                family, getTypeColumn(),
+                                CompareOp.EQUAL, Type.VARIANT_FILE_METADATA.bytes()));
 
             }
             ResultScanner scanner = hBaseManager.act(tableName,
@@ -154,7 +159,7 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
         if (result == null || result.isEmpty()) {
             return null;
         }
-        byte[] value = result.getValue(genomeHelper.getColumnFamily(), getValueColumn());
+        byte[] value = result.getValue(family, getValueColumn());
         try {
             return objectMapper.readValue(value, VariantFileMetadata.class);
         } catch (IOException e) {
@@ -185,8 +190,8 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
         Integer fileId = Integer.valueOf(metadata.getId());
         checkFileId(fileId);
         Put put = new Put(getVariantFileMetadataRowKey(Integer.valueOf(studyId), fileId));
-        put.addColumn(this.genomeHelper.getColumnFamily(), getValueColumn(), metadata.getImpl().toString().getBytes());
-        put.addColumn(this.genomeHelper.getColumnFamily(), getTypeColumn(), Type.VARIANT_FILE_METADATA.bytes());
+        put.addColumn(this.family, getValueColumn(), metadata.getImpl().toString().getBytes());
+        put.addColumn(this.family, getTypeColumn(), Type.VARIANT_FILE_METADATA.bytes());
         hBaseManager.act(tableName, table -> {
             table.put(put);
         });
@@ -200,38 +205,25 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
 
     public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
         ensureTableExists();
-        StringBuilder sb = new StringBuilder();
+
+        List<Put> puts = new ArrayList<>(newLoadedFiles.size());
         for (Integer newLoadedFile : newLoadedFiles) {
-            sb.append(',').append(newLoadedFile);
+            Put put = new Put(getVariantFileMetadataRowKey(studyId, newLoadedFile));
+            put.addColumn(family, getTypeColumn(), Type.VARIANT_FILE_METADATA.bytes());
+            put.addColumn(family, getStatusColumn(), Status.READY.bytes());
+            puts.add(put);
         }
-
-        Append append = new Append(getFilesSummaryRowKey(studyId));
-        append.add(genomeHelper.getColumnFamily(), getValueColumn(), Bytes.toBytes(sb.toString()));
-        Put put = new Put(getFilesSummaryRowKey(studyId));
-        put.addColumn(genomeHelper.getColumnFamily(), getTypeColumn(), Type.FILES.bytes());
-
         hBaseManager.act(tableName, table -> {
-            table.append(append);
-            table.put(put);
+            table.put(puts);
         });
     }
 
     @Override
     public void delete(int study, int file) throws IOException {
-
-        Set<Integer> loadedFiles = getLoadedFiles(study);
-        loadedFiles.remove(file);
-        String loadedFilesStr = loadedFiles.stream().map(Object::toString).collect(Collectors.joining(","));
-
-        // Remove from loaded files
-        Put putLoadedFiles = new Put(getFilesSummaryRowKey(study));
-        putLoadedFiles.addColumn(genomeHelper.getColumnFamily(), getValueColumn(), Bytes.toBytes(loadedFilesStr));
-
         Delete delete = new Delete(getVariantFileMetadataRowKey(study, file));
 
         hBaseManager.act(tableName, table -> {
             table.delete(delete);
-            table.put(putLoadedFiles);
         });
     }
 
@@ -249,39 +241,19 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
             return new HashSet<>();
         } else {
             return hBaseManager.act(tableName, table -> {
-                Get get = new Get(getFilesSummaryRowKey(studyId));
-                get.addColumn(genomeHelper.getColumnFamily(), getValueColumn());
-
-                byte[] value = table.get(get).getValue(genomeHelper.getColumnFamily(), getValueColumn());
-                Set<Integer> set;
-                if (value != null) {
-                    set = new LinkedHashSet<>();
-                    for (String s : Bytes.toString(value).split(",")) {
-                        if (!s.isEmpty()) {
-                            if (s.startsWith("[")) {
-                                s = s.substring(1);
-                            }
-                            if (s.endsWith("]")) {
-                                s = s.substring(0, s.length() - 1);
-                            }
-                            set.add(Integer.parseInt(s));
-                        }
-                    }
-                } else {
-                    set = new LinkedHashSet<>();
+                Set<Integer> set = new TreeSet<>();
+                Scan scan = new Scan();
+                scan.addColumn(family, getStatusColumn());
+                scan.addColumn(family, getTypeColumn());
+                scan.setRowPrefixFilter(getVariantFileMetadataRowKeyPrefix(studyId));
+                scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL,
+                        new SingleColumnValueFilter(family, getStatusColumn(), CompareOp.EQUAL, Status.READY.bytes()),
+                        new SingleColumnValueFilter(family, getTypeColumn(), CompareOp.EQUAL, Type.VARIANT_FILE_METADATA.bytes())));
+                for (Result result : table.getScanner(scan)) {
+                    Pair<Integer, Integer> pair = parseVariantFileMetadataRowKey(result.getRow());
+                    Integer fileId = pair.getValue();
+                    set.add(fileId);
                 }
-//                Set<Integer> set = new TreeSet<>();
-//                Scan scan = new Scan();
-//                scan.setRowPrefixFilter(getVariantFileMetadataRowKeyPrefix(studyId));
-//                scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL,
-//                        new FirstKeyOnlyFilter(),
-//                        new RowFilter(CompareFilter.CompareOp.NOT_EQUAL, new BinaryComparator(getFilesSummaryRowKey(studyId)))));
-//                scan.setFilter(new FirstKeyOnlyFilter());
-//                for (Result result : table.getScanner(scan)) {
-//                    Pair<Integer, Integer> pair = parseVariantFileMetadataRowKey(result.getRow());
-//                    Integer fileId = pair.getValue();
-//                    set.add(fileId);
-//                }
                 return set;
             });
         }
