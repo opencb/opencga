@@ -283,7 +283,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of cohort Ids", required = true) @PathParam("cohorts") String cohortsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "If true, it will try to delete all possible cohorts. Otherwise, it will fail if at least one of them "
+                    + "cannot be deleted") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<QueryResult<Cohort>> delete = cohortManager.delete(studyStr, cohortsStr, queryOptions, sessionId);
             return createOkResponse(delete);

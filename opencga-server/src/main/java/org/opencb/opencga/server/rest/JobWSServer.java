@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
@@ -222,26 +223,24 @@ public class JobWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-//
-//    @GET
-//    @Path("/{jobIds}/delete")
-//    @ApiOperation(value = "Delete job [WARNING]", position = 4,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response delete(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true) @PathParam("jobIds")
-//                                   String jobIds,
-//                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                           @QueryParam("study") String studyStr) {
-////                           @ApiParam(value = "deleteFiles", required = false) @DefaultValue("true")
-////                                @QueryParam("deleteFiles") boolean deleteFiles) {
-//        try {
-////            QueryOptions options = new QueryOptions(JobManager.DELETE_FILES, deleteFiles);
-//            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(studyStr, jobIds, queryOptions, sessionId);
-//            return createOkResponse(delete);
-//        } catch (CatalogException | IOException e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+
+    @GET
+    @Path("/{jobIds}/delete")
+    @ApiOperation(value = "Delete job", position = 4)
+    public Response delete(
+            @ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true) @PathParam("jobIds")
+                String jobIds,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "If true, it will try to delete all possible job. Otherwise, it will fail if at least one of them "
+                    + "cannot be deleted") @QueryParam(Constants.SILENT) boolean silent) {
+        try {
+            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(studyStr, jobIds, queryOptions, sessionId);
+            return createOkResponse(delete);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/groupBy")

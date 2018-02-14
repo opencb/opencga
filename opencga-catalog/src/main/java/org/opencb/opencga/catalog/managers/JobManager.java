@@ -22,26 +22,25 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
@@ -381,27 +380,24 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public List<QueryResult<Job>> delete(@Nullable String studyStr, String jobIdStr, ObjectMap options, String sessionId)
-            throws CatalogException, IOException {
+    public List<QueryResult<Job>> delete(@Nullable String studyStr, String jobIdStr, ObjectMap params, String sessionId)
+            throws CatalogException {
         ParamUtils.checkParameter(jobIdStr, "id");
-//        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        params = ParamUtils.defaultObject(params, ObjectMap::new);
+        boolean silent = params.getBoolean(Constants.SILENT, false);
 
-//        boolean deleteFiles = options.getBoolean(DELETE_FILES);
-//        options.remove(DELETE_FILES);
-
-        MyResourceIds resourceIds = getIds(Arrays.asList(StringUtils.split(jobIdStr, ",")), studyStr, sessionId);
+        MyResourceIds resourceIds = getIds(Arrays.asList(StringUtils.split(jobIdStr, ",")), studyStr, silent, sessionId);
         String userId = resourceIds.getUser();
 
-        List<QueryResult<Job>> queryResultList = new ArrayList<>(resourceIds.getResourceIds().size());
+        List<Job> jobsToDelete = new ArrayList<>(resourceIds.getResourceIds().size());
         for (Long jobId : resourceIds.getResourceIds()) {
-            QueryResult<Job> queryResult = null;
             try {
                 authorizationManager.checkJobPermission(resourceIds.getStudyId(), jobId, userId, JobAclEntry.JobPermissions.DELETE);
 
-                QueryResult<Job> jobQueryResult = jobDBAdaptor.get(jobId, QueryOptions.empty());
-                if (jobQueryResult.first().getOutput() != null && CollectionUtils.isNotEmpty(jobQueryResult.first().getOutput())) {
-                    throw new CatalogException("The job created " + jobQueryResult.first().getOutput().size() + " files. Please, delete "
-                            + "them first.");
+                Query query = new Query(JobDBAdaptor.QueryParams.ID.key(), jobId);
+                QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, QueryOptions.empty(), userId);
+                if (jobQueryResult.getNumResults() == 0) {
+                    throw CatalogAuthorizationException.deny(userId, "VIEW", "Job", jobId, null);
                 }
 
                 switch (jobQueryResult.first().getStatus().getName()) {
@@ -419,37 +415,37 @@ public class JobManager extends ResourceManager<Job> {
                         break;
                 }
 
-                ObjectMap params = new ObjectMap()
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.DELETED);
-                queryResult = jobDBAdaptor.update(jobId, params, QueryOptions.empty());
-                queryResult.setId("Delete job " + jobId);
-                auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, jobQueryResult.first(), queryResult.first(),
-                        null, null);
-
-            } catch (CatalogAuthorizationException e) {
-                auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, null, e.getMessage(), null);
-
-                queryResult = new QueryResult<>("Delete job " + jobId);
-                queryResult.setErrorMsg(e.getMessage());
+                // Add job to the list of jobs to be deleted
+                jobsToDelete.add(jobQueryResult.first());
             } catch (CatalogException e) {
-                e.printStackTrace();
-                queryResult = new QueryResult<>("Delete job " + jobId);
-                queryResult.setErrorMsg(e.getMessage());
-            } finally {
-                queryResultList.add(queryResult);
+                if (silent) {
+                    logger.warn("Cohort " + jobId + " could not be deleted: " + e.getMessage());
+                } else {
+                    throw e;
+                }
             }
+        }
 
-            // Remove jobId references from file
-            try {
-                Query query = new Query()
-                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                        .append(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
+        List<QueryResult<Job>> queryResultList = new ArrayList<>(jobsToDelete.size());
+        for (Job job : jobsToDelete) {
+            // Create update parameter
+            ObjectMap updateParams = new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
 
-                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
-                fileDBAdaptor.update(query, params, QueryOptions.empty());
-            } catch (CatalogDBException e) {
-                logger.error("An error occurred when removing reference of job " + jobId + " from files", e);
-            }
+            QueryResult<Job> update = jobDBAdaptor.update(job.getId(), updateParams, QueryOptions.empty());
+            auditManager.recordDeletion(AuditRecord.Resource.job, job.getId(), userId, null, updateParams, null, null);
+            queryResultList.add(update);
+
+            // TODO: Remove jobId references from file?
+//            try {
+//                Query query = new Query()
+//                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+//                        .append(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
+//
+//                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
+//                fileDBAdaptor.update(query, params, QueryOptions.empty());
+//            } catch (CatalogDBException e) {
+//                logger.error("An error occurred when removing reference of job " + jobId + " from files", e);
+//            }
 
         }
 
