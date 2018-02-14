@@ -268,16 +268,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     getMongoDBDocument(parameters.get(QueryParams.INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
         }
 
-        String[] acceptedLongParams = {QueryParams.SIZE.key()};
+        String[] acceptedLongParams = {QueryParams.SIZE.key(), QueryParams.JOB_ID.key()};
         filterLongParams(parameters, fileParameters, acceptedLongParams);
 
-        String[] acceptedIntParams = {QueryParams.JOB_ID.key()};
-        // Fixme: Add "experiment_id" ?
-        filterIntParams(parameters, fileParameters, acceptedIntParams);
         // Check if the job exists.
-        if (parameters.containsKey(QueryParams.JOB_ID.key())) {
-            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().exists(parameters.getInt(QueryParams.JOB_ID.key()))) {
-                throw CatalogDBException.idNotFound("Job", parameters.getInt(QueryParams.JOB_ID.key()));
+        if (parameters.containsKey(QueryParams.JOB_ID.key()) && parameters.getLong(QueryParams.JOB_ID.key()) > 0) {
+            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().exists(parameters.getLong(QueryParams.JOB_ID.key()))) {
+                throw CatalogDBException.idNotFound("Job", parameters.getLong(QueryParams.JOB_ID.key()));
             }
         }
 

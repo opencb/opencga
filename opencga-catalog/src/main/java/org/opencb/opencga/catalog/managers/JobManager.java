@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -435,22 +436,17 @@ public class JobManager extends ResourceManager<Job> {
             auditManager.recordDeletion(AuditRecord.Resource.job, job.getId(), userId, null, updateParams, null, null);
             queryResultList.add(update);
 
-            // TODO: Remove jobId references from file?
-//            try {
-//                Query query = new Query()
-//                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-//                        .append(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
-//
-//                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
-//                fileDBAdaptor.update(query, params, QueryOptions.empty());
-//            } catch (CatalogDBException e) {
-//                logger.error("An error occurred when removing reference of job " + jobId + " from files", e);
-//            }
+            // Remove jobId references from file
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                    .append(FileDBAdaptor.QueryParams.JOB_ID.key(), job.getId());
 
-        }
+            updateParams = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
+            fileDBAdaptor.update(query, updateParams, QueryOptions.empty());
+    }
 
         return queryResultList;
-    }
+}
 
     public List<QueryResult<Job>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key());
