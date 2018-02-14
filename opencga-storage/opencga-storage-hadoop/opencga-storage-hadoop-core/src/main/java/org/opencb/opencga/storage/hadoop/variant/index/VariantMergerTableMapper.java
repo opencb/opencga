@@ -330,7 +330,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             coveredPositions.addAll(IntStream.range(min, max + 1).boxed().collect(Collectors.toList()));
         });
 
-        loadFromArchive(ctx.context, ctx.getCurrRowKey(), ctx.fileIds, (fileIds, res) -> {
+        loadFromArchive(ctx.context, ctx.getCurrRowKey(), ctx.getFileIdsInResult(), (fileIds, res) -> {
             if (null == res || res.isEmpty()) {
                 // FIXME: Add missing?
                 logger.info("No variants found for {} files", fileIds.size());

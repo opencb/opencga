@@ -56,7 +56,7 @@
 
     <!--<groupId>org.opencb.opencga</groupId>-->
     <artifactId>opencga-storage-hadoop-deps</artifactId>
-    <version>1.4.0-dev-SNAPSHOT</version>
+    <version>1.4.0-dev</version>
 
     <properties>
         <checkstyle.skip>true</checkstyle.skip>

@@ -5,9 +5,11 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.CompareFilter;
 import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.filter.SubstringComparator;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -17,8 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
 
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQuery;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQueryOptions;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQuery;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQueryOptions;
 
 /**
  * Created on 30/10/17.
@@ -29,7 +31,7 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
     public static final String FILL_GAPS_OPERATION_NAME = "fill_gaps";
     public static final String FILL_GAPS_INPUT = "fill-gaps.input";
-    public static final String FILL_GAPS_INPUT_DEFAULT = "phoenix";
+    public static final String FILL_GAPS_INPUT_DEFAULT = "archive";
     private Collection<Integer> samples;
     private final Logger logger = LoggerFactory.getLogger(FillGapsDriver.class);
 
@@ -42,17 +44,24 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected void parseAndValidateParameters() {
-        samples = FillGapsMapper.getSamples(getConf());
+        samples = FillGapsFromArchiveMapper.getSamples(getConf());
     }
 
     @Override
-    protected Class<?> getMapperClass() {
-        return FillGapsMapper.class;
+    protected Class<? extends TableMapper> getMapperClass() {
+        return FillGapsFromArchiveMapper.class;
     }
 
     @Override
     protected Job setupJob(Job job, String archiveTableName, String variantTableName) throws IOException {
-        if (getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
+        String input = getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT);
+        if (input.equalsIgnoreCase("archive")) {
+            // scan
+            Scan scan = FillGapsFromArchiveTask.buildScan(getConf().get(VariantQueryParam.REGION.key()), getConf());
+            // input
+            initMapReduceJob(job, FillGapsFromArchiveMapper.class, archiveTableName, variantTableName, scan);
+            job.getConfiguration().setInt(AbstractAnalysisTableDriver.TIMESTAMP, 5); // Not used, but must be defined
+        } else if (input.equalsIgnoreCase("phoenix")) {
             // Sql
             Query query = buildQuery(getStudyId(), samples, getFiles());
             QueryOptions options = buildQueryOptions();
@@ -77,7 +86,7 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
         // only mapper
         VariantMapReduceUtil.setNoneReduce(job);
 
-        FillGapsMapper.setSamples(job, samples);
+        FillGapsFromArchiveMapper.setSamples(job, samples);
 
         return job;
     }

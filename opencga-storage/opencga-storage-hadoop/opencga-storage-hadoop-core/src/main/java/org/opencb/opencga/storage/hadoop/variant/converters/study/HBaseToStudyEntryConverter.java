@@ -57,6 +57,8 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
+
 
 /**
  * Created on 26/05/17.
@@ -587,7 +589,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private String getDefaultGenotype(StudyConfiguration studyConfiguration) {
         String defaultGenotype;
-        if (VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes()).equals(VariantStorageEngine.MergeMode.ADVANCED)) {
+        if (VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes()).equals(VariantStorageEngine.MergeMode.ADVANCED)
+                || studyConfiguration.getAttributes().getBoolean(MISSING_GENOTYPES_UPDATED)) {
             defaultGenotype = "0/0";
         } else {
             defaultGenotype = unknownGenotype;

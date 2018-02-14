@@ -20,8 +20,9 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -51,8 +52,6 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduc
 public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
 
     private Logger logger = LoggerFactory.getLogger(VariantTableRemoveMapper.class);
-    private Table analysisTable;
-    private Table archiveTable;
     private boolean removeSampleColumns;
     private VariantStorageEngine.MergeMode mergeMode;
 
@@ -61,9 +60,6 @@ public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
             InterruptedException {
         super.setup(context);
         this.loadSampleColumns = false;
-        Connection connection = getHBaseManager().getConnection();
-        this.analysisTable = connection.getTable(TableName.valueOf(getHelper().getAnalysisTable()));
-        this.archiveTable = connection.getTable(TableName.valueOf(getHelper().getArchiveTable()));
 
         removeSampleColumns = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS,
                 HadoopVariantStorageEngine.DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS);
@@ -135,10 +131,16 @@ public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
 
         deleteVariantsFromAnalysisTable(ctx, removeLst);
         deleteSamplesFromAnalysisTable(ctx, updateLst);
-        deleteFromArchiveTable(ctx.context, ctx.currRowKey, ctx.fileIds);
+        deleteFromArchiveTable(ctx.context, ctx.currRowKey, ctx.getFileIdsInResult());
     }
 
-    private void deleteFromArchiveTable(Context context, byte[] rowKey, Set<Integer> fileIds) throws IOException {
+    private void deleteFromArchiveTable(Context context, byte[] rowKey, Collection<Integer> fileIds)
+            throws IOException, InterruptedException {
+        if (fileIds.isEmpty()) {
+            // Nothing to do!
+            context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW-EMPTY").increment(1);
+            return;
+        }
         byte[] cf = getHelper().getColumnFamily();
         Delete del = new Delete(rowKey); // TODO HBase time stamp specific delete -> more efficient
         for (Integer fid : fileIds) {
@@ -146,7 +148,8 @@ public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
         }
         context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW-DELETE_cells").increment(fileIds.size());
         context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW-DELETE_commands").increment(1);
-        this.archiveTable.delete(del);
+//        this.archiveTable.delete(del);
+        context.write(new ImmutableBytesWritable(getHelper().getArchiveTable()), del);
     }
 
     private void deleteVariantsFromAnalysisTable(VariantMapReduceContext variantContext, Collection<Variant> fullRemoveList)
@@ -173,7 +176,11 @@ public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
 
     private void deleteSamplesFromAnalysisTable(VariantMapReduceContext variantContext, Collection<Variant> partialRemoveList)
             throws IOException, InterruptedException {
-        if (!removeSampleColumns || variantContext.getSampleIds().isEmpty()) {
+        if (!removeSampleColumns) {
+            return;
+        } else if (variantContext.getSampleIds().isEmpty() && variantContext.getFileIdsInResult().isEmpty()) {
+            // Nothing to do!
+            variantContext.getContext().getCounter(COUNTER_GROUP_NAME, "ANALYSIS_TABLE_ROW-EMPTY").increment(1);
             return;
         }
 
@@ -184,7 +191,7 @@ public class VariantTableRemoveMapper extends AbstractArchiveTableMapper {
             byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
             Delete delete = new Delete(row);
 
-            for (Integer fileId : variantContext.getFileIds()) {
+            for (Integer fileId : variantContext.getFileIdsInResult()) {
                 delete.addColumn(columnFamily, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
             }
             for (Integer sampleId : variantContext.getSampleIds()) {
