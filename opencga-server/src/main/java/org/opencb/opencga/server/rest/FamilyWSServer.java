@@ -177,7 +177,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotationSet,
             @ApiParam(value = "Delete a specific annotation. Format: Comma separated list of annotationSetName:variable")
                 @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
-            @ApiParam(value = "params", required = true) FamilyPOST parameters) {
+            @ApiParam(value = "params") FamilyPOST parameters) {
         try {
             ObjectUtils.defaultIfNull(parameters, new FamilyPOST());
 

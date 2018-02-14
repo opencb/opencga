@@ -258,7 +258,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     String deleteAnnotationSet,
             @ApiParam(value = "Delete a specific annotation. Format: Comma separated list of annotationSetName:variable")
                 @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
-            @ApiParam(value = "params", required = true) Map<String, Object> params) {
+            @ApiParam(value = "params") Map<String, Object> params) {
         try {
             ObjectUtils.defaultIfNull(params, new HashMap<>());
 

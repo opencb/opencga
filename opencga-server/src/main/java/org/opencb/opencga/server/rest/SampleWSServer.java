@@ -249,7 +249,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotationSet,
             @ApiParam(value = "Delete a specific annotation. Format: Comma separated list of annotationSetName:variable")
                 @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
-            @ApiParam(value = "params", required = true) UpdateSamplePOST parameters) {
+            @ApiParam(value = "params") UpdateSamplePOST parameters) {
         try {
             ObjectUtils.defaultIfNull(parameters, new UpdateSamplePOST());
 
