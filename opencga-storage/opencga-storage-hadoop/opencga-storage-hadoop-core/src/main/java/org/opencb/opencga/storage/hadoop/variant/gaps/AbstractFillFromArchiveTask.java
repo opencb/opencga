@@ -175,6 +175,15 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             if (vcfSlicePair == null) {
                 continue;
             }
+            VcfSlice nonRefVcfSlice = vcfSlicePair.getNonRefVcfSlice();
+            ListIterator<VcfSliceProtos.VcfRecord> nonRefIterator = nonRefVcfSlice == null
+                    ? Collections.<VcfSliceProtos.VcfRecord>emptyList().listIterator()
+                    : nonRefVcfSlice.getRecordsList().listIterator();
+            VcfSlice refVcfSlice = vcfSlicePair.getRefVcfSlice();
+            ListIterator<VcfSliceProtos.VcfRecord> refIterator = refVcfSlice == null
+                    ? Collections.<VcfSliceProtos.VcfRecord>emptyList().listIterator()
+                    : refVcfSlice.getRecordsList().listIterator();
+
 
             Set<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
             for (Variant variant : variants) {
@@ -182,7 +191,7 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
 
                 StopWatch stopWatch = new StopWatch().start();
                 VariantOverlappingStatus overlappingStatus = fillGapsTask.fillGaps(variant, sampleIds, put, fileId,
-                        vcfSlicePair.getNonRefVcfSlice(), vcfSlicePair.getRefVcfSlice());
+                        nonRefVcfSlice, nonRefIterator, refVcfSlice, refIterator);
                 increment("OVERLAPPING_STATUS_" + String.valueOf(overlappingStatus), context.fileBatch, 1);
                 increment("OVERLAPPING_STATUS_" + String.valueOf(overlappingStatus), context.fileBatch, stopWatch);
             }

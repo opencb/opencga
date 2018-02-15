@@ -57,6 +57,14 @@ public class FillGapsTask {
 
     public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
                                              VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
+        return fillGaps(variant, missingSamples, put, fileId,
+                nonRefVcfSlice, nonRefVcfSlice.getRecordsList().listIterator(),
+                refVcfSlice, refVcfSlice.getRecordsList().listIterator());
+    }
+
+    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
+                                             VcfSliceProtos.VcfSlice nonRefVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> nonRefIterator,
+                                             VcfSliceProtos.VcfSlice refVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> refIterator) {
         VariantOverlappingStatus overlappingStatus;
 
         // Three scenarios:
@@ -66,13 +74,13 @@ public class FillGapsTask {
 
         List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> overlappingRecords = new ArrayList<>(1);
         if (nonRefVcfSlice != null) {
-            boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, nonRefVcfSlice, overlappingRecords);
+            boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, fileId, nonRefVcfSlice, nonRefIterator, overlappingRecords);
             if (isVariantAlreadyLoaded) {
                 return VariantOverlappingStatus.NONE;
             }
         }
         if (refVcfSlice != null) {
-            boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, refVcfSlice, overlappingRecords);
+            boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, fileId, refVcfSlice, refIterator, overlappingRecords);
             if (isVariantAlreadyLoaded) {
                 String msg = "Found that the variant " + variant + " was already loaded in refVcfSlice!";
 //                throw new IllegalStateException(msg);
@@ -145,16 +153,48 @@ public class FillGapsTask {
         return overlappingStatus;
     }
 
-    public boolean getOverlappingVariants(Variant variant, VcfSliceProtos.VcfSlice vcfSlice,
+    public boolean getOverlappingVariants(Variant variant, int fileId,
+                                          VcfSliceProtos.VcfSlice vcfSlice, ListIterator<VcfSliceProtos.VcfRecord> iterator,
                                           List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> overlappingRecords) {
         String chromosome = vcfSlice.getChromosome();
         int position = vcfSlice.getPosition();
-        for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
+        Integer resetPosition = null;
+        boolean isAlreadyPresent = false;
+        int firstIndex = iterator.nextIndex();
+        // Assume sorted VcfRecords
+        while (iterator.hasNext()) {
+            VcfSliceProtos.VcfRecord vcfRecord = iterator.next();
             int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
             int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, position);
             String reference = vcfRecord.getReference();
             String alternate = vcfRecord.getAlternate();
-            if (overlapsWith(variant, chromosome, start, end)) {
+            // If the VcfRecord starts after the variant, stop looking for variants
+            if (isAfter(variant, start)) {
+                if (resetPosition == null) {
+                    resetPosition = Math.max(iterator.previousIndex() - 1, 0);
+                }
+                // Shouldn't happen that the first VcfRecord from the iterator is beyond the variant to process,
+                // and is not the first VcfRecord from the slice.
+                // If so, there may be a bug, or the variants or the VcfSlice is not sorted
+                if (firstIndex != 0 && firstIndex == iterator.previousIndex()) {
+                    // This should never happen
+                    throw new IllegalStateException("Variants or VcfSlice not in order!"
+                            + " First next VcfRecord from iterator (index : " + firstIndex + ") "
+                            + chromosome + ':' + start + '-' + end + ':' + reference + ':' + alternate
+                            + " is after the current variant to process for file " + fileId
+                    );
+//                    // Something weird happened. Go back to the first position
+//                    while (iterator.hasPrevious()) {
+//                        iterator.previous();
+//                    }
+//                    firstIndex = 0;
+                } else {
+                    break;
+                }
+            } else if (overlapsWith(variant, chromosome, start, end)) {
+                if (resetPosition == null) {
+                    resetPosition = iterator.previousIndex();
+                }
                 if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
                     // Skip this variant
                     continue;
@@ -163,13 +203,21 @@ public class FillGapsTask {
                 // If the same variant is present for this file in the VcfSlice, the variant is already loaded
                 if (isVariantAlreadyLoaded(variant, vcfSlice, vcfRecord, chromosome, start, end, reference, alternate)) {
                     // Variant already loaded. Nothing to do!
-                    return true;
+                    isAlreadyPresent = true;
+                    break;
                 }
 
                 overlappingRecords.add(ImmutablePair.of(vcfSlice, vcfRecord));
             }
         }
-        return false;
+        // Send back the iterator
+        if (resetPosition != null) {
+//            logger.info("Reset from " + iterator.nextIndex() + " to " + resetPosition + ". fileId : " + fileId + " variant " + variant);
+            while (iterator.nextIndex() > resetPosition) {
+                iterator.previous();
+            }
+        }
+        return isAlreadyPresent;
     }
 
     /**
@@ -225,6 +273,10 @@ public class FillGapsTask {
             }
             return map;
         });
+    }
+
+    public static boolean isAfter(Variant variant, int start) {
+        return start > variant.getEnd() && start > variant.getStart();
     }
 
     public static boolean overlapsWith(Variant variant, String chromosome, int start, int end) {

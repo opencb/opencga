@@ -276,5 +276,14 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         Variant variant = new Variant("1:100:-:T");
         assertTrue(FillGapsTask.overlapsWith(variant, "1", variant.getStart(), variant.getEnd()));
     }
+    @Test
+    public void testIsAfter() {
+        assertFalse(FillGapsTask.isAfter(new Variant("1:100:-:T"), 100));
+        assertFalse(FillGapsTask.isAfter(new Variant("1:100:A:T"), 100));
+        assertTrue(FillGapsTask.isAfter(new Variant("1:100:A:T"), 101));
+        assertFalse(FillGapsTask.isAfter(new Variant("1:100:AAA:GGG"), 101));
+        assertFalse(FillGapsTask.isAfter(new Variant("1:100:AAA:GGG"), 102));
+        assertTrue(FillGapsTask.isAfter(new Variant("1:100:AAA:GGG"), 103));
+    }
 
 }

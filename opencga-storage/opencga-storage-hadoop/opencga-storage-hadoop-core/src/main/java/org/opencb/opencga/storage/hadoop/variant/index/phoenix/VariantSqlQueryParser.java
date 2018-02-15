@@ -55,6 +55,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.HOM_REF;
 
 /**
  * Created on 16/12/15.
@@ -226,7 +227,7 @@ public class VariantSqlQueryParser {
                 selectVariantElements.getFiles().forEach((studyId, fileIds) -> {
                     for (Integer fileId : fileIds) {
                         sb.append(",\"");
-                        VariantPhoenixHelper.buildFileColumnKey(studyId, fileId, sb);
+                        buildFileColumnKey(studyId, fileId, sb);
                         sb.append('"');
                     }
                 });
@@ -235,7 +236,7 @@ public class VariantSqlQueryParser {
                 returnedSamples.forEach((studyId, sampleIds) -> {
                     for (Integer sampleId : sampleIds) {
                         sb.append(",\"");
-                        VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId, sb);
+                        buildSampleColumnKey(studyId, sampleId, sb);
                         sb.append('"');
                     }
                 });
@@ -644,7 +645,7 @@ public class VariantSqlQueryParser {
                     throw VariantQueryException.malformedParam(COHORT, query.getString((COHORT.key())), "Expected {study}:{cohort}");
                 }
                 int cohortId = studyConfigurationManager.getCohortId(cohort, studyConfiguration);
-                Column column = VariantPhoenixHelper.getStatsColumn(studyConfiguration.getStudyId(), cohortId);
+                Column column = getStatsColumn(studyConfiguration.getStudyId(), cohortId);
                 if (negated) {
                     filters.add("\"" + column + "\" IS NULL");
                 } else {
