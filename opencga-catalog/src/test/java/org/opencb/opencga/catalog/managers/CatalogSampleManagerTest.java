@@ -15,6 +15,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.AnnotationMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
@@ -456,6 +457,22 @@ public class CatalogSampleManagerTest extends GenericTest {
         query.put(Constants.ANNOTATION, "variableSet!==" + vs1.getId());
         annotQueryResult = catalogManager.getSampleManager().search(Long.toString(studyId), query, QueryOptions.empty(), sessionIdUser);
         assertEquals(8, annotQueryResult.getNumResults());
+    }
+
+    @Test
+    public void testProjections() throws CatalogException {
+        Study study = catalogManager.getStudyManager().get("1000G:phase1", null, sessionIdUser).first();
+
+        Query query = new Query(Constants.ANNOTATION, "variableSet===" + study.getVariableSets().get(0).getId());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, "annotationSets");
+        QueryResult<Sample> annotQueryResult = catalogManager.getSampleManager().search(Long.toString(studyId), query, options,
+                sessionIdUser);
+        assertEquals(8, annotQueryResult.getNumResults());
+
+        for (Sample sample : annotQueryResult.getResult()) {
+            assertEquals(null, sample.getName());
+            assertTrue(!sample.getAnnotationSets().isEmpty());
+        }
     }
 
     @Test

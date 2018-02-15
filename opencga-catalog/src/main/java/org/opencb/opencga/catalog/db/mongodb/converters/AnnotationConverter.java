@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.managers.AnnotationSetManager.ANNOTATION_SETS;
+
 public class AnnotationConverter {
 
     static final String ID = AnnotationMongoDBAdaptor.AnnotationSetParams.ID.key();
@@ -467,6 +469,10 @@ public class AnnotationConverter {
         } else if (!exclude.isEmpty()) {
             projection = exclude;
             passProjectionFilter = false;
+        }
+
+        if (projection.contains(ANNOTATION_SETS)) {
+            return passProjectionFilter;
         }
 
         // We check the annotation
