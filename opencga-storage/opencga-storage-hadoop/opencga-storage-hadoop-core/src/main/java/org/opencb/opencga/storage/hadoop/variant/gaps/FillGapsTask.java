@@ -22,7 +22,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus.*;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus.REFERENCE;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus.VARIANT;
 
 /**
  * Created on 15/01/18.
@@ -169,9 +170,9 @@ public class FillGapsTask {
             String reference = vcfRecord.getReference();
             String alternate = vcfRecord.getAlternate();
             // If the VcfRecord starts after the variant, stop looking for variants
-            if (isAfter(variant, start)) {
+            if (isRegionAfterVariantStart(start, end, variant)) {
                 if (resetPosition == null) {
-                    resetPosition = Math.max(iterator.previousIndex() - 1, 0);
+                    resetPosition = Math.max(iterator.previousIndex() - 1, firstIndex);
                 }
                 // Shouldn't happen that the first VcfRecord from the iterator is beyond the variant to process,
                 // and is not the first VcfRecord from the slice.
@@ -193,7 +194,7 @@ public class FillGapsTask {
                 }
             } else if (overlapsWith(variant, chromosome, start, end)) {
                 if (resetPosition == null) {
-                    resetPosition = iterator.previousIndex();
+                    resetPosition = Math.max(iterator.previousIndex() - 1, firstIndex);
                 }
                 if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
                     // Skip this variant
@@ -275,8 +276,10 @@ public class FillGapsTask {
         });
     }
 
-    public static boolean isAfter(Variant variant, int start) {
-        return start > variant.getEnd() && start > variant.getStart();
+    public static boolean isRegionAfterVariantStart(int start, int end, Variant variant) {
+        int pos = Math.min(start, end);
+        int variantPos = Math.min(variant.getStart(), variant.getEnd());
+        return pos > variantPos;
     }
 
     public static boolean overlapsWith(Variant variant, String chromosome, int start, int end) {
