@@ -42,7 +42,7 @@ public class FillGapsFromVariantTask implements TaskWithException<Variant, Put, 
     private final ArchiveRowKeyFactory archiveRowKeyFactory;
     private final Collection<Integer> samples;
     private final Map<Integer, Integer> samplesFileMap;
-    private final Map<Integer, byte[]> fileToColumnMap = new HashMap<>();
+    private final Map<Integer, byte[]> fileToNonRefColumnMap = new HashMap<>();
     private final Logger logger = LoggerFactory.getLogger(FillGapsFromVariantTask.class);
     private FillGapsTask fillGapsTask;
 
@@ -63,13 +63,13 @@ public class FillGapsFromVariantTask implements TaskWithException<Variant, Put, 
                 if (entry.getValue().contains(sample)) {
                     Integer fileId = entry.getKey();
                     samplesFileMap.put(sample, fileId);
-                    fileToColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
+                    fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
                     break;
                 }
             }
         }
-        anyFileId = fileToColumnMap.keySet().iterator().next();
-        for (Integer fileId : fileToColumnMap.keySet()) {
+        anyFileId = fileToNonRefColumnMap.keySet().iterator().next();
+        for (Integer fileId : fileToNonRefColumnMap.keySet()) {
             // FIXME !!
             if (archiveRowKeyFactory.getFileBatch(anyFileId) != archiveRowKeyFactory.getFileBatch(fileId)) {
                 throw new IllegalStateException("Unable to fill gaps for files from different batches in archive!");
@@ -140,16 +140,17 @@ public class FillGapsFromVariantTask implements TaskWithException<Variant, Put, 
         }
         Get get = new Get(Bytes.toBytes(archiveRowKeyFactory.generateBlockId(variant, anyFileId)));
         for (Integer fileId : fileIds) {
-            get.addColumn(helper.getColumnFamily(), fileToColumnMap.get(fileId));
+            get.addColumn(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileId));
         }
 
         Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
         Result result = archiveTable.get(get);
         for (Integer fileId : fileIds) {
-            byte[] bytes = result.getValue(helper.getColumnFamily(), fileToColumnMap.get(fileId));
+            byte[] bytes = result.getValue(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileId));
             if (bytes != null) {
-                VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(bytes);
-                fillGapsTask.fillGaps(variant, missingSamples, put, fileId, vcfSlice);
+                VcfSliceProtos.VcfSlice refVcfSlice = null; // FIXME !!
+                VcfSliceProtos.VcfSlice nonRefVcfSlice = VcfSliceProtos.VcfSlice.parseFrom(bytes);
+                fillGapsTask.fillGaps(variant, missingSamples, put, fileId, nonRefVcfSlice, refVcfSlice);
             } else {
                 logger.debug("Missing fileId " + fileId + " in variant " + variant);
             }

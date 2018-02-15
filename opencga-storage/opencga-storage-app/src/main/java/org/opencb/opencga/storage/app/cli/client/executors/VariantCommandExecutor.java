@@ -162,8 +162,8 @@ public class VariantCommandExecutor extends CommandExecutor {
                 fillGaps();
                 break;
             case FILL_MISSING_COMMAND:
-                configure(variantCommandOptions.fillGapsCommandOptions.commonOptions,
-                        variantCommandOptions.fillGapsCommandOptions.dbName);
+                configure(variantCommandOptions.fillMissingCommandOptions.commonOptions,
+                        variantCommandOptions.fillMissingCommandOptions.dbName);
                 fillMissing();
                 break;
             case "export":
@@ -534,6 +534,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.FillGapsCommandOptions fillGapsCommandOptions = variantCommandOptions.fillGapsCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.put(VariantStorageEngine.Options.RESUME.key(), fillGapsCommandOptions.resume);
         options.putAll(fillGapsCommandOptions.commonOptions.params);
 
         variantStorageEngine.fillGaps(fillGapsCommandOptions.study, fillGapsCommandOptions.samples, options);
@@ -543,6 +544,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.FillMissingCommandOptions cliOptions = variantCommandOptions.fillMissingCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
         variantStorageEngine.fillMissing(cliOptions.study, options);

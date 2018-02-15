@@ -59,6 +59,7 @@ import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
  *
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
+@Deprecated
 public class VariantTableStudyRow {
     public static final String NOCALL = ".";
     public static final String HOM_REF = "0/0";
@@ -473,7 +474,7 @@ public class VariantTableStudyRow {
                 .filter(entry -> entry.getValue() != null && entry.getValue().length > 0)
                 .map(entry -> Bytes.toString(entry.getKey()))
                 .filter(key -> key.endsWith(MAIN_STUDY_COLUMN))
-                .map(key -> extractStudyId(key, false))
+                .map(key -> VariantPhoenixHelper.extractStudyId(key, false))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
@@ -567,7 +568,7 @@ public class VariantTableStudyRow {
             String columnName = metaData.getColumnName(i + 1);
             if (columnName != null && !columnName.isEmpty() && columnName.endsWith(MAIN_STUDY_COLUMN)) {
                 if (resultSet.getBytes(columnName) != null) {
-                    Integer studyId = extractStudyId(columnName, false);
+                    Integer studyId = VariantPhoenixHelper.extractStudyId(columnName, false);
                     if (studyId != null) {
                         studyIds.add(studyId);
                     }
@@ -634,21 +635,6 @@ public class VariantTableStudyRow {
 
     public static String buildColumnKey(Integer sid, String gt) {
         return String.valueOf(sid) + VariantPhoenixHelper.COLUMN_KEY_SEPARATOR + gt;
-    }
-
-    public static Integer extractStudyId(String columnKey, boolean failOnMissing) {
-        String study = StringUtils.split(columnKey, VariantPhoenixHelper.COLUMN_KEY_SEPARATOR)[0];
-        if (StringUtils.isNotBlank(columnKey)
-                && Character.isDigit(columnKey.charAt(0))
-                && StringUtils.isNumeric(study)) {
-            return Integer.parseInt(study);
-        } else {
-            if (failOnMissing) {
-                throw new IllegalStateException(String.format("Integer expected for study ID: extracted %s from %s ", study, columnKey));
-            } else {
-                return null;
-            }
-        }
     }
 
     /**

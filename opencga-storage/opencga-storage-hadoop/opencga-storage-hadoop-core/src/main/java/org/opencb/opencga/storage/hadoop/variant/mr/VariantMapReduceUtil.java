@@ -32,6 +32,13 @@ public class VariantMapReduceUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariantMapReduceUtil.class);
 
 
+    public static void initTableMapperJob(Job job, String inTable, String outTable, Scan scan, Class<? extends TableMapper> mapperClass)
+            throws IOException {
+        initTableMapperJob(job, inTable, scan, mapperClass);
+        setOutputHBaseTable(job, outTable);
+        setNoneReduce(job);
+    }
+
     public static void initTableMapperJob(Job job, String inTable, Scan scan, Class<? extends TableMapper> mapperClass)
             throws IOException {
         boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
