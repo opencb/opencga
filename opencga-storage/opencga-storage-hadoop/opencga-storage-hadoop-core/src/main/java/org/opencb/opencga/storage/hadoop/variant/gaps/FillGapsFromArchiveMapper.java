@@ -50,15 +50,11 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         if (isFillGaps(context.getConfiguration())) {
             Collection<Integer> samples = getSamples(context.getConfiguration());
             task = new FillGapsFromArchiveTask(getHBaseManager(),
-                    getHelper().getAnalysisTableAsString(),
                     getHelper().getArchiveTableAsString(),
                     getStudyConfiguration(), getHelper(),
                     samples);
         } else {
-            task = new FillMissingFromArchiveTask(getHBaseManager(),
-                    getHelper().getAnalysisTableAsString(),
-                    getHelper().getArchiveTableAsString(),
-                    getStudyConfiguration(), getHelper());
+            task = new FillMissingFromArchiveTask(getHBaseManager(), getStudyConfiguration(), getHelper());
         }
         task.setQuiet(true);
         task.pre();

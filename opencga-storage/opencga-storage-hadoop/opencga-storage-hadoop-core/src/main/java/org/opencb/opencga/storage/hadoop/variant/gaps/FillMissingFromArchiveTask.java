@@ -1,9 +1,11 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -11,15 +13,10 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
 import java.io.IOException;
 import java.util.*;
-
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.HOM_REF;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.buildColumnKey;
 
 /**
  * Created on 06/02/18.
@@ -28,9 +25,8 @@ import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyR
  */
 public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
 
-    public FillMissingFromArchiveTask(HBaseManager hBaseManager, String variantsTableName, String archiveTableName,
-                                      StudyConfiguration studyConfiguration, GenomeHelper helper) {
-        super(hBaseManager, variantsTableName, archiveTableName, studyConfiguration, helper, Collections.emptyList(), true);
+    public FillMissingFromArchiveTask(HBaseManager hBaseManager, StudyConfiguration studyConfiguration, GenomeHelper helper) {
+        super(hBaseManager, studyConfiguration, helper, Collections.emptyList(), true);
     }
 
     @Override
@@ -47,19 +43,14 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
 
         @Override
         protected List<Variant> extractVariantsToFill() throws IOException {
-            // Fill all variants from the study. Get variant ids from variants table
+            // Fill all variants from the study. Read variants from _V
 
             List<Variant> variants = new ArrayList<>();
             Region region = rowKeyFactory.extractRegionFromBlockId(Bytes.toString(result.getRow()));
 
-            // Build scan. Only get variants from the needed region, from this study
-            Scan scan = new Scan();
-            VariantHBaseQueryParser.addRegionFilter(scan, region);
-            scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(buildColumnKey(studyConfiguration.getStudyId(), HOM_REF)));
-
-            try (ResultScanner scanner = variantsTable.getScanner(scan)) {
-                for (Result variantResult : scanner) {
-                    variants.add(VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(variantResult.getRow()));
+            for (Cell cell : result.rawCells()) {
+                if (Bytes.startsWith(CellUtil.cloneQualifier(cell), GenomeHelper.VARIANT_COLUMN_B_PREFIX)) {
+                    variants.add(GenomeHelper.getVariantFromArchiveVariantColumn(region.getChromosome(), CellUtil.cloneQualifier(cell)));
                 }
             }
 
@@ -93,10 +84,16 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
     public static Scan buildScan(Collection<Integer> fileIds, String regionStr, Configuration conf) {
         Scan scan = AbstractFillFromArchiveTask.buildScan(regionStr, conf);
 
-
-        GenomeHelper helper = new GenomeHelper(conf);
+        FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         for (Integer fileId : fileIds) {
-            scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
+            byte[] value = Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId));
+            filterList.addFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL, new BinaryComparator(value)));
+        }
+        filterList.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+        if (scan.getFilter() != null) {
+            scan.setFilter(filterList);
+        } else {
+            scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL, filterList, scan.getFilter()));
         }
 
         return scan;

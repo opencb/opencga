@@ -460,7 +460,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
 
-            if (options.getBoolean("local")) {
+            if (options.getBoolean("local", false)) {
                 ProgressLogger progressLogger = new ProgressLogger("Process");
                 VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
                 Scan scan;
@@ -484,11 +484,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                             AbstractFillFromArchiveTask task;
                             if (fillGaps) {
                                 task = new FillGapsFromArchiveTask(dbAdaptor.getHBaseManager(),
-                                        getVariantTableName(), getArchiveTableName(studyId), studyConfiguration,
+                                        getArchiveTableName(studyId), studyConfiguration,
                                         dbAdaptor.getGenomeHelper(), sampleIds);
                             } else {
-                                task = new FillMissingFromArchiveTask(dbAdaptor.getHBaseManager(),
-                                        getVariantTableName(), getArchiveTableName(studyId), studyConfiguration,
+                                task = new FillMissingFromArchiveTask(dbAdaptor.getHBaseManager(), studyConfiguration,
                                         dbAdaptor.getGenomeHelper());
                             }
                             tasks.add(task);

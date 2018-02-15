@@ -24,7 +24,6 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.ConnectionConfiguration;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.*;
-import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
@@ -42,7 +41,6 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,13 +174,6 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return succeed;
     }
 
-
-    protected final void initMapReduceJob(Job job, Class<? extends TableMapper> mapperClass, String inTable, String outTable, Scan scan)
-            throws IOException {
-        VariantMapReduceUtil.initTableMapperJob(job, inTable, scan, mapperClass);
-        VariantMapReduceUtil.setOutputHBaseTable(job, outTable);
-        VariantMapReduceUtil.setNoneReduce(job);
-    }
 
     protected final Scan createArchiveTableScan(List<Integer> files) {
         Scan scan = new Scan();

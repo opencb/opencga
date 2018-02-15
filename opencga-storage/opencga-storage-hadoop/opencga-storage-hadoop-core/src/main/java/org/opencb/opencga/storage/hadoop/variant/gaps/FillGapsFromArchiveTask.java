@@ -1,9 +1,11 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -30,14 +32,16 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
     private final Integer mainFileBatch;
     private final Map<Integer, List<Integer>> otherFilesGroupByFilesBatch;
 
+    protected final String archiveTableName;
+    protected Table archiveTable;
+
     public FillGapsFromArchiveTask(HBaseManager hBaseManager,
-                                   String variantsTableName,
                                    String archiveTableName,
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
                                    Collection<Integer> samples) {
-        super(hBaseManager, variantsTableName, archiveTableName, studyConfiguration, helper, samples, false);
-
+        super(hBaseManager, studyConfiguration, helper, samples, false);
+        this.archiveTableName = archiveTableName;
 
         fileToRefColumnMap = new HashMap<>();
         for (Integer fileId : fileIds) {
@@ -48,6 +52,16 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
         otherFilesGroupByFilesBatch = groupFilesByBatch(fileIds, rowKeyFactory);
         otherFilesGroupByFilesBatch.remove(mainFileBatch);
+    }
+
+    @Override
+    public void pre() throws IOException {
+        archiveTable = hBaseManager.getConnection().getTable(TableName.valueOf(archiveTableName));
+    }
+
+    @Override
+    public void post() throws IOException {
+        archiveTable.close();
     }
 
     private static Integer getMainFileBatch(Collection<Integer> fileIds, ArchiveRowKeyFactory rowKeyFactory) {

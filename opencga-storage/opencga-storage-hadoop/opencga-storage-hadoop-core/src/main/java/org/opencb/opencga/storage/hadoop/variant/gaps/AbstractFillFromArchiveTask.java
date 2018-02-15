@@ -3,11 +3,9 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
 import org.opencb.biodata.models.core.Region;
@@ -28,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -50,8 +47,6 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
 //    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
 
     protected final HBaseManager hBaseManager;
-    protected final String archiveTableName;
-    protected final String variantsTableName;
     protected final StudyConfiguration studyConfiguration;
     protected final GenomeHelper helper;
     protected final FillGapsTask fillGapsTask;
@@ -60,21 +55,15 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
     protected final Logger logger = LoggerFactory.getLogger(AbstractFillFromArchiveTask.class);
     protected final ArchiveRowKeyFactory rowKeyFactory;
 
-    protected Table variantsTable;
-    protected Table archiveTable;
 
     private final Map<String, Long> stats = new HashMap<>();
 
     protected AbstractFillFromArchiveTask(HBaseManager hBaseManager,
-                                          String variantsTableName,
-                                          String archiveTableName,
                                           StudyConfiguration studyConfiguration,
                                           GenomeHelper helper,
                                           Collection<Integer> samples,
                                           boolean skipReferenceVariants) {
         this.hBaseManager = hBaseManager;
-        this.archiveTableName = archiveTableName;
-        this.variantsTableName = variantsTableName;
         this.studyConfiguration = studyConfiguration;
         this.helper = helper;
 
@@ -104,24 +93,10 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
     }
 
     @Override
-    public void pre() {
-        try {
-            archiveTable = hBaseManager.getConnection().getTable(TableName.valueOf(archiveTableName));
-            variantsTable = hBaseManager.getConnection().getTable(TableName.valueOf(variantsTableName));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+    public void pre() throws IOException { }
 
     @Override
-    public void post() {
-        try {
-            archiveTable.close();
-            variantsTable.close();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+    public void post() throws IOException { }
 
     @Override
     public List<Put> apply(List<Result> list) throws IOException {

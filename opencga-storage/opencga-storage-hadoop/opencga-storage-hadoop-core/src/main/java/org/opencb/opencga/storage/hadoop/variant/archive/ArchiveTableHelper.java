@@ -128,11 +128,11 @@ public class ArchiveTableHelper extends GenomeHelper {
     }
 
     public static boolean isNonRefColumn(byte[] columnName) {
-        return endsWith(columnName, NON_REF_COLUMN_SUFIX_BYTES);
+        return columnName.length > 0 && Character.isDigit(columnName[0]) && endsWith(columnName, NON_REF_COLUMN_SUFIX_BYTES);
     }
 
     public static boolean isRefColumn(byte[] columnName) {
-        return endsWith(columnName, REF_COLUMN_SUFIX_BYTES);
+        return columnName.length > 0 && Character.isDigit(columnName[0]) && endsWith(columnName, REF_COLUMN_SUFIX_BYTES);
     }
 
     private static boolean endsWith(byte[] columnName, byte[] sufixBytes) {
