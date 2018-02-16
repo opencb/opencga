@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
@@ -172,7 +173,7 @@ public class VariantHBaseQueryParser {
                     studyColumns = STUDY_COLUMNS;
                 } else {
                     // If samples are not required, do not fetch all the fields
-                    studyColumns = Collections.singletonList(HOM_REF);
+                    studyColumns = Collections.singletonList(VariantPhoenixHelper.HOM_REF);
                 }
                 for (String studyColumn : studyColumns) {
                     scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(buildColumnKey(studyId, studyColumn)));
@@ -223,7 +224,7 @@ public class VariantHBaseQueryParser {
             List<Integer> nonNegatedStudies = new ArrayList<>();
             for (String studyStr : values) {
                 Integer studyId = studyConfigurationManager.getStudyId(studyStr, null);
-                byte[] column = Bytes.toBytes(buildColumnKey(studyId, HOM_REF));
+                byte[] column = Bytes.toBytes(buildColumnKey(studyId, VariantPhoenixHelper.HOM_REF));
                 if (isNegated(studyStr)) {
                     subFilters.addFilter(missingColumnFilter(column));
                 } else {
@@ -382,14 +383,19 @@ public class VariantHBaseQueryParser {
         filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, valueFilters));
     }
 
-    public static void addArchiveRegionFilter(Scan scan, Region region, ArchiveRowKeyFactory keyFactory) {
+    public static void addArchiveRegionFilter(Scan scan, Region region, ArchiveTableHelper helper) {
+        addArchiveRegionFilter(scan, region, helper.getFileId(), helper.getKeyFactory());
+    }
+
+    public static void addArchiveRegionFilter(Scan scan, Region region, int fileId, ArchiveRowKeyFactory keyFactory) {
         if (region == null) {
             addDefaultRegionFilter(scan);
         } else {
-            scan.setStartRow(keyFactory.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
+            scan.setStartRow(keyFactory.generateBlockIdAsBytes(fileId, region.getChromosome(), region.getStart()));
             long endSlice = keyFactory.getSliceId((long) region.getEnd()) + 1;
             // +1 because the stop row is exclusive
-            scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(region.getChromosome(), endSlice)));
+            scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(
+                    fileId, region.getChromosome(), endSlice)));
         }
     }
 
@@ -404,7 +410,10 @@ public class VariantHBaseQueryParser {
 
     public static Scan addDefaultRegionFilter(Scan scan) {
 //        return scan.setStopRow(Bytes.toBytes(String.valueOf(GenomeHelper.METADATA_PREFIX)));
-        return scan.setFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+//        return scan.setFilter(new RowFilter(CompareFilter.CompareOp.NOT_EQUAL,
+//                new BinaryComparator(Bytes.toBytes(GenomeHelper.DEFAULT_METADATA_ROW_KEY))));
+
+        return scan;
     }
 
 }

@@ -41,8 +41,6 @@ import java.util.stream.Collectors;
 public class GenomeHelper {
     private final Logger logger = LoggerFactory.getLogger(GenomeHelper.class);
 
-    public static final String METADATA_PREFIX = "_";
-    public static final String DEFAULT_METADATA_ROW_KEY = "_METADATA";
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
     public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
 
@@ -54,8 +52,6 @@ public class GenomeHelper {
     private final int chunkSize;
     private final char separator;
     private final byte[] columnFamily;
-    private final byte[] metaRowKey;
-    private final String metaRowKeyString;
 
     private final Configuration conf;
 
@@ -80,8 +76,6 @@ public class GenomeHelper {
         // Phoenix local indexes fail if the default_column_family is lower case
         // TODO: Report this bug to phoenix JIRA
         this.columnFamily = Bytes.toBytes(conf.get(HadoopVariantStorageEngine.HBASE_COLUMN_FAMILY, DEFAULT_COLUMN_FAMILY));
-        this.metaRowKeyString = DEFAULT_METADATA_ROW_KEY;
-        this.metaRowKey = Bytes.toBytes(metaRowKeyString);
         this.chunkSize = conf.getInt(HadoopVariantStorageEngine.ARCHIVE_CHUNK_SIZE, HadoopVariantStorageEngine.DEFAULT_ARCHIVE_CHUNK_SIZE);
         this.studyId = studyId > 0 ? studyId : conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
     }
@@ -112,14 +106,6 @@ public class GenomeHelper {
 
     public int getChunkSize() {
         return chunkSize;
-    }
-
-    public byte[] getMetaRowKey() {
-        return metaRowKey;
-    }
-
-    public String getMetaRowKeyString() {
-        return metaRowKeyString;
     }
 
     /**

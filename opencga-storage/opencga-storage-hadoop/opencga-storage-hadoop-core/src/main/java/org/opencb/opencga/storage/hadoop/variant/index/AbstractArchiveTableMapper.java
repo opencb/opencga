@@ -79,11 +79,18 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
      * @return Set of file IDs
      */
     private Set<Integer> extractFileIds(Result value) {
-        return Arrays.stream(value.rawCells())
-                .filter(c -> Bytes.equals(CellUtil.cloneFamily(c), getHelper().getColumnFamily()))
-                .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
-                .map(c -> ArchiveTableHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c)))
-                .collect(Collectors.toSet());
+        Set<Integer> set = new HashSet<>();
+        for (Cell c : value.rawCells()) {
+            if (Bytes.equals(CellUtil.cloneFamily(c), getHelper().getColumnFamily())) {
+                byte[] column = CellUtil.cloneQualifier(c);
+                if (ArchiveTableHelper.isNonRefColumn(column)) {
+                    set.add(ArchiveTableHelper.getFileIdFromNonRefColumnName(column));
+                } else if (ArchiveTableHelper.isRefColumn(column)) {
+                    set.add(ArchiveTableHelper.getFileIdFromRefColumnName(column));
+                }
+            }
+        }
+        return set;
     }
 
     protected List<Variant> parseCurrentVariantsRegion(VariantMapReduceContext ctx) {
@@ -230,7 +237,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         int studyId = getStudyConfiguration().getStudyId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
 
-        rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getChunkSize(), getHelper().getSeparator());
+        rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getConf());
     }
 
     @Override
@@ -248,9 +255,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             return; // TODO search backwards?
         }
 
-        if (Bytes.equals(key.get(), getHelper().getMetaRowKey())) {
-            return; // ignore metadata column
-        }
         context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_BLOCK_READ").increment(1);
 
 

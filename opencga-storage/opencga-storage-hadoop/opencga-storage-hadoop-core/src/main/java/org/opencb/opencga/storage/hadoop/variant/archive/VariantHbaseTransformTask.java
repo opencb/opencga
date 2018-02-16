@@ -17,11 +17,6 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.BufferedMutator;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToProtoVcfRecord;
@@ -30,7 +25,6 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -38,7 +32,9 @@ import java.util.stream.Collectors;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
+ * @deprecated use {@link org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader} and {@link VariantToVcfSliceConverter}
  */
+@Deprecated
 public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Variant, VcfSlice> {
 
     protected final Logger logger = LoggerFactory.getLogger(VariantHbaseTransformTask.class);
@@ -54,24 +50,20 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
     private final AtomicLong timeProto = new AtomicLong(0);
     private final AtomicLong timeIndex = new AtomicLong(0);
     private final AtomicLong timePut = new AtomicLong(0);
+
     private final AtomicInteger bufferSize = new AtomicInteger(200);
-    private final TableName tableName;
-    private Connection connection;
-    private BufferedMutator tableMutator;
 
     /**
      * @param helper {@link ArchiveTableHelper}
-     * @param table  {@link String} HBase table name
      */
-    public VariantHbaseTransformTask(ArchiveTableHelper helper, String table) {
+    public VariantHbaseTransformTask(ArchiveTableHelper helper) {
         converter = new VariantToVcfSliceConverter();
         this.helper = helper;
         storedChr = new HashSet<>();
         lookup = new HashSet<>();
         buffer = new HashMap<>();
         lookupOrder = new LinkedList<>();
-        this.tableName = table == null ? null : TableName.valueOf(table);
-        keyFactory = new ArchiveRowKeyFactory(helper.getChunkSize(), helper.getSeparator());
+        keyFactory = helper.getKeyFactory();
     }
 
     public void setBufferSize(Integer size) {
@@ -93,7 +85,6 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         this.timeIndex.addAndGet(System.currentTimeMillis() - curr);
         List<VcfSlice> data = checkSlices(getBufferSize());
         curr = System.currentTimeMillis();
-        submit(data);
         this.timePut.addAndGet(System.currentTimeMillis() - curr);
         return data;
     }
@@ -101,20 +92,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
     @Override
     public List<VcfSlice> drain() {
         List<VcfSlice> data = checkSlices(0);
-        submit(data);
         return data;
-    }
-
-    private void submit(List<VcfSlice> data) {
-        if (null != this.tableName) {
-            List<Put> putList = data.stream().map(s -> this.getHelper().wrap(s)).collect(Collectors.toList());
-            try {
-                this.tableMutator.mutate(putList);
-            } catch (IOException e) {
-                throw new RuntimeException(String.format("Problems submitting %s data to hbase %s ", putList.size(),
-                        this.tableName.getNameAsString()), e);
-            }
-        }
     }
 
     private List<VcfSlice> checkSlices(int limit) {
@@ -173,7 +151,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         String chromosome = var.getChromosome();
         long[] coveredSlicePositions = getCoveredSlicePositions(var);
         for (long slicePos : coveredSlicePositions) {
-            String blockKey = keyFactory.generateBlockId(chromosome, slicePos);
+            String blockKey = keyFactory.generateBlockId(helper.getFileId(), chromosome, slicePos);
             addVariant(blockKey, var);
         }
     }
@@ -215,44 +193,9 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
     }
 
     @Override
-    public void pre() {
-        if (null != this.tableName) {
-            try {
-                logger.info("Open connection using " + getHelper().getConf());
-                connection = ConnectionFactory.createConnection(getHelper().getConf());
-                tableMutator = connection.getBufferedMutator(this.tableName);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to connect to Hbase", e);
-            }
-        }
-    }
-
-    @Override
     public void post() {
         logger.info(String.format("Time norm2proto: %s", this.timeProto.get()));
         logger.info(String.format("Time idx: %s", this.timeIndex.get()));
-        if (null != this.tableName) {
-            if (null != this.tableMutator) {
-                try {
-                    this.tableMutator.close();
-                } catch (IOException e) {
-                    logger.error("Problem closing Table mutator from HBase", e);
-                } finally {
-                    this.tableMutator = null;
-                }
-
-            }
-            if (null != connection) {
-                try {
-                    connection.close();
-                } catch (IOException e) {
-                    logger.error("Issue with closing DB connection", e);
-                } finally {
-                    connection = null;
-                }
-                logger.info(String.format("Time put: %s", this.timeIndex.get()));
-            }
-        }
     }
 
     private ArchiveTableHelper getHelper() {

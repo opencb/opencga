@@ -25,6 +25,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,7 @@ public class VariantTableRemoveFileDriver extends AbstractAnalysisTableDriver {
             scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL, new KeyOnlyFilter(), scan.getFilter()));
         }
         // set other scan attrs
-        initMapReduceJob(job, getMapperClass(), archiveTable, variantTable, scan);
+        VariantMapReduceUtil.initTableMapperJob(job, archiveTable, variantTable, scan, getMapperClass());
         job.setOutputFormatClass(MultiTableOutputFormat.class);
 
         return job;

@@ -70,9 +70,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private static final String UNKNOWN_SAMPLE_DATA = VCFConstants.MISSING_VALUE_v4;
     public static final int FILE_CALL_IDX = 0;
     public static final int FILE_SEC_ALTS_IDX = 1;
-    public static final int FILE_QUAL_IDX = 2;
-    public static final int FILE_FILTER_IDX = 3;
-    public static final int FILE_INFO_START_IDX = 4;
+    public static final int FILE_VARIANT_OVERLAPPING_STATUS_IDX = 2;
+    public static final int FILE_QUAL_IDX = 3;
+    public static final int FILE_FILTER_IDX = 4;
+    public static final int FILE_INFO_START_IDX = 5;
 
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
@@ -207,8 +208,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                         studies.add(studyId);
                         filesMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(fileId, array));
                     }
-                } else if (columnName.endsWith(VariantTableStudyRow.HOM_REF)) {
-                    Integer studyId = VariantTableStudyRow.extractStudyId(columnName, true);
+                } else if (columnName.endsWith(VariantPhoenixHelper.HOM_REF)) {
+                    Integer studyId = VariantPhoenixHelper.extractStudyId(columnName, true);
                     // Method GetInt will always return 0, even is null was stored.
                     // Check if value was actually a null.
                     resultSet.getInt(i);
@@ -276,9 +277,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 studies.add(studyId);
                 PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
                 filesMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(fileId, array));
-            } else if (endsWith(qualifier, VariantTableStudyRow.HOM_REF_BYTES)) {
+            } else if (endsWith(qualifier, VariantPhoenixHelper.HOM_REF_BYTES)) {
                 String columnName = Bytes.toString(qualifier);
-                Integer studyId = VariantTableStudyRow.extractStudyId(columnName, true);
+                Integer studyId = VariantPhoenixHelper.extractStudyId(columnName, true);
                 studies.add(studyId);
             }
         }
@@ -434,6 +435,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
             i++;
         }
+        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
         studyEntry.getFiles().add(new FileEntry(fileId, (String) (fileColumn.getElement(FILE_CALL_IDX)), attributes));
     }
 
@@ -527,9 +529,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             int gapCounter = 0;
             List<String> defaultSampleData;
             if (ftIdx == null) {
-                defaultSampleData = Collections.singletonList(VariantTableStudyRow.HOM_REF);
+                defaultSampleData = Collections.singletonList(VariantPhoenixHelper.HOM_REF);
             } else {
-                defaultSampleData = Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE);
+                defaultSampleData = Arrays.asList(VariantPhoenixHelper.HOM_REF, VariantMerger.PASS_VALUE);
             }
             for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
                 if (studyEntry.getSamplesData().get(i) == null) {
@@ -552,7 +554,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                         .append("Wrong number of HomRef samples for variant ").append(variant)
                         .append(". Got ").append(homRefCount).append(", expect ").append(row.getHomRefCount())
                         .append(". Samples number: ").append(studyEntry.getSamplesData().size()).append(" , ")
-                        .append('\'' + VariantTableStudyRow.HOM_REF + "':").append(row.getHomRefCount()).append(" , ");
+                        .append('\'' + VariantPhoenixHelper.HOM_REF + "':").append(row.getHomRefCount()).append(" , ");
                 for (String studyColumn : VariantTableStudyRow.GENOTYPE_COLUMNS) {
                     message.append('\'').append(studyColumn).append("':").append(row.getSampleIds(studyColumn)).append(" , ");
                 }

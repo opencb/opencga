@@ -51,8 +51,6 @@ import java.util.stream.Collectors;
  */
 public class PhoenixHelper {
 
-    public static final PTableType DEFAULT_TABLE_TYPE = PTableType.TABLE;
-
     // Server offset, for server pagination, is only available in Phoenix4.8 or Phoenix4.7.0.2.5.0 (from HDP2.5.0)
     // See https://issues.apache.org/jira/browse/PHOENIX-2722
     public static final String PHOENIX_SERVER_OFFSET_AVAILABLE = "phoenix.server.offset.available";
@@ -109,30 +107,14 @@ public class PhoenixHelper {
         }
     }
 
-    public String buildAlterAddColumn(String tableName, String column, String type) {
-        return buildAlterAddColumn(tableName, column, type, true);
-    }
-
-    public String buildAlterAddColumn(String tableName, String column, String type, boolean ifNotExists) {
-        return buildAlterAddColumn(tableName, column, type, ifNotExists, DEFAULT_TABLE_TYPE);
-    }
-
-    public String buildAlterTableAddColumn(String tableName, String column, String type, boolean ifNotExists) {
-        return buildAlterAddColumn(tableName, column, type, ifNotExists, PTableType.TABLE);
-    }
-
-    public String buildAlterViewAddColumn(String tableName, String column, String type, boolean ifNotExists) {
-        return buildAlterAddColumn(tableName, column, type, ifNotExists, PTableType.VIEW);
-    }
-
-    private String buildAlterAddColumn(String tableName, String column, String type, boolean ifNotExists, PTableType tableType) {
+    public String buildAlterAddColumn(String tableName, String column, String type, boolean ifNotExists, PTableType tableType) {
         return "ALTER " + tableType.toString() + " " + SchemaUtil.getEscapedFullTableName(tableName)
                 + " ADD " + (ifNotExists ? "IF NOT EXISTS " : "") + "\"" + column + "\" " + type;
     }
 
-    public String buildAlterAddColumns(String tableName, Collection<Column> columns, boolean ifNotExists) {
+    public String buildAlterAddColumns(String tableName, Collection<Column> columns, boolean ifNotExists, PTableType tableType) {
         StringBuilder sb = new StringBuilder();
-        sb.append("ALTER ").append(DEFAULT_TABLE_TYPE).append(" ").append(SchemaUtil.getEscapedFullTableName(tableName))
+        sb.append("ALTER ").append(tableType).append(" ").append(SchemaUtil.getEscapedFullTableName(tableName))
                 .append(" ADD ").append(ifNotExists ? "IF NOT EXISTS " : "");
         Iterator<Column> iterator = columns.iterator();
         while (iterator.hasNext()) {
@@ -145,8 +127,8 @@ public class PhoenixHelper {
         return sb.toString();
     }
 
-    public String buildDropTable(String tableName, boolean ifExists, boolean cascade) {
-        StringBuilder sb = new StringBuilder().append("DROP TABLE ");
+    public String buildDropTable(String tableName, PTableType tableType, boolean ifExists, boolean cascade) {
+        StringBuilder sb = new StringBuilder().append("DROP ").append(tableType).append(' ');
         if (ifExists) {
             sb.append("IF EXISTS ");
         }
@@ -157,11 +139,11 @@ public class PhoenixHelper {
         return sb.toString();
     }
 
-    public void dropTable(Connection con, String tableName, boolean ifExists, boolean cascade) throws SQLException {
-        execute(con, buildDropTable(tableName, ifExists, cascade));
+    public void dropTable(Connection con, String tableName, PTableType tableType, boolean ifExists, boolean cascade) throws SQLException {
+        execute(con, buildDropTable(tableName, tableType, ifExists, cascade));
     }
 
-    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, boolean oneCall)
+    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, boolean oneCall, PTableType tableType)
             throws SQLException {
         Set<String> columns = getColumns(con, tableName).stream().map(Column::column).collect(Collectors.toSet());
         List<Column> missingColumns = newColumns.stream()
@@ -170,12 +152,12 @@ public class PhoenixHelper {
         if (!missingColumns.isEmpty()) {
             logger.info("Adding missing columns: " + missingColumns);
             if (oneCall) {
-                String sql = buildAlterAddColumns(tableName, missingColumns, true);
+                String sql = buildAlterAddColumns(tableName, missingColumns, true, tableType);
                 logger.info(sql);
                 execute(con, sql);
             } else {
                 for (Column column : missingColumns) {
-                    String sql = buildAlterAddColumn(tableName, column.column(), column.sqlType(), true);
+                    String sql = buildAlterAddColumn(tableName, column.column(), column.sqlType(), true, tableType);
                     logger.info(sql);
                     execute(con, sql);
                 }
@@ -183,9 +165,9 @@ public class PhoenixHelper {
         }
     }
 
-    public String buildAlterDropColumns(String tableName, Collection<CharSequence> columns, boolean ifExists) {
+    public String buildAlterDropColumns(String tableName, Collection<CharSequence> columns, boolean ifExists, PTableType tableType) {
         StringBuilder sb = new StringBuilder();
-        sb.append("ALTER ").append(DEFAULT_TABLE_TYPE).append(' ').append(SchemaUtil.getEscapedFullTableName(tableName))
+        sb.append("ALTER ").append(tableType).append(' ').append(SchemaUtil.getEscapedFullTableName(tableName))
                 .append(" DROP COLUMN ").append(ifExists ? "IF EXISTS " : "");
         Iterator<CharSequence> iterator = columns.iterator();
         while (iterator.hasNext()) {
@@ -197,10 +179,10 @@ public class PhoenixHelper {
         return sb.toString();
     }
 
-    public void dropColumns(Connection con, String tableName, Collection<CharSequence> columns)
+    public void dropColumns(Connection con, String tableName, Collection<CharSequence> columns, PTableType tableType)
             throws SQLException {
         logger.info("Dropping columns: " + columns);
-        String sql = buildAlterDropColumns(tableName, columns, true);
+        String sql = buildAlterDropColumns(tableName, columns, true, tableType);
         logger.info(sql);
 
         execute(con, sql);

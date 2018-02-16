@@ -254,8 +254,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         for (String fileIdStr : fileArr) {
             int id = Integer.parseInt(fileIdStr);
-            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true,
-                    Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true));
+            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(id)), true,
+                    Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(id)), true));
         }
         filter.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
         scan.setFilter(filter);
@@ -274,8 +274,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     protected StudyConfigurationManager getStudyConfigurationManager() throws IOException {
         if (scm == null) {
-            byte[] outTable = getHelper().getAnalysisTable();
-            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(Bytes.toString(outTable), getConf(), null));
+            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(getHelper()));
         }
         return scm;
     }

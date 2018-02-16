@@ -23,6 +23,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.PrefixFilter;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -52,8 +53,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTaskTest;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
@@ -72,6 +75,7 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.VARIANT_COLUMN_B_PREFIX;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromVariantsTable;
 
@@ -89,7 +93,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     // Variants that are wrong in the platinum files that should not be included
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>();
-    private Map<String, Object> notCollapseDeletions = new ObjectMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false).append(VariantStorageEngine.Options.ANNOTATE.key(), true);
+    private Map<String, Object> notCollapseDeletions = new ObjectMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
 
     @Before
     public void setUp() throws Exception {
@@ -102,7 +106,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true).append(VariantStorageEngine.Options.ANNOTATE.key(), true);
+        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true).append(VariantStorageEngine.Options.ANNOTATE.key(), false);
     }
 
     public VariantFileMetadata loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
@@ -138,6 +142,31 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         checkArchiveTableTimeStamp(dbAdaptor);
         printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
+
+        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
+
+    }
+
+    @Test
+    public void testTwoFilesBasicFillMissing() throws Exception {
+        ObjectMap params = new ObjectMap(this.notCollapseDeletions);
+        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        loadFile("s1.genome.vcf", studyConfiguration, params);
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        loadFile("s2.genome.vcf", studyConfiguration, params);
+
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+        getVariantStorageEngine().fillMissing(studyConfiguration.getStudyName(), new ObjectMap("local", true));
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
         checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
@@ -255,6 +284,37 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 5));
     }
 
+    @Test
+    public void testMultipleFilesConcurrentMergeBasicMultipleBatches() throws Exception {
+        testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_BATCH_SIZE, 5)
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 5)
+                .append(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 5));
+
+        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(1000, '_', 5);
+
+        HadoopVariantStorageEngine engine = getVariantStorageEngine();
+        VariantHadoopDBAdaptor dbAdaptor = engine.getDBAdaptor();
+        Integer count = dbAdaptor.getHBaseManager().act(engine.getArchiveTableName(STUDY_ID), table -> {
+            int numBlocks = 0;
+            for (Result result : table.getScanner(dbAdaptor.getGenomeHelper().getColumnFamily())) {
+                numBlocks++;
+                int batch = rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(result.getRow()));
+                for (byte[] column : result.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).keySet()) {
+                    if (!Bytes.startsWith(column, VARIANT_COLUMN_B_PREFIX)) {
+                        int fileId = ArchiveTableHelper.getFileIdFromNonRefColumnName(column);
+                        int expectedBatch = rowKeyFactory.getFileBatch(fileId);
+                        assertEquals(expectedBatch, batch);
+                    }
+                }
+            }
+            return numBlocks;
+        });
+        assertTrue(count > 0);
+
+    }
+
     public void testMultipleFilesConcurrent(ObjectMap extraParams) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
@@ -296,7 +356,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         System.out.println("StudyConfiguration = " + studyConfiguration);
 
-        HadoopVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
+        HBaseVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
         Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles(studyConfiguration.getStudyId());
         System.out.println("loadedFiles = " + loadedFiles);
         for (int fileId = 1; fileId <= 17; fileId++) {
@@ -319,7 +379,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        ObjectMap otherParams = new ObjectMap(VariantMergerTableMapperFail.SLICE_TO_FAIL, "1_000000000011");
+        ObjectMap otherParams = new ObjectMap(VariantMergerTableMapperFail.SLICE_TO_FAIL, "00000_1_000000000011");
         otherParams.putAll(notCollapseDeletions);
         try {
             loadFile("s1.genome.vcf", studyConfiguration, otherParams);
@@ -707,7 +767,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = scm.getStudyConfiguration(STUDY_ID, new QueryOptions()).first();
 
-        String tableName = HadoopVariantStorageEngine.getArchiveTableName(STUDY_ID, dbAdaptor.getConfiguration());
+        String tableName = dbAdaptor.getArchiveTableName(STUDY_ID);
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
 

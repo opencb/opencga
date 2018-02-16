@@ -27,6 +27,7 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
@@ -94,6 +95,10 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
 
 
     public Put convert(Variant variant, Put put, Set<Integer> sampleIds) {
+        return convert(variant, put, sampleIds, VariantOverlappingStatus.NONE);
+    }
+
+    public Put convert(Variant variant, Put put, Set<Integer> sampleIds, VariantOverlappingStatus overlappingStatus) {
         StudyEntry studyEntry = variant.getStudies().get(0);
         Integer gtIdx = studyEntry.getFormatPositions().get(VariantMerger.GT_KEY);
         int[] formatReMap = buildFormatRemap(studyEntry);
@@ -127,7 +132,7 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                 if (writeAllFileAttributes || filesToWrite.contains(fileId)) {
                     byte[] fileColumnKey = VariantPhoenixHelper
                             .buildFileColumnKey(studyConfiguration.getStudyId(), fileId);
-                    List<String> fileColumn = remapFileData(variant, studyEntry, fileEntry);
+                    List<String> fileColumn = remapFileData(variant, studyEntry, fileEntry, overlappingStatus);
                     addVarcharArray(put, fileColumnKey, fileColumn);
                 }
             }
@@ -136,27 +141,31 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         return put;
     }
 
-    private List<String> remapFileData(Variant variant, StudyEntry studyEntry, FileEntry fileEntry) {
-        List<String> fileColumn = new ArrayList<>(fileAttributes.size() + HBaseToStudyEntryConverter.FILE_INFO_START_IDX);
+    private List<String> remapFileData(Variant variant, StudyEntry studyEntry, FileEntry fileEntry,
+                                       VariantOverlappingStatus overlappingStatus) {
+        int capacity = fileAttributes.size() + HBaseToStudyEntryConverter.FILE_INFO_START_IDX;
+        List<String> fileColumn = Arrays.asList(new String[capacity]);
 
         Map<String, String> attributes = fileEntry.getAttributes();
-        fileColumn.add(fileEntry.getCall());
+        fileColumn.set(HBaseToStudyEntryConverter.FILE_CALL_IDX, fileEntry.getCall());
         if (addSecondaryAlternates && studyEntry.getSecondaryAlternates() != null && !studyEntry.getSecondaryAlternates().isEmpty()) {
-            fileColumn.add(getSecondaryAlternates(variant, studyEntry));
-        } else {
-            fileColumn.add(null);
+            fileColumn.set(HBaseToStudyEntryConverter.FILE_SEC_ALTS_IDX, getSecondaryAlternates(variant, studyEntry));
         }
-        fileColumn.add(attributes.get(StudyEntry.QUAL));
-        fileColumn.add(attributes.get(StudyEntry.FILTER));
+        fileColumn.set(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX, overlappingStatus.toString());
+        fileColumn.set(HBaseToStudyEntryConverter.FILE_QUAL_IDX, attributes.get(StudyEntry.QUAL));
+        fileColumn.set(HBaseToStudyEntryConverter.FILE_FILTER_IDX, attributes.get(StudyEntry.FILTER));
+        int attributeIdx = HBaseToStudyEntryConverter.FILE_INFO_START_IDX;
         for (String fileAttribute : fileAttributes) {
-            fileColumn.add(attributes.get(fileAttribute));
+            fileColumn.set(attributeIdx, attributes.get(fileAttribute));
+            attributeIdx++;
         }
 
         // Trim all leading null values
         for (int i = fileColumn.size() - 1; i >= 0; i--) {
-            if (fileColumn.get(i) == null) {
-                fileColumn.remove(i);
-            } else {
+            if (fileColumn.get(i) != null) {
+                if (i != fileColumn.size() - 1) {
+                    fileColumn = fileColumn.subList(0, i + 1);
+                }
                 break;
             }
         }
@@ -222,7 +231,11 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                     remappedSampleData.add(studyEntry.getFiles().get(0).getAttributes().get(StudyEntry.FILTER));
                     break;
                 default:
-                    remappedSampleData.add(sampleData.get(i));
+                    if (sampleData.size() > i) {
+                        remappedSampleData.add(sampleData.get(i));
+                    } else {
+                        remappedSampleData.add("");
+                    }
                     break;
             }
         }

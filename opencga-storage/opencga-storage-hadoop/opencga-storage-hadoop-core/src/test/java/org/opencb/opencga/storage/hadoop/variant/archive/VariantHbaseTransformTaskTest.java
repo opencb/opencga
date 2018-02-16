@@ -47,7 +47,7 @@ public class VariantHbaseTransformTaskTest {
         VcfVariantReader reader = VcfVariantReaderTest.createReader(size);
         Configuration conf = new Configuration();
         ArchiveTableHelper helper = new ArchiveTableHelper(conf, 1, new VariantFileMetadata("1", "1"));
-        ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper, null);
+        ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper);
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(1)
                 .setBatchSize(10)
@@ -65,7 +65,7 @@ public class VariantHbaseTransformTaskTest {
         VcfVariantReader reader = VcfVariantReaderTest.createReader(size);
         Configuration conf = new Configuration();
         ArchiveTableHelper helper = new ArchiveTableHelper(conf, 1, new VariantFileMetadata("", ""));
-        ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper, null);
+        ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper);
 
 
         return () -> {

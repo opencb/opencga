@@ -98,6 +98,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
                 VariantDBAdaptorTest.fileIndexed = false;
                 clearDB(getVariantStorageEngine().getVariantTableName());
                 clearDB(getVariantStorageEngine().getArchiveTableName(STUDY_ID));
+                clearDB(getVariantStorageEngine().getDBAdaptor().getTableNameGenerator().getMetaTableName());
             }
             previousIndexParams = indexParams;
             System.out.println("Loading with MergeMode : " + mergeMode);

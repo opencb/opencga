@@ -67,11 +67,6 @@ public class VariantMergerTableMapperTest extends VariantStorageBaseTest impleme
     public void tearDown() throws Exception {
     }
 
-    private StudyConfigurationManager buildStudyManager() throws IOException{
-        StorageEngineConfiguration se = variantStorageEngine.getConfiguration().getStorageEngine(variantStorageEngine.getStorageEngineId());
-        ObjectMap opts = se.getVariant().getOptions();
-        return new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(DB_NAME, configuration.get(), opts));
-    }
     
     @Test
     public void testMap() throws Exception {

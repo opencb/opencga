@@ -27,6 +27,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +68,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
         Scan scan = createVariantsTableScan();
 
         // Read and write into the same table
-        initMapReduceJob(job, getMapperClass(), variantTable, variantTable, scan);
+        VariantMapReduceUtil.initTableMapperJob(job, variantTable, variantTable, scan, getMapperClass());
 
         return job;
     }

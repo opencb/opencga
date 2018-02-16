@@ -284,11 +284,10 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
 
         @Override
         public List<VcfSlice> apply(List<ImmutablePair<Long, List<Variant>>> batch) {
-            List<VcfSlice> slices;
-            slices = converterTask.apply(batch);
             for (ImmutablePair<Long, List<Variant>> pair : batch) {
                 hadoopDBWriter.write(pair.getRight());
             }
+            List<VcfSlice> slices = converterTask.apply(batch);
             archiveWriter.write(slices);
             return slices;
         }

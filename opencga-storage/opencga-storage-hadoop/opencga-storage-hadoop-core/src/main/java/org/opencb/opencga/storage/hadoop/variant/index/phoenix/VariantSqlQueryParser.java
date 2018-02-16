@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.phoenix.parse.HintNode;
+import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.feature.Genotype;
@@ -39,7 +40,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
+import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.HOM_REF;
 
 /**
  * Created on 16/12/15.
@@ -119,7 +121,7 @@ public class VariantSqlQueryParser {
             List<String> regionFilters = getRegionFilters(query);
             List<String> filters = getOtherFilters(query, options, dynamicColumns);
 
-            if (filters.isEmpty()) {
+            if (DEFAULT_TABLE_TYPE != PTableType.VIEW && filters.isEmpty()) {
                 // Only region filters. Hint no index usage
                 sb.append("/*+ ").append(HintNode.Hint.NO_INDEX.toString()).append(" */ ");
             }
@@ -226,7 +228,7 @@ public class VariantSqlQueryParser {
                 selectVariantElements.getFiles().forEach((studyId, fileIds) -> {
                     for (Integer fileId : fileIds) {
                         sb.append(",\"");
-                        VariantPhoenixHelper.buildFileColumnKey(studyId, fileId, sb);
+                        buildFileColumnKey(studyId, fileId, sb);
                         sb.append('"');
                     }
                 });
@@ -235,7 +237,7 @@ public class VariantSqlQueryParser {
                 returnedSamples.forEach((studyId, sampleIds) -> {
                     for (Integer sampleId : sampleIds) {
                         sb.append(",\"");
-                        VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId, sb);
+                        buildSampleColumnKey(studyId, sampleId, sb);
                         sb.append('"');
                     }
                 });
@@ -339,10 +341,10 @@ public class VariantSqlQueryParser {
         }
 //        addQueryFilter(query, GENE, VariantColumn.GENES, regionFilters);
 
-        if (regionFilters.isEmpty()) {
-            // chromosome != _METADATA
-            regionFilters.add(VariantColumn.CHROMOSOME + " != '" + genomeHelper.getMetaRowKeyString() + "'");
-        }
+//        if (regionFilters.isEmpty()) {
+//            // chromosome != _METADATA
+//            regionFilters.add(VariantColumn.CHROMOSOME + " != '" + genomeHelper.getMetaRowKeyString() + "'");
+//        }
         return regionFilters;
     }
 
@@ -483,10 +485,10 @@ public class VariantSqlQueryParser {
                 String study = iterator.next();
                 Integer studyId = studyConfigurationManager.getStudyId(study, false, studies);
                 if (isNegated(study)) {
-                    sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NULL ");
+                    sb.append("\"").append(buildColumnKey(studyId, HOM_REF)).append("\" IS NULL ");
                 } else {
                     notNullStudies.add(studyId);
-                    sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NOT NULL ");
+                    sb.append("\"").append(buildColumnKey(studyId, HOM_REF)).append("\" IS NOT NULL ");
                 }
                 if (iterator.hasNext()) {
                     if (operation == null || operation.equals(QueryOperation.AND)) {
@@ -548,23 +550,35 @@ public class VariantSqlQueryParser {
                 String file = iterator.next();
                 Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration);
 
-                if (filterValues == null || filterValues.isEmpty()) {
+                sb.append(" ( ");
+                if (isNegated(file)) {
+                    // ( "FILE" IS NULL OR "FILE"[3] != 'N' )
+
+                    sb.append('"');
+                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append("\" IS NULL ");
+
+                    sb.append(" OR ");
+
                     sb.append('"');
                     buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
                     sb.append('"');
-                    if (isNegated(file)) {
-                        sb.append(" IS NULL ");
-                    } else {
-                        sb.append(" IS NOT NULL ");
-                    }
+                    // Arrays in SQL are 1-based.
+                    sb.append('[').append(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX + 1).append(']');
+                    sb.append(" != '").append(VariantOverlappingStatus.NONE.toString()).append('\'');
+
                 } else {
-                    if (isNegated(file)) {
-                        sb.append('"');
-                        buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
-                        sb.append('"');
-                        sb.append(" IS NULL ");
-                    } else {
-                        sb.append(" ( ");
+                    // ( "FILE"[3] = 'N' )
+                    sb.append('"');
+                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append('"');
+                    // Arrays in SQL are 1-based.
+                    sb.append('[').append(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX + 1).append(']');
+                    sb.append(" = '").append(VariantOverlappingStatus.NONE.toString()).append('\'');
+
+                    if (filterValues != null && !filterValues.isEmpty()) {
+                        // ( "FILE"[3] = 'N' AND ( "FILE"[5] = 'FILTER_1' OR "FILE"[5] = 'FILTER_2' ) )
+                        sb.append(" AND ( ");
                         for (int i = 0; i < filterValues.size(); i++) {
                             String filter = checkStringValue(filterValues.get(i));
                             boolean negated = isNegated(filter);
@@ -599,6 +613,7 @@ public class VariantSqlQueryParser {
                         sb.append(" ) ");
                     }
                 }
+                sb.append(" ) ");
                 if (iterator.hasNext()) {
                     if (operation == null) {
                         // This should never happen!
@@ -631,7 +646,7 @@ public class VariantSqlQueryParser {
                     throw VariantQueryException.malformedParam(COHORT, query.getString((COHORT.key())), "Expected {study}:{cohort}");
                 }
                 int cohortId = studyConfigurationManager.getCohortId(cohort, studyConfiguration);
-                Column column = VariantPhoenixHelper.getStatsColumn(studyConfiguration.getStudyId(), cohortId);
+                Column column = getStatsColumn(studyConfiguration.getStudyId(), cohortId);
                 if (negated) {
                     filters.add("\"" + column + "\" IS NULL");
                 } else {
