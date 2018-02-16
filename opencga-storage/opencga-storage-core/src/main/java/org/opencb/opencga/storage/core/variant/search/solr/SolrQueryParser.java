@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.search.solr;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.core.Region;
@@ -94,21 +95,13 @@ public class SolrQueryParser {
         //-------------------------------------
         String[] includes = null;
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-//            includes = queryOptions.getAsStringList(QueryOptions.INCLUDE);
             includes = solrIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE));
         } else {
             if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-//                includes = new ArrayList<>();
-//                List<String> excludes = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
-//                for (String excludeField : includeMap.keySet()) {
-//                    if (!excludes.contains(excludeField)) {
-//                        includes.add(excludeField);
-//                    }
-//                }
                 includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
             }
         }
-        solrQuery.setFields(includes);
+        solrQuery.setFields(includeFieldsWithMandatory(includes));
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
@@ -1030,5 +1023,17 @@ public class SolrQueryParser {
         }
 
         return solrFieldsToIncludeArr;
+    }
+
+    private String[] includeFieldsWithMandatory(String[] includes) {
+        String[] mandatoryIncludeFields  = new String[]{"id", "chromosome", "start", "end", "type"};
+        String[] includeWithMandatory = new String[includes.length + mandatoryIncludeFields.length];
+        for (int i = 0; i < includes.length; i++) {
+            includeWithMandatory[i] = includes[i];
+        }
+        for (int i = 0; i < mandatoryIncludeFields.length; i++) {
+            includeWithMandatory[includes.length + i] = mandatoryIncludeFields[i];
+        }
+        return includeWithMandatory;
     }
  }
