@@ -579,8 +579,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
                     }
 
                     // Get all the annotation sets from the entry
-                    QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(resource.getResourceId(), null,
-                            QueryOptions.empty());
+                    QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(resource.getResourceId(), null);
                     // Create a map annotationSetName - AnnotationSet
                     Map<String, AnnotationSet> annotationSetMap = new HashMap<>();
                     List<AnnotationSet> annotationSetList = new ArrayList<>();
@@ -713,8 +712,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             }
 
             // Get all the annotation sets from the entry
-            QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(resource.getResourceId(), null,
-                    QueryOptions.empty());
+            QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(resource.getResourceId(), null);
             // Create a map annotationSetName - AnnotationSet
             Map<String, AnnotationSet> annotationSetMap = new HashMap<>();
             if (annotationSetQueryResult != null && annotationSetQueryResult.getNumResults() > 0) {
