@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -42,15 +40,14 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET;
 
 /**
  * Created on 15/10/15
@@ -138,7 +135,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         long partialCount2 = dbAdaptor.count(new Query(VariantQueryParam.REGION.key(), "1:15030-60000")).first();
 
 
-        long count = VariantMergerTableMapper.getTargetVariantType().stream()
+        long count = TARGET_VARIANT_TYPE_SET.stream()
                 .map(type -> fileMetadata.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b)
                 .orElse(0).longValue();
@@ -218,7 +215,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         });
         System.out.println("End query from HBase : " + DB_NAME);
         System.out.println(fileMetadata.getStats().getVariantTypeCounts());
-        long count = VariantMergerTableMapper.getTargetVariantType().stream()
+        long count = TARGET_VARIANT_TYPE_SET.stream()
                 .map(type -> fileMetadata.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b).orElse(0).longValue();
         count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
@@ -245,16 +242,6 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                 List<Variant> variants = converter.convert(vcfSlice);
                 for (Variant variant : variants) {
                     System.out.println(variant.toJson());
-                }
-
-                List<Cell> cells = GenomeHelper.getVariantColumns(result.rawCells());
-                if (!cells.isEmpty()) {
-                    for (Cell cell : cells) {
-                        value = CellUtil.cloneValue(cell);
-                        VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(value);
-                        String column = Bytes.toString(CellUtil.cloneQualifier(cell));
-                        System.out.println(column + " ts:" + proto.getTimestamp() + " value: " + proto);
-                    }
                 }
             }
             resultScanner.close();

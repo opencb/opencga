@@ -29,7 +29,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -277,11 +276,8 @@ public class VariantPhoenixHelper {
     public void registerNewStudy(Connection con, String variantsTableName, Integer studyId) throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         createTableIfNeeded(con, variantsTableName);
-        addColumns(con, variantsTableName, studyId, PUnsignedInt.INSTANCE, HOM_REF, VariantTableStudyRow.PASS_CNT,
-                VariantTableStudyRow.CALL_CNT);
-        addColumns(con, variantsTableName, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
-                VariantTableStudyRow.OTHER, VariantTableStudyRow.NOCALL);
-        addColumns(con, variantsTableName, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX, VariantTableStudyRow.FILTER_OTHER);
+        Column studyColumn = getStudyColumn(studyId);
+        addMissingColumns(con, variantsTableName, Collections.singletonList(studyColumn), true);
         con.commit();
     }
 
@@ -296,7 +292,6 @@ public class VariantPhoenixHelper {
         for (Integer sampleId : sampleIds) {
             columns.add(getSampleColumn(studyId, sampleId));
         }
-        columns.add(getStudyColumn(studyId));
         phoenixHelper.addMissingColumns(con, variantsTableName, columns, true, DEFAULT_TABLE_TYPE);
         con.commit();
     }
@@ -345,16 +340,6 @@ public class VariantPhoenixHelper {
             }
         } else {
             logger.info("Table {} already exists", table);
-        }
-    }
-
-    private void addColumns(Connection con, String variantsTableName, Integer studyId, PDataType<?> dataType, String... columns)
-            throws SQLException {
-        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
-        for (String col : columns) {
-            String sql = phoenixHelper.buildAlterAddColumn(variantsTableName,
-                    VariantTableStudyRow.buildColumnKey(studyId, col), dataType.getSqlTypeName(), true, DEFAULT_TABLE_TYPE);
-            phoenixHelper.execute(con, sql);
         }
     }
 

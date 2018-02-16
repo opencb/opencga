@@ -21,19 +21,14 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import com.google.protobuf.MessageLite;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
@@ -44,8 +39,6 @@ public class GenomeHelper {
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
     public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
 
-    public static final String VARIANT_COLUMN_PREFIX = "_V";
-    public static final byte[] VARIANT_COLUMN_B_PREFIX = Bytes.toBytes(VARIANT_COLUMN_PREFIX);
     public static final String PHOENIX_LOCK_COLUMN = "PHOENIX_LOCK";
     public static final String PHOENIX_INDEX_LOCK_COLUMN = "PHOENIX_INDEX_LOCK";
 
@@ -163,28 +156,6 @@ public class GenomeHelper {
         Put put = new Put(row);
         put.addColumn(getColumnFamily(), column, data);
         return put;
-    }
-
-    public static List<Cell> getVariantColumns(Cell[] cells) {
-        return Arrays.stream(cells).filter(c -> Bytes.startsWith(CellUtil.cloneQualifier(c), VARIANT_COLUMN_B_PREFIX))
-                .collect(Collectors.toList());
-    }
-
-    public static String getVariantColumn(VariantTableStudyRow row) {
-        return getVariantColumn(row.getPos(), row.getRef(), row.getAlt());
-    }
-
-    public static String getVariantColumn(Integer pos, String reference, String alternate) {
-        return VARIANT_COLUMN_PREFIX + '_' + pos + '_' + reference + '_' + alternate;
-    }
-
-    public static Variant getVariantFromArchiveVariantColumn(String chromosome, byte[] column) {
-        String[] split = Bytes.toString(column).split("_", -1);
-        if (split.length != 5) {
-            return null;
-        } else {
-            return new Variant(chromosome, Integer.valueOf(split[2]), split[3], split[4]);
-        }
     }
 
 }

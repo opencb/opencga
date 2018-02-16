@@ -38,7 +38,6 @@ import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVa
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
@@ -188,14 +187,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return new ResultSetToVariantConverter(genomeHelper, scm);
     }
 
-    public static HBaseToVariantConverter<VariantTableStudyRow> fromRow(VariantTableHelper helper) throws IOException {
-        return new VariantTableStudyRowToVariantConverter(helper);
-    }
-
-    public static HBaseToVariantConverter<VariantTableStudyRow> fromRow(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
-        return new VariantTableStudyRowToVariantConverter(genomeHelper, scm);
-    }
-
     protected Variant convert(Variant variant, Map<Integer, StudyEntry> studies,
                               VariantAnnotation annotation) {
         if (annotation == null) {
@@ -242,24 +233,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 //                .setFormats(formats)
 
         return this;
-    }
-
-
-    private static class VariantTableStudyRowToVariantConverter extends HBaseToVariantConverter<VariantTableStudyRow> {
-        VariantTableStudyRowToVariantConverter(VariantTableHelper helper) throws IOException {
-            super(helper);
-        }
-
-        VariantTableStudyRowToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
-            super(genomeHelper, scm);
-        }
-
-        @Override
-        public Variant convert(VariantTableStudyRow row) {
-            Variant variant = new Variant(row.getChromosome(), row.getPos(), row.getRef(), row.getAlt());
-            StudyEntry studyEntry = studyEntryConverter.convert(variant, row);
-            return convert(variant, Collections.singletonMap(row.getStudyId(), studyEntry), null);
-        }
     }
 
     private static class ResultSetToVariantConverter extends HBaseToVariantConverter<ResultSet> {

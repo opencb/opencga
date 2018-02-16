@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
     protected List<Put> convert(List<Variant> list) {
         List<Put> puts = new ArrayList<>(list.size());
         for (Variant variant : list) {
-            if (VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET.contains(variant.getType())) {
+            if (HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET.contains(variant.getType())) {
                 Put put = converter.convert(variant);
                 puts.add(put);
             } //Discard ref_block and symbolic variants.

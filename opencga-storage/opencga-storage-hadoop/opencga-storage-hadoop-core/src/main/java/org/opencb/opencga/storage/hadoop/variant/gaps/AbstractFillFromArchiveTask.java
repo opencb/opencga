@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET;
 
 /**
  * Created on 31/10/17.

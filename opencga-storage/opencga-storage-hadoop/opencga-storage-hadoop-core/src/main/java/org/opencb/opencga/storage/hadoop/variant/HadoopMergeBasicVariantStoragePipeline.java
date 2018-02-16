@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHadoopDBWriter;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
@@ -49,6 +50,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -57,7 +59,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
 
 /**
@@ -65,7 +66,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantStoragePipeline {
+public class HadoopMergeBasicVariantStoragePipeline extends AbstractHadoopVariantStoragePipeline {
 
     private final Logger logger = LoggerFactory.getLogger(HadoopMergeBasicVariantStoragePipeline.class);
     private static final String OPERATION_NAME = "Load";
@@ -82,9 +83,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
                                                   VariantHadoopDBAdaptor dbAdaptor, Configuration conf,
                                                   HBaseCredentials archiveCredentials, VariantReaderUtils variantReaderUtils,
                                                   ObjectMap options) {
-        super(configuration, dbAdaptor, null, conf, archiveCredentials, variantReaderUtils, options);
-        loadArch = loadArch || loadVar;
-        loadVar = false;
+        super(configuration, dbAdaptor, variantReaderUtils, options, archiveCredentials, null, conf);
     }
 
     @Override
@@ -128,18 +127,62 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         Thread hook = newShutdownHook(OPERATION_NAME, fileIds);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            super.loadArch(inputUri);
+            Path input = Paths.get(inputUri.getPath());
+            String table = archiveTableCredentials.getTable();
+            String fileName = input.getFileName().toString();
+            Path sourcePath = input.getParent().resolve(VariantReaderUtils.getMetaFromTransformedFile(fileName));
+
+            Integer fileId = options.getInt(VariantStorageEngine.Options.FILE_ID.key());
+            int studyId = getStudyId();
+
+            VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(sourcePath, null);
+            fileMetadata.setId(fileId.toString());
+//            fileMetadata.setStudyId(Integer.toString(studyId));
+
+            long start = System.currentTimeMillis();
+            if (VariantReaderUtils.isProto(fileName)) {
+                ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), studyId, fileMetadata);
+
+                ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
+                if (fileMetadata.getStats() != null) {
+                    progressLogger.setApproximateTotalCount(fileMetadata.getStats().getNumVariants());
+                }
+
+                loadFromProto(input, table, helper, progressLogger);
+            } else {
+                ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), studyId, fileMetadata);
+
+                ProgressLogger progressLogger;
+                if (fileMetadata.getStats() != null) {
+                    progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :",
+                            fileMetadata.getStats().getNumVariants());
+                } else {
+                    progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :");
+                }
+
+                loadFromAvro(input, table, helper, progressLogger);
+            }
+            long end = System.currentTimeMillis();
+            logger.info("end - start = " + (end - start) / 1000.0 + "s");
+
+            HBaseVariantFileMetadataDBAdaptor manager = dbAdaptor.getVariantFileMetadataDBAdaptor();
+            try {
+                manager.updateVariantFileMetadata(studyId, fileMetadata);
+                manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
+            } catch (IOException e) {
+                throw new StorageEngineException("Not able to store Variant Source for file!!!", e);
+            }
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
         }
     }
 
-    @Override
+
     protected void loadFromProto(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         long counter = 0;
 
-        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager(), true);
+        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(helper.getStudyMetadata());
         VariantHadoopDBWriter variantsWriter = newVariantHadoopDBWriter();
 
@@ -178,7 +221,6 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         logger.info("Read {} slices", counter);
     }
 
-    @Override
     protected void loadFromAvro(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getStudyMetadata());
@@ -191,7 +233,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
                 .setBatchSize(1)
                 .setReadQueuePutTimeout(1000).build();
 
-        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager(), true);
+        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());
         VariantHadoopDBWriter hadoopDBWriter = newVariantHadoopDBWriter();
         GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, null);
 
@@ -202,17 +244,6 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         } catch (ExecutionException e) {
             throw new StorageEngineException("Error loading file " + input, e);
         }
-    }
-
-    @Override
-    public URI postLoad(URI input, URI output) throws StorageEngineException {
-        final List<Integer> fileIds = getLoadedFiles();
-        if (fileIds.isEmpty()) {
-            logger.debug("Skip post load");
-            return input;
-        }
-        registerLoadedFiles(fileIds);
-        return input;
     }
 
     @Override
@@ -228,35 +259,6 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
                 dbAdaptor.getCredentials().getTable(),
                 studyConfiguration,
                 dbAdaptor.getHBaseManager());
-    }
-
-    @Override
-    protected void securePreMerge(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
-    }
-
-    @Override
-    public void merge(int studyId, List<Integer> pendingFiles) throws StorageEngineException {
-        logger.info("Nothing else to merge!");
-    }
-
-    @Override
-    public URI postMerge(URI input, URI output) throws StorageEngineException {
-        return input;
-    }
-
-    @Override
-    protected void securePostMerge(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
-    }
-
-    @Override
-    protected List<Integer> getLoadedFiles() {
-        List<Integer> fileIds;
-        if (options.getBoolean(HADOOP_LOAD_ARCHIVE)) {
-            fileIds = options.getAsIntegerList(VariantStorageEngine.Options.FILE_ID.key());
-        } else {
-            fileIds = Collections.emptyList();
-        }
-        return fileIds;
     }
 
     protected static class GroupedVariantsTask implements Task<ImmutablePair<Long, List<Variant>>, VcfSlice> {

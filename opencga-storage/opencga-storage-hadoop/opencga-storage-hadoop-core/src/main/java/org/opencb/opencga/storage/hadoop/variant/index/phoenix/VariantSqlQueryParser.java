@@ -32,7 +32,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -53,10 +52,9 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
+import static org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantLocalConflictResolver.NOCALL;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.HOM_REF;
 
 /**
  * Created on 16/12/15.
@@ -71,7 +69,6 @@ public class VariantSqlQueryParser {
     private final StudyConfigurationManager studyConfigurationManager;
     private final CellBaseUtils cellBaseUtils;
     private final boolean clientSideSkip;
-    private boolean genotypesFromSampleColumns;
 
     private static final Map<String, String> SQL_OPERATOR;
 
@@ -107,7 +104,6 @@ public class VariantSqlQueryParser {
         this.studyConfigurationManager = studyConfigurationManager;
         this.cellBaseUtils = cellBaseUtils;
         this.clientSideSkip = clientSideSkip;
-        this.genotypesFromSampleColumns = true;
     }
 
     public VariantPhoenixSQLQuery parse(Query query, QueryOptions options) {
@@ -200,22 +196,8 @@ public class VariantSqlQueryParser {
             if (returnedFields.contains(VariantField.STUDIES)) {
                 for (Integer studyId : studyIds) {
                     StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-                    VariantStorageEngine.MergeMode mergeMode = VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes());
-                    List<String> studyColumns = STUDY_COLUMNS;
-                    if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
-                            && mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
-                        studyColumns = STUDY_COLUMNS;
-                    } else {
-                        // If samples are not required, do not fetch all the fields
-                        studyColumns = Collections.singletonList(HOM_REF);
-                    }
-                    for (String studyColumn : studyColumns) {
-                        sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
-                    }
-//                    if (mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
-//                    } else {
-//                        sb.append(",\"").append(buildColumnKey(studyId, HOM_REF)).append('"');
-//                    }
+                    Column studyColumn = VariantPhoenixHelper.getStudyColumn(studyId);
+                    sb.append(",\"").append(studyColumn.column()).append('"');
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
                         for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);
@@ -485,10 +467,10 @@ public class VariantSqlQueryParser {
                 String study = iterator.next();
                 Integer studyId = studyConfigurationManager.getStudyId(study, false, studies);
                 if (isNegated(study)) {
-                    sb.append("\"").append(buildColumnKey(studyId, HOM_REF)).append("\" IS NULL ");
+                    sb.append("\"").append(getStudyColumn(studyId).column()).append("\" IS NULL ");
                 } else {
                     notNullStudies.add(studyId);
-                    sb.append("\"").append(buildColumnKey(studyId, HOM_REF)).append("\" IS NOT NULL ");
+                    sb.append("\"").append(getStudyColumn(studyId).column()).append("\" IS NOT NULL ");
                 }
                 if (iterator.hasNext()) {
                     if (operation == null || operation.equals(QueryOperation.AND)) {
@@ -518,7 +500,7 @@ public class VariantSqlQueryParser {
 //            StringBuilder sb = new StringBuilder();
 //            for (Iterator<Integer> iterator = studyIds.iterator(); iterator.hasNext();) {
 //                Integer studyId = iterator.next();
-//                sb.append('"').append(buildColumnKey(studyId, HOM_REF)).append("\" IS NOT NULL");
+//                sb.append('"').append(getStudyColumn(studyId).column()).append("\" IS NOT NULL");
 //                if (iterator.hasNext()) {
 //                    sb.append(" OR ");
 //                }
@@ -665,11 +647,7 @@ public class VariantSqlQueryParser {
             QueryOperation op = checkOperator(value);
             List<String> samples = splitValue(value, op);
             for (String sample : samples) {
-                if (genotypesFromSampleColumns) {
-                    genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
-                } else {
-                    genotypesMap.put(sample, Arrays.asList(HET_REF, HOM_VAR, OTHER));
-                }
+                genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
             }
         }
 
@@ -697,62 +675,22 @@ public class VariantSqlQueryParser {
                     if (negated) {
                         genotype = removeNegation(genotype);
                     }
-                    if (genotypesFromSampleColumns) {
-                        String key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
-                        final String filter;
-                        if (new Genotype(genotype).isAllelesRefs()) {
-                            if (negated) {
-                                filter = '"' + key + "\" IS NOT NULL";
-                            } else {
-                                filter = '"' + key + "\" IS NULL";
-                            }
+                    String key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
+                    final String filter;
+                    if (new Genotype(genotype).isAllelesRefs()) {
+                        if (negated) {
+                            filter = '"' + key + "\" IS NOT NULL";
                         } else {
-                            if (negated) {
-                                filter = "( \"" + key + "\"[1] != '" + genotype + "' OR \"" + key + "\" IS NULL )";
-                            } else {
-                                filter = '"' + key + "\"[1] = '" + genotype + '\'';
-                            }
+                            filter = '"' + key + "\" IS NULL";
                         }
-                        gtFilters.add(filter);
                     } else {
-                        genotype = genotype.replace('|', '/');
-                        if (("./.").equals(genotype)) {
-                            genotype = NOCALL;
-                        }
-                        switch (genotype) {
-                            case HET_REF:
-                            case HOM_VAR:
-                            case NOCALL:
-//                        0 = any("1_.")
-                                if (negated) {
-                                    gtFilters.add(" ( NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") "
-                                            + " OR \"" + buildColumnKey(studyId, genotype) + "\" IS NULL"
-                                            + " ) ");
-                                } else {
-                                    gtFilters.add(sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") ");
-                                }
-                                break;
-                            case HOM_REF:
-                                if (negated) {
-                                    gtFilters.add(" ( " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HET_REF) + "\") "
-                                            + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HOM_VAR) + "\") "
-                                            + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, NOCALL) + "\") "
-                                            + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, OTHER) + "\") "
-                                            + " ) "
-                                    );
-                                } else {
-                                    gtFilters.add(" NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HET_REF) + "\") "
-                                            + "AND NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HOM_VAR) + "\") "
-                                            + "AND NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, NOCALL) + "\") "
-                                            + "AND NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, OTHER) + "\") "
-                                    );
-                                }
-                                break;
-                            default:  //OTHER
-                                gtFilters.add((negated ? " NOT " : " ") + sampleId + " = ANY(\"" + buildColumnKey(studyId, OTHER) + "\") ");
-                                break;
+                        if (negated) {
+                            filter = "( \"" + key + "\"[1] != '" + genotype + "' OR \"" + key + "\" IS NULL )";
+                        } else {
+                            filter = '"' + key + "\"[1] = '" + genotype + '\'';
                         }
                     }
+                    gtFilters.add(filter);
                 }
                 if (!negated) {
                     filters.add(gtFilters.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));

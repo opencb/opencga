@@ -43,7 +43,7 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(value.getRow());
-        byte[] column = Bytes.toBytes(GenomeHelper.getVariantColumn(variant.getStart(), variant.getReference(), variant.getAlternate()));
+        byte[] column = FillMissingFromArchiveTask.getArchiveVariantColumn(variant);
         long sliceId = rowKeyFactory.getSliceId(variant.getStart());
         String chromosome = variant.getChromosome();
         for (Integer fileBatch : fileBatches) {

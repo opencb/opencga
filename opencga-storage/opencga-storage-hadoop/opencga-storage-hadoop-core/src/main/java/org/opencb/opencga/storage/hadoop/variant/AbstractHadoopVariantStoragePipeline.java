@@ -20,11 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.phoenix.schema.PTableType;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -45,9 +43,7 @@ import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -60,11 +56,9 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
@@ -77,7 +71,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -99,8 +96,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     protected final HBaseCredentials archiveTableCredentials;
     protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
-    protected boolean loadArch;
-    protected boolean loadVar;
 
     private final Logger logger = LoggerFactory.getLogger(AbstractHadoopVariantStoragePipeline.class);
 
@@ -117,15 +112,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         this.variantsTableCredentials = dbAdaptor == null ? null : dbAdaptor.getCredentials();
         this.conf = new Configuration(conf);
 
-        loadArch = this.options.getBoolean(HADOOP_LOAD_ARCHIVE, false);
-        loadVar = this.options.getBoolean(HADOOP_LOAD_VARIANT, false);
-
-        if (!loadArch && !loadVar) {
-            loadArch = true;
-            loadVar = true;
-            this.options.put(HADOOP_LOAD_ARCHIVE, loadArch);
-            this.options.put(HADOOP_LOAD_VARIANT, loadVar);
-        }
     }
 
     @Override
@@ -302,42 +288,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageEngineException {
-
-        if (loadArch) {
-            super.preLoad(input, output);
-
-            if (needLoadFromHdfs() && !input.getScheme().equals("hdfs")) {
-                if (!StringUtils.isEmpty(options.getString(INTERMEDIATE_HDFS_DIRECTORY))) {
-                    output = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY));
-                }
-                if (output.getScheme() != null && !output.getScheme().equals("hdfs")) {
-                    throw new StorageEngineException("Output must be in HDFS");
-                }
-
-                try {
-                    long startTime = System.currentTimeMillis();
-//                    Configuration conf = getHadoopConfiguration(options);
-                    FileSystem fs = FileSystem.get(conf);
-                    org.apache.hadoop.fs.Path variantsOutputPath = new org.apache.hadoop.fs.Path(
-                            output.resolve(Paths.get(input.getPath()).getFileName().toString()));
-                    logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(input).toUri(), variantsOutputPath.toUri());
-                    fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(input), variantsOutputPath);
-                    logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-
-                    startTime = System.currentTimeMillis();
-                    URI fileInput = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
-                    org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(
-                            output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
-                    logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(fileInput).toUri(), fileOutputPath.toUri());
-                    fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(fileInput), fileOutputPath);
-                    logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-
-                    input = variantsOutputPath.toUri();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        super.preLoad(input, output);
 
         try {
             ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableCredentials.getTable(),
@@ -352,10 +303,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             throw new StorageHadoopException("Issue creating table " + variantsTableCredentials.getTable(), e);
         }
 
-        if (loadVar) {
-            preMerge(input);
-        }
-
         return input;
     }
 
@@ -366,10 +313,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
         super.securePreLoad(studyConfiguration, fileMetadata);
 
-        if (!studyConfiguration.getAttributes().containsKey(MERGE_LOAD_SAMPLE_COLUMNS)) {
-            boolean loadSampleColumns = getOptions().getBoolean(MERGE_LOAD_SAMPLE_COLUMNS, DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS);
-            studyConfiguration.getAttributes().put(MERGE_LOAD_SAMPLE_COLUMNS, loadSampleColumns);
-        }
         MergeMode mergeMode;
         if (!studyConfiguration.getAttributes().containsKey(Options.MERGE_MODE.key())) {
             mergeMode = MergeMode.from(options);
@@ -406,129 +349,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         studyConfiguration.getAttributes().put(MISSING_GENOTYPES_UPDATED, false);
     }
 
-    protected void preMerge(URI input) throws StorageEngineException {
-        int studyId = getStudyId();
-
-        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
-
-        //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        try {
-            StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration(true);
-            VariantFileMetadata fileMetadata = readVariantFileMetadata(input, options);
-            securePreMerge(studyConfiguration, fileMetadata);
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        } finally {
-            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
-        }
-
-    }
-
-    protected void securePreMerge(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
-
-        if (loadVar) {
-            // Load into variant table
-            // Update the studyConfiguration with data from the Archive Table.
-            // Reads the VcfMeta documents, and populates the StudyConfiguration if needed.
-            // Obtain the list of pending files.
-
-            int studyId = options.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
-            int fileId = options.getInt(VariantStorageEngine.Options.FILE_ID.key(), -1);
-            boolean missingFilesDetected = false;
-
-
-            HBaseVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
-            Set<Integer> files = null;
-            try {
-                files = fileMetadataManager.getLoadedFiles(studyId);
-            } catch (IOException e) {
-                throw new StorageHadoopException("Unable to read loaded files", e);
-            }
-
-            logger.info("Found files in Archive DB: " + files);
-
-            // Pending files, not in analysis but in archive.
-            List<Integer> pendingFiles = new LinkedList<>();
-            logger.info("Found registered indexed files: {}", studyConfiguration.getIndexedFiles());
-            for (Integer loadedFileId : files) {
-                VariantFileMetadata readFileMetadata;
-                try {
-                    readFileMetadata = fileMetadataManager.getVariantFileMetadata(studyId, loadedFileId, null);
-                } catch (IOException e) {
-                    throw new StorageHadoopException("Unable to read file VcfMeta for file : " + loadedFileId, e);
-                }
-
-                Integer readFileId = Integer.parseInt(readFileMetadata.getId());
-                logger.debug("Found fileMetadata for file id {} with registered id {} ", loadedFileId, readFileId);
-                if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
-                    StudyConfigurationManager.checkNewFile(studyConfiguration, readFileId, readFileMetadata.getPath());
-                    studyConfiguration.getFileIds().put(readFileMetadata.getPath(), readFileId);
-//                    studyConfiguration.getHeaders().put(readFileId, readFileMetadata.getMetadata()
-//                            .get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
-                    StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readFileMetadata, options);
-                    missingFilesDetected = true;
-                }
-                if (!studyConfiguration.getIndexedFiles().contains(readFileId)) {
-                    pendingFiles.add(readFileId);
-                }
-            }
-            logger.info("Found pending in DB: " + pendingFiles);
-
-            fileId = StudyConfigurationManager.checkNewFile(studyConfiguration, fileId, fileMetadata.getPath());
-
-            if (!loadArch) {
-                //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
-                if (!pendingFiles.contains(fileId)) {
-                    throw new StorageEngineException("File " + fileId + " is not loaded in archive table "
-                            + dbAdaptor.getTableNameGenerator().getArchiveTableName(studyId) + "");
-                }
-            } else {
-                //If don't skip archive, input fileId must not be pending, because must not be in the archive table.
-                if (pendingFiles.contains(fileId)) {
-                    // set loadArch to false?
-                    throw new StorageEngineException("File " + fileId + " is not loaded in archive table");
-                } else {
-                    pendingFiles.add(fileId);
-                }
-            }
-
-            //If there are some given pending files, load only those files, not all pending files
-            List<Integer> givenPendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
-            if (!givenPendingFiles.isEmpty()) {
-                logger.info("Given Pending file list: " + givenPendingFiles);
-                for (Integer pendingFile : givenPendingFiles) {
-                    if (!pendingFiles.contains(pendingFile)) {
-                        throw new StorageEngineException("File " + pendingFile + " is not pending to be loaded in variant table");
-                    }
-                }
-                pendingFiles = givenPendingFiles;
-            } else {
-                options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
-            }
-
-            boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
-                    || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
-            long timestamp = studyConfiguration.getBatches().stream().map(BatchFileOperation::getTimestamp).max(Long::compareTo).orElse(0L);
-            BatchFileOperation op = StudyConfigurationManager.addBatchOperation(
-                    studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume,
-                    BatchFileOperation.Type.LOAD);
-            // Overwrite default timestamp. Use custom monotonic timestamp. (lastTimestamp + 1)
-            if (op.getTimestamp() > timestamp) {
-                op.setTimestamp(timestamp + 1);
-            }
-            options.put(HADOOP_LOAD_VARIANT_STATUS, op.currentStatus());
-            options.put(AbstractAnalysisTableDriver.TIMESTAMP, op.getTimestamp());
-
-        }
-    }
-
-    /**
-     * Specify if the current class needs to move the file to load to HDFS.
-     *
-     * If true, the transformed file will be copied to hdfs during the {@link #preLoad}
-     *
-     * @return boolean
-     */
-    protected abstract boolean needLoadFromHdfs();
 
     @Override
     public URI load(URI input) throws IOException, StorageEngineException {
@@ -538,71 +358,18 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         ArchiveTableHelper.setChunkSize(conf, conf.getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE));
         ArchiveTableHelper.setStudyId(conf, studyId);
 
-        if (loadArch) {
-            Set<Integer> loadedFiles = dbAdaptor.getVariantFileMetadataDBAdaptor().getLoadedFiles(studyId);
-            if (!loadedFiles.contains(fileId)) {
-                loadArch(input);
-            } else {
-                logger.info("File {} already loaded in archive table. Skip this step!",
-                        Paths.get(input.getPath()).getFileName().toString());
-            }
-        }
-
-        if (loadVar) {
-            List<Integer> pendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
-            merge(studyId, pendingFiles);
+        Set<Integer> loadedFiles = dbAdaptor.getVariantFileMetadataDBAdaptor().getLoadedFiles(studyId);
+        if (!loadedFiles.contains(fileId)) {
+            loadArch(input);
+        } else {
+            logger.info("File {} already loaded in archive table. Skip this step!",
+                    Paths.get(input.getPath()).getFileName().toString());
         }
 
         return input; // TODO  change return value?
     }
 
     protected abstract void loadArch(URI input) throws StorageEngineException;
-
-    @Deprecated
-    public void merge(int studyId, List<Integer> pendingFiles) throws StorageEngineException {
-        // Check if status is "DONE"
-        if (options.get(HADOOP_LOAD_VARIANT_STATUS, BatchFileOperation.Status.class).equals(BatchFileOperation.Status.DONE)) {
-            // Merge operation status : DONE, not READY or RUNNING
-            // Don't need to merge again. Skip merge and run post-load/post-merge step
-            logger.info("Files {} already merged!", pendingFiles);
-            return;
-        }
-        String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
-        String jar = getJarWithDependencies();
-        options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
-
-        Class execClass = VariantTableDriver.class;
-        String args = VariantTableDriver.buildCommandLineArgs(
-                archiveTableCredentials.getTable(),
-                variantsTableCredentials.getTable(), studyId, pendingFiles, options);
-        String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
-
-        long startTime = System.currentTimeMillis();
-        Thread hook = newShutdownHook(VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
-        Runtime.getRuntime().addShutdownHook(hook);
-        try {
-            logger.info("------------------------------------------------------");
-            logger.info("Loading files {} into analysis table '{}'", pendingFiles, variantsTableCredentials.getTable());
-            logger.info(executable + " " + args);
-            logger.info("------------------------------------------------------");
-            int exitValue = mrExecutor.run(executable, args);
-            logger.info("------------------------------------------------------");
-            logger.info("Exit value: {}", exitValue);
-            logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-            if (exitValue != 0) {
-                throw new StorageEngineException("Error loading files " + pendingFiles + " into variant table \""
-                        + variantsTableCredentials.getTable() + "\"");
-            }
-            getStudyConfigurationManager()
-                    .atomicSetStatus(getStudyId(), BatchFileOperation.Status.DONE, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
-        } catch (Exception e) {
-            getStudyConfigurationManager()
-                    .atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
-            throw e;
-        } finally {
-            Runtime.getRuntime().removeShutdownHook(hook);
-        }
-    }
 
     public String getJarWithDependencies() throws StorageEngineException {
         return HadoopVariantStorageEngine.getJarWithDependencies(options);
@@ -616,29 +383,11 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
-        if (loadArch) {
-            logger.debug("Nothing to do");
-        }
-
-        if (loadVar) {
-            return postMerge(input, output);
-        }
-        return input;
-    }
-
-    public URI postMerge(URI input, URI output) throws StorageEngineException {
-        final List<Integer> fileIds = getLoadedFiles();
-        if (fileIds.isEmpty()) {
-            logger.debug("Skip post load");
-            return input;
-        }
-
+        List<Integer> fileIds = options.getAsIntegerList(VariantStorageEngine.Options.FILE_ID.key());
         registerLoadedFiles(fileIds);
 
-        dbAdaptor.getStudyConfigurationManager().lockAndUpdate(getStudyId(), studyConfiguration -> {
-            securePostMerge(fileIds, studyConfiguration);
-            return studyConfiguration;
-        });
+        // This method checks the loaded variants (if possible) and adds the loaded files to the studyConfiguration
+        super.postLoad(null, null);
 
         return input;
     }
@@ -668,12 +417,10 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             }
             logger.debug("Winning lock {}", lock);
 
-            if (MergeMode.from(studyConfiguration.getAttributes()).equals(MergeMode.ADVANCED)) {
-                try {
-                    phoenixHelper.registerNewStudy(jdbcConnection, variantsTableName, studyConfiguration.getStudyId());
-                } catch (SQLException e) {
-                    throw new StorageEngineException("Unable to register study in Phoenix", e);
-                }
+            try {
+                phoenixHelper.registerNewStudy(jdbcConnection, variantsTableName, studyConfiguration.getStudyId());
+            } catch (SQLException e) {
+                throw new StorageEngineException("Unable to register study in Phoenix", e);
             }
 
             try {
@@ -685,23 +432,21 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 throw new StorageEngineException("Unable to register population frequency columns in Phoenix", e);
             }
 
-            if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
-                try {
-                    Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
-                    Set<Integer> newSamples = new HashSet<>();
-                    for (Integer fileId : fileIds) {
-                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                            if (!previouslyIndexedSamples.contains(sampleId)) {
-                                newSamples.add(sampleId);
-                            }
+            try {
+                Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
+                Set<Integer> newSamples = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                        if (!previouslyIndexedSamples.contains(sampleId)) {
+                            newSamples.add(sampleId);
                         }
                     }
-                    phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyConfiguration.getStudyId(), fileIds,
-                            newSamples);
-
-                } catch (SQLException e) {
-                    throw new StorageEngineException("Unable to register samples in Phoenix", e);
                 }
+                phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyConfiguration.getStudyId(), fileIds,
+                        newSamples);
+
+            } catch (SQLException e) {
+                throw new StorageEngineException("Unable to register samples in Phoenix", e);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -747,28 +492,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                     getStudyConfigurationManager().unLockStudy(studyConfiguration.getStudyId(), lock, PHOENIX_INDEX_LOCK_COLUMN);
                 }
             }
-        }
-
-        // This method checks the loaded variants (if possible) and adds the loaded files to the studyConfiguration
-        super.postLoad(null, null);
-    }
-
-    protected List<Integer> getLoadedFiles() {
-        List<Integer> fileIds;
-        if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
-            fileIds = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
-            options.put(Options.FILE_ID.key(), fileIds);
-        } else {
-            fileIds = Collections.emptyList();
-        }
-        return fileIds;
-    }
-
-    protected void securePostMerge(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
-        BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
-                .setStatus(studyConfiguration, BatchFileOperation.Status.READY, VariantTableDriver.JOB_OPERATION_NAME, fileIds);
-        if (status != BatchFileOperation.Status.DONE) {
-            logger.warn("Unexpected status " + status);
         }
     }
 

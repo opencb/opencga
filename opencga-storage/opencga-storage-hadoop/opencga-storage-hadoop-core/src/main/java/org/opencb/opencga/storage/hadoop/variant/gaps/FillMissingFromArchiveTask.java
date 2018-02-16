@@ -25,6 +25,9 @@ import java.util.*;
  */
 public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
 
+    public static final String VARIANT_COLUMN_PREFIX = "_V";
+    public static final byte[] VARIANT_COLUMN_B_PREFIX = Bytes.toBytes(VARIANT_COLUMN_PREFIX);
+
     public FillMissingFromArchiveTask(HBaseManager hBaseManager, StudyConfiguration studyConfiguration, GenomeHelper helper) {
         super(hBaseManager, studyConfiguration, helper, Collections.emptyList(), true);
     }
@@ -49,8 +52,8 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
             Region region = rowKeyFactory.extractRegionFromBlockId(Bytes.toString(result.getRow()));
 
             for (Cell cell : result.rawCells()) {
-                if (Bytes.startsWith(CellUtil.cloneQualifier(cell), GenomeHelper.VARIANT_COLUMN_B_PREFIX)) {
-                    variants.add(GenomeHelper.getVariantFromArchiveVariantColumn(region.getChromosome(), CellUtil.cloneQualifier(cell)));
+                if (Bytes.startsWith(CellUtil.cloneQualifier(cell), VARIANT_COLUMN_B_PREFIX)) {
+                    variants.add(getVariantFromArchiveVariantColumn(region.getChromosome(), CellUtil.cloneQualifier(cell)));
                 }
             }
 
@@ -89,7 +92,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
             byte[] value = Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId));
             filterList.addFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL, new BinaryComparator(value)));
         }
-        filterList.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+        filterList.addFilter(new ColumnPrefixFilter(VARIANT_COLUMN_B_PREFIX));
         if (scan.getFilter() != null) {
             scan.setFilter(filterList);
         } else {
@@ -99,5 +102,18 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
         return scan;
     }
 
+    public static byte[] getArchiveVariantColumn(Variant variant) {
+        return Bytes.toBytes(VARIANT_COLUMN_PREFIX + '_' + variant.getStart() + '_'
+                + variant.getReference() + '_' + variant.getAlternate());
+    }
+
+    public static Variant getVariantFromArchiveVariantColumn(String chromosome, byte[] column) {
+        String[] split = Bytes.toString(column).split("_", -1);
+        if (split.length != 5) {
+            return null;
+        } else {
+            return new Variant(chromosome, Integer.valueOf(split[2]), split[3], split[4]);
+        }
+    }
 }
 

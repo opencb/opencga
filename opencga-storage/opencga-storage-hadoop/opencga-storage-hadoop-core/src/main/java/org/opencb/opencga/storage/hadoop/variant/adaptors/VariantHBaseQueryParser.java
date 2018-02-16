@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -45,7 +44,6 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.buildFileColumnKey;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.buildSampleColumnKey;
@@ -165,19 +163,7 @@ public class VariantHBaseQueryParser {
 
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
             for (Integer studyId : selectElements.getStudies()) {
-                VariantStorageEngine.MergeMode mergeMode = VariantStorageEngine.MergeMode.from(
-                        selectElements.getStudyConfigurations().get(studyId).getAttributes());
-                List<String> studyColumns;
-                if (selectElements.getFields().contains(VariantField.STUDIES_SAMPLES_DATA)
-                        && mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
-                    studyColumns = STUDY_COLUMNS;
-                } else {
-                    // If samples are not required, do not fetch all the fields
-                    studyColumns = Collections.singletonList(VariantPhoenixHelper.HOM_REF);
-                }
-                for (String studyColumn : studyColumns) {
-                    scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(buildColumnKey(studyId, studyColumn)));
-                }
+                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
             }
 
             if (selectElements.getFields().contains(VariantField.STUDIES_STATS)) {
@@ -224,7 +210,7 @@ public class VariantHBaseQueryParser {
             List<Integer> nonNegatedStudies = new ArrayList<>();
             for (String studyStr : values) {
                 Integer studyId = studyConfigurationManager.getStudyId(studyStr, null);
-                byte[] column = Bytes.toBytes(buildColumnKey(studyId, VariantPhoenixHelper.HOM_REF));
+                byte[] column = VariantPhoenixHelper.getStudyColumn(studyId).bytes();
                 if (isNegated(studyStr)) {
                     subFilters.addFilter(missingColumnFilter(column));
                 } else {

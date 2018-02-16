@@ -17,15 +17,9 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,17 +35,10 @@ import java.util.List;
 public class VariantHBaseArchiveDataWriter extends AbstractHBaseDataWriter<VcfSlice, Put> {
     protected final Logger logger = LoggerFactory.getLogger(VariantHBaseArchiveDataWriter.class);
     private final ArchiveTableHelper helper;
-    private final boolean writeVariantsColumn;
 
     public VariantHBaseArchiveDataWriter(ArchiveTableHelper helper, String tableName, HBaseManager hBaseManager) {
-        this(helper, tableName, hBaseManager, false);
-    }
-
-    public VariantHBaseArchiveDataWriter(ArchiveTableHelper helper, String tableName, HBaseManager hBaseManager,
-                                         boolean writeVariantsColumn) {
         super(hBaseManager, tableName);
         this.helper = helper;
-        this.writeVariantsColumn = writeVariantsColumn;
     }
 
     @Override
@@ -64,20 +51,6 @@ public class VariantHBaseArchiveDataWriter extends AbstractHBaseDataWriter<VcfSl
             // TODO: Modify input to have slices already sorted
             Put put = helper.wrap(slice, isRefSlice(slice));
 
-            // TODO: REMOVE THIS
-            if (writeVariantsColumn) {
-                for (int i = 0; i < slice.getRecordsCount(); i++) {
-                    VcfSliceProtos.VcfRecord record = slice.getRecords(i);
-                    VariantType type = VcfRecordProtoToVariantConverter.getVariantType(record.getType());
-                    if (VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET.contains(type)) {
-                        int start = VcfRecordProtoToVariantConverter.getStart(record, slice.getPosition());
-                        String reference = record.getReference();
-                        String alternate = record.getAlternate();
-                        byte[] column = Bytes.toBytes(GenomeHelper.getVariantColumn(start, reference, alternate));
-                        put.addColumn(helper.getColumnFamily(), column, new byte[0]);
-                    }
-                }
-            }
             putLst.add(put);
         }
         return putLst;

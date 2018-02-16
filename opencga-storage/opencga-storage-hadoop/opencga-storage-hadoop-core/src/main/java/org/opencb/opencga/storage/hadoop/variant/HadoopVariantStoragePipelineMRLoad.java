@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -28,29 +30,71 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.HADOOP_BIN;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.INTERMEDIATE_HDFS_DIRECTORY;
 
 /**
  * Created on 31/03/16.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantStoragePipeline extends AbstractHadoopVariantStoragePipeline {
+// FIXME! This class is broken!
+public class HadoopVariantStoragePipelineMRLoad extends AbstractHadoopVariantStoragePipeline {
 
-    private final Logger logger = LoggerFactory.getLogger(HadoopVariantStoragePipeline.class);
+    private final Logger logger = LoggerFactory.getLogger(HadoopVariantStoragePipelineMRLoad.class);
 
-    public HadoopVariantStoragePipeline(
+    public HadoopVariantStoragePipelineMRLoad(
             StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
             Configuration conf, HBaseCredentials archiveCredentials,
             VariantReaderUtils variantReaderUtils, ObjectMap options) {
         super(configuration, dbAdaptor, variantReaderUtils,
                 options, archiveCredentials, mrExecutor, conf);
+        throw new IllegalStateException("Unable to load from hdfs using a MR job");
     }
 
+    @Override
+    public URI preLoad(URI input, URI output) throws StorageEngineException {
+
+        if (!input.getScheme().equals("hdfs")) {
+            if (!StringUtils.isEmpty(options.getString(INTERMEDIATE_HDFS_DIRECTORY))) {
+                output = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY));
+            }
+            if (output.getScheme() != null && !output.getScheme().equals("hdfs")) {
+                throw new StorageEngineException("Output must be in HDFS");
+            }
+
+            try {
+                long startTime = System.currentTimeMillis();
+//                    Configuration conf = getHadoopConfiguration(options);
+                FileSystem fs = FileSystem.get(conf);
+                org.apache.hadoop.fs.Path variantsOutputPath = new org.apache.hadoop.fs.Path(
+                        output.resolve(Paths.get(input.getPath()).getFileName().toString()));
+                logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(input).toUri(), variantsOutputPath.toUri());
+                fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(input), variantsOutputPath);
+                logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+
+                startTime = System.currentTimeMillis();
+                URI fileInput = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
+                org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(
+                        output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
+                logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(fileInput).toUri(), fileOutputPath.toUri());
+                fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(fileInput), fileOutputPath);
+                logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+
+                input = variantsOutputPath.toUri();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return super.preLoad(input, output);
+    }
 
     protected void loadArch(URI input) throws StorageEngineException {
         int studyId = getStudyId();
@@ -81,9 +125,4 @@ public class HadoopVariantStoragePipeline extends AbstractHadoopVariantStoragePi
         }
     }
 
-
-    @Override
-    protected boolean needLoadFromHdfs() {
-        return true;
-    }
 }
