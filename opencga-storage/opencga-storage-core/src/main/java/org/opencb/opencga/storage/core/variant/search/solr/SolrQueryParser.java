@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.variant.search.solr;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.core.Region;
