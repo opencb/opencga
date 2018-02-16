@@ -92,21 +92,23 @@ public class SolrQueryParser {
         //-------------------------------------
         // QueryOptions processing
         //-------------------------------------
-        List<String> includes = null;
+        String[] includes = null;
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            includes = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+//            includes = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            includes = solrIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE));
         } else {
             if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-                includes = new ArrayList<>();
-                List<String> excludes = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
-                for (String excludeField : includeMap.keySet()) {
-                    if (!excludes.contains(excludeField)) {
-                        includes.add(excludeField);
-                    }
-                }
+//                includes = new ArrayList<>();
+//                List<String> excludes = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+//                for (String excludeField : includeMap.keySet()) {
+//                    if (!excludes.contains(excludeField)) {
+//                        includes.add(excludeField);
+//                    }
+//                }
+                includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
             }
         }
-        solrQuery.setFields(solrIncludeFields(includes));
+        solrQuery.setFields(includes);
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
@@ -1006,5 +1008,21 @@ public class SolrQueryParser {
             }
         }
         return StringUtils.join(solrIncludeList, ",").split(",");
+    }
+
+    private String[] getSolrIncludeFromExclude(List<String> excludes) {
+        Set<String> solrFieldsToInclude = new HashSet<>(20);
+        for (String value : includeMap.values()) {
+            solrFieldsToInclude.addAll(Arrays.asList(value.split(".")));
+        }
+
+        if (excludes != null) {
+            for (String exclude : excludes) {
+                List<String> solrFields = Arrays.asList(includeMap.get(exclude).split(","));
+                solrFieldsToInclude.removeAll(solrFields);
+            }
+        }
+
+        return (String[]) solrFieldsToInclude.toArray();
     }
  }
