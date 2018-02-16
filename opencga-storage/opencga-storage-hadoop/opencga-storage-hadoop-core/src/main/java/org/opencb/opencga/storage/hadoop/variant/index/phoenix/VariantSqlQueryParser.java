@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.phoenix.parse.HintNode;
+import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.feature.Genotype;
@@ -120,7 +121,7 @@ public class VariantSqlQueryParser {
             List<String> regionFilters = getRegionFilters(query);
             List<String> filters = getOtherFilters(query, options, dynamicColumns);
 
-            if (filters.isEmpty()) {
+            if (DEFAULT_TABLE_TYPE != PTableType.VIEW && filters.isEmpty()) {
                 // Only region filters. Hint no index usage
                 sb.append("/*+ ").append(HintNode.Hint.NO_INDEX.toString()).append(" */ ");
             }

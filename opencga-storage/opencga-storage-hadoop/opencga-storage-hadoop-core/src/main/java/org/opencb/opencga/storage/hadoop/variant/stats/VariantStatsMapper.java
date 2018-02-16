@@ -77,7 +77,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
 
             Put put = converter.convert(stats);
             if (put == null) {
-                System.out.println("PUT NULL FOR VARIANT " + variant);
+                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
             } else {
                 context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
                 context.write(new ImmutableBytesWritable(helper.getAnalysisTable()), put);

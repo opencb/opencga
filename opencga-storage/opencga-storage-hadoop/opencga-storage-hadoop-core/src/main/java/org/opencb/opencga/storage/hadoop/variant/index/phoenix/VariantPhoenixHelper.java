@@ -50,6 +50,8 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  */
 public class VariantPhoenixHelper {
 
+    public static final PTableType DEFAULT_TABLE_TYPE = PTableType.VIEW;
+
     public static final String STATS_PREFIX = "";
     public static final byte[] STATS_PREFIX_BYTES = Bytes.toBytes(STATS_PREFIX);
     public static final String ANNOTATION_PREFIX = "A_";
@@ -258,7 +260,7 @@ public class VariantPhoenixHelper {
     public void updateAnnotationColumns(Connection con, String variantsTableName) throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         List<Column> annotColumns = Arrays.asList(VariantColumn.values());
-        phoenixHelper.addMissingColumns(con, variantsTableName, annotColumns, true);
+        phoenixHelper.addMissingColumns(con, variantsTableName, annotColumns, true, DEFAULT_TABLE_TYPE);
     }
 
     public void updateStatsColumns(Connection con, String variantsTableName, StudyConfiguration studyConfiguration) throws SQLException {
@@ -269,7 +271,7 @@ public class VariantPhoenixHelper {
                 columns.add(column);
             }
         }
-        phoenixHelper.addMissingColumns(con, variantsTableName, columns, true);
+        phoenixHelper.addMissingColumns(con, variantsTableName, columns, true, DEFAULT_TABLE_TYPE);
     }
 
     public void registerNewStudy(Connection con, String variantsTableName, Integer studyId) throws SQLException {
@@ -295,7 +297,7 @@ public class VariantPhoenixHelper {
             columns.add(getSampleColumn(studyId, sampleId));
         }
         columns.add(getStudyColumn(studyId));
-        phoenixHelper.addMissingColumns(con, variantsTableName, columns, true);
+        phoenixHelper.addMissingColumns(con, variantsTableName, columns, true, DEFAULT_TABLE_TYPE);
         con.commit();
     }
 
@@ -309,7 +311,7 @@ public class VariantPhoenixHelper {
         for (Integer sampleId : sampleIds) {
             columns.add(buildSampleColumnKey(studyId, sampleId, new StringBuilder()));
         }
-        phoenixHelper.dropColumns(con, variantsTableName, columns);
+        phoenixHelper.dropColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
         con.commit();
     }
 
@@ -337,8 +339,8 @@ public class VariantPhoenixHelper {
                 if (!phoenixHelper.tableExists(con, table)) {
                     throw e;
                 } else {
-                    logger.info("Table {} already exists", table);
-                    logger.debug("Table " + table + " already exists. Hide exception", e);
+                    logger.info(DEFAULT_TABLE_TYPE + " {} already exists", table);
+                    logger.debug(DEFAULT_TABLE_TYPE + " " + table + " already exists. Hide exception", e);
                 }
             }
         } else {
@@ -351,29 +353,19 @@ public class VariantPhoenixHelper {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         for (String col : columns) {
             String sql = phoenixHelper.buildAlterAddColumn(variantsTableName,
-                    VariantTableStudyRow.buildColumnKey(studyId, col), dataType.getSqlTypeName());
+                    VariantTableStudyRow.buildColumnKey(studyId, col), dataType.getSqlTypeName(), true, DEFAULT_TABLE_TYPE);
             phoenixHelper.execute(con, sql);
         }
     }
 
+    public void addMissingColumns(Connection connection, String variantsTableName, List<Column> newColumns, boolean oneCall)
+            throws SQLException {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
+        phoenixHelper.addMissingColumns(connection, variantsTableName, newColumns, oneCall, DEFAULT_TABLE_TYPE);
+    }
+
     private String buildCreate(String variantsTableName) {
-        return buildCreate(variantsTableName, Bytes.toString(genomeHelper.getColumnFamily()), PhoenixHelper.DEFAULT_TABLE_TYPE);
-    }
-
-    private String buildCreateView(String variantsTableName) {
-        return buildCreateView(variantsTableName, Bytes.toString(genomeHelper.getColumnFamily()));
-    }
-
-    private static String buildCreateView(String variantsTableName, String columnFamily) {
-        return buildCreate(variantsTableName, columnFamily, PTableType.VIEW);
-    }
-
-    private String buildCreateTable(String variantsTableName) {
-        return buildCreateTable(variantsTableName, Bytes.toString(genomeHelper.getColumnFamily()));
-    }
-
-    private static String buildCreateTable(String variantsTableName, String columnFamily) {
-        return buildCreate(variantsTableName, columnFamily, PTableType.TABLE);
+        return buildCreate(variantsTableName, Bytes.toString(genomeHelper.getColumnFamily()), DEFAULT_TABLE_TYPE);
     }
 
     private static String buildCreate(String variantsTableName, String columnFamily, PTableType tableType) {

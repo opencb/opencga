@@ -88,6 +88,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
 import org.slf4j.Logger;
@@ -401,7 +402,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         PhoenixHelper phoenixHelper = new PhoenixHelper(configuration.get());
         try (java.sql.Connection con = phoenixHelper.newJdbcConnection()) {
             if (phoenixHelper.tableExists(con, tableName)) {
-                phoenixHelper.dropTable(con, tableName, true, true);
+                phoenixHelper.dropTable(con, tableName, VariantPhoenixHelper.DEFAULT_TABLE_TYPE, true, true);
             }
         }
         utility.get().deleteTableIfAny(TableName.valueOf(tableName));

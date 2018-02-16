@@ -26,6 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.PTableType;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -681,7 +682,10 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                         throw new StorageEngineException("Unable to register study in Phoenix", e);
                     }
                 }
-
+                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                    List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
+                    phoenixHelper.addMissingColumns(jdbcConnection, variantsTableName, columns, true);
+                }
                 if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
                     try {
                         Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
@@ -709,12 +713,14 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 }
             }
 
-            if (!options.getBoolean(VARIANT_TABLE_INDEXES_SKIP, false)) {
+            if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW) {
+                logger.debug("Skip create indexes for VIEW table");
+            } else if (options.getBoolean(VARIANT_TABLE_INDEXES_SKIP, false)) {
+                logger.info("Skip create indexes!!");
+            } else {
                 try {
                     lock = hBaseLock.lock(PHOENIX_INDEX_LOCK_COLUMN, TimeUnit.MINUTES.toMillis(60), TimeUnit.SECONDS.toMillis(5));
                     if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
-                        List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
-                        phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, variantsTableName, columns, true);
                         List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(variantsTableName);
                         phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, variantsTableName, popFreqIndices, false);
                     }
@@ -734,8 +740,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                         hBaseLock.unlock(PHOENIX_INDEX_LOCK_COLUMN, lock);
                     }
                 }
-            } else {
-                logger.info("Skip create indexes!!");
             }
 
         } catch (SQLException | ClassNotFoundException | IOException e) {
