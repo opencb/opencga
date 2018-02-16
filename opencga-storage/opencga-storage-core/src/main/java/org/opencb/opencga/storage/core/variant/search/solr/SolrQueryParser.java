@@ -1026,6 +1026,10 @@ public class SolrQueryParser {
     }
 
     private String[] includeFieldsWithMandatory(String[] includes) {
+        if (includes == null || includes.length == 0) {
+            return new String[];
+        }
+        
         String[] mandatoryIncludeFields  = new String[]{"id", "chromosome", "start", "end", "type"};
         String[] includeWithMandatory = new String[includes.length + mandatoryIncludeFields.length];
         for (int i = 0; i < includes.length; i++) {
