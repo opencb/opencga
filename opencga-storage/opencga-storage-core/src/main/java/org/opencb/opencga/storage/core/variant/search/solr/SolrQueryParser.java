@@ -1013,7 +1013,7 @@ public class SolrQueryParser {
     private String[] getSolrIncludeFromExclude(List<String> excludes) {
         Set<String> solrFieldsToInclude = new HashSet<>(20);
         for (String value : includeMap.values()) {
-            solrFieldsToInclude.addAll(Arrays.asList(value.split(".")));
+            solrFieldsToInclude.addAll(Arrays.asList(value.split(",")));
         }
 
         if (excludes != null) {
