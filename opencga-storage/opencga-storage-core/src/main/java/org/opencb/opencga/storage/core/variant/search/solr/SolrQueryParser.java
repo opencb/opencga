@@ -1023,6 +1023,12 @@ public class SolrQueryParser {
             }
         }
 
-        return (String[]) solrFieldsToInclude.toArray();
+        List<String> solrFieldsToIncludeList = new ArrayList<>(solrFieldsToInclude);
+        String[] solrFieldsToIncludeArr = new String[solrFieldsToIncludeList.size()];
+        for (int i = 0; i < solrFieldsToIncludeList.size(); i++) {
+            solrFieldsToIncludeArr[i] = solrFieldsToIncludeList.get(i);
+        }
+
+        return solrFieldsToIncludeArr;
     }
  }
