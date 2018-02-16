@@ -20,9 +20,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -106,19 +108,24 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     }
 
     @Override
-    public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+        return lockStudy(studyId, lockDuration, timeout, StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName));
+    }
+
+    private long lockStudy(int studyId, long lockDuration, long timeout, byte[] lockName) throws InterruptedException, TimeoutException {
         try {
             ensureTableExists();
-            return lock.lock(getStudyConfigurationRowKey(studyId), getLockColumn(), lockDuration, timeout);
+            return lock.lock(getStudyConfigurationRowKey(studyId), lockName, lockDuration, timeout);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public void unLockStudy(int studyId, long lockToken) {
+    public void unLockStudy(int studyId, long lockToken, String lockName) {
         try {
-            lock.unlock(getStudyConfigurationRowKey(studyId), getLockColumn(), lockToken);
+            byte[] column = StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
+            lock.unlock(getStudyConfigurationRowKey(studyId), column, lockToken);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

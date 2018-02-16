@@ -46,8 +46,8 @@ public class GenomeHelper {
 
     public static final String VARIANT_COLUMN_PREFIX = "_V";
     public static final byte[] VARIANT_COLUMN_B_PREFIX = Bytes.toBytes(VARIANT_COLUMN_PREFIX);
-    public static final byte[] PHOENIX_LOCK_COLUMN = Bytes.toBytes("PHOENIX_LOCK");
-    public static final byte[] PHOENIX_INDEX_LOCK_COLUMN = Bytes.toBytes("PHOENIX_INDEX_LOCK");
+    public static final String PHOENIX_LOCK_COLUMN = "PHOENIX_LOCK";
+    public static final String PHOENIX_INDEX_LOCK_COLUMN = "PHOENIX_INDEX_LOCK";
 
     private final int chunkSize;
     private final char separator;

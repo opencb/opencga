@@ -25,7 +25,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTableType;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -653,97 +652,101 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
         String metaTableName = dbAdaptor.getTableNameGenerator().getMetaTableName();
         String variantsTableName = dbAdaptor.getTableNameGenerator().getVariantTableName();
-        try (Connection jdbcConnection = phoenixHelper.newJdbcConnection()) {
-            HBaseLock hBaseLock = new HBaseLock(dbAdaptor.getHBaseManager(), metaTableName,
-                    dbAdaptor.getGenomeHelper().getColumnFamily(), Bytes.toBytes(String.valueOf(studyConfiguration.getStudyId())));
-            Long lock;
+        Connection jdbcConnection = dbAdaptor.getJdbcConnection();
+
+        Long lock = null;
+        try {
+            long lockDuration = TimeUnit.MINUTES.toMillis(5);
             try {
-                long lockDuration = TimeUnit.MINUTES.toMillis(5);
+                lock = getStudyConfigurationManager().lockStudy(studyConfiguration.getStudyId(), lockDuration,
+                        TimeUnit.SECONDS.toMillis(5), GenomeHelper.PHOENIX_LOCK_COLUMN);
+            } catch (TimeoutException e) {
+                int timeout = 10;
+                logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", metaTableName, timeout);
+                lock = getStudyConfigurationManager().lockStudy(studyConfiguration.getStudyId(), lockDuration,
+                        TimeUnit.MINUTES.toMillis(timeout), GenomeHelper.PHOENIX_LOCK_COLUMN);
+            }
+            logger.debug("Winning lock {}", lock);
+
+            if (MergeMode.from(studyConfiguration.getAttributes()).equals(MergeMode.ADVANCED)) {
                 try {
-                    lock = hBaseLock.lock(GenomeHelper.PHOENIX_LOCK_COLUMN, lockDuration, TimeUnit.SECONDS.toMillis(5));
-                } catch (TimeoutException e) {
-                    int duration = 10;
-                    logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", metaTableName, duration);
-                    lock = hBaseLock.lock(GenomeHelper.PHOENIX_LOCK_COLUMN, lockDuration, TimeUnit.MINUTES.toMillis(duration));
+                    phoenixHelper.registerNewStudy(jdbcConnection, variantsTableName, studyConfiguration.getStudyId());
+                } catch (SQLException e) {
+                    throw new StorageEngineException("Unable to register study in Phoenix", e);
                 }
-                logger.debug("Winning lock {}", lock);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
-            } catch (TimeoutException | IOException e) {
-                throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
             }
 
             try {
-                if (MergeMode.from(studyConfiguration.getAttributes()).equals(MergeMode.ADVANCED)) {
-                    try {
-                        phoenixHelper.registerNewStudy(jdbcConnection, variantsTableName, studyConfiguration.getStudyId());
-                    } catch (SQLException e) {
-                        throw new StorageEngineException("Unable to register study in Phoenix", e);
-                    }
-                }
                 if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
                     List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
                     phoenixHelper.addMissingColumns(jdbcConnection, variantsTableName, columns, true);
                 }
-                if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
-                    try {
-                        Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
-                        Set<Integer> newSamples = new HashSet<>();
-                        for (Integer fileId : fileIds) {
-                            for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                                if (!previouslyIndexedSamples.contains(sampleId)) {
-                                    newSamples.add(sampleId);
-                                }
+            } catch (SQLException e) {
+                throw new StorageEngineException("Unable to register population frequency columns in Phoenix", e);
+            }
+
+            if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
+                try {
+                    Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
+                    Set<Integer> newSamples = new HashSet<>();
+                    for (Integer fileId : fileIds) {
+                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                            if (!previouslyIndexedSamples.contains(sampleId)) {
+                                newSamples.add(sampleId);
                             }
                         }
-                        phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyConfiguration.getStudyId(), fileIds,
-                                newSamples);
-
-                    } catch (SQLException e) {
-                        throw new StorageEngineException("Unable to register samples in Phoenix", e);
                     }
-                }
-            } finally {
-                try {
-                    hBaseLock.unlock(GenomeHelper.PHOENIX_LOCK_COLUMN, lock);
-                } catch (HBaseLock.IllegalLockStatusException e) {
-                    logger.warn(e.getMessage());
-                    logger.debug(e.getMessage(), e);
-                }
-            }
+                    phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyConfiguration.getStudyId(), fileIds,
+                            newSamples);
 
-            if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW) {
-                logger.debug("Skip create indexes for VIEW table");
-            } else if (options.getBoolean(VARIANT_TABLE_INDEXES_SKIP, false)) {
-                logger.info("Skip create indexes!!");
-            } else {
-                try {
-                    lock = hBaseLock.lock(PHOENIX_INDEX_LOCK_COLUMN, TimeUnit.MINUTES.toMillis(60), TimeUnit.SECONDS.toMillis(5));
-                    if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
-                        List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(variantsTableName);
-                        phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, variantsTableName, popFreqIndices, false);
-                    }
-                    phoenixHelper.createVariantIndexes(jdbcConnection, variantsTableName);
                 } catch (SQLException e) {
-                    throw new StorageEngineException("Unable to create Phoenix Indexes", e);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new StorageEngineException("Unable to create Phoenix Indexes", e);
-                } catch (TimeoutException e) {
-                    // Indices are been created by another instance. Don't need to create twice.
-                    logger.info("Unable to get lock to create PHOENIX INDICES. Already been created by another instance. "
-                            + "Skip create indexes!");
-                    lock = null;
-                } finally {
-                    if (lock != null) {
-                        hBaseLock.unlock(PHOENIX_INDEX_LOCK_COLUMN, lock);
-                    }
+                    throw new StorageEngineException("Unable to register samples in Phoenix", e);
                 }
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
+        } catch (TimeoutException e) {
+            throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
+        } finally {
+            try {
+                if (lock != null) {
+                    getStudyConfigurationManager().unLockStudy(studyConfiguration.getStudyId(), lock, GenomeHelper.PHOENIX_LOCK_COLUMN);
+                }
+            } catch (HBaseLock.IllegalLockStatusException e) {
+                logger.warn(e.getMessage());
+                logger.debug(e.getMessage(), e);
+            }
+        }
 
-        } catch (SQLException | ClassNotFoundException | IOException e) {
-            throw new StorageEngineException("Error with Phoenix connection", e);
+        if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW) {
+            logger.debug("Skip create indexes for VIEW table");
+        } else if (options.getBoolean(VARIANT_TABLE_INDEXES_SKIP, false)) {
+            logger.info("Skip create indexes!!");
+        } else {
+            lock = null;
+            try {
+                lock = getStudyConfigurationManager().lockStudy(studyConfiguration.getStudyId(), TimeUnit.MINUTES.toMillis(60),
+                        TimeUnit.SECONDS.toMillis(5), PHOENIX_INDEX_LOCK_COLUMN);
+                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                    List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(variantsTableName);
+                    phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, variantsTableName, popFreqIndices, false);
+                }
+                phoenixHelper.createVariantIndexes(jdbcConnection, variantsTableName);
+            } catch (SQLException e) {
+                throw new StorageEngineException("Unable to create Phoenix Indexes", e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new StorageEngineException("Unable to create Phoenix Indexes", e);
+            } catch (TimeoutException e) {
+                // Indices are been created by another instance. Don't need to create twice.
+                logger.info("Unable to get lock to create PHOENIX INDICES. Already been created by another instance. "
+                        + "Skip create indexes!");
+            } finally {
+                if (lock != null) {
+                    getStudyConfigurationManager().unLockStudy(studyConfiguration.getStudyId(), lock, PHOENIX_INDEX_LOCK_COLUMN);
+                }
+            }
         }
 
         // This method checks the loaded variants (if possible) and adds the loaded files to the studyConfiguration
