@@ -131,9 +131,17 @@ public class VariantSearchModel {
     @Field("popFreq_*")
     private Map<String, Float> popFreq;
 
-
+    public static final double MISSING_VALUE = -100.0;
 
     public VariantSearchModel() {
+        phastCons = MISSING_VALUE;
+        phylop = MISSING_VALUE;
+        gerp = MISSING_VALUE;
+        caddRaw = MISSING_VALUE;
+        caddScaled = MISSING_VALUE;
+        sift = MISSING_VALUE;
+        polyphen = MISSING_VALUE;
+
         this.genes = new ArrayList<>();
         this.soAcc = new ArrayList<>();
         this.geneToSoAcc = new ArrayList<>();

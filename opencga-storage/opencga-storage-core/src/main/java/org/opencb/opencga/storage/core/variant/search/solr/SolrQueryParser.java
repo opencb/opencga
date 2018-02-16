@@ -44,10 +44,34 @@ public class SolrQueryParser {
 
     private final StudyConfigurationManager studyConfigurationManager;
 
+    private static Map<String, String> includeMap;
+
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
 
     protected static Logger logger = LoggerFactory.getLogger(SolrQueryParser.class);
+
+    static {
+        includeMap = new HashMap<>();
+
+        includeMap.put("id", "id,variantId");
+        includeMap.put("chromosome", "chromosome");
+        includeMap.put("start", "start");
+        includeMap.put("end", "end");
+        includeMap.put("type", "type");
+
+        includeMap.put("studies", "studies,stats__*");
+        includeMap.put("studies.stats", "studies,stats__*");
+
+        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq__*,xrefs,"
+                + "phastCons,phylop,gerp,caddRaw,caddScaled,traits");
+        includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc");
+        includeMap.put("annotation.populationFrequencies", "popFreq__*");
+        includeMap.put("annotation.xrefs", "xrefs");
+        includeMap.put("annotation.conservation", "phastCons,phylop,gerp");
+        includeMap.put("annotation.functionalScore", "caddRaw,caddScaled");
+        includeMap.put("annotation.traitAssociation", "traits");
+    }
 
     public SolrQueryParser(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
@@ -68,10 +92,21 @@ public class SolrQueryParser {
         //-------------------------------------
         // QueryOptions processing
         //-------------------------------------
+        List<String> includes = null;
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            List<String> includes = queryOptions.getAsStringList(QueryOptions.INCLUDE);
-            solrQuery.setFields(includes.toArray(new String[includes.size()]));
+            includes = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+        } else {
+            if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+                includes = new ArrayList<>();
+                List<String> excludes = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+                for (String excludeField : includeMap.keySet()) {
+                    if (!excludes.contains(excludeField)) {
+                        includes.add(excludeField);
+                    }
+                }
+            }
         }
+        solrQuery.setFields(solrIncludeFields(includes));
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
@@ -957,4 +992,19 @@ public class SolrQueryParser {
                     + " is 'name:value1^value2[^value3]', value3 is optional");
         }
     }
-}
+
+    private String[] solrIncludeFields(List<String> includes) {
+        if (includes == null) {
+            return new String[0];
+        }
+
+        List<String> solrIncludeList = new ArrayList<>();
+        // The values of the includeMap can contain commas
+        for (String include : includes) {
+            if (includeMap.containsKey(include)) {
+                solrIncludeList.add(includeMap.get(include));
+            }
+        }
+        return StringUtils.join(solrIncludeList, ",").split(",");
+    }
+ }

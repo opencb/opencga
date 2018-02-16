@@ -54,7 +54,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variant.setId(variantSearchModel.getVariantId());
 
         // set variant type
-        variant.setType(VariantType.valueOf(variantSearchModel.getType()));
+        if (StringUtils.isNotEmpty(variantSearchModel.getType())) {
+            variant.setType(VariantType.valueOf(variantSearchModel.getType()));
+        }
 
         // set studies and stats
         Map<String, StudyEntry> studyEntryMap = new HashMap<>();
@@ -112,22 +114,24 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         String gene = null;
         String ensGene = null;
         Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
-        for (int i = 0; i < variantSearchModel.getGenes().size(); i++) {
-            if (!variantSearchModel.getGenes().get(i).startsWith("ENS")) {
-                gene = variantSearchModel.getGenes().get(i);
-            }
-            if (variantSearchModel.getGenes().get(i).startsWith("ENSG")) {
-                ensGene = variantSearchModel.getGenes().get(i);
-            }
-            if (variantSearchModel.getGenes().get(i).startsWith("ENST")) {
-                ConsequenceType consequenceType = new ConsequenceType();
-                consequenceType.setGeneName(gene);
-                consequenceType.setEnsemblGeneId(ensGene);
-                consequenceType.setEnsemblTranscriptId(variantSearchModel.getGenes().get(i));
-                // setProteinVariantAnnotation is postponed, since it will only be set if SO accession is 1583
+        if (variantSearchModel.getGenes() != null) {
+            for (int i = 0; i < variantSearchModel.getGenes().size(); i++) {
+                if (!variantSearchModel.getGenes().get(i).startsWith("ENS")) {
+                    gene = variantSearchModel.getGenes().get(i);
+                }
+                if (variantSearchModel.getGenes().get(i).startsWith("ENSG")) {
+                    ensGene = variantSearchModel.getGenes().get(i);
+                }
+                if (variantSearchModel.getGenes().get(i).startsWith("ENST")) {
+                    ConsequenceType consequenceType = new ConsequenceType();
+                    consequenceType.setGeneName(gene);
+                    consequenceType.setEnsemblGeneId(ensGene);
+                    consequenceType.setEnsemblTranscriptId(variantSearchModel.getGenes().get(i));
+                    // setProteinVariantAnnotation is postponed, since it will only be set if SO accession is 1583
 
-                // The key is the ENST id
-                consequenceTypeMap.put(variantSearchModel.getGenes().get(i), consequenceType);
+                    // The key is the ENST id
+                    consequenceTypeMap.put(variantSearchModel.getGenes().get(i), consequenceType);
+                }
             }
         }
 
@@ -149,47 +153,53 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // and finally, update the SO accession for each consequence type
         // and setProteinVariantAnnotation if SO accession is 1583
         Set<Integer> geneRelatedSoTerms = new HashSet<>();
-        for (String geneToSoAcc : variantSearchModel.getGeneToSoAcc()) {
-            String[] fields = geneToSoAcc.split("_");
-            if (consequenceTypeMap.containsKey(fields[0])) {
-                int soAcc = Integer.parseInt(fields[1]);
-                geneRelatedSoTerms.add(soAcc);  // we memorise the SO term for next block
+        if (variantSearchModel.getGeneToSoAcc() != null) {
+            for (String geneToSoAcc : variantSearchModel.getGeneToSoAcc()) {
+                String[] fields = geneToSoAcc.split("_");
+                if (consequenceTypeMap.containsKey(fields[0])) {
+                    int soAcc = Integer.parseInt(fields[1]);
+                    geneRelatedSoTerms.add(soAcc);  // we memorise the SO term for next block
 
-                SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
-                sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", soAcc));
-                sequenceOntologyTerm.setName(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
-                if (consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms() == null) {
-                    consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
-                }
-                consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms().add(sequenceOntologyTerm);
+                    SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
+                    sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", soAcc));
+                    sequenceOntologyTerm.setName(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
+                    if (consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms() == null) {
+                        consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
+                    }
+                    consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms().add(sequenceOntologyTerm);
 
-                // only set protein for that consequence type
-                // if annotated protein and SO accession is 1583 (missense_variant)
-                if (soAcc == 1583) {
-                    consequenceTypeMap.get(fields[0]).setProteinVariantAnnotation(proteinAnnotation);
+                    // only set protein for that consequence type
+                    // if annotated protein and SO accession is 1583 (missense_variant)
+                    if (soAcc == 1583) {
+                        consequenceTypeMap.get(fields[0]).setProteinVariantAnnotation(proteinAnnotation);
+                    }
                 }
             }
         }
+
 
         // We convert the Map into an array
         ArrayList<ConsequenceType> consequenceTypes = new ArrayList<>(consequenceTypeMap.values());
 
         // Add non-gene related SO terms
-        for (Integer soAcc : variantSearchModel.getSoAcc()) {
-            // let's process all non-gene related terms such as regulatory_region_variant or intergenic_variant
-            if (!geneRelatedSoTerms.contains(soAcc)) {
-                SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
-                sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", soAcc));
-                sequenceOntologyTerm.setName(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
+        if (variantSearchModel.getSoAcc() != null) {
+            for (Integer soAcc : variantSearchModel.getSoAcc()) {
+                // let's process all non-gene related terms such as regulatory_region_variant or intergenic_variant
+                if (!geneRelatedSoTerms.contains(soAcc)) {
+                    SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
+                    sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", soAcc));
+                    sequenceOntologyTerm.setName(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
 
-                ConsequenceType consequenceType = new ConsequenceType();
-                consequenceType.setEnsemblGeneId("");
-                consequenceType.setGeneName("");
-                consequenceType.setEnsemblTranscriptId("");
-                consequenceType.setSequenceOntologyTerms(Collections.singletonList(sequenceOntologyTerm));
-                consequenceTypes.add(consequenceType);
+                    ConsequenceType consequenceType = new ConsequenceType();
+                    consequenceType.setEnsemblGeneId("");
+                    consequenceType.setGeneName("");
+                    consequenceType.setEnsemblTranscriptId("");
+                    consequenceType.setSequenceOntologyTerms(Collections.singletonList(sequenceOntologyTerm));
+                    consequenceTypes.add(consequenceType);
+                }
             }
         }
+
         // and update the variant annotation with the consequence types
         variantAnnotation.setConsequenceTypes(consequenceTypes);
 
