@@ -17,6 +17,7 @@ import java.io.IOException;
 class HBaseVariantMetadataUtils {
 
     private static final byte[] STUDIES_RK = Bytes.toBytes("studies");
+    private static final String STUDY_PREFIX = "S_";
     private static final String FILE_METADATA_SEPARATOR = "_F_";
 
     private static final byte[] VALUE_COLUMN = Bytes.toBytes("value");
@@ -61,15 +62,15 @@ class HBaseVariantMetadataUtils {
     }
 
     static byte[] getStudyConfigurationRowKey(int studyId) {
-        return Bytes.toBytes(String.valueOf(studyId));
+        return Bytes.toBytes(STUDY_PREFIX + String.valueOf(studyId));
     }
 
     static byte[] getVariantFileMetadataRowKey(int studyId, int fileId) {
-        return Bytes.toBytes(studyId + FILE_METADATA_SEPARATOR + fileId);
+        return Bytes.toBytes(STUDY_PREFIX + studyId + FILE_METADATA_SEPARATOR + fileId);
     }
 
     static byte[] getVariantFileMetadataRowKeyPrefix(int studyId) {
-        return Bytes.toBytes(studyId + FILE_METADATA_SEPARATOR);
+        return Bytes.toBytes(STUDY_PREFIX + studyId + FILE_METADATA_SEPARATOR);
     }
 
     static Pair<Integer, Integer> parseVariantFileMetadataRowKey(byte[] rk) {
@@ -78,7 +79,8 @@ class HBaseVariantMetadataUtils {
         if (idx < 0) {
             throw new IllegalArgumentException("RowKey " + s + " is not a valid VariantFileMetadata RowKey!");
         }
-        return Pair.of(Integer.valueOf(s.substring(0, idx)), Integer.valueOf(s.substring(idx + FILE_METADATA_SEPARATOR.length())));
+        return Pair.of(Integer.valueOf(s.substring(STUDY_PREFIX.length(), idx)),
+                Integer.valueOf(s.substring(idx + FILE_METADATA_SEPARATOR.length())));
     }
 
     static byte[] getLockColumn() {

@@ -69,11 +69,19 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
-        return adaptor.lockStudy(studyId, lockDuration, timeout);
+        return adaptor.lockStudy(studyId, lockDuration, timeout, null);
+    }
+
+    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+        return adaptor.lockStudy(studyId, lockDuration, timeout, lockName);
     }
 
     public void unLockStudy(int studyId, long lockId) {
-        adaptor.unLockStudy(studyId, lockId);
+        adaptor.unLockStudy(studyId, lockId, null);
+    }
+
+    public void unLockStudy(int studyId, long lockId, String lockName) {
+        adaptor.unLockStudy(studyId, lockId, lockName);
     }
 
     public interface UpdateStudyConfiguration<E extends Exception> {
