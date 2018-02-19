@@ -35,7 +35,6 @@ import java.net.URI;
 import java.nio.file.Paths;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.HADOOP_BIN;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.INTERMEDIATE_HDFS_DIRECTORY;
 
 /**
@@ -44,11 +43,11 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 // FIXME! This class is broken!
-public class HadoopVariantStoragePipelineMRLoad extends AbstractHadoopVariantStoragePipeline {
+public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipeline {
 
-    private final Logger logger = LoggerFactory.getLogger(HadoopVariantStoragePipelineMRLoad.class);
+    private final Logger logger = LoggerFactory.getLogger(HadoopMRLoadVariantStoragePipeline.class);
 
-    public HadoopVariantStoragePipelineMRLoad(
+    public HadoopMRLoadVariantStoragePipeline(
             StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
             Configuration conf, HBaseCredentials archiveCredentials,
@@ -96,10 +95,8 @@ public class HadoopVariantStoragePipelineMRLoad extends AbstractHadoopVariantSto
         return super.preLoad(input, output);
     }
 
-    protected void loadArch(URI input) throws StorageEngineException {
-        int studyId = getStudyId();
+    protected void load(URI input, int studyId, int fileId) throws StorageEngineException {
         URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
-        int fileId = options.getInt(Options.FILE_ID.key());
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
         String jar = getJarWithDependencies();

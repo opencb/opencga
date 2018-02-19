@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
@@ -64,7 +65,8 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     }
 
     @Test
-    public void removeFileTest() throws Exception {
+    @Ignore
+    public void removeFileTestMergeAdvanced() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
         String studyName = studyConfiguration.getStudyName();

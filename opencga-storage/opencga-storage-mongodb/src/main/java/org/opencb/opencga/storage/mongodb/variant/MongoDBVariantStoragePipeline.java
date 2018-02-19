@@ -260,7 +260,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         Path input = Paths.get(inputUri.getPath());
 
-        VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri, null);
+        VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri);
         VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(getStudyId()));
         int numRecords = fileMetadata.getStats().getNumVariants();
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());

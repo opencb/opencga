@@ -259,16 +259,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     }
 
     @Test
-    public void testMultipleFilesConcurrentSpecificPut() throws Exception {
-        testMultipleFilesConcurrent(new ObjectMap(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, true));
-    }
-
-    @Test
-    public void testMultipleFilesConcurrentFullPut() throws Exception {
-        testMultipleFilesConcurrent(new ObjectMap(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, false));
-    }
-
-    @Test
     public void testMultipleFilesConcurrentMergeBasic() throws Exception {
         testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
@@ -321,12 +311,10 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         }
 
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
-        options.put(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
+//        options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
         options.putAll(extraParams);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 

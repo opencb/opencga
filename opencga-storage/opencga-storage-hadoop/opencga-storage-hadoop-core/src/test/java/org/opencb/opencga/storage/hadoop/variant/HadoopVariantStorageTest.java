@@ -78,6 +78,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -374,6 +375,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         options.put(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 5);
         options.put(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 5);
         options.put(HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER, 10);
+        options.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;

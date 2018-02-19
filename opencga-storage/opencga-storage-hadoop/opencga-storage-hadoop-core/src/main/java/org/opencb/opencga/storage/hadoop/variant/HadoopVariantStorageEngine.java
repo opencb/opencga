@@ -235,7 +235,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     if (doLoad && !error) {
                         // Read the VariantSource to get the original fileName (it may be different from the
                         // nextUri.getFileName if this is the transformed file)
-                        String fileName = storageETL.readVariantFileMetadata(nextUri, null).getPath();
+                        String fileName = storageETL.readVariantFileMetadata(nextUri).getPath();
                         // Get latest study configuration from DB, might have been changed since
                         StudyConfiguration studyConfiguration = storageETL.getStudyConfiguration();
                         // Get file ID for the provided file name
@@ -314,7 +314,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public AbstractHadoopVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
+    public HadoopVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         return newStoragePipeline(connected, null);
     }
 
@@ -515,7 +515,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     }
 
-    public AbstractHadoopVariantStoragePipeline newStoragePipeline(boolean connected, Map<? extends String, ?> extraOptions)
+    public HadoopVariantStoragePipeline newStoragePipeline(boolean connected, Map<? extends String, ?> extraOptions)
             throws StorageEngineException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
         if (extraOptions != null) {
@@ -543,7 +543,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         if (mergeMode.equals(MergeMode.ADVANCED)) {
             throw new IllegalStateException("Unable to load with MergeMode " + MergeMode.ADVANCED);
         }
-        AbstractHadoopVariantStoragePipeline storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, dbAdaptor,
+        HadoopVariantStoragePipeline storageETL = new HadoopLocalLoadVariantStoragePipeline(configuration, dbAdaptor,
                 hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
 //        if (mergeMode.equals(MergeMode.BASIC)) {
 //            storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, dbAdaptor,

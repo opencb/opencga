@@ -38,7 +38,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHadoopDBWriter;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
@@ -66,9 +65,9 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopMergeBasicVariantStoragePipeline extends AbstractHadoopVariantStoragePipeline {
+public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStoragePipeline {
 
-    private final Logger logger = LoggerFactory.getLogger(HadoopMergeBasicVariantStoragePipeline.class);
+    private final Logger logger = LoggerFactory.getLogger(HadoopLocalLoadVariantStoragePipeline.class);
     private static final String OPERATION_NAME = "Load";
 
     /**
@@ -79,10 +78,10 @@ public class HadoopMergeBasicVariantStoragePipeline extends AbstractHadoopVarian
      * @param variantReaderUtils {@link VariantReaderUtils}
      * @param options            {@link ObjectMap}
      */
-    public HadoopMergeBasicVariantStoragePipeline(StorageConfiguration configuration,
-                                                  VariantHadoopDBAdaptor dbAdaptor, Configuration conf,
-                                                  HBaseCredentials archiveCredentials, VariantReaderUtils variantReaderUtils,
-                                                  ObjectMap options) {
+    public HadoopLocalLoadVariantStoragePipeline(StorageConfiguration configuration,
+                                                 VariantHadoopDBAdaptor dbAdaptor, Configuration conf,
+                                                 HBaseCredentials archiveCredentials, VariantReaderUtils variantReaderUtils,
+                                                 ObjectMap options) {
         super(configuration, dbAdaptor, variantReaderUtils, options, archiveCredentials, null, conf);
     }
 
@@ -121,22 +120,17 @@ public class HadoopMergeBasicVariantStoragePipeline extends AbstractHadoopVarian
     }
 
     @Override
-    protected void loadArch(URI inputUri) throws StorageEngineException {
-        List<Integer> fileIds = Collections.singletonList(options.getInt(VariantStorageEngine.Options.FILE_ID.key()));
+    protected void load(URI inputUri, int studyId, int fileId) throws StorageEngineException {
 
-        Thread hook = newShutdownHook(OPERATION_NAME, fileIds);
+        Thread hook = newShutdownHook(OPERATION_NAME, Collections.singletonList(fileId));
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             Path input = Paths.get(inputUri.getPath());
             String table = archiveTableCredentials.getTable();
             String fileName = input.getFileName().toString();
-            Path sourcePath = input.getParent().resolve(VariantReaderUtils.getMetaFromTransformedFile(fileName));
 
-            Integer fileId = options.getInt(VariantStorageEngine.Options.FILE_ID.key());
-            int studyId = getStudyId();
-
-            VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(sourcePath, null);
-            fileMetadata.setId(fileId.toString());
+            VariantFileMetadata fileMetadata = variantReaderUtils.readVariantFileMetadata(inputUri);
+            fileMetadata.setId(String.valueOf(fileId));
 //            fileMetadata.setStudyId(Integer.toString(studyId));
 
             long start = System.currentTimeMillis();
@@ -165,13 +159,6 @@ public class HadoopMergeBasicVariantStoragePipeline extends AbstractHadoopVarian
             long end = System.currentTimeMillis();
             logger.info("end - start = " + (end - start) / 1000.0 + "s");
 
-            HBaseVariantFileMetadataDBAdaptor manager = dbAdaptor.getVariantFileMetadataDBAdaptor();
-            try {
-                manager.updateVariantFileMetadata(studyId, fileMetadata);
-                manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
-            } catch (IOException e) {
-                throw new StorageEngineException("Not able to store Variant Source for file!!!", e);
-            }
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
         }

@@ -59,6 +59,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
@@ -90,16 +91,16 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 /**
  * Created by mh719 on 13/05/2016.
  */
-public abstract class AbstractHadoopVariantStoragePipeline extends VariantStoragePipeline {
+public abstract class HadoopVariantStoragePipeline extends VariantStoragePipeline {
     protected final VariantHadoopDBAdaptor dbAdaptor;
     protected final Configuration conf;
     protected final HBaseCredentials archiveTableCredentials;
     protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
 
-    private final Logger logger = LoggerFactory.getLogger(AbstractHadoopVariantStoragePipeline.class);
+    private final Logger logger = LoggerFactory.getLogger(HadoopVariantStoragePipeline.class);
 
-    public AbstractHadoopVariantStoragePipeline(
+    public HadoopVariantStoragePipeline(
             StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor,
             VariantReaderUtils variantReaderUtils, ObjectMap options,
@@ -353,23 +354,23 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     @Override
     public URI load(URI input) throws IOException, StorageEngineException {
         int studyId = getStudyId();
-        int fileId = options.getInt(Options.FILE_ID.key());
+        int fileId = getFileId();
 
-        ArchiveTableHelper.setChunkSize(conf, conf.getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE));
+        ArchiveTableHelper.setChunkSize(conf, getOptions().getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE));
         ArchiveTableHelper.setStudyId(conf, studyId);
 
         Set<Integer> loadedFiles = dbAdaptor.getVariantFileMetadataDBAdaptor().getLoadedFiles(studyId);
         if (!loadedFiles.contains(fileId)) {
-            loadArch(input);
+            load(input, studyId, fileId);
         } else {
-            logger.info("File {} already loaded in archive table. Skip this step!",
+            logger.info("File {} already loaded. Skip this step!",
                     Paths.get(input.getPath()).getFileName().toString());
         }
 
         return input; // TODO  change return value?
     }
 
-    protected abstract void loadArch(URI input) throws StorageEngineException;
+    protected abstract void load(URI input, int studyId, int fileId) throws StorageEngineException;
 
     public String getJarWithDependencies() throws StorageEngineException {
         return HadoopVariantStorageEngine.getJarWithDependencies(options);
@@ -383,11 +384,22 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
-        List<Integer> fileIds = options.getAsIntegerList(VariantStorageEngine.Options.FILE_ID.key());
-        registerLoadedFiles(fileIds);
+        HBaseVariantFileMetadataDBAdaptor manager = dbAdaptor.getVariantFileMetadataDBAdaptor();
+
+        try {
+            int studyId = getStudyId();
+            VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
+
+            manager.updateVariantFileMetadata(studyId, fileMetadata);
+            manager.updateLoadedFilesSummary(studyId, Collections.singletonList(getFileId()));
+        } catch (IOException e) {
+            throw new StorageEngineException("Error storing VariantFileMetadata for file " + getFileId(), e);
+        }
+
+        registerLoadedFiles(Collections.singletonList(getFileId()));
 
         // This method checks the loaded variants (if possible) and adds the loaded files to the studyConfiguration
-        super.postLoad(null, null);
+        super.postLoad(input, output);
 
         return input;
     }
@@ -494,6 +506,23 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 }
             }
         }
+    }
+
+    @Override
+    public void close() throws StorageEngineException {
+        // Do not close VariantDBAdaptor
+    }
+
+    public int getFileId() {
+        return options.getInt(Options.FILE_ID.key());
+    }
+
+    @Override
+    public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
+        VariantFileMetadata variantFileMetadata = super.readVariantFileMetadata(input);
+        // Ensure correct fileId
+        variantFileMetadata.setId(String.valueOf(getFileId()));
+        return variantFileMetadata;
     }
 
 }
