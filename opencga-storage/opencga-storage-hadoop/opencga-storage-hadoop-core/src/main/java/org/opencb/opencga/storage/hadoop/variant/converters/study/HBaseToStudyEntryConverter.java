@@ -205,7 +205,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                         studies.add(studyId);
                         filesMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(fileId, array));
                     }
-                } else if (columnName.endsWith(VariantPhoenixHelper.HOM_REF)) {
+                } else if (columnName.endsWith(VariantPhoenixHelper.STUDY_SUFIX)) {
                     Integer studyId = VariantPhoenixHelper.extractStudyId(columnName, true);
                     // Method GetInt will always return 0, even is null was stored.
                     // Check if value was actually a null.
@@ -271,7 +271,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 studies.add(studyId);
                 PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
                 filesMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(fileId, array));
-            } else if (endsWith(qualifier, VariantPhoenixHelper.HOM_REF_BYTES)) {
+            } else if (endsWith(qualifier, VariantPhoenixHelper.STUDY_SUFIX_BYTES)) {
                 String columnName = Bytes.toString(qualifier);
                 Integer studyId = VariantPhoenixHelper.extractStudyId(columnName, true);
                 studies.add(studyId);

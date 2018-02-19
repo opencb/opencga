@@ -61,6 +61,8 @@ public class VariantPhoenixHelper {
     public static final byte[] SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(SAMPLE_DATA_SUFIX);
     public static final String FILE_SUFIX = "_F";
     public static final byte[] FILE_SUFIX_BYTES = Bytes.toBytes(FILE_SUFIX);
+    public static final String STUDY_SUFIX = "_ST";
+    public static final byte[] STUDY_SUFIX_BYTES = Bytes.toBytes(STUDY_SUFIX);
     public static final byte[] STATS_PROTOBUF_SUFIX_BYTES = Bytes.toBytes(STATS_PROTOBUF_SUFIX);
     public static final String MAF_SUFIX = "_MAF";
     public static final String MGF_SUFIX = "_MGF";
@@ -498,11 +500,11 @@ public class VariantPhoenixHelper {
     }
 
     public static Column getStatsColumn(int studyId, int cohortId) {
-        return Column.build(STATS_PREFIX + studyId + "_" + cohortId + STATS_PROTOBUF_SUFIX, PVarbinary.INSTANCE);
+        return Column.build(STATS_PREFIX + studyId + COLUMN_KEY_SEPARATOR + cohortId + STATS_PROTOBUF_SUFIX, PVarbinary.INSTANCE);
     }
 
     public static Column getStudyColumn(int studyId) {
-        return Column.build(String.valueOf(studyId) + VariantPhoenixHelper.COLUMN_KEY_SEPARATOR + HOM_REF, PUnsignedInt.INSTANCE);
+        return Column.build(String.valueOf(studyId) + STUDY_SUFIX, PUnsignedInt.INSTANCE);
     }
 
     public static Integer extractStudyId(String columnKey, boolean failOnMissing) {
@@ -516,7 +518,7 @@ public class VariantPhoenixHelper {
             }
         }
         if (failOnMissing) {
-            throw new IllegalStateException(String.format("Integer expected for study ID from %s ", columnKey));
+            throw new IllegalStateException("Integer expected for study ID from " + columnKey);
         } else {
             return null;
         }

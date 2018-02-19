@@ -66,7 +66,6 @@ import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getTmpRootDir;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest.configuration;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.COLUMN_KEY_SEPARATOR;
 
 /**
  *  Utility class for VariantStorage hadoop tests
@@ -169,7 +168,7 @@ public class VariantHbaseTestUtils {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));
                     } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + PFloatArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(COLUMN_KEY_SEPARATOR + VariantPhoenixHelper.HOM_REF)) {
+                    } else if (key.endsWith(VariantPhoenixHelper.STUDY_SUFIX)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX) || key.endsWith(VariantPhoenixHelper.FILE_SUFIX)) {
                         os.println("\t" + key + " = " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
