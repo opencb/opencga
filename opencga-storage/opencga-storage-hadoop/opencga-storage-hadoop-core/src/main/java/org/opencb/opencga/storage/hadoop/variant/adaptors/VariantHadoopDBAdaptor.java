@@ -21,7 +21,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.phoenix.exception.SQLExceptionCode;
-import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -38,20 +37,21 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnotationPhoenixDBWriter;
+import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnotationUpsertExecutor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
-import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnotationPhoenixDBWriter;
-import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnotationUpsertExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
@@ -292,7 +292,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             return new QueryResult<>("count", ((int) (System.currentTimeMillis() - startTime)),
                     1, 1, "", "", Collections.singletonList(count));
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw VariantQueryException.internalException(e);
         }
     }
 
@@ -351,7 +351,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             try {
                 archiveHelper = getArchiveHelper(studyId, fileId);
             } catch (IOException | StorageEngineException e) {
-                throw new RuntimeException(e);
+                throw VariantQueryException.internalException(e);
             }
 
             Scan scan = new Scan();
@@ -374,7 +374,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 ResultScanner resScan = table.getScanner(scan);
                 return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options).setRegion(region);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw VariantQueryException.internalException(e);
             }
         } else if (hbaseIterator) {
             logger.debug("Creating " + VariantHBaseScanIterator.class.getSimpleName() + " iterator");
@@ -391,7 +391,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 return new VariantHBaseScanIterator(resScan, genomeHelper, studyConfigurationManager.get(), options,
                         unknownGenotype, formats, selectElements);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw VariantQueryException.internalException(e);
             }
         } else {
 
@@ -432,15 +432,17 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 if (e.getErrorCode() == SQLExceptionCode.COLUMN_NOT_FOUND.getErrorCode()) {
                     try {
                         logger.error(e.getMessage());
+                        List<PhoenixHelper.Column> columns = phoenixHelper.getPhoenixHelper()
+                                .getColumns(getJdbcConnection(), variantTable, VariantPhoenixHelper.DEFAULT_TABLE_TYPE);
                         logger.info("Available columns from table " + variantTable + " :");
-                        for (PhoenixHelper.Column column : phoenixHelper.getPhoenixHelper().getColumns(getJdbcConnection(), variantTable)) {
+                        for (PhoenixHelper.Column column : columns) {
                             logger.info(" - " + column.toColumnInfo());
                         }
                     } catch (SQLException e1) {
                         logger.error("Error reading columns for table " + variantTable, e1);
                     }
                 }
-                throw new RuntimeException(e);
+                throw VariantQueryException.internalException(e);
             }
         }
     }
@@ -531,9 +533,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(genomeHelper1.getColumnFamily());
         Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);
 
+        String fullTableName = VariantPhoenixHelper.getEscapedFullTableName(variantTable, getConfiguration());
         try (java.sql.Connection conn = phoenixHelper.newJdbcConnection(this.configuration);
              VariantAnnotationUpsertExecutor upsertExecutor =
-                     new VariantAnnotationUpsertExecutor(conn, SchemaUtil.getEscapedFullTableName(variantTable))) {
+                     new VariantAnnotationUpsertExecutor(conn, fullTableName)) {
             upsertExecutor.execute(records);
             upsertExecutor.close();
             getLog().info("Phoenix connection is autoclosed ... " + conn);

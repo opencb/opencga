@@ -22,8 +22,8 @@ import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
-import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 
@@ -66,7 +66,7 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
         VariantMapReduceUtil.initTableMapperJob(job, variantTable, scan, getMapperClass());
 
         String[] fieldNames = Arrays.stream(VariantColumn.values()).map(VariantColumn::toString).toArray(String[]::new);
-        PhoenixMapReduceUtil.setOutput(job, SchemaUtil.getEscapedFullTableName(variantTable), fieldNames);
+        PhoenixMapReduceUtil.setOutput(job, VariantPhoenixHelper.getEscapedFullTableName(variantTable, getConf()), fieldNames);
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(PhoenixVariantAnnotationWritable.class);
         job.setNumReduceTasks(0);

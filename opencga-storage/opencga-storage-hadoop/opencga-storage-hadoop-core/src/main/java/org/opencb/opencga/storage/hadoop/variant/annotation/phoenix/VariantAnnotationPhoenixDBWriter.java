@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant.annotation.phoenix;
 
-import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -68,7 +67,8 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
         Collections.addAll(columns, VariantPhoenixHelper.VariantColumn.values());
         columns.addAll(VariantPhoenixHelper.getHumanPopulationFrequenciesColumns());
 
-        this.upsertExecutor = new VariantAnnotationUpsertExecutor(connection, SchemaUtil.getEscapedFullTableName(variantTable), columns);
+        this.upsertExecutor = new VariantAnnotationUpsertExecutor(connection,
+                VariantPhoenixHelper.getEscapedFullTableName(variantTable, dbAdaptor.getConfiguration()), columns);
     }
 
     @Override
