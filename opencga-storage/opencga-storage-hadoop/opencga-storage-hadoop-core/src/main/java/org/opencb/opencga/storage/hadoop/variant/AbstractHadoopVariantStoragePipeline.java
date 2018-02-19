@@ -730,7 +730,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                         TimeUnit.SECONDS.toMillis(5), PHOENIX_INDEX_LOCK_COLUMN);
                 if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
                     List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(variantsTableName);
-                    phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, variantsTableName, popFreqIndices, false);
+                    phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, VariantPhoenixHelper.DEFAULT_TABLE_TYPE,
+                            variantsTableName, popFreqIndices, false);
                 }
                 phoenixHelper.createVariantIndexes(jdbcConnection, variantsTableName);
             } catch (SQLException e) {

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -29,10 +30,7 @@ import org.apache.phoenix.schema.TableNotFoundException;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
-import org.apache.phoenix.util.ColumnInfo;
-import org.apache.phoenix.util.PhoenixRuntime;
-import org.apache.phoenix.util.QueryUtil;
-import org.apache.phoenix.util.SchemaUtil;
+import org.apache.phoenix.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,13 +106,28 @@ public class PhoenixHelper {
     }
 
     public String buildAlterAddColumn(String tableName, String column, String type, boolean ifNotExists, PTableType tableType) {
-        return "ALTER " + tableType.toString() + " " + SchemaUtil.getEscapedFullTableName(tableName)
+        return "ALTER " + tableType.toString() + " " + getEscapedFullTableName(tableType, tableName)
                 + " ADD " + (ifNotExists ? "IF NOT EXISTS " : "") + "\"" + column + "\" " + type;
+    }
+
+    protected String getEscapedFullTableName(PTableType tableType, String fullTableName) {
+        return getEscapedFullTableName(tableType, fullTableName, conf);
+    }
+
+    protected static String getEscapedFullTableName(PTableType tableType, String fullTableName, Configuration conf) {
+        String schemaName = SchemaUtil.getSchemaNameFromFullName(fullTableName);
+        String tableName = SchemaUtil.getTableNameFromFullName(fullTableName);
+
+        if (isNamespaceMappingEnabled(tableType, conf)) {
+            return SchemaUtil.getEscapedTableName(schemaName, tableName);
+        } else {
+            return StringUtils.isNotEmpty(schemaName) ? "\"" + schemaName + ":" + tableName + "\"" : "\"" + tableName + "\"";
+        }
     }
 
     public String buildAlterAddColumns(String tableName, Collection<Column> columns, boolean ifNotExists, PTableType tableType) {
         StringBuilder sb = new StringBuilder();
-        sb.append("ALTER ").append(tableType).append(" ").append(SchemaUtil.getEscapedFullTableName(tableName))
+        sb.append("ALTER ").append(tableType).append(" ").append(getEscapedFullTableName(tableType, tableName))
                 .append(" ADD ").append(ifNotExists ? "IF NOT EXISTS " : "");
         Iterator<Column> iterator = columns.iterator();
         while (iterator.hasNext()) {
@@ -132,7 +145,7 @@ public class PhoenixHelper {
         if (ifExists) {
             sb.append("IF EXISTS ");
         }
-        sb.append(SchemaUtil.getEscapedFullTableName(tableName));
+        sb.append(getEscapedFullTableName(tableType, tableName));
         if (cascade) {
             sb.append(" CASCADE");
         }
@@ -145,7 +158,7 @@ public class PhoenixHelper {
 
     public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, boolean oneCall, PTableType tableType)
             throws SQLException {
-        Set<String> columns = getColumns(con, tableName).stream().map(Column::column).collect(Collectors.toSet());
+        Set<String> columns = getColumns(con, tableName, tableType).stream().map(Column::column).collect(Collectors.toSet());
         List<Column> missingColumns = newColumns.stream()
                 .filter(column -> !columns.contains(column.column()))
                 .collect(Collectors.toList());
@@ -167,7 +180,7 @@ public class PhoenixHelper {
 
     public String buildAlterDropColumns(String tableName, Collection<CharSequence> columns, boolean ifExists, PTableType tableType) {
         StringBuilder sb = new StringBuilder();
-        sb.append("ALTER ").append(tableType).append(' ').append(SchemaUtil.getEscapedFullTableName(tableName))
+        sb.append("ALTER ").append(tableType).append(' ').append(getEscapedFullTableName(tableType, tableName))
                 .append(" DROP COLUMN ").append(ifExists ? "IF EXISTS " : "");
         Iterator<CharSequence> iterator = columns.iterator();
         while (iterator.hasNext()) {
@@ -211,31 +224,34 @@ public class PhoenixHelper {
         return arrayType.toBytes(phoenixArray);
     }
 
-    public void createIndexes(Connection con, String tableName, List<PhoenixHelper.Index> indices, boolean async) throws SQLException {
+    public void createIndexes(Connection con, PTableType tableType, String tableName, List<Index> indices, boolean async)
+            throws SQLException {
         for (PhoenixHelper.Index index : indices) {
-            String sql = createIndexSql(tableName, index, async);
+            String sql = createIndexSql(tableType, tableName, index, async);
             execute(con, sql);
         }
     }
 
-    public void createLocalIndex(Connection con, String tableName, String indexName, List<String> columns, List<String> include)
+    public void createLocalIndex(Connection con, PTableType tableType, String tableName, String indexName, List<String> columns,
+                                 List<String> include)
             throws SQLException {
-        String sql = PhoenixHelper.createIndexSql(PTable.IndexType.LOCAL, tableName, indexName, columns, include, false);
+        String sql = createIndexSql(PTable.IndexType.LOCAL, tableType, tableName, indexName, columns, include, false);
         execute(con, sql);
     }
 
-    public void createGlobalIndex(Connection con, String indexName, String tableName, List<String> columns, List<String> include)
+    public void createGlobalIndex(Connection con, PTableType tableType, String indexName, String tableName, List<String> columns,
+                                  List<String> include)
             throws SQLException {
-        String sql = PhoenixHelper.createIndexSql(PTable.IndexType.GLOBAL, tableName, indexName, columns, include, false);
+        String sql = createIndexSql(PTable.IndexType.GLOBAL, tableType, tableName, indexName, columns, include, false);
         execute(con, sql);
     }
 
-    public static String createIndexSql(String tableName, Index index, boolean async) {
-        return createIndexSql(index.indexType, tableName, index.indexName, index.columns, index.include, async);
+    public String createIndexSql(PTableType tableType, String tableName, Index index, boolean async) {
+        return createIndexSql(index.indexType, tableType, tableName, index.indexName, index.columns, index.include, async);
     }
 
-    public static String createIndexSql(PTable.IndexType type, String tableName, String indexName,
-                                        List<String> columns, List<String> include, boolean async) {
+    public String createIndexSql(PTable.IndexType type, PTableType tableType, String tableName, String indexName,
+                                 List<String> columns, List<String> include, boolean async) {
         Objects.requireNonNull(indexName);
         Objects.requireNonNull(tableName);
         if (columns == null || columns.isEmpty()) {
@@ -249,7 +265,7 @@ public class PhoenixHelper {
         sb.append(" INDEX IF NOT EXISTS ");
 
         sb.append(SchemaUtil.getEscapedArgument(indexName))
-                .append(" ON ").append(SchemaUtil.getEscapedFullTableName(tableName)).append(" ( ");
+                .append(" ON ").append(getEscapedFullTableName(tableType, tableName)).append(" ( ");
         for (Iterator<String> iterator = columns.iterator(); iterator.hasNext();) {
             String column = iterator.next();
             sb.append(SchemaUtil.getEscapedFullColumnName(column));
@@ -286,11 +302,18 @@ public class PhoenixHelper {
         }
     }
 
-    public List<Column> getColumns(Connection con, String fullTableName) throws SQLException {
-        String schema = SchemaUtil.getSchemaNameFromFullName(fullTableName);
-        String table = SchemaUtil.getTableNameFromFullName(fullTableName);
-
+    public List<Column> getColumns(Connection con, String fullTableName, PTableType tableType) throws SQLException {
+        String schema;
+        String table;
+        if (isNamespaceMappingEnabled(tableType, conf)) {
+            schema = SchemaUtil.getSchemaNameFromFullName(fullTableName);
+            table = SchemaUtil.getTableNameFromFullName(fullTableName);
+        } else {
+            schema = null;
+            table = fullTableName;
+        }
         try (ResultSet resultSet = con.getMetaData().getColumns(null, schema, table, null)) {
+
             List<Column> columns = new ArrayList<>();
             while (resultSet.next()) {
                 String columnName = resultSet.getString(PhoenixDatabaseMetaData.COLUMN_NAME);
@@ -301,6 +324,20 @@ public class PhoenixHelper {
         }
     }
 
+    public static boolean isNamespaceMappingEnabled(PTableType tableType, Configuration conf) {
+        // There is an issue with namespace mapping for VIEW tables.
+        // This is fixed in version 4.12
+        // Do not map the namespace for VIEW tables.
+        //
+        // See : https://issues.apache.org/jira/browse/PHOENIX-3944
+        if (tableType.equals(PTableType.VIEW)
+                && PhoenixDriver.INSTANCE.getMajorVersion() == 4
+                && PhoenixDriver.INSTANCE.getMinorVersion() < 12) {
+            return false;
+        } else {
+            return SchemaUtil.isNamespaceMappingEnabled(tableType, new ReadOnlyProps(conf.iterator()));
+        }
+    }
 
     public interface Column {
         String column();

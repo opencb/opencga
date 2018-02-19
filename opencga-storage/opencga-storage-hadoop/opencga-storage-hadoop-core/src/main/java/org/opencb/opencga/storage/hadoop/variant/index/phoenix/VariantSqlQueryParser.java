@@ -55,6 +55,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.getEscapedFullTableName;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.HOM_REF;
 
@@ -251,7 +252,7 @@ public class VariantSqlQueryParser {
     }
 
     protected void appendFromStatement(StringBuilder sb, Set<Column> dynamicColumns) {
-        sb.append(" FROM ").append(SchemaUtil.getEscapedFullTableName(variantTable));
+        sb.append(" FROM ").append(getEscapedFullTableName(variantTable, genomeHelper.getConf()));
 
         if (!dynamicColumns.isEmpty()) {
             sb.append(dynamicColumns.stream()

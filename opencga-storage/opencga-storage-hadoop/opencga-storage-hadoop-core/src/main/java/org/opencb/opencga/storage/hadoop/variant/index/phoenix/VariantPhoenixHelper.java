@@ -24,7 +24,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.*;
-import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -50,6 +49,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  */
 public class VariantPhoenixHelper {
 
+    // TODO: Make default varants table type configurable
     public static final PTableType DEFAULT_TABLE_TYPE = PTableType.VIEW;
 
     public static final String STATS_PREFIX = "";
@@ -368,9 +368,9 @@ public class VariantPhoenixHelper {
         return buildCreate(variantsTableName, Bytes.toString(genomeHelper.getColumnFamily()), DEFAULT_TABLE_TYPE);
     }
 
-    private static String buildCreate(String variantsTableName, String columnFamily, PTableType tableType) {
+    private String buildCreate(String variantsTableName, String columnFamily, PTableType tableType) {
         StringBuilder sb = new StringBuilder().append("CREATE ").append(tableType).append(" IF NOT EXISTS ")
-                .append(SchemaUtil.getEscapedFullTableName(variantsTableName)).append(" ").append("(");
+                .append(phoenixHelper.getEscapedFullTableName(tableType, variantsTableName)).append(" ").append("(");
         for (VariantColumn variantColumn : VariantColumn.values()) {
             switch (variantColumn) {
                 case CHROMOSOME:
@@ -398,7 +398,7 @@ public class VariantPhoenixHelper {
     public void createVariantIndexes(Connection con, String variantsTableName) throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         List<PhoenixHelper.Index> indices = getIndices(variantsTableName);
-        phoenixHelper.createIndexes(con, variantsTableName, indices, false);
+        phoenixHelper.createIndexes(con, DEFAULT_TABLE_TYPE, variantsTableName, indices, false);
     }
 
     public static List<PhoenixHelper.Index> getPopFreqIndices(String variantsTableName) {
@@ -567,6 +567,10 @@ public class VariantPhoenixHelper {
 
     public static Column getFileColumn(int studyId, int sampleId) {
         return Column.build(buildFileColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
+    }
+
+    public static String getEscapedFullTableName(String fullTableName, Configuration conf) {
+        return PhoenixHelper.getEscapedFullTableName(DEFAULT_TABLE_TYPE, fullTableName, conf);
     }
 
 }
