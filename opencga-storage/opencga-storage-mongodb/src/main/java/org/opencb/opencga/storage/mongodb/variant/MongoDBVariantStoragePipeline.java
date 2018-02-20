@@ -72,6 +72,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.addBatchOperation;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.setStatus;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOAD_SPLIT_DATA;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
 /**
@@ -914,6 +915,50 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
         }
         return true; // This is a new batch of samples
+    }
+
+    /**
+     * Check if the file can be loaded using direct load.
+     *
+     * First loaded file in study:
+     *   There is no other indexed file
+     *   There is no staged file
+     * First loaded file in region:
+     *   --load-split-data is provided
+     *   There are some loaded file
+     *   All loaded files, and the file to load, have the same samples
+     *
+     * @param input File to load
+     * @return  If the file can be loaded using direct load
+     * @throws StorageEngineException is there is a problem reading metadata
+     */
+    public boolean checkCanLoadDirectly(URI input) throws StorageEngineException {
+        boolean doDirectLoad;
+
+        // Direct load can be avoided from outside, but can not be forced.
+        if (!getOptions().getBoolean(DIRECT_LOAD.key(), true)) {
+            doDirectLoad = false;
+        } else {
+            StudyConfiguration studyConfiguration = getStudyConfiguration();
+
+            // Direct load if loading one file, and there were no other indexed file in the study.
+            if ((studyConfiguration == null || studyConfiguration.getIndexedFiles().isEmpty())) {
+                doDirectLoad = true;
+            } else if (getOptions().getBoolean(LOAD_SPLIT_DATA.key(), LOAD_SPLIT_DATA.defaultValue())) {
+                LinkedHashSet<Integer> sampleIds = readVariantFileMetadata(input).getSampleIds().stream()
+                        .map(studyConfiguration.getSampleIds()::get).collect(Collectors.toCollection(LinkedHashSet::new));
+                doDirectLoad = true;
+                for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+                    if (!sampleIds.equals(studyConfiguration.getSamplesInFiles().get(fileId))) {
+                        doDirectLoad = false;
+                        break;
+                    }
+                }
+            } else {
+                doDirectLoad = false;
+            }
+        }
+        return doDirectLoad;
     }
 
 }

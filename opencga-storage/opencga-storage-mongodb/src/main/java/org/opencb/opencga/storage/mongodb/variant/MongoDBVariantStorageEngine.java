@@ -34,7 +34,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -300,16 +299,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                         boolean doDirectLoad;
                         // Decide if use direct load or not.
                         if (doStage && doMerge) {
-                            StudyConfiguration studyConfiguration = storagePipeline.getStudyConfiguration();
-                            // Direct load if loading one file, and there were no other indexed file in the study.
-                            if ((studyConfiguration == null || studyConfiguration.getIndexedFiles().isEmpty())) {
-                                // Direct load can be avoided from outside, but can not be forced
-                                doDirectLoad = getOptions().getBoolean(DIRECT_LOAD.key(), true);
-                            } else {
-                                doDirectLoad = false;
-                            }
+                            doDirectLoad = storagePipeline.checkCanLoadDirectly(input);
                             logger.info("direct load = " + doDirectLoad);
-
                         } else {
                             doDirectLoad = false;
                         }

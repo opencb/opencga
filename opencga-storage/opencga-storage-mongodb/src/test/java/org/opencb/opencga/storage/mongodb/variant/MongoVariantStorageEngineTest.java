@@ -932,6 +932,16 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public void multiIndexPlatinum() throws Exception {
         super.multiIndexPlatinum(new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,AD,PL"));
         checkPlatinumDatabase(d -> 17, Collections.singleton("0/0"));
+
+        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
+                .getStudyConfiguration(1, null).first();
+
+        Iterator<BatchFileOperation> iterator = studyConfiguration.getBatches().iterator();
+        assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), iterator.next().getOperationName());
+        while (iterator.hasNext()) {
+            BatchFileOperation batchFileOperation = iterator.next();
+            assertNotEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), batchFileOperation.getOperationName());
+        }
     }
 
     @Test
@@ -1062,6 +1072,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public void multiRegionBatchIndex() throws Exception {
         super.multiRegionBatchIndex();
         checkLoadedVariants();
+
+        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
+                .getStudyConfiguration(1, null).first();
+
+        for (BatchFileOperation batchFileOperation : studyConfiguration.getBatches()) {
+            assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), batchFileOperation.getOperationName());
+        }
     }
 
     @Test
@@ -1070,6 +1087,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         super.multiRegionIndex();
 
         checkLoadedVariants();
+
+        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
+                .getStudyConfiguration(1, null).first();
+
+        for (BatchFileOperation batchFileOperation : studyConfiguration.getBatches()) {
+            assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), batchFileOperation.getOperationName());
+        }
     }
 
     public void checkLoadedVariants() throws Exception {
