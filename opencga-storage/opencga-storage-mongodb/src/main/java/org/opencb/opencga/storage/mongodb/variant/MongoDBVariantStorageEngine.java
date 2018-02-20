@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -95,6 +96,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         STAGE_RESUME("stage.resume", false),
         STAGE_PARALLEL_WRITE("stage.parallel.write", false),
         STAGE_CLEAN_WHILE_LOAD("stage.clean.while.load", true),
+        DIRECT_LOAD("direct_load", false),
+        DIRECT_LOAD_PARALLEL_WRITE("direct_load.parallel.write", false),
         MERGE("merge", false),
         MERGE_SKIP("merge.skip", false), // Internal use only
         MERGE_RESUME("merge.resume", false),
@@ -110,14 +113,16 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             this.value = value;
         }
 
+        public static boolean isResume(ObjectMap options) {
+            return options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
+        }
+
         public static boolean isResumeStage(ObjectMap options) {
-            return options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
-                    || options.getBoolean(STAGE_RESUME.key(), false);
+            return isResume(options) || options.getBoolean(STAGE_RESUME.key(), false);
         }
 
         public static boolean isResumeMerge(ObjectMap options) {
-            return options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
-                    || options.getBoolean(MERGE_RESUME.key(), false);
+            return isResume(options) || options.getBoolean(MERGE_RESUME.key(), false);
         }
 
         public String key() {
@@ -269,11 +274,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 }
             }
 
-            boolean doStage = getOptions().getBoolean(STAGE.key());
-            boolean doMerge = getOptions().getBoolean(MERGE.key());
+            boolean doStage = doLoad && getOptions().getBoolean(STAGE.key());
+            boolean doMerge = doLoad && getOptions().getBoolean(MERGE.key());
             if (!doStage && !doMerge) {
-                doStage = true;
-                doMerge = true;
+                doStage = doLoad;
+                doMerge = doLoad;
             }
 
             if (doLoad) {
@@ -292,54 +297,83 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
                     StopWatch loadWatch = StopWatch.createStarted();
                     try {
+                        boolean doDirectLoad;
+                        // Decide if use direct load or not.
+                        if (doStage && doMerge) {
+                            StudyConfiguration studyConfiguration = storagePipeline.getStudyConfiguration();
+                            // Direct load if loading one file, and there were no other indexed file in the study.
+                            if ((studyConfiguration == null || studyConfiguration.getIndexedFiles().isEmpty())) {
+                                // Direct load can be avoided from outside, but can not be forced
+                                doDirectLoad = getOptions().getBoolean(DIRECT_LOAD.key(), true);
+                            } else {
+                                doDirectLoad = false;
+                            }
+                            logger.info("direct load = " + doDirectLoad);
+
+                        } else {
+                            doDirectLoad = false;
+                        }
+
                         storagePipeline.getOptions().put(STAGE.key(), doStage);
                         storagePipeline.getOptions().put(MERGE.key(), doMerge);
+                        storagePipeline.getOptions().put(DIRECT_LOAD.key(), doDirectLoad);
 
                         logger.info("PreLoad '{}'", input);
                         input = storagePipeline.preLoad(input, outdirUri);
                         result.setPreLoadResult(input);
 
-                        if (doStage) {
-                            logger.info("Load - Stage '{}'", input);
-                            storagePipeline.stage(input);
-                            result.setLoadResult(input);
+                        if (doDirectLoad) {
+                            storagePipeline.getOptions().put(STAGE.key(), false);
+                            storagePipeline.getOptions().put(MERGE.key(), false);
+                            storagePipeline.directLoad(input);
+                            result.setLoadExecuted(true);
                             result.setLoadStats(storagePipeline.getLoadStats());
-                            result.getLoadStats().put(STAGE.key(), true);
                             result.setLoadTimeMillis(loadWatch.getTime(TimeUnit.MILLISECONDS));
-                        }
+                        } else {
+                            if (doStage) {
+                                logger.info("Load - Stage '{}'", input);
+                                storagePipeline.stage(input);
+                                result.setLoadResult(input);
+                                result.setLoadStats(storagePipeline.getLoadStats());
+                                result.getLoadStats().put(STAGE.key(), true);
+                                result.setLoadTimeMillis(loadWatch.getTime(TimeUnit.MILLISECONDS));
+                            }
 
-                        if (doMerge) {
-                            logger.info("Load - Merge '{}'", input);
-                            filesToMerge.add(storagePipeline.getOptions().getInt(Options.FILE_ID.key()));
-                            resultsToMerge.add(result);
+                            if (doMerge) {
+                                logger.info("Load - Merge '{}'", input);
+                                filesToMerge.add(storagePipeline.getOptions().getInt(Options.FILE_ID.key()));
+                                resultsToMerge.add(result);
 
-                            if (filesToMerge.size() == batchLoad || !iterator.hasNext()) {
-                                StopWatch mergeWatch = StopWatch.createStarted();
-                                try {
-                                    storagePipeline.merge(new ArrayList<>(filesToMerge));
-                                } catch (Exception e) {
-                                    for (StoragePipelineResult storagePipelineResult : resultsToMerge) {
-                                        storagePipelineResult.setLoadError(e);
-                                    }
-                                    throw new StoragePipelineException("Exception executing merge.", e, results);
-                                } finally {
-                                    long mergeTime = mergeWatch.getTime(TimeUnit.MILLISECONDS);
-                                    for (StoragePipelineResult storagePipelineResult : resultsToMerge) {
-                                        storagePipelineResult.setLoadTimeMillis(storagePipelineResult.getLoadTimeMillis() + mergeTime);
-                                        for (Map.Entry<String, Object> statsEntry : storagePipeline.getLoadStats().entrySet()) {
-                                            storagePipelineResult.getLoadStats().putIfAbsent(statsEntry.getKey(), statsEntry.getValue());
+                                if (filesToMerge.size() == batchLoad || !iterator.hasNext()) {
+                                    StopWatch mergeWatch = StopWatch.createStarted();
+                                    try {
+                                        storagePipeline.merge(new ArrayList<>(filesToMerge));
+                                    } catch (Exception e) {
+                                        for (StoragePipelineResult storagePipelineResult : resultsToMerge) {
+                                            storagePipelineResult.setLoadError(e);
                                         }
-                                        storagePipelineResult.setLoadExecuted(true);
+                                        throw new StoragePipelineException("Exception executing merge.", e, results);
+                                    } finally {
+                                        long mergeTime = mergeWatch.getTime(TimeUnit.MILLISECONDS);
+                                        for (StoragePipelineResult storagePipelineResult : resultsToMerge) {
+                                            storagePipelineResult.setLoadTimeMillis(storagePipelineResult.getLoadTimeMillis() + mergeTime);
+                                            for (Map.Entry<String, Object> statsEntry : storagePipeline.getLoadStats().entrySet()) {
+                                                storagePipelineResult.getLoadStats()
+                                                        .putIfAbsent(statsEntry.getKey(), statsEntry.getValue());
+                                            }
+                                            storagePipelineResult.setLoadExecuted(true);
+                                        }
+                                        mergedFiles.addAll(filesToMerge);
+                                        filesToMerge.clear();
+                                        resultsToMerge.clear();
                                     }
-                                    mergedFiles.addAll(filesToMerge);
-                                    filesToMerge.clear();
-                                    resultsToMerge.clear();
+                                } else {
+                                    // We don't execute merge for this file
+                                    storagePipeline.getOptions().put(MERGE.key(), false);
                                 }
-                            } else {
-                                // We don't execute merge for this file
-                                storagePipeline.getOptions().put(MERGE.key(), false);
                             }
                         }
+
 
                         logger.info("PostLoad '{}'", input);
                         input = storagePipeline.postLoad(input, outdirUri);

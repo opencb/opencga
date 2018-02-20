@@ -23,9 +23,9 @@ import com.google.common.collect.ListMultimap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.ProgressLogger;
@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
@@ -43,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
@@ -51,6 +53,7 @@ import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStage
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantDirectLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
 import org.slf4j.Logger;
@@ -66,6 +69,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.addBatchOperation;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.setStatus;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
@@ -111,7 +115,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata source) throws StorageEngineException {
         super.securePreLoad(studyConfiguration, source);
-        int fileId = options.getInt(Options.FILE_ID.key());
+        int fileId = getFileId();
 
         if (studyConfiguration.getAttributes().containsKey(Options.MERGE_MODE.key())
                 || studyConfiguration.getAttributes().containsKey(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
@@ -204,7 +208,18 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         options.put(MERGE.key(), doMerge);
         options.put(STAGE.key(), doStage);
 
-        securePreStage(fileId, studyConfiguration);
+        if (options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue())) {
+            // TODO: Check if can execute direct load
+            BatchFileOperation operation = addBatchOperation(studyConfiguration, DIRECT_LOAD.key(), Collections.singletonList(fileId),
+                    isResume(options), BatchFileOperation.Type.LOAD);
+            if (operation.getStatus().size() > 1) {
+                options.put(Options.RESUME.key(), true);
+                options.put(STAGE_RESUME.key(), true);
+                options.put(MERGE_RESUME.key(), true);
+            }
+        } else {
+            securePreStage(fileId, studyConfiguration);
+        }
 //        QueryResult<Long> countResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration
 //                .getStudyId())
 //                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId));
@@ -226,21 +241,26 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 //        boolean compressGenotypes = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
 //        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
 
-        boolean doMerge = options.getBoolean(MERGE.key(), false);
-        boolean doStage = options.getBoolean(STAGE.key(), false);
-
         final int fileId = options.getInt(Options.FILE_ID.key());
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
 
-        if (doStage) {
-            stage(inputUri);
-        }
+        boolean directLoad = options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue());
+        if (directLoad) {
+            directLoad(inputUri);
+        } else {
+            boolean doMerge = options.getBoolean(MERGE.key(), false);
+            boolean doStage = options.getBoolean(STAGE.key(), false);
 
-        long skippedVariants = options.getLong("skippedVariants");
-        if (doMerge) {
-            merge(Collections.singletonList(fileId), skippedVariants);
+            if (doStage) {
+                stage(inputUri);
+            }
+
+            long skippedVariants = options.getLong("skippedVariants");
+            if (doMerge) {
+                merge(Collections.singletonList(fileId), skippedVariants);
+            }
         }
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
@@ -248,6 +268,71 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
 
         return inputUri; //TODO: Return something like this: mongo://<host>/<dbName>/<collectionName>
+    }
+
+    public void directLoad(URI inputUri) throws StorageEngineException {
+
+        final int fileId = getFileId();
+        VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri);
+        VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(getStudyId()));
+        int numRecords = fileMetadata.getStats().getNumVariants();
+        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
+        int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
+        final int numReaders = 1;
+        StudyConfiguration studyConfiguration = getStudyConfiguration();
+
+        try {
+            //Reader
+            VariantReader variantReader;
+            variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata);
+
+            //Remapping ids task
+            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration, getFileId());
+
+            //Runner
+            ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
+            MongoDBVariantDirectLoader loader = new MongoDBVariantDirectLoader(dbAdaptor, getStudyConfiguration(), fileId,
+                    isResume(options), progressLogger);
+
+            ParallelTaskRunner<Variant, ?> ptr;
+            ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                    .setReadQueuePutTimeout(20 * 60)
+                    .setNumTasks(loadThreads)
+                    .setBatchSize(batchSize)
+                    .setAbortOnFail(true).build();
+            if (options.getBoolean(DIRECT_LOAD_PARALLEL_WRITE.key(), DIRECT_LOAD_PARALLEL_WRITE.defaultValue())) {
+                logger.info("Multi thread direct load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
+                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(loader), null, config);
+            } else {
+                logger.info("Multi thread direct load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
+                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask, loader, config);
+            }
+
+            Thread hook = getStudyConfigurationManager().buildShutdownHook(DIRECT_LOAD.key(), getStudyId(), fileId);
+            try {
+                Runtime.getRuntime().addShutdownHook(hook);
+                ptr.run();
+            } finally {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            }
+
+            writeResult = loader.getResult();
+            loadStats.append("directLoad", true);
+            loadStats.append("writeResult", writeResult);
+
+            fileMetadata.setId(String.valueOf(fileId));
+            dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(getStudyId()), fileMetadata);
+        } catch (ExecutionException e) {
+            try {
+                getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, DIRECT_LOAD.key(),
+                        Collections.singletonList(fileId));
+            } catch (Exception e2) {
+                // Do not propagate this exception!
+                logger.error("Error reporting direct load error!", e2);
+            }
+
+            throw new StorageEngineException("Error executing direct load", e);
+        }
     }
 
     public void stage(URI inputUri) throws StorageEngineException {
@@ -279,16 +364,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             variantReader = VariantReaderUtils.getVariantReader(input, metadata);
 
             //Remapping ids task
-            String fileIdStr = options.getString(Options.FILE_ID.key());
-            ParallelTaskRunner.Task<Variant, Variant> remapIdsTask = batch -> {
-                batch.forEach(variant -> variant.getStudies()
-                        .forEach(studyEntry -> {
-                            studyEntry.setStudyId(Integer.toString(studyConfiguration.getStudyId()));
-                            studyEntry.getFiles().forEach(fileEntry -> fileEntry.setFileId(fileIdStr));
-                        }));
-                return batch;
-            };
-
+            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration, getFileId());
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in STAGE collection:", numRecords, 200);
@@ -403,7 +479,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     public void stageError() throws StorageEngineException {
-        int fileId = options.getInt(Options.FILE_ID.key());
+        int fileId = getFileId();
         getStudyConfigurationManager()
                 .atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, STAGE.key(), Collections.singletonList(fileId));
     }
@@ -415,6 +491,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         getStudyConfigurationManager()
                 .atomicSetStatus(getStudyId(), BatchFileOperation.Status.READY, STAGE.key(), Collections.singletonList(fileId));
+        metadata.setId(String.valueOf(fileId));
         dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(getStudyId()), metadata);
 
     }
@@ -653,7 +730,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
 
-        if (options.getBoolean(MERGE.key())) {
+        if (options.getBoolean(MERGE.key()) || options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue())) {
             return super.postLoad(input, output);
         } else {
             return input;
@@ -663,9 +740,17 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-        BatchFileOperation.Status status = setStatus(studyConfiguration, BatchFileOperation.Status.READY, MERGE.key(), fileIds);
-        if (status != BatchFileOperation.Status.DONE) {
-            logger.warn("Unexpected status " + status);
+        boolean direct = options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue());
+        if (direct) {
+            BatchFileOperation.Status status = setStatus(studyConfiguration, BatchFileOperation.Status.READY, DIRECT_LOAD.key(), fileIds);
+            if (status != BatchFileOperation.Status.DONE) {
+                logger.warn("Unexpected status " + status);
+            }
+        } else {
+            BatchFileOperation.Status status = setStatus(studyConfiguration, BatchFileOperation.Status.READY, MERGE.key(), fileIds);
+            if (status != BatchFileOperation.Status.DONE) {
+                logger.warn("Unexpected status " + status);
+            }
         }
         Set<String> genotypes = new HashSet<>(studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key()));
         genotypes.addAll(writeResult.getGenotypes());

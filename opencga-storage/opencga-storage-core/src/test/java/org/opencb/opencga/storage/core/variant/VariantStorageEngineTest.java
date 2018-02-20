@@ -314,7 +314,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         variantStorageManager.getOptions()
                 .append(VariantStorageEngine.Options.STUDY_NAME.key(), STUDY_NAME)
-                .append(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID);
+                .append(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID)
+                .append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), true);
 
         List<StoragePipelineResult> results = variantStorageManager.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
 

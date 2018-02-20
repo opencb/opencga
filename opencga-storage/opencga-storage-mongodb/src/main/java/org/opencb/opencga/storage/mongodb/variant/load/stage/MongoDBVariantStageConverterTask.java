@@ -22,6 +22,7 @@ import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
 
@@ -41,15 +42,25 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
 
     private final ProgressLogger progressLogger;
     private final AtomicLong skippedVariants;
+    private ComplexTypeConverter<Variant, Binary> variantConverter;
 
     public MongoDBVariantStageConverterTask(ProgressLogger progressLogger) {
+        this(progressLogger, VARIANT_CONVERTER_DEFAULT);
+    }
+
+    public MongoDBVariantStageConverterTask(ProgressLogger progressLogger, ComplexTypeConverter<Variant, Binary> variantConverter) {
         this.progressLogger = progressLogger;
         skippedVariants = new AtomicLong(0);
+        this.variantConverter = variantConverter;
     }
 
     @Override
     public void pre() {
         skippedVariants.set(0);
+    }
+
+    @Override
+    public void post()  {
     }
 
     @Override
@@ -64,7 +75,7 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
                 localSkippedVariants++;
                 continue;
             }
-            Binary binary = VARIANT_CONVERTER_DEFAULT.convertToStorageType(variant);
+            Binary binary = variantConverter.convertToStorageType(variant);
             Document id = STAGE_TO_VARIANT_CONVERTER.convertToStorageType(variant);
 
             ids.put(id, binary);

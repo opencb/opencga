@@ -459,7 +459,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             // Different actions if the file is present or missing in the document.
             if (study.containsKey(fileId.toString())) {
                 //Duplicated documents are treated like missing. Increment the number of duplicated variants
-                List<Binary> duplicatedVariants = getListFromDocument(study, fileId.toString());
+                List<Object> duplicatedVariants = getListFromDocument(study, fileId.toString());
                 if (duplicatedVariants.size() > 1) {
                     mongoDBOps.setNonInserted(mongoDBOps.getNonInserted() + duplicatedVariants.size());
                     if (addUnknownGenotypes) {
@@ -470,8 +470,15 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     continue;
                 }
 
-                Binary file = duplicatedVariants.get(0);
-                Variant variant = VARIANT_CONVERTER_DEFAULT.convertToDataModelType(file);
+                Object file = duplicatedVariants.get(0);
+                Variant variant;
+                if (file instanceof Binary) {
+                    variant = VARIANT_CONVERTER_DEFAULT.convertToDataModelType(((Binary) file));
+                } else if (file instanceof Variant) {
+                    variant = ((Variant) file);
+                } else {
+                    throw new IllegalStateException("");
+                }
                 if (MongoDBVariantStoragePipeline.SKIPPED_VARIANTS.contains(variant.getType())) {
                     mongoDBOps.setSkipped(mongoDBOps.getSkipped() + 1);
                     skipped++;
