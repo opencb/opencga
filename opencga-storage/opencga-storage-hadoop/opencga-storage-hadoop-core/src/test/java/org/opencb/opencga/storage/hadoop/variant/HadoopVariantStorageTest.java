@@ -80,11 +80,11 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
+import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
@@ -449,11 +449,6 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     System.out.println("Finish execution ArchiveDriver");
 
                     return r;
-                } else if (executable.endsWith(VariantTableRemoveFileDriver.class.getName())) {
-                    System.out.println("Executing VariantTableDeletionDriver : " + executable + " " + args);
-                    int r = new VariantTableRemoveFileDriver().privateMain(Commandline.translateCommandline(args), conf);
-                    System.out.println("Finish execution VariantTableDeletionDriver");
-                    return r;
                 } else if (executable.endsWith(FillGapsDriver.class.getName())) {
                     System.out.println("Executing FillGapsDriver : " + executable + " " + args);
                     int r = new FillGapsDriver().privateMain(Commandline.translateCommandline(args), conf);
@@ -463,6 +458,11 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     System.out.println("Executing VariantStatsDriver : " + executable + " " + args);
                     int r = new VariantStatsDriver().privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution VariantStatsDriver");
+                    return r;
+                } else if (executable.endsWith(DeleteHBaseColumnDriver.class.getName())) {
+                    System.out.println("Executing DeleteHBaseColumnDriver : " + executable + " " + args);
+                    int r = new DeleteHBaseColumnDriver().privateMain(Commandline.translateCommandline(args), conf);
+                    System.out.println("Finish execution DeleteHBaseColumnDriver");
                     return r;
                 }
             } catch (Exception e) {

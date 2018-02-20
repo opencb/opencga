@@ -28,6 +28,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.ProgressLogger;
@@ -47,7 +48,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -55,15 +55,16 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataReader;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.gaps.*;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
@@ -572,7 +573,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+        VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
         List<Integer> fileIds = preRemoveFiles(study, files);
         final int studyId = scm.getStudyId(study, null);
@@ -601,25 +602,49 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             Runtime.getRuntime().addShutdownHook(hook);
 
             String archiveTable = getArchiveTableName(studyId);
-            HBaseCredentials variantsTable = getDbCredentials();
+            String variantsTable = getVariantTableName();
             String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
             String jar = getJarWithDependencies(options);
 
-            Class execClass = VariantTableRemoveFileDriver.class;
-            String args = VariantTableRemoveFileDriver.buildCommandLineArgs(archiveTable,
-                    variantsTable.getTable(), studyId, fileIds, options);
+            Class execClass = DeleteHBaseColumnDriver.class;
             String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");
-            logger.info("Remove files {} in archive '{}' and analysis table '{}'", fileIds, archiveTable, variantsTable.getTable());
-            logger.debug(executable + " " + args);
+            logger.info("Remove files {} in archive '{}' and analysis table '{}'", fileIds, archiveTable, variantsTable);
             logger.info("------------------------------------------------------");
-            int exitValue = getMRExecutor(options).run(executable, args);
+            ExecutorService service = Executors.newFixedThreadPool(options.getBoolean("delete.parallel", true) ? 2 : 1);
+            Future<Integer> deleteFromVariants = service.submit(() -> {
+                List<String> variantsColumns = new ArrayList<>();
+                String family = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
+                for (Integer fileId : fileIds) {
+                    variantsColumns.add(family + ':' + VariantPhoenixHelper.getFileColumn(studyId, fileId).column());
+                    for (Integer sampleId : sc.getSamplesInFiles().get(fileId)) {
+                        variantsColumns.add(family + ':' + VariantPhoenixHelper.getSampleColumn(studyId, sampleId).column());
+                    }
+                }
+                String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, variantsColumns, options);
+                logger.debug(executable + ' ' + Arrays.toString(deleteFromVariantsArgs));
+                return getMRExecutor(options).run(executable, deleteFromVariantsArgs);
+            });
+            Future<Integer> deleteFromArchive = service.submit(() -> {
+                List<String> archiveColumns = new ArrayList<>();
+                String family = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
+                for (Integer fileId : fileIds) {
+                    archiveColumns.add(family + ':' + ArchiveTableHelper.getRefColumnName(fileId));
+                    archiveColumns.add(family + ':' + ArchiveTableHelper.getNonRefColumnName(fileId));
+                }
+                String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, options);
+                logger.debug(executable + ' ' + Arrays.toString(deleteFromArchiveArgs));
+                return getMRExecutor(options).run(executable, deleteFromArchiveArgs);
+            });
+            service.shutdown();
+            service.awaitTermination(12, TimeUnit.HOURS);
             logger.info("------------------------------------------------------");
-            logger.info("Exit value: {}", exitValue);
+            logger.info("Exit value delete from variants: {}", deleteFromVariants.get());
+            logger.info("Exit value delete from archive: {}", deleteFromArchive.get());
             logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-            if (exitValue != 0) {
+            if (deleteFromArchive.get() != 0 || deleteFromVariants.get() != 0) {
                 throw new StorageEngineException("Error removing files " + fileIds + " from tables ");
             }
 
@@ -633,9 +658,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 //            });
 
             postRemoveFiles(study, fileIds, false);
-        } catch (Exception e) {
+        } catch (StorageEngineException e) {
             postRemoveFiles(study, fileIds, true);
             throw e;
+        } catch (Exception e) {
+            postRemoveFiles(study, fileIds, true);
+            throw new StorageEngineException("Error removing files " + fileIds + " from tables ", e);
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
         }
