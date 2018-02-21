@@ -80,9 +80,6 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                         .append(Options.FILE_ID.key(), FILE_ID)
                         .append(Options.ANNOTATE.key(), true)
                         .append(Options.CALCULATE_STATS.key(), false)
-                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
-                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, true)
-                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
         );
 
         fileMetadata = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
@@ -139,7 +136,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                 .map(type -> fileMetadata.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b)
                 .orElse(0).longValue();
-        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
+//        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, totalCount);
         assertEquals(totalCount, partialCount1 + partialCount2);
     }
@@ -199,10 +196,10 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
 
     @Test
     public void checkVariantTable() throws IOException {
-        System.out.println("Query from HBase : " + DB_NAME);
+        System.out.println("Query from HBase : " + dbAdaptor.getVariantTable());
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
-        int numVariants = hm.act(DB_NAME, table -> {
+        int numVariants = hm.act(dbAdaptor.getVariantTable(), table -> {
             int num = 0;
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {
@@ -213,12 +210,12 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
             resultScanner.close();
             return num;
         });
-        System.out.println("End query from HBase : " + DB_NAME);
+        System.out.println("End query from HBase : " + dbAdaptor.getVariantTable());
         System.out.println(fileMetadata.getStats().getVariantTypeCounts());
         long count = TARGET_VARIANT_TYPE_SET.stream()
                 .map(type -> fileMetadata.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b).orElse(0).longValue();
-        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
+//        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, numVariants);
     }
 
@@ -234,14 +231,25 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {
                 System.out.println("VcfSlice = " + Bytes.toString(result.getRow()));
-
                 byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
-                VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(
-                        value);
-                System.out.println(vcfSlice);
-                List<Variant> variants = converter.convert(vcfSlice);
-                for (Variant variant : variants) {
-                    System.out.println(variant.toJson());
+                if (value != null && value.length > 0) {
+                    VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(
+                            value);
+                    System.out.println(vcfSlice);
+                    List<Variant> variants = converter.convert(vcfSlice);
+                    for (Variant variant : variants) {
+                        System.out.println(variant.toJson());
+                    }
+                }
+                value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
+                if (value != null && value.length > 0) {
+                    VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(
+                            value);
+                    System.out.println(vcfSlice);
+                    List<Variant> variants = converter.convert(vcfSlice);
+                    for (Variant variant : variants) {
+                        System.out.println(variant.toJson());
+                    }
                 }
             }
             resultScanner.close();

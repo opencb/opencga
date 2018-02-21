@@ -38,6 +38,7 @@ import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -81,6 +82,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS;
@@ -195,8 +197,16 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                     helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()));
 
             // Use a supplier to avoid concurrent modifications of non thread safe objects.
-            Supplier<ParallelTaskRunner.TaskWithException<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice, ?>> supplier =
-                    () -> new VariantToVcfSliceConverterTask(progressLogger);
+            Supplier<Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> supplier =
+                    () -> ((Task<ImmutablePair<Long, List<Variant>>, ImmutablePair<Long, List<Variant>>>) ((batch) -> {
+                        for (ImmutablePair<Long, List<Variant>> pair : batch) {
+                            statsCalculator.apply(pair.getRight()
+                                    .stream()
+                                    .filter(variant -> variant.getStart() >= pair.getKey())
+                                    .collect(Collectors.toList()));
+                        }
+                        return batch;
+                    })).then(new VariantToVcfSliceConverterTask(progressLogger));
 
             ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                     .setNumTasks(options.getInt(Options.TRANSFORM_THREADS.key(), 1))

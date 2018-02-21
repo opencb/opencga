@@ -207,7 +207,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         sc.getAttributes().append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
-        VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), DB_NAME);
+        VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
 
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
@@ -221,8 +221,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         VariantSliceReader reader = getVariantSliceReader(variants, sc.getStudyId(), fileId);
 
         // Writers
-        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, DB_NAME, dbAdaptor.getHBaseManager());
-        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, DB_NAME, sc, dbAdaptor.getHBaseManager());
+        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, dbAdaptor.getVariantTable(), dbAdaptor.getHBaseManager());
+        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(), sc, dbAdaptor.getHBaseManager());
 
         // Task
         HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null);
@@ -236,8 +236,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         sc.getIndexedFiles().add(fileId);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, QueryOptions.empty());
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-        phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId());
-        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId(), Collections.singleton(fileId), sc.getSamplesInFiles().get(fileId));
+        phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId());
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId(), Collections.singleton(fileId), sc.getSamplesInFiles().get(fileId));
     }
 
     private void stageVariants(StudyConfiguration study, int fileId, List<Variant> variants) throws Exception {

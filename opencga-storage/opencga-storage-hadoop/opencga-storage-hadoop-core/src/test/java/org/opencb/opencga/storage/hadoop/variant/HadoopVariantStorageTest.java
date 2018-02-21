@@ -93,10 +93,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -395,6 +392,20 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     @Override
     default void clearDB(String tableName) throws Exception {
+        if (Objects.equals(tableName, VariantStorageBaseTest.DB_NAME)) {
+            try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
+                for (TableName table : admin.listTableNames()) {
+                    if (table.getNameAsString().startsWith(tableName)) {
+                        deleteTable(table.getNameAsString());
+                    }
+                }
+            }
+        } else {
+            deleteTable(tableName);
+        }
+    }
+
+    default void deleteTable(String tableName) throws Exception {
         LoggerFactory.getLogger(HadoopVariantStorageTest.class).info("Drop table " + tableName);
         PhoenixHelper phoenixHelper = new PhoenixHelper(configuration.get());
         try (java.sql.Connection con = phoenixHelper.newJdbcConnection()) {

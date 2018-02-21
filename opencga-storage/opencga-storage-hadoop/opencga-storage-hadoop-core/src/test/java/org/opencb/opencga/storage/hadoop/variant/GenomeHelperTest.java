@@ -93,7 +93,7 @@ public class GenomeHelperTest {
 
     @Test
     public void testGenerateSplitArchive() throws Exception {
-        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, (chr, pos) -> keyFactory.generateBlockIdAsBytes(0, chr, pos)), 30);
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, (chr, pos) -> keyFactory.generateBlockIdAsBytes(1, chr, pos)), 30);
     }
 
     @Test

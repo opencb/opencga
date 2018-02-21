@@ -45,7 +45,17 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         }
         StudyConfiguration sc = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(study, options).first();
 
+        if (sc.isAggregated()) {
+            throw new StorageEngineException("Unsupported calculate aggregated statistics with map-reduce. Please, use "
+                    + HadoopVariantStorageEngine.STATS_LOCAL + '=' + true);
+        }
         boolean updateStats = options.getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(), false);
+//        boolean overwriteStats = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+//
+//        DefaultVariantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(sc, cohorts.stream()
+//                    .collect(Collectors.toMap(c -> c, c -> Collections.emptySet())), null, updateStats, overwriteStats);
+//        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, options);
+
         VariantStatisticsManager.checkAndUpdateCalculatedCohorts(sc, cohorts, updateStats);
 
         List<Integer> cohortIds = StudyConfigurationManager.getCohortIdsFromStudy(cohorts, sc);

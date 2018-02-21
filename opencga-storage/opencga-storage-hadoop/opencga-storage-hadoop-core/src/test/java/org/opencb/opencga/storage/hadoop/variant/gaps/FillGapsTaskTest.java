@@ -131,21 +131,13 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     }
 
 
+
+
     @Test
     public void testFillMissingPlatinumFiles() throws Exception {
-        testFillMissingPlatinumFiles(new ObjectMap("local", true));
-    }
-
-    @Test
-    public void testFillMissingPlatinumFilesMR() throws Exception {
-        testFillMissingPlatinumFiles(new ObjectMap("local", false));
-    }
-
-    public void testFillMissingPlatinumFiles(ObjectMap fillMissingOptions) throws Exception {
         ObjectMap options = new ObjectMap()
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 2);
-        options.putAll(fillMissingOptions);
 
         StudyConfiguration studyConfiguration = loadPlatinum(options, 12877, 12878);
         assertFalse(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));

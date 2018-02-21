@@ -75,6 +75,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
@@ -523,6 +524,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 //        });
 
         StudyConfiguration sc = scm.getStudyConfiguration(studyId, null).first();
+        boolean removeWholeStudy = sc.getIndexedFiles().size() == fileIds.size() && sc.getIndexedFiles().containsAll(fileIds);
         BatchFileOperation operation = StudyConfigurationManager.getOperation(sc, REMOVE_OPERATION_NAME, fileIds);
         options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
 
@@ -552,6 +554,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     for (Integer sampleId : sc.getSamplesInFiles().get(fileId)) {
                         variantsColumns.add(family + ':' + VariantPhoenixHelper.getSampleColumn(studyId, sampleId).column());
                     }
+                }
+                if (removeWholeStudy) {
+                    variantsColumns.add(family + ':' + VariantPhoenixHelper.getStudyColumn(studyId).column());
                 }
                 String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, variantsColumns, options);
                 logger.debug(executable + ' ' + Arrays.toString(deleteFromVariantsArgs));
@@ -623,7 +628,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unimplemented");
+        StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
+        removeFiles(studyName, sc.getIndexedFiles().stream().map(Object::toString).collect(Collectors.toList()));
     }
 
     private HBaseCredentials getDbCredentials() throws StorageEngineException {
@@ -850,7 +856,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
             VariantFileMetadata source;
 
-            System.out.println("READ VARIANT META FROM input = " + input);
             if (input.getScheme() == null || input.getScheme().startsWith("file")) {
                 return VariantReaderUtils.readVariantFileMetadata(Paths.get(input.getPath()), null);
             }
