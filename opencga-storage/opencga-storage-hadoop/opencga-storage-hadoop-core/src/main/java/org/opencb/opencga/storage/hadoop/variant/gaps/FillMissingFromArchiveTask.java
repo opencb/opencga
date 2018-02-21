@@ -93,7 +93,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
             filterList.addFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL, new BinaryComparator(value)));
         }
         filterList.addFilter(new ColumnPrefixFilter(VARIANT_COLUMN_B_PREFIX));
-        if (scan.getFilter() != null) {
+        if (scan.getFilter() == null) {
             scan.setFilter(filterList);
         } else {
             scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL, filterList, scan.getFilter()));

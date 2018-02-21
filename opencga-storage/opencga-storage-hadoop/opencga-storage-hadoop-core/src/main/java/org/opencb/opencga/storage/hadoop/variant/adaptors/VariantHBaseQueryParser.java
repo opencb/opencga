@@ -119,8 +119,6 @@ public class VariantHBaseQueryParser {
             logger.debug("region = " + region);
             // TODO: Use MultiRowRangeFilter
             addRegionFilter(scan, region);
-        } else {
-            addDefaultRegionFilter(scan);
         }
 
 
@@ -374,9 +372,7 @@ public class VariantHBaseQueryParser {
     }
 
     public static void addArchiveRegionFilter(Scan scan, Region region, int fileId, ArchiveRowKeyFactory keyFactory) {
-        if (region == null) {
-            addDefaultRegionFilter(scan);
-        } else {
+        if (region != null) {
             scan.setStartRow(keyFactory.generateBlockIdAsBytes(fileId, region.getChromosome(), region.getStart()));
             long endSlice = keyFactory.getSliceId((long) region.getEnd()) + 1;
             // +1 because the stop row is exclusive
@@ -386,20 +382,10 @@ public class VariantHBaseQueryParser {
     }
 
     public static void addRegionFilter(Scan scan, Region region) {
-        if (region == null) {
-            addDefaultRegionFilter(scan);
-        } else {
+        if (region != null) {
             scan.setStartRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getStart()));
             scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getEnd()));
         }
-    }
-
-    public static Scan addDefaultRegionFilter(Scan scan) {
-//        return scan.setStopRow(Bytes.toBytes(String.valueOf(GenomeHelper.METADATA_PREFIX)));
-//        return scan.setFilter(new RowFilter(CompareFilter.CompareOp.NOT_EQUAL,
-//                new BinaryComparator(Bytes.toBytes(GenomeHelper.DEFAULT_METADATA_ROW_KEY))));
-
-        return scan;
     }
 
 }
