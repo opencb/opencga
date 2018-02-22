@@ -105,6 +105,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         System.out.println("----------------");
 
         runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false)
                 .append(MongoDBVariantOptions.STAGE_RESUME.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
         );
@@ -125,7 +126,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         variantStorageManager.getDBAdaptor().getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
 
         try {
-            runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration);
+            runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+                    .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false));
             fail();
         } catch (StorageEngineException e) {
             e.printStackTrace();
@@ -163,6 +165,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         runDefaultETL(storagePipelineResult.getTransformResult(), variantStorageManager, studyConfiguration, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), true)
+                .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false), false, true);
 
@@ -226,7 +229,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     @Test
     public void loadStageConcurrent() throws Exception {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
-        StoragePipelineResult storagePipelineResult = runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration, new ObjectMap(), true, false);
+        StoragePipelineResult storagePipelineResult = runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false), true, false);
 
         StoragePipelineException exception = loadConcurrentAndCheck(studyConfiguration, storagePipelineResult);
         exception.printStackTrace();
@@ -239,8 +243,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         URI file1 = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         URI file2 = getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
-        URI file1Transformed = runDefaultETL(file1, variantStorageEngine, studyConfiguration, new ObjectMap(), true, false).getTransformResult();
-        URI file2Transformed = runDefaultETL(file2, variantStorageEngine, studyConfiguration, new ObjectMap(), true, false).getTransformResult();
+        URI file1Transformed = runDefaultETL(file1, variantStorageEngine, studyConfiguration,
+                new ObjectMap(MongoDBVariantOptions.DIRECT_LOAD.key(), false), true, false).getTransformResult();
+        URI file2Transformed = runDefaultETL(file2, variantStorageEngine, studyConfiguration,
+                new ObjectMap(), true, false).getTransformResult();
 
         ExecutorService executor = Executors.newFixedThreadPool(3);
         Future<Integer> loadOne = executor.submit(() -> {
@@ -292,6 +298,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             try {
                 runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyConfiguration, new ObjectMap()
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                        .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false), false, true);
             } catch (StoragePipelineException e) {
                 assertEquals(null, exception.getAndSet(e));
@@ -330,10 +337,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public void stageWhileMerging() throws Exception {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         StoragePipelineResult storagePipelineResult = runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration, new ObjectMap()
-                .append(MongoDBVariantOptions.STAGE.key(), true));
+                .append(MongoDBVariantOptions.STAGE.key(), true)
+                .append(MongoDBVariantOptions.MERGE.key(), false)
+                .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false));
         Thread thread = new Thread(() -> {
             try {
-                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyConfiguration, new ObjectMap(),
+                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyConfiguration, new ObjectMap()
+                                .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false),
                         false, true);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -353,7 +363,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             thrown.expectCause(hasMessage(is(expected.getMessage())));
 
             runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration,
-                    new ObjectMap(VariantStorageEngine.Options.FILE_ID.key(), secondFileId));
+                    new ObjectMap(VariantStorageEngine.Options.FILE_ID.key(), secondFileId)
+                            .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false));
         } finally {
             System.out.println("Interrupt!");
             thread.interrupt();
@@ -384,8 +395,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                         .append(VariantStorageEngine.Options.FILE_ID.key(), secondFileId));
         Thread thread = new Thread(() -> {
             try {
-                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyConfiguration, new ObjectMap(),
-                        false, true);
+                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyConfiguration, new ObjectMap()
+                            .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false), false, true);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -403,7 +414,11 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             thrown.expectCause(hasMessage(is(expected.getMessage())));
 
             runDefaultETL(storagePipelineResult2.getTransformResult(), getVariantStorageEngine(), studyConfiguration,
-                    new ObjectMap(MongoDBVariantOptions.STAGE.key(), false).append(VariantStorageEngine.Options.FILE_ID.key(), secondFileId), false, true);
+                    new ObjectMap()
+                            .append(MongoDBVariantOptions.MERGE.key(), true)
+                            .append(MongoDBVariantOptions.STAGE.key(), false)
+                            .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false)
+                            .append(VariantStorageEngine.Options.FILE_ID.key(), secondFileId), false, true);
         } finally {
             System.out.println("Interrupt!");
             thread.interrupt();
@@ -491,8 +506,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                     runETL(variantStorageEngine, storagePipelineResult.getTransformResult(), outputUri, new ObjectMap()
                             .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                             .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                            .append(MongoDBVariantOptions.DIRECT_LOAD.key(), false)
                             .append(MongoDBVariantOptions.STAGE.key(), true)
-                            .append(MongoDBVariantOptions.MERGE_RESUME.key(), execution > 1)
+                            .append(VariantStorageEngine.Options.RESUME.key(), execution > 1)
                             .append(MongoDBVariantOptions.MERGE.key(), true), false, false, true);
                     success.set(true);
                 } catch (IOException | FileFormatException | StorageEngineException e) {
@@ -916,6 +932,16 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public void multiIndexPlatinum() throws Exception {
         super.multiIndexPlatinum(new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,AD,PL"));
         checkPlatinumDatabase(d -> 17, Collections.singleton("0/0"));
+
+        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
+                .getStudyConfiguration(1, null).first();
+
+        Iterator<BatchFileOperation> iterator = studyConfiguration.getBatches().iterator();
+        assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), iterator.next().getOperationName());
+        while (iterator.hasNext()) {
+            BatchFileOperation batchFileOperation = iterator.next();
+            assertNotEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), batchFileOperation.getOperationName());
+        }
     }
 
     @Test
@@ -1046,6 +1072,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public void multiRegionBatchIndex() throws Exception {
         super.multiRegionBatchIndex();
         checkLoadedVariants();
+
+        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
+                .getStudyConfiguration(1, null).first();
+
+        for (BatchFileOperation batchFileOperation : studyConfiguration.getBatches()) {
+            assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), batchFileOperation.getOperationName());
+        }
     }
 
     @Test
@@ -1054,6 +1087,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         super.multiRegionIndex();
 
         checkLoadedVariants();
+
+        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
+                .getStudyConfiguration(1, null).first();
+
+        for (BatchFileOperation batchFileOperation : studyConfiguration.getBatches()) {
+            assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), batchFileOperation.getOperationName());
+        }
     }
 
     public void checkLoadedVariants() throws Exception {

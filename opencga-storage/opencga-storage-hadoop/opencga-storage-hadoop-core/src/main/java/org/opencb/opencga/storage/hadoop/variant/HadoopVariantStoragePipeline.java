@@ -523,16 +523,4 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         // Do not close VariantDBAdaptor
     }
 
-    public int getFileId() {
-        return options.getInt(Options.FILE_ID.key());
-    }
-
-    @Override
-    public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
-        VariantFileMetadata variantFileMetadata = super.readVariantFileMetadata(input);
-        // Ensure correct fileId
-        variantFileMetadata.setId(String.valueOf(getFileId()));
-        return variantFileMetadata;
-    }
-
 }

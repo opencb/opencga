@@ -745,8 +745,15 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return studyName + "_" + fileId;
     }
 
+    public int getFileId() {
+        return options.getInt(Options.FILE_ID.key());
+    }
+
     public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
-        return variantReaderUtils.readVariantFileMetadata(input);
+        VariantFileMetadata variantFileMetadata = variantReaderUtils.readVariantFileMetadata(input);
+        // Ensure correct fileId
+        variantFileMetadata.setId(String.valueOf(getFileId()));
+        return variantFileMetadata;
     }
 
     /* --------------------------------------- */
