@@ -28,10 +28,12 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
+import org.opencb.biodata.tools.variant.DuplicatedVariantsDetector;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -287,8 +289,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         try {
             //Reader
-            VariantReader variantReader;
-            variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata);
+            DataReader<Variant> variantReader;
+            DuplicatedVariantsDetector duplicatedVariantsDetector = new DuplicatedVariantsDetector();
+            variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata).then(duplicatedVariantsDetector);
 
             //Remapping ids task
             Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration, fileId);
@@ -325,6 +328,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             writeResult = loader.getResult();
             writeResult.setSkippedVariants(converter.getSkippedVariants());
+            writeResult.setNonInsertedVariants(duplicatedVariantsDetector.getDiscardedVariants());
             loadStats.append("directLoad", true);
             loadStats.append("writeResult", writeResult);
 
