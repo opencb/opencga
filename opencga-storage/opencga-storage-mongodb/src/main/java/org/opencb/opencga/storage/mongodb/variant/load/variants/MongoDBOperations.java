@@ -53,7 +53,7 @@ public class MongoDBOperations {
     /** Missing variants. See A3) . No fill gaps needed*/
     private long missingVariantsNoFillGaps = 0;
 
-    protected MongoDBOperations() {
+    public MongoDBOperations() {
     }
 
     NewStudy getNewStudy() {

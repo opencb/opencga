@@ -1,18 +1,19 @@
-package org.opencb.opencga.storage.mongodb.variant.load.variants;
+package org.opencb.opencga.storage.mongodb.variant.load.direct;
 
 import com.google.common.collect.ListMultimap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
-import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
-import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
 
 import java.util.Collections;
 import java.util.List;
@@ -20,11 +21,11 @@ import java.util.List;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.STAGE_TO_VARIANT_CONVERTER;
 
 /**
- * Created on 20/02/18.
+ * Created on 21/02/18.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBVariantDirectLoader implements DataWriter<Variant> {
+public class MongoDBVariantDirectConverter implements Task<Variant, Pair<ListMultimap<Document, Binary>, MongoDBOperations>> {
 
     public static final ComplexTypeConverter<Variant, Binary> EMPTY_CONVERTER = new ComplexTypeConverter<Variant, Binary>() {
         @Override public Variant convertToDataModelType(Binary binary) {
@@ -35,83 +36,53 @@ public class MongoDBVariantDirectLoader implements DataWriter<Variant> {
         }
     };
     private final MongoDBVariantStageConverterTask stageConverter;
-    private final MongoDBVariantStageLoader stageLoader;
 
-    private final MongoDBVariantDirectConverter variantConverter;
-    private final MongoDBVariantMergeLoader variantsLoader;
+    private final MongoDBVariantMergerDirect variantConverter;
 
     private final ProgressLogger progressLogger;
 
-    public MongoDBVariantDirectLoader(VariantMongoDBAdaptor dbAdaptor, final StudyConfiguration studyConfiguration, int fileId,
-                                      boolean resume, ProgressLogger progressLogger) {
+    public MongoDBVariantDirectConverter(VariantMongoDBAdaptor dbAdaptor, final StudyConfiguration studyConfiguration, int fileId,
+                                         boolean resume, ProgressLogger progressLogger) {
         this.progressLogger = progressLogger;
         stageConverter = new MongoDBVariantStageConverterTask(null, EMPTY_CONVERTER);
-        stageLoader = new MongoDBVariantStageLoader(dbAdaptor.getStageCollection(), studyConfiguration.getStudyId(), fileId, resume, true);
-        variantsLoader = new MongoDBVariantMergeLoader(
-                dbAdaptor.getVariantsCollection(),
-                dbAdaptor.getStageCollection(),
-                dbAdaptor.getStudiesCollection(),
-                studyConfiguration, Collections.singletonList(fileId), resume, false, null);
-        variantConverter = new MongoDBVariantDirectConverter(dbAdaptor, studyConfiguration, fileId, resume);
+
+        variantConverter = new MongoDBVariantMergerDirect(dbAdaptor, studyConfiguration, fileId, resume);
     }
 
     @Override
-    public boolean pre() {
+    public void pre() throws Exception {
+        variantConverter.pre();
         stageConverter.pre();
-        stageLoader.pre();
-        variantsLoader.pre();
-        return true;
     }
 
     @Override
-    public boolean post() {
+    public void post() throws Exception {
+        variantConverter.post();
         stageConverter.post();
-        stageLoader.post();
-        variantsLoader.post();
-        return true;
     }
 
-    @Override
-    public boolean open() {
-        stageLoader.open();
-        variantsLoader.open();
-        return true;
-    }
+    public List<Pair<ListMultimap<Document, Binary>, MongoDBOperations>> apply(List<Variant> variants) {
+        // Convert into stage collection format
+        ListMultimap<Document, Binary> archiveDocuments = stageConverter.convert(variants);
 
-    @Override
-    public boolean close() {
-        stageLoader.close();
-        variantsLoader.close();
-        return true;
-    }
-
-    @Override
-    public boolean write(List<Variant> variants) {
-        // Write in archive collection
-        List<ListMultimap<Document, Binary>> archiveDocuments = stageConverter.apply(variants);
-        stageLoader.write(archiveDocuments);
-
-        // Write in archive collection
+        // Convert into variants collection formar
         MongoDBOperations mongoDBOperations = variantConverter.processVariants(variants, new MongoDBOperations());
-        variantsLoader.write(mongoDBOperations);
 
         progressLogger.increment(variants.size(), () -> "up to variant " + variants.get(variants.size() - 1));
-        return true;
+        return Collections.singletonList(Pair.of(archiveDocuments, mongoDBOperations));
     }
 
-    public MongoDBVariantWriteResult getResult() {
-        MongoDBVariantWriteResult result = variantsLoader.getResult();
-        result.setSkippedVariants(stageConverter.getSkippedVariants());
-        return result;
+    public long getSkippedVariants() {
+        return stageConverter.getSkippedVariants();
     }
 
-    private static class MongoDBVariantDirectConverter extends MongoDBVariantMerger {
+    private static class MongoDBVariantMergerDirect extends MongoDBVariantMerger {
 
         private String studyIdStr;
         private String fileIdStr;
 
-        MongoDBVariantDirectConverter(VariantMongoDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,
-                                             int fileId, boolean resume) {
+        MongoDBVariantMergerDirect(VariantMongoDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,
+                                   int fileId, boolean resume) {
             super(dbAdaptor, studyConfiguration, Collections.singletonList(fileId), studyConfiguration.getIndexedFiles(), resume, true);
             studyIdStr = String.valueOf(studyConfiguration.getStudyId());
             fileIdStr = String.valueOf(fileId);

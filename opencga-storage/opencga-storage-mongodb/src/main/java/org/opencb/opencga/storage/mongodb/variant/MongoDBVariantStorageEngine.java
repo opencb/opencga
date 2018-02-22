@@ -91,12 +91,15 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0")),
         ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
         LOADED_GENOTYPES("loadedGenotypes", null),
+
         STAGE("stage", false),
         STAGE_RESUME("stage.resume", false),
         STAGE_PARALLEL_WRITE("stage.parallel.write", false),
         STAGE_CLEAN_WHILE_LOAD("stage.clean.while.load", true),
+
         DIRECT_LOAD("direct_load", false),
         DIRECT_LOAD_PARALLEL_WRITE("direct_load.parallel.write", false),
+
         MERGE("merge", false),
         MERGE_SKIP("merge.skip", false), // Internal use only
         MERGE_RESUME("merge.resume", false),
@@ -300,7 +303,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                         // Decide if use direct load or not.
                         if (doStage && doMerge) {
                             doDirectLoad = storagePipeline.checkCanLoadDirectly(input);
-                            logger.info("direct load = " + doDirectLoad);
                         } else {
                             doDirectLoad = false;
                         }

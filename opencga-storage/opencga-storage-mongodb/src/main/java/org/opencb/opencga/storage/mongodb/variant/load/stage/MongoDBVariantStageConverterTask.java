@@ -65,6 +65,11 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
 
     @Override
     public List<ListMultimap<Document, Binary>> apply(List<Variant> variants) throws RuntimeException {
+        ListMultimap<Document, Binary> ids = convert(variants);
+        return Collections.singletonList(ids);
+    }
+
+    public ListMultimap<Document, Binary> convert(List<Variant> variants) {
 //        final long start = System.nanoTime();
         int localSkippedVariants = 0;
 
@@ -85,7 +90,7 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
         }
 
         skippedVariants.addAndGet(localSkippedVariants);
-        return Collections.singletonList(ids);
+        return ids;
     }
 
     public long getSkippedVariants() {

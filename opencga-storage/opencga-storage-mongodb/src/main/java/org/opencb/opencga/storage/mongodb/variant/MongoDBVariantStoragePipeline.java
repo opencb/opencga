@@ -49,11 +49,12 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
+import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
-import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantDirectLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
 import org.slf4j.Logger;
@@ -272,10 +273,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     public void directLoad(URI inputUri) throws StorageEngineException {
+        int fileId = getFileId();
+        int studyId = getStudyId();
+        List<Integer> fileIds = Collections.singletonList(fileId);
 
-        final int fileId = getFileId();
         VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri);
-        VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(getStudyId()));
+        VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(studyId));
         int numRecords = fileMetadata.getStats().getNumVariants();
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
@@ -288,12 +291,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata);
 
             //Remapping ids task
-            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration, getFileId());
+            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration, fileId);
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
-            MongoDBVariantDirectLoader loader = new MongoDBVariantDirectLoader(dbAdaptor, getStudyConfiguration(), fileId,
+            MongoDBVariantDirectConverter converter = new MongoDBVariantDirectConverter(dbAdaptor, getStudyConfiguration(), fileId,
                     isResume(options), progressLogger);
+            MongoDBVariantDirectLoader loader = new MongoDBVariantDirectLoader(dbAdaptor, getStudyConfiguration(), fileId,
+                    isResume(options));
 
             ParallelTaskRunner<Variant, ?> ptr;
             ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
@@ -303,30 +308,32 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setAbortOnFail(true).build();
             if (options.getBoolean(DIRECT_LOAD_PARALLEL_WRITE.key(), DIRECT_LOAD_PARALLEL_WRITE.defaultValue())) {
                 logger.info("Multi thread direct load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(loader), null, config);
+                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converter).then(loader), null, config);
             } else {
                 logger.info("Multi thread direct load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask, loader, config);
+                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converter), loader, config);
             }
 
-            Thread hook = getStudyConfigurationManager().buildShutdownHook(DIRECT_LOAD.key(), getStudyId(), fileId);
+            Thread hook = getStudyConfigurationManager().buildShutdownHook(DIRECT_LOAD.key(), studyId, fileId);
             try {
                 Runtime.getRuntime().addShutdownHook(hook);
                 ptr.run();
+                getStudyConfigurationManager().atomicSetStatus(studyId, BatchFileOperation.Status.DONE, DIRECT_LOAD.key(), fileIds);
             } finally {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
 
             writeResult = loader.getResult();
+            writeResult.setSkippedVariants(converter.getSkippedVariants());
             loadStats.append("directLoad", true);
             loadStats.append("writeResult", writeResult);
 
             fileMetadata.setId(String.valueOf(fileId));
-            dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(getStudyId()), fileMetadata);
+            dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(studyId), fileMetadata);
         } catch (ExecutionException e) {
             try {
-                getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, DIRECT_LOAD.key(),
-                        Collections.singletonList(fileId));
+                getStudyConfigurationManager().atomicSetStatus(studyId, BatchFileOperation.Status.ERROR, DIRECT_LOAD.key(),
+                        fileIds);
             } catch (Exception e2) {
                 // Do not propagate this exception!
                 logger.error("Error reporting direct load error!", e2);
@@ -365,7 +372,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             variantReader = VariantReaderUtils.getVariantReader(input, metadata);
 
             //Remapping ids task
-            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration, getFileId());
+            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyConfiguration, fileId);
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in STAGE collection:", numRecords, 200);
