@@ -28,7 +28,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.biodata.tools.variant.DuplicatedVariantsDetector;
+import org.opencb.biodata.tools.variant.VariantDeduplicationTask;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -290,7 +290,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         try {
             //Reader
             DataReader<Variant> variantReader;
-            DuplicatedVariantsDetector duplicatedVariantsDetector = new DuplicatedVariantsDetector();
+            VariantDeduplicationTask duplicatedVariantsDetector = new VariantDeduplicationTask();
             variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata).then(duplicatedVariantsDetector);
 
             //Remapping ids task
