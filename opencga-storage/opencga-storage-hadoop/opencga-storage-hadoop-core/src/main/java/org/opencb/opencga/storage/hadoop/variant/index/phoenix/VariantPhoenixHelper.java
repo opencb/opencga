@@ -71,9 +71,13 @@ public class VariantPhoenixHelper {
     public static final String HOM_REF = "0/0";
     public static final byte[] HOM_REF_BYTES = Bytes.toBytes(HOM_REF);
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
+    public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(CHROMOSOME, POSITION, REFERENCE, ALTERNATE));
+
+    protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
+
     private final PhoenixHelper phoenixHelper;
     private final GenomeHelper genomeHelper;
-    protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
+
 
     public enum VariantColumn implements Column {
         CHROMOSOME("CHROMOSOME", PVarchar.INSTANCE),
@@ -357,15 +361,15 @@ public class VariantPhoenixHelper {
 
     private String buildCreate(String variantsTableName, String columnFamily, PTableType tableType) {
         StringBuilder sb = new StringBuilder().append("CREATE ").append(tableType).append(" IF NOT EXISTS ")
-                .append(phoenixHelper.getEscapedFullTableName(tableType, variantsTableName)).append(" ").append("(");
+                .append(phoenixHelper.getEscapedFullTableName(tableType, variantsTableName)).append(' ').append('(');
         for (VariantColumn variantColumn : VariantColumn.values()) {
             switch (variantColumn) {
                 case CHROMOSOME:
                 case POSITION:
-                    sb.append(" ").append(variantColumn).append(" ").append(variantColumn.sqlType()).append(" NOT NULL , ");
+                    sb.append(' ').append(variantColumn).append(' ').append(variantColumn.sqlType()).append(" NOT NULL , ");
                     break;
                 default:
-                    sb.append(" ").append(variantColumn).append(" ").append(variantColumn.sqlType()).append(" , ");
+                    sb.append(' ').append(variantColumn).append(' ').append(variantColumn.sqlType()).append(" , ");
                     break;
             }
         }
@@ -374,12 +378,15 @@ public class VariantPhoenixHelper {
 //            sb.append(" \"").append(column).append("\" ").append(column.sqlType()).append(" , ");
 //        }
 
-        return sb.append(" ")
-                .append("CONSTRAINT PK PRIMARY KEY (")
-                .append(CHROMOSOME).append(", ")
-                .append(POSITION).append(", ")
-                .append(REFERENCE).append(", ")
-                .append(ALTERNATE).append(") ").append(") ").toString();
+        sb.append(" CONSTRAINT PK PRIMARY KEY (");
+        for (Iterator<Column> iterator = PRIMARY_KEY.iterator(); iterator.hasNext();) {
+            Column column = iterator.next();
+            sb.append(column);
+            if (iterator.hasNext()) {
+                sb.append(", ");
+            }
+        }
+        return sb.append(") )").toString();
     }
 
     public void createVariantIndexes(Connection con, String variantsTableName) throws SQLException {
