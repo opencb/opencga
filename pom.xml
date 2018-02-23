@@ -46,8 +46,8 @@
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
         <avro.version>1.7.7</avro.version>
-        <protobuf>3.5.1</protobuf>
-        <grpc>1.9.1</grpc>
+        <protobuf.version>3.5.1</protobuf.version>
+        <grpc.version>1.9.1</grpc.version>
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
         <solr.version>6.4.1</solr.version>
