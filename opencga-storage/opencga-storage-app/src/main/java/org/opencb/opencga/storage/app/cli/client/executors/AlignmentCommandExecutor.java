@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.storage.app.cli.client.executors;
 
-import org.opencb.biodata.formats.feature.gff.io.GffReader;
-import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.models.core.Region;
+import org.apache.commons.lang3.StringUtils;
+import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.client.ClientCliOptionsParser;
@@ -32,9 +35,12 @@ import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URI;
-import java.util.List;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 22/05/15.
@@ -42,7 +48,7 @@ import java.util.List;
 public class AlignmentCommandExecutor extends CommandExecutor {
 
     private StorageEngineConfiguration storageConfiguration;
-    private AlignmentStorageEngine alignmentStorageManager;
+    private AlignmentStorageEngine alignmentStorageEngine;
 
     private StorageAlignmentCommandOptions alignmentCommandOptions;
 
@@ -70,9 +76,9 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         // TODO: Start passing catalogManager
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
         if (storageEngine == null || storageEngine.isEmpty()) {
-            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(null, dbName);
+            this.alignmentStorageEngine = storageEngineFactory.getAlignmentStorageEngine(null, dbName);
         } else {
-            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine, dbName);
+            this.alignmentStorageEngine = storageEngineFactory.getAlignmentStorageEngine(storageEngine, dbName);
         }
     }
 
@@ -81,7 +87,6 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing alignment command line");
 
-//        String subCommandString = alignmentCommandOptions.getParsedSubCommand();
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         switch (subCommandString) {
             case "index":
@@ -89,7 +94,11 @@ public class AlignmentCommandExecutor extends CommandExecutor {
                 index();
                 break;
             case "query":
-                configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions, alignmentCommandOptions.queryAlignmentsCommandOptions.commonQueryOptions.dbName);
+                configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions, "");
+                query();
+                break;
+            case "coverage":
+                configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions, "");
                 query();
                 break;
             default:
@@ -113,9 +122,9 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 //        FileUtils.checkDirectory(Paths.get(outdirUri.getPath()));
         logger.debug("All files and directories exist");
 
-            /*
-             * Add CLI options to the alignmentOptions
-             */
+        /*
+         * Add CLI options to the alignmentOptions
+         */
         ObjectMap alignmentOptions = storageConfiguration.getAlignment().getOptions();
 //        if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
 //            alignmentOptions.put(AlignmentStorageEngineOld.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
@@ -152,7 +161,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             load = indexAlignmentsCommandOptions.load;
         }
 
-        try (StoragePipeline storagePipeline = alignmentStorageManager.newStoragePipeline(true)) {
+        try (StoragePipeline storagePipeline = alignmentStorageEngine.newStoragePipeline(true)) {
 
             if (extract) {
                 logger.info("-- Extract alignments -- {}", inputUri);
@@ -179,121 +188,92 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         }
     }
 
-    private void query() throws StorageEngineException, FileFormatException {
+    private void query() throws StorageEngineException, IOException {
         StorageAlignmentCommandOptions.QueryAlignmentsCommandOptions queryAlignmentsCommandOptions = alignmentCommandOptions.queryAlignmentsCommandOptions;
-        AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor();
 
-        /**
-         * Parse Regions
-         */
-        GffReader gffReader = null;
-        List<Region> regions = null;
-        if (queryAlignmentsCommandOptions.region != null && !queryAlignmentsCommandOptions.region.isEmpty()) {
-            regions = Region.parseRegions(queryAlignmentsCommandOptions.region);
-            logger.debug("Processed regions: '{}'", regions);
-//            regions = new LinkedList<>();
-//            for (String csvRegion : queryAlignmentsCommandOptions.regions) {
-//                for (String strRegion : csvRegion.split(",")) {
-//                    Region region = new Region(strRegion);
-//                    regions.add(region);
-//                    logger.info("Parsed region: {}", region);
-//                }
-//            }
-        } else if (queryAlignmentsCommandOptions.regionFile != null && !queryAlignmentsCommandOptions.regionFile.isEmpty()) {
-            try {
-                gffReader = new GffReader(queryAlignmentsCommandOptions.regionFile);
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            //throw new UnsupportedOperationException("Unsuppoted GFF file");
-        }
+        Path path = Paths.get(queryAlignmentsCommandOptions.filePath);
+        FileUtils.checkFile(path);
 
-        /**
-         * Parse QueryOptions
-         */
-        QueryOptions options = new QueryOptions();
-
-        if (queryAlignmentsCommandOptions.fileId != null && !queryAlignmentsCommandOptions.fileId.isEmpty()) {
-            options.add(AlignmentDBAdaptor.QO_FILE_ID, queryAlignmentsCommandOptions.fileId);
-        }
-        options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, queryAlignmentsCommandOptions.coverage);
-        options.add(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, queryAlignmentsCommandOptions.asPairs);
-        options.add(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, queryAlignmentsCommandOptions.processDifferences);
-        if (queryAlignmentsCommandOptions.histogram) {
-            options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, true);
-            options.add(AlignmentDBAdaptor.QO_HISTOGRAM, true);
-            options.add(AlignmentDBAdaptor.QO_INTERVAL_SIZE, queryAlignmentsCommandOptions.histogram);
-        }
-        if (queryAlignmentsCommandOptions.filePath != null && !queryAlignmentsCommandOptions.filePath.isEmpty()) {
-            options.add(AlignmentDBAdaptor.QO_BAM_PATH, queryAlignmentsCommandOptions.filePath);
+        if (StringUtils.isEmpty(queryAlignmentsCommandOptions.region)) {
+            logger.warn("'region' parameter cannot be empty");
+            return;
         }
 
 
-        if (queryAlignmentsCommandOptions.stats != null && !queryAlignmentsCommandOptions.stats.isEmpty()) {
-            for (String csvStat : queryAlignmentsCommandOptions.stats) {
-                for (String stat : csvStat.split(",")) {
-                    int index = stat.indexOf("<");
-                    index = index >= 0 ? index : stat.indexOf("!");
-                    index = index >= 0 ? index : stat.indexOf("~");
-                    index = index >= 0 ? index : stat.indexOf("<");
-                    index = index >= 0 ? index : stat.indexOf(">");
-                    index = index >= 0 ? index : stat.indexOf("=");
-                    if (index < 0) {
-                        throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
-                    }
-                    String name = stat.substring(0, index);
-                    String cond = stat.substring(index);
+        Query query = new Query();
+        query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), queryAlignmentsCommandOptions.minMapq);
+        query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MAX_NM.key(), queryAlignmentsCommandOptions.maxNm);
+        query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MAX_NH.key(), queryAlignmentsCommandOptions.maxNH);
+        query.putIfNotNull(AlignmentDBAdaptor.QueryParams.PROPERLY_PAIRED.key(), queryAlignmentsCommandOptions.properlyPaired);
+        query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MAX_INSERT_SIZE.key(), queryAlignmentsCommandOptions.maxInsertSize);
+        query.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP_UNMAPPED.key(), queryAlignmentsCommandOptions.skipUnmapped);
+        query.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP_DUPLICATED.key(), queryAlignmentsCommandOptions.skipDuplicated);
 
-                    if (name.matches("")) {
-                        options.put(name, cond);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), queryAlignmentsCommandOptions.contained);
+        queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(), queryAlignmentsCommandOptions.mdField);
+        queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(), queryAlignmentsCommandOptions.binQualities);
+        queryOptions.putIfNotNull(QueryOptions.LIMIT, queryAlignmentsCommandOptions.limit);
+        queryOptions.putIfNotNull(QueryOptions.COUNT, queryAlignmentsCommandOptions.count);
+
+
+        PrintStream out = System.out;
+        if (StringUtils.isNotEmpty(queryAlignmentsCommandOptions.output)) {
+            out = new PrintStream(queryAlignmentsCommandOptions.output);
+        }
+
+        String[] regions = queryAlignmentsCommandOptions.region.split(",");
+        switch (queryAlignmentsCommandOptions.mode.toLowerCase()) {
+            case "rest":
+                break;
+            case "grpc":
+                break;
+            default:
+                for (String region : regions) {
+                    logger.debug("Processing region '{}'", region);
+                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), queryAlignmentsCommandOptions.region);
+                    if (queryAlignmentsCommandOptions.count) {
+                        QueryResult<Long> longQueryResult = this.alignmentStorageEngine.getDBAdaptor().count(path, query, queryOptions);
+                        if (longQueryResult != null) {
+                            out.println(region + "\t" + longQueryResult.first());
+                        }
                     } else {
-                        throw new UnsupportedOperationException("Unknown stat filter name: " + name);
+                        QueryResult<ReadAlignment> readAlignmentQueryResult = this.alignmentStorageEngine.getDBAdaptor().get(path, query, queryOptions);
+                        if (readAlignmentQueryResult != null) {
+                            if (queryAlignmentsCommandOptions.outputFormat.equalsIgnoreCase("SAM")) {
+                                SAMRecordToAvroReadAlignmentBiConverter samRecordToAvroReadAlignmentBiConverter =
+                                        new SAMRecordToAvroReadAlignmentBiConverter(queryAlignmentsCommandOptions.binQualities);
+                                for (ReadAlignment readAlignment : readAlignmentQueryResult.getResult()) {
+                                    out.println(samRecordToAvroReadAlignmentBiConverter.from(readAlignment).getSAMString());
+                                }
+                            } else {
+                                for (ReadAlignment readAlignment : readAlignmentQueryResult.getResult()) {
+                                    out.println(readAlignment.toString());
+                                }
+                            }
+                        }
                     }
-                    logger.info("Parsed stat filter: {} {}", name, cond);
                 }
-            }
+                break;
+
         }
 
+        out.close();
 
-        /**
-         * Run query
-         */
-//        int subListSize = 20;
-//        logger.info("options = {}", options.toJson());
-//        if (queryAlignmentsCommandOptions.histogram) {
-//            for (Region region : regions) {
-//                System.out.println(dbAdaptor.getAllIntervalFrequencies(region, options));
-//            }
-//        } else if (regions != null && !regions.isEmpty()) {
-//            for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
-//                List<Region> subRegions = regions.subList(
-//                        i * subListSize,
-//                        Math.min((i + 1) * subListSize, regions.size()));
-//
-//                logger.info("subRegions = " + subRegions);
-//                QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
-//                logger.info("{}", queryResult);
-//                System.out.println(new ObjectMap("queryResult", queryResult).toJson());
-//            }
-//        } else if (gffReader != null) {
-//            List<Gff> gffList;
-//            List<Region> subRegions;
-//            while ((gffList = gffReader.read(subListSize)) != null) {
-//                subRegions = new ArrayList<>(subListSize);
-//                for (Gff gff : gffList) {
-//                    subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
+        // We use gRPC to query BAM file
+//            Map<String, String> queryMap = new HashMap<>();
+//            Map<String, String> queryOptionsMap = new HashMap<>();
+//            for (String key : params.keySet()) {
+//                if (query.containsKey(key)) {
+//                    queryMap.put(key, query.getString(key));
+//                } else {
+//                    queryOptionsMap.put(key, params.getString(key));
 //                }
-//
-//                logger.info("subRegions = " + subRegions);
-//                QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
-//                logger.info("{}", queryResult);
-//                System.out.println(new ObjectMap("queryResult", queryResult).toJson());
 //            }
-//        } else {
-//            throw new UnsupportedOperationException("Unable to fetch over all the genome");
-////                System.out.println(dbAdaptor.getAllAlignments(options));
-//        }
+
+    }
+    private void coverage() throws StorageEngineException, IOException {
+        logger.warn("Not implemented yet");
+
     }
 }

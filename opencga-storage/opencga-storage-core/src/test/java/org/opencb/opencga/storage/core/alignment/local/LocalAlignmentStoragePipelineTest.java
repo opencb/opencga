@@ -31,13 +31,13 @@ import java.nio.file.Paths;
 public class LocalAlignmentStoragePipelineTest {
     @Test
     public void transform() throws Exception {
-////        String inputPath = getClass().getResource("/HG00096.chrom20.small.bam").toString();
+        String inputPath = getClass().getResource("/HG00096.chrom20.small.bam").toString();
 //        String inputPath = "/tmp/kk/ebi.bam";
-////        String inputPath = "/tmp/kk/HG00096.chrom20.small.bam";
-//        String outputPath = "/tmp/kk/";
+//        String inputPath = "/tmp/HG00096.chrom20.small.bam";
+        String outputPath = "/tmp/";
 //        System.out.println("inputPath = " + inputPath);
-//        DefaultAlignmentStorageETL storageETL = new DefaultAlignmentStorageETL();
-//        storageETL.transform(new URI(inputPath), null, new URI(outputPath));
+        LocalAlignmentStoragePipeline storageETL = new LocalAlignmentStoragePipeline();
+        storageETL.transform(new URI(inputPath), null, new URI(outputPath));
     }
 
     @Test

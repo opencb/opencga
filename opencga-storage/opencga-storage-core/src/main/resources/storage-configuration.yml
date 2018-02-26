@@ -73,7 +73,7 @@ storageEngines:
   options: {}     ## this field is intended to be removed, try not to use it.
   alignment:
 #    manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageEngine"
-    manager: "org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentStorageEngine"
+    manager: "org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine"
     options:
       database.name: "opencga"
       tools.samtools: "${OPENCGA.INSTALLATION.DIR}/tools/samtools/samtools"

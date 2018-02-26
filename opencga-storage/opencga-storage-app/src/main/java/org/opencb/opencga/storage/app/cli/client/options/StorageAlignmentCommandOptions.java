@@ -33,6 +33,7 @@ public class StorageAlignmentCommandOptions {
 
     public IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
     public QueryAlignmentsCommandOptions queryAlignmentsCommandOptions;
+    public CoverageAlignmentsCommandOptions coverageAlignmentsCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
@@ -48,10 +49,11 @@ public class StorageAlignmentCommandOptions {
 
         this.indexAlignmentsCommandOptions = new IndexAlignmentsCommandOptions();
         this.queryAlignmentsCommandOptions = new QueryAlignmentsCommandOptions();
+        this.coverageAlignmentsCommandOptions = new CoverageAlignmentsCommandOptions();
     }
 
 
-    @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
+    @Parameters(commandNames = {"index"}, commandDescription = "Create the BAI file")
     public class IndexAlignmentsCommandOptions {
 
         @ParametersDelegate
@@ -77,45 +79,91 @@ public class StorageAlignmentCommandOptions {
         public List<String> meanCoverage;
     }
 
+
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")
     public class QueryAlignmentsCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
-        @ParametersDelegate
-        public GeneralCliOptions.QueryCommandOptions commonQueryOptions = queryCommandOptions;
 
-        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
-                required = false)
-        public String region;
+        @Parameter(names = {"--mode"}, description = "Whether to use 'local' or 'gRPC' server mode", arity = 1)
+        public String mode = "local";
 
-        @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
-        public String regionFile;
+        @Parameter(names = {"--server-url"}, description = "REST or gRPC server host and port", arity = 1)
+        public String host = "localhost:9091";
 
-        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes", required = false)
-        public String gene;
-
-        @Parameter(names = {"-a", "--alias"}, description = "File unique ID.", required = false, arity = 1)
-        public String fileId;
-
-        @Parameter(names = {"--file-path"}, description = "", required = false, arity = 1)
+        @Parameter(names = {"--file"}, description = "Path to the BAM or CRAM file", required = true, arity = 1)
         public String filePath;
 
-        @Parameter(names = {"--include-coverage"}, description = " [CSV]", required = false)
-        public boolean coverage = false;
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
+        public String output;
 
-        @Parameter(names = {"-H", "--histogram"}, description = " ", required = false, arity = 1)
-        public boolean histogram = false;
+        @Parameter(names = {"--of", "--output-format"}, description = "Output file. [STDOUT]", arity = 1)
+        public String outputFormat = "GA4GH";
 
-        @Parameter(names = {"--view-as-pairs"}, description = " ", required = false)
-        public boolean asPairs;
+        @Parameter(names = {"-r", "--region"}, required = true, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000")
+        public String region;
 
-        @Parameter(names = {"--process-differences"}, description = " ", required = false)
-        public boolean processDifferences;
+        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes")
+        public String gene;
 
-        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
-        public List<String> stats = new LinkedList<>();
+        @Parameter(names = {"--min-mapq"}, description = "Window size")
+        public Integer minMapq;
+
+        @Parameter(names = {"--max-nm"}, description = "Window size")
+        public Integer maxNm;
+
+        @Parameter(names = {"--max-nh"}, description = "Window size")
+        public Integer maxNH;
+
+        @Parameter(names = {"--properly-paired"}, description = "Window size")
+        public boolean properlyPaired;
+
+        @Parameter(names = {"--max-insert-size"}, description = "Window size")
+        public Integer maxInsertSize;
+
+        @Parameter(names = {"--skip-unmapped"}, description = "Window size")
+        public boolean skipUnmapped;
+
+        @Parameter(names = {"--skip-duplicated"}, description = "Window size")
+        public boolean skipDuplicated;
+
+        @Parameter(names = {"--contained"}, description = "Window size")
+        public boolean contained;
+
+        @Parameter(names = {"--md-field"}, description = "Window size")
+        public boolean mdField;
+
+        @Parameter(names = {"--bin-qualities"}, description = "Window size")
+        public boolean binQualities;
+
+        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements", arity = 1)
+        public int limit;
+
+        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", arity = 0)
+        public boolean count;
+
+//        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
+//        public List<String> stats = new LinkedList<>();
+
+    }
+
+    @Parameters(commandNames = {"coverage"}, commandDescription = "Return the coverage from the BigWig file if exists")
+    public class CoverageAlignmentsCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+
+        @Parameter(names = {"--file"}, description = "BAM/CRAM file path", required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"-r", "--region"}, required = true, description = "Comma-separated list of regions 'chr:start-end'")
+        public String region;
+
+        @Parameter(names = {"-w", "--window-size"}, description = "Window size")
+        public int windowSize = 1;
 
     }
 }
