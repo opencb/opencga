@@ -7,7 +7,6 @@ import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
@@ -15,10 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingMapper.setFileBatches;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingMapper.setIndexedFiles;
 
 /**
  * Created on 14/02/18.
@@ -51,13 +48,12 @@ public class PrepareFillMissingDriver extends AbstractAnalysisTableDriver {
         getConf().iterator().forEachRemaining(entry -> options.put(entry.getKey(), entry.getValue()));
 
         StudyConfiguration sc = readStudyConfiguration();
-        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(getConf());
-        Set<Integer> fileBatches = sc.getIndexedFiles().stream().map(rowKeyFactory::getFileBatch).collect(Collectors.toSet());
-        setFileBatches(job.getConfiguration(), fileBatches);
+        setIndexedFiles(job.getConfiguration(), sc.getIndexedFiles());
 
         Scan scan = new Scan();
         scan.setCacheBlocks(false);
         scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.getStudyColumn(getStudyId()).bytes());
+        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.getFillMissingColumn(getStudyId()).bytes());
 
         LOG.info(scan.toString());
 

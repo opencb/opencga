@@ -14,7 +14,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
-import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -36,9 +36,9 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.TaskWithException<Result, Put, IOException> {
+public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
 
-    private static final Comparator<Variant> VARIANT_COMPARATOR = Comparator
+    protected static final Comparator<Variant> VARIANT_COMPARATOR = Comparator
             .comparing(Variant::getStart)
             .thenComparing(Variant::getEnd)
             .thenComparing(Variant::getReference)
@@ -111,24 +111,7 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
     }
 
     public List<Put> fillGaps(Context context) throws IOException {
-        Map<Variant, Set<Integer>> variantsToFill = new TreeMap<>(VARIANT_COMPARATOR);
-
-        // If filling all the files, (i.e. fill missing) we can use the list of already processed variants and files
-        if (context.getNewFiles().isEmpty()) {
-            increment("NO_NEW_FILES", context.fileBatch, 1);
-            // No files to process. Nothing to do!
-            return Collections.emptyList();
-        } else { // New files
-            for (Variant variant : context.getProcessedVariants()) {
-                // Already processed variants has to be filled with new files only
-                variantsToFill.put(variant, new HashSet<>(context.getNewFiles()));
-            }
-            // New variants?
-            for (Variant variant : context.getNewVariants()) {
-                // New variants has to be filled with all files
-                variantsToFill.put(variant, new HashSet<>(context.getAllFiles()));
-            }
-        }
+        Map<Variant, Set<Integer>> variantsToFill = context.getVariantsToFill();
 
         // Use a sorted map to fetch VcfSlice orderly
         SortedMap<Integer, List<Variant>> fileToVariantsMap = new TreeMap<>();
@@ -162,7 +145,7 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
 
             Set<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
             for (Variant variant : variants) {
-                Put put = putsMap.computeIfAbsent(variant, v -> new Put(VariantPhoenixKeyFactory.generateVariantRowKey(v)));
+                Put put = putsMap.computeIfAbsent(variant, this::createPut);
 
                 StopWatch stopWatch = new StopWatch().start();
                 VariantOverlappingStatus overlappingStatus = fillGapsTask.fillGaps(variant, sampleIds, put, fileId,
@@ -177,6 +160,8 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
         for (Put put : putsMap.values()) {
             if (!put.isEmpty()) {
                 puts.add(put);
+            } else {
+                increment("PUTS_EMPTY", context.fileBatch, 1);
             }
         }
         if (puts.isEmpty()) {
@@ -187,30 +172,31 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
         return puts;
     }
 
+    protected Put createPut(Variant v) {
+        return new Put(VariantPhoenixKeyFactory.generateVariantRowKey(v));
+    }
+
     protected abstract Context buildContext(Result result) throws IOException;
 
     public abstract class Context {
-        /** Empty variants (just chr:pos:ref:alt) for the current region. */
-        protected final List<Variant> variants;
-        /** List of already processed files in this region. */
-        protected final List<Integer> processedFiles;
-        /** List of already processed variants in this region. */
-        protected final List<Variant> processedVariants;
         /** Current rowkey from archive table. */
         protected final byte[] rowKey;
 
         /** Look up map of VcfSlice objects. */
         protected final Map<Integer, VcfSlicePair> filesMap;
         protected final SortedSet<Integer> fileIdsInBatch;
-        protected final SortedSet<Integer> newFiles;
-        protected final SortedSet<Variant> newVariants;
         protected final Result result;
         protected final int fileBatch;
+
+        protected final Region region;
 
         protected Context(Result result) throws IOException {
             this.rowKey = result.getRow();
             this.result = result;
-            fileBatch = rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(rowKey));
+            String blockId = Bytes.toString(rowKey);
+            region = rowKeyFactory.extractRegionFromBlockId(blockId);
+
+            fileBatch = rowKeyFactory.extractFileBatchFromBlockId(blockId);
             this.fileIdsInBatch = new TreeSet<>();
             for (Integer fileId : AbstractFillFromArchiveTask.this.fileIds) {
                 if (rowKeyFactory.getFileBatch(fileId) == fileBatch) {
@@ -218,39 +204,20 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
                 }
             }
             if (fileIdsInBatch.isEmpty()) {
-                throw new IllegalStateException("Read data from RK " + Bytes.toString(rowKey) + " from file batch " + fileBatch
+                throw new IllegalStateException("Read data from RK " + blockId + " from file batch " + fileBatch
                         + " without any file from " + AbstractFillFromArchiveTask.this.fileIds);
             }
 
             filesMap = new HashMap<>();
 
-            // TODO: Find list of processed files.
-            // TODO: If fillAllFiles == true, (global fill operation), this can be stored in the StudyConfiguration
-            // if fillAllFiles == true
-            //     processedFiles = studyConfiguration.getXXXX()
-            // TODO: Should we store this for each chunk? Or should we store a timestamp to indicate how updated is this chunk?
-            this.processedFiles = Collections.emptyList();
-            // TODO: Find list of processed variants
-            this.processedVariants = Collections.emptyList();
-
-            newFiles = new TreeSet<>(fileIdsInBatch);
-            newFiles.removeAll(processedFiles);
-
-            StopWatch stopWatch = new StopWatch().start();
-            variants = extractVariantsToFill();
-            increment("EXTRACT_VARIANTS_TO_FILL", fileBatch, stopWatch);
-
-            // Do not compute Variant::hashCode
-            newVariants = new TreeSet<>(VARIANT_COMPARATOR);
-            newVariants.addAll(variants);
-            newVariants.removeAll(processedVariants);
+//            StopWatch stopWatch = new StopWatch().start();
+//            variants = extractVariantsToFill();
+//            increment("EXTRACT_VARIANTS_TO_FILL", fileBatch, stopWatch);
 
             increment("RESULTS", 1);
             increment("RESULTS", fileBatch, 1);
-            increment("VARIANTS_TO_FILL", fileBatch, variants.size());
+//            increment("VARIANTS_TO_FILL", fileBatch, variants.size());
         }
-
-        protected abstract List<Variant> extractVariantsToFill() throws IOException;
 
         public VcfSlicePair getVcfSlice(int fileId) throws IOException {
             if (!filesMap.containsKey(fileId)) {
@@ -267,10 +234,6 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             }
             return filesMap.get(fileId);
         }
-
-        protected abstract void vcfSliceNotFound(int fileId);
-
-        protected abstract VcfSlicePair getVcfSlicePairFromResult(Integer fileId) throws IOException;
 
         public VcfSlice parseVcfSlice(byte[] data) throws IOException {
             VcfSlice vcfSlice;
@@ -289,32 +252,15 @@ public abstract class AbstractFillFromArchiveTask implements ParallelTaskRunner.
             return vcfSlice;
         }
 
-        public Set<Variant> getNewVariants() {
-//            return variants - processedVariants;
-            return newVariants;
-        }
-        public List<Variant> getVariants() {
-            return variants;
-        }
-
-        public SortedSet<Integer> getNewFiles() {
-//            return files - processedFiles;
-            return newFiles;
-        }
-
-        public abstract Set<Integer> getAllFiles();
-
-        public List<Integer> getProcessedFiles() {
-            return processedFiles;
-        }
-
-        public List<Variant> getProcessedVariants() {
-            return processedVariants;
-        }
-
         public void clearVcfSlice(Integer fileId) {
             filesMap.put(fileId, null);
         }
+
+        protected abstract void vcfSliceNotFound(int fileId);
+
+        protected abstract VcfSlicePair getVcfSlicePairFromResult(Integer fileId) throws IOException;
+
+        public abstract TreeMap<Variant, Set<Integer>> getVariantsToFill() throws IOException;
     }
 
     public static class VcfSlicePair {

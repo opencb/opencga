@@ -87,7 +87,6 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
             // input
             VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, variantTableName, scan, FillGapsFromArchiveMapper.class);
-            job.getConfiguration().setInt(AbstractAnalysisTableDriver.TIMESTAMP, 5); // Not used, but must be defined
         } else if (input.equalsIgnoreCase("phoenix")) {
             // Sql
             Query query = buildQuery(getStudyId(), samples, getFiles());

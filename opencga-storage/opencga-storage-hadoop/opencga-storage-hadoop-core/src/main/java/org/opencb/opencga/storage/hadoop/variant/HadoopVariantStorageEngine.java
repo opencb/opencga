@@ -385,7 +385,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         scm.lockAndUpdate(study, sc -> {
             boolean resume = options.getBoolean(RESUME.key(), RESUME.defaultValue());
-            StudyConfigurationManager.addBatchOperation(
+            BatchFileOperation operation = StudyConfigurationManager.addBatchOperation(
                     sc,
                     jobOperationName,
                     fileIdsList,
@@ -393,6 +393,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     BatchFileOperation.Type.OTHER,
                     // Allow concurrent operations if fillGaps.
                     (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
+
+            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
             return sc;
         });
 
@@ -439,6 +441,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         jobOperationName, fileIdsList);
                 if (!fillGaps && StringUtils.isEmpty(options.getString(VariantQueryParam.REGION.key()))) {
                     sc.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
+                    sc.getAttributes().put("lastFile", new ArrayList<>(sc.getIndexedFiles()).get(sc.getIndexedFiles().size() - 1));
                 }
                 return sc;
             });

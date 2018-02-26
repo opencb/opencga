@@ -130,9 +130,6 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         checkNewMissingPositions(dbAdaptor);
     }
 
-
-
-
     @Test
     public void testFillMissingPlatinumFiles() throws Exception {
         ObjectMap options = new ObjectMap()

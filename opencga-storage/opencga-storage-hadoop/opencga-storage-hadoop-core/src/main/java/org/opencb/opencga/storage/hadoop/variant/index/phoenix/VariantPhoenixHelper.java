@@ -84,6 +84,7 @@ public class VariantPhoenixHelper {
         POSITION("POSITION", PUnsignedInt.INSTANCE),
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
         ALTERNATE("ALTERNATE", PVarchar.INSTANCE),
+
         TYPE("TYPE", PVarchar.INSTANCE),
 
         SO(ANNOTATION_PREFIX + "SO", PIntegerArray.INSTANCE),
@@ -561,6 +562,10 @@ public class VariantPhoenixHelper {
 
     public static Column getFileColumn(int studyId, int sampleId) {
         return Column.build(buildFileColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
+    }
+
+    public static Column getFillMissingColumn(int studyId) {
+        return Column.build("_" + studyId + "_FM", PInteger.INSTANCE);
     }
 
     public static String getEscapedFullTableName(String fullTableName, Configuration conf) {
