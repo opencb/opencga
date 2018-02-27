@@ -91,7 +91,7 @@ public class StorageAlignmentCommandOptions {
         public String mode = "local";
 
         @Parameter(names = {"--server-url"}, description = "REST or gRPC server host and port", arity = 1)
-        public String host = "localhost:9091";
+        public String serverUrl = "localhost:9091";
 
         @Parameter(names = {"--file"}, description = "Path to the BAM or CRAM file", required = true, arity = 1)
         public String filePath;

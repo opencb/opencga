@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.storage.app.cli.client.executors;
 
+import ga4gh.Reads;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
@@ -34,6 +37,11 @@ import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.BeaconResponse;
+import org.opencb.opencga.storage.server.grpc.AlignmentGrpcService;
+import org.opencb.opencga.storage.server.grpc.AlignmentServiceGrpc;
+import org.opencb.opencga.storage.server.grpc.AlignmentServiceModel;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -41,6 +49,10 @@ import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by imedina on 22/05/15.
@@ -188,7 +200,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         }
     }
 
-    private void query() throws StorageEngineException, IOException {
+    private void query() throws StorageEngineException, IOException, InterruptedException {
         StorageAlignmentCommandOptions.QueryAlignmentsCommandOptions queryAlignmentsCommandOptions = alignmentCommandOptions.queryAlignmentsCommandOptions;
 
         Path path = Paths.get(queryAlignmentsCommandOptions.filePath);
@@ -198,7 +210,6 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             logger.warn("'region' parameter cannot be empty");
             return;
         }
-
 
         Query query = new Query();
         query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), queryAlignmentsCommandOptions.minMapq);
@@ -227,11 +238,38 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             case "rest":
                 break;
             case "grpc":
+                // Only one region is allowed in gRPC
+                query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regions[0]);
+
+                ManagedChannel channel = getManagedChannel(queryAlignmentsCommandOptions.serverUrl);
+                AlignmentServiceGrpc.AlignmentServiceBlockingStub alignmentServiceBlockingStub =
+                        AlignmentServiceGrpc.newBlockingStub(channel);
+                AlignmentServiceModel.AlignmentRequest alignmentRequest =
+                        getAlignmentRequest(queryAlignmentsCommandOptions.filePath, query, queryOptions);
+
+                if (queryAlignmentsCommandOptions.count) {
+                    AlignmentServiceModel.LongResponse count = alignmentServiceBlockingStub.count(alignmentRequest);
+                    System.out.println(count.getValue());
+                } else {
+                    if (queryAlignmentsCommandOptions.outputFormat.equalsIgnoreCase("SAM")) {
+                        Iterator<AlignmentServiceModel.StringResponse> samRecordString = alignmentServiceBlockingStub.getAsSam(alignmentRequest);
+                        while (samRecordString.hasNext()) {
+                            System.out.print(samRecordString.next().getValue());
+                        }
+                    } else {
+                        Iterator<Reads.ReadAlignment> readAlignmentIterator = alignmentServiceBlockingStub.get(alignmentRequest);
+                        while (readAlignmentIterator.hasNext()) {
+                            System.out.print(readAlignmentIterator.next().getAlignment());
+                        }
+                    }
+                }
+                channel.shutdownNow().awaitTermination(2, TimeUnit.SECONDS);
                 break;
             default:
                 for (String region : regions) {
                     logger.debug("Processing region '{}'", region);
-                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), queryAlignmentsCommandOptions.region);
+                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
+
                     if (queryAlignmentsCommandOptions.count) {
                         QueryResult<Long> longQueryResult = this.alignmentStorageEngine.getDBAdaptor().count(path, query, queryOptions);
                         if (longQueryResult != null) {
@@ -255,25 +293,42 @@ public class AlignmentCommandExecutor extends CommandExecutor {
                     }
                 }
                 break;
-
         }
 
         out.close();
-
-        // We use gRPC to query BAM file
-//            Map<String, String> queryMap = new HashMap<>();
-//            Map<String, String> queryOptionsMap = new HashMap<>();
-//            for (String key : params.keySet()) {
-//                if (query.containsKey(key)) {
-//                    queryMap.put(key, query.getString(key));
-//                } else {
-//                    queryOptionsMap.put(key, params.getString(key));
-//                }
-//            }
-
     }
     private void coverage() throws StorageEngineException, IOException {
         logger.warn("Not implemented yet");
 
     }
+
+    private ManagedChannel getManagedChannel(String serverUrl) {
+        // We create the gRPC channel to the specified server host and port
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverUrl)
+                .usePlaintext(true)
+                .build();
+
+        return channel;
+    }
+
+    private AlignmentServiceModel.AlignmentRequest getAlignmentRequest(String file, Query query, QueryOptions queryOptions) {
+        Map<String, String> queryMap = new HashMap<>();
+        Map<String, String> queryOptionsMap = new HashMap<>();
+        for (String key : query.keySet()) {
+            queryMap.put(key, query.getString(key));
+        }
+        for (String key : queryOptions.keySet()) {
+            queryOptionsMap.put(key, queryOptions.getString(key));
+        }
+
+        // We create the OpenCGA gRPC request object with the query, queryOptions and sessionId
+        AlignmentServiceModel.AlignmentRequest request = AlignmentServiceModel.AlignmentRequest.newBuilder()
+                .setFile(file)
+                .putAllQuery(queryMap)
+                .putAllOptions(queryOptionsMap)
+                .build();
+
+        return request;
+    }
+
 }
