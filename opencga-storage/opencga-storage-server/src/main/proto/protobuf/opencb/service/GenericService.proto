@@ -1,7 +1,8 @@
 syntax = "proto3";
 
-package org.opencb.opencga.storage.server.grpc;
+package protobuf.opencb.service;
 
+option java_package = "org.opencb.opencga.storage.server.grpc";
 option java_outer_classname = "GenericServiceModel";
 
 message Request {

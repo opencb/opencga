@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -93,6 +94,27 @@ public class GenericGrpcService {
         }
     }
 
+    protected Query createQuery(Map<String, String> request) {
+        Query query = new Query();
+        for (String key : request.keySet()) {
+            if (request.get(key) != null) {
+                query.put(key, request.get(key));
+            }
+        }
+        return query;
+    }
+
+    protected QueryOptions createQueryOptions(Map<String, String> request) {
+        QueryOptions queryOptions = new QueryOptions();
+        for (String key : request.keySet()) {
+            if (request.get(key) != null) {
+                queryOptions.put(key, request.get(key));
+            }
+        }
+        return queryOptions;
+    }
+
+    @Deprecated
     protected Query createQuery(Request request) {
         Query query = new Query();
         for (String key : request.getQuery().keySet()) {
@@ -103,6 +125,7 @@ public class GenericGrpcService {
         return query;
     }
 
+    @Deprecated
     protected QueryOptions createQueryOptions(Request request) {
         QueryOptions queryOptions = new QueryOptions();
         for (String key : request.getOptions().keySet()) {
