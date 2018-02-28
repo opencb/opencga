@@ -92,6 +92,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
         LOADED_GENOTYPES("loadedGenotypes", null),
 
+        PARALLEL_WRITE("parallel.write", false),
+
         STAGE("stage", false),
         STAGE_RESUME("stage.resume", false),
         STAGE_PARALLEL_WRITE("stage.parallel.write", false),
@@ -125,6 +127,23 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
         public static boolean isResumeMerge(ObjectMap options) {
             return isResume(options) || options.getBoolean(MERGE_RESUME.key(), false);
+        }
+
+        public static boolean isDirectLoadParallelWrite(ObjectMap options) {
+            return isParallelWrite(DIRECT_LOAD_PARALLEL_WRITE, options);
+        }
+
+        public static boolean isStageParallelWrite(ObjectMap options) {
+            return isParallelWrite(STAGE_PARALLEL_WRITE, options);
+        }
+
+        public static boolean isMergeParallelWrite(ObjectMap options) {
+            return isParallelWrite(MERGE_PARALLEL_WRITE, options);
+        }
+
+        private static boolean isParallelWrite(MongoDBVariantOptions option, ObjectMap options) {
+            return options.getBoolean(PARALLEL_WRITE.key(), PARALLEL_WRITE.defaultValue())
+                    || options.getBoolean(option.key(), option.defaultValue());
         }
 
         public String key() {
