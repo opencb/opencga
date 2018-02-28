@@ -8,7 +8,9 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -138,9 +140,10 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
         StudyConfiguration studyConfiguration = loadPlatinum(options, 12877, 12878);
         assertFalse(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
-
         HadoopVariantStorageEngine variantStorageEngine = ((HadoopVariantStorageEngine) this.variantStorageEngine);
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        checkFillMissing(dbAdaptor);
+
         List<Integer> sampleIds = new ArrayList<>(studyConfiguration.getSampleIds().values());
         sampleIds.sort(Integer::compareTo);
 
@@ -148,21 +151,22 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         printVariants(dbAdaptor, newOutputUri());
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
-        checkFillMissing(dbAdaptor, "?/?");
+        checkFillMissing(dbAdaptor, "NA12877", "NA12878");
 
         studyConfiguration = loadPlatinum(options, 12879, 12879);
 
-        printVariants(dbAdaptor, newOutputUri());
+//        printVariants(dbAdaptor, newOutputUri());
         assertFalse(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
-        checkFillMissing(dbAdaptor, "0/0");
+        checkFillMissing(dbAdaptor, Arrays.asList(3), "NA12877", "NA12878");
 
         studyConfiguration = loadPlatinum(options, 12880, 12880);
+        checkFillMissing(dbAdaptor, Arrays.asList(3, 4), "NA12877", "NA12878");
 
         variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options);
         printVariants(dbAdaptor, newOutputUri());
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
-        checkFillMissing(dbAdaptor, "?/?");
+        checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880", "NA12881");
 
         checkNewMultiAllelicVariants(dbAdaptor);
         checkNewMissingPositions(dbAdaptor);
@@ -251,10 +255,25 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         }
     }
 
-    protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, String unexpectedGT) {
+    protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, String... processedSamples) {
+        checkFillMissing(dbAdaptor, Arrays.asList(), processedSamples);
+    }
+
+    protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, List<Integer> newFiles, String... processedSamples) {
+        Set<Integer> newFilesSet = new HashSet<>(newFiles);
+        Set<String> samplesSet = new HashSet<>(Arrays.asList(processedSamples));
         for (Variant variant : dbAdaptor) {
-            for (List<String> data : variant.getStudies().get(0).getSamplesData()) {
-                assertFalse(data.get(0).equals(unexpectedGT));
+            StudyEntry studyEntry = variant.getStudies().get(0);
+            boolean newVariant = studyEntry.getFiles().stream().map(FileEntry::getFileId).map(Integer::valueOf).allMatch(newFilesSet::contains);
+            List<List<String>> samplesData = studyEntry.getSamplesData();
+            for (int i = 0; i < samplesData.size(); i++) {
+                List<String> data = samplesData.get(i);
+                String sampleName = studyEntry.getOrderedSamplesName().get(i);
+                if (!newVariant && samplesSet.contains(sampleName)) {
+                    assertFalse((newVariant ? "new variant " : "") + variant + " _ " + sampleName + " should not have GT=?/?", data.get(0).equals("?/?"));
+                } else {
+                    assertFalse((newVariant ? "new variant " : "") + variant + " _ " + sampleName + " should not have GT=0/0", data.get(0).equals("0/0"));
+                }
             }
         }
     }

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PVarcharArray;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -78,6 +79,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
             .append(StudyConfigurationManager.CACHED, true);
     private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
+    private Map<Pair<Integer, Integer>, List<Boolean>> missingUpdatedSamplesMap = new HashMap<>();
 
     private boolean studyNameAsStudyId = false;
     private boolean simpleGenotypes = false;
@@ -149,9 +151,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     /**
      * Format of the converted variants. Discard other values.
-     * @see org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils#getIncludeFormats
+     *
      * @param formats Formats for converted variants
      * @return this
+     * @see org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils#getIncludeFormats
      */
     public HBaseToStudyEntryConverter setFormats(List<String> formats) {
         this.expectedFormat = formats;
@@ -226,10 +229,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
             HashMap<Integer, StudyEntry> map = new HashMap<>();
             for (Integer studyId : studies) {
+                int fillMissingColumnValue = resultSet.getInt(VariantPhoenixHelper.getFillMissingColumn(studyId).column());
                 StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
                 StudyEntry studyEntry = convert(
                         sampleDataMap.getOrDefault(studyId, Collections.emptyList()),
-                        filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration);
+                        filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration, fillMissingColumnValue);
                 BiMap<Integer, String> cohortIdMap = studyConfiguration.getCohortIds().inverse();
                 for (Map.Entry<Integer, VariantStats> entry : stats.getOrDefault(studyId, Collections.emptyMap()).entrySet()) {
                     studyEntry.setStats(cohortIdMap.get(entry.getKey()), entry.getValue());
@@ -284,9 +288,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         HashMap<Integer, StudyEntry> map = new HashMap<>();
         for (Integer studyId : studies) {
             StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
+            Integer fillMissingColumnValue = (Integer) PInteger.INSTANCE.toObject(result.getValue(columnFamily,
+                    VariantPhoenixHelper.getFillMissingColumn(studyId).bytes()));
+            fillMissingColumnValue = fillMissingColumnValue == null ? -1 : fillMissingColumnValue;
             StudyEntry studyEntry = convert(
                     sampleDataMap.getOrDefault(studyId, Collections.emptyList()),
-                    filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration);
+                    filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration, fillMissingColumnValue);
             BiMap<Integer, String> cohortIdMap = studyConfiguration.getCohortIds().inverse();
             for (Map.Entry<Integer, VariantStats> entry : stats.getOrDefault(studyId, Collections.emptyMap()).entrySet()) {
                 studyEntry.setStats(cohortIdMap.get(entry.getKey()), entry.getValue());
@@ -300,12 +307,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
                                  Variant variant, Integer studyId) {
-        return convert(sampleDataMap, filesMap, variant, getStudyConfiguration(studyId));
+        return convert(sampleDataMap, filesMap, variant, getStudyConfiguration(studyId), -1);
     }
 
     protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
-                                 Variant variant, StudyConfiguration studyConfiguration) {
+                                 Variant variant, StudyConfiguration studyConfiguration, int fillMissingColumnValue) {
         List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
@@ -327,7 +334,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         addSecondaryAlternates(variant, studyEntry, studyConfiguration, alternateFileMap);
 
-        fillEmptySamplesData(studyEntry, studyConfiguration);
+        fillEmptySamplesData(studyEntry, studyConfiguration, fillMissingColumnValue);
 
         return studyEntry;
     }
@@ -427,32 +434,93 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         studyEntry.getFiles().add(new FileEntry(fileId, (String) (fileColumn.getElement(FILE_CALL_IDX)), attributes));
     }
 
-    private void fillEmptySamplesData(StudyEntry studyEntry, StudyConfiguration studyConfiguration) {
+    private void fillEmptySamplesData(StudyEntry studyEntry, StudyConfiguration studyConfiguration, int fillMissingColumnValue) {
         List<String> format = studyEntry.getFormat();
         List<String> emptyData = new ArrayList<>(format.size());
+        List<String> emptyDataReferenceGenotype = new ArrayList<>(format.size());
         String defaultGenotype = getDefaultGenotype(studyConfiguration);
         for (String formatKey : format) {
             if (VariantMerger.GT_KEY.equals(formatKey)) {
                 emptyData.add(defaultGenotype);
+                emptyDataReferenceGenotype.add("0/0");
             } else {
                 emptyData.add(UNKNOWN_SAMPLE_DATA);
+                emptyDataReferenceGenotype.add(UNKNOWN_SAMPLE_DATA);
             }
         }
         // Make unmodifiable. All samples will share this information
         List<String> unmodifiableEmptyData = Collections.unmodifiableList(emptyData);
-        studyEntry.getSamplesData().replaceAll(strings -> {
-            if (strings == null) {
-                return unmodifiableEmptyData;
+        List<String> unmodifiableEmptyDataReferenceGenotype = Collections.unmodifiableList(emptyDataReferenceGenotype);
+
+
+        List<Boolean> missingUpdatedList = getMissingUpdatedSamples(studyConfiguration, fillMissingColumnValue);
+
+
+        ListIterator<List<String>> sampleIterator = studyEntry.getSamplesData().listIterator();
+        while (sampleIterator.hasNext()) {
+            List<String> sampleData = sampleIterator.next();
+            if (sampleData == null) {
+                int sampleIdx = sampleIterator.previousIndex();
+                if (missingUpdatedList.get(sampleIdx)) {
+                    sampleIterator.set(unmodifiableEmptyDataReferenceGenotype);
+                } else {
+                    sampleIterator.set(unmodifiableEmptyData);
+                }
             } else {
-                strings.replaceAll(s -> s == null ? UNKNOWN_SAMPLE_DATA : s);
-                if (strings.size() < unmodifiableEmptyData.size()) {
-                    for (int i = strings.size(); i < unmodifiableEmptyData.size(); i++) {
-                        strings.add(unmodifiableEmptyData.get(i));
+                sampleData.replaceAll(s -> s == null ? UNKNOWN_SAMPLE_DATA : s);
+                if (sampleData.size() < unmodifiableEmptyData.size()) {
+                    for (int i = sampleData.size(); i < unmodifiableEmptyData.size(); i++) {
+                        sampleData.add(unmodifiableEmptyData.get(i));
                     }
                 }
-                return strings;
             }
-        });
+        }
+
+    }
+
+    /**
+     * Given a study and the value of the fillMissingColumnValue {@link VariantPhoenixHelper::getFillMissingColumn}, gets a list of
+     * booleans, one per sample, ordered by the position in the StudyEntry.
+     *
+     * @param studyConfiguration The study configuration
+     * @param fillMissingColumnValue    Value of the column {@link VariantPhoenixHelper::getFillMissingColumn} containing the last
+     *                                  file updated by the fillMissing task
+     * @return List of boolean values, one per sample.
+     */
+    private List<Boolean> getMissingUpdatedSamples(StudyConfiguration studyConfiguration, int fillMissingColumnValue) {
+        Pair<Integer, Integer> pair = Pair.of(studyConfiguration.getStudyId(), fillMissingColumnValue);
+        List<Boolean> missingUpdatedList = missingUpdatedSamplesMap.get(pair);
+        if (missingUpdatedList == null) {
+            Set<Integer> sampleIds = new HashSet<>(selectVariantElements.getSamples().get(studyConfiguration.getStudyId()));
+            missingUpdatedList = Arrays.asList(new Boolean[sampleIds.size()]);
+            // If fillMissingColumnValue has an invalid value, the variant is new, so gaps must be returned as ?/? for every sample
+            if (studyConfiguration.getIndexedFiles().contains(fillMissingColumnValue)) {
+                LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
+                boolean missingUpdated = true;
+                for (Integer indexedFile : studyConfiguration.getIndexedFiles()) {
+                    LinkedHashSet<Integer> samples = studyConfiguration.getSamplesInFiles().get(indexedFile);
+                    for (Integer sampleId : samples) {
+                        if (sampleIds.contains(sampleId)) {
+                            missingUpdatedList.set(returnedSamplesPosition.get(studyConfiguration.getSampleIds().inverse().get(sampleId)),
+                                    missingUpdated);
+                        }
+                    }
+
+                    if (indexedFile == fillMissingColumnValue) {
+                        missingUpdated = false;
+                    }
+                }
+            } else {
+                if (fillMissingColumnValue > 0) {
+                    logger.warn("Last file updated '" + fillMissingColumnValue + "' is not indexed!");
+                }
+                for (int i = 0; i < missingUpdatedList.size(); i++) {
+                    missingUpdatedList.set(i, Boolean.FALSE);
+                }
+            }
+            missingUpdatedSamplesMap.put(pair, missingUpdatedList);
+        }
+        return missingUpdatedList;
     }
 
     private String getDefaultGenotype(StudyConfiguration studyConfiguration) {

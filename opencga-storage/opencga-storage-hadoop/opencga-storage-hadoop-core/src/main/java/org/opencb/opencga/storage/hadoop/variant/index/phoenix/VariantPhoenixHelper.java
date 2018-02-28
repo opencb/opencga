@@ -72,6 +72,7 @@ public class VariantPhoenixHelper {
     public static final byte[] HOM_REF_BYTES = Bytes.toBytes(HOM_REF);
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
     public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(CHROMOSOME, POSITION, REFERENCE, ALTERNATE));
+    public static final String FILL_MISSING_SUFIX = "_FM";
 
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
@@ -283,8 +284,8 @@ public class VariantPhoenixHelper {
     public void registerNewStudy(Connection con, String variantsTableName, Integer studyId) throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         createTableIfNeeded(con, variantsTableName);
-        Column studyColumn = getStudyColumn(studyId);
-        addMissingColumns(con, variantsTableName, Collections.singletonList(studyColumn), true);
+        List<Column> columns = Arrays.asList(getStudyColumn(studyId), getFillMissingColumn(studyId));
+        addMissingColumns(con, variantsTableName, columns, true);
         con.commit();
     }
 
@@ -565,7 +566,7 @@ public class VariantPhoenixHelper {
     }
 
     public static Column getFillMissingColumn(int studyId) {
-        return Column.build("_" + studyId + "_FM", PInteger.INSTANCE);
+        return Column.build("_" + studyId + FILL_MISSING_SUFIX, PInteger.INSTANCE);
     }
 
     public static String getEscapedFullTableName(String fullTableName, Configuration conf) {
