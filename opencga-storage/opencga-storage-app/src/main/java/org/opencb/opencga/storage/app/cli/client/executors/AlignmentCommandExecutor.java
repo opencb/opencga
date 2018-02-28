@@ -299,16 +299,40 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
         out.close();
     }
+
     private void coverage() throws Exception {
         StorageAlignmentCommandOptions.CoverageAlignmentsCommandOptions coverageAlignmentsCommandOptions = alignmentCommandOptions.coverageAlignmentsCommandOptions;
 
-        Path path = Paths.get(coverageAlignmentsCommandOptions.file);
-        FileUtils.checkFile(path);
+        switch (coverageAlignmentsCommandOptions.mode.toLowerCase()) {
+            case "grpc":
+                // Only one region is allowed in gRPC
+                Query query = new Query();
+                query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), coverageAlignmentsCommandOptions.region);
+                query.putIfNotNull(AlignmentDBAdaptor.QueryParams.WINDOW_SIZE.key(), coverageAlignmentsCommandOptions.windowSize);
 
-        Region region = Region.parseRegion(coverageAlignmentsCommandOptions.region);
-        QueryResult<RegionCoverage> coverage = this.alignmentStorageEngine.getDBAdaptor().coverage(path, region,
-                coverageAlignmentsCommandOptions.windowSize);
-        System.out.println("coverage = " + coverage);
+                ManagedChannel channel = getManagedChannel(coverageAlignmentsCommandOptions.serverUrl);
+                AlignmentServiceGrpc.AlignmentServiceBlockingStub alignmentServiceBlockingStub =
+                        AlignmentServiceGrpc.newBlockingStub(channel);
+                AlignmentServiceModel.AlignmentRequest alignmentRequest =
+                        getAlignmentRequest(coverageAlignmentsCommandOptions.file, query, QueryOptions.empty());
+
+                Iterator<AlignmentServiceModel.FloatResponse> coverageFloatResponse = alignmentServiceBlockingStub.coverage(alignmentRequest);
+                while (coverageFloatResponse.hasNext()) {
+                    System.out.println(coverageFloatResponse.next().getValue());
+                }
+
+                channel.shutdownNow().awaitTermination(2, TimeUnit.SECONDS);
+                break;
+            default:
+                Path path = Paths.get(coverageAlignmentsCommandOptions.file);
+                FileUtils.checkFile(path);
+
+                Region region = Region.parseRegion(coverageAlignmentsCommandOptions.region);
+                QueryResult<RegionCoverage> coverage = this.alignmentStorageEngine.getDBAdaptor().coverage(path, region,
+                        coverageAlignmentsCommandOptions.windowSize);
+                System.out.println("coverage = " + coverage);
+                break;
+        }
     }
 
     private ManagedChannel getManagedChannel(String serverUrl) {

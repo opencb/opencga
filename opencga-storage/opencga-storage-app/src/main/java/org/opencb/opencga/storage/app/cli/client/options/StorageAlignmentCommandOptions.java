@@ -156,6 +156,12 @@ public class StorageAlignmentCommandOptions {
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
 
+        @Parameter(names = {"--mode"}, description = "Whether to use 'local' or 'gRPC' server mode", arity = 1)
+        public String mode = "local";
+
+        @Parameter(names = {"--server-url"}, description = "REST or gRPC server host and port", arity = 1)
+        public String serverUrl = "localhost:9091";
+
         @Parameter(names = {"-i", "--input"}, description = "BAM/CRAM file path", required = true, arity = 1)
         public String file;
 

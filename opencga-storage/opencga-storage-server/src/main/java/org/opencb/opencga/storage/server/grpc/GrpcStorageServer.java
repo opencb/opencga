@@ -33,25 +33,23 @@ public class GrpcStorageServer extends AbstractStorageServer {
         this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
     }
 
+    public GrpcStorageServer(StorageConfiguration storageConfiguration) {
+        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
+    }
+
     public GrpcStorageServer(int port, String defaultStorageEngine) {
         super(port, defaultStorageEngine);
 
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public GrpcStorageServer(StorageConfiguration storageConfiguration) {
-        super(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
-        GrpcStorageServer.storageConfiguration = storageConfiguration;
-
-        logger = LoggerFactory.getLogger(this.getClass());
-    }
 
     @Override
     public void start() throws Exception {
         server = ServerBuilder.forPort(port)
-                .addService(new AdminGrpcService(storageConfiguration, this))
-                .addService(new VariantGrpcService(storageConfiguration))
                 .addService(new AlignmentGrpcService(storageConfiguration))
+                .addService(new VariantGrpcService(storageConfiguration))
+                .addService(new AdminGrpcService(storageConfiguration, this))
                 .build()
                 .start();
         logger.info("gRPC server started, listening on {}", port);

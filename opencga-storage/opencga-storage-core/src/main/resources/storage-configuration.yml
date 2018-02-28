@@ -27,7 +27,6 @@ server:
   grpc: 9091
   authManager: "org.opencb.opencga.storage.server.common.DefaultAuthManager"       ## Path to the AuthManager implementation class
   storageEngine: "mongodb"
-  authorizedHosts: ["0.0.0.0"]
   options: {}
 
 ## Cache Configuration

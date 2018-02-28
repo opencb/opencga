@@ -19,36 +19,45 @@ package org.opencb.opencga.storage.server.grpc;
 import ga4gh.Reads;
 import htsjdk.samtools.SAMRecord;
 import io.grpc.stub.StreamObserver;
+import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceImplBase {
 
-    private GenericGrpcService genericGrpcService;
+    private StorageConfiguration storageConfiguration;
+    private StorageEngineFactory storageEngineFactory;
 
     public AlignmentGrpcService(StorageConfiguration storageConfiguration) {
-//        super(storageConfiguration);
-        genericGrpcService = new GenericGrpcService(storageConfiguration);
+        this.storageConfiguration = storageConfiguration;
+
+        storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
     }
 
     @Override
     public void get(AlignmentServiceModel.AlignmentRequest request, StreamObserver<Reads.ReadAlignment> responseObserver) {
         try {
             AlignmentStorageEngine alignmentStorageEngine =
-                    GenericGrpcService.storageEngineFactory.getAlignmentStorageEngine(genericGrpcService.defaultStorageEngine, "");
+                    storageEngineFactory.getAlignmentStorageEngine(storageConfiguration.getDefaultStorageEngineId(), "");
 
             Path path = Paths.get(request.getFile());
-            Query query = genericGrpcService.createQuery(request.getQueryMap());
-            QueryOptions queryOptions = genericGrpcService.createQueryOptions(request.getOptionsMap());
+            FileUtils.checkFile(path);
+
+            Query query = GrpcServiceUtils.createQuery(request.getQueryMap());
+            QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
 
             int limit = queryOptions.getInt(QueryOptions.LIMIT) > 0 ? queryOptions.getInt(QueryOptions.LIMIT) : Integer.MAX_VALUE;
             int count = 0;
@@ -59,26 +68,50 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
                 responseObserver.onNext(readAlignment);
             }
             responseObserver.onCompleted();
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException | IOException e) {
             e.printStackTrace();
         }
     }
 
     @Override
     public void coverage(AlignmentServiceModel.AlignmentRequest request,
-                         StreamObserver<AlignmentServiceModel.IntArrayResponse> responseObserver) {
-        super.coverage(request, responseObserver);
+                         StreamObserver<AlignmentServiceModel.FloatResponse> responseObserver) {
+        try {
+            AlignmentStorageEngine alignmentStorageEngine =
+                    storageEngineFactory.getAlignmentStorageEngine(storageConfiguration.getDefaultStorageEngineId(), "");
+
+            Path path = Paths.get(request.getFile());
+            FileUtils.checkFile(path);
+
+            Query query = GrpcServiceUtils.createQuery(request.getQueryMap());
+            String regionStr = query.getString(AlignmentDBAdaptor.QueryParams.REGION.key());
+            Region region = Region.parseRegion(regionStr);
+            int windowSize = query.getInt(AlignmentDBAdaptor.QueryParams.WINDOW_SIZE.key());
+
+            QueryResult<RegionCoverage> coverageQueryResult = alignmentStorageEngine.getDBAdaptor().coverage(path, region, windowSize);
+            for (Float regionCoverage : coverageQueryResult.first().getValues()) {
+                AlignmentServiceModel.FloatResponse floatResponse = AlignmentServiceModel.FloatResponse
+                        .newBuilder()
+                        .setValue(regionCoverage)
+                        .build();
+                responseObserver.onNext(floatResponse);
+            }
+
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void count(AlignmentServiceModel.AlignmentRequest request, StreamObserver<AlignmentServiceModel.LongResponse> responseObserver) {
         try {
             AlignmentStorageEngine alignmentStorageEngine =
-                    GenericGrpcService.storageEngineFactory.getAlignmentStorageEngine(genericGrpcService.defaultStorageEngine, "");
+                    storageEngineFactory.getAlignmentStorageEngine(storageConfiguration.getDefaultStorageEngineId(), "");
 
             Path path = Paths.get(request.getFile());
-            Query query = genericGrpcService.createQuery(request.getQueryMap());
-            QueryOptions queryOptions = genericGrpcService.createQueryOptions(request.getOptionsMap());
+            Query query = GrpcServiceUtils.createQuery(request.getQueryMap());
+            QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
 
             AlignmentDBAdaptor alignmentDBAdaptor = alignmentStorageEngine.getDBAdaptor();
             QueryResult<Long> queryResult = alignmentDBAdaptor.count(path, query, queryOptions);
@@ -96,11 +129,11 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
                          StreamObserver<AlignmentServiceModel.StringResponse> responseObserver) {
         try {
             AlignmentStorageEngine alignmentStorageEngine =
-                    GenericGrpcService.storageEngineFactory.getAlignmentStorageEngine(genericGrpcService.defaultStorageEngine, "");
+                    storageEngineFactory.getAlignmentStorageEngine(storageConfiguration.getDefaultStorageEngineId(), "");
 
             Path path = Paths.get(request.getFile());
-            Query query = genericGrpcService.createQuery(request.getQueryMap());
-            QueryOptions queryOptions = genericGrpcService.createQueryOptions(request.getOptionsMap());
+            Query query = GrpcServiceUtils.createQuery(request.getQueryMap());
+            QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
 
             int limit = queryOptions.getInt(QueryOptions.LIMIT) > 0 ? queryOptions.getInt(QueryOptions.LIMIT) : Integer.MAX_VALUE;
             int count = 0;

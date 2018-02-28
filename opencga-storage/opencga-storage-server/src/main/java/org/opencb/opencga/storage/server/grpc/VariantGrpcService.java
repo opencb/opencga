@@ -23,6 +23,7 @@ import org.opencb.biodata.tools.variant.converters.proto.VariantAvroToVariantPro
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -31,23 +32,18 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import java.io.IOException;
 
 
-
 /**
  * Created by imedina on 29/12/15.
  */
 public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBase {
 
-    private GenericGrpcService genericGrpcService;
+    private StorageConfiguration storageConfiguration;
+    private StorageEngineFactory storageEngineFactory;
 
     public VariantGrpcService(StorageConfiguration storageConfiguration) {
-//        super(storageConfiguration);
-        genericGrpcService = new GenericGrpcService(storageConfiguration);
-    }
+        this.storageConfiguration = storageConfiguration;
 
-    @Deprecated
-    public VariantGrpcService(StorageConfiguration storageConfiguration, String defaultStorageEngine) {
-//        super(storageConfiguration, defaultStorageEngine);
-        genericGrpcService = new GenericGrpcService(storageConfiguration);
+        storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
     }
 
 
@@ -55,19 +51,14 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     public void count(GenericServiceModel.Request request, StreamObserver<GenericServiceModel.LongResponse> responseObserver) {
         try {
             // Creating the datastore Query object from the gRPC request Map of Strings
-            Query query = genericGrpcService.createQuery(request);
+            Query query = GrpcServiceUtils.createQuery(request.getQueryMap());
 
-//            checkAuthorizedHosts(query, request.getIp());
             VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(request);
             QueryResult<Long> queryResult = variantDBAdaptor.count(query);
             responseObserver.onNext(GenericServiceModel.LongResponse.newBuilder().setValue(queryResult.getResult().get(0)).build());
             responseObserver.onCompleted();
             variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException e) {
-            e.printStackTrace();
-//        } catch (NotAuthorizedHostException | NotAuthorizedUserException e) {
-//            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException | IOException e) {
             e.printStackTrace();
         }
     }
@@ -76,8 +67,8 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     public void get(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
         try {
             // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
-            Query query = genericGrpcService.createQuery(request);
-            QueryOptions queryOptions = genericGrpcService.createQueryOptions(request);
+            Query query = GrpcServiceUtils.createQuery(request.getOptionsMap());
+            QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
 
             VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
             VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(request);
@@ -108,20 +99,18 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     private VariantDBAdaptor getVariantDBAdaptor(GenericServiceModel.Request request)
             throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
         // Setting storageEngine and database parameters. If the storageEngine is not provided then the server default is used
-        String storageEngine = genericGrpcService.getDefaultStorageEngine();
+        String storageEngine = storageConfiguration.getDefaultStorageEngineId();
         if (StringUtils.isNotEmpty(request.getStorageEngine())) {
             storageEngine = request.getStorageEngine();
         }
 
-        String database = genericGrpcService
-                .getStorageConfiguration().getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
+        String database = storageConfiguration.getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
         if (StringUtils.isNotEmpty(request.getDatabase())) {
             database = request.getDatabase();
         }
 
         // Creating the VariantDBAdaptor to the parsed storageEngine and database
-        VariantDBAdaptor variantDBAdaptor = GenericGrpcService.storageEngineFactory
-                .getVariantStorageEngine(storageEngine, database).getDBAdaptor();
+        VariantDBAdaptor variantDBAdaptor = storageEngineFactory.getVariantStorageEngine(storageEngine, database).getDBAdaptor();
 //        logger.debug("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
 
         return variantDBAdaptor;

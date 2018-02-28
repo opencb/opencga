@@ -20,13 +20,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -34,10 +36,6 @@ import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
-import org.opencb.opencga.storage.server.common.AuthManager;
-import org.opencb.opencga.storage.server.common.DefaultAuthManager;
-import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedHostException;
-import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedUserException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +46,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by imedina on 23/10/14.
@@ -76,10 +76,6 @@ public class GenericRestWebService {
 
     protected static String defaultStorageEngine;
     protected static StorageEngineFactory storageEngineFactory;
-
-    protected static AuthManager authManager;
-
-    protected static Set<String> authorizedHosts;
 
     private static Logger privLogger;
     protected Logger logger;
@@ -117,33 +113,6 @@ public class GenericRestWebService {
             privLogger.debug("Creating the StorageManagerFactory object");
             // TODO: We will need to pass catalog manager once storage starts doing things over catalog
             storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-        }
-
-        if (authorizedHosts == null) {
-            privLogger.debug("Creating the authorizedHost HashSet");
-            authorizedHosts = new HashSet<>(storageConfiguration.getServer().getAuthorizedHosts());
-        }
-
-        if (authManager == null) {
-            try {
-                if (StringUtils.isNotEmpty(context.getInitParameter("authManager"))) {
-                    privLogger.debug("Loading AuthManager in {} from {}", this.getClass(), context.getInitParameter("authManager"));
-                    authManager = (AuthManager) Class.forName(context.getInitParameter("authManager")).newInstance();
-                } else {
-                    privLogger.debug("Loading DefaultAuthManager in {} from {}", this.getClass(), DefaultAuthManager.class);
-                    authManager = new DefaultAuthManager();
-                }
-            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    protected void checkAuthorizedHosts(Query query, String ip) throws NotAuthorizedHostException, NotAuthorizedUserException {
-        if (authorizedHosts.contains("0.0.0.0") || authorizedHosts.contains("*") || authorizedHosts.contains(ip)) {
-            authManager.checkPermission(query, "");
-        } else {
-            throw new NotAuthorizedHostException("No queries are allowed from " + ip);
         }
     }
 

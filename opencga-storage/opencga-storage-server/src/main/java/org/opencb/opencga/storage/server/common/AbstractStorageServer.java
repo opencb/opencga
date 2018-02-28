@@ -41,7 +41,7 @@ public abstract class AbstractStorageServer {
     protected static Logger logger;
 
     static {
-        logger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.common.StorageServer");
+        logger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.common.AbstractStorageServer");
         logger.info("Static block, loading StorageConfiguration");
         try {
             if (System.getenv("OPENCGA_HOME") != null) {

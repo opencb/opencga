@@ -28,6 +28,7 @@ public class ServerConfiguration {
     private int grpc;
     private String authManager;
     private String storageEngine;
+    @Deprecated
     private List<String> authorizedHosts;
     private Map<String, String> options;
 
@@ -86,10 +87,12 @@ public class ServerConfiguration {
         this.storageEngine = storageEngine;
     }
 
+    @Deprecated
     public List<String> getAuthorizedHosts() {
         return authorizedHosts;
     }
 
+    @Deprecated
     public void setAuthorizedHosts(List<String> authorizedHosts) {
         this.authorizedHosts = authorizedHosts;
     }
