@@ -459,7 +459,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
 
         int studyId = options.getInt(Options.STUDY_ID.key());
-        HBaseCredentials archiveCredentials = buildCredentials(getArchiveTableName(studyId));
+        HBaseCredentials archiveCredentials = connected ? buildCredentials(getArchiveTableName(studyId)) : null;
         MergeMode mergeMode;
         if (connected) {
             StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, null).first();
