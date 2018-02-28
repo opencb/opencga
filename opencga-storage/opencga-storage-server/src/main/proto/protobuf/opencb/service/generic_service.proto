@@ -10,9 +10,8 @@ message Request {
     string database = 2;
     string user = 3;
     string password = 4;
-    string ip = 5;
-    map<string, string> query = 6;
-    map<string, string> options = 7;
+    map<string, string> query = 5;
+    map<string, string> options = 6;
 }
 
 message LongResponse {

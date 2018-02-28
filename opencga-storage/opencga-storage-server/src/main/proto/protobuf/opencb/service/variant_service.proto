@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package protobuf.opencb.service;
+
+option java_package = "org.opencb.opencga.storage.server.grpc";
+option java_outer_classname = "VariantServiceModel";
+
+import "protobuf/opencb/service/generic_service.proto";
+import "protobuf/opencb/variant.proto";
+
+service VariantService {
+
+    rpc Count(Request) returns (LongResponse) {}
+
+    rpc Get(Request) returns (stream Variant) {}
+
+    rpc getAsJson(Request) returns (stream StringResponse) {}
+
+    rpc GroupBy(Request) returns (GroupResponse) {}
+
+}

@@ -5,12 +5,12 @@ package protobuf.opencb.service;
 option java_package = "org.opencb.opencga.storage.server.grpc";
 option java_outer_classname = "AdminServiceModel";
 
-import "protobuf/opencb/service/GenericService.proto";
+import "protobuf/opencb/service/generic_service.proto";
 
 service AdminService {
 
-    rpc status(Request) returns (MapResponse) {}
+    rpc Status(Request) returns (MapResponse) {}
 
-    rpc stop(Request) returns (MapResponse) {}
+    rpc Stop(Request) returns (MapResponse) {}
 
 }

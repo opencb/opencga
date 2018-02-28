@@ -73,11 +73,6 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     }
 
     @Override
-    public void distinct(GenericServiceModel.Request request, StreamObserver<GenericServiceModel.StringArrayResponse> responseObserver) {
-
-    }
-
-    @Override
     public void get(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
         try {
             // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
@@ -101,7 +96,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     }
 
     @Override
-    public void getJson(GenericServiceModel.Request request, StreamObserver<GenericServiceModel.StringResponse> responseObserver) {
+    public void getAsJson(GenericServiceModel.Request request, StreamObserver<GenericServiceModel.StringResponse> responseObserver) {
 
     }
 
