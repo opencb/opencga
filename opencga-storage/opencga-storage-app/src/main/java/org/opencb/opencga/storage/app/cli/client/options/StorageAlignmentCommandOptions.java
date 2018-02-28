@@ -156,7 +156,7 @@ public class StorageAlignmentCommandOptions {
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
 
-        @Parameter(names = {"--file"}, description = "BAM/CRAM file path", required = true, arity = 1)
+        @Parameter(names = {"-i", "--input"}, description = "BAM/CRAM file path", required = true, arity = 1)
         public String file;
 
         @Parameter(names = {"-r", "--region"}, required = true, description = "Comma-separated list of regions 'chr:start-end'")

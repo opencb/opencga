@@ -21,6 +21,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -111,7 +113,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
                 break;
             case "coverage":
                 configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions, "");
-                query();
+                coverage();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -297,9 +299,16 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
         out.close();
     }
-    private void coverage() throws StorageEngineException, IOException {
-        logger.warn("Not implemented yet");
+    private void coverage() throws Exception {
+        StorageAlignmentCommandOptions.CoverageAlignmentsCommandOptions coverageAlignmentsCommandOptions = alignmentCommandOptions.coverageAlignmentsCommandOptions;
 
+        Path path = Paths.get(coverageAlignmentsCommandOptions.file);
+        FileUtils.checkFile(path);
+
+        Region region = Region.parseRegion(coverageAlignmentsCommandOptions.region);
+        QueryResult<RegionCoverage> coverage = this.alignmentStorageEngine.getDBAdaptor().coverage(path, region,
+                coverageAlignmentsCommandOptions.windowSize);
+        System.out.println("coverage = " + coverage);
     }
 
     private ManagedChannel getManagedChannel(String serverUrl) {
