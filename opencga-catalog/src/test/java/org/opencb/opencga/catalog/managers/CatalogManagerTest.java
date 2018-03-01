@@ -1212,14 +1212,15 @@ public class CatalogManagerTest extends GenericTest {
         String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase1");
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_3", "", "", null, false, null, new HashMap<>(), null,
+        Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), new Sample().setName("SAMPLE_1"),
+                new QueryOptions(), sessionIdUser).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), new Sample().setName("SAMPLE_2"),
+                new QueryOptions(), sessionIdUser).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(Long.toString(studyId), new Sample().setName("SAMPLE_3"),
                 new QueryOptions(), sessionIdUser).first();
 
         Cohort myCohort = catalogManager.getCohortManager().create(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1,
                 sampleId2, sampleId3), null, null, sessionIdUser).first();
-
 
         assertEquals("MyCohort", myCohort.getName());
         assertEquals(3, myCohort.getSamples().size());

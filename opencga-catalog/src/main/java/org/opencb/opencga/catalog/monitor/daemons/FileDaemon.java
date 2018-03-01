@@ -22,12 +22,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-
-import java.io.IOException;
+import org.opencb.opencga.core.models.File;
 
 /**
  * Created by imedina on 16/06/16.
@@ -104,17 +102,13 @@ public class FileDaemon extends MonitorParentDaemon {
 
         long currentTimeMillis = System.currentTimeMillis();
         for (File file: files.getResult()) {
-            try {
-                long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
-                if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
-                    if (file.getType().equals(File.Type.FILE)) {
-                        catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, sessionId);
-                    } else {
-                        System.out.println("empty block");
-                    }
+            long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
+            if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
+                if (file.getType().equals(File.Type.FILE)) {
+                    catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, sessionId);
+                } else {
+                    System.out.println("empty block");
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
     }

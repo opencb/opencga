@@ -310,13 +310,14 @@ public class CatalogFileUtilsTest {
 
     @Test
     public void unlinkFileNoUriTest() throws CatalogException, IOException {
-        File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat
-                .NONE, "item." + TimeUtils.getTimeMillis() + ".txt", null, "file at root", null, 0, -1, null, (long) -1, null, null, true, null, null, userSessionId).first();
+        File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN,
+                File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", null, "file at root", null, 0, -1, null, (long) -1, null,
+                null, true, null, null, userSessionId).first();
 
         // Now we try to unlink it
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("Only previously linked files can be unlinked. Please, use delete instead.");
-        catalogManager.getFileManager().unlink(Long.toString(file.getId()), Long.toString(studyId), userSessionId);
+        thrown.expectMessage("Cannot delete file");
+        catalogManager.getFileManager().unlink(Long.toString(studyId), Long.toString(file.getId()), userSessionId);
     }
 
     @Test

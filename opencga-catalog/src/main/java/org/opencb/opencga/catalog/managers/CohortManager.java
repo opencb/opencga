@@ -453,7 +453,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 authorizationManager.checkCohortPermission(resource.getStudyId(), cohortId, userId,
                         CohortAclEntry.CohortPermissions.DELETE);
 
-                Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), cohortId);
+                Query query = new Query()
+                        .append(CohortDBAdaptor.QueryParams.ID.key(), cohortId)
+                        .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudyId());
                 QueryResult<Cohort> myCohortQR = cohortDBAdaptor.get(query, new QueryOptions(), userId);
                 if (myCohortQR.getNumResults() == 0) {
                     throw CatalogAuthorizationException.deny(userId, "VIEW", "Cohort", cohortId, null);
@@ -497,6 +499,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.ID.key(), cohort.getId())
+                    .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudyId())
                     .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
 
             queryResultList.add(cohortDBAdaptor.get(query, QueryOptions.empty(), userId));

@@ -993,7 +993,7 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr) throws CatalogException {
         try {
-            QueryResult<File> queryResult = catalogManager.getFileManager().unlink(fileIdStr, studyStr, sessionId);
+            QueryResult<File> queryResult = catalogManager.getFileManager().unlink(studyStr, fileIdStr, sessionId);
             return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1077,13 +1077,14 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{file}/delete")
     @ApiOperation(value = "Delete file [NOT TESTED]", position = 23, response = QueryResponse.class)
-    public Response deleteGET(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String studyStr,
-                              @ApiParam(value = "Delete files and folders from disk (only applicable for linked files/folders)",
-                                      required = false) @DefaultValue("false") @QueryParam("deleteExternal") boolean deleteExternal,
-                              @ApiParam(value = "Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)",
-                                      required = false) @DefaultValue("false") @QueryParam("skipTrash") boolean skipTrash) {
+    public Response deleteGET(
+            @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Delete files and folders from disk (only applicable for linked files/folders)")
+                @DefaultValue("false") @QueryParam("deleteExternal") boolean deleteExternal,
+            @ApiParam(value = "Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)")
+                @DefaultValue("false") @QueryParam("skipTrash") boolean skipTrash) {
         try {
 //            QueryOptions qOptions = new QueryOptions(queryOptions)
             ObjectMap params = new ObjectMap()
