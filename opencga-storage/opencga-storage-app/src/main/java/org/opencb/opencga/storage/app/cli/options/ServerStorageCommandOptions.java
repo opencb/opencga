@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.server.options;
+package org.opencb.opencga.storage.app.cli.options;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -26,7 +26,7 @@ import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
  * Created by joaquin on 2/2/17.
  */
 @Parameters(commandNames = {"server"}, commandDescription = "REST and gRPC server management.")
-public class ServerCommandOptions {
+public class ServerStorageCommandOptions {
 
     public RestServerCommandOptions restServerCommandOptions;
     public GrpcServerCommandOptions grpcServerCommandOptions;
@@ -34,7 +34,7 @@ public class ServerCommandOptions {
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
 
-    public ServerCommandOptions(GeneralCliOptions.CommonOptions commonOptions, JCommander jCommander) {
+    public ServerStorageCommandOptions(GeneralCliOptions.CommonOptions commonOptions, JCommander jCommander) {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonOptions;
 

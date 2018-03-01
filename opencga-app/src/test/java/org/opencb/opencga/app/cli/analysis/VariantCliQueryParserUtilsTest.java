@@ -18,7 +18,7 @@ package org.opencb.opencga.app.cli.analysis;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
+import org.opencb.opencga.app.cli.analysis.executors.VariantCliQueryParserUtils;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantQueryCommandUtilsTest {
+public class VariantCliQueryParserUtilsTest {
 
     @Test
     public void parseQueryTest() throws Exception {
@@ -44,7 +44,7 @@ public class VariantQueryCommandUtilsTest {
         queryVariantsOptions.genericVariantQueryOptions.returnStudy = "1";
         Map<Long, String> studyIds = Collections.singletonMap(1L, "study");
 
-        Query query = VariantQueryCommandUtils.parseQuery(queryVariantsOptions, studyIds, null);
+        Query query = VariantCliQueryParserUtils.parseQuery(queryVariantsOptions, studyIds, null);
 
 //        System.out.println("query = " + query.toJson());
         assertEquals("HP:0002812", query.get(VariantQueryParam.ANNOT_HPO.key()));

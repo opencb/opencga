@@ -14,37 +14,39 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.client;
+package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.JCommander;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
-import org.opencb.opencga.storage.app.cli.client.options.StorageAlignmentCommandOptions;
-import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
+import org.opencb.opencga.storage.app.cli.options.BenchmarkStorageCommandOptions;
+import org.opencb.opencga.storage.app.cli.options.ServerStorageCommandOptions;
+import org.opencb.opencga.storage.app.cli.options.AlignmentStorageCommandOptions;
+import org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions;
 
 import java.util.Map;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
  */
-public class ClientCliOptionsParser extends GeneralCliOptions {
+public class CliOptionsParser extends GeneralCliOptions {
 
-    private final ClientCliOptionsParser.IndexCommandOptions indexCommandOptions;
-    private final ClientCliOptionsParser.QueryCommandOptions queryCommandOptions;
+    private final CliOptionsParser.IndexCommandOptions indexCommandOptions;
+    private final CliOptionsParser.QueryCommandOptions queryCommandOptions;
 
-    private StorageAlignmentCommandOptions alignmentCommandOptions;
-    private StorageVariantCommandOptions variantCommandOptions;
-//    private FeatureCommandOptions featureCommandOptions;
+    private AlignmentStorageCommandOptions alignmentCommandOptions;
+    private VariantStorageCommandOptions variantCommandOptions;
+    private BenchmarkStorageCommandOptions benchmarkStorageCommandOptions;
+    private ServerStorageCommandOptions serverStorageCommandOptions;
 
-    public ClientCliOptionsParser() {
+    public CliOptionsParser() {
         indexCommandOptions = new IndexCommandOptions();
         queryCommandOptions = new QueryCommandOptions();
 
-        alignmentCommandOptions = new StorageAlignmentCommandOptions(this.commonOptions, this.indexCommandOptions, this.queryCommandOptions,
+        alignmentCommandOptions = new AlignmentStorageCommandOptions(this.commonOptions, this.indexCommandOptions, this.queryCommandOptions,
                 this.jcommander);
         jcommander.addCommand("alignment", alignmentCommandOptions);
         JCommander alignmentSubCommands = jcommander.getCommands().get("alignment");
@@ -52,7 +54,7 @@ public class ClientCliOptionsParser extends GeneralCliOptions {
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentsCommandOptions);
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentsCommandOptions);
 
-        variantCommandOptions = new StorageVariantCommandOptions(this.commonOptions, this.indexCommandOptions, this.queryCommandOptions,
+        variantCommandOptions = new VariantStorageCommandOptions(this.commonOptions, this.indexCommandOptions, this.queryCommandOptions,
                 this.jcommander);
         jcommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jcommander.getCommands().get("variant");
@@ -61,11 +63,23 @@ public class ClientCliOptionsParser extends GeneralCliOptions {
         variantSubCommands.addCommand("query", variantCommandOptions.variantQueryCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantsCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantsCommandOptions);
-//        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
+//        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkStorageCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
         variantSubCommands.addCommand(FILL_GAPS_COMMAND, variantCommandOptions.fillGapsCommandOptions);
         variantSubCommands.addCommand("export", variantCommandOptions.exportVariantsCommandOptions);
         variantSubCommands.addCommand("search", variantCommandOptions.searchVariantsCommandOptions);
+
+        benchmarkStorageCommandOptions = new BenchmarkStorageCommandOptions(this.commonOptions, this.jcommander);
+        jcommander.addCommand("benchmark", benchmarkStorageCommandOptions);
+        JCommander benchmarkSubCommands = jcommander.getCommands().get("benchmark");
+        benchmarkSubCommands.addCommand("variant", benchmarkStorageCommandOptions.variantBenchmarkCommandOptions);
+        benchmarkSubCommands.addCommand("alignment", benchmarkStorageCommandOptions.alignmentBenchmarkCommandOptions);
+
+        serverStorageCommandOptions = new ServerStorageCommandOptions(this.commonOptions, this.jcommander);
+        jcommander.addCommand("server", serverStorageCommandOptions);
+        JCommander serverSubCommands = jcommander.getCommands().get("server");
+        serverSubCommands.addCommand("rest", serverStorageCommandOptions.restServerCommandOptions);
+        serverSubCommands.addCommand("grpc", serverStorageCommandOptions.grpcServerCommandOptions);
     }
 
 
@@ -124,12 +138,20 @@ public class ClientCliOptionsParser extends GeneralCliOptions {
         return commonOptions;
     }
 
-    public StorageAlignmentCommandOptions getAlignmentCommandOptions() {
+    public AlignmentStorageCommandOptions getAlignmentCommandOptions() {
         return alignmentCommandOptions;
     }
 
-    public StorageVariantCommandOptions getVariantCommandOptions() {
+    public VariantStorageCommandOptions getVariantCommandOptions() {
         return variantCommandOptions;
+    }
+
+    public BenchmarkStorageCommandOptions getBenchmarkStorageCommandOptions() {
+        return benchmarkStorageCommandOptions;
+    }
+
+    public ServerStorageCommandOptions getServerStorageCommandOptions() {
+        return serverStorageCommandOptions;
     }
 
 }

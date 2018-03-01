@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.client.options;
+package org.opencb.opencga.storage.app.cli.options;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -22,14 +22,13 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 
-import java.util.LinkedList;
 import java.util.List;
 
 /**
  * Created by imedina on 22/01/17.
  */
 @Parameters(commandNames = {"alignment"}, commandDescription = "Alignment management.")
-public class StorageAlignmentCommandOptions {
+public class AlignmentStorageCommandOptions {
 
     public IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
     public QueryAlignmentsCommandOptions queryAlignmentsCommandOptions;
@@ -40,7 +39,7 @@ public class StorageAlignmentCommandOptions {
     public GeneralCliOptions.IndexCommandOptions indexCommandOptions;
     public GeneralCliOptions.QueryCommandOptions queryCommandOptions;
 
-    public StorageAlignmentCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
+    public AlignmentStorageCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
                                           GeneralCliOptions.QueryCommandOptions queryCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonOptions;
         this.indexCommandOptions  = indexCommandOptions;
@@ -162,7 +161,7 @@ public class StorageAlignmentCommandOptions {
         @Parameter(names = {"--server-url"}, description = "REST or gRPC server host and port", arity = 1)
         public String serverUrl = "localhost:9091";
 
-        @Parameter(names = {"-i", "--input"}, description = "BAM/CRAM file path", required = true, arity = 1)
+        @Parameter(names = {"-f", "--file"}, description = "BAM/CRAM file path", required = true, arity = 1)
         public String file;
 
         @Parameter(names = {"-r", "--region"}, required = true, description = "Comma-separated list of regions 'chr:start-end'")

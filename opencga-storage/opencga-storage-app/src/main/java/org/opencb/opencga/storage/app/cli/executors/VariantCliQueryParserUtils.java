@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.client.executors;
+package org.opencb.opencga.storage.app.cli.executors;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
+import org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -44,11 +44,11 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 /**
  * Created by imedina on 30/12/15.
  */
-public class VariantQueryCommandUtils {
+public class VariantCliQueryParserUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(VariantQueryCommandUtils.class);
+    private static Logger logger = LoggerFactory.getLogger(VariantCliQueryParserUtils.class);
 
-    public static Query parseBasicVariantQuery(StorageVariantCommandOptions.BasicVariantQueryOptions options,
+    public static Query parseBasicVariantQuery(VariantStorageCommandOptions.BasicVariantQueryOptions options,
                                                Query query) throws IOException {
 
         /*
@@ -88,21 +88,20 @@ public class VariantQueryCommandUtils {
         return query;
     }
 
-    public static Query parseQuery(StorageVariantCommandOptions.GenericVariantSearchOptions options, Query query)
-            throws Exception {
+    public static Query parseQuery(VariantStorageCommandOptions.GenericVariantSearchOptions options, Query query) throws Exception {
         query = parseBasicVariantQuery(options, query);
         addParam(query, ANNOT_CLINVAR, options.clinvar);
         addParam(query, ANNOT_COSMIC, options.cosmic);
         return query;
     }
 
-    public static Query parseQuery(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, List<String> studyNames)
+    public static Query parseQuery(VariantStorageCommandOptions.VariantQueryCommandOptions queryVariantsOptions, List<String> studyNames)
             throws Exception {
         VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.outputFormat, null);
         return parseGenericVariantQuery(queryVariantsOptions, queryVariantsOptions.study, studyNames, queryVariantsOptions.commonQueryOptions.count, of);
     }
 
-    protected static Query parseGenericVariantQuery(StorageVariantCommandOptions.GenericVariantQueryOptions queryVariantsOptions,
+    protected static Query parseGenericVariantQuery(VariantStorageCommandOptions.GenericVariantQueryOptions queryVariantsOptions,
                                                     String studiesFilter, Collection<String> allStudyNames, boolean count,
                                                     VariantWriterFactory.VariantOutputFormat of)
             throws IOException {
@@ -193,7 +192,7 @@ public class VariantQueryCommandUtils {
         return query;
     }
 
-    public static QueryOptions parseQueryOptions(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions) {
+    public static QueryOptions parseQueryOptions(VariantStorageCommandOptions.VariantQueryCommandOptions queryVariantsOptions) {
         QueryOptions queryOptions = new QueryOptions();
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.commonQueryOptions.include)) {

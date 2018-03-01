@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.client.options;
+package org.opencb.opencga.storage.app.cli.options;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
+import org.opencb.opencga.storage.app.cli.executors.VariantCliQueryParserUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
@@ -33,7 +34,7 @@ import java.util.Map;
  * Created by imedina on 22/01/17.
  */
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
-public class StorageVariantCommandOptions {
+public class VariantStorageCommandOptions {
 
     public final VariantIndexCommandOptions indexVariantsCommandOptions;
     public final VariantRemoveCommandOptions variantRemoveCommandOptions;
@@ -51,7 +52,7 @@ public class StorageVariantCommandOptions {
     public final GeneralCliOptions.IndexCommandOptions indexCommandOptions;
     public final GeneralCliOptions.QueryCommandOptions queryCommandOptions;
 
-    public StorageVariantCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
+    public VariantStorageCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
                                         GeneralCliOptions.QueryCommandOptions queryCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonOptions;
         this.indexCommandOptions  = indexCommandOptions;
@@ -204,7 +205,7 @@ public class StorageVariantCommandOptions {
     /**
      *  query: basic, generic and specific options
      *
-     * @see org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils#parseBasicVariantQuery
+     * @see VariantCliQueryParserUtils#parseBasicVariantQuery
      */
     public static class BasicVariantQueryOptions {
 
@@ -250,7 +251,7 @@ public class StorageVariantCommandOptions {
     }
 
     /**
-     * @see org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils#parseGenericVariantQuery
+     * @see VariantCliQueryParserUtils#parseGenericVariantQuery
      */
     public static class GenericVariantQueryOptions extends BasicVariantQueryOptions {
 

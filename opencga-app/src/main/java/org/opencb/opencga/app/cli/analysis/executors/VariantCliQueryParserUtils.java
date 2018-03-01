@@ -43,9 +43,9 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
 /**
  * Created by imedina on 30/12/15.
  */
-public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils {
+public class VariantCliQueryParserUtils extends org.opencb.opencga.storage.app.cli.executors.VariantCliQueryParserUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(VariantQueryCommandUtils.class);
+    private static Logger logger = LoggerFactory.getLogger(org.opencb.opencga.app.cli.analysis.executors.VariantCliQueryParserUtils.class);
 
     public static Query parseQuery(VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, Map<Long, String> studyIds, ClientConfiguration clientConfiguration)
             throws Exception {

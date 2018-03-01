@@ -53,9 +53,9 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
 
@@ -187,8 +187,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
 
         Map<Long, String> studyIds = getStudyIds(sessionId);
-        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds, clientConfiguration);
-        QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
+        Query query = VariantCliQueryParserUtils.parseQuery(cliOptions, studyIds, clientConfiguration);
+        QueryOptions queryOptions = VariantCliQueryParserUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -383,7 +383,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantCommandOptions.VariantSamplesFilterCommandOptions cliOptions = variantCommandOptions.samplesFilterCommandOptions;
 
 //        Map<Long, String> studyIds = getStudyIds(sessionId);
-        Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
+        Query query = VariantCliQueryParserUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
@@ -439,7 +439,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
         params.put(VariantHistogramAnalysis.INTERVAL, cliOptions.interval.toString());
         params.put(VariantHistogramAnalysis.OUTDIR, cliOptions.outdir);
-        Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
+        Query query = VariantCliQueryParserUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
         params.putAll(query);
 
         String userId1 = catalogManager.getUserManager().getUserId(sessionId);

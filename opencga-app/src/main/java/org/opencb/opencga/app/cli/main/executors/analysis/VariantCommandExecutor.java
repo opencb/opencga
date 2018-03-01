@@ -26,7 +26,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
+import org.opencb.opencga.app.cli.analysis.executors.VariantCliQueryParserUtils;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
@@ -127,8 +127,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 }
             }
         }
-        Query query = VariantQueryCommandUtils.parseQuery(queryCommandOptions, studies, clientConfiguration);
-        QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryCommandOptions);
+        Query query = VariantCliQueryParserUtils.parseQuery(queryCommandOptions, studies, clientConfiguration);
+        QueryOptions options = VariantCliQueryParserUtils.parseQueryOptions(queryCommandOptions);
 
         options.putIfNotEmpty("groupBy", queryCommandOptions.genericVariantQueryOptions.groupBy);
         options.put("histogram", queryCommandOptions.genericVariantQueryOptions.histogram);

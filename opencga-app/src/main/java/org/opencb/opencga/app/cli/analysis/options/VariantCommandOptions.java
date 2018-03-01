@@ -26,18 +26,18 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
-import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
+import org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.List;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.options.VariantStorageCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.PROJECT_DESC;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC;
 
@@ -94,7 +94,7 @@ public class VariantCommandOptions {
     public class VariantIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantIndexOptions genericVariantIndexOptions = new StorageVariantCommandOptions.GenericVariantIndexOptions();
+        public VariantStorageCommandOptions.GenericVariantIndexOptions genericVariantIndexOptions = new VariantStorageCommandOptions.GenericVariantIndexOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -229,7 +229,7 @@ public class VariantCommandOptions {
     public class VariantRemoveCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantRemoveOptions genericVariantRemoveOptions = new StorageVariantCommandOptions.GenericVariantRemoveOptions();
+        public VariantStorageCommandOptions.GenericVariantRemoveOptions genericVariantRemoveOptions = new VariantStorageCommandOptions.GenericVariantRemoveOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -412,7 +412,7 @@ public class VariantCommandOptions {
     public class VariantQueryCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantQueryOptions genericVariantQueryOptions = new StorageVariantCommandOptions.GenericVariantQueryOptions();
+        public VariantStorageCommandOptions.GenericVariantQueryOptions genericVariantQueryOptions = new VariantStorageCommandOptions.GenericVariantQueryOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -441,7 +441,7 @@ public class VariantCommandOptions {
     public class VariantStatsCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantStatsOptions genericVariantStatsOptions = new StorageVariantCommandOptions.GenericVariantStatsOptions();
+        public VariantStorageCommandOptions.GenericVariantStatsOptions genericVariantStatsOptions = new VariantStorageCommandOptions.GenericVariantStatsOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -520,7 +520,7 @@ public class VariantCommandOptions {
     public class VariantAnnotateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantAnnotateOptions genericVariantAnnotateOptions = new StorageVariantCommandOptions.GenericVariantAnnotateOptions();
+        public VariantStorageCommandOptions.GenericVariantAnnotateOptions genericVariantAnnotateOptions = new VariantStorageCommandOptions.GenericVariantAnnotateOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -611,7 +611,7 @@ public class VariantCommandOptions {
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericFillGapsOptions genericFillGapsOptions = new StorageVariantCommandOptions.GenericFillGapsOptions();
+        public VariantStorageCommandOptions.GenericFillGapsOptions genericFillGapsOptions = new VariantStorageCommandOptions.GenericFillGapsOptions();
     }
 
     @Parameters(commandNames = {FILL_MISSING_COMMAND}, commandDescription = FILL_MISSING_COMMAND_DESCRIPTION)
@@ -693,7 +693,7 @@ public class VariantCommandOptions {
     public class VariantSamplesFilterCommandOptions {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.BasicVariantQueryOptions variantQueryOptions = new StorageVariantCommandOptions.BasicVariantQueryOptions();
+        public VariantStorageCommandOptions.BasicVariantQueryOptions variantQueryOptions = new VariantStorageCommandOptions.BasicVariantQueryOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -727,7 +727,7 @@ public class VariantCommandOptions {
     public class VariantHistogramCommandOptions {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.BasicVariantQueryOptions variantQueryOptions = new StorageVariantCommandOptions.BasicVariantQueryOptions();
+        public VariantStorageCommandOptions.BasicVariantQueryOptions variantQueryOptions = new VariantStorageCommandOptions.BasicVariantQueryOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

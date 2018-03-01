@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.server.executors;
+package org.opencb.opencga.storage.app.cli.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.server.options.BenchmarkCommandOptions;
+import org.opencb.opencga.storage.app.cli.options.BenchmarkStorageCommandOptions;
 import org.opencb.opencga.storage.benchmark.variant.VariantBenchmarkRunner;
 
 import java.io.IOException;
@@ -31,19 +31,19 @@ import java.nio.file.Paths;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class BenchmarkCommandExecutor extends CommandExecutor {
+public class BenchmarkStorageCommandExecutor extends CommandExecutor {
 
-    private final BenchmarkCommandOptions commandOptions;
+    private final BenchmarkStorageCommandOptions benchmarkStorageCommandOptions;
 
-    public BenchmarkCommandExecutor(BenchmarkCommandOptions commandOptions) {
-        super(commandOptions.commonCommandOptions);
-        this.commandOptions = commandOptions;
+    public BenchmarkStorageCommandExecutor(BenchmarkStorageCommandOptions benchmarkStorageCommandOptions) {
+        super(benchmarkStorageCommandOptions.commonCommandOptions);
+        this.benchmarkStorageCommandOptions = benchmarkStorageCommandOptions;
     }
 
 
     @Override
     public void execute() throws Exception {
-        String subCommandString = getParsedSubCommand(commandOptions.jCommander);
+        String subCommandString = getParsedSubCommand(benchmarkStorageCommandOptions.jCommander);
         switch (subCommandString) {
             case "variant":
                 variant();
@@ -58,26 +58,26 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
     }
 
     private void variant() throws IOException {
-        BenchmarkCommandOptions.VariantBenchmarkCommandOptions options = commandOptions.variantBenchmarkCommandOptions;
+        BenchmarkStorageCommandOptions.VariantBenchmarkCommandOptions options = benchmarkStorageCommandOptions.variantBenchmarkCommandOptions;
 
         Path outdirPath = Paths.get(options.outdir == null ? "" : options.outdir).toAbsolutePath();
         Path jmeterHome = Paths.get(appHome, "benchmark", "jmeter");
         Path dataDir = Paths.get(appHome, "benchmark", "data", "hsapiens");
 
         if (StringUtils.isNotEmpty(options.commonOptions.storageEngine)) {
-            configuration.getBenchmark().setStorageEngine(options.commonOptions.storageEngine);
+            storageConfiguration.getBenchmark().setStorageEngine(options.commonOptions.storageEngine);
         }
         if (StringUtils.isNotEmpty(options.dbName)) {
-            configuration.getBenchmark().setDatabaseName(options.dbName);
+            storageConfiguration.getBenchmark().setDatabaseName(options.dbName);
         }
         if (options.repetition != null) {
-            configuration.getBenchmark().setNumRepetitions(options.repetition);
+            storageConfiguration.getBenchmark().setNumRepetitions(options.repetition);
         }
         if (options.concurrency != null) {
-            configuration.getBenchmark().setConcurrency(options.concurrency);
+            storageConfiguration.getBenchmark().setConcurrency(options.concurrency);
         }
 
-        VariantBenchmarkRunner variantBenchmarkRunner = new VariantBenchmarkRunner(configuration, jmeterHome, outdirPath);
+        VariantBenchmarkRunner variantBenchmarkRunner = new VariantBenchmarkRunner(storageConfiguration, jmeterHome, outdirPath);
 //        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir,
 //                Arrays.asList(GeneQueryGenerator.class, RegionQueryGenerator.class));
         QueryOptions queryOptions = new QueryOptions();

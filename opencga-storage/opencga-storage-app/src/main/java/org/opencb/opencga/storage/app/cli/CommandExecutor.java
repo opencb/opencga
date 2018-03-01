@@ -45,7 +45,7 @@ public abstract class CommandExecutor {
     protected String appHome;
 
     protected String storageEngine;
-    protected StorageConfiguration configuration;
+    protected StorageConfiguration storageConfiguration;
 
     protected Logger logger;
 
@@ -140,39 +140,39 @@ public abstract class CommandExecutor {
         String loadedConfigurationFile;
         if (this.configFile != null) {
             loadedConfigurationFile = this.configFile;
-            this.configuration = StorageConfiguration.load(new FileInputStream(new File(this.configFile)));
+            this.storageConfiguration = StorageConfiguration.load(new FileInputStream(new File(this.configFile)));
         } else {
             // We load configuration file either from app home folder or from the JAR
             Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
             if (appHome != null && Files.exists(path)) {
                 loadedConfigurationFile = path.toString();
-                this.configuration = StorageConfiguration.load(new FileInputStream(path.toFile()));
+                this.storageConfiguration = StorageConfiguration.load(new FileInputStream(path.toFile()));
             } else {
                 loadedConfigurationFile = StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml")
                         .toString();
-                this.configuration = StorageConfiguration
+                this.storageConfiguration = StorageConfiguration
                         .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
             }
         }
 
         // logLevel parameter has preference in CLI over configuration file
         if (this.logLevel == null || this.logLevel.isEmpty()) {
-            this.logLevel = this.configuration.getLogLevel();
+            this.logLevel = this.storageConfiguration.getLogLevel();
             configureDefaultLog(this.logLevel);
         } else {
-            if (!this.logLevel.equalsIgnoreCase(this.configuration.getLogLevel())) {
-                this.configuration.setLogLevel(this.logLevel);
+            if (!this.logLevel.equalsIgnoreCase(this.storageConfiguration.getLogLevel())) {
+                this.storageConfiguration.setLogLevel(this.logLevel);
                 configureDefaultLog(this.logLevel);
             }
         }
 
         // logFile parameter has preference in CLI over configuration file, we first set the logFile passed
         if (this.logFile != null && !this.logFile.isEmpty()) {
-            this.configuration.setLogFile(logFile);
+            this.storageConfiguration.setLogFile(logFile);
         }
 
         // If user has set up a logFile we redirect logs to it
-        if (this.configuration.getLogFile() != null && !this.configuration.getLogFile().isEmpty()) {
+        if (this.storageConfiguration.getLogFile() != null && !this.storageConfiguration.getLogFile().isEmpty()) {
             org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
 
             // If a log file is used then console log is removed
@@ -180,8 +180,8 @@ public abstract class CommandExecutor {
 
             // Creating a RollingFileAppender to output the log
             RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
-                    + "%m%n"), this.configuration.getLogFile(), true);
-            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel()));
+                    + "%m%n"), this.storageConfiguration.getLogFile(), true);
+            rollingFileAppender.setThreshold(Level.toLevel(storageConfiguration.getLogLevel()));
             rootLogger.addAppender(rollingFileAppender);
         }
 
@@ -225,12 +225,12 @@ public abstract class CommandExecutor {
         return builder;
     }
 
-    public StorageConfiguration getConfiguration() {
-        return configuration;
+    public StorageConfiguration getStorageConfiguration() {
+        return storageConfiguration;
     }
 
-    public void setConfiguration(StorageConfiguration configuration) {
-        this.configuration = configuration;
+    public void setStorageConfiguration(StorageConfiguration storageConfiguration) {
+        this.storageConfiguration = storageConfiguration;
     }
 
     public static String getParsedSubCommand(JCommander jCommander) {

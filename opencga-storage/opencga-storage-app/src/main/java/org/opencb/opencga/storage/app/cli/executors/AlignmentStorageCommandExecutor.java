@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.client.executors;
+package org.opencb.opencga.storage.app.cli.executors;
 
 import ga4gh.Reads;
 import io.grpc.ManagedChannel;
@@ -31,21 +31,17 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.client.ClientCliOptionsParser;
-import org.opencb.opencga.storage.app.cli.client.options.StorageAlignmentCommandOptions;
+import org.opencb.opencga.storage.app.cli.CliOptionsParser;
+import org.opencb.opencga.storage.app.cli.options.AlignmentStorageCommandOptions;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.BeaconResponse;
-import org.opencb.opencga.storage.server.grpc.AlignmentGrpcService;
 import org.opencb.opencga.storage.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.storage.server.grpc.AlignmentServiceModel;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
@@ -59,19 +55,19 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by imedina on 22/05/15.
  */
-public class AlignmentCommandExecutor extends CommandExecutor {
+public class AlignmentStorageCommandExecutor extends CommandExecutor {
 
-    private StorageEngineConfiguration storageConfiguration;
+    private StorageEngineConfiguration storageEngineConfiguration;
     private AlignmentStorageEngine alignmentStorageEngine;
 
-    private StorageAlignmentCommandOptions alignmentCommandOptions;
+    private AlignmentStorageCommandOptions alignmentStorageCommandOptions;
 
-    public AlignmentCommandExecutor(StorageAlignmentCommandOptions alignmentCommandOptions) {
-        super(alignmentCommandOptions.commonCommandOptions);
-        this.alignmentCommandOptions = alignmentCommandOptions;
+    public AlignmentStorageCommandExecutor(AlignmentStorageCommandOptions alignmentStorageCommandOptions) {
+        super(alignmentStorageCommandOptions.commonCommandOptions);
+        this.alignmentStorageCommandOptions = alignmentStorageCommandOptions;
     }
 
-    private void configure(ClientCliOptionsParser.CommonOptions commonOptions, String dbName) throws Exception {
+    private void configure(CliOptionsParser.CommonOptions commonOptions, String dbName) throws Exception {
 
         this.logFile = commonOptions.logFile;
 
@@ -82,13 +78,13 @@ public class AlignmentCommandExecutor extends CommandExecutor {
          **/
         this.storageEngine = (storageEngine != null && !storageEngine.isEmpty())
                 ? storageEngine
-                : configuration.getDefaultStorageEngineId();
+                : storageConfiguration.getDefaultStorageEngineId();
         logger.debug("Storage Engine set to '{}'", this.storageEngine);
 
-        this.storageConfiguration = configuration.getStorageEngine(storageEngine);
+        this.storageEngineConfiguration = storageConfiguration.getStorageEngine(storageEngine);
 
         // TODO: Start passing catalogManager
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
         if (storageEngine == null || storageEngine.isEmpty()) {
             this.alignmentStorageEngine = storageEngineFactory.getAlignmentStorageEngine(null, dbName);
         } else {
@@ -101,18 +97,18 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing alignment command line");
 
-        String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
+        String subCommandString = getParsedSubCommand(alignmentStorageCommandOptions.jCommander);
         switch (subCommandString) {
             case "index":
-                configure(alignmentCommandOptions.indexAlignmentsCommandOptions.commonOptions, alignmentCommandOptions.indexAlignmentsCommandOptions.commonIndexOptions.dbName);
+                configure(alignmentStorageCommandOptions.indexAlignmentsCommandOptions.commonOptions, alignmentStorageCommandOptions.indexAlignmentsCommandOptions.commonIndexOptions.dbName);
                 index();
                 break;
             case "query":
-                configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions, "");
+                configure(alignmentStorageCommandOptions.queryAlignmentsCommandOptions.commonOptions, "");
                 query();
                 break;
             case "coverage":
-                configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions, "");
+                configure(alignmentStorageCommandOptions.queryAlignmentsCommandOptions.commonOptions, "");
                 coverage();
                 break;
             default:
@@ -123,7 +119,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     }
 
     private void index() throws Exception {
-        StorageAlignmentCommandOptions.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions = alignmentCommandOptions.indexAlignmentsCommandOptions;
+        AlignmentStorageCommandOptions.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions = alignmentStorageCommandOptions.indexAlignmentsCommandOptions;
 
         String inputs[] = indexAlignmentsCommandOptions.commonIndexOptions.input.split(",");
         URI inputUri = UriUtils.createUri(inputs[0]);
@@ -139,7 +135,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         /*
          * Add CLI options to the alignmentOptions
          */
-        ObjectMap alignmentOptions = storageConfiguration.getAlignment().getOptions();
+        ObjectMap alignmentOptions = storageEngineConfiguration.getAlignment().getOptions();
 //        if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
 //            alignmentOptions.put(AlignmentStorageEngineOld.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
 //        }
@@ -203,7 +199,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     }
 
     private void query() throws StorageEngineException, IOException, InterruptedException {
-        StorageAlignmentCommandOptions.QueryAlignmentsCommandOptions queryAlignmentsCommandOptions = alignmentCommandOptions.queryAlignmentsCommandOptions;
+        AlignmentStorageCommandOptions.QueryAlignmentsCommandOptions queryAlignmentsCommandOptions = alignmentStorageCommandOptions.queryAlignmentsCommandOptions;
 
         Path path = Paths.get(queryAlignmentsCommandOptions.filePath);
         FileUtils.checkFile(path);
@@ -301,7 +297,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     }
 
     private void coverage() throws Exception {
-        StorageAlignmentCommandOptions.CoverageAlignmentsCommandOptions coverageAlignmentsCommandOptions = alignmentCommandOptions.coverageAlignmentsCommandOptions;
+        AlignmentStorageCommandOptions.CoverageAlignmentsCommandOptions coverageAlignmentsCommandOptions = alignmentStorageCommandOptions.coverageAlignmentsCommandOptions;
 
         switch (coverageAlignmentsCommandOptions.mode.toLowerCase()) {
             case "grpc":

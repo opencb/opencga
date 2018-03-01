@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app;
+package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.client.executors.AlignmentCommandExecutor;
-import org.opencb.opencga.storage.app.cli.client.ClientCliOptionsParser;
-import org.opencb.opencga.storage.app.cli.client.executors.VariantCommandExecutor;
+import org.opencb.opencga.storage.app.cli.executors.AlignmentStorageCommandExecutor;
+import org.opencb.opencga.storage.app.cli.executors.VariantStorageCommandExecutor;
+import org.opencb.opencga.storage.app.cli.executors.BenchmarkStorageCommandExecutor;
+import org.opencb.opencga.storage.app.cli.executors.ServerStorageCommandExecutor;
 
 import java.io.IOException;
 
@@ -35,7 +35,7 @@ public class StorageMain {
     }
 
     public static int privateMain(String[] args) {
-        ClientCliOptionsParser cliOptionsParser = new ClientCliOptionsParser();
+        CliOptionsParser cliOptionsParser = new CliOptionsParser();
 
         try {
             cliOptionsParser.parse(args);
@@ -71,14 +71,17 @@ public class StorageMain {
                     cliOptionsParser.printUsage();
                 } else {
                     switch (parsedCommand) {
-//                        case "feature":
-//                            commandExecutor = new IndexAlignmentsCommandExecutor(cliOptionsParser.getIndexAlignmentsCommandOptions());
-//                            break;
                         case "alignment":
-                            commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommandOptions());
+                            commandExecutor = new AlignmentStorageCommandExecutor(cliOptionsParser.getAlignmentCommandOptions());
                             break;
                         case "variant":
-                            commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommandOptions());
+                            commandExecutor = new VariantStorageCommandExecutor(cliOptionsParser.getVariantCommandOptions());
+                            break;
+                        case "benchmark":
+                            commandExecutor = new BenchmarkStorageCommandExecutor(cliOptionsParser.getBenchmarkStorageCommandOptions());
+                            break;
+                        case "server":
+                            commandExecutor = new ServerStorageCommandExecutor(cliOptionsParser.getServerStorageCommandOptions());
                             break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");

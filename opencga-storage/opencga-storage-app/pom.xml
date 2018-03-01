@@ -101,15 +101,8 @@
                     <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>
+                            <mainClass>org.opencb.opencga.storage.app.cli.StorageMain</mainClass>
                             <name>opencga-storage.sh</name>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </program>
-                        <program>
-                            <mainClass>org.opencb.opencga.storage.app.StorageAdminMain</mainClass>
-                            <name>opencga-storage-admin.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>

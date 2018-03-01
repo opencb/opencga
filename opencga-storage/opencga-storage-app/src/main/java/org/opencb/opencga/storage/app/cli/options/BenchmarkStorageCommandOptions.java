@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.server.options;
+package org.opencb.opencga.storage.app.cli.options;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -29,14 +29,14 @@ import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Parameters(commandNames = {"benchmark"}, commandDescription = "Execute benchmark operations.")
-public class BenchmarkCommandOptions {
+public class BenchmarkStorageCommandOptions {
 
     public final VariantBenchmarkCommandOptions variantBenchmarkCommandOptions;
     public final AlignmentBenchmarkCommandOptions alignmentBenchmarkCommandOptions;
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
 
-    public BenchmarkCommandOptions(GeneralCliOptions.CommonOptions commonOptions, JCommander jCommander) {
+    public BenchmarkStorageCommandOptions(GeneralCliOptions.CommonOptions commonOptions, JCommander jCommander) {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonOptions;
 
