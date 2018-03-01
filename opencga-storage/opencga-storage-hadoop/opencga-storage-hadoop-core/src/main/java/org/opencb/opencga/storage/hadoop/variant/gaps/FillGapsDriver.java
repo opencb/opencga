@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -83,6 +84,11 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
             } else {
                 scan = FillMissingFromArchiveTask.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
             }
+
+            int caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
+            logger.info("Scan set Caching to " + caching);
+            scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
+            scan.setCacheBlocks(false);      // don't set to true for MR jobs
             logger.info("Scan archive table " + archiveTableName + " with scan " + scan.toString(50));
 
             // input

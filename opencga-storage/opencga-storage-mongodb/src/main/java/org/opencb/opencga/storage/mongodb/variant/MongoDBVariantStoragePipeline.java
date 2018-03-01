@@ -309,7 +309,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setNumTasks(loadThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true).build();
-            if (options.getBoolean(DIRECT_LOAD_PARALLEL_WRITE.key(), DIRECT_LOAD_PARALLEL_WRITE.defaultValue())) {
+            if (isDirectLoadParallelWrite(options)) {
                 logger.info("Multi thread direct load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
                 ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converter).then(loader), null, config);
             } else {
@@ -391,7 +391,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setNumTasks(loadThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true).build();
-            if (options.getBoolean(STAGE_PARALLEL_WRITE.key(), STAGE_PARALLEL_WRITE.defaultValue())) {
+            if (isStageParallelWrite(options)) {
                 logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
                 ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converterTask).then(stageLoader), null, config);
             } else {
@@ -715,7 +715,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 .setBatchSize(batchSize)
                 .setAbortOnFail(true).build();
         try {
-            if (options.getBoolean(MERGE_PARALLEL_WRITE.key(), MERGE_PARALLEL_WRITE.defaultValue())) {
+            if (isMergeParallelWrite(options)) {
                 ptrMerge = new ParallelTaskRunner<>(reader, variantMerger.then(variantLoader), null, config);
             } else {
                 ptrMerge = new ParallelTaskRunner<>(reader, variantMerger, variantLoader, config);
