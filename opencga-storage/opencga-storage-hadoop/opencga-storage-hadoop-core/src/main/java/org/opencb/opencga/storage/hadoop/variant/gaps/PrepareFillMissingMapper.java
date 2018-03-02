@@ -15,6 +15,8 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -50,6 +52,7 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
             throw new IllegalArgumentException(AbstractAnalysisTableDriver.TIMESTAMP + " not defined!");
         }
     }
+    private final Logger logger = LoggerFactory.getLogger(PrepareFillMissingMapper.class);
 
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
@@ -66,15 +69,7 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
 //            logger.info("FILL ALL for variant " + variant + " -> " + fileBatches);
         } else {
             Integer lastFile = (Integer) PInteger.INSTANCE.toObject(lastFileBytes);
-            fileBatches = fileBatchesMap.computeIfAbsent(lastFile, (file) -> {
-                Set<Integer> batches = new HashSet<>();
-                // Add only file batches from files beyond the last file
-                for (int i = indexedFiles.indexOf(file) + 1; i < indexedFiles.size(); i++) {
-                    Integer indexedFile = indexedFiles.get(i);
-                    batches.add(rowKeyFactory.getFileBatch(indexedFile));
-                }
-                return batches;
-            });
+            fileBatches = fileBatchesMap.computeIfAbsent(lastFile, this::buildFileBatches);
             newVariant = false;
 //            logger.info("FILL some for variant " + variant + " -> " + fileBatches);
         }
@@ -93,6 +88,20 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
             context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "UPDATE_VARIANT").increment(1);
         }
         context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANTS").increment(1);
+    }
+
+    private Collection<Integer> buildFileBatches(Integer lastFile) {
+        Set<Integer> batches = new HashSet<>();
+        // Add only file batches from files beyond the last file
+        int indexOf = indexedFiles.indexOf(lastFile);
+        if (indexOf == -1) {
+            logger.warn("Last file updated '" + lastFile + "' is not indexed!");
+        }
+        for (int i = indexOf + 1; i < indexedFiles.size(); i++) {
+            Integer indexedFile = indexedFiles.get(i);
+            batches.add(rowKeyFactory.getFileBatch(indexedFile));
+        }
+        return batches;
     }
 
     public static List<Integer> getIndexedFiles(Configuration configuration) {

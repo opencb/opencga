@@ -31,7 +31,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
+import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.removeFile;
 
 /**
  * Created on 27/10/17.
@@ -138,6 +140,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 2);
 
+        // Load files 1277 , 1278
         StudyConfiguration studyConfiguration = loadPlatinum(options, 12877, 12878);
         assertFalse(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         HadoopVariantStorageEngine variantStorageEngine = ((HadoopVariantStorageEngine) this.variantStorageEngine);
@@ -147,29 +150,43 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         List<Integer> sampleIds = new ArrayList<>(studyConfiguration.getSampleIds().values());
         sampleIds.sort(Integer::compareTo);
 
+        // Fill missing
         variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options);
         printVariants(dbAdaptor, newOutputUri());
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, "NA12877", "NA12878");
 
+        // Load file 12879
         studyConfiguration = loadPlatinum(options, 12879, 12879);
 
-//        printVariants(dbAdaptor, newOutputUri());
         assertFalse(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, Arrays.asList(3), "NA12877", "NA12878");
 
+        // Load file 12880
         studyConfiguration = loadPlatinum(options, 12880, 12880);
         checkFillMissing(dbAdaptor, Arrays.asList(3, 4), "NA12877", "NA12878");
 
+        // Fill missing
         variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options);
         printVariants(dbAdaptor, newOutputUri());
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880", "NA12881");
 
+        // Check fill missing for 4 files
         checkNewMultiAllelicVariants(dbAdaptor);
         checkNewMissingPositions(dbAdaptor);
+
+        // Remove last file
+        removeFile(variantStorageEngine, null, 4, studyConfiguration, Collections.emptyMap());
+        printVariants(dbAdaptor, newOutputUri());
+        checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
+
+        // Fill missing
+        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options);
+        printVariants(dbAdaptor, newOutputUri());
+        checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
     }
 
     public void checkNewMultiAllelicVariants(VariantHadoopDBAdaptor dbAdaptor) {
@@ -262,9 +279,12 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
     protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, List<Integer> newFiles, String... processedSamples) {
         Set<Integer> newFilesSet = new HashSet<>(newFiles);
         Set<String> samplesSet = new HashSet<>(Arrays.asList(processedSamples));
+        StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(STUDY_ID, null).first();
+        boolean missingGenotypesUpdated = studyConfiguration.getAttributes().getBoolean(MISSING_GENOTYPES_UPDATED);
+
         for (Variant variant : dbAdaptor) {
             StudyEntry studyEntry = variant.getStudies().get(0);
-            boolean newVariant = studyEntry.getFiles().stream().map(FileEntry::getFileId).map(Integer::valueOf).allMatch(newFilesSet::contains);
+            boolean newVariant =  !missingGenotypesUpdated && studyEntry.getFiles().stream().map(FileEntry::getFileId).map(Integer::valueOf).allMatch(newFilesSet::contains);
             List<List<String>> samplesData = studyEntry.getSamplesData();
             for (int i = 0; i < samplesData.size(); i++) {
                 List<String> data = samplesData.get(i);

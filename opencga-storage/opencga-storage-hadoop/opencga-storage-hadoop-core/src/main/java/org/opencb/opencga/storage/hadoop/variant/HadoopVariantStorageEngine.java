@@ -441,7 +441,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         jobOperationName, fileIdsList);
                 if (!fillGaps && StringUtils.isEmpty(options.getString(VariantQueryParam.REGION.key()))) {
                     sc.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
-                    sc.getAttributes().put("lastFile", new ArrayList<>(sc.getIndexedFiles()).get(sc.getIndexedFiles().size() - 1));
                 }
                 return sc;
             });

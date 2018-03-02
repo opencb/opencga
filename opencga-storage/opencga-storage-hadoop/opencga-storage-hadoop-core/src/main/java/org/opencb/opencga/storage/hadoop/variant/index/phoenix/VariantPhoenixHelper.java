@@ -347,7 +347,7 @@ public class VariantPhoenixHelper {
                 }
             }
         } else {
-            logger.info("Table {} already exists", table);
+            logger.debug(DEFAULT_TABLE_TYPE + " {} already exists", table);
         }
     }
 
