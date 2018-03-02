@@ -2143,9 +2143,9 @@ public class FileManager extends ResourceManager<File> {
         String statusQuery = physicalDelete ? GET_NON_DELETED_FILES : GET_NON_TRASHED_FILES;
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.INDEX.key(),
-                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.RELATED_FILES.key(),
-                FileDBAdaptor.QueryParams.STATUS.key(), FileDBAdaptor.QueryParams.EXTERNAL.key()));
+                FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.RELATED_FILES.key(),
+                FileDBAdaptor.QueryParams.SIZE.key(), FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
+                FileDBAdaptor.QueryParams.INDEX.key(), FileDBAdaptor.QueryParams.STATUS.key(), FileDBAdaptor.QueryParams.EXTERNAL.key()));
         Query myQuery = new Query(query);
         myQuery.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         myQuery.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), statusQuery);
@@ -2171,9 +2171,9 @@ public class FileManager extends ResourceManager<File> {
 
         long studyId = catalogManager.getStudyManager().getId(null, studyStr);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.INDEX.key(),
-                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.RELATED_FILES.key(),
-                FileDBAdaptor.QueryParams.STATUS.key(), FileDBAdaptor.QueryParams.EXTERNAL.key()));
+                FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.RELATED_FILES.key(),
+                FileDBAdaptor.QueryParams.SIZE.key(), FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
+                FileDBAdaptor.QueryParams.INDEX.key(), FileDBAdaptor.QueryParams.STATUS.key(), FileDBAdaptor.QueryParams.EXTERNAL.key()));
 
         List<File> filesToAnalyse = new LinkedList<>();
 
@@ -2291,6 +2291,66 @@ public class FileManager extends ResourceManager<File> {
         return filesToAnalyse;
     }
 
+    private void updateIndexStatusAfterDeletionOfTransformedFile(long studyId, File file) throws CatalogDBException {
+        if (file.getType() == File.Type.FILE && (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty())) {
+            return;
+        }
+
+        // We check if any of the files to be removed are transformation files
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
+                .append(FileDBAdaptor.QueryParams.RELATED_FILES_RELATION.key(), File.RelatedFile.Relation.PRODUCED_FROM);
+        QueryResult<File> fileQR = fileDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
+                FileDBAdaptor.QueryParams.RELATED_FILES.key()));
+        if (fileQR.getNumResults() > 0) {
+            // Among the files to be deleted / unlinked, there are transformed files. We need to check that these files are not being used
+            // anymore.
+            Set<Long> fileIds = new HashSet<>();
+            for (File transformedFile : fileQR.getResult()) {
+                fileIds.addAll(
+                        transformedFile.getRelatedFiles().stream()
+                                .filter(myFile -> myFile.getRelation() == File.RelatedFile.Relation.PRODUCED_FROM)
+                                .map(File.RelatedFile::getFileId)
+                                .collect(Collectors.toSet())
+                );
+            }
+
+            // Update the original files to remove the transformed file
+            query = new Query(FileDBAdaptor.QueryParams.ID.key(), new ArrayList<>(fileIds));
+            Map<Long, FileIndex> filesToUpdate;
+            try (DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                    FileDBAdaptor.QueryParams.INDEX.key(), FileDBAdaptor.QueryParams.ID.key())))) {
+                filesToUpdate = new HashMap<>();
+                while (iterator.hasNext()) {
+                    File next = iterator.next();
+                    String status = next.getIndex().getStatus().getName();
+                    switch (status) {
+                        case FileIndex.IndexStatus.READY:
+                            // If they are already ready, we only need to remove the reference to the transformed files as they will be
+                            // removed
+                            next.getIndex().setTransformedFile(null);
+                            filesToUpdate.put(next.getId(), next.getIndex());
+                            break;
+                        case FileIndex.IndexStatus.TRANSFORMED:
+                            // We need to remove the reference to the transformed files and change their status from TRANSFORMED to NONE
+                            next.getIndex().setTransformedFile(null);
+                            next.getIndex().getStatus().setName(FileIndex.IndexStatus.NONE);
+                            filesToUpdate.put(next.getId(), next.getIndex());
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            for (Map.Entry<Long, FileIndex> indexEntry : filesToUpdate.entrySet()) {
+                fileDBAdaptor.update(indexEntry.getKey(), new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), indexEntry.getValue()),
+                        QueryOptions.empty());
+            }
+        }
+    }
+
     private QueryResult<File> deleteFromDisk(File fileOrDirectory, long studyId, ObjectMap params) throws CatalogException {
         QueryResult<File> removedFileResult;
 
@@ -2298,6 +2358,9 @@ public class FileManager extends ResourceManager<File> {
         CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
 
         String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        // Remove the index references in case it is a transformed file or folder
+        updateIndexStatusAfterDeletionOfTransformedFile(studyId, fileOrDirectory);
 
         // If file is not a directory then we can just delete it from disk and update catalog
         if (fileOrDirectory.getType().equals(File.Type.FILE)) {
