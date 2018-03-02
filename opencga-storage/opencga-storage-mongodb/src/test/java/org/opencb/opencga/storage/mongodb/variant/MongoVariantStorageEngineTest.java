@@ -191,7 +191,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         System.out.println("Files delete count " + files.remove(new Document(), new QueryOptions()).first().getDeletedCount());
 
         // 3) Clean some variants from the Stage collection.
-        MongoDBCollection stage = dataStore.getCollection(MongoDBVariantOptions.COLLECTION_STAGE.defaultValue());
+        MongoDBCollection stage = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
 
         long stageCount = stage.count().first();
         System.out.println("stage count : " + stageCount);
@@ -545,7 +545,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         System.out.println("count = " + count);
         assertTrue(count > 0);
 
-        long cleanedDocuments = MongoDBVariantStageLoader.cleanStageCollection(dbAdaptor.getStageCollection(), studyConfiguration.getStudyId(), Collections.singletonList(FILE_ID), null, null);
+        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
+        long cleanedDocuments = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyConfiguration.getStudyId(), Collections.singletonList(FILE_ID), null, null);
         assertEquals(0, cleanedDocuments);
 
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
@@ -567,8 +568,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         MongoDataStore mongoDataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
         MongoDBCollection variantsCollection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue());
         MongoDBCollection variants2Collection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue() + "2");
-        MongoDBCollection stageCollection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_STAGE.defaultValue());
-        MongoDBCollection stage2Collection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_STAGE.defaultValue() + "2");
+//        MongoDBCollection stageCollection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_STAGE.defaultValue());
+        MongoDBCollection stage2Collection = variantStorageManager.getDBAdaptor().getStageCollection(studyConfiguration.getStudyId());
 
         assertEquals(count, compareCollections(variants2Collection, variantsCollection));
         compareCollections(stage2Collection, stageCollection);
@@ -596,6 +597,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         System.out.println("Comparing " + expectedCollection + " vs " + actualCollection);
         assertNotEquals(expectedCollection.toString(), actualCollection.toString());
         assertEquals(expectedCollection.count().first(), actualCollection.count().first());
+        assertNotEquals(0L, expectedCollection.count().first().longValue());
 
         Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), sort).iterator();
         Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), sort).iterator();
@@ -1153,16 +1155,18 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 variantStorageEngineExpected, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 5));
 
         super.removeFileTest(params);
+        VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
 
-        MongoDataStore mongoDataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
+        int studyId = studyConfiguration1.getStudyId();
+        MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
+        System.out.println("variantsCollection = " + variantsCollection);
+        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyId);
+        System.out.println("stageCollection = " + stageCollection);
 
-        MongoDBCollection variantsCollection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue());
-        MongoDBCollection stageCollection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_STAGE.defaultValue());
+//        assertEquals(variantsCollection.count().first(), stageCollection.count().first());
 
-        assertEquals(variantsCollection.count().first(), stageCollection.count().first());
-
-        Set<String> variantIds = variantsCollection.find(new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, 1), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
-        Set<String> stageIds = stageCollection.find(Filters.exists("1"), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
+        Set<String> variantIds = variantsCollection.find(new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
+        Set<String> stageIds = stageCollection.find(Filters.exists(String.valueOf(studyId)), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
 
         if (!variantIds.equals(stageIds)) {
             for (String id : variantIds) {
@@ -1175,7 +1179,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
         compareCollections(
                 variantStorageEngineExpected.getDBAdaptor().getVariantsCollection(),
-                getVariantStorageEngine().getDBAdaptor().getVariantsCollection(),
+                dbAdaptor.getVariantsCollection(),
                 d -> {
                     List<Document> list = (List<Document>) d.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
                     for (Document study : list) {
