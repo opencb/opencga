@@ -59,11 +59,9 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
             Query query = GrpcServiceUtils.createQuery(request.getQueryMap());
             QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
 
-            int limit = queryOptions.getInt(QueryOptions.LIMIT) > 0 ? queryOptions.getInt(QueryOptions.LIMIT) : Integer.MAX_VALUE;
-            int count = 0;
             AlignmentDBAdaptor alignmentDBAdaptor = alignmentStorageEngine.getDBAdaptor();
             AlignmentIterator iterator = alignmentDBAdaptor.iterator(path, query, queryOptions);
-            while (iterator.hasNext() && count++ < limit) {
+            while (iterator.hasNext()) {
                 Reads.ReadAlignment readAlignment = (Reads.ReadAlignment) iterator.next();
                 responseObserver.onNext(readAlignment);
             }
@@ -96,7 +94,6 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
                         .build();
                 responseObserver.onNext(floatResponse);
             }
-
             responseObserver.onCompleted();
         } catch (Exception e) {
             e.printStackTrace();
@@ -135,11 +132,9 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
             Query query = GrpcServiceUtils.createQuery(request.getQueryMap());
             QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
 
-            int limit = queryOptions.getInt(QueryOptions.LIMIT) > 0 ? queryOptions.getInt(QueryOptions.LIMIT) : Integer.MAX_VALUE;
-            int count = 0;
             AlignmentDBAdaptor alignmentDBAdaptor = alignmentStorageEngine.getDBAdaptor();
             AlignmentIterator iterator = alignmentDBAdaptor.iterator(path, query, queryOptions, SAMRecord.class);
-            while (iterator.hasNext() && count++ < limit) {
+            while (iterator.hasNext()) {
                 SAMRecord samRecord = (SAMRecord) iterator.next();
                 AlignmentServiceModel.StringResponse stringResponse =
                         AlignmentServiceModel.StringResponse.newBuilder().setValue(samRecord.getSAMString()).build();
