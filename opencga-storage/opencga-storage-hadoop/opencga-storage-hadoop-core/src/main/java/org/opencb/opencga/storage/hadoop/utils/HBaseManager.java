@@ -403,7 +403,8 @@ public class HBaseManager implements AutoCloseable {
     }
 
     public static Configuration addHBaseSettings(Configuration conf, HBaseCredentials credentials) {
-        conf = HBaseConfiguration.create(conf);
+        // Do not overwrite the input conf
+        HBaseConfiguration.addHbaseResources(conf);
 
         if (StringUtils.isNotEmpty(credentials.getZookeeperQuorums())) {
             conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getZookeeperQuorums());

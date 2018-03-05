@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant.annotation;
+package org.opencb.opencga.storage.hadoop.variant.annotation.mr;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
@@ -31,12 +31,10 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
-import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +54,6 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
     public static final String CONFIG_VARIANT_TABLE_ANNOTATE_FORCE = "opencga.variant.table.annotate.force";
 
     private VariantAnnotator variantAnnotator;
-    private byte[] studiesRow;
     private boolean forceAnnotation;
     private VariantAnnotationToPhoenixConverter annotationConverter;
     private VariantPhoenixHelper.VariantColumn[] columnsOrdered;
@@ -65,7 +62,6 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         this.forceAnnotation = context.getConfiguration().getBoolean(CONFIG_VARIANT_TABLE_ANNOTATE_FORCE, false);
-        studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
 
         /* Annotation -> Phoenix converter */
         annotationConverter = new VariantAnnotationToPhoenixConverter(getHelper().getColumnFamily());
@@ -135,19 +131,17 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
                 context.getCounter("opencga", "row.empty").increment(1);
                 return;
             }
-            if (!Bytes.startsWith(value.getRow(), this.studiesRow)) { // ignore _METADATA row
-                context.getCounter("opencga", "variant.read").increment(1);
-                logger.info("Convert ... ");
-                long start = System.nanoTime();
-                Variant variant = this.getHbaseToVariantConverter().convert(value);
-                if (!requireAnnotation(variant)) {
-                    context.getCounter("opencga", "variant.no-annotation-required").increment(1);
-                    return; // No annotation needed
-                }
-                logger.info("Add to annotate set {} [convert time: {}] ... ", variant, System.nanoTime() - start);
-                variantsToAnnotate.add(variant);
-
+            context.getCounter("opencga", "variant.read").increment(1);
+            logger.info("Convert ... ");
+            long start = System.nanoTime();
+            Variant variant = this.getHbaseToVariantConverter().convert(value);
+            if (!requireAnnotation(variant)) {
+                context.getCounter("opencga", "variant.no-annotation-required").increment(1);
+                return; // No annotation needed
             }
+            logger.info("Add to annotate set {} [convert time: {}] ... ", variant, System.nanoTime() - start);
+            variantsToAnnotate.add(variant);
+
         } catch (Exception e) {
             throw new IllegalStateException("Problems with row [hex:" + hexBytes + "] for cells " + cells.length, e);
         }

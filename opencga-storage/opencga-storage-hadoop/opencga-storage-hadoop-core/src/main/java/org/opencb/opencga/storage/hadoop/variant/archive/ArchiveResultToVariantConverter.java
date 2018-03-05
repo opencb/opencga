@@ -29,8 +29,8 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantLocalConflictResolver;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArchiveTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +102,7 @@ public class ArchiveResultToVariantConverter {
             throws IllegalStateException {
         Stream<Cell> cellStream = Arrays.stream(value.rawCells())
                 .filter(c -> Bytes.equals(CellUtil.cloneFamily(c), columnFamily))
-                .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+                .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), FillMissingFromArchiveTask.VARIANT_COLUMN_B_PREFIX));
         if (this.isParallel()) { // if parallel
             cellStream = cellStream.parallel();
         }
@@ -117,7 +117,7 @@ public class ArchiveResultToVariantConverter {
             } catch (InvalidProtocolBufferException e) {
                 throw new IllegalStateException(e);
             }
-            int fileId = ArchiveTableHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c));
+            int fileId = ArchiveTableHelper.getFileIdFromNonRefColumnName(CellUtil.cloneQualifier(c));
             VcfSliceToVariantListConverter converter = getConverter(fileId);
             long startConvert = System.nanoTime();
             List<Variant> variants = converter.convert(vcfSlice, vcfRecordFilter);

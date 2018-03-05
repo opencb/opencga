@@ -17,11 +17,11 @@
 package org.opencb.opencga.catalog.monitor.executors;
 
 import org.apache.tools.ant.types.Commandline;
+import org.opencb.commons.exec.Command;
+import org.opencb.commons.exec.SingleProcess;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.SgeManager;
-import org.opencb.opencga.core.exec.Command;
-import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -99,7 +99,7 @@ public class SGEManager {
         logger.info("SgeManager: Enqueuing job: " + Commandline.toString(cmdArray));
 
         // thrown command to shell
-        Command sgeCommand = new Command(cmdArray, null);
+        Command sgeCommand = new Command(cmdArray, Collections.EMPTY_LIST);
         SingleProcess sp = new SingleProcess(sgeCommand);
         sp.getRunnableProcess().run();
         if (sgeCommand.getExitValue() != 0 || sgeCommand.getException() != null) {

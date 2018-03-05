@@ -30,7 +30,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -43,10 +42,8 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,9 +67,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private static final String UNKNOWN_SAMPLE_DATA = VCFConstants.MISSING_VALUE_v4;
     public static final int FILE_CALL_IDX = 0;
     public static final int FILE_SEC_ALTS_IDX = 1;
-    public static final int FILE_QUAL_IDX = 2;
-    public static final int FILE_FILTER_IDX = 3;
-    public static final int FILE_INFO_START_IDX = 4;
+    public static final int FILE_VARIANT_OVERLAPPING_STATUS_IDX = 2;
+    public static final int FILE_QUAL_IDX = 3;
+    public static final int FILE_FILTER_IDX = 4;
+    public static final int FILE_INFO_START_IDX = 5;
 
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
@@ -207,8 +205,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                         studies.add(studyId);
                         filesMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(fileId, array));
                     }
-                } else if (columnName.endsWith(VariantTableStudyRow.HOM_REF)) {
-                    Integer studyId = VariantTableStudyRow.extractStudyId(columnName, true);
+                } else if (columnName.endsWith(VariantPhoenixHelper.STUDY_SUFIX)) {
+                    Integer studyId = VariantPhoenixHelper.extractStudyId(columnName, true);
                     // Method GetInt will always return 0, even is null was stored.
                     // Check if value was actually a null.
                     resultSet.getInt(i);
@@ -224,9 +222,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
             );
 
-            Map<Integer, VariantTableStudyRow> rows = VariantTableStudyRow.parse(variant, resultSet, genomeHelper)
-                    .stream().collect(Collectors.toMap(VariantTableStudyRow::getStudyId, r -> r));
-
             Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
 
             HashMap<Integer, StudyEntry> map = new HashMap<>();
@@ -234,7 +229,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
                 StudyEntry studyEntry = convert(
                         sampleDataMap.getOrDefault(studyId, Collections.emptyList()),
-                        filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration, rows.get(studyId));
+                        filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration);
                 BiMap<Integer, String> cohortIdMap = studyConfiguration.getCohortIds().inverse();
                 for (Map.Entry<Integer, VariantStats> entry : stats.getOrDefault(studyId, Collections.emptyMap()).entrySet()) {
                     studyEntry.setStats(cohortIdMap.get(entry.getKey()), entry.getValue());
@@ -276,17 +271,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 studies.add(studyId);
                 PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
                 filesMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(fileId, array));
-            } else if (endsWith(qualifier, VariantTableStudyRow.HOM_REF_BYTES)) {
+            } else if (endsWith(qualifier, VariantPhoenixHelper.STUDY_SUFIX_BYTES)) {
                 String columnName = Bytes.toString(qualifier);
-                Integer studyId = VariantTableStudyRow.extractStudyId(columnName, true);
+                Integer studyId = VariantPhoenixHelper.extractStudyId(columnName, true);
                 studies.add(studyId);
             }
         }
 
         Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
-        Map<Integer, VariantTableStudyRow> rows = VariantTableStudyRow.parse(result, genomeHelper)
-                .stream().collect(Collectors.toMap(VariantTableStudyRow::getStudyId, r -> r));
-
         Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(result);
 
         HashMap<Integer, StudyEntry> map = new HashMap<>();
@@ -294,7 +286,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
             StudyEntry studyEntry = convert(
                     sampleDataMap.getOrDefault(studyId, Collections.emptyList()),
-                    filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration, rows.get(studyId));
+                    filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration);
             BiMap<Integer, String> cohortIdMap = studyConfiguration.getCohortIds().inverse();
             for (Map.Entry<Integer, VariantStats> entry : stats.getOrDefault(studyId, Collections.emptyMap()).entrySet()) {
                 studyEntry.setStats(cohortIdMap.get(entry.getKey()), entry.getValue());
@@ -307,13 +299,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
-                                 Variant variant, Integer studyId, VariantTableStudyRow row) {
-        return convert(sampleDataMap, filesMap, variant, getStudyConfiguration(studyId), row);
+                                 Variant variant, Integer studyId) {
+        return convert(sampleDataMap, filesMap, variant, getStudyConfiguration(studyId));
     }
 
     protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
-                                 Variant variant, StudyConfiguration studyConfiguration, VariantTableStudyRow row) {
+                                 Variant variant, StudyConfiguration studyConfiguration) {
         List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyConfiguration);
         StudyEntry studyEntry = newStudyEntry(studyConfiguration, fixedFormat);
 
@@ -333,11 +325,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             addFileEntry(studyConfiguration, studyEntry, fileId, fileColumn, alternateFileMap);
         }
 
-        addSecondaryAlternates(variant, studyEntry, studyConfiguration, alternateFileMap, row);
+        addSecondaryAlternates(variant, studyEntry, studyConfiguration, alternateFileMap);
 
-        if (row != null) {
-            convert(variant, studyEntry, studyConfiguration, row);
-        }
         fillEmptySamplesData(studyEntry, studyConfiguration);
 
         return studyEntry;
@@ -434,6 +423,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
             i++;
         }
+        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
         studyEntry.getFiles().add(new FileEntry(fileId, (String) (fileColumn.getElement(FILE_CALL_IDX)), attributes));
     }
 
@@ -465,128 +455,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         });
     }
 
-    public StudyEntry convert(Variant variant, VariantTableStudyRow row) {
-        return convert(Collections.emptyList(), Collections.emptyList(), variant, row.getStudyId(), row);
-    }
-
-    public StudyEntry convert(Variant variant, StudyEntry studyEntry, StudyConfiguration studyConfiguration, VariantTableStudyRow row) {
-        BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
-        LinkedHashMap<String, Integer> returnedSamplesPosition = studyEntry.getSamplesPosition();
-
-        int loadedSamplesSize = StudyConfiguration.getIndexedSamples(studyConfiguration).size();
-
-//        calculatePassCallRates(row, attributesMap, loadedSamplesSize);
-
-        Integer gtIdx = studyEntry.getFormatPositions().get(VariantMerger.GT_KEY);
-        Integer ftIdx = studyEntry.getFormatPositions().get(VariantMerger.GENOTYPE_FILTER_KEY);
-        if (gtIdx != null) {
-            Set<Integer> sampleWithVariant = new HashSet<>();
-            for (String genotype : row.getGenotypes()) {
-                sampleWithVariant.addAll(row.getSampleIds(genotype));
-                if (genotype.equals(VariantTableStudyRow.OTHER)) {
-                    continue; // skip OTHER -> see Complex type
-                }
-                for (Integer sampleId : row.getSampleIds(genotype)) {
-                    String sampleName = mapSampleIds.get(sampleId);
-                    Integer sampleIdx = returnedSamplesPosition.get(sampleName);
-                    if (sampleIdx == null) {
-                        continue;   //Sample may not be required. Ignore this sample.
-                    }
-//                    List<String> lst = Arrays.asList(genotype, VariantMerger.PASS_VALUE);
-//                samplesDataArray[sampleIdx] = lst;
-//                    studyEntry.addSampleData(sampleIdx, lst);
-                    studyEntry.addSampleData(sampleIdx, gtIdx, genotype, UNKNOWN_SAMPLE_DATA);
-                }
-            }
-
-            // Load complex genotypes
-            for (Map.Entry<Integer, String> entry : row.getComplexVariant().getSampleToGenotypeMap().entrySet()) {
-                sampleWithVariant.add(entry.getKey());
-
-                String sampleName = mapSampleIds.get(entry.getKey());
-                Integer samplePosition = returnedSamplesPosition.get(sampleName);
-                if (samplePosition == null) {
-                    continue;   //Sample may not be required. Ignore this sample.
-                }
-                String genotype = entry.getValue();
-                String returnedGenotype;
-                // FIXME: Decide what to do with lists of genotypes
-                if (simpleGenotypes) {
-                    returnedGenotype = getSimpleGenotype(genotype);
-                    logger.debug("Return simplified genotype: {} -> {}", genotype, returnedGenotype);
-                } else {
-                    returnedGenotype = genotype;
-                }
-//            samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE);
-//            studyEntry.addSampleData(samplePosition, Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE));
-//                studyEntry.addSampleData(sampleName, "GT", returnedGenotype);
-                studyEntry.addSampleData(samplePosition, gtIdx, returnedGenotype, UNKNOWN_SAMPLE_DATA);
-            }
-
-            // Fill gaps (with HOM_REF)
-            int gapCounter = 0;
-            List<String> defaultSampleData;
-            if (ftIdx == null) {
-                defaultSampleData = Collections.singletonList(VariantTableStudyRow.HOM_REF);
-            } else {
-                defaultSampleData = Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE);
-            }
-            for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
-                if (studyEntry.getSamplesData().get(i) == null) {
-                    gapCounter++;
-                    studyEntry.addSampleData(i, new ArrayList<>(defaultSampleData));
-                }
-            }
-//            for (int i = 0; i < samplesDataArray.length; i++) {
-//                if (samplesDataArray[i] == null) {
-//                    ++gapCounter;
-//                    samplesDataArray[i] = Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE);
-//                }
-//            }
-
-            // Check homRef count
-            int homRefCount = loadedSamplesSize;
-            homRefCount -= sampleWithVariant.size();
-            if (homRefCount != row.getHomRefCount()) {
-                StringBuilder message = new StringBuilder()
-                        .append("Wrong number of HomRef samples for variant ").append(variant)
-                        .append(". Got ").append(homRefCount).append(", expect ").append(row.getHomRefCount())
-                        .append(". Samples number: ").append(studyEntry.getSamplesData().size()).append(" , ")
-                        .append('\'' + VariantTableStudyRow.HOM_REF + "':").append(row.getHomRefCount()).append(" , ");
-                for (String studyColumn : VariantTableStudyRow.GENOTYPE_COLUMNS) {
-                    message.append('\'').append(studyColumn).append("':").append(row.getSampleIds(studyColumn)).append(" , ");
-                }
-                wrongVariant(message.toString());
-            }
-        }
-
-        if (ftIdx != null) {
-            // Set pass field
-            int passCount = loadedSamplesSize;
-            for (Map.Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPassMap().entrySet()) {
-                String filterString = entry.getKey();
-                passCount -= entry.getValue().getSampleIdsCount();
-                for (Integer sampleId : entry.getValue().getSampleIdsList()) {
-                    String sampleName = mapSampleIds.get(sampleId);
-                    Integer samplePosition = returnedSamplesPosition.get(sampleName);
-                    if (samplePosition == null) {
-                        continue;   //Sample may not be required. Ignore this sample.
-                    }
-                    studyEntry.addSampleData(samplePosition, ftIdx, filterString, UNKNOWN_SAMPLE_DATA);
-                }
-            }
-
-            // Check pass count
-            if (passCount != row.getPassCount()) {
-                wrongVariant("Error parsing variant " + row.toString() + " . "
-                        + "Pass count " + row.getPassCount() + " does not match filter "
-                        + "fill count: " + passCount + " using " + loadedSamplesSize + " loaded samples.");
-            }
-        }
-
-        return studyEntry;
-    }
-
     private String getDefaultGenotype(StudyConfiguration studyConfiguration) {
         String defaultGenotype;
         if (VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes()).equals(VariantStorageEngine.MergeMode.ADVANCED)
@@ -613,19 +481,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         } else {
             logger.warn(message);
         }
-    }
-
-    private void calculatePassCallRates(VariantTableStudyRow row, Map<String, String> attributesMap, int
-            loadedSamplesSize) {
-        attributesMap.put("PASS", row.getPassCount().toString());
-        attributesMap.put("CALL", row.getCallCount().toString());
-        double passRate = row.getPassCount().doubleValue() / loadedSamplesSize;
-        double callRate = row.getCallCount().doubleValue() / loadedSamplesSize;
-        double opr = passRate * callRate;
-        attributesMap.put("PR", String.valueOf(passRate));
-        attributesMap.put("CR", String.valueOf(callRate));
-        attributesMap.put("OPR", String.valueOf(opr)); // OVERALL pass rate
-        attributesMap.put("NS", String.valueOf(loadedSamplesSize)); // Number of Samples
     }
 
     /**
@@ -665,23 +520,15 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
      * @param studyEntry         Study Entry all samples data
      * @param studyConfiguration StudyConfiguration from the study
      * @param alternateFileIdMap Map from SecondaryAlternate to FileId
-     * @param row                VariantTableStudyRow may contain secondary alternates.
-     *                           These alternates have preference over any other secondary alternate
      */
     private void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, StudyConfiguration studyConfiguration,
-                                        Map<String, List<String>> alternateFileIdMap, VariantTableStudyRow row) {
+                                        Map<String, List<String>> alternateFileIdMap) {
 
-        final List<AlternateCoordinate> alternateCoordinatesFromRow;
-        if (row != null) {
-            alternateCoordinatesFromRow = getAlternateCoordinates(variant, row);
-        } else {
-            alternateCoordinatesFromRow = Collections.emptyList();
-        }
 
         final List<AlternateCoordinate> alternateCoordinates;
         if (alternateFileIdMap.isEmpty()) {
-            alternateCoordinates = alternateCoordinatesFromRow;
-        } else if (alternateFileIdMap.size() == 1 && alternateCoordinatesFromRow.isEmpty()) {
+            alternateCoordinates = Collections.emptyList();
+        } else if (alternateFileIdMap.size() == 1) {
             alternateCoordinates = getAlternateCoordinates(alternateFileIdMap.keySet().iterator().next());
         } else {
             // There are multiple secondary alternates.
@@ -693,20 +540,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
 
             // Create one variant for each alternate with the samples data
-            // If VariantTableStudyRow had some alternates, add them in first place.
             List<Variant> variants = new ArrayList<>(alternateFileIdMap.size());
-            if (!alternateCoordinatesFromRow.isEmpty()) {
-                Variant sampleVariant = new Variant(
-                        variant.getChromosome(),
-                        variant.getStart(),
-                        variant.getReference(),
-                        variant.getAlternate());
-                StudyEntry se = new StudyEntry("0");
-                se.setSecondaryAlternates(alternateCoordinatesFromRow);
-                se.setFormat(studyEntry.getFormat());
-                sampleVariant.addStudyEntry(se);
-                variants.add(sampleVariant);
-            }
 
             for (Map.Entry<String, List<String>> entry : alternateFileIdMap.entrySet()) {
                 String secondaryAlternates = entry.getKey();
@@ -750,27 +584,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             alternateCoordinates = newSe.getSecondaryAlternates();
         }
         studyEntry.setSecondaryAlternates(alternateCoordinates);
-    }
-
-    protected List<AlternateCoordinate> getAlternateCoordinates(Variant variant, VariantTableStudyRow row) {
-        List<AlternateCoordinate> secAltArr;
-        List<VariantProto.AlternateCoordinate> secondaryAlternates = row.getComplexVariant().getSecondaryAlternatesList();
-        int secondaryAlternatesCount = row.getComplexVariant().getSecondaryAlternatesCount();
-        secAltArr = new ArrayList<>(secondaryAlternatesCount);
-        if (secondaryAlternatesCount > 0) {
-            for (VariantProto.AlternateCoordinate altCoordinate : secondaryAlternates) {
-                VariantType type = VariantType.valueOf(altCoordinate.getType().name());
-                String chr = StringUtils.isEmpty(altCoordinate.getChromosome())
-                        ? variant.getChromosome() : altCoordinate.getChromosome();
-                Integer start = altCoordinate.getStart() == 0 ? variant.getStart() : altCoordinate.getStart();
-                Integer end = altCoordinate.getEnd() == 0 ? variant.getEnd() : altCoordinate.getEnd();
-                String reference = StringUtils.isEmpty(altCoordinate.getReference()) ? "" : altCoordinate.getReference();
-                String alternate = StringUtils.isEmpty(altCoordinate.getAlternate()) ? "" : altCoordinate.getAlternate();
-                AlternateCoordinate alt = new AlternateCoordinate(chr, start, end, reference, alternate, type);
-                secAltArr.add(alt);
-            }
-        }
-        return secAltArr;
     }
 
     public List<AlternateCoordinate> getAlternateCoordinates(String s) {

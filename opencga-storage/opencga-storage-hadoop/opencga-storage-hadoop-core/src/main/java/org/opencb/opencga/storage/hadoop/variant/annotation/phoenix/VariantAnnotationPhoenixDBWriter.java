@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant.index.annotation;
+package org.opencb.opencga.storage.hadoop.variant.annotation.phoenix;
 
-import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -30,10 +29,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 26/10/16.
@@ -66,21 +67,17 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
         Collections.addAll(columns, VariantPhoenixHelper.VariantColumn.values());
         columns.addAll(VariantPhoenixHelper.getHumanPopulationFrequenciesColumns());
 
-        this.upsertExecutor = new VariantAnnotationUpsertExecutor(connection, SchemaUtil.getEscapedFullTableName(variantTable), columns);
+        this.upsertExecutor = new VariantAnnotationUpsertExecutor(connection,
+                VariantPhoenixHelper.getEscapedFullTableName(variantTable, dbAdaptor.getConfiguration()), columns);
     }
 
     @Override
-    public synchronized void pre() {
+    public synchronized void pre() throws SQLException {
         VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
-        try {
-            //TODO: Read population frequencies columns from StudyConfiguration ?
-            variantPhoenixHelper.getPhoenixHelper().addMissingColumns(connection, variantTable,
-                    VariantPhoenixHelper.getHumanPopulationFrequenciesColumns(), true);
-            variantPhoenixHelper.updateAnnotationColumns(connection, variantTable);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
+        //TODO: Read population frequencies columns from StudyConfiguration ?
+        variantPhoenixHelper.getPhoenixHelper().addMissingColumns(connection, variantTable,
+                VariantPhoenixHelper.getHumanPopulationFrequenciesColumns(), true, VariantPhoenixHelper.DEFAULT_TABLE_TYPE);
+        variantPhoenixHelper.updateAnnotationColumns(connection, variantTable);
     }
 
     @Override
@@ -107,17 +104,11 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
     }
 
     @Override
-    public void post() {
-        try {
-            upsertExecutor.close();
-            if (closeConnection) {
-                logger.info("Close Phoenix connection " + connection);
-                connection.close();
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+    public void post() throws IOException, SQLException {
+        upsertExecutor.close();
+        if (closeConnection) {
+            logger.info("Close Phoenix connection " + connection);
+            connection.close();
         }
     }
 }

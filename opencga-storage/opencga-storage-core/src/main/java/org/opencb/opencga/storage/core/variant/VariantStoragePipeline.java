@@ -484,7 +484,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
         options.remove(Options.STUDY_CONFIGURATION.key());
 
-        VariantFileMetadata fileMetadata = readVariantFileMetadata(input, options);
+        VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
             studyConfiguration = checkOrCreateStudyConfiguration(studyConfiguration);
@@ -745,8 +745,15 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return studyName + "_" + fileId;
     }
 
-    public VariantFileMetadata readVariantFileMetadata(URI input, ObjectMap options) throws StorageEngineException {
-        return variantReaderUtils.readVariantFileMetadata(input);
+    public int getFileId() {
+        return options.getInt(Options.FILE_ID.key());
+    }
+
+    public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
+        VariantFileMetadata variantFileMetadata = variantReaderUtils.readVariantFileMetadata(input);
+        // Ensure correct fileId
+        variantFileMetadata.setId(String.valueOf(getFileId()));
+        return variantFileMetadata;
     }
 
     /* --------------------------------------- */
