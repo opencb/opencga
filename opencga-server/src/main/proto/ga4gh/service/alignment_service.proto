@@ -4,21 +4,56 @@ package ga4gh.service;
 
 option java_package = "org.opencb.opencga.server.grpc";
 option java_outer_classname = "AlignmentServiceModel";
+option java_generate_equals_and_hash = true;
 
-import "ga4gh/service/generic_service.proto";
 import "ga4gh/reads.proto";
-import "ga4gh/service/service_types.proto";
+
 
 service AlignmentService {
 
-   rpc count(Request) returns (LongResponse) {}
+   rpc Get(AlignmentRequest) returns (stream ReadAlignment) {}
 
-   rpc distinct(Request) returns (StringArrayResponse) {}
+   rpc Coverage(AlignmentRequest) returns (stream FloatResponse) {}
 
-   rpc get(Request) returns (stream ReadAlignment) {}
+   rpc Count(AlignmentRequest) returns (LongResponse) {}
 
-   rpc getAsSam(Request) returns (stream StringResponse) {}
+   rpc GetAsSam(AlignmentRequest) returns (stream StringResponse) {}
 
-   rpc groupBy(Request) returns (GroupResponse) {}
+}
 
+message AlignmentRequest {
+    string storageEngine = 1;
+    string file = 2;
+    string token = 3;
+    // string user = 3;
+    // string password = 4;
+    // string ip = 5;
+    map<string, string> query = 5;
+    map<string, string> options = 6;
+}
+
+message Response {
+    string id = 1;
+    string warning = 2;
+    string error = 3;
+}
+
+message FloatResponse {
+    Response response = 1;
+    float value = 2;
+}
+
+message LongResponse {
+    Response response = 1;
+    int64 value = 2;
+}
+
+message StringResponse {
+    Response response = 1;
+    string value = 2;
+}
+
+message StringArrayResponse {
+    Response response = 1;
+    repeated string values = 2;
 }

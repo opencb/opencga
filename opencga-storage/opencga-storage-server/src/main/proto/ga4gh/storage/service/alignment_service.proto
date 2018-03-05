@@ -8,6 +8,7 @@ option java_generate_equals_and_hash = true;
 
 import "ga4gh/reads.proto";
 
+
 service AlignmentService {
 
     rpc Get(AlignmentRequest) returns (stream ReadAlignment) {}

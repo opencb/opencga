@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.utils.GrpcServiceUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
@@ -70,10 +71,10 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
             Query query = GrpcServiceUtils.createQuery(request.getOptionsMap());
             QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
 
-            VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
             VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(request);
 //            Iterator iterator = variantDBAdaptor.iterator(query, queryOptions);
             try (VariantDBIterator iterator = variantDBAdaptor.iterator(query, queryOptions)) {
+                VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
                 while (iterator.hasNext()) {
                     org.opencb.biodata.models.variant.Variant variant = (org.opencb.biodata.models.variant.Variant) iterator.next();
                     responseObserver.onNext(converter.convert(variant));

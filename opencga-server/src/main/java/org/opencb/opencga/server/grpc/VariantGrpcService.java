@@ -26,6 +26,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.utils.GrpcServiceUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,19 +38,23 @@ import org.slf4j.LoggerFactory;
 public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBase {
 
     private GenericGrpcService genericGrpcService;
+    private VariantStorageManager variantStorageManager;
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger;
 
     public VariantGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
         genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
+        variantStorageManager = new VariantStorageManager(genericGrpcService.catalogManager, GenericGrpcService.storageEngineFactory);
+
+        logger = LoggerFactory.getLogger(getClass());
     }
 
     @Override
     public void count(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.LongResponse> responseObserver) {
         try {
-            Query query = genericGrpcService.createQuery(request);
-            logger.info("Count variants query : {} " + query.toJson());
-            QueryResult<Long> count = genericGrpcService.variantStorageManager.count(query, request.getSessionId());
+            Query query = GrpcServiceUtils.createQuery(request.getOptionsMap());
+            logger.debug("Count variants query : {} " + query.toJson());
+            QueryResult<Long> count = variantStorageManager.count(query, request.getSessionId());
             responseObserver.onNext(ServiceTypesModel.LongResponse.newBuilder().setValue(count.getResult().get(0)).build());
             responseObserver.onCompleted();
         } catch (Exception e) {
@@ -65,11 +71,11 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     @Override
     public void get(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
         try {
-            VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
-            Query query = genericGrpcService.createQuery(request);
-            QueryOptions queryOptions = genericGrpcService.createQueryOptions(request);
-            logger.info("Get variants query : {} , queryOptions : {}" , query.toJson(), queryOptions.toJson());
-            try (VariantDBIterator iterator = genericGrpcService.variantStorageManager.iterator(query, queryOptions, request.getSessionId())) {
+            Query query = GrpcServiceUtils.createQuery(request.getOptionsMap());
+            QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
+            logger.debug("Get variants query : {} , queryOptions : {}" , query.toJson(), queryOptions.toJson());
+            try (VariantDBIterator iterator = variantStorageManager.iterator(query, queryOptions, request.getSessionId())) {
+                VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
                     responseObserver.onNext(converter.convert(variant));

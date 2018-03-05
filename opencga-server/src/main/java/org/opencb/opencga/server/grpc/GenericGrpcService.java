@@ -16,12 +16,9 @@
 
 package org.opencb.opencga.server.grpc;
 
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -38,11 +35,8 @@ public class GenericGrpcService {
     protected String defaultStorageEngine;
 
     protected CatalogManager catalogManager;
-    protected VariantStorageManager variantStorageManager;
+//    protected VariantStorageManager variantStorageManager;
     protected static StorageEngineFactory storageEngineFactory;
-
-//    protected AuthManager authManager;
-//    protected Set<String> authorizedHosts;
 
     private Logger privLogger;
     protected Logger logger;
@@ -52,14 +46,12 @@ public class GenericGrpcService {
     }
 
     public GenericGrpcService(Configuration configuration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
-
         privLogger = LoggerFactory.getLogger(this.getClass().toString());
         logger = LoggerFactory.getLogger(this.getClass().toString());
 
         this.configuration = configuration;
         this.storageConfiguration = storageConfiguration;
         this.defaultStorageEngine = defaultStorageEngine;
-
 
         try {
             catalogManager = new CatalogManager(configuration);
@@ -73,53 +65,7 @@ public class GenericGrpcService {
             storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
         }
 
-        variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-
-
-//        if (authorizedHosts == null) {
-//            privLogger.debug("Creating the authorizedHost HashSet");
-//            authorizedHosts = new HashSet<>(storageConfiguration.getServer().getAuthorizedHosts());
-//        }
-
-//        try {
-//            if (StringUtils.isNotEmpty(storageConfiguration.getServer().getAuthManager())) {
-//                privLogger.debug("Loading AuthManager in {} from {}", this.getClass(), storageConfiguration.getServer().getAuthManager());
-//                authManager = (AuthManager) Class.forName(storageConfiguration.getServer().getAuthManager()).newInstance();
-//            } else {
-//                privLogger.debug("Loading DefaultAuthManager in {} from {}", this.getClass(), DefaultAuthManager.class);
-//                authManager = new DefaultAuthManager();
-//            }
-//        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-//            e.printStackTrace();
-//        }
-    }
-
-//    protected void checkAuthorizedHosts(Query query, String ip) throws NotAuthorizedHostException, NotAuthorizedUserException {
-//        if (authorizedHosts.contains("0.0.0.0") || authorizedHosts.contains("*") || authorizedHosts.contains(ip)) {
-//            authManager.checkPermission(query, "");
-//        } else {
-//            throw new NotAuthorizedHostException("No queries are allowed from " + ip);
-//        }
-//    }
-
-    protected Query createQuery(Request request) {
-        Query query = new Query();
-        for (String key : request.getQueryMap().keySet()) {
-            if (request.getQueryMap().get(key) != null) {
-                query.put(key, request.getQueryMap().get(key));
-            }
-        }
-        return query;
-    }
-
-    protected QueryOptions createQueryOptions(Request request) {
-        QueryOptions queryOptions = new QueryOptions();
-        for (String key : request.getOptionsMap().keySet()) {
-            if (request.getOptionsMap().get(key) != null) {
-                queryOptions.put(key, request.getOptionsMap().get(key));
-            }
-        }
-        return queryOptions;
+//        variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
     }
 
     @Override

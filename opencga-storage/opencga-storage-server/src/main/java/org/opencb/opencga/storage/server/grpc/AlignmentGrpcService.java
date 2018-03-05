@@ -31,6 +31,7 @@ import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.utils.GrpcServiceUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -46,6 +47,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
 
         storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
     }
+
 
     @Override
     public void get(AlignmentServiceModel.AlignmentRequest request, StreamObserver<Reads.ReadAlignment> responseObserver) {

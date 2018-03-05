@@ -35,8 +35,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
-import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
-import org.opencb.opencga.server.grpc.ServiceTypesModel;
+import org.opencb.opencga.server.grpc.AlignmentServiceModel;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
@@ -143,21 +142,17 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private QueryResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)
-            throws CatalogException, IOException {
-
+    private QueryResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)throws IOException {
         String study = resolveStudy(alignmentCommandOptions.queryAlignmentCommandOptions.study);
-
         String fileIds = commandOptions.fileId;
 
-        ObjectMap o = new ObjectMap();
-        o.putIfNotNull("study", study);
-        o.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), commandOptions.region);
-        o.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
-        o.putIfNotNull("limit", commandOptions.limit);
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.putIfNotNull("study", study);
+        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), commandOptions.region);
+        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
+        objectMap.putIfNotNull("limit", commandOptions.limit);
 
-        QueryResponse<ReadAlignment> query = openCGAClient.getAlignmentClient().query(fileIds, o);
-        return query;
+        return openCGAClient.getAlignmentClient().query(fileIds, objectMap);
     }
 
     private void queryGRPC(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions) throws InterruptedException {
@@ -181,7 +176,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         addParam(queryOptions, QueryOptions.LIMIT, commandOptions.limit);
         addParam(queryOptions, QueryOptions.SKIP, commandOptions.skip);
 
-        GenericAlignmentServiceModel.Request request = GenericAlignmentServiceModel.Request.newBuilder()
+        AlignmentServiceModel.AlignmentRequest request = AlignmentServiceModel.AlignmentRequest.newBuilder()
+                .setFile(commandOptions.fileId)
                 .putAllQuery(query)
                 .putAllOptions(queryOptions)
                 .build();
@@ -205,7 +201,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         AlignmentServiceGrpc.AlignmentServiceBlockingStub serviceBlockingStub = AlignmentServiceGrpc.newBlockingStub(channel);
 
         if (commandOptions.count) {
-            ServiceTypesModel.LongResponse count = serviceBlockingStub.count(request);
+            AlignmentServiceModel.LongResponse count = serviceBlockingStub.count(request);
             String pretty = "";
             if (commandOptions.commonOptions.outputFormat.toLowerCase().equals("extended_text")) {
                 pretty = "\nThe number of alignments is ";
@@ -214,20 +210,20 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         } else {
             if (commandOptions.commonOptions.outputFormat.toLowerCase().contains("text")) {
                 // Output in SAM format
-                Iterator<ServiceTypesModel.StringResponse> alignmentIterator = serviceBlockingStub.getAsSam(request);
+                Iterator<AlignmentServiceModel.StringResponse> alignmentIterator = serviceBlockingStub.getAsSam(request);
 //                watch.stop();
 //                System.out.println("Time: " + watch.getTime());
                 int limit = commandOptions.limit;
                 if (limit > 0) {
                     long cont = 0;
                     while (alignmentIterator.hasNext() && cont < limit) {
-                        ServiceTypesModel.StringResponse next = alignmentIterator.next();
+                        AlignmentServiceModel.StringResponse next = alignmentIterator.next();
                         cont++;
                         System.out.print(next.getValue());
                     }
                 } else {
                     while (alignmentIterator.hasNext()) {
-                        ServiceTypesModel.StringResponse next = alignmentIterator.next();
+                        AlignmentServiceModel.StringResponse next = alignmentIterator.next();
                         System.out.print(next.getValue());
                     }
                 }

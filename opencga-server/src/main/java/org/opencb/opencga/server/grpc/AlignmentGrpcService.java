@@ -19,13 +19,19 @@ package org.opencb.opencga.server.grpc;
 import ga4gh.Reads;
 import htsjdk.samtools.SAMRecord;
 import io.grpc.stub.StreamObserver;
+import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.utils.GrpcServiceUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by pfurio on 26/10/16.
@@ -35,51 +41,25 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
     private GenericGrpcService genericGrpcService;
     private AlignmentStorageManager alignmentStorageManager;
 
+    private Logger logger;
+
     public AlignmentGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
         genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
         alignmentStorageManager = new AlignmentStorageManager(genericGrpcService.catalogManager, GenericGrpcService.storageEngineFactory);
+
+        logger = LoggerFactory.getLogger(getClass());
     }
 
-    @Override
-    public void count(GenericAlignmentServiceModel.Request request, StreamObserver<ServiceTypesModel.LongResponse> responseObserver) {
-        try {
-            // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
-            Query query = createQuery(request);
-            QueryOptions queryOptions = createQueryOptions(request);
-
-            String studyIdStr = query.getString("study");
-            String fileIdStr = query.getString("fileId");
-            String sessionId = query.getString("sid");
-
-            QueryResult<Long> countQueryResult = alignmentStorageManager.count(studyIdStr, fileIdStr, query, queryOptions, sessionId);
-
-            if (countQueryResult.getNumResults() != 1) {
-                throw new Exception(countQueryResult.getErrorMsg());
-            }
-
-            long count = countQueryResult.first();
-            ServiceTypesModel.LongResponse longResponse = ServiceTypesModel.LongResponse.newBuilder().setValue(count).build();
-            responseObserver.onNext(longResponse);
-            responseObserver.onCompleted();
-//            alignmentDBAdaptor.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
-    public void distinct(GenericAlignmentServiceModel.Request request, StreamObserver<ServiceTypesModel.StringArrayResponse> responseObserver) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void get(GenericAlignmentServiceModel.Request request, StreamObserver<Reads.ReadAlignment> responseObserver) {
+    public void get(AlignmentServiceModel.AlignmentRequest request, StreamObserver<Reads.ReadAlignment> responseObserver) {
         // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
-        Query query = createQuery(request);
-        QueryOptions queryOptions = createQueryOptions(request);
+        Query query = GrpcServiceUtils.createQuery(request.getOptionsMap());
+        QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
 
+//        String fileIdStr = query.getString("fileId");
+        String fileIdStr = request.getFile();
         String studyIdStr = query.getString("study");
-        String fileIdStr = query.getString("fileId");
         String sessionId = query.getString("sid");
 
         try (AlignmentIterator<Reads.ReadAlignment> iterator =
@@ -89,15 +69,73 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
             }
             responseObserver.onCompleted();
         } catch (Exception e) {
+            logger.error("Error in get: {}", e.toString());
             e.printStackTrace();
         }
     }
 
     @Override
-    public void getAsSam(GenericAlignmentServiceModel.Request request, StreamObserver<ServiceTypesModel.StringResponse> responseObserver) {
+    public void coverage(AlignmentServiceModel.AlignmentRequest request,
+                         StreamObserver<AlignmentServiceModel.FloatResponse> responseObserver) {
+        try {
+            Query query = GrpcServiceUtils.createQuery(request.getQueryMap());
+            String studyIdStr = query.getString("study");
+            String fileIdStr = request.getFile();
+            String regionStr = query.getString(AlignmentDBAdaptor.QueryParams.REGION.key());
+            Region region = Region.parseRegion(regionStr);
+            int windowSize = query.getInt(AlignmentDBAdaptor.QueryParams.WINDOW_SIZE.key());
+            String sessionId = query.getString("sid");
+
+            QueryResult<RegionCoverage> coverageQueryResult =
+                    alignmentStorageManager.coverage(studyIdStr, fileIdStr, region, windowSize, sessionId);
+            for (Float regionCoverage : coverageQueryResult.first().getValues()) {
+                AlignmentServiceModel.FloatResponse floatResponse = AlignmentServiceModel.FloatResponse
+                        .newBuilder()
+                        .setValue(regionCoverage)
+                        .build();
+                responseObserver.onNext(floatResponse);
+            }
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void count(AlignmentServiceModel.AlignmentRequest request, StreamObserver<AlignmentServiceModel.LongResponse> responseObserver) {
+        try {
+            // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
+            Query query = GrpcServiceUtils.createQuery(request.getOptionsMap());
+            QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
+
+//            String fileIdStr = query.getString("fileId");
+            String fileIdStr = request.getFile();
+            String studyIdStr = query.getString("study");
+            String sessionId = query.getString("sid");
+
+            QueryResult<Long> countQueryResult = alignmentStorageManager.count(studyIdStr, fileIdStr, query, queryOptions, sessionId);
+            if (countQueryResult.getNumResults() != 1) {
+                throw new Exception(countQueryResult.getErrorMsg());
+            }
+
+            long count = countQueryResult.first();
+            AlignmentServiceModel.LongResponse longResponse = AlignmentServiceModel.LongResponse
+                    .newBuilder()
+                    .setValue(count)
+                    .build();
+            responseObserver.onNext(longResponse);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void getAsSam(AlignmentServiceModel.AlignmentRequest request,
+                         StreamObserver<AlignmentServiceModel.StringResponse> responseObserver) {
         // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
-        Query query = createQuery(request);
-        QueryOptions queryOptions = createQueryOptions(request);
+        Query query = GrpcServiceUtils.createQuery(request.getOptionsMap());
+        QueryOptions queryOptions = GrpcServiceUtils.createQueryOptions(request.getOptionsMap());
 
         String studyIdStr = query.getString("study");
         String fileIdStr = query.getString("fileId");
@@ -106,41 +144,17 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         try (AlignmentIterator<SAMRecord> iterator =
                      alignmentStorageManager.iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId, SAMRecord.class)) {
             while (iterator.hasNext()) {
-                ServiceTypesModel.StringResponse response =
-                        ServiceTypesModel.StringResponse.newBuilder().setValue(iterator.next().getSAMString()).build();
+                AlignmentServiceModel.StringResponse response =
+                        AlignmentServiceModel.StringResponse
+                                .newBuilder()
+                                .setValue(iterator.next().getSAMString())
+                                .build();
                 responseObserver.onNext(response);
             }
             responseObserver.onCompleted();
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-
-    @Override
-    public void groupBy(GenericAlignmentServiceModel.Request request, StreamObserver<ServiceTypesModel.GroupResponse> responseObserver) {
-        throw new UnsupportedOperationException();
-    }
-
-    // TODO: Temporal solution. We have to implement a general createQuery and createQueryOptions
-    private Query createQuery(GenericAlignmentServiceModel.Request request) {
-        Query query = new Query();
-        for (String key : request.getQuery().keySet()) {
-            if (request.getQuery().get(key) != null) {
-                query.put(key, request.getQuery().get(key));
-            }
-        }
-        return query;
-    }
-
-    private QueryOptions createQueryOptions(GenericAlignmentServiceModel.Request request) {
-        QueryOptions queryOptions = new QueryOptions();
-        for (String key : request.getOptions().keySet()) {
-            if (request.getOptions().get(key) != null) {
-                queryOptions.put(key, request.getOptions().get(key));
-            }
-        }
-        return queryOptions;
     }
 
 }
