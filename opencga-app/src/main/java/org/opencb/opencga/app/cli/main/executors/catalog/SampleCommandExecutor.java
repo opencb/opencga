@@ -168,6 +168,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 samplesCommandOptions.searchCommandOptions.annotationSetName);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), samplesCommandOptions.searchCommandOptions.variableSetId);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
+        query.putAll(samplesCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (samplesCommandOptions.searchCommandOptions.numericOptions.count) {
             return openCGAClient.getSampleClient().count(query);

@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.core.models.Individual;
@@ -148,6 +149,9 @@ public class IndividualCommandOptions {
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
     public class SearchCommandOptions extends StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;

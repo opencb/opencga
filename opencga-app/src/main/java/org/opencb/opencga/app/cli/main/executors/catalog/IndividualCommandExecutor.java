@@ -197,6 +197,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 individualsCommandOptions.searchCommandOptions.annotation);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.annotationSetName);
+        query.putAll(individualsCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (individualsCommandOptions.searchCommandOptions.numericOptions.count) {
             return openCGAClient.getIndividualClient().count(query);

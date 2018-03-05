@@ -157,6 +157,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
                 familyCommandOptions.searchCommandOptions.annotationSetName);
         query.putIfNotNull(FamilyDBAdaptor.QueryParams.MEMBERS_PARENTAL_CONSANGUINITY.key(),
                 familyCommandOptions.searchCommandOptions.parentalConsanguinity);
+        query.putAll(familyCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (familyCommandOptions.searchCommandOptions.numericOptions.count) {
             return openCGAClient.getFamilyClient().count(query);

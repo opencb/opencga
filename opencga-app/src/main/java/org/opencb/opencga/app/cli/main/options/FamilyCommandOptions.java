@@ -123,6 +123,9 @@ public class FamilyCommandOptions {
     public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
         public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
 
         @ParametersDelegate

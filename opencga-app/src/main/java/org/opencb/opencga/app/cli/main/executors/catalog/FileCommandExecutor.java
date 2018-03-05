@@ -196,6 +196,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.searchCommandOptions.jobId);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.attributes);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.nattributes);
+        query.putAll(filesCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (filesCommandOptions.searchCommandOptions.numericOptions.count) {
             return openCGAClient.getFileClient().count(query);
