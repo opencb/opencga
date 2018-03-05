@@ -30,19 +30,18 @@ import java.util.Map;
  */
 public class GrpcServiceUtils {
 
-
     /**
-     * Create a gROC Managed Channel from a server host and port
+     * Create a gROC Managed Channel from a server host and port.
      * @param serverUrl A string with the host and port, example: localhost:9091
      * @return MangedChannel object
      */
     public static ManagedChannel getManagedChannel(String serverUrl) {
         // We create the gRPC channel to the specified server host and port
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverUrl)
+        ManagedChannel managedChannel = ManagedChannelBuilder.forTarget(serverUrl)
                 .usePlaintext(true)
                 .build();
 
-        return channel;
+        return managedChannel;
     }
 
     public static Map<String, String> createMap(ObjectMap objectMap) {
