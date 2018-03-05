@@ -673,10 +673,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
-        // Add study id to the query
-        query.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        Query finalQuery = new Query(query);
+        fixQuery(studyId, finalQuery, sessionId);
 
-        QueryResult queryResult = individualDBAdaptor.groupBy(query, fields, options, userId);
+        // Add study id to the query
+        finalQuery.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        QueryResult queryResult = individualDBAdaptor.groupBy(finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
@@ -1047,6 +1050,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     getId(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
             query.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
             query.append(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), resource.getResourceId());
+        }
+        if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {
+            MyResourceIds resource = catalogManager.getSampleManager().getIds(
+                    query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()), String.valueOf(studyId), sessionId);
+            query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+            query.append(IndividualDBAdaptor.QueryParams.SAMPLES_ID.key(), resource.getResourceIds());
         }
     }
 

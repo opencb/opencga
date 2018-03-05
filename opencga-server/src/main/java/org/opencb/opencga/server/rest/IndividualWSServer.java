@@ -124,7 +124,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "father", required = false) @QueryParam("father") String father,
             @ApiParam(value = "(DEPRECATED) User mother instead", required = false) @QueryParam("motherId") String motherId,
             @ApiParam(value = "mother", required = false) @QueryParam("mother") String mother,
-            @ApiParam(value = "family", required = false) @QueryParam("family") String family,
+            @ApiParam(value = "(DEPRECATED) family", required = false) @QueryParam("family") String family,
+            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
             @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
@@ -385,33 +386,30 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
                     paramType = "query", defaultValue = "50")
     })
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
-                            @QueryParam("fields") String fields,
-                            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
-                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                            @QueryParam("study") String studyStr,
-                            @ApiParam(value = "name", required = false) @QueryParam("name") String names,
-                            @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
-                            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                            @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
-                            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
-                                    String populationSubpopulation,
-                            @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
-                                    String populationDescription,
-                            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                                    Individual.KaryotypicSex karyotypicSex,
-                            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
-                            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                                    Individual.AffectationStatus affectationStatus,
-                            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
-                            @ApiParam(value = "Variable set id or name", required = false) @QueryParam("variableSet") String variableSet,
-                            @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
-                                    String annotationsetName,
-                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
-                            @QueryParam("release") String release,
-                            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
-                                    int snapshot) {
+    public Response groupBy(
+            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
+                @QueryParam("fields") String fields,
+            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "name", required = false) @QueryParam("name") String names,
+            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
+            @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
+            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+            @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+            @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
+            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
+            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
+            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
+                    Individual.AffectationStatus affectationStatus,
+            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", required = false) @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
+                @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
