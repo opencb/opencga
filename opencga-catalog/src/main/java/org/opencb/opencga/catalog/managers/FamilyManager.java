@@ -276,25 +276,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     private void fixQueryObject(Query query, long studyId, String sessionId) throws CatalogException {
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // We change the FATHER, MOTHER and MEMBER parameters for FATHER_ID, MOTHER_ID and MEMBER_ID which is what the DBAdaptor
-        // understands
-        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()))) {
+        // We change the MEMBERS parameters for MEMBERS_ID which is what the DBAdaptor understands
+        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBERS.key()))) {
             MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                    .getIds(query.getAsStringList(FamilyDBAdaptor.QueryParams.FATHER.key()), Long.toString(studyId), sessionId);
-            query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
-            query.remove(FamilyDBAdaptor.QueryParams.FATHER.key());
-        }
-        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()))) {
-            MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                    .getIds(query.getAsStringList(FamilyDBAdaptor.QueryParams.MOTHER.key()), Long.toString(studyId), sessionId);
-            query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
-            query.remove(FamilyDBAdaptor.QueryParams.MOTHER.key());
-        }
-        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBER.key()))) {
-            MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                    .getIds(query.getAsStringList(FamilyDBAdaptor.QueryParams.MEMBER.key()), Long.toString(studyId), sessionId);
-            query.put(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), resourceIds.getResourceIds());
-            query.remove(FamilyDBAdaptor.QueryParams.MEMBER.key());
+                    .getIds(query.getAsStringList(FamilyDBAdaptor.QueryParams.MEMBERS.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.MEMBERS_ID.key(), resourceIds.getResourceIds());
+            query.remove(FamilyDBAdaptor.QueryParams.MEMBERS.key());
         }
     }
 

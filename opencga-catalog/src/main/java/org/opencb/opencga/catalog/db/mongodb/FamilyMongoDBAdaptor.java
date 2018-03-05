@@ -688,9 +688,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case SNAPSHOT:
                         addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case FATHER_ID:
-                    case MOTHER_ID:
-                    case MEMBER_ID:
+                    case MEMBERS_ID:
                     case NAME:
                     case DESCRIPTION:
                     case RELEASE:
