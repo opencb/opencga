@@ -514,34 +514,7 @@ public class StudyManager extends AbstractManager {
 
         studyDBAdaptor.createPermissionRule(studyId, entry, permissionRule);
 
-//        // Remove the permissionRule mark from all the entries contained by the study
-//        switch (entry) {
-//            case SAMPLES:
-//                sampleDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-//                break;
-//            case FILES:
-//                fileDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-//                break;
-//            case COHORTS:
-//                cohortDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-//                break;
-//            case INDIVIDUALS:
-//                individualDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-//                break;
-//            case FAMILIES:
-//                familyDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-//                break;
-//            case JOBS:
-//                jobDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-//                break;
-//            case CLINICAL_ANALYSES:
-//                clinicalDBAdaptor.unmarkPermissionRule(studyId, permissionRule.getId());
-//                break;
-//            default:
-//                throw new CatalogException("Unexpected entry " + entry + " detected");
-//        }
-
-        return studyDBAdaptor.getPermissionRules(studyId, entry);
+        return new QueryResult<>(String.valueOf(studyId), -1, 1, 1, "", "", Collections.singletonList(permissionRule));
     }
 
     public void markDeletedPermissionRule(String studyStr, Study.Entry entry, String permissionRuleId,
