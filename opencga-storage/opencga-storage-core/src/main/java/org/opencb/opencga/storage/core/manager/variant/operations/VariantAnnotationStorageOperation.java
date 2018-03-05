@@ -130,7 +130,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
             }
             if (studyIds != null && !studyIds.isEmpty()) {
-                annotationQuery.put(VariantQueryParam.STUDIES.key(), studyIds);
+                annotationQuery.put(VariantQueryParam.STUDY.key(), studyIds);
             }
 
             QueryOptions annotationOptions = new QueryOptions(options)
@@ -186,12 +186,6 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
         List<Region> regions = new ArrayList<>();
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
             List<Region> c = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
-            if (c != null) {
-                regions.addAll(c);
-            }
-        }
-        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.CHROMOSOME)) {
-            List<Region> c = Region.parseRegions(query.getString(VariantQueryParam.CHROMOSOME.key()));
             if (c != null) {
                 regions.addAll(c);
             }

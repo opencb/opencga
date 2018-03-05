@@ -34,22 +34,49 @@ public class LDAPUtils {
     private static DirContext dctx;
 
     private static DirContext getDirContext(String host) throws NamingException {
-        if (dctx == null) {
+        int count = 0;
+        if (dctx == null || !isConnectionAlive()) {
             // Obtain users from external origin
             Hashtable env = new Hashtable();
             env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
             env.put(Context.PROVIDER_URL, host);
 
-            dctx = new InitialDirContext(env);
+            dctx = null;
+            while (dctx == null) {
+                try {
+                    dctx = new InitialDirContext(env);
+                } catch (NamingException e) {
+                    if (count == 3) {
+                        // After 3 attempts, we will raise an error.
+                        throw e;
+                    }
+                    count++;
+                    try {
+                        // Sleep 1 seconds
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+
+                }
+
+            }
+
         }
 
         return dctx;
+    }
 
+    private static boolean isConnectionAlive() {
+        try {
+            dctx.getAttributes("");
+            return true;
+        } catch (NamingException e) {
+            return false;
+        }
     }
 
     public static List<String> getUsersFromLDAPGroup(String host, String groupName, String groupBase) throws NamingException {
-
-
         String groupFilter = "(cn=" + groupName + ")";
 
         String[] attributeFilter = {"uniqueMember"};
@@ -64,20 +91,34 @@ public class LDAPUtils {
             Attributes attrs = sr.getAttributes();
 
             BasicAttribute uniquemember = (BasicAttribute) attrs.get("uniqueMember");
-            NamingEnumeration<?> all = uniquemember.getAll();
+            if (uniquemember != null) {
+                NamingEnumeration<?> all = uniquemember.getAll();
 
-            while (all.hasMore()) {
-                String next = (String) all.next();
-                for (String s : next.split(",")) {
-                    if (s.contains("uid")) {
-                        users.add(s.split("=")[1]);
-                        continue;
+                while (all.hasMore()) {
+                    String next = (String) all.next();
+                    for (String s : next.split(",")) {
+                        if (s.contains("uid")) {
+                            users.add(s.split("=")[1]);
+                            continue;
+                        }
                     }
                 }
             }
         }
 
         return users;
+    }
+
+    public static boolean existsLDAPGroup(String host, String groupName, String groupBase) throws NamingException {
+        String groupFilter = "(cn=" + groupName + ")";
+        SearchControls sc = new SearchControls();
+        sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        NamingEnumeration<SearchResult> search = getDirContext(host).search(groupBase, groupFilter, sc);
+
+        if (search.hasMore()) {
+            return true;
+        }
+        return false;
     }
 
     public static List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase) throws NamingException {

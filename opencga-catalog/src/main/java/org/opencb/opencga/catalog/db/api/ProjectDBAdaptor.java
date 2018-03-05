@@ -37,7 +37,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
-        CREATION_DATE("creationDate", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
         ORGANISM("organism", TEXT_ARRAY, ""),

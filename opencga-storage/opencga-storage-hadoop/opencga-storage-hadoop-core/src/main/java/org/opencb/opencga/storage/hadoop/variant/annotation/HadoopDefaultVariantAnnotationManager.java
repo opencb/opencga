@@ -16,13 +16,25 @@
 
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.phoenix.schema.PTableType;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataReader;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
-import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
+import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 /**
  * Created on 23/11/16.
@@ -31,20 +43,37 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
  */
 public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotationManager {
 
+    private final VariantHadoopDBAdaptor hadoopDBAdaptor;
+
     public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
         super(variantAnnotator, dbAdaptor);
+        hadoopDBAdaptor = (VariantHadoopDBAdaptor) this.dbAdaptor;
     }
 
     @Override
-    protected VariantAnnotationDBWriter newVariantAnnotationDBWriter(VariantDBAdaptor dbAdaptor, QueryOptions options) {
-        VariantHadoopDBAdaptor hadoopDBAdaptor = (VariantHadoopDBAdaptor) dbAdaptor;
-        return hadoopDBAdaptor.newAnnotationLoader(options);
+    protected ParallelTaskRunner<VariantAnnotation, ?> buildLoadAnnotationParallelTaskRunner(
+            DataReader<VariantAnnotation> reader, ParallelTaskRunner.Config config, ProgressLogger progressLogger, ObjectMap params) {
+
+        if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
+                || params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
+            VariantAnnotationToHBaseConverter task =
+                    new VariantAnnotationToHBaseConverter(hadoopDBAdaptor.getGenomeHelper(), progressLogger);
+            HBaseDataWriter<Put> writer = new HBaseDataWriter<>(hadoopDBAdaptor.getHBaseManager(), hadoopDBAdaptor.getVariantTable());
+            return new ParallelTaskRunner<>(reader, task, writer, config);
+        } else {
+            return new ParallelTaskRunner<>(reader,
+                    () -> hadoopDBAdaptor.newAnnotationLoader(new QueryOptions(params))
+                            .setProgressLogger(progressLogger), null, config);
+        }
     }
 
     @Override
-    protected QueryOptions getIteratorQueryOptions(ObjectMap params) {
-        QueryOptions iteratorQueryOptions = super.getIteratorQueryOptions(params);
-        iteratorQueryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+    protected QueryOptions getIteratorQueryOptions(Query query, ObjectMap params) {
+        QueryOptions iteratorQueryOptions = super.getIteratorQueryOptions(query, params);
+        if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.FILE)
+                || !VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOTATION_EXISTS)) {
+            iteratorQueryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+        }
         return iteratorQueryOptions;
     }
 }

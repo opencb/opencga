@@ -163,7 +163,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         if (StringUtils.isNotEmpty(usersCommandOptions.infoCommandOptions.userParam.user)) {
             queryOptions.putIfNotEmpty("userId", usersCommandOptions.infoCommandOptions.userParam.user);
-        } else if (StringUtils.isNotEmpty(cliSession.getUserId())) {
+        } else if (cliSession != null && StringUtils.isNotEmpty(cliSession.getUserId())) {
             queryOptions.putIfNotEmpty("userId", cliSession.getUserId());
         }
 
@@ -198,7 +198,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 
         if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.userParam.user)) {
             queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.userParam.user);
-        } else {
+        } else if (cliSession != null) {
             queryOptions.putIfNotEmpty("userId", cliSession.getUserId());
         }
 

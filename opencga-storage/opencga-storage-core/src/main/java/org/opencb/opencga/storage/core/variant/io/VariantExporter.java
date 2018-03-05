@@ -114,6 +114,9 @@ public class VariantExporter {
             final Query finalQuery = query;
             final QueryOptions finalQueryOptions = queryOptions;
             ProgressLogger progressLogger = new ProgressLogger("Export variants", () -> {
+                if (finalQueryOptions.getBoolean(QueryOptions.SKIP_COUNT)) {
+                    return 0L;
+                }
                 Long count = engine.count(finalQuery).first();
                 long limit = finalQueryOptions.getLong(QueryOptions.LIMIT, Long.MAX_VALUE);
                 long skip = finalQueryOptions.getLong(QueryOptions.SKIP, 0);

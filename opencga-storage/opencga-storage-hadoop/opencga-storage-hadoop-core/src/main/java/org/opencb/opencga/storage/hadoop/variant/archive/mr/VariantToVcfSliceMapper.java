@@ -65,7 +65,7 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
     }
 
     public byte[] getColumn() {
-        return getHelper().getColumn();
+        return getHelper().getNonRefColumnName();
     }
 
     /**
@@ -83,7 +83,7 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
         for (long slicePos : slicePositionArr) {
             VcfSlice slice = converter.convert(Collections.singletonList(variant), (int) slicePos);
             ImmutableBytesWritable rowKey = new ImmutableBytesWritable(getHelper().getKeyFactory().
-                    generateBlockIdAsBytes(variant.getChromosome(), (int) slicePos));
+                    generateBlockIdAsBytes(getHelper().getFileId(), variant.getChromosome(), (int) slicePos));
             context.write(rowKey, new VcfSliceWritable(slice));
         }
 

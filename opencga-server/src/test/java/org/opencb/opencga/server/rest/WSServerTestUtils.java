@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
-import org.opencb.opencga.core.common.Config;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -40,7 +39,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 /**
@@ -110,18 +108,18 @@ public class WSServerTestUtils {
 
     public void setUp() throws Exception {
         //Create test environment. Override OpenCGA_Home
-        Path opencgaHome = Paths.get("/tmp/opencga-server-test");
-        configDir = opencgaHome.resolve("conf");
-        System.setProperty("app.home", opencgaHome.toString());
-        Config.setOpenCGAHome(opencgaHome.toString());
-
-        Files.createDirectories(opencgaHome);
-        Files.createDirectories(opencgaHome.resolve("conf"));
-
 
         CatalogManagerTest catalogManagerTest =  new CatalogManagerTest();
         catalogManagerResource = catalogManagerTest.catalogManagerResource;
         catalogManagerResource.before();
+
+        Path opencgaHome = catalogManagerResource.getOpencgaHome();
+        configDir = opencgaHome.resolve("conf");
+        System.setProperty("app.home", opencgaHome.toString());
+//        Config.setOpenCGAHome(opencgaHome.toString());
+
+        Files.createDirectories(opencgaHome);
+        Files.createDirectories(opencgaHome.resolve("conf"));
 
         catalogManagerResource.getConfiguration().serialize(new FileOutputStream(configDir.resolve("configuration.yml").toFile()));
         InputStream inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +

@@ -37,8 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
@@ -54,27 +52,37 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
     public static final boolean NEW_STUDY_DEFAULT = true;
 
     private static final QueryOptions QUERY_OPTIONS = new QueryOptions(MongoDBCollection.UPSERT, true);
-    public static final Pattern DUP_KEY_WRITE_RESULT_ERROR_PATTERN = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
 
     private final MongoDBCollection collection;
     private final String fieldName;
     private final boolean resumeStageLoad;
-    private final String studyFile;
     private final String studyIdStr;
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
+    private final List<String> studyFileValue;
 
     private final MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
 
     public static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_DEFAULT = new VariantToAvroBinaryConverter();
 
     public static final StageDocumentToVariantConverter STAGE_TO_VARIANT_CONVERTER = new StageDocumentToVariantConverter();
+    private boolean directLoad;
 
     public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, boolean resumeStageLoad) {
+        this(collection, studyId, fileId, resumeStageLoad, false);
+    }
+
+    public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, boolean resumeStageLoad, boolean directLoad) {
         this.collection = collection;
         fieldName = studyId + "." + fileId;
-        studyFile = studyId + "_" + fileId;
-        studyIdStr = String.valueOf(studyId);
+        this.directLoad = directLoad;
         this.resumeStageLoad = resumeStageLoad;
+        studyIdStr = String.valueOf(studyId);
+        if (directLoad) {
+            studyFileValue = Collections.singletonList(studyIdStr);
+        } else {
+            String studyFile = studyId + "_" + fileId;
+            studyFileValue = Arrays.asList(studyIdStr, studyFile);
+        }
     }
 
     @Override
@@ -142,25 +150,29 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
         if (values.isEmpty()) {
             return nonInsertedIds;
         }
-        List<Bson> queries = new LinkedList<>();
-        List<Bson> updates = new LinkedList<>();
+        List<String> ids = new ArrayList<>(retryIds != null ? retryIds.size() : values.size());
+        List<Bson> queries = new ArrayList<>(retryIds != null ? retryIds.size() : values.size());
+        List<Bson> updates = new ArrayList<>(retryIds != null ? retryIds.size() : values.size());
         for (Document id : values.keySet()) {
-            if (retryIds == null || retryIds.contains(id.getString(StageDocumentToVariantConverter.ID_FIELD))) {
+            String mongoId = id.getString(StageDocumentToVariantConverter.ID_FIELD);
+            if (retryIds == null || retryIds.contains(mongoId)) {
+                ids.add(mongoId);
                 List<Binary> binaryList = values.get(id);
-                queries.add(eq(StageDocumentToVariantConverter.ID_FIELD, id.getString(StageDocumentToVariantConverter.ID_FIELD)));
-                if (binaryList.size() == 1) {
-                    updates.add(combine(resumeStageLoad ? addToSet(fieldName, binaryList.get(0)) : push(fieldName, binaryList.get(0)),
-                            addEachToSet(StageDocumentToVariantConverter.STUDY_FILE_FIELD, Arrays.asList(studyIdStr, studyFile)),
-                            setOnInsert(StageDocumentToVariantConverter.END_FIELD, id.get(StageDocumentToVariantConverter.END_FIELD)),
-                            setOnInsert(StageDocumentToVariantConverter.REF_FIELD, id.get(StageDocumentToVariantConverter.REF_FIELD)),
-                            setOnInsert(StageDocumentToVariantConverter.ALT_FIELD, id.get(StageDocumentToVariantConverter.ALT_FIELD))));
+                queries.add(eq(StageDocumentToVariantConverter.ID_FIELD, mongoId));
+                List<Bson> bsons = new ArrayList<>(6);
+                if (directLoad) {
+                    bsons.add(set(fieldName, null));
+                    bsons.add(set(studyIdStr + '.' + NEW_STUDY_FIELD, false));
+                } else if (binaryList.size() == 1) {
+                    bsons.add(resumeStageLoad ? addToSet(fieldName, binaryList.get(0)) : push(fieldName, binaryList.get(0)));
                 } else {
-                    updates.add(combine(resumeStageLoad ? addEachToSet(fieldName, binaryList) : pushEach(fieldName, binaryList),
-                            addEachToSet(StageDocumentToVariantConverter.STUDY_FILE_FIELD, Arrays.asList(studyIdStr, studyFile)),
-                            setOnInsert(StageDocumentToVariantConverter.END_FIELD, id.get(StageDocumentToVariantConverter.END_FIELD)),
-                            setOnInsert(StageDocumentToVariantConverter.REF_FIELD, id.get(StageDocumentToVariantConverter.REF_FIELD)),
-                            setOnInsert(StageDocumentToVariantConverter.ALT_FIELD, id.get(StageDocumentToVariantConverter.ALT_FIELD))));
+                    bsons.add(resumeStageLoad ? addEachToSet(fieldName, binaryList) : pushEach(fieldName, binaryList));
                 }
+                bsons.add(addEachToSet(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyFileValue));
+                bsons.add(setOnInsert(StageDocumentToVariantConverter.END_FIELD, id.get(StageDocumentToVariantConverter.END_FIELD)));
+                bsons.add(setOnInsert(StageDocumentToVariantConverter.REF_FIELD, id.get(StageDocumentToVariantConverter.REF_FIELD)));
+                bsons.add(setOnInsert(StageDocumentToVariantConverter.ALT_FIELD, id.get(StageDocumentToVariantConverter.ALT_FIELD)));
+                updates.add(combine(bsons));
             }
         }
 
@@ -179,20 +191,18 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
                 throw e;
             }
 
+            // Retry once!
+            // With UPSERT=true, this command should never throw DuplicatedKeyException.
+            // See https://jira.mongodb.org/browse/SERVER-14322
+            // Assume unordered bulk
+            // Get non inserted variant ids
             nonInsertedIds = new HashSet<>();
             for (BulkWriteError writeError : e.getWriteErrors()) {
                 if (ErrorCategory.fromErrorCode(writeError.getCode()).equals(ErrorCategory.DUPLICATE_KEY)) { //Dup Key error code
-                    Matcher matcher = DUP_KEY_WRITE_RESULT_ERROR_PATTERN.matcher(writeError.getMessage());
-                    if (matcher.find()) {
-                        String id = matcher.group(1);
-                        nonInsertedIds.add(id);
-                        LOGGER.warn("Catch error : {}",  writeError.toString());
-                        LOGGER.warn("DupKey exception inserting '{}'. Retry!", id);
-                    } else {
-                        LOGGER.error("WriteError with code {} does not match with the pattern {}",
-                                writeError.getCode(), DUP_KEY_WRITE_RESULT_ERROR_PATTERN.pattern());
-                        throw e;
-                    }
+                    String id = ids.get(writeError.getIndex());
+                    nonInsertedIds.add(id);
+                    LOGGER.warn("Catch error : {}. DupKey exception inserting '{}'. Retry!",
+                            writeError.toString(), id);
                 } else {
                     throw e;
                 }

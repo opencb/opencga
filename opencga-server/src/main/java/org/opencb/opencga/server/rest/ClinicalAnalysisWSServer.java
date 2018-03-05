@@ -101,8 +101,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100") @PathParam(value = "clinicalAnalysis")
-                                 String clinicalAnalysisStr,
+    public Response info(@ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100")
+                             @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr,
                          @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {

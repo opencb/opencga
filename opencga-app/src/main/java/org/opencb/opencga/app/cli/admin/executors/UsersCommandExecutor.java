@@ -25,15 +25,15 @@ import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 02/03/15.
@@ -107,8 +107,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                         params.putIfNotNull("study-group", group.getName());
                         params.putIfNotNull("study", executor.study);
                         params.putIfNotNull("expirationDate", executor.expDate);
-                        LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                                executor.type, params, sessionId);
+                        QueryResult<User> ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(
+                                executor.authOrigin, executor.type, params, sessionId);
 
                         printImportReport(ldapImportResult);
                     }
@@ -119,29 +119,33 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             } else {
                 try {
                     QueryResult<Group> group = catalogManager.getStudyManager().getGroup(executor.study, executor.to, sessionId);
-                    if (group.first().getSyncedFrom() != null && (!group.first().getSyncedFrom().getRemoteGroup().equals(executor.from)
-                            || !group.first().getSyncedFrom().getAuthOrigin().equals(executor.authOrigin))) {
-                        // Sync with different group or different authentication origin
-                        logger.error("Cannot synchronise with group {}. The group is already synchronised with the group {} from the "
-                                + "authentication origin {}", executor.to, group.first().getSyncedFrom().getRemoteGroup(),
-                                group.first().getSyncedFrom().getAuthOrigin());
-                        return;
-                    } else if (group.first().getSyncedFrom() == null && !executor.force) {
-                        logger.error("Cannot synchronise with group {}. The group already exists. You can use --force to force the "
-                                + "synchronisation with this group.", executor.to);
-                        return;
-                    }
+                    if (group.getNumResults() == 1) {
+                        if (group.first().getSyncedFrom() != null && (!group.first().getSyncedFrom().getRemoteGroup().equals(executor.from)
+                                || !group.first().getSyncedFrom().getAuthOrigin().equals(executor.authOrigin))) {
 
-                    // Remove all users from the group
-                    GroupParams groupParams = new GroupParams(StringUtils.join(group.first().getUserIds(), ","), GroupParams.Action.REMOVE);
-                    QueryResult<Group> deleteUsers = catalogManager.getStudyManager().updateGroup(executor.study, executor.to, groupParams,
-                            sessionId);
-                    if (deleteUsers.first().getUserIds().size() > 0) {
-                        logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
-                                deleteUsers.first().getUserIds().size(), deleteUsers.first().getName());
-                        return;
-                    }
+                            // Sync with different group or different authentication origin
+                            logger.error("Cannot synchronise with group {}. The group is already synchronised with the group {} from the "
+                                    + "authentication origin {}", executor.to, group.first().getSyncedFrom().getRemoteGroup(),
+                                    group.first().getSyncedFrom().getAuthOrigin());
+                            return;
+                        } else if (group.first().getSyncedFrom() == null && !executor.force) {
+                            logger.error("Cannot synchronise with group {}. The group already exists. You can use --force to force the "
+                                    + "synchronisation with this group.", executor.to);
+                            return;
+                        }
 
+                        // Remove all users from the group
+                        GroupParams groupParams = new GroupParams(StringUtils.join(group.first().getUserIds(), ","),
+                                GroupParams.Action.REMOVE);
+                        QueryResult<Group> deleteUsers = catalogManager.getStudyManager().updateGroup(executor.study, executor.to,
+                                groupParams, sessionId);
+                        if (deleteUsers.first().getUserIds().size() > 0) {
+                            logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
+                                    deleteUsers.first().getUserIds().size(), deleteUsers.first().getName());
+
+                            return;
+                        }
+                    }
                 } catch (CatalogException e) {
                     logger.info("{} group does not exist.", executor.to, e.getMessage());
                 }
@@ -151,7 +155,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 params.putIfNotNull("study-group", executor.to);
                 params.putIfNotNull("study", executor.study);
                 params.putIfNotNull("expirationDate", executor.expDate);
-                LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
+                QueryResult<User> ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
                         executor.type, params, sessionId);
 
                 printImportReport(ldapImportResult);
@@ -180,36 +184,21 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             params.putIfNotNull("study", executor.study);
             params.putIfNotNull("study-group", executor.studyGroup);
             params.putIfNotNull("expirationDate", executor.expDate);
-            LdapImportResult ldapImportResult = catalogManager.getUserManager()
+            QueryResult<User> ldapImportResult = catalogManager.getUserManager()
                     .importFromExternalAuthOrigin(executor.authOrigin, executor.type, params, token);
 
             printImportReport(ldapImportResult);
         }
     }
 
-    private void printImportReport(LdapImportResult ldapImportResult) {
-        if (ldapImportResult.getResult() != null) {
-            LdapImportResult.SummaryResult userSummary = ldapImportResult.getResult().getUserSummary();
-            if (userSummary != null) {
-                if (userSummary.getNewUsers().size() > 0) {
-                    System.out.println("New users registered: " + StringUtils.join(userSummary.getNewUsers(), ", "));
-                }
-                if (userSummary.getExistingUsers().size() > 0) {
-                    System.out.println("Users already registered: " + StringUtils.join(userSummary.getExistingUsers(), ", "));
-                }
-                if (userSummary.getNonExistingUsers().size() > 0) {
-                    System.out.println("Users not found in origin: " + StringUtils.join(userSummary.getNonExistingUsers(), ", "));
-                }
-            }
-            List<String> usersInGroup = ldapImportResult.getResult().getUsersInGroup();
-            if (usersInGroup != null) {
-                System.out.println("Users registered in group " + ldapImportResult.getInput().getStudyGroup() + " from "
-                        + ldapImportResult.getInput().getStudy() + ": " + StringUtils.join(usersInGroup, ", "));
-            }
+    private void printImportReport(QueryResult<User> ldapImportResult) {
+        if (ldapImportResult.getNumResults() > 0) {
+            System.out.println("New users registered: "
+                    + ldapImportResult.getResult().stream().map(User::getId).collect(Collectors.joining(", ")));
         }
 
         if (StringUtils.isNotEmpty(ldapImportResult.getWarningMsg())) {
-            System.out.println("WARNING: " + ldapImportResult.getWarningMsg());
+            System.out.println(ldapImportResult.getWarningMsg());
         }
 
         if (StringUtils.isNotEmpty(ldapImportResult.getErrorMsg())) {
@@ -237,7 +226,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                     usersCommandOptions.createUserCommandOptions.userPassword,
                     usersCommandOptions.createUserCommandOptions.userOrganization, userQuota,
-                    usersCommandOptions.createUserCommandOptions.type, null).first();
+                    usersCommandOptions.createUserCommandOptions.type, null, null).first();
 
             System.out.println("The user has been successfully created: " + user.toString() + "\n");
         }

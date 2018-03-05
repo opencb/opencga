@@ -1,26 +1,21 @@
 package org.opencb.opencga.app.cli.main.io;
 
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.vcf.VCFHeader;
-import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
-import org.opencb.biodata.models.metadata.Sample;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
-import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
-import org.opencb.biodata.tools.variant.converters.avro.VariantStudyMetadataToVCFHeaderConverter;
-import org.opencb.biodata.tools.variant.converters.proto.VariantProtoToVariantContextConverter;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.io.VcfDataWriter;
 
 import java.io.PrintStream;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created on 03/11/17.
@@ -57,41 +52,55 @@ public class VcfOutputWriter extends AbstractOutputWriter {
 
     private void print(VariantQueryResult<Variant> variantQueryResult, Iterator<VariantProto.Variant> variantIterator) {
 
-        String study = metadata.getStudies().get(0).getId();
-        List<String> samples = metadata.getStudies().get(0).getIndividuals().stream()
-                .flatMap(individual -> individual.getSamples().stream()).map(Sample::getId).collect(Collectors.toList());
-
-//            List<String> samples = getSamplesFromVariantQueryResult(variantQueryResult, study);
-
         // Prepare other VCF fields
 //            List<String> cohorts = new ArrayList<>(); // Arrays.asList("ALL", "MXL");
 //            List<String> formats = getFormats(study);
 
-        VCFHeader vcfHeader = new VariantStudyMetadataToVCFHeaderConverter().convert(metadata.getStudies().get(0), annotations);
-        VariantContextWriter variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary());
-        variantContextWriter.writeHeader(vcfHeader);
-
         if (variantQueryResult != null) {
-            VariantAvroToVariantContextConverter converter = new VariantAvroToVariantContextConverter(study, samples, annotations);
+            if (metadata.getStudies().isEmpty()) {
+                // If excluding studies, we need to create a dummy study.
+                metadata.getStudies().add(VariantStudyMetadata
+                        .newBuilder()
+                        .setId("any")
+                        .setSampleSetType(SampleSetType.UNKNOWN)
+                        .setAggregatedHeader(VariantFileHeader
+                                .newBuilder()
+                                .setVersion("")
+                                .build())
+                        .build());
+            }
+            String study = metadata.getStudies().get(0).getId();
+            VcfDataWriter<Variant> writer = VcfDataWriter.newWriterForAvro(metadata, annotations, outputStream);
+            writer.open();
+            writer.pre();
             for (Variant variant : variantQueryResult.getResult()) {
+                // FIXME: The server may be returning the StudyEntry with a different name
+                String shortStudy = study.substring(study.lastIndexOf(':') + 1, study.length());
+                if (variant.getStudy(study) == null && variant.getStudy(shortStudy) != null) {
+                    variant.addStudyEntry(variant.getStudy(shortStudy).setStudyId(study));
+                }
+
                 // FIXME: This should not be needed! VariantAvroToVariantContextConverter must be fixed
-                if (variant.getStudies().isEmpty()) {
+                if (variant.getStudy(study) == null) {
                     StudyEntry studyEntry = new StudyEntry(study);
                     studyEntry.getFiles().add(new FileEntry("", null, Collections.emptyMap()));
                     variant.addStudyEntry(studyEntry);
                 }
-
-                VariantContext variantContext = converter.convert(variant);
-                variantContextWriter.add(variantContext);
+                writer.write(variant);
             }
+            writer.post();
+            writer.close();
         } else {
-            VariantProtoToVariantContextConverter converter = new VariantProtoToVariantContextConverter(study, samples, annotations);
+            VcfDataWriter<VariantProto.Variant> writer = VcfDataWriter.newWriterForProto(metadata, annotations, outputStream);
+            writer.open();
+            writer.pre();
             while (variantIterator.hasNext()) {
                 VariantProto.Variant next = variantIterator.next();
-                variantContextWriter.add(converter.convert(next));
+                writer.write(next);
             }
+            writer.post();
+            writer.close();
         }
-        variantContextWriter.close();
         outputStream.close();
 
     }

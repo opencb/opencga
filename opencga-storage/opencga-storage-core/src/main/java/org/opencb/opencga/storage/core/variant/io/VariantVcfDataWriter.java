@@ -35,17 +35,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FilterOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.text.DecimalFormat;
@@ -63,7 +60,9 @@ import java.util.stream.IntStream;
  *
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  * @author Matthias Haimel
+ * @deprecated Use {@link VcfDataWriter}
  */
+@Deprecated
 public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     private static final DecimalFormat DECIMAL_FORMAT_7 = new DecimalFormat("#.#######");
@@ -230,16 +229,11 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         if (sampleNames.isEmpty() || !this.exportGenotype.get()) {
             builder.setOption(Options.DO_NOT_WRITE_GENOTYPES);
         }
-        List<String> formatFields = studyConfiguration.getAttributes()
-                .getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key());
-        List<String> formatFieldsType = studyConfiguration.getAttributes()
-                .getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
-        for (int i = 0; i < formatFields.size(); i++) {
-            String id = formatFields.get(i);
+        studyConfiguration.getVariantHeaderLines("FORMAT").forEach((id, line) -> {
             if (header.getFormatHeaderLine(id) == null) {
-                header.addMetaDataLine(new VCFFormatHeaderLine(id, 1, VCFHeaderLineType.valueOf(formatFieldsType.get(i)), ""));
+                header.addMetaDataLine(new VCFFormatHeaderLine(id, 1, VCFHeaderLineType.valueOf(line.getType()), ""));
             }
-        }
+        });
 
         writer = builder.build();
         writer.writeHeader(header);
@@ -885,23 +879,5 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     }
 
 
-    /**
-     * Unclosable output stream.
-     *
-     * Avoid passing System.out directly to HTSJDK, because it will close it at the end.
-     *
-     * http://stackoverflow.com/questions/8941298/system-out-closed-can-i-reopen-it/23791138#23791138
-     */
-    public static class UnclosableOutputStream extends FilterOutputStream {
-
-        public UnclosableOutputStream(OutputStream os) {
-            super(os);
-        }
-
-        @Override
-        public void close() throws IOException {
-            super.flush();
-        }
-    }
 }
 

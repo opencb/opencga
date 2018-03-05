@@ -64,16 +64,16 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                           @QueryParam(value = "file") String fileIdStr,
                           @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                            @QueryParam("study") String studyStr,
+                          @QueryParam("study") String studyStr,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load) {
+
         if (StringUtils.isNotEmpty(studyId)) {
             studyStr = studyId;
         }
 
         Map<String, String> params = new LinkedHashMap<>();
-//        addParamIfNotNull(params, "studyId", studyId);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
         addParamIfNotNull(params, "outdir", outDirStr);
@@ -84,7 +84,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             List<String> idList = getIdList(fileIdStr);
             QueryResult queryResult = catalogManager.getFileManager().index(idList, studyStr, "BAM", params, sessionId);
             return createOkResponse(queryResult);
-        } catch(Exception e) {
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -99,7 +99,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     })
     public Response getAlignments(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
                                   @ApiParam(value = "Study [[user@]project:]study where study and project can be either the Id or alias") @QueryParam("study") String studyStr,
-                                  @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam ("region") String regions,
+                                  @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam("region") String regions,
                                   @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
                                   @ApiParam(value = "Maximum number of mismatches") @QueryParam("maxNM") Integer maxNM,
                                   @ApiParam(value = "Maximum number of hits") @QueryParam("maxNH") Integer maxNH,
@@ -111,6 +111,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                   @ApiParam(value = "Force SAM MD optional field to be set with the alignments") @DefaultValue("false") @QueryParam("mdField") Boolean mdField,
                                   @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels") @QueryParam("binQualities") @DefaultValue("false") Boolean binQualities) {
         try {
+            isSingleId(fileIdStr);
             Query query = new Query();
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MAX_NM.key(), maxNM);
@@ -132,7 +133,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             if (StringUtils.isNotEmpty(regions)) {
                 String[] regionList = regions.split(",");
                 List<QueryResult<ReadAlignment>> queryResultList = new ArrayList<>(regionList.length);
-                for (String region: regionList) {
+                for (String region : regionList) {
                     query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
                     QueryResult<ReadAlignment> queryResult = alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId);
                     queryResultList.add(queryResult);
@@ -154,6 +155,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam("region") String regions,
                                 @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
         try {
+            isSingleId(fileIdStr);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             if (StringUtils.isNotEmpty(regions)) {
                 String[] regionList = regions.split(",");
@@ -207,29 +209,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             } else {
                 return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, sessionId));
             }
-//            String userId = catalogManager.getUserManager().getId(sessionId);
-//            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-//
-//            Query query = new Query();
-//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
-//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
-//
-//            QueryOptions queryOptions = new QueryOptions();
-//            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
-//
-//            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-//            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
-//
-//            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
-//                // This should never happen
-//                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
-//            }
-//            String path = fileQueryResult.first().getUri().getRawPath();
-//
-//            AlignmentStorageEngine alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-//            AlignmentGlobalStats stats = alignmentStorageManager.getDBAdaptor().stats(path, query, queryOptions);
-//            QueryResult<AlignmentGlobalStats> queryResult = new QueryResult<>("get stats", -1, 1, 1, "", "", Arrays.asList(stats));
-//            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

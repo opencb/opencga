@@ -84,7 +84,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
 
         IdentityByStateClustering ibsc = new IdentityByStateClustering();
         List<String> samples;
-        Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
 
         Query samplesQuery = new Query();
@@ -94,7 +94,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
                     userId)
                     .getResourceIds();
             samplesQuery.append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-            query.append(VariantQueryParam.RETURNED_SAMPLES.key(), sampleIds);
+            query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
         }
         samples = catalogManager.getSampleManager().get(studyId, samplesQuery, new QueryOptions(), sessionId)
                 .getResult()

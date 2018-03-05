@@ -23,9 +23,13 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.VariableSet;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -34,46 +38,6 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  * Created by hpccoll1 on 19/06/15.
  */
 public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> {
-
-    default boolean exists(long sampleId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
-    }
-
-    default void checkId(long individualId) throws CatalogDBException {
-        if (individualId < 0) {
-            throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
-        }
-
-        if (!exists(individualId)) {
-            throw CatalogDBException.newInstance("Indivivual id '{}' does not exist", individualId);
-        }
-    }
-
-    void nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
-
-    QueryResult<Individual> insert(Individual individual, long studyId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
-            throws CatalogDBException, CatalogAuthorizationException;
-
-//    @Deprecated
-//    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
-
-//    QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
-
-//    @Deprecated
-//    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
-
-    QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
-            CatalogDBException;
-
-    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
-
-    long getStudyId(long individualId) throws CatalogDBException;
-
-    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
@@ -95,7 +59,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
         DATE_OF_BIRTH("dateOfBirth", TEXT, ""),
-        CREATION_DATE("creationDate", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
         RELEASE("release", INTEGER, ""), //  Release where the individual was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual
@@ -160,5 +124,104 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
             return map.get(key);
         }
     }
+
+    enum UpdateParams {
+        NAME(QueryParams.NAME.key()),
+        DATE_OF_BIRTH(QueryParams.DATE_OF_BIRTH.key()),
+        KARYOTYPIC_SEX(QueryParams.KARYOTYPIC_SEX.key()),
+        SEX(QueryParams.SEX.key()),
+        MULTIPLES(QueryParams.MULTIPLES.key()),
+        SAMPLES(QueryParams.SAMPLES.key()),
+        FATHER(QueryParams.FATHER.key()),
+        MOTHER(QueryParams.MOTHER.key()),
+        ETHNICITY(QueryParams.ETHNICITY.key()),
+        POPULATION_DESCRIPTION(QueryParams.POPULATION_DESCRIPTION.key()),
+        POPULATION_NAME(QueryParams.POPULATION_NAME.key()),
+        POPULATION_SUBPOPULATION(QueryParams.POPULATION_SUBPOPULATION.key()),
+        PHENOTYPES(QueryParams.PHENOTYPES.key()),
+        LIFE_STATUS(QueryParams.LIFE_STATUS.key()),
+        AFFECTATION_STATUS(QueryParams.AFFECTATION_STATUS.key()),
+        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
+        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
+        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    default boolean exists(long sampleId) throws CatalogDBException {
+        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
+    }
+
+    default void checkId(long individualId) throws CatalogDBException {
+        if (individualId < 0) {
+            throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
+        }
+
+        if (!exists(individualId)) {
+            throw CatalogDBException.newInstance("Indivivual id '{}' does not exist", individualId);
+        }
+    }
+
+    void nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
+
+    default QueryResult<Individual> insert(long studyId, Individual individual, QueryOptions options) throws CatalogDBException {
+        individual.setAnnotationSets(Collections.emptyList());
+        return insert(studyId, individual, Collections.emptyList(), options);
+    }
+
+    QueryResult<Individual> insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException;
+
+    QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
+            throws CatalogDBException, CatalogAuthorizationException;
+
+//    @Deprecated
+//    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
+
+//    QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+
+//    @Deprecated
+//    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
+
+//    QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
+//            CatalogDBException;
+
+//    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
+
+    long getStudyId(long individualId) throws CatalogDBException;
+
+    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+
+    /**
+     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
+     * be applied.
+     *
+     * @param studyId study id containing the entries affected.
+     * @param permissionRuleId permission rule id to be unmarked.
+     * @throws CatalogException if there is any database error.
+     */
+    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

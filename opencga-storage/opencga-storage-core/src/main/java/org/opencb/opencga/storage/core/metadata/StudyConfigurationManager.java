@@ -69,11 +69,19 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
-        return adaptor.lockStudy(studyId, lockDuration, timeout);
+        return adaptor.lockStudy(studyId, lockDuration, timeout, null);
+    }
+
+    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+        return adaptor.lockStudy(studyId, lockDuration, timeout, lockName);
     }
 
     public void unLockStudy(int studyId, long lockId) {
-        adaptor.unLockStudy(studyId, lockId);
+        adaptor.unLockStudy(studyId, lockId, null);
+    }
+
+    public void unLockStudy(int studyId, long lockId, String lockName) {
+        adaptor.unLockStudy(studyId, lockId, lockName);
     }
 
     public interface UpdateStudyConfiguration<E extends Exception> {
@@ -179,10 +187,14 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     }
 
+    public Thread buildShutdownHook(String jobOperationName, int studyId, Integer... files) {
+        return buildShutdownHook(jobOperationName, studyId, Arrays.asList(files));
+    }
+
     public Thread buildShutdownHook(String jobOperationName, int studyId, List<Integer> files) {
         return new Thread(() -> {
             try {
-                logger.error("Shutdown hook!");
+                logger.error("Shutdown hook while '" + jobOperationName + "' !");
                 atomicSetStatus(studyId, BatchFileOperation.Status.ERROR, jobOperationName, files);
             } catch (Exception e) {
                 logger.error("Error terminating!", e);
@@ -585,7 +597,23 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public static Integer getSampleIdFromStudy(Object sampleObj, StudyConfiguration sc) {
-        return getResourceIdFromStudy(sampleObj, sc, sc.getSampleIds());
+        return getSampleIdFromStudy(sampleObj, sc, false);
+    }
+
+    public static Integer getSampleIdFromStudy(Object sampleObj, StudyConfiguration sc, boolean indexed) {
+        Integer sampleId = getResourceIdFromStudy(sampleObj, sc, sc.getSampleIds());
+        if (indexed) {
+            if (sampleId != null) {
+                for (Integer indexedFile : sc.getIndexedFiles()) {
+                    if (sc.getSamplesInFiles().get(indexedFile).contains(sampleId)) {
+                        return sampleId;
+                    }
+                }
+            }
+            return null;
+        } else {
+            return sampleId;
+        }
     }
 
     // TODO: Return cohortId and studyId as a Pair
@@ -795,7 +823,8 @@ public class StudyConfigurationManager implements AutoCloseable {
     public static int checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageEngineException {
         Map<Integer, String> idFiles = StudyConfiguration.inverseMap(studyConfiguration.getFileIds());
 
-        if (fileId < 0) {
+        // Don't allow negative values or zero
+        if (fileId <= 0) {
             if (studyConfiguration.getFileIds().containsKey(fileName)) {
                 fileId = studyConfiguration.getFileIds().get(fileName);
             } else {

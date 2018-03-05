@@ -28,28 +28,31 @@ public class SearchConfiguration {
     private String password;
     private boolean active;
     private int timeout;
+    @Deprecated
     private int rows;
+    private int insertBatchSize;
 
     private static final String DEFAULT_HOST = "localhost:8983/solr/";
     private static final String DEFAULT_MODE = "cloud";
-    private static final String DEFAULT_PASSWORD = "";
     private static final String DEFAULT_USER = "";
+    private static final String DEFAULT_PASSWORD = "";
     private static final boolean DEFAULT_ACTIVE = true;
     private static final int DEFAULT_TIMEOUT = 30000;
-    private static final int DEFAULT_ROWS = 10000;
+    private static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
     public SearchConfiguration() {
-        this(DEFAULT_HOST, DEFAULT_MODE, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_ACTIVE, DEFAULT_TIMEOUT, DEFAULT_ROWS);
+        this(DEFAULT_HOST, DEFAULT_MODE, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_ACTIVE, DEFAULT_TIMEOUT, DEFAULT_INSERT_BATCH_SIZE);
     }
 
-    public SearchConfiguration(String host, String mode, String user, String password, boolean active, int timeout, int rows) {
+    public SearchConfiguration(String host, String mode, String user, String password, boolean active, int timeout, int insertBatchSize) {
         this.host = host;
         this.mode = mode;
         this.user = user;
         this.password = password;
         this.active = active;
         this.timeout = timeout;
-        this.rows = rows;
+        this.insertBatchSize = insertBatchSize;
+        this.rows = insertBatchSize;
     }
 
     @Override
@@ -58,9 +61,11 @@ public class SearchConfiguration {
         sb.append("host='").append(host).append('\'');
         sb.append(", mode='").append(mode).append('\'');
         sb.append(", user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
         sb.append(", active=").append(active);
         sb.append(", timeout=").append(timeout);
         sb.append(", rows=").append(rows);
+        sb.append(", insertBatchSize=").append(insertBatchSize);
         sb.append('}');
         return sb.toString();
     }
@@ -118,10 +123,21 @@ public class SearchConfiguration {
         this.timeout = timeout;
     }
 
+    public int getInsertBatchSize() {
+        return insertBatchSize;
+    }
+
+    public SearchConfiguration setInsertBatchSize(int insertBatchSize) {
+        this.insertBatchSize = insertBatchSize;
+        return this;
+    }
+
+    @Deprecated
     public int getRows() {
         return rows;
     }
 
+    @Deprecated
     public SearchConfiguration setRows(int rows) {
         this.rows = rows;
         return this;

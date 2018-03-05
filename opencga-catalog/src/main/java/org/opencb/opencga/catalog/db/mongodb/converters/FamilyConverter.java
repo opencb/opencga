@@ -17,9 +17,10 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.VariableSet;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 03/05/17.
  */
-public class FamilyConverter extends GenericDocumentComplexConverter<Family> {
+public class FamilyConverter extends AnnotableConverter<Family> {
 
     public FamilyConverter() {
         super(Family.class);
@@ -41,8 +42,10 @@ public class FamilyConverter extends GenericDocumentComplexConverter<Family> {
     }
 
     @Override
-    public Document convertToStorageType(Family object) {
-        Document document = super.convertToStorageType(object);
+    public Document convertToStorageType(Family object, List<VariableSet> variableSetList) {
+        Document document = super.convertToStorageType(object, variableSetList);
+        document.remove(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key());
+
         document.put("id", document.getInteger("id").longValue());
         validateDocumentToUpdate(document);
         return document;

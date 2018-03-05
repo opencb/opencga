@@ -35,20 +35,21 @@ import java.util.Map;
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
 public class StorageVariantCommandOptions {
 
-    public VariantIndexCommandOptions indexVariantsCommandOptions;
-    public VariantRemoveCommandOptions variantRemoveCommandOptions;
-    public VariantQueryCommandOptions variantQueryCommandOptions;
-    public ImportVariantsCommandOptions importVariantsCommandOptions;
-    public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
-    public VariantStatsCommandOptions statsVariantsCommandOptions;
-    public FillGapsCommandOptions fillGapsCommandOptions;
-    public VariantExportCommandOptions exportVariantsCommandOptions;
-    public VariantSearchCommandOptions searchVariantsCommandOptions;
+    public final VariantIndexCommandOptions indexVariantsCommandOptions;
+    public final VariantRemoveCommandOptions variantRemoveCommandOptions;
+    public final VariantQueryCommandOptions variantQueryCommandOptions;
+    public final ImportVariantsCommandOptions importVariantsCommandOptions;
+    public final VariantAnnotateCommandOptions annotateVariantsCommandOptions;
+    public final VariantStatsCommandOptions statsVariantsCommandOptions;
+    public final FillGapsCommandOptions fillGapsCommandOptions;
+    public final FillMissingCommandOptions fillMissingCommandOptions;
+    public final VariantExportCommandOptions exportVariantsCommandOptions;
+    public final VariantSearchCommandOptions searchVariantsCommandOptions;
 
-    public JCommander jCommander;
-    public GeneralCliOptions.CommonOptions commonCommandOptions;
-    public GeneralCliOptions.IndexCommandOptions indexCommandOptions;
-    public GeneralCliOptions.QueryCommandOptions queryCommandOptions;
+    public final JCommander jCommander;
+    public final GeneralCliOptions.CommonOptions commonCommandOptions;
+    public final GeneralCliOptions.IndexCommandOptions indexCommandOptions;
+    public final GeneralCliOptions.QueryCommandOptions queryCommandOptions;
 
     public StorageVariantCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
                                         GeneralCliOptions.QueryCommandOptions queryCommandOptions, JCommander jCommander) {
@@ -64,6 +65,7 @@ public class StorageVariantCommandOptions {
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
         this.fillGapsCommandOptions = new FillGapsCommandOptions();
+        this.fillMissingCommandOptions = new FillMissingCommandOptions();
         this.exportVariantsCommandOptions = new VariantExportCommandOptions();
         this.searchVariantsCommandOptions = new VariantSearchCommandOptions();
     }
@@ -121,6 +123,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
         public boolean resume;
+
+        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)")
+        public boolean loadSplitData;
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -258,11 +263,10 @@ public class StorageVariantCommandOptions {
 //        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
 //        public String study;
 
-        @Parameter(names = {"--gt", "--genotype"}, description = "A comma separated list of samples from the SAME study, example: " +
-                "NA0001:0/0,0/1;NA0002:0/1", arity = 1)
+        @Parameter(names = {"--gt", "--genotype"}, description = VariantQueryParam.GENOTYPE_DESCR, arity = 1)
         public String sampleGenotype;
 
-        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLES_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
         public String samples;
 
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)
@@ -271,7 +275,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR, arity = 1)
         public String filter;
 
-        @Parameter(names = {"--gene-biotype"}, description = "Biotype CSV", arity = 1)
+        @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR, arity = 1)
         public String geneBiotype;
 
         @Parameter(names = {"--pmaf", "--population-maf"}, description = "Population minor allele frequency: " +
@@ -384,6 +388,8 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters")
         public boolean summary;
 
+        @Parameter(names = {"--sort"}, description = "Sort the output elements.")
+        public boolean sort;
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
@@ -468,10 +474,6 @@ public class StorageVariantCommandOptions {
         public String filterRegion;
 
         @Deprecated
-        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
-        public String filterChromosome;
-
-        @Deprecated
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
         public String filterGene;
 
@@ -507,6 +509,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
         public List<String> samples;
 
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
+        public boolean resume;
+
 //        @Parameter(names = {"--exclude-hom-ref"}, description = "Do not fill gaps of samples with HOM-REF genotype (0/0)", arity = 0)
 //        public boolean excludeHomRef;
     }
@@ -525,6 +530,25 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
+    }
+
+    @Parameters(commandNames = {FillMissingCommandOptions.FILL_MISSING_COMMAND}, commandDescription = FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION)
+    public class FillMissingCommandOptions {
+
+        public static final String FILL_MISSING_COMMAND = "fill-missing";
+        public static final String FILL_MISSING_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study", arity = 1)
+        public String study;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
+        public boolean resume;
     }
 
     /**

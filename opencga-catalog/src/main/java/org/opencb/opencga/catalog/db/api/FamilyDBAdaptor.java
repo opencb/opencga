@@ -22,8 +22,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.VariableSet;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -47,7 +52,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         MOTHER_ID("members.mother.id", INTEGER, ""),
         MEMBER_ID("members.id", INTEGER, ""),
         MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),
-        CREATION_DATE("creationDate", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -68,9 +73,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
-        VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
-        ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
@@ -115,6 +118,39 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
     }
 
+    enum UpdateParams {
+        NAME(QueryParams.NAME.key()),
+        PHENOTYPES(QueryParams.PHENOTYPES.key()),
+        MEMBERS(QueryParams.MEMBERS.key()),
+        DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
+        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
+        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
+        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
     default boolean exists(long familyId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), familyId)).first() > 0;
     }
@@ -131,11 +167,27 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     void nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
-    QueryResult<Family> insert(Family family, long studyId, QueryOptions options) throws CatalogDBException;
+    default QueryResult<Family> insert(long studyId, Family family, QueryOptions options) throws CatalogDBException {
+        family.setAnnotationSets(Collections.emptyList());
+        return insert(studyId, family, Collections.emptyList(), options);
+    }
+
+    QueryResult<Family> insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException;
 
     QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long familyId) throws CatalogDBException;
 
     void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+
+    /**
+     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
+     * be applied.
+     *
+     * @param studyId study id containing the entries affected.
+     * @param permissionRuleId permission rule id to be unmarked.
+     * @throws CatalogException if there is any database error.
+     */
+    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 }

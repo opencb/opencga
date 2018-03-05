@@ -17,15 +17,16 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -50,6 +51,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a new project", response = Project.class)
     public Response createProjectPOST(@ApiParam(value = "JSON containing the mandatory parameters", required = true) ProjectCreateParams project) {
         try {
+            ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
             QueryResult queryResult = catalogManager.getProjectManager()
                     .create(project.name, project.alias, project.description, project.organization,
                             project.organism != null ? project.organism.getScientificName() : null,
@@ -163,6 +165,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
                                          + "fields not previously defined.", required = true) ProjectUpdateParams updateParams)
             throws IOException {
         try {
+            ObjectUtils.defaultIfNull(updateParams, new ProjectUpdateParams());
+
             isSingleId(projectStr);
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams));
             if (updateParams.organism != null) {
@@ -188,14 +192,14 @@ public class ProjectWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{project}/delete")
-    @ApiOperation(value = "Delete a project [WARNING]", position = 5,
-            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-                    "planned to be fully implemented and tested in version 1.4.0")
-    public Response delete(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectId) {
-        return createErrorResponse("delete", "PENDING");
-    }
+//    @GET
+//    @Path("/{project}/delete")
+//    @ApiOperation(value = "Delete a project [WARNING]", position = 5,
+//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+//                    "planned to be fully implemented and tested in version 1.4.0")
+//    public Response delete(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectId) {
+//        return createErrorResponse("delete", "PENDING");
+//    }
 
     protected static class ProjectParams {
         public String name;

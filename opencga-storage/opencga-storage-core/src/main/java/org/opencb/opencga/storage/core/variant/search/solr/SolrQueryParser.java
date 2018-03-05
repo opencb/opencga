@@ -36,6 +36,8 @@ import java.util.regex.Pattern;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
+ * Created by imedina on 18/11/16.
+ * Created by jtarraga on 18/11/16.
  * Created by wasim on 18/11/16.
  */
 public class SolrQueryParser {
@@ -93,8 +95,7 @@ public class SolrQueryParser {
         //    - nested faceted fields (i.e., Solr pivots) are separated by ">>", e.g.: studies>>type
         //    - ranges, field_name:start:end:gap, e.g.: sift:0:1:0.5
         //    - intersections, field_name:value1^value2[^value3], e.g.: studies:1kG^ESP
-        if (queryOptions.containsKey(QueryOptions.FACET)
-            && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             parseSolrFacets(queryOptions.get(QueryOptions.FACET).toString(), solrQuery);
         }
 
@@ -172,8 +173,8 @@ public class SolrQueryParser {
 
         // now we continue with the other AND conditions...
         // type (t)
-        String key = VariantQueryParam.STUDIES.key();
-        if (isValidParam(query, VariantQueryParam.STUDIES)) {
+        String key = VariantQueryParam.STUDY.key();
+        if (isValidParam(query, VariantQueryParam.STUDY)) {
             try {
                 String value = query.getString(key);
                 VariantQueryUtils.QueryOperation op = checkOperator(value);
@@ -231,24 +232,32 @@ public class SolrQueryParser {
         }
 
         // ALT population frequency
-        // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
+        // in the query: 1kG_phase3:CEU<=0.0053191,1kG_phase3:CLM>0.0125319"
+        // in the search model: "popFreq__1kG_phase3__CEU":0.0053191,popFreq__1kG_phase3__CLM">0.0125319"
         key = VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopValue("popFreq", query.getString(key)));
+            filterList.add(parsePopFreqValue("popFreq", query.getString(key), "ALT"));
         }
 
         // MAF population frequency
         // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopValue("popFreq", query.getString(key)));
+            filterList.add(parsePopFreqValue("popFreq", query.getString(key), "MAF"));
+        }
+
+        // REF population frequency
+        // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
+        key = VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parsePopFreqValue("popFreq", query.getString(key), "REF"));
         }
 
         // stats maf
         // in the model: "stats__1kg_phase3__ALL"=0.02
         key = VariantQueryParam.STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopValue("stats", query.getString(key)));
+            filterList.add(parsePopFreqValue("stats", query.getString(key), "MAF"));
         }
 
         // GO
@@ -269,6 +278,12 @@ public class SolrQueryParser {
             }
         }
 
+        // Gene Trait IDs
+        key = VariantQueryParam.ANNOT_GENE_TRAIT_ID.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parseCategoryTermValue("traits", query.getString(key)));
+        }
+
         // hpo
         key = VariantQueryParam.ANNOT_HPO.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
@@ -276,13 +291,13 @@ public class SolrQueryParser {
         }
 
         // clinvar
-        key = VariantQueryParam.ANNOT_CLINVAR.key();
-        if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseCategoryTermValue("traits", query.getString(key)));
-        }
+//        key = VariantQueryParam.ANNOT_CLINVAR.key();
+//        if (StringUtils.isNotEmpty(query.getString(key))) {
+//            filterList.add(parseCategoryTermValue("traits", query.getString(key)));
+//        }
 
         // traits
-        key = VariantQueryParam.ANNOT_TRAITS.key();
+        key = VariantQueryParam.ANNOT_TRAIT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
@@ -450,7 +465,7 @@ public class SolrQueryParser {
      * @param value        Paramenter value
      * @return             The string with the boolean conditions
      */
-    public String parsePopValue(String name, String value) {
+    private String parsePopFreqValue(String name, String value, String type) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
@@ -468,9 +483,11 @@ public class SolrQueryParser {
             if (values.length == 1) {
                 matcher = STUDY_PATTERN.matcher(value);
                 if (matcher.find()) {
+                    // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
+                    String[] freqValue = getMafOrRefFrequency(type, matcher.group(3), matcher.group(4));
+
                     // concat expression, e.g.: value:[0 TO 12]
-                    sb.append(getRange(name + "__" + matcher.group(1) + "__", matcher.group(2),
-                            matcher.group(3), matcher.group(4)));
+                    sb.append(getRange(name + "__" + matcher.group(1) + "__", matcher.group(2), freqValue[0], freqValue[1]));
                 } else {
                     // error
                     throw new IllegalArgumentException("Invalid expression " +  value);
@@ -480,9 +497,11 @@ public class SolrQueryParser {
                 for (String v : values) {
                     matcher = STUDY_PATTERN.matcher(v);
                     if (matcher.find()) {
+                        // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
+                        String[] freqValue = getMafOrRefFrequency(type, matcher.group(3), matcher.group(4));
+
                         // concat expression, e.g.: value:[0 TO 12]
-                        list.add(getRange(name + "__" + matcher.group(1) + "__", matcher.group(2),
-                                matcher.group(3), matcher.group(4)));
+                        list.add(getRange(name + "__" + matcher.group(1) + "__", matcher.group(2), freqValue[0], freqValue[1]));
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
                     }
@@ -491,6 +510,44 @@ public class SolrQueryParser {
             }
         }
         return sb.toString();
+    }
+
+    private String[] getMafOrRefFrequency(String type, String operator, String value) {
+        String[] opValue = new String[2];
+        opValue[0] = operator;
+        switch (type.toUpperCase()) {
+            case "MAF":
+                double d = Double.parseDouble(value);
+                if (d > 0.5) {
+                    d = 1 - d;
+
+                    if (operator.contains("<")) {
+                        opValue[0] = operator.replaceAll("<", ">");
+                    } else {
+                        if (operator.contains(">")) {
+                            opValue[0] = operator.replaceAll(">", "<");
+                        }
+                    }
+                }
+
+                opValue[1] = String.valueOf(d);
+                break;
+            case "REF":
+                if (operator.contains("<")) {
+                    opValue[0] = operator.replaceAll("<", ">");
+                } else {
+                    if (operator.contains(">")) {
+                        opValue[0] = operator.replaceAll(">", "<");
+                    }
+                }
+                opValue[1] = String.valueOf(1 - Double.parseDouble(value));
+                break;
+            case "ALT":
+            default:
+                opValue[1] = value;
+                break;
+        }
+        return opValue;
     }
 
     /**

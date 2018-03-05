@@ -74,7 +74,7 @@ public class VariantMongoDBQueryParserTest {
 
     @Test
     public void testQuerySampleAddFile() {
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDIES.key(), "study_1").append(SAMPLES.key(), "sample_10101"));
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(SAMPLE.key(), "sample_10101"));
 
         Document expected = new Document(STUDIES_FIELD,
                 new Document("$elemMatch", new Document()
@@ -92,7 +92,7 @@ public class VariantMongoDBQueryParserTest {
     public void testQuerySampleNotAddFile() {
         // In Study2 all the files has the same samples.
         // See #641
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDIES.key(), "study_2").append(SAMPLES.key(), "sample_20001"));
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_2").append(SAMPLE.key(), "sample_20001"));
 
         Document expected = new Document(STUDIES_FIELD,
                 new Document("$elemMatch", new Document()
@@ -108,8 +108,8 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesAddFile() {
         // Filter samples from same file
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDIES.key(), "study_1")
-                .append(SAMPLES.key(), "sample_10101,sample_10102"));
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+                .append(SAMPLE.key(), "sample_10101,sample_10102"));
 
         Document expected = new Document(STUDIES_FIELD,
                 new Document("$elemMatch", new Document()
@@ -129,8 +129,8 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesAddFiles() {
         // Filter samples from different files
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDIES.key(), "study_1")
-                .append(SAMPLES.key(), "sample_10101,sample_10201"));
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+                .append(SAMPLE.key(), "sample_10101,sample_10201"));
 
         Document expected = new Document(STUDIES_FIELD,
                 new Document("$elemMatch", new Document()
@@ -150,8 +150,8 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesFromAllFiles() {
         // If filter by samples from all files, don't add the files.fid filter
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDIES.key(), "study_1")
-                .append(SAMPLES.key(), "sample_10101,sample_10201,sample_10301"));
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+                .append(SAMPLE.key(), "sample_10101,sample_10201,sample_10301"));
 
         Document expected = new Document(STUDIES_FIELD,
                 new Document("$elemMatch", new Document()
@@ -173,7 +173,7 @@ public class VariantMongoDBQueryParserTest {
 
     @Test
     public void testQueryGenotypesAddFiles() {
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDIES.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + "0/1"));
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + "0/1"));
 
         Document expected = new Document(STUDIES_FIELD,
                 new Document("$elemMatch", new Document()
@@ -190,7 +190,7 @@ public class VariantMongoDBQueryParserTest {
     public void testQueryDefaultGenotypesNotAddFiles() {
         // FILES filter should not be used when the genotype filter is the default genotype
         Document mongoQuery = parser.parseQuery(new Query()
-                .append(STUDIES.key(), "study_1")
+                .append(STUDY.key(), "study_1")
                 .append(GENOTYPE.key(), "sample_10101" + IS + "0/0" + OR + "1/1"));
 
 
@@ -213,7 +213,7 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQueryUnknownGenotypesNotAddFiles() {
         // FILES filter should not be used when the genotype filter is the unknown genotype
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDIES.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + DocumentToSamplesConverter.UNKNOWN_GENOTYPE));
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + DocumentToSamplesConverter.UNKNOWN_GENOTYPE));
 
         Document expected = new Document(STUDIES_FIELD,
                 new Document("$elemMatch", new Document()
@@ -227,7 +227,7 @@ public class VariantMongoDBQueryParserTest {
 
     @Test
     public void testQueryNegatedGenotypes() {
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDIES.key(), "study_1")
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(GENOTYPE.key(), "sample_10101" + IS + NOT + "1/1"));
 
         Document expected = new Document(STUDIES_FIELD,

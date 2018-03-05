@@ -27,16 +27,19 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.List;
 
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.PROJECT_DESC;
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_FILTER_DESC;
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -44,24 +47,25 @@ import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQuer
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant commands")
 public class VariantCommandOptions {
 
-    public VariantIndexCommandOptions indexVariantCommandOptions;
-    public VariantIndexSearchCommandOptions variantIndexSearchCommandOptions;
-    public VariantRemoveCommandOptions variantRemoveCommandOptions;
-//    public QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
-    public VariantQueryCommandOptions queryVariantCommandOptions;
-    public VariantStatsCommandOptions statsVariantCommandOptions;
-    public VariantAnnotateCommandOptions annotateVariantCommandOptions;
-    public FillGapsCommandOptions fillGapsVariantCommandOptions;
-    public VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
-    public VariantImportCommandOptions importVariantCommandOptions;
-    public VariantIbsCommandOptions ibsVariantCommandOptions;
-    public VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
-    public VariantHistogramCommandOptions histogramCommandOptions;
+    public final VariantIndexCommandOptions indexVariantCommandOptions;
+    public final VariantIndexSearchCommandOptions variantIndexSearchCommandOptions;
+    public final VariantRemoveCommandOptions variantRemoveCommandOptions;
+//    public final QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
+    public final VariantQueryCommandOptions queryVariantCommandOptions;
+    public final VariantStatsCommandOptions statsVariantCommandOptions;
+    public final VariantAnnotateCommandOptions annotateVariantCommandOptions;
+    public final FillGapsCommandOptions fillGapsVariantCommandOptions;
+    public final FillMissingCommandOptions fillMissingCommandOptions;
+    public final VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
+    public final VariantImportCommandOptions importVariantCommandOptions;
+    public final VariantIbsCommandOptions ibsVariantCommandOptions;
+    public final VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
+    public final VariantHistogramCommandOptions histogramCommandOptions;
 
-    public JCommander jCommander;
-    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
-    public DataModelOptions commonDataModelOptions;
-    public NumericOptions commonNumericOptions;
+    public final JCommander jCommander;
+    public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public final DataModelOptions commonDataModelOptions;
+    public final NumericOptions commonNumericOptions;
 
     public VariantCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions,
                                  NumericOptions numericOptions, JCommander jCommander) {
@@ -78,6 +82,7 @@ public class VariantCommandOptions {
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
         this.fillGapsVariantCommandOptions = new FillGapsCommandOptions();
+        this.fillMissingCommandOptions = new FillMissingCommandOptions();
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
@@ -122,6 +127,20 @@ public class VariantCommandOptions {
         @Parameter(names = {"--project-id"}, description = "Project to index. DEPRECATED: Use --project", arity = 1)
         public String projectId;
 
+        @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
+        public String region;
+
+        @Parameter(names = {"-g", "--gene"}, description = VariantQueryParam.GENE_DESCR)
+        public String gene;
+
+        @Parameter(names = {"--file"}, description = VariantQueryParam.FILE_DESCR, arity = 1)
+        public String file;
+
+        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLE_DESCR, arity = 1)
+        public String sample;
+
+        @Parameter(names = {"--cohort"}, description = VariantQueryParam.COHORT_DESCR, arity = 1)
+        public String cohort;
     }
 
     @Deprecated
@@ -404,7 +423,7 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
+        @Parameter(names = {"--sample-filter"}, description = SAMPLE_ANNOTATION_DESC)
         public String sampleFilter;
 
         // FIXME: This param should not be in the ANALYSIS command line!
@@ -593,6 +612,16 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public StorageVariantCommandOptions.GenericFillGapsOptions genericFillGapsOptions = new StorageVariantCommandOptions.GenericFillGapsOptions();
+    }
+
+    @Parameters(commandNames = {FILL_MISSING_COMMAND}, commandDescription = FILL_MISSING_COMMAND_DESCRIPTION)
+    public class FillMissingCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
+        public boolean resume;
     }
 
     @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")

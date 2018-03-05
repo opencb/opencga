@@ -64,6 +64,10 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         this.panelConverter = new PanelConverter();
     }
 
+    public MongoDBCollection getCollection() {
+        return panelCollection;
+    }
+
     @Override
     public QueryResult<DiseasePanel> get(long diseasePanelId, QueryOptions options) throws CatalogDBException {
         checkId(diseasePanelId);

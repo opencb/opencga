@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -117,14 +118,12 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     @Test
     public void testVcfHtsExportSingleFile() throws Exception {
         Query query = new Query()
-                .append(VariantQueryParam.STUDIES.key(), STUDY_NAME)
-                .append(VariantQueryParam.FILES.key(), 1);
+                .append(VariantQueryParam.STUDY.key(), STUDY_NAME)
+                .append(VariantQueryParam.FILE.key(), 1);
 
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true);
-        int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, options),
-                studyConfiguration, dbAdaptor.getVariantFileMetadataDBAdaptor()
-                , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), query, options);
+        int failedVariants = export(outputVcf, query, options);
 
         assertEquals(0, failedVariants);
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
@@ -135,12 +134,10 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     @Test
     public void testVcfHtsExportMultiFile() throws Exception {
         Query query = new Query();
-        query.append(VariantQueryParam.STUDIES.key(), STUDY_NAME);
+        query.append(VariantQueryParam.STUDY.key(), STUDY_NAME);
 //                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
-        int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)), studyConfiguration,
-                dbAdaptor.getVariantFileMetadataDBAdaptor(),
-                new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), query, null);
+        int failedVariants = export(outputVcf, query, new QueryOptions(QueryOptions.SORT, true));
 
         assertEquals(0, failedVariants);
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
@@ -161,6 +158,19 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
 
         variantReader.post();
         variantReader.close();
+    }
+
+    public int export(Path outputVcf, Query query, QueryOptions options) throws IOException {
+        try (GZIPOutputStream outputStream = new GZIPOutputStream(new FileOutputStream(outputVcf.toFile()))) {
+            DataWriter<Variant> writer = new VariantWriterFactory(dbAdaptor).newDataWriter(VariantWriterFactory.VariantOutputFormat.VCF_GZ, outputStream, query, options);
+
+            writer.open();
+            writer.pre();
+            dbAdaptor.iterator(query, options).forEachRemaining(writer::write);
+            writer.post();
+            writer.close();
+        }
+        return 0;
     }
 
     @Ignore

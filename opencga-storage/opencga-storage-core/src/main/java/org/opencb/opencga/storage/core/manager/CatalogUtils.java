@@ -142,8 +142,8 @@ public class CatalogUtils {
      * @throws CatalogException if there is an error with catalog
      */
     public Set<Long> getStudies(Query query, String sessionId) throws CatalogException {
-        List<Long> studies = getStudies(query, VariantQueryParam.STUDIES, sessionId);
-        studies.addAll(getStudies(query, VariantQueryParam.RETURNED_STUDIES, sessionId));
+        List<Long> studies = getStudies(query, VariantQueryParam.STUDY, sessionId);
+        studies.addAll(getStudies(query, VariantQueryParam.INCLUDE_STUDY, sessionId));
         // Use a set to remove duplicated
         return new HashSet<>(studies);
     }
@@ -153,7 +153,7 @@ public class CatalogUtils {
      *
      * @see VariantQueryUtils#getStudyIds(List, org.opencb.commons.datastore.core.QueryOptions)
      * @param query     Query with the values
-     * @param param     Param to check. {@link VariantQueryParam#STUDIES} or {@link VariantQueryParam#RETURNED_STUDIES}
+     * @param param     Param to check. {@link VariantQueryParam#STUDY} or {@link VariantQueryParam#INCLUDE_STUDY}
      * @param sessionId User's sessionId
      * @return          List of positive studies.
      * @throws CatalogException if there is an error with catalog
@@ -195,9 +195,9 @@ public class CatalogUtils {
             }
             return queryResult.first().getId();
         }
-        Long id = getAnyStudyId(query, VariantQueryParam.STUDIES, sessionId);
+        Long id = getAnyStudyId(query, VariantQueryParam.STUDY, sessionId);
         if (id == null) {
-            id = getAnyStudyId(query, VariantQueryParam.RETURNED_STUDIES, sessionId);
+            id = getAnyStudyId(query, VariantQueryParam.INCLUDE_STUDY, sessionId);
             if (id == null) {
                 String userId = catalogManager.getUserManager().getUserId(sessionId);
                 id = catalogManager.getStudyManager().getId(userId, null);

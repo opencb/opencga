@@ -195,12 +195,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
-        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", required = false, arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
-        public String annotationSetName;
-
         @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", required = false, arity = 1)
         public String annotation;
 

@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -283,6 +284,24 @@ public class File {
             this.relation = relation;
             return this;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof RelatedFile)) {
+                return false;
+            }
+            RelatedFile that = (RelatedFile) o;
+            return fileId == that.fileId
+                    && relation == that.relation;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(fileId, relation);
+        }
     }
 
     @Override
@@ -394,10 +413,12 @@ public class File {
         return this;
     }
 
+    @Deprecated
     public String getModificationDate() {
         return modificationDate;
     }
 
+    @Deprecated
     public File setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
@@ -502,10 +523,12 @@ public class File {
         return this;
     }
 
+    @Deprecated
     public List<Long> getSampleIds() {
         return sampleIds;
     }
 
+    @Deprecated
     public File setSampleIds(List<Long> sampleIds) {
         this.sampleIds = sampleIds;
         return this;

@@ -19,15 +19,17 @@ package org.opencb.opencga.storage.core.variant.io;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.stats.writer.VariantStatsPopulationFrequencyExporter;
 import org.opencb.biodata.tools.variant.stats.writer.VariantStatsTsvExporter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.slf4j.Logger;
@@ -41,9 +43,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RETURNED_SAMPLES;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RETURNED_STUDIES;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF_GZ;
 
 /**
  * Created on 06/12/16.
@@ -184,7 +186,7 @@ public class VariantWriterFactory {
         OutputStream outputStream;
         if (isStandardOutput(output)) {
             // Unclosable OutputStream
-            outputStream = new VariantVcfDataWriter.UnclosableOutputStream(System.out);
+            outputStream = new UnclosableOutputStream(System.out);
         } else {
             outputStream = new FileOutputStream(output);
             logger.debug("writing to %s", output);
@@ -209,17 +211,19 @@ public class VariantWriterFactory {
         switch (outputFormat) {
             case VCF_GZ:
             case VCF:
-                StudyConfiguration studyConfiguration = getStudyConfiguration(query, dbAdaptor, true);
-                if (studyConfiguration != null) {
-                    // Samples to be returned
-                    if (query.containsKey(RETURNED_SAMPLES.key())) {
-                        queryOptions.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
-                    }
-
-                    VariantFileMetadataDBAdaptor fileMetadataDBAdaptor = dbAdaptor.getVariantFileMetadataDBAdaptor();
-                    exporter = new VariantVcfDataWriter(studyConfiguration, fileMetadataDBAdaptor, outputStream, query, queryOptions);
+                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(dbAdaptor.getStudyConfigurationManager(),
+                        dbAdaptor.getVariantFileMetadataDBAdaptor());
+                VariantMetadata variantMetadata;
+                try {
+                    variantMetadata = metadataFactory.makeVariantMetadata(query, queryOptions);
+                } catch (StorageEngineException e) {
+                    throw new IOException(e);
+                }
+                if (!variantMetadata.getStudies().isEmpty()) {
+                    List<String> annotations = queryOptions.getAsStringList("annotations");
+                    exporter = VcfDataWriter.newWriterForAvro(variantMetadata, annotations, outputStream);
                 } else {
-                    throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
+                    throw new IllegalArgumentException("No study found named " + query.getAsStringList(INCLUDE_STUDY.key()).get(0));
                 }
                 break;
 
@@ -286,4 +290,22 @@ public class VariantWriterFactory {
         return scm.getStudyConfiguration(studyIds.get(0), null).first();
     }
 
+    /**
+     * Unclosable output stream.
+     *
+     * Avoid passing System.out directly to HTSJDK, because it will close it at the end.
+     *
+     * http://stackoverflow.com/questions/8941298/system-out-closed-can-i-reopen-it/23791138#23791138
+     */
+    public static class UnclosableOutputStream extends FilterOutputStream {
+
+        public UnclosableOutputStream(OutputStream os) {
+            super(os);
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.flush();
+        }
+    }
 }

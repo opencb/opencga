@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -25,11 +26,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -37,7 +38,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -57,12 +58,14 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a new user", response = User.class)
     public Response createUserPost(@ApiParam(value = "JSON containing the parameters", required = true) UserCreatePOST user) {
         try {
+            ObjectUtils.defaultIfNull(user, new UserCreatePOST());
+
             if (!user.checkValidParams()) {
                 createErrorResponse(new CatalogException("id, name, email or password not present"));
             }
 
-            QueryResult queryResult = catalogManager.getUserManager().create(user.id, user.name, user.email, user.password, user
-                    .organization, null, Account.FULL, queryOptions);
+            QueryResult queryResult = catalogManager.getUserManager()
+                    .create(user.id, user.name, user.email, user.password, user.organization, null, Account.FULL, queryOptions, null);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -103,6 +106,8 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response loginPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                               @ApiParam(value = "JSON containing the parameter 'password'") Map<String, String> map) {
         try {
+            ObjectUtils.defaultIfNull(map, new HashMap<>());
+
             String token;
             if (map.containsKey("password")) {
                 String password = map.get("password");
@@ -118,7 +123,8 @@ public class UserWSServer extends OpenCGAWSServer {
                     .append("id", token)
                     .append("token", token);
 
-            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", 0, 1, 1, "", "", Arrays.asList(sessionMap));
+            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", 0, 1, 1,
+                    "'sessionId' and 'id' deprecated", "", Arrays.asList(sessionMap));
 
             return createOkResponse(login);
         } catch (Exception e) {
@@ -134,6 +140,8 @@ public class UserWSServer extends OpenCGAWSServer {
                                        @ApiParam(value = "JSON containing the params 'password' (old password) and 'npassword' (new "
                                                + "password)", required = true) ObjectMap params) {
         try {
+            ObjectUtils.defaultIfNull(params, new ObjectMap());
+
             if (!params.containsKey("password") || !params.containsKey("npassword")) {
                 throw new Exception("The json must contain the keys password and npassword.");
             }
@@ -191,6 +199,8 @@ public class UserWSServer extends OpenCGAWSServer {
                                  @ApiParam(name = "params", value = "JSON containing the params to be updated.", required = true)
                                          UserUpdatePOST parameters) {
         try {
+            ObjectUtils.defaultIfNull(parameters, new UserUpdatePOST());
+
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
             QueryResult result = catalogManager.getUserManager().update(userId, params, null, sessionId);
             return createOkResponse(result);
@@ -199,19 +209,19 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{user}/delete")
-    @ApiOperation(value = "Delete a user [WARNING]",
-            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-                    "planned to be fully implemented and tested in version 1.4.0")
-    public Response delete(@ApiParam(value = "Comma separated list of user ids", required = true) @PathParam("user") String userId) {
-        try {
-            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager().delete(userId, queryOptions, sessionId);
-            return createOkResponse(deletedUsers);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{user}/delete")
+//    @ApiOperation(value = "Delete a user [WARNING]",
+//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+//                    "planned to be fully implemented and tested in version 1.4.0")
+//    public Response delete(@ApiParam(value = "Comma separated list of user ids", required = true) @PathParam("user") String userId) {
+//        try {
+//            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager().delete(userId, queryOptions, sessionId);
+//            return createOkResponse(deletedUsers);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{user}/configs/create")
@@ -224,6 +234,8 @@ public class UserWSServer extends OpenCGAWSServer {
                                          @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default "
                                                  + "preferences", required = true) ObjectMap params) {
         try {
+            ObjectUtils.defaultIfNull(params, new ObjectMap());
+
             return createOkResponse(catalogManager.getUserManager().setConfig(userId, name, params, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -280,6 +292,8 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response addFilterPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                   @ApiParam(name = "params", value = "Filter parameters", required = true) User.Filter params) {
         try {
+            ObjectUtils.defaultIfNull(params, new User.Filter());
+
             return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
                     params.getBioformat(), params.getQuery(), params.getOptions(), sessionId));
         } catch (Exception e) {
@@ -301,6 +315,8 @@ public class UserWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
                                      @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
         try {
+            ObjectUtils.defaultIfNull(params, new UpdateFilter());
+
             return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name,
                     new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId));
         } catch (Exception e) {
@@ -370,7 +386,7 @@ public class UserWSServer extends OpenCGAWSServer {
         public Map<String, Object> attributes;
     }
 
-    protected static class UserCreatePOST {
+    public static class UserCreatePOST {
         @Deprecated
         public String userId;
         @JsonProperty(required = true)

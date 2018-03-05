@@ -20,7 +20,7 @@ public class AuthorizationMongoDBUtils {
     static final String PRIVATE_OWNER_ID = "_ownerId";
     private static final String PRIVATE_ACL = "_acl";
     private static final String VARIABLE_SETS = "variableSets";
-    private static final String ANNOTATION_SETS = "annotationSets";
+    private static final String ANNOTATION_SETS = AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key();
 
     private static final String PERMISSION_DELIMITER = "__";
 
@@ -109,7 +109,7 @@ public class AuthorizationMongoDBUtils {
         boolean hasStudyPermission = checkUserHasPermission(study, user, groups, studyPermission, false);
 
         if (!checkUserHasPermission(entry, user, groups, entryPermission, hasStudyPermission)) {
-            entry.remove(ANNOTATION_SETS);
+            entry.put(ANNOTATION_SETS, Collections.emptyList());
         } else {
             // Check if the user has the CONFIDENTIAL PERMISSION
             boolean confidential =

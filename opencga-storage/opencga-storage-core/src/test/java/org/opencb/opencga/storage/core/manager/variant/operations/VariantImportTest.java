@@ -59,9 +59,9 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
                 new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
                 new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)), sessionId);
 
-        catalogManager.getSampleManager().createAnnotationSet("NA19600", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19600").append("age", 30), null, sessionId);
-        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19660").append("age", 35).append("other", "unknown"), null, sessionId);
-        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as2", new ObjectMap("name", "NA19660").append("age", 35).append("other", "asdf"), null, sessionId);
+        catalogManager.getSampleManager().createAnnotationSet("NA19600", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19600").append("age", 30), sessionId);
+        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19660").append("age", 35).append("other", "unknown"), sessionId);
+        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as2", new ObjectMap("name", "NA19660").append("age", 35).append("other", "asdf"), sessionId);
 
     }
 
@@ -85,8 +85,8 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         List<Sample> samples = catalogManager.getSampleManager().get(studyId, new Query(), new QueryOptions(), sessionId).getResult();
         List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getName).collect(Collectors.toList());
-        Query query = new Query(VariantQueryParam.RETURNED_STUDIES.key(), studyId)
-                .append(VariantQueryParam.RETURNED_SAMPLES.key(), someSamples);
+        Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), someSamples);
         QueryOptions queryOptions = new QueryOptions();
         variantManager.exportData(export, VariantOutputFormat.AVRO, query, queryOptions, sessionId);
 

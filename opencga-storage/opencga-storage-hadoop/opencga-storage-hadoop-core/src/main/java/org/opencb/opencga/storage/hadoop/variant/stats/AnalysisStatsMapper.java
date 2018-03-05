@@ -28,11 +28,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +50,6 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
     private Logger logger = LoggerFactory.getLogger(AnalysisStatsMapper.class);
     private VariantStatisticsCalculator variantStatisticsCalculator;
     private String studyId;
-    private byte[] studiesRow;
     private Map<String, Set<String>> samples;
     private VariantStatsToHBaseConverter variantStatsToHBaseConverter;
 
@@ -60,7 +57,6 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         this.getHbaseToVariantConverter().setSimpleGenotypes(true);
-        studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
         variantStatisticsCalculator = new VariantStatisticsCalculator(true);
         this.variantStatisticsCalculator.setAggregationType(Aggregation.NONE, null);
         this.studyId = Integer.valueOf(this.getStudyConfiguration().getStudyId()).toString();
@@ -79,25 +75,23 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         boolean done = false;
-        if (!Bytes.startsWith(value.getRow(), this.studiesRow)) { // ignore _METADATA row
-            try {
-                Variant variant = this.getHbaseToVariantConverter().convert(value);
-                List<VariantStatsWrapper> annotations = this.variantStatisticsCalculator.calculateBatch(
-                        Collections.singletonList(variant), this.studyId, this.samples);
-                for (VariantStatsWrapper annotation : annotations) {
-                    Put convert = this.variantStatsToHBaseConverter.convert(annotation);
-                    if (null != convert) {
-                        context.write(key, convert);
-                        done = true;
-                        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
-                    }
+        try {
+            Variant variant = this.getHbaseToVariantConverter().convert(value);
+            List<VariantStatsWrapper> annotations = this.variantStatisticsCalculator.calculateBatch(
+                    Collections.singletonList(variant), this.studyId, this.samples);
+            for (VariantStatsWrapper annotation : annotations) {
+                Put convert = this.variantStatsToHBaseConverter.convert(annotation);
+                if (null != convert) {
+                    context.write(key, convert);
+                    done = true;
+                    context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
                 }
-                if (done) {
-                    context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
-                }
-            } catch (IllegalStateException e) {
-                throw new IllegalStateException("Problem with row [hex:" + Bytes.toHex(key.copyBytes()) + "]", e);
             }
+            if (done) {
+                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
+            }
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException("Problem with row [hex:" + Bytes.toHex(key.copyBytes()) + "]", e);
         }
     }
 }
