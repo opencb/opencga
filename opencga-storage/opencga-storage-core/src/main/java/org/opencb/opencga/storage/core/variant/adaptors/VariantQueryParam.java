@@ -105,9 +105,14 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam FILE = new VariantQueryParam("file", TEXT_ARRAY, FILE_DESCR);
 
     public static final String FILTER_DESCR
-            = "Specify the FILTER for any of the files. If 'files' filter is provided, will match the file and the filter. "
+            = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. "
             + "e.g.: PASS,LowGQX";
     public static final VariantQueryParam FILTER = new VariantQueryParam("filter", TEXT_ARRAY, FILTER_DESCR);
+
+    public static final String QUAL_DESCR
+            = "Specify the QUAL for any of the files. If 'file' filter is provided, will match the file and the qual. "
+            + "e.g.: >123.4";
+    public static final VariantQueryParam QUAL = new VariantQueryParam("qual", DECIMAL_ARRAY, QUAL_DESCR);
 
     public static final String INCLUDE_FILE_DESCR
             = "List of files to be returned";
