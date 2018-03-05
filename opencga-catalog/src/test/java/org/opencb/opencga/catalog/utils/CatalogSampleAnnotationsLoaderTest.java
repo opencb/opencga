@@ -26,10 +26,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
@@ -118,26 +118,21 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
         long variableSetId = sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
 
-//        Query query = new Query("variableSetId", variableSetId).append("annotation", "family:GB84");
-        Query query = new Query("variableSetId", variableSetId)
-                .append("annotation.family", "GB84");
+        Query query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";family=GB84");
         QueryOptions options = new QueryOptions("limit", 2);
 
         QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, allSamples.getNumResults());
-        query.remove("annotation.family");
 
-        query.put("annotation.sex", "2");
-        query.put("annotation.Population","ITU");
+        query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=2;Population=ITU");
         QueryResult<Sample> femaleIta = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, femaleIta.getNumResults());
 
-        query.put("annotation.sex", "1");
-        query.put("annotation.Population", "ITU");
+        query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=1;Population=ITU");
         QueryResult<Sample> maleIta = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, maleIta.getNumResults());
 
-        query.remove("annotation.sex");
+        query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";Population=ITU");
         QueryResult<Sample> ita = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, ita.getNumResults());
 
@@ -148,11 +143,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     private void validate(Pedigree pedigree, VariableSet variableSet) throws CatalogException {
         for (Map.Entry<String, Individual> entry : pedigree.getIndividuals().entrySet()) {
             Map<String, Object> annotation = loader.getAnnotation(entry.getValue(), null, variableSet, pedigree.getFields());
-            HashSet<Annotation> annotationSet = new HashSet<>(annotation.size());
-            for (Map.Entry<String, Object> annotationEntry : annotation.entrySet()) {
-                annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
-            }
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", 1,
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation, "", 1,
                     null), null);
         }
     }

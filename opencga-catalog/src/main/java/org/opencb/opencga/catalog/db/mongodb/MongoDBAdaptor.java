@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
@@ -35,6 +36,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -63,6 +65,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String LAST_OF_RELEASE = "_lastOfRelease";
     static final String PRIVATE_CREATION_DATE = "_creationDate";
     static final String PERMISSION_RULES_APPLIED = "_permissionRulesApplied";
+
+    static final String INTERNAL_DELIMITER = "__";
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
 
@@ -284,13 +288,17 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         Bson match = Aggregates.match(query);
 
         // add all group-by fields to the projection together with the aggregation field name
-        List<String> includeGroupByFields = new ArrayList<>(groupByField);
+        List<String> includeGroupByFields = new ArrayList<>(groupByFields);
         includeGroupByFields.add(idField);
-        List<Bson> projections = new ArrayList<>();
-        addDateProjection(projections, includeGroupByFields, groupByFields);
-        projections.add(Projections.include(includeGroupByFields));
-        Bson project = Aggregates.project(Projections.fields(projections));
-//            Bson project = Aggregates.project(Projections.include(groupByFields));
+        Document projection = createDateProjection(includeGroupByFields, groupByFields);
+        Document annotationDocument = createAnnotationProjectionForGroupBy(includeGroupByFields);
+        projection.putAll(annotationDocument);
+
+        for (String field : includeGroupByFields) {
+            // Include the parameters from the includeGroupByFields list
+            projection.append(field, 1);
+        }
+        Bson project = Aggregates.project(projection);
 
         // _id document creation to have the multiple id
         Document id = new Document();
@@ -308,24 +316,21 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     /**
-     * Adds the corresponding date projections to the projections list (if any), removes the date fields from includeGroupByFields and
+     * Create a date projection if included in the includeGroupByFields, removes the date fields from includeGroupByFields and
      * add them to groupByFields if not there.
      * Only for groupBy methods.
      *
-     * @param projections List of Bson containing the projections to be done.
      * @param includeGroupByFields List containing the fields to be included in the projection.
      * @param groupByFields List containing the fields by which the group by will be done.
      */
-    private void addDateProjection(List<Bson> projections, List<String> includeGroupByFields, List<String> groupByFields) {
-
+    private Document createDateProjection(List<String> includeGroupByFields, List<String> groupByFields) {
         Document dateProjection = new Document();
-        Document year = new Document("$substr", Arrays.asList("$creationDate", 0, 4));
-        Document month = new Document("$substr", Arrays.asList("$creationDate", 4, 2));
-        Document day = new Document("$substr", Arrays.asList("$creationDate", 6, 2));
+        Document year = new Document("$year", "$" + PRIVATE_CREATION_DATE);
+        Document month = new Document("$month", "$" + PRIVATE_CREATION_DATE);
+        Document day = new Document("$dayOfMonth", "$" + PRIVATE_CREATION_DATE);
 
         if (includeGroupByFields.contains("day")) {
             dateProjection.append("day", day).append("month", month).append("year", year);
-            projections.add(dateProjection);
             includeGroupByFields.remove("day");
             if (!includeGroupByFields.remove("month")) {
                 groupByFields.add("month");
@@ -336,17 +341,42 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         } else if (includeGroupByFields.contains("month")) {
             dateProjection.append("month", month).append("year", year);
-            projections.add(dateProjection);
             includeGroupByFields.remove("month");
             if (!includeGroupByFields.remove("year")) {
                 groupByFields.add("year");
             }
         } else if (includeGroupByFields.contains("year")) {
             dateProjection.append("year", year);
-            projections.add(dateProjection);
             includeGroupByFields.remove("year");
         }
 
+        return dateProjection;
+    }
+
+    /**
+     * Fixes the annotation ids provided by the user to create a proper groupBy by any annotation field provided.
+     *
+     * @param includeGroupByFields List containing the fields to be included in the projection.
+     */
+    private Document createAnnotationProjectionForGroupBy(List<String> includeGroupByFields) {
+        Document document = new Document();
+
+        Iterator<String> iterator = includeGroupByFields.iterator();
+        while (iterator.hasNext()) {
+            String field = iterator.next();
+
+            if (field.startsWith(Constants.ANNOTATION)) {
+                String replacedField = field
+                        .replace(Constants.ANNOTATION + ":", "")
+                        .replace(":", INTERNAL_DELIMITER)
+                        .replace(".", INTERNAL_DELIMITER);
+                iterator.remove();
+
+                document.put(field, "$" + AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key() + "." + replacedField);
+            }
+        }
+
+        return document;
     }
 
     protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {

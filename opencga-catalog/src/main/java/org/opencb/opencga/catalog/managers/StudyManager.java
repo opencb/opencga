@@ -1188,13 +1188,15 @@ public class StudyManager extends AbstractManager {
 
     public QueryResult<VariableSet> renameFieldFromVariableSet(String studyStr, String variableSetStr, String oldName, String newName,
                                                                String sessionId) throws CatalogException {
-        MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
-        String userId = resource.getUser();
+        throw new UnsupportedOperationException("Operation not yet supported");
 
-        authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.renameFieldVariableSet(resource.getResourceId(), oldName, newName, userId);
-        auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
-        return queryResult;
+//        MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
+//        String userId = resource.getUser();
+//
+//        authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
+//        QueryResult<VariableSet> queryResult = studyDBAdaptor.renameFieldVariableSet(resource.getResourceId(), oldName, newName, userId);
+//        auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
+//        return queryResult;
     }
 
 

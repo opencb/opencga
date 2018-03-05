@@ -21,6 +21,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -430,7 +431,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         Document clinicalObject = clinicalConverter.convertToStorageType(clinicalAnalysis);
         clinicalObject.put(PRIVATE_STUDY_ID, studyId);
         clinicalObject.put(PRIVATE_ID, clinicalAnalysisId);
-        clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
+            clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
+        } else {
+            clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
         clinicalObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         clinicalCollection.insert(clinicalObject, null);
 

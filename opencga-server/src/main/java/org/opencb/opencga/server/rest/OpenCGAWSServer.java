@@ -42,8 +42,12 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
+import org.opencb.opencga.server.rest.json.mixin.FamilyMixin;
+import org.opencb.opencga.server.rest.json.mixin.IndividualMixin;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -324,6 +328,9 @@ public class OpenCGAWSServer {
                 case "count":
                     count = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), count);
+                    break;
+                case Constants.FLATTENED_ANNOTATIONS:
+                    queryOptions.put(Constants.FLATTENED_ANNOTATIONS, Boolean.parseBoolean(value));
                     break;
                 case "includeIndividual": // SampleWS
                     lazy = !Boolean.parseBoolean(value);

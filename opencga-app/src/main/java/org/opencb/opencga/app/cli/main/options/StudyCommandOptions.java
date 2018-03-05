@@ -341,12 +341,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"--individual"}, description = "Individual id", arity = 1)
         public String individual;
 
-        @Parameter(names = {"--annotation-set-name"}, description = "AnnotationSetName", arity = 1)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set id", arity = 1)
-        public String variableSetId;
-
         @Parameter(names = {"--annotation"}, description = "Annotation", arity = 1)
         public String annotation;
 

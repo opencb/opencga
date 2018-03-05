@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.StudyMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
@@ -131,7 +132,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         studyObject.put(PRIVATE_PROJECT_ID, projectId);
         studyObject.put(PRIVATE_OWNER_ID, ownerId);
 
-        studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(study.getCreationDate()));
+        if (StringUtils.isNotEmpty(study.getCreationDate())) {
+            studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(study.getCreationDate()));
+        } else {
+            studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
 
         //Insert
         QueryResult<WriteResult> updateResult = studyCollection.insert(studyObject, null);
@@ -154,7 +159,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         for (Cohort cohort : cohorts) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(cohort, study.getId(), options).getErrorMsg();
+            String fileErrorMsg = dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(study.getId(), cohort, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg += cohort.getName() + ":" + fileErrorMsg + ", ";
             }
@@ -620,50 +625,53 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        long startTime = startQuery();
-
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
-        checkVariableNotInVariableSet(variableSet.first(), newName);
-
-        // The field can be changed if we arrive to this point.
-        // 1. we obtain the variable
-        Variable variable = getVariable(variableSet.first(), oldName);
-        if (variable == null) {
-            throw new CatalogDBException("VariableSet {id: " + variableSet.getId() + "}. The variable {id: " + oldName + "} does not "
-                    + "exist.");
-        }
-
-        // 2. we take it out from the array.
-        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-        Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(), Filters.eq("name", oldName));
-        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
-
-        if (queryResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Could not rename the field " + oldName);
-        }
-        if (queryResult.first().getModifiedCount() > 1) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - An unexpected error happened when extracting the "
-                    + "variable from the variableSet to do the rename. Please, report this error to the OpenCGA developers.");
-        }
-
-        // 3. we change the name in the variable object and push it again in the array.
-        variable.setName(newName);
-        update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
-                getMongoDBDocument(variable, "Variable"));
-        queryResult = studyCollection.update(bsonQuery, update, null);
-
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - A critical error happened when trying to rename one "
-                    + "of the variables of the variableSet object. Please, report this error to the OpenCGA developers.");
-        }
-
-        // 4. Change the field id in the annotations
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
-        dbAdaptorFactory.getCatalogFamilyDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
-        dbAdaptorFactory.getCatalogIndividualDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
-
-        return endQuery("Rename field in variableSet", startTime, getVariableSet(variableSetId, null));
+        // TODO
+        throw new UnsupportedOperationException("Operation not yet supported");
+//        long startTime = startQuery();
+//
+//        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
+//        checkVariableNotInVariableSet(variableSet.first(), newName);
+//
+//        // The field can be changed if we arrive to this point.
+//        // 1. we obtain the variable
+//        Variable variable = getVariable(variableSet.first(), oldName);
+//        if (variable == null) {
+//            throw new CatalogDBException("VariableSet {id: " + variableSet.getId() + "}. The variable {id: " + oldName + "} does not "
+//                    + "exist.");
+//        }
+//
+//        // 2. we take it out from the array.
+//        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+//        Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
+// Filters.eq("name", oldName));
+//        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
+//
+//        if (queryResult.first().getModifiedCount() == 0) {
+//            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Could not rename the field " + oldName);
+//        }
+//        if (queryResult.first().getModifiedCount() > 1) {
+//            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - An unexpected error happened when extracting the "
+//                    + "variable from the variableSet to do the rename. Please, report this error to the OpenCGA developers.");
+//        }
+//
+//        // 3. we change the name in the variable object and push it again in the array.
+//        variable.setName(newName);
+//        update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
+//                getMongoDBDocument(variable, "Variable"));
+//        queryResult = studyCollection.update(bsonQuery, update, null);
+//
+//        if (queryResult.first().getModifiedCount() != 1) {
+//            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - A critical error happened when trying to rename one "
+//                    + "of the variables of the variableSet object. Please, report this error to the OpenCGA developers.");
+//        }
+//
+//        // 4. Change the field id in the annotations
+//        dbAdaptorFactory.getCatalogSampleDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+//        dbAdaptorFactory.getCatalogCohortDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+//        dbAdaptorFactory.getCatalogFamilyDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+//        dbAdaptorFactory.getCatalogIndividualDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+//
+//        return endQuery("Rename field in variableSet", startTime, getVariableSet(variableSetId, null));
     }
 
     @Override
@@ -925,7 +933,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     public void checkVariableSetInUse(long variableSetId) throws CatalogDBException {
         QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(
-                new Query(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
+                new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), new QueryOptions());
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
             for (Sample sample : samples.getResult()) {
@@ -935,7 +943,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException(msg);
         }
         QueryResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(
-                new Query(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
+                new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId),
+                new QueryOptions());
         if (individuals.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of individuals : [";
             for (Individual individual : individuals.getResult()) {
@@ -945,7 +954,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException(msg);
         }
         QueryResult<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(
-                new Query(CohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
+                new Query(CohortDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), new QueryOptions());
         if (cohorts.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of cohorts : [";
             for (Cohort cohort : cohorts.getResult()) {
@@ -955,7 +964,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException(msg);
         }
         QueryResult<Family> families = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(
-                new Query(FamilyDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
+                new Query(FamilyDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), new QueryOptions());
         if (cohorts.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of families : [";
             for (Family family : families.getResult()) {
