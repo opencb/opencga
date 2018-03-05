@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.utils.GrpcServiceUtils;
 import org.opencb.opencga.storage.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.storage.server.grpc.AlignmentServiceModel;
 
@@ -239,7 +240,7 @@ public class AlignmentStorageCommandExecutor extends CommandExecutor {
                 // Only one region is allowed in gRPC
                 query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regions[0]);
 
-                ManagedChannel channel = getManagedChannel(queryAlignmentsCommandOptions.serverUrl);
+                ManagedChannel channel = GrpcServiceUtils.getManagedChannel(queryAlignmentsCommandOptions.serverUrl);
                 AlignmentServiceGrpc.AlignmentServiceBlockingStub alignmentServiceBlockingStub =
                         AlignmentServiceGrpc.newBlockingStub(channel);
                 AlignmentServiceModel.AlignmentRequest alignmentRequest =
@@ -306,7 +307,7 @@ public class AlignmentStorageCommandExecutor extends CommandExecutor {
                 query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), coverageAlignmentsCommandOptions.region);
                 query.putIfNotNull(AlignmentDBAdaptor.QueryParams.WINDOW_SIZE.key(), coverageAlignmentsCommandOptions.windowSize);
 
-                ManagedChannel channel = getManagedChannel(coverageAlignmentsCommandOptions.serverUrl);
+                ManagedChannel channel = GrpcServiceUtils.getManagedChannel(coverageAlignmentsCommandOptions.serverUrl);
                 AlignmentServiceGrpc.AlignmentServiceBlockingStub alignmentServiceBlockingStub =
                         AlignmentServiceGrpc.newBlockingStub(channel);
                 AlignmentServiceModel.AlignmentRequest alignmentRequest =
@@ -316,7 +317,6 @@ public class AlignmentStorageCommandExecutor extends CommandExecutor {
                 while (coverageFloatResponse.hasNext()) {
                     System.out.println(coverageFloatResponse.next().getValue());
                 }
-
                 channel.shutdownNow().awaitTermination(2, TimeUnit.SECONDS);
                 break;
             default:
@@ -331,24 +331,9 @@ public class AlignmentStorageCommandExecutor extends CommandExecutor {
         }
     }
 
-    private ManagedChannel getManagedChannel(String serverUrl) {
-        // We create the gRPC channel to the specified server host and port
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverUrl)
-                .usePlaintext(true)
-                .build();
-
-        return channel;
-    }
-
     private AlignmentServiceModel.AlignmentRequest getAlignmentRequest(String file, Query query, QueryOptions queryOptions) {
-        Map<String, String> queryMap = new HashMap<>();
-        Map<String, String> queryOptionsMap = new HashMap<>();
-        for (String key : query.keySet()) {
-            queryMap.put(key, query.getString(key));
-        }
-        for (String key : queryOptions.keySet()) {
-            queryOptionsMap.put(key, queryOptions.getString(key));
-        }
+        Map<String, String> queryMap = GrpcServiceUtils.createMap(query);
+        Map<String, String> queryOptionsMap = GrpcServiceUtils.createMap(queryOptions);
 
         // We create the OpenCGA gRPC request object with the query, queryOptions and sessionId
         AlignmentServiceModel.AlignmentRequest request = AlignmentServiceModel.AlignmentRequest.newBuilder()
