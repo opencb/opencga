@@ -55,6 +55,17 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalAnalysisManager = catalogManager.getClinicalAnalysisManager();
     }
 
+    // FIXME Class path to a new section in storage-configuration.yml file
+    private void init() {
+        try {
+            this.clinicalVariantEngine =
+                    (ClinicalVariantEngine) Class.forName("org.opencb.opencga.enterprise.clinical.ClinicalVariantSolrEngine").newInstance();
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     @Override
     public void testConnection() throws StorageEngineException {
     }
