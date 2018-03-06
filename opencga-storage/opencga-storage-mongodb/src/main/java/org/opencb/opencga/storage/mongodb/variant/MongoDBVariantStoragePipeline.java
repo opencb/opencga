@@ -298,8 +298,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
+            int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
             MongoDBVariantDirectConverter converter = new MongoDBVariantDirectConverter(dbAdaptor, getStudyConfiguration(), fileId,
-                    isResume(options), progressLogger);
+                    isResume(options), release, progressLogger);
             MongoDBVariantDirectLoader loader = new MongoDBVariantDirectLoader(dbAdaptor, getStudyConfiguration(), fileId,
                     isResume(options));
 
