@@ -180,7 +180,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/files")
-    @ApiOperation(value = "Fetch files in study [WARNING]", response = File[].class,
+    @ApiOperation(value = "Fetch files in study [DEPRECATED]", response = File[].class,
             notes = "The use of this webservice is discouraged. The whole functionality is replicated in the files/search endpoint.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
@@ -226,7 +226,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/samples")
-    @ApiOperation(value = "Fetch samples in study [WARNING]", response = Sample[].class,
+    @ApiOperation(value = "Fetch samples in study [DEPRECATED]", response = Sample[].class,
             notes = "The use of this webservice is discouraged. The whole functionality is replicated in the samples/search endpoint.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
@@ -259,7 +259,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/jobs")
-    @ApiOperation(value = "Return filtered jobs in study [WARNING]", position = 9,
+    @ApiOperation(value = "Return filtered jobs in study [DEPRECATED]", position = 9,
             notes = "The use of this webservice is discouraged. The whole functionality is replicated in the jobs/search endpoint.",
             response = Job[].class)
     @ApiImplicitParams({

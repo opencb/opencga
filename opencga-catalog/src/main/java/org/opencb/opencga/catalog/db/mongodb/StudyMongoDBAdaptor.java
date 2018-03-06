@@ -552,6 +552,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             permissionRules = Collections.emptyList();
         }
 
+        // Remove all permission rules that are pending of some actions such as deletion
+        permissionRules.removeIf(permissionRule -> StringUtils.split(permissionRule.getId(), INTERNAL_DELIMITER, 2).length == 2);
+
         return new QueryResult<>(String.valueOf(studyId), studyQueryResult.getDbTime(), permissionRules.size(), permissionRules.size(),
                 "", "", permissionRules);
     }

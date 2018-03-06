@@ -276,6 +276,9 @@ public class VariantStorageCommandOptions {
         @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR, arity = 1)
         public String filter;
 
+        @Parameter(names = {"--qual"}, description = VariantQueryParam.QUAL_DESCR, arity = 1)
+        public String qual;
+
         @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR, arity = 1)
         public String geneBiotype;
 

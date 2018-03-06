@@ -564,16 +564,26 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
-            MyResourceId tmpResource =
-                    getId(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()), String.valueOf(studyId), sessionId);
-            parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
-            parameters.put(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), tmpResource.getResourceId());
+            Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.FATHER.key());
+            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()))) {
+                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()), String.valueOf(studyId),
+                        sessionId);
+                parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
+                parameters.put(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), tmpResource.getResourceId());
+            } else {
+                throw new CatalogException("Cannot update father parameter. Father name or id not passed");
+            }
         }
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
-            MyResourceId tmpResource =
-                    getId(parameters.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
-            parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
-            parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), tmpResource.getResourceId());
+            Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.MOTHER.key());
+            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()))) {
+                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()), String.valueOf(studyId),
+                        sessionId);
+                parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
+                parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), tmpResource.getResourceId());
+            } else {
+                throw new CatalogException("Cannot update mother parameter. Mother name or id not passed");
+            }
         }
 
         List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, individualDBAdaptor);
