@@ -44,8 +44,13 @@ public class Group {
     }
 
     public Group(String name, List<String> userIds) {
+        this(name, userIds, null);
+    }
+
+    public Group(String name, List<String> userIds, Sync syncedFrom) {
         this.name = name;
         this.userIds = userIds;
+        this.syncedFrom = syncedFrom;
     }
 
     @Override

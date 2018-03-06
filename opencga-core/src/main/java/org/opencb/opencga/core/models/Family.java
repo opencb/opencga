@@ -21,7 +21,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+
+import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -203,17 +204,4 @@ public class Family extends Annotable {
         return this;
     }
 
-    public static <O> O defaultObject(O object, O defaultObject) {
-        if (object == null) {
-            object = defaultObject;
-        }
-        return object;
-    }
-
-    public static <O> O defaultObject(O object, Supplier<O> supplier) {
-        if (object == null) {
-            object = supplier.get();
-        }
-        return object;
-    }
 }

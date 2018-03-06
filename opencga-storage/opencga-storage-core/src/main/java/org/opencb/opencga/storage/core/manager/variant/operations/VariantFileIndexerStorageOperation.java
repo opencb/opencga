@@ -64,9 +64,12 @@ import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_S
 public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     public static final String DEFAULT_COHORT_DESCRIPTION = "Default cohort with almost all indexed samples";
-    public static final QueryOptions FILE_GET_QUERY_OPTIONS = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(
-            FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
-            FileDBAdaptor.QueryParams.STATS.key()));
+    public static final QueryOptions FILE_GET_QUERY_OPTIONS = new QueryOptions()
+            .append(QueryOptions.EXCLUDE, Arrays.asList(
+                    FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
+                    FileDBAdaptor.QueryParams.STATS.key()))
+            .append(QueryOptions.SORT, FileDBAdaptor.QueryParams.NAME.key())
+            .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
     private final FileManager fileManager;
 
 
@@ -153,8 +156,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             createDefaultCohortIfNeeded(study, sessionId);
         }
 
-        // Update study configuration BEFORE executing the index and fetching files from Catalog
-        updateStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
+        // Update Catalog from the study configuration BEFORE executing the index and fetching files from Catalog
+        updateCatalogFromStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
 
         List<File> inputFiles = new ArrayList<>();
 //        for (Long fileIdLong : fileIds) {
@@ -171,6 +174,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                             Arrays.asList(File.Format.VCF, File.Format.GVCF));
                     QueryResult<File> fileQueryResult = fileManager.get(studyIdByInputFileId, query, FILE_GET_QUERY_OPTIONS, sessionId);
+//                    fileQueryResult.getResult().sort(Comparator.comparing(File::getName));
                     inputFiles.addAll(fileQueryResult.getResult());
                 } else {
                     throw new CatalogException(String.format("Expected file type %s or %s instead of %s",
@@ -240,6 +244,18 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             logger.warn("Nothing to do.");
             return Collections.emptyList();
         }
+
+        // Check that we are not indexing two or more files with the same name at the same time
+        Set<String> fileNamesToIndexSet = new HashSet<>();
+        for (File fileToIndex : filesToIndex) {
+            if (!fileNamesToIndexSet.add(fileToIndex.getName())) {
+                throw new CatalogException("Unable to " + step + " multiple files with the same name");
+            }
+        }
+
+        // Update study configuration BEFORE executing the index
+        List<Long> fileIdsToIndex = filesToIndex.stream().map(File::getId).collect(Collectors.toList());
+        updateStudyConfigurationFromCatalog(sessionId, studyIdByInputFileId, dataStore, fileIdsToIndex);
 
         String prevDefaultCohortStatus = Cohort.CohortStatus.NONE;
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
@@ -468,7 +484,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                             }
                             indexStatusMessage = "Job failed. Restoring status from " + FileIndex.IndexStatus.INDEXING
                                     + " to " + indexStatusName;
-                            logger.warn(indexStatusName);
+                            logger.warn(indexStatusMessage);
                         } else {
                             indexStatusName = FileIndex.IndexStatus.READY;
                             indexStatusMessage = "Job finished. File index ready";
@@ -567,6 +583,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 //        }
     }
 
+    @Deprecated
     private boolean updateDefaultCohort(File file, Study study, QueryOptions options, String sessionId) throws CatalogException {
         /* Get file samples */
         boolean modified = false;

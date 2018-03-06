@@ -143,15 +143,8 @@ public class FamilyCommandOptions {
         @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
         public Boolean parentalConsanguinity;
 
-        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", arity = 1)
-        public String annotationSetName;
-
         @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", arity = 1)
         public String annotation;
-
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "Group samples")

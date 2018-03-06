@@ -16,13 +16,11 @@
 
 package org.opencb.opencga.storage.app.cli.client.executors;
 
-import org.opencb.biodata.formats.feature.gff.Gff;
 import org.opencb.biodata.formats.feature.gff.io.GffReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.client.ClientCliOptionsParser;
@@ -31,13 +29,11 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngineOld;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -121,24 +117,24 @@ public class AlignmentCommandExecutor extends CommandExecutor {
              * Add CLI options to the alignmentOptions
              */
         ObjectMap alignmentOptions = storageConfiguration.getAlignment().getOptions();
-        if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
-            alignmentOptions.put(AlignmentStorageEngineOld.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
-        }
-        if (indexAlignmentsCommandOptions.commonIndexOptions.dbName != null && !indexAlignmentsCommandOptions.commonIndexOptions.dbName.isEmpty()) {
-            alignmentOptions.put(AlignmentStorageEngineOld.Options.DB_NAME.key(), indexAlignmentsCommandOptions.commonIndexOptions.dbName);
-        }
+//        if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
+//            alignmentOptions.put(AlignmentStorageEngineOld.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
+//        }
+//        if (indexAlignmentsCommandOptions.commonIndexOptions.dbName != null && !indexAlignmentsCommandOptions.commonIndexOptions.dbName.isEmpty()) {
+//            alignmentOptions.put(AlignmentStorageEngineOld.Options.DB_NAME.key(), indexAlignmentsCommandOptions.commonIndexOptions.dbName);
+//        }
         if (indexAlignmentsCommandOptions.commonOptions.params != null) {
             alignmentOptions.putAll(indexAlignmentsCommandOptions.commonOptions.params);
         }
 
-        alignmentOptions.put(AlignmentStorageEngineOld.Options.PLAIN.key(), false);
-        alignmentOptions.put(AlignmentStorageEngineOld.Options.INCLUDE_COVERAGE.key(), indexAlignmentsCommandOptions.calculateCoverage);
-        if (indexAlignmentsCommandOptions.meanCoverage != null && !indexAlignmentsCommandOptions.meanCoverage.isEmpty()) {
-            alignmentOptions.put(AlignmentStorageEngineOld.Options.MEAN_COVERAGE_SIZE_LIST.key(),
-                    indexAlignmentsCommandOptions.meanCoverage);
-        }
-        alignmentOptions.put(AlignmentStorageEngineOld.Options.COPY_FILE.key(), false);
-        alignmentOptions.put(AlignmentStorageEngineOld.Options.ENCRYPT.key(), "null");
+//        alignmentOptions.put(AlignmentStorageEngineOld.Options.PLAIN.key(), false);
+//        alignmentOptions.put(AlignmentStorageEngineOld.Options.INCLUDE_COVERAGE.key(), indexAlignmentsCommandOptions.calculateCoverage);
+//        if (indexAlignmentsCommandOptions.meanCoverage != null && !indexAlignmentsCommandOptions.meanCoverage.isEmpty()) {
+//            alignmentOptions.put(AlignmentStorageEngineOld.Options.MEAN_COVERAGE_SIZE_LIST.key(),
+//                    indexAlignmentsCommandOptions.meanCoverage);
+//        }
+//        alignmentOptions.put(AlignmentStorageEngineOld.Options.COPY_FILE.key(), false);
+//        alignmentOptions.put(AlignmentStorageEngineOld.Options.ENCRYPT.key(), "null");
         logger.debug("Configuration options: {}", alignmentOptions.toJson());
 
 

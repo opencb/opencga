@@ -91,7 +91,7 @@ public abstract class TermQueryGenerator extends QueryGenerator {
     public static class StudyQueryGenerator extends TermQueryGenerator {
 
         public StudyQueryGenerator() {
-            super("studies.csv", VariantQueryParam.STUDIES.key());
+            super("studies.csv", VariantQueryParam.STUDY.key());
         }
     }
 

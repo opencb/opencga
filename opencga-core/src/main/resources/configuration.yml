@@ -63,7 +63,7 @@ authentication:
   #  host: ldap://localhost:9000
   #  options:
   #    usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
-  #    groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+  #    groupsSearch: ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
 
 server:
   rest:

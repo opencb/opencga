@@ -22,13 +22,12 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +58,7 @@ public class VariantLocalConflictResolver {
     private static final VariantComparator VARIANT_COMP = new VariantComparator();
     private static final VariantPositionComparator VARIANT_POSITION_COMPARATOR = new VariantPositionComparator();
     private static final PositionComparator POSITION_COMPARATOR = new PositionComparator();
+    public static final String NOCALL = ".";
 
     public List<Variant> resolveConflicts(List<Variant> variants) {
         Map<Alternate, Variant> altToVar = removeDuplicatedAlts(variants);
@@ -751,7 +751,7 @@ public class VariantLocalConflictResolver {
         var.setAlternate("");
         var.setStart(start);
         var.setEnd(end);
-        String genotype = VariantTableStudyRow.NOCALL;
+        String genotype = NOCALL;
         var.setType(NO_VARIATION);
         StudyEntry se = var.getStudies().get(0);
         Map<String, Integer> formatPositions = se.getFormatPositions();

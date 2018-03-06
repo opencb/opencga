@@ -1,16 +1,9 @@
 // #706
 
-migrateCollection("individual", {samples: {$exists: true, $eq: []}}, {id: 1, _studyId: 1}, function(bulk, doc) {
+migrateCollection("sample", {"individual.id": {$exists: true}}, {id: 1, _studyId: 1, individual: 1}, function(bulk, doc) {
+    if (doc.individual.id > 0) {
+        db.individual.update({"_id": doc.individual.id}, {"$addToSet": {"samples": {"id": NumberLong(doc.id)}}})
+    }
 
-    var samples = [];
-    migrateCollection("sample", {"individual.id": doc.id, _studyId: doc._studyId}, {id: 1}, function (sBulk, sDoc) {
-       samples.push({
-           id: sDoc.id
-       });
-
-       sBulk.find({"_id": sDoc._id}).updateOne({"$set": {"individual": {}}})
-    });
-
-    bulk.find({"_id": doc._id}).updateOne({"$set": {"samples": samples}});
-
+    bulk.find({"_id": doc._id}).updateOne({"$set": {"individual": {}}})
 });

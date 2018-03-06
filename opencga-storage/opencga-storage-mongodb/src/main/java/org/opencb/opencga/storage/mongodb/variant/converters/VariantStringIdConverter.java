@@ -94,13 +94,23 @@ public class VariantStringIdConverter {
 
     private StructuralVariation buildSv(String[] split) {
         if (split.length == SV_SPLIT_LENGTH) {
-            return new StructuralVariation(
-                    getInt(split, CI_POS_L),
-                    getInt(split, CI_POS_R),
-                    getInt(split, CI_END_L),
-                    getInt(split, CI_END_R),
-                    VariantBuilder.getCopyNumberFromAlternate(split[ALT]),
-                    null, null, null);
+            try {
+                return new StructuralVariation(
+                        getInt(split, CI_POS_L),
+                        getInt(split, CI_POS_R),
+                        getInt(split, CI_END_L),
+                        getInt(split, CI_END_R),
+                        VariantBuilder.getCopyNumberFromAlternate(split[ALT]),
+                        null, null, null);
+            } catch (RuntimeException e) {
+                for (String s : split) {
+                    // If any of the splits is non printable, the variantId had 4 colons in the SHA1
+                    if (!StringUtils.isAsciiPrintable(s)) {
+                        return null;
+                    }
+                }
+                throw new IllegalArgumentException("Unable to build SV from " + String.join(SEPARATOR, split), e);
+            }
         } else {
             return null;
         }
@@ -138,7 +148,10 @@ public class VariantStringIdConverter {
         if (alternate.length() > Variant.SV_THRESHOLD) {
             reduce(stringBuilder, alternate, sv);
         } else if (!alternate.equals("-")) {
-            stringBuilder.append(alternate);
+            // Breakend ( A]chr1:1234] ) and Symbolic ( <INS:ALU> ) variants may contain ':' in the alternate allele. Replace with '_'
+            // This value is not intended to be recovered, so it doesn't matter if the alternate already contains the character '_'.
+            // The original alternate is stored separately.
+            stringBuilder.append(alternate.replace(SEPARATOR_CHAR, '_'));
         }
 
         // All symbolic variants have a non null SV.

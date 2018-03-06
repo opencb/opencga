@@ -97,7 +97,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final ObjectMap configuration;
 //    private CacheManager cacheManager;
 
-    protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
+    private static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
     public static final int CHUNK_SIZE_SMALL = 1000;
     public static final int CHUNK_SIZE_BIG = 10000;
@@ -112,10 +112,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.closeConnection = true;
     }
 
-    public VariantMongoDBAdaptor(MongoDataStoreManager mongoManager, MongoCredentials credentials,
-                                 String variantsCollectionName, String filesCollectionName,
-                                 StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration)
-            throws UnknownHostException {
+    public VariantMongoDBAdaptor(MongoDataStoreManager mongoManager, MongoCredentials credentials, String variantsCollectionName,
+                                 String filesCollectionName, StudyConfigurationManager studyConfigurationManager,
+                                 StorageConfiguration storageConfiguration) throws UnknownHostException {
         // MongoDB configuration
         this.closeConnection = false;
         this.credentials = credentials;
@@ -140,8 +139,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return variantsCollection;
     }
 
-    public MongoDBCollection getStageCollection() {
-        return db.getCollection(configuration.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
+    public MongoDBCollection getStageCollection(int studyId) {
+        String stageCollectionName = configuration.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue());
+        // Ensure retro-compatibility.
+        // If a "stage" collection exists, continue using one single stage collection for all the studies.
+        // Otherwise, build the stage collection name as: 'stage_study_<study-id>'
+        if (db.getCollectionNames().contains(stageCollectionName)) {
+            return db.getCollection(stageCollectionName);
+        } else {
+            return db.getCollection(stageCollectionName + "_study_" + studyId);
+        }
     }
 
     public MongoDBCollection getStudiesCollection() {
@@ -166,9 +173,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult remove(Query query, QueryOptions options) {
         Bson mongoQuery = queryParser.parseQuery(query);
         logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
-        QueryResult queryResult = variantsCollection.remove(mongoQuery, options);
-
-        return queryResult;
+        return variantsCollection.remove(mongoQuery, options);
     }
 
     /**
@@ -180,7 +185,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @return A QueryResult with the file deleted
      */
     public QueryResult removeFiles(String study, List<String> files, QueryOptions options) {
-
         Integer studyId = studyConfigurationManager.getStudyId(study, null, false);
         StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
         List<Integer> fileIds = studyConfigurationManager.getFileIdsFromStudy(files, sc);
@@ -209,7 +213,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private void removeFilesFromStageCollection(Bson studiesToRemoveQuery, Integer studyId, List<Integer> fileIds) {
-
         int batchSize = 500;
         FindIterable<Document> findIterable = getVariantsCollection()
                 .nativeQuery()
@@ -217,7 +220,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .batchSize(batchSize);
 
         logger.info("Remove files from stage collection - step 1/3"); // Remove study if only contains removed files
-        MongoDBCollection stageCollection = getStageCollection();
+        MongoDBCollection stageCollection = getStageCollection(studyId);
         int updatedStageDocuments = 0;
         try (MongoCursor<Document> cursor = findIterable.iterator()) {
             List<String> ids = new ArrayList<>(batchSize);
@@ -247,7 +250,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 combine(studyUpdate), new QueryOptions(MULTI, true)).first().getModifiedCount();
 
         logger.info("Remove files from stage collection - step 3/3"); // purge
-        long removedStageDocuments = removeEmptyVariantsFromStage();
+        long removedStageDocuments = removeEmptyVariantsFromStage(studyId);
 
         logger.info("Updated " + updatedStageDocuments + " documents from stage");
         logger.info("Removed " + removedStageDocuments + " documents from stage");
@@ -255,7 +258,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private QueryResult<UpdateResult> removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyConfiguration sc,
                                                                         List<Integer> fileIds) {
-
         Set<Integer> sampleIds = fileIds.stream()
                 .map(sc.getSamplesInFiles()::get)
                 .flatMap(Collection::stream)
@@ -265,7 +267,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         int studyId = sc.getStudyId();
         logger.info("Remove files from variants collection - step 1/3"); // Remove study if only contains removed files
         long updatedVariantsDocuments = removeStudyFromVariants(studyId, studiesToRemoveQuery).first().getModifiedCount();
-
 
         // Remove also negated fileIds
         List<Integer> negatedFileIds = fileIds.stream().map(i -> -i).collect(Collectors.toList());
@@ -300,16 +301,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         logger.info("Remove files from variants collection - step 2/3"); // Other studies
         QueryResult<UpdateResult> result2 = getVariantsCollection().update(query, update, new QueryOptions(MULTI, true));
-
         logger.debug("removeFile: matched  = " + result2.first().getMatchedCount());
         logger.debug("removeFile: modified = " + result2.first().getModifiedCount());
 
-
         logger.info("Remove files from variants collection - step 3/3"); // purge
         long removedVariantsDocuments = removeEmptyVariants();
-
         logger.info("Updated " + (updatedVariantsDocuments + result2.first().getModifiedCount()) + " documents from variants");
         logger.info("Removed " + removedVariantsDocuments + " documents from variants");
+
         return result2;
     }
 
@@ -324,8 +323,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
+
         Integer studyId = studyConfigurationManager.getStudyId(studyName, null, false);
-        Bson query = queryParser.parseQuery(new Query(STUDIES.key(), studyId));
+        Bson query = queryParser.parseQuery(new Query(STUDY.key(), studyId));
 
         boolean purge = options.getBoolean("purge", true);
 
@@ -342,11 +342,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeStudy: stage query = " + eq.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         logger.debug("removeStudy: stage update = " + combine.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         logger.info("Remove study from stage collection - step 1/" + (purge ? '2' : '1'));
-        getStageCollection().update(eq, combine, new QueryOptions(MULTI, true));
+        getStageCollection(studyId).update(eq, combine, new QueryOptions(MULTI, true));
 
         if (purge) {
             logger.info("Remove study from stage collection - step 2/2");
-            removeEmptyVariantsFromStage();
+            removeEmptyVariantsFromStage(studyId);
         }
         return result;
     }
@@ -361,7 +361,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeStudy: update = {}", update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
         QueryResult<UpdateResult> result = variantsCollection.update(query, update, new QueryOptions(MULTI, true));
-
         logger.debug("removeStudy: matched  = {}", result.first().getMatchedCount());
         logger.debug("removeStudy: modified = {}", result.first().getModifiedCount());
 
@@ -373,14 +372,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return variantsCollection.remove(purgeQuery, new QueryOptions(MULTI, true)).first().getDeletedCount();
     }
 
-    private long removeEmptyVariantsFromStage() {
+    private long removeEmptyVariantsFromStage(int studyId) {
         Bson purgeQuery = eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, Collections.emptyList());
-        return getStageCollection().remove(purgeQuery, new QueryOptions(MULTI, true)).first().getDeletedCount();
+        return getStageCollection(studyId).remove(purgeQuery, new QueryOptions(MULTI, true)).first().getDeletedCount();
     }
 
     @Override
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
-
         if (options == null) {
             options = new QueryOptions();
         }
@@ -415,17 +413,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantQueryResult<Variant> getPhased(String varStr, String studyName, String sampleName, QueryOptions options,
                                                  int windowsSize) {
-        StopWatch watch = new StopWatch();
-        watch.start();
+        StopWatch watch = StopWatch.createStarted();
 
         Variant variant = new Variant(varStr);
         Region region = new Region(variant.getChromosome(), variant.getStart(), variant.getEnd());
         Query query = new Query(REGION.key(), region)
                 .append(REFERENCE.key(), variant.getReference())
                 .append(ALTERNATE.key(), variant.getAlternate())
-                .append(STUDIES.key(), studyName)
-                .append(RETURNED_STUDIES.key(), studyName)
-                .append(RETURNED_SAMPLES.key(), sampleName);
+                .append(STUDY.key(), studyName)
+                .append(INCLUDE_STUDY.key(), studyName)
+                .append(INCLUDE_SAMPLE.key(), sampleName);
         VariantQueryResult<Variant> queryResult = get(query, new QueryOptions());
         variant = queryResult.first();
         if (variant != null && !variant.getStudies().isEmpty()) {
@@ -440,8 +437,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     region.setEnd(region.getEnd() + windowsSize);
                     query.remove(REFERENCE.key());
                     query.remove(ALTERNATE.key());
-                    query.remove(RETURNED_STUDIES.key());
-                    query.remove(RETURNED_SAMPLES.key());
+                    query.remove(INCLUDE_STUDY.key());
+                    query.remove(INCLUDE_SAMPLE.key());
                     queryResult = get(query, new QueryOptions(QueryOptions.SORT, true));
                     Iterator<Variant> iterator = queryResult.getResult().iterator();
                     while (iterator.hasNext()) {
@@ -463,7 +460,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
         watch.stop();
-        return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null);
+        return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null,
+                MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
     }
 
     @Override
@@ -505,11 +503,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
-        if (options == null) {
-            options = new QueryOptions();
-        }
         if (query == null) {
             query = new Query();
+        }
+        if (options == null) {
+            options = new QueryOptions();
         }
 
         Document mongoQuery = queryParser.parseQuery(query);
@@ -818,7 +816,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String id = variantConverter.buildStorageId(new Variant(wrapper.getChromosome(), wrapper.getStart(), wrapper.getEnd(),
                         variantStats.getRefAllele(), variantStats.getAltAllele()).setSv(wrapper.getSv()));
 
-
                 Document find = new Document("_id", id);
                 if (overwrite) {
                     List<Document> idsList = new ArrayList<>(cohorts.size());
@@ -850,12 +847,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         BulkWriteResult writeResult = variantsCollection.update(pushQueriesBulkList, pushUpdatesBulkList, new QueryOptions()).first();
         if (writeResult.getMatchedCount() != pushQueriesBulkList.size()) {
-            logger.warn("Could not update stats from some variants: "
-                    + writeResult.getMatchedCount() + " != " + pushQueriesBulkList.size() + " , "
-                    + (pushQueriesBulkList.size() - writeResult.getMatchedCount()) + " non loaded stats");
+            logger.warn("Could not update stats from some variants: {} != {}, {} non loaded stats", writeResult.getMatchedCount(),
+                    pushQueriesBulkList.size(), (pushQueriesBulkList.size() - writeResult.getMatchedCount()));
         }
         int writes = writeResult.getModifiedCount();
-
 
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
     }
@@ -886,11 +881,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-
         List<Bson> queries = new LinkedList<>();
         List<Bson> updates = new LinkedList<>();
 
-        long start = System.nanoTime();
+        StopWatch watch = StopWatch.createStarted();
         DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), queryOptions);
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
             String id;
@@ -915,7 +909,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         BulkWriteResult writeResult = variantsCollection.update(queries, updates, null).first();
 
-        return new QueryResult<>("", ((int) (System.nanoTime() - start)), 1, 1, "", "", Collections.singletonList(writeResult));
+        return new QueryResult<>("", (int) watch.getNanoTime(), 1, 1, "", "", Collections.singletonList(writeResult));
     }
 
     @Override
@@ -951,7 +945,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, SelectVariantElements selectVariantElements) {
-
         List<Integer> returnedStudies = selectVariantElements.getStudies();
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);

@@ -173,8 +173,11 @@ public class VariantReaderUtils {
             metadata = new VariantFileMetadata(input.getFileName().toString(), input.getFileName().toString());
         }
 
+        if (isTransformedVariants(input.toString())) {
+            input = getMetaFromTransformedFile(input);
+        }
         // If it's a sourceFile
-        if (input.toString().endsWith(METADATA_FILE_FORMAT_GZ)) {
+        if (isMetaFile(input.toString())) {
             try (InputStream inputStream = FileUtils.newInputStream(input)) {
                 return VariantReaderUtils.readVariantFileMetadataFromJson(inputStream);
             } catch (IOException | RuntimeException e) {

@@ -150,7 +150,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 return clientConfiguration.getDefaultStudy();
             } else {
                 // Third, check if there is only one single project and study for this user in the current CLI session file.
-                Map<String, List<String>> projectsAndStudies = cliSession.getProjectsAndStudies();
+                Map<String, List<String>> projectsAndStudies = cliSession == null ? null : cliSession.getProjectsAndStudies();
                 if (projectsAndStudies != null && projectsAndStudies.size() == 1) {
                     List<String> projectAliases = new ArrayList<>(projectsAndStudies.keySet());
                     // Get the study list of the only existing project
@@ -345,14 +345,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.samplesCommandOptions.name);
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), studiesCommandOptions.samplesCommandOptions.source);
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), studiesCommandOptions.samplesCommandOptions.individual);
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
-                studiesCommandOptions.samplesCommandOptions.annotationSetName);
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                studiesCommandOptions.samplesCommandOptions.variableSetId);
+
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), studiesCommandOptions.samplesCommandOptions.annotation);
-        /*if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.description)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.samplesCommandOptions.description);
-        }*/
 
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.exclude);

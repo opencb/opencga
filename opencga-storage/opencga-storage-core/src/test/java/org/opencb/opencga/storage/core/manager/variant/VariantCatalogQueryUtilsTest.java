@@ -29,7 +29,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDIES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 /**
  * Created on 28/02/17.
@@ -71,10 +71,10 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void parseQuery() throws Exception {
-        assertEquals("1", catalogUtils.parseQuery(new Query(STUDIES.key(), "s1"), "sessionId").getString(STUDIES.key()));
-        assertEquals("1,2", catalogUtils.parseQuery(new Query(STUDIES.key(), "s1,s2"), "sessionId").getString(STUDIES.key()));
-        assertEquals("!1,2", catalogUtils.parseQuery(new Query(STUDIES.key(), "!s1,2"), "sessionId").getString(STUDIES.key()));
-        assertEquals("2;!1;3", catalogUtils.parseQuery(new Query(STUDIES.key(), "u@p1:s2;!s1;p1:s3"), "sessionId").getString(STUDIES.key()));
+        assertEquals("1", catalogUtils.parseQuery(new Query(STUDY.key(), "s1"), "sessionId").getString(STUDY.key()));
+        assertEquals("1,2", catalogUtils.parseQuery(new Query(STUDY.key(), "s1,s2"), "sessionId").getString(STUDY.key()));
+        assertEquals("!1,2", catalogUtils.parseQuery(new Query(STUDY.key(), "!s1,2"), "sessionId").getString(STUDY.key()));
+        assertEquals("2;!1;3", catalogUtils.parseQuery(new Query(STUDY.key(), "u@p1:s2;!s1;p1:s3"), "sessionId").getString(STUDY.key()));
     }
 
 }

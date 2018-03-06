@@ -39,7 +39,7 @@ public interface DatasetDBAdaptor extends DBAdaptor<Dataset> {
 
         ID("id", DOUBLE, ""),
         NAME("name", TEXT, ""),
-        CREATION_DATE("creationDate", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         FILES("files", INTEGER_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),

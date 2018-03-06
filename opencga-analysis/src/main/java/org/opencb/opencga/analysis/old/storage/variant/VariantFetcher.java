@@ -144,10 +144,10 @@ public class VariantFetcher implements AutoCloseable {
         //TODO: Check files and studies exists
 
         if (fileIdNum != null) {
-            query.put(VariantQueryParam.FILES.key(), fileIdNum);
+            query.put(VariantQueryParam.FILE.key(), fileIdNum);
         }
-        if (!query.containsKey(VariantQueryParam.STUDIES.key())) {
-            query.put(VariantQueryParam.STUDIES.key(), studyId);
+        if (!query.containsKey(VariantQueryParam.STUDY.key())) {
+            query.put(VariantQueryParam.STUDY.key(), studyId);
         }
 
         // TODO: Check returned files
@@ -206,18 +206,18 @@ public class VariantFetcher implements AutoCloseable {
 
     public QueryResult<Long> countByFile(long fileId, QueryOptions params, String sessionId) throws CatalogException, StorageEngineException, IOException {
         Query query = getVariantQuery(params);
-        if (getMainStudyId(query, VariantQueryParam.STUDIES.key(), sessionId) == null) {
+        if (getMainStudyId(query, VariantQueryParam.STUDY.key(), sessionId) == null) {
             long studyId = catalogManager.getFileManager().getStudyId(fileId);
-            query.put(VariantQueryParam.STUDIES.key(), studyId);
+            query.put(VariantQueryParam.STUDY.key(), studyId);
         }
-        query.put(VariantQueryParam.FILES.key(), fileId);
+        query.put(VariantQueryParam.FILE.key(), fileId);
         return count(query, sessionId);
     }
 
     public QueryResult<Long> count(long studyId, QueryOptions params, String sessionId) throws CatalogException, StorageEngineException, IOException {
         Query query = getVariantQuery(params);
-        if (getMainStudyId(query, VariantQueryParam.STUDIES.key(), sessionId) == null) {
-            query.put(VariantQueryParam.STUDIES.key(), studyId);
+        if (getMainStudyId(query, VariantQueryParam.STUDY.key(), sessionId) == null) {
+            query.put(VariantQueryParam.STUDY.key(), studyId);
         }
         return count(query, sessionId);
     }
@@ -259,9 +259,9 @@ public class VariantFetcher implements AutoCloseable {
     }
 
     public Long getMainStudyId(Query query, String sessionId) throws CatalogException {
-        Long id = getMainStudyId(query, VariantQueryParam.STUDIES.key(), sessionId);
+        Long id = getMainStudyId(query, VariantQueryParam.STUDY.key(), sessionId);
         if (id == null) {
-            id = getMainStudyId(query, VariantQueryParam.RETURNED_STUDIES.key(), sessionId);
+            id = getMainStudyId(query, VariantQueryParam.INCLUDE_STUDY.key(), sessionId);
         }
         if (id != null) {
             return id;
@@ -285,7 +285,7 @@ public class VariantFetcher implements AutoCloseable {
 
     protected Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor, String sessionId) throws CatalogException {
         final Map<Long, List<Sample>> samplesMap;
-        if (query.containsKey(VariantQueryParam.RETURNED_SAMPLES.key())) {
+        if (query.containsKey(VariantQueryParam.INCLUDE_SAMPLE.key())) {
             Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(query, queryOptions);
             samplesMap = new HashMap<>();
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
@@ -316,7 +316,7 @@ public class VariantFetcher implements AutoCloseable {
                 samplesMap.put(study.getId(), samplesQueryResult.getResult());
                 samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
             }
-            query.append(VariantQueryParam.RETURNED_SAMPLES.key(), returnedSamples);
+            query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), returnedSamples);
         }
         return samplesMap;
     }

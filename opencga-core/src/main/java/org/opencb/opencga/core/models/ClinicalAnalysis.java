@@ -18,7 +18,6 @@ package org.opencb.opencga.core.models;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -222,13 +221,6 @@ public class ClinicalAnalysis {
     public ClinicalAnalysis setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
-    }
-
-    public static <O> O defaultObject(O object, Supplier<O> supplier) {
-        if (object == null) {
-            object = supplier.get();
-        }
-        return object;
     }
 
     public static class ClinicalInterpretation {

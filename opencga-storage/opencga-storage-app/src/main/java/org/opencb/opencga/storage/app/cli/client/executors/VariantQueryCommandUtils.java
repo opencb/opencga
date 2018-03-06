@@ -111,30 +111,31 @@ public class VariantQueryCommandUtils {
         parseBasicVariantQuery(queryVariantsOptions, query);
 
 
-        addParam(query, STUDIES, studiesFilter);
-        addParam(query, RETURNED_STUDIES, queryVariantsOptions.returnStudy);
-        addParam(query, FILES, queryVariantsOptions.file);
-        addParam(query, RETURNED_FILES, queryVariantsOptions.returnFile);
+        addParam(query, STUDY, studiesFilter);
+        addParam(query, INCLUDE_STUDY, queryVariantsOptions.returnStudy);
+        addParam(query, FILE, queryVariantsOptions.file);
+        addParam(query, INCLUDE_FILE, queryVariantsOptions.returnFile);
         addParam(query, FILTER, queryVariantsOptions.filter);
+        addParam(query, QUAL, queryVariantsOptions.qual);
         addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
-        addParam(query, SAMPLES, queryVariantsOptions.samples);
-        addParam(query, RETURNED_SAMPLES, queryVariantsOptions.returnSample);
+        addParam(query, SAMPLE, queryVariantsOptions.samples);
+        addParam(query, INCLUDE_SAMPLE, queryVariantsOptions.returnSample);
         addParam(query, INCLUDE_FORMAT, queryVariantsOptions.includeFormat);
         addParam(query, INCLUDE_GENOTYPE, queryVariantsOptions.includeGenotype);
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
-        addParam(query, SAMPLES_METADATA, queryVariantsOptions.samplesMetadata);
+        addParam(query, SAMPLE_METADATA, queryVariantsOptions.samplesMetadata);
 
         /**
          * Annotation parameters
          */
         addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.geneBiotype);
         addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
-        addParam(query, ANNOT_TRANSCRIPTION_FLAGS, queryVariantsOptions.flags);
+        addParam(query, ANNOT_TRANSCRIPTION_FLAG, queryVariantsOptions.flags);
 //        addParam(query, ANNOT_GENE_TRAITS, queryVariantsOptions.geneTrait);
-        addParam(query, ANNOT_GENE_TRAITS_ID, queryVariantsOptions.geneTraitId);
-        addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.geneTraitName);
+        addParam(query, ANNOT_GENE_TRAIT_ID, queryVariantsOptions.geneTraitId);
+        addParam(query, ANNOT_GENE_TRAIT_NAME, queryVariantsOptions.geneTraitName);
         addParam(query, ANNOT_GO, queryVariantsOptions.go);
-        addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.proteinKeywords);
+        addParam(query, ANNOT_PROTEIN_KEYWORD, queryVariantsOptions.proteinKeywords);
         addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
         addParam(query, ANNOT_COSMIC, queryVariantsOptions.cosmic);
         addParam(query, ANNOT_CLINVAR, queryVariantsOptions.clinvar);
@@ -214,6 +215,10 @@ public class VariantQueryCommandUtils {
 
         if (queryVariantsOptions.commonQueryOptions.count) {
             queryOptions.put(QueryOptions.COUNT, true);
+        }
+
+        if (queryVariantsOptions.sort) {
+            queryOptions.put(QueryOptions.SORT, true);
         }
 
         if (queryVariantsOptions.summary) {

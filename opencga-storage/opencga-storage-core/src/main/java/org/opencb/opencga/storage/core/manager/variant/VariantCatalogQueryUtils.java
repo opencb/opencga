@@ -44,10 +44,11 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  */
 public class VariantCatalogQueryUtils extends CatalogUtils {
 
-    public static final String SAMPLE_FILTER_DESC =
+    public static final String SAMPLE_ANNOTATION_DESC =
             "Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith";
-    public static final QueryParam SAMPLE_FILTER = QueryParam.create("sampleFilter", SAMPLE_FILTER_DESC, QueryParam.Type.TEXT_ARRAY);
-    public static final String PROJECT_DESC = "Project [user@]project where project can be either the id or the alias.";
+    public static final QueryParam SAMPLE_ANNOTATION
+            = QueryParam.create("sampleAnnotation", SAMPLE_ANNOTATION_DESC, QueryParam.Type.TEXT_ARRAY);
+    public static final String PROJECT_DESC = "Project [user@]project where project can be either the ID or the alias";
     public static final QueryParam PROJECT = QueryParam.create("project", PROJECT_DESC, QueryParam.Type.TEXT_ARRAY);
     private final StudyTransformFilter studyTransformFilter;
     private final FileTransformFilter fileTransformFilter;
@@ -86,15 +87,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         String defaultStudyStr = defaultStudyId > 0 ? String.valueOf(defaultStudyId) : null;
         Integer release = getReleaseFilter(query, sessionId);
 
-        studyTransformFilter.processFilter(query, VariantQueryParam.STUDIES, release, sessionId, defaultStudyStr);
-        studyTransformFilter.processFilter(query, VariantQueryParam.RETURNED_STUDIES, release, sessionId, defaultStudyStr);
-        sampleTransformFilter.processFilter(query, VariantQueryParam.SAMPLES, release, sessionId, defaultStudyStr);
-        sampleTransformFilter.processFilter(query, VariantQueryParam.RETURNED_SAMPLES, release, sessionId, defaultStudyStr);
+        studyTransformFilter.processFilter(query, VariantQueryParam.STUDY, release, sessionId, defaultStudyStr);
+        studyTransformFilter.processFilter(query, VariantQueryParam.INCLUDE_STUDY, release, sessionId, defaultStudyStr);
+        sampleTransformFilter.processFilter(query, VariantQueryParam.SAMPLE, release, sessionId, defaultStudyStr);
+        sampleTransformFilter.processFilter(query, VariantQueryParam.INCLUDE_SAMPLE, release, sessionId, defaultStudyStr);
         //TODO: Parse genotype filter
         //sampleTransformFilter.processFilter(query, VariantQueryParam.GENOTYPE, release, sessionId, defaultStudyStr);
-        fileTransformFilter.processFilter(query, VariantQueryParam.FILES, release, sessionId, defaultStudyStr);
-        fileTransformFilter.processFilter(query, VariantQueryParam.RETURNED_FILES, release, sessionId, defaultStudyStr);
-        cohortTransformFilter.processFilter(query, VariantQueryParam.COHORTS, release, sessionId, defaultStudyStr);
+        fileTransformFilter.processFilter(query, VariantQueryParam.FILE, release, sessionId, defaultStudyStr);
+        fileTransformFilter.processFilter(query, VariantQueryParam.INCLUDE_FILE, release, sessionId, defaultStudyStr);
+        cohortTransformFilter.processFilter(query, VariantQueryParam.COHORT, release, sessionId, defaultStudyStr);
         cohortTransformFilter.processFilter(query, VariantQueryParam.STATS_MAF, release, sessionId, defaultStudyStr);
         cohortTransformFilter.processFilter(query, VariantQueryParam.STATS_MGF, release, sessionId, defaultStudyStr);
         cohortTransformFilter.processFilter(query, VariantQueryParam.MISSING_ALLELES, release, sessionId, defaultStudyStr);
@@ -113,7 +114,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         includeFiles.add(String.valueOf(file.getId()));
                     }
                 }
-                query.append(VariantQueryParam.RETURNED_FILES.key(), includeFiles);
+                query.append(VariantQueryParam.INCLUDE_FILE.key(), includeFiles);
             }
             // If no list of included samples is specified:
             if (!VariantQueryUtils.isReturnedSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA))) {
@@ -141,12 +142,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         }
                     }
                 }
-                query.append(VariantQueryParam.RETURNED_SAMPLES.key(), includeSamples);
+                query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples);
             }
         }
 
-        if (isValidParam(query, SAMPLE_FILTER)) {
-            String sampleAnnotation = query.getString(SAMPLE_FILTER.key());
+        if (isValidParam(query, SAMPLE_ANNOTATION)) {
+            String sampleAnnotation = query.getString(SAMPLE_ANNOTATION.key());
             Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
             sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), defaultStudyId);
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID);
@@ -169,11 +170,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                             .append(AND); // TODO: Should this be an AND (;) or an OR (,)?
                 }
                 query.append(VariantQueryParam.GENOTYPE.key(), sb.toString());
-                if (!isValidParam(query, VariantQueryParam.RETURNED_SAMPLES)) {
-                    query.append(VariantQueryParam.RETURNED_SAMPLES.key(), sampleIds);
+                if (!isValidParam(query, VariantQueryParam.INCLUDE_SAMPLE)) {
+                    query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
                 }
             } else {
-                query.append(VariantQueryParam.SAMPLES.key(), sampleIds);
+                query.append(VariantQueryParam.SAMPLE.key(), sampleIds);
             }
         }
 

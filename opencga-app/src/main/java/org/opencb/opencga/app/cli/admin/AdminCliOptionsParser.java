@@ -16,14 +16,17 @@
 
 package org.opencb.opencga.app.cli.admin;
 
-import com.beust.jcommander.*;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
+import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
-import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.models.Account;
 
 import java.util.List;
 
@@ -102,6 +105,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         this.jCommander.addCommand("migration", this.migrationCommandOptions);
         JCommander migrationSubCommands = this.jCommander.getCommands().get("migration");
         migrationSubCommands.addCommand("v1.3.0", this.migrationCommandOptions.getMigrateV130CommandOptions());
+        migrationSubCommands.addCommand("v1.4.0", this.migrationCommandOptions.getMigrateV140CommandOptions());
 
     }
 
@@ -141,7 +145,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
      */
     public class AdminCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
-        @Parameter(names = {"-p", "--password"}, description = "Admin password", required = false, password = true, arity = 0)
+        @Parameter(names = {"-p", "--password"}, description = "Admin password", hidden = true, password = true, arity = 0)
         public String adminPassword;
 
     }
@@ -323,13 +327,13 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         public String secretKey;
 
-        @Parameter(
-                names = {"--algorithm"},
-                description = "Algorithm to encrypt JWT session token (HS256)",
-                required = true
-        )
-
-        public String algorithm;
+//        @Parameter(
+//                names = {"--algorithm"},
+//                description = "Algorithm to encrypt JWT session token (HS256)",
+//                required = true
+//        )
+//
+//        public String algorithm;
 
         public InstallCatalogCommandOptions() {
             super();

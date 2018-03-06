@@ -136,7 +136,6 @@ public class CatalogUtils {
         }
     }
 
-
     /**
      * Gets any studyId referred in the Query. If none, tries to get the default study. If more than one, thrown an exception.
      * @param query     Variants query

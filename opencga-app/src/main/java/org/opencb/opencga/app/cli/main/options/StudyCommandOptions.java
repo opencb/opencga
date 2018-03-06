@@ -341,12 +341,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"--individual"}, description = "Individual id", arity = 1)
         public String individual;
 
-        @Parameter(names = {"--annotation-set-name"}, description = "AnnotationSetName", arity = 1)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set id", arity = 1)
-        public String variableSetId;
-
         @Parameter(names = {"--annotation"}, description = "Annotation", arity = 1)
         public String annotation;
 
@@ -436,7 +430,8 @@ public class StudyCommandOptions {
                 arity = 1)
         public String permissions;
 
-        @Parameter(names = {"-a", "--action"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
+        @Parameter(names = {"-a", "--action"}, description = "Action to be applied with the permissions (SET, ADD, REMOVE or RESET)",
+                arity = 1)
         public AclParams.Action action = AclParams.Action.SET;
 
         @Parameter(names = {"--template"}, description = "Template of permissions to be used (admin, analyst or view_only)", arity = 1)

@@ -17,26 +17,29 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataStoreServerAddress;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.acls.permissions.*;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.PermissionRule;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.acls.permissions.*;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -45,31 +48,28 @@ import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory.*;
 
 /**
  * Created by pfurio on 20/04/17.
  */
 public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements AuthorizationDBAdaptor {
 
-    private MongoDataStore mongoDataStore;
-
-    private Map<String, MongoDBCollection> dbCollectionMap = new HashMap<>();
-    private Map<String, List<String>> fullPermissionsMap = new HashMap<>();
+    private Map<Entity, MongoDBCollection> dbCollectionMap = new HashMap<>();
+    private Map<Entity, List<String>> fullPermissionsMap = new HashMap<>();
 
     private static final String ANONYMOUS = "*";
-    private static final String PERMISSION_DELIMITER = "__";
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
-        initMongoDatastore(configuration);
+        dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
         initCollectionConnections();
         initPermissions();
     }
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
-        ACL("_acl", TEXT_ARRAY, "");
+        ACL("_acl", TEXT_ARRAY, ""),
+        USER_DEFINED_ACLS("_userAcls", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
 
@@ -114,114 +114,72 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     private void initCollectionConnections() {
-        this.dbCollectionMap.put(STUDY_COLLECTION, mongoDataStore.getCollection(STUDY_COLLECTION));
-        this.dbCollectionMap.put(COHORT_COLLECTION, mongoDataStore.getCollection(COHORT_COLLECTION));
-        this.dbCollectionMap.put(DATASET_COLLECTION, mongoDataStore.getCollection(DATASET_COLLECTION));
-        this.dbCollectionMap.put(FILE_COLLECTION, mongoDataStore.getCollection(FILE_COLLECTION));
-        this.dbCollectionMap.put(INDIVIDUAL_COLLECTION, mongoDataStore.getCollection(INDIVIDUAL_COLLECTION));
-        this.dbCollectionMap.put(JOB_COLLECTION, mongoDataStore.getCollection(JOB_COLLECTION));
-        this.dbCollectionMap.put(SAMPLE_COLLECTION, mongoDataStore.getCollection(SAMPLE_COLLECTION));
-        this.dbCollectionMap.put(PANEL_COLLECTION, mongoDataStore.getCollection(PANEL_COLLECTION));
-        this.dbCollectionMap.put(FAMILY_COLLECTION, mongoDataStore.getCollection(FAMILY_COLLECTION));
-        this.dbCollectionMap.put(CLINICAL_ANALYSIS_COLLECTION, mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION));
+        this.dbCollectionMap.put(Entity.STUDY, dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection());
+        this.dbCollectionMap.put(Entity.COHORT, dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection());
+        this.dbCollectionMap.put(Entity.DATASET, dbAdaptorFactory.getCatalogDatasetDBAdaptor().getDatasetCollection());
+        this.dbCollectionMap.put(Entity.FILE, dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection());
+        this.dbCollectionMap.put(Entity.INDIVIDUAL, dbAdaptorFactory.getCatalogIndividualDBAdaptor().getCollection());
+        this.dbCollectionMap.put(Entity.JOB, dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection());
+        this.dbCollectionMap.put(Entity.SAMPLE, dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection());
+        this.dbCollectionMap.put(Entity.PANEL, dbAdaptorFactory.getCatalogPanelDBAdaptor().getCollection());
+        this.dbCollectionMap.put(Entity.FAMILY, dbAdaptorFactory.getCatalogFamilyDBAdaptor().getCollection());
+        this.dbCollectionMap.put(Entity.CLINICAL_ANALYSIS, dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getClinicalCollection());
     }
 
     private void initPermissions() {
-        this.fullPermissionsMap.put(STUDY_COLLECTION, Arrays.stream(StudyAclEntry.StudyPermissions.values())
+        this.fullPermissionsMap.put(Entity.STUDY, Arrays.stream(StudyAclEntry.StudyPermissions.values())
                 .map(StudyAclEntry.StudyPermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(COHORT_COLLECTION, Arrays.stream(CohortAclEntry.CohortPermissions.values())
+        this.fullPermissionsMap.put(Entity.COHORT, Arrays.stream(CohortAclEntry.CohortPermissions.values())
                 .map(CohortAclEntry.CohortPermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(DATASET_COLLECTION, Arrays.stream(DatasetAclEntry.DatasetPermissions.values())
+        this.fullPermissionsMap.put(Entity.DATASET, Arrays.stream(DatasetAclEntry.DatasetPermissions.values())
                 .map(DatasetAclEntry.DatasetPermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(FILE_COLLECTION, Arrays.stream(FileAclEntry.FilePermissions.values())
+        this.fullPermissionsMap.put(Entity.FILE, Arrays.stream(FileAclEntry.FilePermissions.values())
                 .map(FileAclEntry.FilePermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(INDIVIDUAL_COLLECTION, Arrays.stream(IndividualAclEntry.IndividualPermissions.values())
+        this.fullPermissionsMap.put(Entity.INDIVIDUAL, Arrays.stream(IndividualAclEntry.IndividualPermissions.values())
                 .map(IndividualAclEntry.IndividualPermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(JOB_COLLECTION, Arrays.stream(JobAclEntry.JobPermissions.values())
+        this.fullPermissionsMap.put(Entity.JOB, Arrays.stream(JobAclEntry.JobPermissions.values())
                 .map(JobAclEntry.JobPermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(SAMPLE_COLLECTION, Arrays.stream(SampleAclEntry.SamplePermissions.values())
+        this.fullPermissionsMap.put(Entity.SAMPLE, Arrays.stream(SampleAclEntry.SamplePermissions.values())
                 .map(SampleAclEntry.SamplePermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(PANEL_COLLECTION, Arrays.stream(DiseasePanelAclEntry.DiseasePanelPermissions.values())
+        this.fullPermissionsMap.put(Entity.PANEL, Arrays.stream(DiseasePanelAclEntry.DiseasePanelPermissions.values())
                 .map(DiseasePanelAclEntry.DiseasePanelPermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(FAMILY_COLLECTION, Arrays.stream(FamilyAclEntry.FamilyPermissions.values())
+        this.fullPermissionsMap.put(Entity.FAMILY, Arrays.stream(FamilyAclEntry.FamilyPermissions.values())
                 .map(FamilyAclEntry.FamilyPermissions::toString)
                 .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(CLINICAL_ANALYSIS_COLLECTION,
+        this.fullPermissionsMap.put(Entity.CLINICAL_ANALYSIS,
                 Arrays.stream(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.values())
                         .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::toString)
                         .collect(Collectors.toList()));
 
         // Add none as the last permission for all of them
-        for (Map.Entry<String, List<String>> stringListEntry : this.fullPermissionsMap.entrySet()) {
+        for (Map.Entry<Entity, List<String>> stringListEntry : this.fullPermissionsMap.entrySet()) {
             stringListEntry.getValue().add("NONE");
         }
     }
 
-    private void initMongoDatastore(Configuration configuration) throws CatalogDBException {
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getDatabase().getUser())
-                .add("password", configuration.getCatalog().getDatabase().getPassword())
-                .setAuthenticationDatabase(configuration.getCatalog().getDatabase().getOptions()
-                        .get(MongoDBConfiguration.AUTHENTICATION_DATABASE))
-                .setConnectionsPerHost(Integer.parseInt(configuration.getCatalog().getDatabase().getOptions()
-                        .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
-                .build();
-
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        mongoDataStore = mongoManager.get(getCatalogDatabase(configuration), mongoDBConfiguration);
-        if (mongoDataStore == null) {
-            throw new CatalogDBException("Unable to connect to MongoDB");
-        }
-    }
-
-    private String getCatalogDatabase(Configuration configuration) {
-        String database;
-        if (StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
-            if (!configuration.getDatabasePrefix().endsWith("_")) {
-                database = configuration.getDatabasePrefix() + "_catalog";
-            } else {
-                database = configuration.getDatabasePrefix() + "catalog";
-            }
-        } else {
-            database = "opencga_catalog";
-        }
-        return database;
-    }
-
-    private void validateCollection(String collection) throws CatalogDBException {
-        switch (collection) {
-            case STUDY_COLLECTION:
-            case COHORT_COLLECTION:
-            case INDIVIDUAL_COLLECTION:
-            case DATASET_COLLECTION:
-            case JOB_COLLECTION:
-            case FILE_COLLECTION:
-            case SAMPLE_COLLECTION:
-            case PANEL_COLLECTION:
-            case FAMILY_COLLECTION:
-            case CLINICAL_ANALYSIS_COLLECTION:
+    private void validateEntry(Entity entry) throws CatalogDBException {
+        switch (entry) {
+            case STUDY:
+            case COHORT:
+            case INDIVIDUAL:
+            case DATASET:
+            case JOB:
+            case FILE:
+            case SAMPLE:
+            case PANEL:
+            case FAMILY:
+            case CLINICAL_ANALYSIS:
                 return;
             default:
-                throw new CatalogDBException("Unexpected parameter received. " + collection + " has been received.");
+                throw new CatalogDBException("Unexpected parameter received. " + entry + " has been received.");
         }
     }
 
@@ -231,19 +189,19 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
      *
      * @param resourceId Resource id being queried.
      * @param membersList    Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
-     * @param entity     Entity where the query will be performed.
-     * @return A map of user -> List of permissions.
+     * @param entry     Entity where the query will be performed.
+     * @return A map of [acl, user_defined_acl] -> user -> List of permissions.
      */
-    private Map<String, List<String>> internalGet(long resourceId, List<String> membersList, String entity) {
+    private Map<String, Map<String, List<String>>> internalGet(long resourceId, List<String> membersList, Entity entry) {
 
         List<String> members = (membersList == null ? Collections.emptyList() : membersList);
 
-        MongoDBCollection collection = dbCollectionMap.get(entity);
+        MongoDBCollection collection = dbCollectionMap.get(entry);
 
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, resourceId)));
         aggregation.add(Aggregates.project(
-                Projections.include(QueryParams.ID.key(), QueryParams.ACL.key())));
+                Projections.include(QueryParams.ID.key(), QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key())));
 
         List<Bson> filters = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(members)) {
@@ -270,25 +228,44 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         QueryResult<Document> aggregate = collection.aggregate(aggregation, null);
 
         // Code replicated in MongoDBAdaptor
-        Map<String, List<String>> permissions = new HashMap<>();
+        Map<String, Map<String, List<String>>> permissions = new HashMap<>();
+        permissions.put(QueryParams.ACL.key(), new HashMap<>());
+        permissions.put(QueryParams.USER_DEFINED_ACLS.key(), new HashMap<>());
+
         if (aggregate.getNumResults() > 0) {
             Set<String> memberSet = new HashSet<>();
             memberSet.addAll(members);
 
             Document document = aggregate.first();
-            List<String> memberList = (List<String>) document.get(QueryParams.ACL.key);
-
-            if (memberList != null) {
+            List<String> aclList = (List<String>) document.get(QueryParams.ACL.key());
+            if (aclList != null) {
                 // If _acl was not previously defined, it can be null the first time
-                for (String memberPermission : memberList) {
-                    String[] split = StringUtils.split(memberPermission, PERMISSION_DELIMITER, 2);
-//                    String[] split = memberPermission.split(PERMISSION_DELIMITER, 2);
+                for (String memberPermission : aclList) {
+                    String[] split = StringUtils.split(memberPermission, INTERNAL_DELIMITER, 2);
+//                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
                     if (memberSet.isEmpty() || memberSet.contains(split[0])) {
-                        if (!permissions.containsKey(split[0])) {
-                            permissions.put(split[0], new ArrayList<>());
+                        if (!permissions.get(QueryParams.ACL.key()).containsKey(split[0])) {
+                            permissions.get(QueryParams.ACL.key()).put(split[0], new ArrayList<>());
                         }
                         if (!("NONE").equals(split[1])) {
-                            permissions.get(split[0]).add(split[1]);
+                            permissions.get(QueryParams.ACL.key()).get(split[0]).add(split[1]);
+                        }
+                    }
+                }
+            }
+
+            List<String> userDefinedAcls = (List<String>) document.get(QueryParams.USER_DEFINED_ACLS.key());
+            if (userDefinedAcls != null) {
+                // If _acl was not previously defined, it can be null the first time
+                for (String memberPermission : userDefinedAcls) {
+                    String[] split = StringUtils.split(memberPermission, INTERNAL_DELIMITER, 2);
+//                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
+                    if (memberSet.isEmpty() || memberSet.contains(split[0])) {
+                        if (!permissions.get(QueryParams.USER_DEFINED_ACLS.key()).containsKey(split[0])) {
+                            permissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(split[0], new ArrayList<>());
+                        }
+                        if (!("NONE").equals(split[1])) {
+                            permissions.get(QueryParams.USER_DEFINED_ACLS.key()).get(split[0]).add(split[1]);
                         }
                     }
                 }
@@ -299,112 +276,115 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public <E extends AbstractAclEntry> QueryResult<E> get(long resourceId, List<String> members, String entity) throws CatalogException {
+    public <E extends AbstractAclEntry> QueryResult<E> get(long resourceId, List<String> members, Entity entry) throws CatalogException {
 
-        validateCollection(entity);
+        validateEntry(entry);
         long startTime = startQuery();
 
-        Map<String, List<String>> myMap = internalGet(resourceId, members, entity);
+        Map<String, List<String>> myMap = internalGet(resourceId, members, entry).get(QueryParams.ACL.key());
         List<E> retList;
-        switch (entity) {
-            case STUDY_COLLECTION:
+        switch (entry) {
+            case STUDY:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new StudyAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case COHORT_COLLECTION:
+            case COHORT:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new CohortAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case INDIVIDUAL_COLLECTION:
+            case INDIVIDUAL:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new IndividualAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case DATASET_COLLECTION:
+            case DATASET:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new DatasetAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case JOB_COLLECTION:
+            case JOB:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new JobAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case FILE_COLLECTION:
+            case FILE:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new FileAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case SAMPLE_COLLECTION:
+            case SAMPLE:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new SampleAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case PANEL_COLLECTION:
+            case PANEL:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new DiseasePanelAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case FAMILY_COLLECTION:
+            case FAMILY:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new FamilyAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case CLINICAL_ANALYSIS_COLLECTION:
+            case CLINICAL_ANALYSIS:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new ClinicalAnalysisAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
             default:
-                throw new CatalogException("Unexpected parameter received. " + entity + " has been received.");
+                throw new CatalogException("Unexpected parameter received. " + entry + " has been received.");
         }
 
         return endQuery(Long.toString(resourceId), startTime, retList);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> get(List<Long> resourceIds, List<String> members, String entity)
+    public <E extends AbstractAclEntry> List<QueryResult<E>> get(List<Long> resourceIds, List<String> members, Entity entry)
             throws CatalogException {
         List<QueryResult<E>> retList = new ArrayList<>(resourceIds.size());
         for (Long resourceId : resourceIds) {
-            retList.add(get(resourceId, members, entity));
+            retList.add(get(resourceId, members, entry));
         }
         return retList;
     }
 
     @Override
-    public void removeFromStudy(long studyId, String member, String entity) throws CatalogException {
-        validateCollection(entity);
+    public void removeFromStudy(long studyId, String member, Entity entry) throws CatalogException {
+        validateEntry(entry);
         Document query = new Document()
                 .append("$isolated", 1)
                 .append(PRIVATE_STUDY_ID, studyId);
-        List<String> removePermissions = createPermissionArray(Arrays.asList(member), fullPermissionsMap.get(entity));
-        Document update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
-        logger.debug("Remove all acls for entity {} in study {}. Query: {}, pullAll: {}", entity, studyId,
+        List<String> removePermissions = createPermissionArray(Arrays.asList(member), fullPermissionsMap.get(entry));
+        Document update = new Document("$pullAll", new Document()
+                .append(QueryParams.ACL.key(), removePermissions)
+                .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
+        );
+        logger.debug("Remove all acls for entity {} in study {}. Query: {}, pullAll: {}", entry, studyId,
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        dbCollectionMap.get(entity).update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        dbCollectionMap.get(entry).update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
 
         logger.debug("Remove all the Acls for member {} in study {}", member, studyId);
     }
 
     @Override
-    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
+    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, Entity entry)
             throws CatalogDBException {
-        validateCollection(entity);
-        MongoDBCollection collection = dbCollectionMap.get(entity);
+        validateEntry(entry);
+        MongoDBCollection collection = dbCollectionMap.get(entry);
 
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
         List<String> permissions = new ArrayList<>(permissionList);
@@ -412,16 +392,26 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         for (long resourceId : resourceIds) {
             // Get current permissions for resource and override with new ones set for members (already existing or not)
-            Map<String, List<String>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
+            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entry);
             for (String member : members) {
-                currentPermissions.put(member, new ArrayList<>(permissions));
+                currentPermissions.get(QueryParams.ACL.key()).put(member, new ArrayList<>(permissions));
+                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(member, new ArrayList<>(permissions));
             }
 
-            List<String> permissionArray = createPermissionArray(currentPermissions);
+            List<String> permissionArray = createPermissionArray(currentPermissions.get(QueryParams.ACL.key()));
+            List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));
             Document queryDocument = new Document()
                     .append("$isolated", 1)
                     .append(PRIVATE_ID, resourceId);
-            Document update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+            Document update;
+            if (isPermissionRuleEntity(entry)) {
+                update = new Document("$set", new Document()
+                        .append(QueryParams.ACL.key(), permissionArray)
+                        .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray)
+                );
+            } else {
+                update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+            }
 
             logger.debug("Set Acls (set): Query {}, Push {}",
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -432,10 +422,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
+    public void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, Entity entry)
             throws CatalogDBException {
-        validateCollection(entity);
-        MongoDBCollection collection = dbCollectionMap.get(entity);
+        validateEntry(entry);
+        MongoDBCollection collection = dbCollectionMap.get(entry);
 
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
         List<String> permissions = new ArrayList<>(permissionList);
@@ -446,7 +436,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         Document queryDocument = new Document()
                 .append("$isolated", 1)
                 .append(PRIVATE_ID, new Document("$in", resourceIds));
-        Document update = new Document("$addToSet", new Document(QueryParams.ACL.key(), new Document("$each", myPermissions)));
+        Document update;
+        if (isPermissionRuleEntity(entry)) {
+            update = new Document("$addToSet", new Document()
+                    .append(QueryParams.ACL.key(), new Document("$each", myPermissions))
+                    .append(QueryParams.USER_DEFINED_ACLS.key(), new Document("$each", myPermissions))
+            );
+        } else {
+            update = new Document("$addToSet", new Document(QueryParams.ACL.key(), new Document("$each", myPermissions)));
+        }
+
         logger.debug("Add Acls (addToSet): Query {}, Push {}",
                 queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -455,14 +454,14 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
+    public void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, Entity entity)
             throws CatalogDBException {
 
         if (members == null || members.isEmpty()) {
             return;
         }
 
-        validateCollection(entity);
+        validateEntry(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
         List<String> permissions = permissionList;
@@ -476,7 +475,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         Document queryDocument = new Document()
                 .append("$isolated", 1)
                 .append(PRIVATE_ID, new Document("$in", resourceIds));
-        Document update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
+        Document update;
+        if (isPermissionRuleEntity(entity)) {
+            update = new Document("$pullAll", new Document()
+                    .append(QueryParams.ACL.key(), removePermissions)
+                    .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
+            );
+        } else {
+            update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
+        }
+
         logger.debug("Remove Acls (pullAll): Query {}, Pull {}",
                 queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -490,40 +498,48 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             return;
         }
 
-        removePermissions(studyId, members, COHORT_COLLECTION);
-        removePermissions(studyId, members, DATASET_COLLECTION);
-        removePermissions(studyId, members, FILE_COLLECTION);
-        removePermissions(studyId, members, INDIVIDUAL_COLLECTION);
-        removePermissions(studyId, members, JOB_COLLECTION);
-        removePermissions(studyId, members, SAMPLE_COLLECTION);
-        removePermissions(studyId, members, PANEL_COLLECTION);
-        removePermissions(studyId, members, FAMILY_COLLECTION);
-        removePermissions(studyId, members, CLINICAL_ANALYSIS_COLLECTION);
-        removeFromMembers(Arrays.asList(studyId), members, null, STUDY_COLLECTION);
-
+        removePermissions(studyId, members, Entity.COHORT);
+        removePermissions(studyId, members, Entity.DATASET);
+        removePermissions(studyId, members, Entity.FILE);
+        removePermissions(studyId, members, Entity.INDIVIDUAL);
+        removePermissions(studyId, members, Entity.JOB);
+        removePermissions(studyId, members, Entity.SAMPLE);
+        removePermissions(studyId, members, Entity.PANEL);
+        removePermissions(studyId, members, Entity.FAMILY);
+        removePermissions(studyId, members, Entity.CLINICAL_ANALYSIS);
+        removeFromMembers(Arrays.asList(studyId), members, null, Entity.STUDY);
     }
 
     @Override
-    public <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, String entity) throws CatalogDBException {
-        validateCollection(entity);
+    public <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException {
+        validateEntry(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
         for (long resourceId : resourceIds) {
             // Get current permissions for resource and override with new ones set for members (already existing or not)
-            Map<String, List<String>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
+            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
             for (E acl : acls) {
                 List<String> permissions = (List<String>) acl.getPermissions().stream().map(a -> a.toString()).collect(Collectors.toList());
                 // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
                 permissions = new ArrayList<>(permissions);
                 permissions.add("NONE");
-                currentPermissions.put(acl.getMember(), permissions);
+                currentPermissions.get(QueryParams.ACL.key()).put(acl.getMember(), permissions);
+                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(acl.getMember(), permissions);
             }
+            List<String> permissionArray = createPermissionArray(currentPermissions.get(QueryParams.ACL.key()));
+            List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));
 
-            List<String> permissionArray = createPermissionArray(currentPermissions);
             Document queryDocument = new Document()
                     .append("$isolated", 1)
                     .append(PRIVATE_ID, resourceId);
-            Document update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+            Document update;
+            if (isPermissionRuleEntity(entity)) {
+                update = new Document("$set", new Document()
+                        .append(QueryParams.ACL.key(), permissionArray)
+                        .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray));
+            } else {
+                update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+            }
 
             logger.debug("Set Acls (set): Query {}, Push {}",
                     queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -533,7 +549,279 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
     }
 
-    private void removePermissions(long studyId, List<String> users, String entity) {
+    @Override
+    public void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException {
+        MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
+
+        // We will apply the permission rules to all the entries matching the query defined in the permission rules that does not have
+        // the permission rules applied yet
+        Document rawQuery = new Document()
+                .append(PRIVATE_STUDY_ID, studyId)
+                .append(PERMISSION_RULES_APPLIED, new Document("$ne", permissionRule.getId()));
+        Bson bson = parseQuery(permissionRule.getQuery(), rawQuery, entry.getEntity());
+
+        // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
+        List<String> permissions = new ArrayList<>(permissionRule.getPermissions());
+        permissions.add("NONE");
+        List<String> myPermissions = createPermissionArray(permissionRule.getMembers(), permissions);
+
+        Document update = new Document()
+                .append("$addToSet", new Document()
+                        .append(QueryParams.ACL.key(), new Document("$each", myPermissions))
+                        .append(PERMISSION_RULES_APPLIED, permissionRule.getId()));
+
+        logger.debug("Apply permission rules: Query {}, Update {}",
+                bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        collection.update(bson, update, new QueryOptions("multi", true));
+    }
+
+    @Override
+    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entry entry)
+            throws CatalogException {
+        // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
+        Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
+                .collect(Collectors.toMap(PermissionRule::getId, p -> p));
+        PermissionRule permissionRuleToDelete = permissionRuleMap.get(permissionRuleToDeleteId);
+
+        Set<String> permissionsToRemove =
+                createPermissionArray(permissionRuleToDelete.getMembers(), permissionRuleToDelete.getPermissions())
+                        .stream().collect(Collectors.toSet());
+
+        MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
+
+        // Remove the __TODELETE tag...
+        String permissionRuleId = permissionRuleToDeleteId.split(INTERNAL_DELIMITER)[0];
+
+        // 1. Get all the entries that have the permission rule to be removed applied
+        Document query = new Document()
+                .append(PRIVATE_STUDY_ID, study.getId())
+                .append(PERMISSION_RULES_APPLIED, permissionRuleId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_ID));
+        MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
+        while (iterator.hasNext()) {
+            Document myDocument = iterator.next();
+            Set<String> effectivePermissions = new HashSet<>();
+            Set<String> manualPermissions = new HashSet<>();
+            Set<String> permissionRulesApplied = new HashSet<>();
+
+            List<String> currentAclList = (List) myDocument.get(QueryParams.ACL.key());
+            List<String> currentManualAclList = (List) myDocument.get(QueryParams.USER_DEFINED_ACLS.key());
+            List<String> currentPermissionRulesApplied = (List) myDocument.get(PERMISSION_RULES_APPLIED);
+
+            // TODO: Control that if there are no more permissions set for a user or group, we should also remove the NONE permission
+            // Remove permissions from the permission rule
+            for (String permission : currentAclList) {
+                if (!permissionsToRemove.contains(permission)) {
+                    effectivePermissions.add(permission);
+                }
+            }
+
+            // Remove permissions from the permission rule from the internal manual permissions list
+            if (currentManualAclList != null) {
+                for (String permission : currentManualAclList) {
+                    if (!permissionsToRemove.contains(permission)) {
+                        manualPermissions.add(permission);
+                    }
+                }
+            }
+
+            for (String tmpPermissionRuleId : currentPermissionRulesApplied) {
+                // We apply the rest of permission rules except the one to be deleted
+                if (!tmpPermissionRuleId.equals(permissionRuleId)) {
+                    PermissionRule tmpPermissionRule = permissionRuleMap.get(tmpPermissionRuleId);
+                    List<String> tmpPermissionList = new ArrayList<>(tmpPermissionRule.getPermissions());
+                    tmpPermissionList.add("NONE");
+                    List<String> permissionArray = createPermissionArray(tmpPermissionRule.getMembers(), tmpPermissionList);
+
+                    effectivePermissions.addAll(permissionArray);
+                    permissionRulesApplied.add(tmpPermissionRuleId);
+                }
+            }
+
+            Document tmpQuery = new Document()
+                    .append(PRIVATE_ID, myDocument.get(PRIVATE_ID))
+                    .append(PRIVATE_STUDY_ID, study.getId())
+                    .append("$isolated", true);
+
+            Document update = new Document("$set", new Document()
+                    .append(QueryParams.ACL.key(), effectivePermissions)
+                    .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissions)
+                    .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
+
+            logger.debug("Remove permission rule id and permissions from {}: Query {}, Update {}", entry,
+                    tmpQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            QueryResult<UpdateResult> updateResult = collection.update(tmpQuery, update, new QueryOptions("multi", true));
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_ID));
+            }
+        }
+
+        // 2. Remove the permission rule from the map in the study
+        removeReferenceToPermissionRuleInStudy(study.getId(), permissionRuleToDeleteId, entry);
+    }
+
+    @Override
+    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entry entry)
+            throws CatalogException {
+        // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
+        Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
+                .collect(Collectors.toMap(PermissionRule::getId, p -> p));
+        PermissionRule permissionRuleToDelete = permissionRuleMap.get(permissionRuleToDeleteId);
+
+        Set<String> permissionsToRemove =
+                createPermissionArray(permissionRuleToDelete.getMembers(), permissionRuleToDelete.getPermissions())
+                        .stream().collect(Collectors.toSet());
+
+        MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
+
+        // Remove the __TODELETE tag...
+        String permissionRuleId = permissionRuleToDeleteId.split(INTERNAL_DELIMITER)[0];
+
+        // 1. Get all the entries that have the permission rule to be removed applied
+        Document query = new Document()
+                .append(PRIVATE_STUDY_ID, study.getId())
+                .append(PERMISSION_RULES_APPLIED, permissionRuleId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_ID));
+        MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
+        while (iterator.hasNext()) {
+            Document myDocument = iterator.next();
+            Set<String> effectivePermissions = new HashSet<>();
+            Set<String> permissionRulesApplied = new HashSet<>();
+
+            List<String> currentAclList = (List) myDocument.get(QueryParams.ACL.key());
+            List<String> currentManualAclList = (List) myDocument.get(QueryParams.USER_DEFINED_ACLS.key());
+            List<String> currentPermissionRulesApplied = (List) myDocument.get(PERMISSION_RULES_APPLIED);
+
+            // TODO: Control that if there are no more permissions set for a user or group, we should also remove the NONE permission
+            // Remove permissions from the permission rule
+            for (String permission : currentAclList) {
+                if (!permissionsToRemove.contains(permission)) {
+                    effectivePermissions.add(permission);
+                }
+            }
+
+            // Restore manual permissions
+            if (currentManualAclList != null) {
+                for (String permission : currentManualAclList) {
+                    effectivePermissions.add(permission);
+                }
+            }
+
+            for (String tmpPermissionRuleId : currentPermissionRulesApplied) {
+                // We apply the rest of permission rules except the one to be deleted
+                if (!tmpPermissionRuleId.equals(permissionRuleId)) {
+                    PermissionRule tmpPermissionRule = permissionRuleMap.get(tmpPermissionRuleId);
+                    List<String> tmpPermissionList = new ArrayList<>(tmpPermissionRule.getPermissions());
+                    tmpPermissionList.add("NONE");
+                    List<String> permissionArray = createPermissionArray(tmpPermissionRule.getMembers(), tmpPermissionList);
+
+                    effectivePermissions.addAll(permissionArray);
+                    permissionRulesApplied.add(tmpPermissionRuleId);
+                }
+            }
+
+            Document tmpQuery = new Document()
+                    .append(PRIVATE_ID, myDocument.get(PRIVATE_ID))
+                    .append(PRIVATE_STUDY_ID, study.getId())
+                    .append("$isolated", true);
+
+            Document update = new Document("$set", new Document()
+                    .append(QueryParams.ACL.key(), effectivePermissions)
+                    .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
+
+            logger.debug("Remove permission rule id and restoring permissions from {}: Query {}, Update {}", entry,
+                    tmpQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            QueryResult<UpdateResult> updateResult = collection.update(tmpQuery, update, new QueryOptions("multi", true));
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_ID));
+            }
+        }
+
+        // 2. Remove the permission rule from the map in the study
+        removeReferenceToPermissionRuleInStudy(study.getId(), permissionRuleToDeleteId, entry);
+    }
+
+    @Override
+    public void removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entry entry) throws CatalogException {
+        // Remove the __TODELETE tag...
+        String permissionRuleId = permissionRuleToDelete.split(INTERNAL_DELIMITER)[0];
+
+        Document query = new Document()
+                .append(PRIVATE_STUDY_ID, studyId)
+                .append(PERMISSION_RULES_APPLIED, permissionRuleId)
+                .append("$isolated", 1);
+        Document update = new Document()
+                .append("$pull", new Document(PERMISSION_RULES_APPLIED, permissionRuleId));
+        logger.debug("Remove permission rule id from all {} in study {}: Query {}, Update {}", entry, studyId,
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
+        QueryResult<UpdateResult> updateResult = collection.update(query, update, new QueryOptions("multi", true));
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogException("Could not remove permission rule id " + permissionRuleId + " from all " + entry);
+        }
+
+        // Remove the permission rule from the map in the study
+        removeReferenceToPermissionRuleInStudy(studyId, permissionRuleToDelete, entry);
+    }
+
+    private boolean isPermissionRuleEntity(Entity entity) {
+        if (Study.Entry.CLINICAL_ANALYSES.getEntity() == entity || Study.Entry.COHORTS.getEntity() == entity
+                || Study.Entry.FAMILIES.getEntity() == entity || Study.Entry.FILES.getEntity() == entity
+                || Study.Entry.INDIVIDUALS.getEntity() == entity || Study.Entry.JOBS.getEntity() == entity
+                || Study.Entry.SAMPLES.getEntity() == entity) {
+            return true;
+        }
+        return false;
+    }
+
+    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Study.Entry entry)
+            throws CatalogException {
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry + ".id", permissionRuleToDelete);
+        Document update = new Document("$pull",
+                new Document(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry,
+                        new Document("id", permissionRuleToDelete)));
+        logger.debug("Remove permission rule from the study {}: Query {}, Update {}", studyId,
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        QueryResult<UpdateResult> updateResult = dbCollectionMap.get(Entity.STUDY).update(query, update, new QueryOptions("multi", true));
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogException("Could not remove permission rule " + permissionRuleToDelete + " from study "
+                    + String.valueOf(studyId));
+        }
+    }
+
+    private Bson parseQuery(Query query, Document rawQuery, Entity entry) throws CatalogException {
+        switch (entry) {
+            case COHORT:
+                return dbAdaptorFactory.getCatalogCohortDBAdaptor().parseQuery(query, true, rawQuery);
+            case INDIVIDUAL:
+                return dbAdaptorFactory.getCatalogIndividualDBAdaptor().parseQuery(query, true, rawQuery);
+            case JOB:
+                return dbAdaptorFactory.getCatalogJobDBAdaptor().parseQuery(query, true, rawQuery);
+            case FILE:
+                return dbAdaptorFactory.getCatalogFileDBAdaptor().parseQuery(query, true, rawQuery);
+            case SAMPLE:
+                return dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, true, rawQuery);
+            case FAMILY:
+                return dbAdaptorFactory.getCatalogFamilyDBAdaptor().parseQuery(query, true, rawQuery);
+            case CLINICAL_ANALYSIS:
+                return dbAdaptorFactory.getClinicalAnalysisDBAdaptor().parseQuery(query, true, rawQuery);
+            default:
+                throw new CatalogException("Unexpected parameter received. " + entry + " has been received.");
+        }
+    }
+
+    private void removePermissions(long studyId, List<String> users, Entity entity) {
         List<String> permissions = fullPermissionsMap.get(entity);
         List<String> removePermissions = createPermissionArray(users, permissions);
 
@@ -542,7 +830,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append("$isolated", 1)
                 .append(PRIVATE_STUDY_ID, studyId)
                 .append(QueryParams.ACL.key(), new Document("$in", removePermissions));
-        Document update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
+        Document update = new Document("$pullAll", new Document()
+                .append(QueryParams.ACL.key(), removePermissions)
+                .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
+        );
 
         collection.update(queryDocument, update, new QueryOptions("multi", true));
     }
@@ -555,7 +846,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             }
 
             for (String permission : stringListEntry.getValue()) {
-                myPermissions.add(stringListEntry.getKey() + PERMISSION_DELIMITER + permission);
+                myPermissions.add(stringListEntry.getKey() + INTERNAL_DELIMITER + permission);
             }
         }
 
@@ -573,7 +864,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         List<String> myPermissions = new ArrayList<>(members.size() * writtenPermissions.size());
         for (String member : members) {
             for (String writtenPermission : writtenPermissions) {
-                myPermissions.add(member + PERMISSION_DELIMITER + writtenPermission);
+                myPermissions.add(member + INTERNAL_DELIMITER + writtenPermission);
             }
         }
         return myPermissions;

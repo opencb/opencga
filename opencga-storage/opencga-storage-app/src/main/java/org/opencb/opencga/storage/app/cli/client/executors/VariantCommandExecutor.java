@@ -71,6 +71,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
@@ -160,6 +161,11 @@ public class VariantCommandExecutor extends CommandExecutor {
                         variantCommandOptions.fillGapsCommandOptions.dbName);
                 fillGaps();
                 break;
+            case FILL_MISSING_COMMAND:
+                configure(variantCommandOptions.fillMissingCommandOptions.commonOptions,
+                        variantCommandOptions.fillMissingCommandOptions.dbName);
+                fillMissing();
+                break;
             case "export":
                 configure(variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonOptions,
                         variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonQueryOptions.dbName);
@@ -237,6 +243,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             params.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
         }
         params.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
+        params.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), indexVariantsCommandOptions.loadSplitData);
 
         if (indexVariantsCommandOptions.aggregationMappingFile != null) {
             // TODO move this options to new configuration.yml
@@ -379,9 +386,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         Query query = new Query();
         if (annotateVariantsCommandOptions.filterRegion != null) {
             query.put(VariantQueryParam.REGION.key(), annotateVariantsCommandOptions.filterRegion);
-        }
-        if (annotateVariantsCommandOptions.filterChromosome != null) {
-            query.put(VariantQueryParam.CHROMOSOME.key(), annotateVariantsCommandOptions.filterChromosome);
         }
         if (annotateVariantsCommandOptions.filterGene != null) {
             query.put(VariantQueryParam.GENE.key(), annotateVariantsCommandOptions.filterGene);
@@ -530,9 +534,20 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.FillGapsCommandOptions fillGapsCommandOptions = variantCommandOptions.fillGapsCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.put(VariantStorageEngine.Options.RESUME.key(), fillGapsCommandOptions.resume);
         options.putAll(fillGapsCommandOptions.commonOptions.params);
 
         variantStorageEngine.fillGaps(fillGapsCommandOptions.study, fillGapsCommandOptions.samples, options);
+    }
+
+    private void fillMissing() throws StorageEngineException {
+        StorageVariantCommandOptions.FillMissingCommandOptions cliOptions = variantCommandOptions.fillMissingCommandOptions;
+
+        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantStorageEngine.fillMissing(cliOptions.study, options);
     }
 
     private void export() throws URISyntaxException, StorageEngineException, IOException {

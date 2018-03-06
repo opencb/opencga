@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.common.networks;
 
-import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.commons.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

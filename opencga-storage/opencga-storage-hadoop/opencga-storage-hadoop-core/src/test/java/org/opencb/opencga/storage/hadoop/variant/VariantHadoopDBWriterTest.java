@@ -17,14 +17,10 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
-import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
-import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
@@ -58,7 +54,6 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHadoopDBWriter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
@@ -125,20 +120,6 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         sc.getFileIds().put("file" + fileId, fileId);
         sc.getSamplesInFiles().put(fileId, sampleIds);
         return fileId;
-    }
-
-    @Test
-    public void test() throws Exception {
-
-        sc1.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX");
-        loadVariants(sc1, fileId1, createFile1Variants());
-        loadVariants(sc1, fileId2, createFile2Variants());
-
-        VariantHbaseTestUtils.printVariants(sc1, getVariantStorageEngine().getDBAdaptor(), newOutputUri());
-
-        Map<String, Variant> variants = dbAdaptor.stream().collect(Collectors.toMap(Variant::toString, i -> i));
-        assertEquals(4, variants.size());
-
     }
 
     @Test
@@ -226,12 +207,12 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         sc.getAttributes().append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
-        VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), DB_NAME);
+        VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
 
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(sc.getStudyId()), fileMetadata);
+        dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(sc.getStudyId()), fileMetadata);
 
         ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getStudyId(), fileMetadata);
 
@@ -240,11 +221,11 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         VariantSliceReader reader = getVariantSliceReader(variants, sc.getStudyId(), fileId);
 
         // Writers
-        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, DB_NAME, dbAdaptor.getHBaseManager());
-        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, DB_NAME, sc, dbAdaptor.getHBaseManager());
+        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, dbAdaptor.getVariantTable(), dbAdaptor.getHBaseManager());
+        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(), sc, dbAdaptor.getHBaseManager());
 
         // Task
-        HadoopMergeBasicVariantStoragePipeline.GroupedVariantsTask task = new HadoopMergeBasicVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null);
+        HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> ptr =
@@ -255,13 +236,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         sc.getIndexedFiles().add(fileId);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, QueryOptions.empty());
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-        phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId());
-        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), DB_NAME, sc.getStudyId(), Collections.singleton(fileId), sc.getSamplesInFiles().get(fileId));
-    }
-
-    private void loadVariants(StudyConfiguration studyConfiguration, int fileId, List<Variant> variants) throws Exception {
-        stageVariants(studyConfiguration, fileId, variants);
-        mergeVariants(studyConfiguration, fileId);
+        phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId());
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId(), Collections.singleton(fileId), sc.getSamplesInFiles().get(fileId));
     }
 
     private void stageVariants(StudyConfiguration study, int fileId, List<Variant> variants) throws Exception {
@@ -271,7 +247,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        dbAdaptor.getVariantFileMetadataDBAdaptor().update(String.valueOf(study.getStudyId()), fileMetadata);
+        dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(study.getStudyId()), fileMetadata);
 
         // Create dummy reader
         VariantSliceReader reader = getVariantSliceReader(variants, study.getStudyId(), fileId);
@@ -316,68 +292,6 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                 }
             }
         }, studyId, fileId);
-    }
-
-    private void mergeVariants(StudyConfiguration study, Integer ...fileIds) throws Exception {
-        mergeVariants(study, Arrays.asList(fileIds));
-    }
-
-    private void mergeVariants(StudyConfiguration study, List<Integer> fileIds) throws Exception {
-
-        VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), DB_NAME);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(study, new QueryOptions());
-        VariantMergerTableMapper mapper = new VariantMergerTableMapper();
-
-
-        // Create SCAN
-        Scan scan = new Scan();
-        FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
-        for (Integer id : fileIds) {// specify return columns (file IDs)
-            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true,
-                    Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true));
-        }
-        filter.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
-        scan.setFilter(filter);
-
-        // Configure mapper
-        String archiveTableName = engine.getArchiveTableName(study.getStudyId());
-        Configuration conf = dbAdaptor.getGenomeHelper().getConf();
-        VariantTableHelper.setStudyId(conf, study.getStudyId());
-        VariantTableHelper.setAnalysisTable(conf, DB_NAME);
-        VariantTableHelper.setArchiveTable(conf, archiveTableName);
-        conf.setLong(AbstractAnalysisTableDriver.TIMESTAMP, timestamp.getAndIncrement());
-        conf.setStrings(VariantStorageEngine.Options.FILE_ID.key(), fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
-
-        // Mock context
-        Map<String, Counter> counterMap = new TreeMap<>();
-        Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context context = mockContext(counterMap);
-
-        // Iterate
-        try (Table table = dbAdaptor.getConnection().getTable(TableName.valueOf(archiveTableName))) {
-            ResultScanner scanner = table.getScanner(scan);
-            mapper.setup(context);
-            Result result = scanner.next();
-            while (result != null) {
-                mapper.map(new ImmutableBytesWritable(result.getRow()), result, context);
-                result = scanner.next();
-            }
-            mapper.cleanup(context);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        // Print counters
-        for (Map.Entry<String, Counter> entry : counterMap.entrySet()) {
-            System.out.println('\t' + entry.getKey() + '\t' + entry.getValue().getValue());
-        }
-
-
-        // Mark files as indexed and register new samples in phoenix
-        study.getIndexedFiles().addAll(fileIds);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(study, QueryOptions.empty());
-        VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-        phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), DB_NAME, study.getStudyId());
-        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), DB_NAME, study.getStudyId(), fileIds, fileIds.stream().flatMap(i -> study.getSamplesInFiles().get(i).stream()).collect(Collectors.toSet()));
     }
 
     private Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context mockContext(Map<String, Counter> counterMap) throws IOException, InterruptedException {

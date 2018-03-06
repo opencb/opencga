@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models;
 /**
  * Created by jacobo on 12/12/14.
  */
+@Deprecated
 public class Annotation {
 
     /**

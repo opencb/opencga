@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.analysis.old.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -91,29 +90,22 @@ public class AnalysisDemo {
         boolean queue = false;
         String logLevel = "info";
 
-        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
+//        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 //
 //        List<String> extraParams = cliOptions.commonOptions.params.entrySet()
 //                .stream()
 //                .map(entry -> "-D" + entry.getKey() + "=" + entry.getValue())
 //                .collect(Collectors.toList());
 
-        QueryOptions options = new QueryOptions()
-                .append(ExecutorManager.EXECUTE, !queue)
-                .append(AnalysisFileIndexer.TRANSFORM, doTransform)
-                .append(AnalysisFileIndexer.LOAD, doLoad)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats)
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), annotate)
-                .append(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-//                .append(AnalysisFileIndexer.PARAMETERS, extraParams)
-//                .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
-//                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields)
-//                .append(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype)
+//        QueryOptions options = new QueryOptions()
+//                .append(ExecutorManager.EXECUTE, !queue)
+//                .append(AnalysisFileIndexer.TRANSFORM, doTransform)
+//                .append(AnalysisFileIndexer.LOAD, doLoad)
+//                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats)
+//                .append(VariantStorageEngine.Options.ANNOTATE.key(), annotate)
+//                .append(AnalysisFileIndexer.LOG_LEVEL, logLevel);
 
-        QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
-//        if (queue) {
-//            System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
-//        }
+//        QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
     }
 
 }

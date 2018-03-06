@@ -21,6 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
@@ -32,58 +33,22 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  */
 public class HBaseVariantTableNameGeneratorTest {
 
+    private static final String DB_NAME = "dbName";
+    @Deprecated
+    private static final String ARCHIVE_TABLE_PREFIX = "";
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void archiveNameDefault() throws Exception {
-        assertEquals(DEFAULT_ARCHIVE_TABLE_PREFIX + "44", HadoopVariantStorageEngine.getArchiveTableName(44, new ObjectMap()));
-        assertEquals(DEFAULT_ARCHIVE_TABLE_PREFIX + "44", HadoopVariantStorageEngine.getArchiveTableName(44, new Configuration()));
+        assertEquals(DB_NAME + "_archive_44", HBaseVariantTableNameGenerator.getArchiveTableName(DB_NAME, 44, new ObjectMap()));
+        assertEquals(DB_NAME + "_archive_44", HBaseVariantTableNameGenerator.getArchiveTableName(DB_NAME, 44, new Configuration()));
     }
 
     @Test
-    public void archiveNameWithPrefix() throws Exception {
-        String myPrefix = "prefix";
-
-        ObjectMap options = new ObjectMap().append(ARCHIVE_TABLE_PREFIX, myPrefix);
-        assertEquals(myPrefix + "_" + "44", HadoopVariantStorageEngine.getArchiveTableName(44, options));
-        Configuration conf = new Configuration();
-        conf.set(ARCHIVE_TABLE_PREFIX, myPrefix);
-        assertEquals(myPrefix + "_" + "44", HadoopVariantStorageEngine.getArchiveTableName(44, conf));
-    }
-
-    @Test
-    public void archiveNameWithPrefixUnderscore() throws Exception {
-        String myPrefix = "prefix_";
-
-        ObjectMap options = new ObjectMap().append(ARCHIVE_TABLE_PREFIX, myPrefix);
-        assertEquals(myPrefix + "44", HadoopVariantStorageEngine.getArchiveTableName(44, options));
-        Configuration conf = new Configuration();
-        conf.set(ARCHIVE_TABLE_PREFIX, myPrefix);
-        assertEquals(myPrefix + "44", HadoopVariantStorageEngine.getArchiveTableName(44, conf));
-    }
-
-    @Test
-    public void archiveNameWithEmptyPrefix() throws Exception {
-        String myPrefix = "";
-
-        ObjectMap options = new ObjectMap().append(ARCHIVE_TABLE_PREFIX, myPrefix);
-        assertEquals(DEFAULT_ARCHIVE_TABLE_PREFIX + "44", HadoopVariantStorageEngine.getArchiveTableName(44, options));
-        Configuration conf = new Configuration();
-        conf.set(ARCHIVE_TABLE_PREFIX, myPrefix);
-        assertEquals(DEFAULT_ARCHIVE_TABLE_PREFIX + "44", HadoopVariantStorageEngine.getArchiveTableName(44, conf));
-    }
-
-    @Test
-    public void archiveNameWithNullPrefix() throws Exception {
-        String myPrefix = null;
-
-        ObjectMap options = new ObjectMap().append(ARCHIVE_TABLE_PREFIX, myPrefix);
-        assertEquals(DEFAULT_ARCHIVE_TABLE_PREFIX + "44", HadoopVariantStorageEngine.getArchiveTableName(44, options));
-        //Configuration object does not accept null values
-//        Configuration conf = new Configuration();
-//        conf.set(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX, myPrefix);
-//        assertEquals(ARCHIVE_TABLE_PREFIX + "44", HadoopVariantStorageEngine.getArchiveTableName(44, conf));
+    public void archiveNameWithDBNameUnderscore() throws Exception {
+        assertEquals(DB_NAME + "_archive_44", HBaseVariantTableNameGenerator.getArchiveTableName(DB_NAME + "_", 44, ""));
     }
 
     @Test
@@ -91,16 +56,16 @@ public class HBaseVariantTableNameGeneratorTest {
         String namespace = "ns";
 
         ObjectMap options = new ObjectMap().append(HBASE_NAMESPACE, namespace);
-        assertEquals(namespace + ":" + DEFAULT_ARCHIVE_TABLE_PREFIX + "44", HadoopVariantStorageEngine.getArchiveTableName(44, options));
+        assertEquals(namespace + ":" + DB_NAME + "_archive_44", HBaseVariantTableNameGenerator.getArchiveTableName(DB_NAME, 44, options));
     }
 
     @Test
     public void variantNameWithNamespace() throws Exception {
         String namespace = "ns";
-        String table = "table";
+        String dbName = "table";
 
         ObjectMap options = new ObjectMap().append(HBASE_NAMESPACE, namespace);
-        assertEquals(namespace + ":" + table, HadoopVariantStorageEngine.getVariantTableName(table, options));
+        assertEquals(namespace + ":" + dbName + "_variants", HBaseVariantTableNameGenerator.getVariantTableName(dbName, options));
     }
 
     @Test
@@ -109,7 +74,7 @@ public class HBaseVariantTableNameGeneratorTest {
         String table = "table";
 
         ObjectMap options = new ObjectMap().append(HBASE_NAMESPACE, namespace);
-        assertEquals(namespace + ":" + table, HadoopVariantStorageEngine.getVariantTableName(namespace + ":" + table, options));
+        assertEquals(namespace + ":" + table+"_variants", HBaseVariantTableNameGenerator.getVariantTableName(namespace + ":" + table, options));
     }
 
     @Test
@@ -118,7 +83,7 @@ public class HBaseVariantTableNameGeneratorTest {
         String table = "table";
 
         ObjectMap options = new ObjectMap();
-        assertEquals(namespace + ":" + table, HadoopVariantStorageEngine.getVariantTableName(namespace + ":" + table, options));
+        assertEquals(namespace + ":" + table + "_variants", HBaseVariantTableNameGenerator.getVariantTableName(namespace + ":" + table, options));
     }
 
     @Test
@@ -129,7 +94,7 @@ public class HBaseVariantTableNameGeneratorTest {
         ObjectMap options = new ObjectMap().append(HBASE_NAMESPACE, namespace);
         thrown.expect(IllegalArgumentException.class);
         thrown.expectMessage("Wrong namespace");
-        HadoopVariantStorageEngine.getVariantTableName("wrong_ns" + ":" + table, options);
+        HBaseVariantTableNameGenerator.getVariantTableName("wrong_ns" + ":" + table, options);
     }
 
     @Test
@@ -138,7 +103,7 @@ public class HBaseVariantTableNameGeneratorTest {
         String table = "table";
 
         ObjectMap options = new ObjectMap();
-        assertEquals(namespace + ":" + table, HadoopVariantStorageEngine.getVariantTableName(namespace + ":" + table, options));
+        assertEquals(namespace + ":" + table + "_variants", HBaseVariantTableNameGenerator.getVariantTableName(namespace + ":" + table, options));
     }
 
     @Test
@@ -149,7 +114,7 @@ public class HBaseVariantTableNameGeneratorTest {
         ObjectMap options = new ObjectMap();
         thrown.expect(IllegalArgumentException.class);
         thrown.expectMessage("Illegal character");
-        HadoopVariantStorageEngine.getVariantTableName(namespace + ":" + table, options);
+        HBaseVariantTableNameGenerator.getVariantTableName(namespace + ":" + table, options);
     }
     @Test
     public void variantNameMalformed() throws Exception {
@@ -158,7 +123,18 @@ public class HBaseVariantTableNameGeneratorTest {
         ObjectMap options = new ObjectMap();
         thrown.expect(IllegalArgumentException.class);
         thrown.expectMessage("Illegal character");
-        HadoopVariantStorageEngine.getVariantTableName(table, options);
+        HBaseVariantTableNameGenerator.getVariantTableName(table, options);
     }
 
+    @Test
+    public void getDBNameFromVariantsTable() throws Exception {
+        assertEquals("dbName", HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName("dbName_variants"));
+    }
+
+    @Test
+    public void getDBNameFromVariantsTableMalformed() throws Exception {
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("Invalid variants table name");
+        HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName("dbName_archive_3");
+    }
 }

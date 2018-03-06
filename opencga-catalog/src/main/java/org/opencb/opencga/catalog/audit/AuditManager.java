@@ -18,8 +18,14 @@ package org.opencb.opencga.catalog.audit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord.Resource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created on 18/08/15.
@@ -154,5 +160,34 @@ public interface AuditManager {
     void recordAction(Resource resource, AuditRecord.Action action, AuditRecord.Magnitude importance, Object id, String userId,
                              Object before, Object after, String description, ObjectMap attributes)
             throws CatalogException;
+
+    /**
+     * Groups the matching entries by some fields.
+     *
+     * @param query     Query object.
+     * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
+     * @param options   QueryOptions object.
+     * @param sessionId Session id of the user logged in.
+     * @return A QueryResult object containing the results of the query grouped by the fields.
+     * @throws CatalogException CatalogException
+     */
+    default QueryResult groupBy(Query query, String fields, QueryOptions options, String sessionId) throws CatalogException {
+        if (StringUtils.isEmpty(fields)) {
+            throw new CatalogException("Empty fields parameter.");
+        }
+        return groupBy(query, Arrays.asList(fields.split(",")), options, sessionId);
+    }
+
+    /**
+     * Groups the matching entries by some fields.
+     *
+     * @param query     Query object.
+     * @param options   QueryOptions object.
+     * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
+     * @param sessionId Session id of the user logged in.
+     * @return A QueryResult object containing the results of the query grouped by the fields.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
 
 }

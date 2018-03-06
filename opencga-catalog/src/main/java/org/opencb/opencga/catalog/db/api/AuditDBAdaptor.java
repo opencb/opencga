@@ -16,11 +16,20 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TIMESTAMP;
 
 /**
  * Created on 18/08/15.
@@ -29,8 +38,61 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
  */
 public interface AuditDBAdaptor {
 
+    enum QueryParams implements QueryParam {
+        RESOURCE("resource", TEXT, ""),
+        ACTION("action", TEXT, ""),
+        BEFORE("before", TEXT_ARRAY, ""),
+        AFTER("after", TEXT_ARRAY, ""),
+        USER_ID("userId", TEXT, ""),
+        DATE("date", TIMESTAMP, "");
+
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams params : QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+
     QueryResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException;
 
     QueryResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
 
 }

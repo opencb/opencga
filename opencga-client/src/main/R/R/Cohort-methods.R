@@ -27,7 +27,7 @@ setMethod("cohortClient", "OpencgaR", function(OpencgaR, cohort, action, params=
                             action=action, params=params, httpMethod="GET"),
            info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=cohort, 
                              action=action, params=params, httpMethod="GET"),
-           annotationsets=fetchOpenCGA(object=OpencgaR, category=category, categoryId=cohorts, 
+           annotationsets=fetchOpenCGA(object=OpencgaR, category=category, categoryId=cohort, 
                                        action=action, params=params, httpMethod="GET"),
            groupBy=fetchOpenCGA(object=OpencgaR, category=category, 
                                 action=action, params=params, httpMethod="GET"),

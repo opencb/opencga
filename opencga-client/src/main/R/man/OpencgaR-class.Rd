@@ -4,8 +4,7 @@
 \name{OpencgaR-class}
 \alias{OpencgaR-class}
 \alias{opencgaR}
-\title{OpencgaR Class
-#@include commons.R}
+\title{OpencgaR Class}
 \description{
 This is an S4 class which defines the OpencgaR object
 }
@@ -21,6 +20,13 @@ configured to query HGVA (http://hgva.opencb.org/).
 "http://bioinfo.hpc.cam.ac.uk/hgva"}
 
 \item{\code{version}}{a character specifying the API version. Default "v1"}
+
+\item{\code{user}}{a character string with you OpenCGA username}
+
+\item{\code{sessionId}}{string containin gyour sessionID}
+
+\item{\code{swagger}}{list with the swagger information of the OpenCGA intance in the
+spcified host}
 }}
 
 \seealso{

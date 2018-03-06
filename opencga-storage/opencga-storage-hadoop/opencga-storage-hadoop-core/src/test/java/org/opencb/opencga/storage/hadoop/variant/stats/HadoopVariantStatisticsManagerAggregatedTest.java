@@ -31,7 +31,7 @@ public class HadoopVariantStatisticsManagerAggregatedTest extends VariantStatist
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
         return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
-                .append(HadoopVariantStorageEngine.STATS_LOCAL, false)
+                .append(HadoopVariantStorageEngine.STATS_LOCAL, true)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
     }
 }

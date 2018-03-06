@@ -14,6 +14,7 @@ opencgaLogout(opencga)
 A function to logout from Opencga web services
 }
 \examples{
+\dontrun{
 opencgaLogout(con)
-
+}
 }

@@ -25,15 +25,15 @@ import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 02/03/15.
@@ -107,8 +107,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                         params.putIfNotNull("study-group", group.getName());
                         params.putIfNotNull("study", executor.study);
                         params.putIfNotNull("expirationDate", executor.expDate);
-                        LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                                executor.type, params, sessionId);
+                        QueryResult<User> ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(
+                                executor.authOrigin, executor.type, params, sessionId);
 
                         printImportReport(ldapImportResult);
                     }
@@ -155,7 +155,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 params.putIfNotNull("study-group", executor.to);
                 params.putIfNotNull("study", executor.study);
                 params.putIfNotNull("expirationDate", executor.expDate);
-                LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
+                QueryResult<User> ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
                         executor.type, params, sessionId);
 
                 printImportReport(ldapImportResult);
@@ -184,36 +184,21 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             params.putIfNotNull("study", executor.study);
             params.putIfNotNull("study-group", executor.studyGroup);
             params.putIfNotNull("expirationDate", executor.expDate);
-            LdapImportResult ldapImportResult = catalogManager.getUserManager()
+            QueryResult<User> ldapImportResult = catalogManager.getUserManager()
                     .importFromExternalAuthOrigin(executor.authOrigin, executor.type, params, token);
 
             printImportReport(ldapImportResult);
         }
     }
 
-    private void printImportReport(LdapImportResult ldapImportResult) {
-        if (ldapImportResult.getResult() != null) {
-            LdapImportResult.SummaryResult userSummary = ldapImportResult.getResult().getUserSummary();
-            if (userSummary != null) {
-                if (userSummary.getNewUsers().size() > 0) {
-                    System.out.println("New users registered: " + StringUtils.join(userSummary.getNewUsers(), ", "));
-                }
-                if (userSummary.getExistingUsers().size() > 0) {
-                    System.out.println("Users already registered: " + StringUtils.join(userSummary.getExistingUsers(), ", "));
-                }
-                if (userSummary.getNonExistingUsers().size() > 0) {
-                    System.out.println("Users not found in origin: " + StringUtils.join(userSummary.getNonExistingUsers(), ", "));
-                }
-            }
-            List<String> usersInGroup = ldapImportResult.getResult().getUsersInGroup();
-            if (usersInGroup != null) {
-                System.out.println("Users registered in group " + ldapImportResult.getInput().getStudyGroup() + " from "
-                        + ldapImportResult.getInput().getStudy() + ": " + StringUtils.join(usersInGroup, ", "));
-            }
+    private void printImportReport(QueryResult<User> ldapImportResult) {
+        if (ldapImportResult.getNumResults() > 0) {
+            System.out.println("New users registered: "
+                    + ldapImportResult.getResult().stream().map(User::getId).collect(Collectors.joining(", ")));
         }
 
         if (StringUtils.isNotEmpty(ldapImportResult.getWarningMsg())) {
-            System.out.println("WARNING: " + ldapImportResult.getWarningMsg());
+            System.out.println(ldapImportResult.getWarningMsg());
         }
 
         if (StringUtils.isNotEmpty(ldapImportResult.getErrorMsg())) {
@@ -235,13 +220,13 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
+            String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
             User user = catalogManager.getUserManager().create(usersCommandOptions.createUserCommandOptions.userId,
                     usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                     usersCommandOptions.createUserCommandOptions.userPassword,
                     usersCommandOptions.createUserCommandOptions.userOrganization, userQuota,
-                    usersCommandOptions.createUserCommandOptions.type, null).first();
+                    usersCommandOptions.createUserCommandOptions.type, null, token).first();
 
             System.out.println("The user has been successfully created: " + user.toString() + "\n");
         }

@@ -110,7 +110,7 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         print(paste("Number of retrieved documents:", count))
     }
     if(class(container[[1]])=="data.frame"){
-        ds <- rbind_pages(container)
+        ds <- jsonlite::rbind_pages(container)
     }else{
         ds <- as.data.frame(container[[1]], stringsAsFactors=FALSE, names="result")
     }
@@ -145,7 +145,7 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam){
             fullUrl <- paste0(pathUrl, skip)
         }
         print(paste("URL:",fullUrl))
-        resp <- httr::GET(fullUrl, add_headers(Accept="application/json", Authorization=session), timeout(30))
+        resp <- httr::GET(fullUrl, httr::add_headers(Accept="application/json", Authorization=session), httr::timeout(30))
         
     }else if(httpMethod == "POST"){
     # Make POST call
@@ -175,10 +175,10 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam){
         print(paste("URL:",fullUrl))
         if (exists("bodyParams")){
             resp <- httr::POST(fullUrl, body = bodyParams, 
-                         add_headers(`Authorization` = session), encode = "json")
+                        httr::add_headers(`Authorization` = session), encode = "json")
         }else{
-            resp <- httr::POST(fullUrl, add_headers(`Authorization` = session), 
-                         encode = "json")
+            resp <- httr::POST(fullUrl, httr::add_headers(`Authorization` = session), 
+                        encode = "json")
         }
     }
     
@@ -198,8 +198,8 @@ parseResponse <- function(resp, content){
         }
     }else{
         print("Query unsuccessful.")
-        print(paste("Category:", http_status(resp)$category))
-        print(paste("Reason:", http_status(resp)$reason))
+        print(paste("Category:", httr::http_status(resp)$category))
+        print(paste("Reason:", httr::http_status(resp)$reason))
         if (js[[1]]$warning != ""){
             print(paste("WARNING:", js[[1]]$warning))
             print()
@@ -213,10 +213,7 @@ parseResponse <- function(resp, content){
     nums <- lapply(js, function(x)x$response$numResults)
 
     if (class(ares[[1]][[1]])=="data.frame"){
-        ds <- lapply(ares, function(x)rbind_pages(x))
-        # if(requireNamespace("pbapply", quietly = TRUE)){
-        #     ds <- pbapply::pblapply(ares, function(x)rbind_pages(x))
-        # }
+        ds <- lapply(ares, function(x)jsonlite::rbind_pages(x))
         
         ### Important to get correct vertical binding of dataframes
         names(ds) <- NULL

@@ -24,13 +24,16 @@ import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
+import org.opencb.opencga.core.models.PermissionRule;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,6 +188,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         QueryResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
         if (groupBelonging.getNumResults() == 0) {
             throw new CatalogAuthorizationException("Only the members of the study are allowed to see it");
+        }
+    }
+
+    @Override
+    public void checkCanUpdatePermissionRules(long studyId, String userId) throws CatalogException {
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+
+        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to modify a update permission rules");
         }
     }
 
@@ -554,7 +566,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(studyId, null, MongoDBAdaptorFactory.STUDY_COLLECTION);
+        return aclDBAdaptor.get(studyId, null, Entity.STUDY);
     }
 
     @Override
@@ -577,13 +589,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //            }
 //        }
 
-        return aclDBAdaptor.get(studyId, Arrays.asList(member), MongoDBAdaptorFactory.STUDY_COLLECTION);
+        return aclDBAdaptor.get(studyId, Arrays.asList(member), Entity.STUDY);
     }
 
     @Override
     public QueryResult<SampleAclEntry> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(sampleId, null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        return aclDBAdaptor.get(sampleId, null, Entity.SAMPLE);
     }
 
     @Override
@@ -606,7 +618,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //            }
 //        }
 
-        return aclDBAdaptor.get(sampleId, Arrays.asList(member), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        return aclDBAdaptor.get(sampleId, Arrays.asList(member), Entity.SAMPLE);
     }
 
     @Override
@@ -620,7 +632,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (checkPermission) {
             checkCanAssignOrSeePermissions(studyId, userId);
         }
-        return aclDBAdaptor.get(fileId, null, MongoDBAdaptorFactory.FILE_COLLECTION);
+        return aclDBAdaptor.get(fileId, null, Entity.FILE);
     }
 
     @Override
@@ -643,13 +655,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //            }
 //        }
 
-        return aclDBAdaptor.get(fileId, Arrays.asList(member), MongoDBAdaptorFactory.FILE_COLLECTION);
+        return aclDBAdaptor.get(fileId, Arrays.asList(member), Entity.FILE);
     }
 
     @Override
     public QueryResult<IndividualAclEntry> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(individualId, null, MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
+        return aclDBAdaptor.get(individualId, null, Entity.INDIVIDUAL);
     }
 
     @Override
@@ -673,13 +685,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //            }
 //        }
 
-        return aclDBAdaptor.get(individualId, Arrays.asList(member), MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
+        return aclDBAdaptor.get(individualId, Arrays.asList(member), Entity.INDIVIDUAL);
     }
 
     @Override
     public QueryResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(cohortId, null, MongoDBAdaptorFactory.COHORT_COLLECTION);
+        return aclDBAdaptor.get(cohortId, null, Entity.COHORT);
     }
 
     @Override
@@ -702,13 +714,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //            }
 //        }
 
-        return aclDBAdaptor.get(cohortId, Arrays.asList(member), MongoDBAdaptorFactory.COHORT_COLLECTION);
+        return aclDBAdaptor.get(cohortId, Arrays.asList(member), Entity.COHORT);
     }
 
     @Override
     public QueryResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(jobId, null, MongoDBAdaptorFactory.JOB_COLLECTION);
+        return aclDBAdaptor.get(jobId, null, Entity.JOB);
     }
 
     @Override
@@ -731,13 +743,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //            }
 //        }
 
-        return aclDBAdaptor.get(jobId, Arrays.asList(member), MongoDBAdaptorFactory.JOB_COLLECTION);
+        return aclDBAdaptor.get(jobId, Arrays.asList(member), Entity.JOB);
     }
 
     @Override
     public QueryResult<FamilyAclEntry> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(familyId, null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        return aclDBAdaptor.get(familyId, null, Entity.FAMILY);
     }
 
     @Override
@@ -749,7 +761,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        return aclDBAdaptor.get(familyId, Arrays.asList(member), MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        return aclDBAdaptor.get(familyId, Arrays.asList(member), Entity.FAMILY);
     }
 
     private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {
@@ -783,8 +795,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        aclDBAdaptor.setToMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
-        return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
+        aclDBAdaptor.setToMembers(studyIds, members, permissions, Entity.STUDY);
+        return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
     @Override
@@ -800,25 +812,24 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
             }
         }
-        aclDBAdaptor.addToMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
-        return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
+        aclDBAdaptor.addToMembers(studyIds, members, permissions, Entity.STUDY);
+        return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
     @Override
     public List<QueryResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
             throws CatalogException {
-        aclDBAdaptor.removeFromMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
-        return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
+        aclDBAdaptor.removeFromMembers(studyIds, members, permissions, Entity.STUDY);
+        return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
-    private <E extends AbstractAclEntry> List<QueryResult<E>> getAcls(List<Long> ids, List<String> members, String entity)
+    private <E extends AbstractAclEntry> List<QueryResult<E>> getAcls(List<Long> ids, List<String> members, Entity entity)
             throws CatalogException {
         return aclDBAdaptor.get(ids, members, entity);
     }
 
-    @Override
     public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members,
-                                                                     List<String> permissions, String entity) throws CatalogException {
+                                                                     List<String> permissions, Entity entity) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to set acls");
             return Collections.emptyList();
@@ -848,7 +859,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members,
-                                                                     List<String> permissions, String entity) throws CatalogException {
+                                                                     List<String> permissions, Entity entity) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to add acls");
             return Collections.emptyList();
@@ -878,7 +889,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members,
-                                                                        @Nullable List<String> permissions, String entity)
+                                                                        @Nullable List<String> permissions, Entity entity)
             throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to remove acls");
@@ -900,7 +911,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries,
-                                                                           String entity) throws CatalogException {
+                                                                           Entity entity) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to set acls");
             return Collections.emptyList();
@@ -917,6 +928,47 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return aclResultList;
+    }
+
+    @Override
+    public void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException {
+        // 1. We obtain which of those members are actually users to add them to the @members group automatically
+        List<String> userList = permissionRule.getMembers().stream()
+                .filter(member -> !member.startsWith("@"))
+                .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(userList)) {
+            // We first add the member to the @members group in case they didn't belong already
+            studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
+        }
+
+        // 2. We can apply the permission rules
+        aclDBAdaptor.applyPermissionRules(studyId, permissionRule, entry);
+    }
+
+    @Override
+    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entry entry)
+            throws CatalogException {
+        ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
+        ParamUtils.checkObj(entry, "Entity");
+
+        aclDBAdaptor.removePermissionRuleAndRemovePermissions(study, permissionRuleId, entry);
+    }
+
+    @Override
+    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entry entry)
+            throws CatalogException {
+        ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
+        ParamUtils.checkObj(entry, "Entity");
+
+        aclDBAdaptor.removePermissionRuleAndRestorePermissions(study, permissionRuleId, entry);
+    }
+
+    @Override
+    public void removePermissionRule(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException {
+        ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
+        ParamUtils.checkObj(entry, "Entity");
+
+        aclDBAdaptor.removePermissionRule(studyId, permissionRuleId, entry);
     }
 
     /*

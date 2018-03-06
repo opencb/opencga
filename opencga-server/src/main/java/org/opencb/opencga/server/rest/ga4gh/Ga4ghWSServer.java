@@ -109,11 +109,11 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                 return createErrorResponse(method, "Required referenceName or referenceId");
             }
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            queryOptions.append(STUDIES.key(), request.getVariantSetId());
+            queryOptions.append(STUDY.key(), request.getVariantSetId());
 
 //        queryOptions.append(, request.getVariantName()); //TODO
             if (request.getCallSetIds() != null) {
-                queryOptions.append(RETURNED_SAMPLES.key(), request.getCallSetIds());
+                queryOptions.append(INCLUDE_SAMPLE.key(), request.getCallSetIds());
             }
 
             CharSequence chr = null;

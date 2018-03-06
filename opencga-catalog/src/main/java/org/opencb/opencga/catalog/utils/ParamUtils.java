@@ -22,6 +22,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -32,6 +34,16 @@ public class ParamUtils {
     public static void checkId(long id, String name) throws CatalogParameterException {
         if (id < 0) {
             throw new CatalogParameterException("Error in id: '" + name + "' is not valid: " + id + ".");
+        }
+    }
+
+    public static void checkAllParametersExist(Iterator<String> parameterIterator, Function<String, Boolean> exist)
+            throws CatalogParameterException {
+        while (parameterIterator.hasNext()) {
+            String parameter = parameterIterator.next();
+            if (!exist.apply(parameter)) {
+                throw new CatalogParameterException("Parameter " + parameter + " not supported");
+            }
         }
     }
 
@@ -99,6 +111,12 @@ public class ParamUtils {
         if (StringUtils.isNumeric(alias) && Long.parseLong(alias) >= offset) {
             throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'. Alias cannot be a numeric value above "
                     + offset);
+        }
+    }
+
+    public static void checkIdentifier(String identifier, String name) throws CatalogParameterException {
+        if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+            throw new CatalogParameterException("Error in identifier: Invalid identifier format for '" + name + "'.");
         }
     }
 

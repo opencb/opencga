@@ -23,19 +23,21 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.AnnotableMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
@@ -43,6 +45,7 @@ import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -55,7 +58,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * Created by hpccoll1 on 14/08/15.
  */
-public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements SampleDBAdaptor {
+public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> implements SampleDBAdaptor {
 
     private final MongoDBCollection sampleCollection;
     private SampleConverter sampleConverter;
@@ -68,7 +71,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    protected GenericDocumentComplexConverter<? extends Annotable> getConverter() {
+    protected AnnotableConverter<? extends Annotable> getConverter() {
         return sampleConverter;
     }
 
@@ -89,7 +92,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    public QueryResult<Sample> insert(long studyId, Sample sample, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
@@ -109,13 +113,19 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         sample.setId(sampleId);
         sample.setVersion(1);
 
-        Document sampleObject = sampleConverter.convertToStorageType(sample);
+        Document sampleObject = sampleConverter.convertToStorageType(sample, variableSetList);
         sampleObject.put(PRIVATE_STUDY_ID, studyId);
 
         // Versioning private parameters
         sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
         sampleObject.put(LAST_OF_VERSION, true);
         sampleObject.put(LAST_OF_RELEASE, true);
+        if (StringUtils.isNotEmpty(sample.getCreationDate())) {
+            sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(sample.getCreationDate()));
+        } else {
+            sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
+        sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         sampleCollection.insert(sampleObject, null);
 
@@ -132,9 +142,39 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
     @Override
     public QueryResult<Sample> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(id, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
+        QueryOptions queryOptions = new QueryOptions();
+        List<String> includeList = new ArrayList<>();
+        includeList.add(QueryParams.ANNOTATION_SETS.key());
+        if (StringUtils.isNotEmpty(annotationSetName)) {
+            includeList.add(Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+        }
+        queryOptions.put(QueryOptions.INCLUDE, includeList);
+
+        QueryResult<Sample> sampleQueryResult = get(id, queryOptions);
+        if (sampleQueryResult.first().getAnnotationSets().isEmpty()) {
+            return new QueryResult<>("Get annotation set", sampleQueryResult.getDbTime(), 0, 0, sampleQueryResult.getWarningMsg(),
+                    sampleQueryResult.getErrorMsg(), Collections.emptyList());
+        } else {
+            List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
+            int size = annotationSets.size();
+            return new QueryResult<>("Get annotation set", sampleQueryResult.getDbTime(), size, size, sampleQueryResult.getWarningMsg(),
+                    sampleQueryResult.getErrorMsg(), annotationSets);
+        }
+    }
+
+    @Override
+    public QueryResult<Sample> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, queryOptions);
-        if (update.getNumTotalResults() != 1 && parameters.size() > 0) {
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
+        if (update.getNumTotalResults() != 1 && parameters.size() > 0 && !(parameters.size() <= 3
+                && (parameters.containsKey(QueryParams.ANNOTATION_SETS.key()) || parameters.containsKey(Constants.DELETE_ANNOTATION_SET)
+                || parameters.containsKey(Constants.DELETE_ANNOTATION)))) {
             throw new CatalogDBException("Could not update sample with id " + id);
         }
         Query query = new Query()
@@ -145,33 +185,43 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(query, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         Document sampleParameters = parseAndValidateUpdateParams(parameters, query);
+        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.ID.key(), -1L), parameters, variableSetList);
+
         if (sampleParameters.containsKey(QueryParams.STATUS_NAME.key())) {
             query.put(Constants.ALL_VERSIONS, true);
             QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
                     new Document("$set", sampleParameters), new QueryOptions("multi", true));
 
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
             return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
+
             if (!sampleParameters.isEmpty()) {
                 QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
                         new Document("$set", sampleParameters), new QueryOptions("multi", true));
-
                 return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {
-            return updateAndCreateNewVersion(query, sampleParameters, queryOptions);
+            return updateAndCreateNewVersion(query, sampleParameters, annotationUpdateMap, queryOptions);
         }
 
         return endQuery("Update sample", startTime, new QueryResult<>());
     }
 
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document sampleParameters, QueryOptions queryOptions)
-            throws CatalogDBException {
+    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document sampleParameters, ObjectMap annotationUpdateMap,
+                                                        QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
@@ -220,6 +270,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
             // Insert the new version document
             sampleCollection.insert(sampleDocument, QueryOptions.empty());
+
+            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
         }
 
         return endQuery("Update sample", startTime, Arrays.asList(queryResult.getNumTotalResults()));
@@ -304,6 +356,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         sampleCollection.update(bson, update, queryOptions);
     }
 
+    @Override
+    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        unmarkPermissionRule(sampleCollection, studyId, permissionRuleId);
+    }
+
     @Deprecated
     public void checkInUse(long sampleId) throws CatalogDBException {
         long studyId = getStudyId(sampleId);
@@ -315,8 +372,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         if (fileQueryResult.getNumResults() != 0) {
             String msg = "Can't delete Sample " + sampleId + ", still in use in \"sampleId\" array of files : "
                     + fileQueryResult.getResult().stream()
-                            .map(file -> "{ id: " + file.getId() + ", path: \"" + file.getPath() + "\" }")
-                            .collect(Collectors.joining(", ", "[", "]"));
+                    .map(file -> "{ id: " + file.getId() + ", path: \"" + file.getPath() + "\" }")
+                    .collect(Collectors.joining(", ", "[", "]"));
             throw new CatalogDBException(msg);
         }
 
@@ -328,8 +385,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         if (cohortQueryResult.getNumResults() != 0) {
             String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : "
                     + cohortQueryResult.getResult().stream()
-                            .map(cohort -> "{ id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" }")
-                            .collect(Collectors.joining(", ", "[", "]"));
+                    .map(cohort -> "{ id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" }")
+                    .collect(Collectors.joining(", ", "[", "]"));
             throw new CatalogDBException(msg);
         }
     }
@@ -533,13 +590,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Override
     public DBIterator<Sample> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor, sampleConverter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, sampleConverter, options);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor);
+        return new AnnotableMongoDBIterator<>(mongoCursor, options);
     }
 
     @Override
@@ -550,7 +607,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
-        return new MongoDBIterator<>(mongoCursor, sampleConverter, iteratorFilter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, sampleConverter, iteratorFilter, options);
     }
 
     @Override
@@ -561,7 +618,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
-        return new MongoDBIterator<>(mongoCursor, iteratorFilter);
+        return new AnnotableMongoDBIterator<>(mongoCursor, iteratorFilter, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -587,10 +644,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
-            qOptions = options;
+            qOptions = new QueryOptions(options);
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
 
         logger.debug("Sample get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -647,8 +705,15 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+        Document queryForAuthorisedEntries;
+        if (containsAnnotationQuery(query)) {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
+                    SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
+        } else {
+         queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+        }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(sampleCollection, bsonQuery, field, QueryParams.NAME.key(), options);
@@ -658,8 +723,15 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+        Document queryForAuthorisedEntries;
+        if (containsAnnotationQuery(query)) {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
+                    SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
+        } else {
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+        }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
         return groupBy(sampleCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
@@ -679,17 +751,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         return parseQuery(query, isolated, null);
     }
 
-    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-        List<Bson> annotationList = new ArrayList<>();
-        // We declare variableMap here just in case we have different annotation queries
-        Map<String, Variable> variableMap = null;
+        Document annotationDocument = null;
 
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
         }
 
-        fixComplexQueryParam(QueryParams.ANNOTATION.key(), query);
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
@@ -723,24 +792,17 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case PHENOTYPES:
                         addOntologyQueryFilter(queryParam.key(), queryParam.key(), query, andBsonList);
                         break;
-                    case VARIABLE_SET_ID:
-                        addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
-                        break;
                     case ANNOTATION:
-                        if (variableMap == null) {
-                            long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
-                            if (variableSetId > 0) {
-                                variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                        .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
-                            }
+                        if (annotationDocument == null) {
+                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
+                                    query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
                         }
-                        addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
-                        break;
-                    case ANNOTATION_SET_NAME:
-                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     case SNAPSHOT:
                         addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case NAME:
                     case RELEASE:
@@ -755,8 +817,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
                     case PHENOTYPES_SOURCE:
-                    case ANNOTATION_SETS:
-                    case CREATION_DATE:
+//                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
@@ -782,9 +843,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             }
         }
 
-        if (annotationList.size() > 0) {
-            Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
-            andBsonList.add(projection);
+        if (annotationDocument != null && !annotationDocument.isEmpty()) {
+            andBsonList.add(annotationDocument);
         }
         if (authorisation != null && authorisation.size() > 0) {
             andBsonList.add(authorisation);

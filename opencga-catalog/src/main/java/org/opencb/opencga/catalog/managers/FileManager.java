@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -42,6 +41,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -218,46 +218,48 @@ public class FileManager extends ResourceManager<File> {
                 continue;
             }
 
+            // Search in the same path
             logger.info("Looking for vcf file in path {}", variantPathName);
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), variantPathName)
                     .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
 
-            QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
+            List<File> fileList = fileDBAdaptor.get(query, new QueryOptions()).getResult();
 
-            if (fileQueryResult.getNumResults() == 0) {
-                // Search in the whole study
+            if (fileList.isEmpty()) {
+                // Search by name in the whole study
                 String variantFileName = getOriginalFile(transformedFile.getName());
                 logger.info("Looking for vcf file by name {}", variantFileName);
                 query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(FileDBAdaptor.QueryParams.NAME.key(), variantFileName)
                         .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-                fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
-            }
+                fileList = new ArrayList<>(fileDBAdaptor.get(query, new QueryOptions()).getResult());
 
-            if (fileQueryResult.getNumResults() > 0) {
-                List<File> fileList = new ArrayList<>(fileQueryResult.getNumResults());
-                List<String> acceptedStatus = Arrays.asList(FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING,
-                        FileIndex.IndexStatus.INDEXING, FileIndex.IndexStatus.READY);
-                // Check index status
-                for (File file : fileQueryResult.getResult()) {
-                    if (file.getIndex() == null || file.getIndex().getStatus() == null || file.getIndex().getStatus().getName() == null
-                            || acceptedStatus.contains(file.getIndex().getStatus().getName())) {
-                        fileList.add(file);
-                    }
+                // In case of finding more than one file, try to find the proper one.
+                if (fileList.size() > 1) {
+                    // Discard files already with a transformed file.
+                    fileList.removeIf(file -> file.getIndex() != null
+                            && file.getIndex().getTransformedFile() != null
+                            && file.getIndex().getTransformedFile().getId() != transformedFile.getId());
                 }
-                fileQueryResult.setResult(fileList);
-                fileQueryResult.setNumResults(fileList.size());
+                if (fileList.size() > 1) {
+                    // Discard files not transformed or indexed.
+                    fileList.removeIf(file -> file.getIndex() == null
+                            || file.getIndex().getStatus() == null
+                            || file.getIndex().getStatus().getName() == null
+                            || file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.NONE));
+                }
             }
 
-            if (fileQueryResult.getNumResults() == 0 || fileQueryResult.getNumResults() > 1) {
+
+            if (fileList.size() != 1) {
                 // VCF file not found
                 logger.warn("The vcf file corresponding to the file " + transformedFile.getName() + " could not be found");
                 continue;
             }
-            File vcf = fileQueryResult.first();
+            File vcf = fileList.get(0);
 
             // Look for the json file. It should be in the same directory where the transformed file is.
             String jsonPathName = getMetaFile(transformedFile.getPath());
@@ -265,35 +267,37 @@ public class FileManager extends ResourceManager<File> {
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), jsonPathName)
                     .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.JSON);
-            fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
-            if (fileQueryResult.getNumResults() != 1) {
+            fileList = fileDBAdaptor.get(query, new QueryOptions()).getResult();
+            if (fileList.size() != 1) {
                 // Skip. This should not ever happen
                 logger.warn("The json file corresponding to the file " + transformedFile.getName() + " could not be found");
                 continue;
             }
-            File json = fileQueryResult.first();
+            File json = fileList.get(0);
 
             /* Update relations */
 
+            File.RelatedFile producedFromRelation = new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM);
+
             // Update json file
             logger.debug("Updating json relation");
-            List<File.RelatedFile> relatedFiles = json.getRelatedFiles();
-            if (relatedFiles == null) {
-                relatedFiles = new ArrayList<>();
+            List<File.RelatedFile> relatedFiles = ParamUtils.defaultObject(json.getRelatedFiles(), ArrayList::new);
+            // Do not add twice the same relation
+            if (!relatedFiles.contains(producedFromRelation)) {
+                relatedFiles.add(producedFromRelation);
+                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
+                fileDBAdaptor.update(json.getId(), params, QueryOptions.empty());
             }
-            relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
-            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
-            fileDBAdaptor.update(json.getId(), params, QueryOptions.empty());
 
             // Update transformed file
             logger.debug("Updating transformed relation");
-            relatedFiles = transformedFile.getRelatedFiles();
-            if (relatedFiles == null) {
-                relatedFiles = new ArrayList<>();
+            relatedFiles = ParamUtils.defaultObject(transformedFile.getRelatedFiles(), ArrayList::new);
+            // Do not add twice the same relation
+            if (!relatedFiles.contains(producedFromRelation)) {
+                relatedFiles.add(producedFromRelation);
+                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
+                fileDBAdaptor.update(transformedFile.getId(), params, QueryOptions.empty());
             }
-            relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
-            params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
-            fileDBAdaptor.update(transformedFile.getId(), params, QueryOptions.empty());
 
             // Update vcf file
             logger.debug("Updating vcf relation");
@@ -307,9 +311,9 @@ public class FileManager extends ResourceManager<File> {
             }
             if (FileIndex.IndexStatus.NONE.equals(status)) {
                 // If TRANSFORMED, TRANSFORMING, etc, do not modify the index status
-                index.setStatus(new FileIndex.IndexStatus(FileIndex.IndexStatus.TRANSFORMED));
+                index.setStatus(new FileIndex.IndexStatus(FileIndex.IndexStatus.TRANSFORMED, "Found transformed file"));
             }
-            params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
+            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
             fileDBAdaptor.update(vcf.getId(), params, QueryOptions.empty());
 
             // Update variant stats
@@ -593,8 +597,7 @@ public class FileManager extends ResourceManager<File> {
         QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
         // Propagate ACLs
         if (allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
-                    MongoDBAdaptorFactory.FILE_COLLECTION);
+            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(), Entity.FILE);
         }
 
         auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -1700,19 +1703,17 @@ public class FileManager extends ResourceManager<File> {
         checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
-        String collectionName = MongoDBAdaptorFactory.FILE_COLLECTION;
-
         switch (fileAclParams.getAction()) {
             case SET:
                 return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.FILE);
             case ADD:
                 return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        Entity.FILE);
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, Entity.FILE);
             case RESET:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, Entity.FILE);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
@@ -2327,8 +2328,7 @@ public class FileManager extends ResourceManager<File> {
         QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
-                    MongoDBAdaptorFactory.FILE_COLLECTION);
+            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(), Entity.FILE);
         }
     }
 
@@ -2484,7 +2484,7 @@ public class FileManager extends ResourceManager<File> {
                 // Propagate ACLs
                 if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                     authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
-                            MongoDBAdaptorFactory.FILE_COLLECTION);
+                            Entity.FILE);
                 }
 
                 File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
@@ -2556,7 +2556,7 @@ public class FileManager extends ResourceManager<File> {
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                                 authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),
-                                        allFileAcls.getResult(), MongoDBAdaptorFactory.FILE_COLLECTION);
+                                        allFileAcls.getResult(), Entity.FILE);
                             }
                         }
 
@@ -2606,7 +2606,7 @@ public class FileManager extends ResourceManager<File> {
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                                 authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),
-                                        allFileAcls.getResult(), MongoDBAdaptorFactory.FILE_COLLECTION);
+                                        allFileAcls.getResult(), Entity.FILE);
                             }
 
                             File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
