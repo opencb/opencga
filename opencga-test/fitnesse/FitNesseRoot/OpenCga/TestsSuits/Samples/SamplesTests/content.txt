@@ -315,7 +315,38 @@
 
 !3 Search Annotation Set By Annotation
 !|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=outer_var.inner_first_var=1000.57||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=outer_var.inner_first_var!=1000.57||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=outer_var.inner_second_var=2000||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=outer_var.inner_second_var!=2000||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=outer_var.inner_second_var%3C%3D2000||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=outer_var.inner_second_var%3C2000||Content-Type: application/json ||
+
+
+!3 Search Nested Annotation Set By Annotation
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+
+
+!3 Search Annotation Set By Annotation Using Include
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=var_double%3C%3D20.5||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId2%3Bvar_double%3C%3D20.5||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&include=annotationSets.annotations||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=var_double=20.5&include=annotationSets.annotations.var_double||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=var_double=20.5&include=annotation.var_double||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&include=annotationSets||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study||Content-Type: application/json ||
+
+!3 Search Annotation Set By Annotation Using Exclude xxx
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/search?sid=$sessionId&study=$study&exclude=annotationSets.annotations||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=var_double=20.5&exclude=annotationSets.annotations.var_double||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=var_double=20.5&exclude=annotation.var_double||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study&exclude=annotationSets||Content-Type: application/json ||
+| GET | /v1/samples/search?sid=$sessionId&study=$study||Content-Type: application/json ||
+
+
 
 !3 Search Annotation Set By Annotation With Exclude
 !|Table: Rest Fixture | $baseURL |
@@ -351,6 +382,20 @@
 | setBody | {"annotationSets":[{"name": "string", "variableSetId": "$gVariableSetId",  "annotations": {"var_double": "2065.35"}}]}|
 |setHeader|Content-Type:application/json|
 |POST| /v1/samples/$sampleId2/update?sid=$sessionId |200|  Content-Type: application/json ||
+
+
+
+!3 Group By Annotation 
+!|Table: Rest Fixture | $baseURL |
+|setHeader|Content-Type:application/json|
+|GET| /v1/samples/groupBy?sid=$sessionId&fields=annotation:$gVariableSetId:string:var_int,date |200|  Content-Type: application/json ||
+|GET| /v1/samples/groupBy?sid=$sessionId&fields=annotation:$gVariableSetId |200|  Content-Type: application/json ||
+
+
+
+
+
+
 
 !3 Delete Annotation
 !|Table: Rest Fixture | $baseURL |

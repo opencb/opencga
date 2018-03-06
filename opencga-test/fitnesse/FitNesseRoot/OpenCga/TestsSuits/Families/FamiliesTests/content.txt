@@ -257,7 +257,8 @@
 !| Table: Rest Fixture | $baseURL |
 | setBody | {  "name": "$asName2",  "annotations": {"var_int": "50"}} |
 | setHeader | Content-Type:application/json |
-| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSet=$gvsName&study=$studyId | 200 | Content-Type : application/json | jsonbody.response[0].result.length == 1 && jsonbody.response[0].result[0].annotations["var_int"] == '50' &&  jsonbody.response[0].result[0].annotations["var_double"] == '20.5' |
+| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSet=$gvsName&study=$studyId |  | Content-Type : application/json | |
+#| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSet=$gvsName&study=$studyId | 200 | Content-Type : application/json | jsonbody.response[0].result.length == 1 && jsonbody.response[0].result[0].annotations["var_int"] == '50' &&  jsonbody.response[0].result[0].annotations["var_double"] == '20.5' |
 
 !3 (Negative) Create Annotation Set with Invalid Data Type
 !| Table: Rest Fixture | $baseURL |

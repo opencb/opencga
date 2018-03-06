@@ -225,8 +225,15 @@
 | GET |/v1/cohorts/search?sid=$sessionId&study=$study|| Content-Type: application/json ||
 | GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId|| Content-Type: application/json |jsonbody.response[0].numTotalResults == 1|
 | GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId||Content-Type: application/json |jsonbody.response[0].result[0].id == $cohortId2|
+| GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId||Content-Type: application/json ||
 | GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId2||Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
 | GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId2||Content-Type: application/json|jsonbody.response[0].result[0].id == $cohortId2|
+| GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet!=$gVariableSetId2||Content-Type: application/json||
+| GET |/v1/cohorts/search?sid=$sessionId&study=$study|| Content-Type: application/json ||
+| GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId|| Content-Type: application/json ||
+| GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet!==$gVariableSetId||Content-Type: application/json ||
+| GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet=$gVariableSetId2||Content-Type: application/json ||
+| GET |/v1/cohorts/search?sid=$sessionId&study=$study&annotation=variableSet!==$gVariableSetId2||Content-Type: application/json||
 
 !3 Search Annotation Set By Annotation
 !|Table: Rest Fixture | $baseURL |
