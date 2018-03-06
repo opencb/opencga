@@ -21,6 +21,7 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
 
     public static final String SAMPLES = "samples";
     public static final String FILL_GAPS = "fillGaps";
+    public static final String OVERWRITE = "overwrite";
     private AbstractFillFromArchiveTask task;
 
     public static void setSamples(Job job, Collection<Integer> sampleIds) {
@@ -42,6 +43,10 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
             throw new IllegalArgumentException("Missing param " + FILL_GAPS);
         }
         return configuration.getBoolean(FILL_GAPS, false);
+    }
+
+    public static boolean isOverwrite(Configuration configuration) {
+        return configuration.getBoolean(OVERWRITE, false);
     }
 
     @Override

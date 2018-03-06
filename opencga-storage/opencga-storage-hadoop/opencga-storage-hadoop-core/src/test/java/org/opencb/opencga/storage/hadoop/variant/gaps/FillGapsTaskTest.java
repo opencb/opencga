@@ -151,7 +151,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         sampleIds.sort(Integer::compareTo);
 
         // Fill missing
-        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options);
+        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options, false);
         printVariants(dbAdaptor, newOutputUri());
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
@@ -168,7 +168,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         checkFillMissing(dbAdaptor, Arrays.asList(3, 4), "NA12877", "NA12878");
 
         // Fill missing
-        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options);
+        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options, false);
         printVariants(dbAdaptor, newOutputUri());
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertTrue(studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
@@ -184,7 +184,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
 
         // Fill missing
-        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options);
+        variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options, false);
         printVariants(dbAdaptor, newOutputUri());
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
     }

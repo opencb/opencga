@@ -38,6 +38,7 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
     private PhoenixHelper.Column fillMissingColumn;
     private List<Integer> indexedFiles;
     private long timestamp;
+    private boolean fillAllFiles;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -51,6 +52,7 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
         if (timestamp <= 0) {
             throw new IllegalArgumentException(AbstractAnalysisTableDriver.TIMESTAMP + " not defined!");
         }
+        fillAllFiles = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
     }
     private final Logger logger = LoggerFactory.getLogger(PrepareFillMissingMapper.class);
 
@@ -63,7 +65,7 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
         byte[] lastFileBytes = value.getValue(family, fillMissingColumn.bytes());
         Collection<Integer> fileBatches;
         boolean newVariant;
-        if (lastFileBytes == null || lastFileBytes.length == 0) {
+        if (lastFileBytes == null || lastFileBytes.length == 0 || fillAllFiles) {
             fileBatches = this.allFileBatches;
             newVariant = true;
 //            logger.info("FILL ALL for variant " + variant + " -> " + fileBatches);

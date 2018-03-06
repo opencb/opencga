@@ -459,9 +459,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param study     Study
      * @param options   Other options
+     * @param overwrite Overwrite gaps for all files and variants
      * @throws StorageEngineException if there is any error
      */
-    public void fillMissing(String study, ObjectMap options) throws StorageEngineException {
+    public void fillMissing(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 

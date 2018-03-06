@@ -533,10 +533,7 @@ public class StorageVariantCommandOptions {
     }
 
     @Parameters(commandNames = {FillMissingCommandOptions.FILL_MISSING_COMMAND}, commandDescription = FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION)
-    public class FillMissingCommandOptions {
-
-        public static final String FILL_MISSING_COMMAND = "fill-missing";
-        public static final String FILL_MISSING_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
+    public class FillMissingCommandOptions extends GenericFillMissingCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
@@ -546,9 +543,17 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
+    }
+
+    public static class GenericFillMissingCommandOptions {
+        public static final String FILL_MISSING_COMMAND = "fill-missing";
+        public static final String FILL_MISSING_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
         public boolean resume;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite gaps for all files and variants. Repeat operation for already processed variants.")
+        public boolean overwrite;
     }
 
     /**
