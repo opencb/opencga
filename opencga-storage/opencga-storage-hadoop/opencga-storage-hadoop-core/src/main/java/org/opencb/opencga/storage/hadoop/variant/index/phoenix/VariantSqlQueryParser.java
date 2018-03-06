@@ -391,6 +391,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#STUDY}
      * {@link VariantQueryParam#FILE}
      * {@link VariantQueryParam#FILTER}
+     * {@link VariantQueryParam#QUAL}
      * {@link VariantQueryParam#COHORT}
      * {@link VariantQueryParam#GENOTYPE}
      *
@@ -510,7 +511,7 @@ public class VariantSqlQueryParser {
         }
 
         QueryOperation filtersOperation = null;
-        List<String> filterValues = null;
+        List<String> filterValues = Collections.emptyList();
         if (isValidParam(query, FILTER)) {
             String value = query.getString(FILTER.key());
             filtersOperation = checkOperator(value);
@@ -518,6 +519,19 @@ public class VariantSqlQueryParser {
             if (!filterValues.isEmpty()) {
                 if (!isValidParam(query, FILE)) {
                     throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILE.key() + "\" filter");
+                }
+            }
+        }
+
+        QueryOperation qualOperation = null;
+        List<String> qualValues = Collections.emptyList();
+        if (isValidParam(query, QUAL)) {
+            String value = query.getString(QUAL.key());
+            qualOperation = checkOperator(value);
+            qualValues = splitValue(value, qualOperation);
+            if (!qualValues.isEmpty()) {
+                if (!isValidParam(query, FILE)) {
+                    throw VariantQueryException.malformedParam(QUAL, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
         }
@@ -559,7 +573,7 @@ public class VariantSqlQueryParser {
                     sb.append('[').append(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX + 1).append(']');
                     sb.append(" = '").append(VariantOverlappingStatus.NONE.toString()).append('\'');
 
-                    if (filterValues != null && !filterValues.isEmpty()) {
+                    if (!filterValues.isEmpty()) {
                         // ( "FILE"[3] = 'N' AND ( "FILE"[5] = 'FILTER_1' OR "FILE"[5] = 'FILTER_2' ) )
                         sb.append(" AND ( ");
                         for (int i = 0; i < filterValues.size(); i++) {
@@ -592,6 +606,33 @@ public class VariantSqlQueryParser {
                                 }
                                 sb.append(" LIKE '%").append(filter).append("%'");
                             }
+                        }
+                        sb.append(" ) ");
+                    }
+                    if (!qualValues.isEmpty()) {
+                        // ( "FILE"[3] = 'N' AND ( "FILE"[5] = 'FILTER_1' OR "FILE"[5] = 'FILTER_2' ) )
+                        sb.append(" AND ( ");
+                        for (int i = 0; i < qualValues.size(); i++) {
+                            String qualValue = qualValues.get(i);
+                            String[] strings = splitOperator(qualValue);
+                            String op = strings[1];
+                            String qual = strings[2];
+
+                            if (i > 0 && qualOperation != null) {
+                                sb.append(' ').append(qualOperation.name()).append(' ');
+                            }
+
+                            sb.append("TO_NUMBER(");
+                            sb.append('"');
+                            buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                            sb.append('"');
+
+                            // Arrays in SQL are 1-based.
+                            sb.append('[').append(HBaseToStudyEntryConverter.FILE_QUAL_IDX + 1).append(']');
+                            sb.append(')');
+
+                            double parsedValue = parseDouble(qual, QUAL, qualValue);
+                            sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
                         }
                         sb.append(" ) ");
                     }
