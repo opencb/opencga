@@ -271,7 +271,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
             for (File file : filesToIndex) {
                 QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus,
-                        fileStatusMessage, sessionId);
+                        fileStatusMessage, release, sessionId);
                 file.setIndex(fileIndexQueryResult.first());
             }
         }
@@ -307,7 +307,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 // Copy results to catalog
                 copyResults(outdir, catalogOutDirId, sessionId);
             }
-            updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, saveIntermediateFiles, options, sessionId);
+            updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, release, saveIntermediateFiles, options, sessionId);
             // Restore previous cohort status. Cohort status will be read from StudyConfiguration.
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
@@ -405,7 +405,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     }
 
     private void updateFileInfo(Study study, List<File> filesToIndex, List<StoragePipelineResult> storagePipelineResults, Path outdir,
-                                boolean saveIntermediateFiles, QueryOptions options, String sessionId)
+                                Integer release, boolean saveIntermediateFiles, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
 
         Map<String, StoragePipelineResult> map;
@@ -509,7 +509,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             fileManager.update(indexedFile.getId(), params, new QueryOptions(), sessionId);
 
             // Update index status
-            fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, sessionId);
+            fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, release, sessionId);
 
             boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
             if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {

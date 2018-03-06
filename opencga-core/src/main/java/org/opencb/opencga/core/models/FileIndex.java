@@ -31,6 +31,8 @@ public class FileIndex {
     @Deprecated
     private long jobId;
 
+    private long release;
+
     private TransformedFile transformedFile;
     private LocalFileIndex localFileIndex;
 
@@ -234,6 +236,15 @@ public class FileIndex {
 
     public FileIndex setJobId(long jobId) {
         this.jobId = jobId;
+        return this;
+    }
+
+    public long getRelease() {
+        return release;
+    }
+
+    public FileIndex setRelease(long release) {
+        this.release = release;
         return this;
     }
 

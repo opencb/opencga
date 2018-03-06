@@ -300,6 +300,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     }
 
     public class FileTransformFilter extends TransformFilter {
+        protected final QueryOptions OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.INDEX.key()));
+
         @Override
         protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
             return catalogManager.getFileManager().getId(value, defaultStudyStr, sessionId).getResourceId();
@@ -311,7 +314,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 return true;
             }
 
-            return catalogManager.getFileManager().get(id, OPTIONS, sessionId).first().getRelease() <= release;
+            File file = catalogManager.getFileManager().get(id, OPTIONS, sessionId).first();
+            return file.getIndex() != null && file.getIndex().getRelease() <= release;
+//            return file.getRelease() <= release;
 //            return catalogManager.getFileManager().count(defaultStudyStr,
 //                    new Query(FileDBAdaptor.QueryParams.ID.key(), id)
 //                            .append(FileDBAdaptor.QueryParams.RELEASE.key(), release), sessionId).getNumTotalResults() == 1;
