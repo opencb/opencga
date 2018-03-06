@@ -412,7 +412,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         long studyId = studyManager.getId(userId, studyStr);
 
         Query finalQuery = new Query(query);
-        fixQuery(studyId, finalQuery, sessionId);
+        try {
+            fixQuery(studyId, finalQuery, sessionId);
+        } catch (CatalogException e) {
+            // Any of mother, father or sample ids or names do not exist or were not found
+            return new QueryResult<>("Get");
+        }
 
         finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
@@ -430,7 +435,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         long studyId = studyManager.getId(userId, studyStr);
 
         Query finalQuery = new Query(query);
-        fixQuery(studyId, finalQuery, sessionId);
+        try {
+            fixQuery(studyId, finalQuery, sessionId);
+        } catch (CatalogException e) {
+            // Any of mother, father or sample ids or names do not exist or were not found
+            return new QueryResult<>(null);
+        }
 
         finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Long> queryResultAux = individualDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
@@ -674,7 +684,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         long studyId = studyManager.getId(userId, studyStr);
 
         Query finalQuery = new Query(query);
-        fixQuery(studyId, finalQuery, sessionId);
+        try {
+            fixQuery(studyId, finalQuery, sessionId);
+        } catch (CatalogException e) {
+            // Any of mother, father or sample ids or names do not exist or were not found
+            return new QueryResult<>(null);
+        }
 
         // Add study id to the query
         finalQuery.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
