@@ -214,6 +214,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @QueryParam("release") String release) {
         try {
+            query.remove("study");
             return createOkResponse(familyManager.delete(studyStr, query, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

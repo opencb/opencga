@@ -518,9 +518,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 // Check if the individual can be deleted
                 if (!params.getBoolean(Constants.FORCE, false)) {
                     if (familyQueryResult.getNumResults() > 0) {
-                        throw new CatalogException("Individual found in families: " + familyQueryResult.getResult()
+                        throw new CatalogException("Individual found in the families: " + familyQueryResult.getResult()
                                 .stream()
-                                .map(f -> f.getId() + "-" + f.getName())
+                                .map(f -> f.getName() + " (" + f.getId() + ")")
                                 .collect(Collectors.joining(", ")));
                     }
                 } else {

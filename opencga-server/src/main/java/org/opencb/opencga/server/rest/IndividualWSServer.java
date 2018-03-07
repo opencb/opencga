@@ -433,6 +433,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
                 @QueryParam("release") String release) {
         try {
+            query.remove("study");
             return createOkResponse(individualManager.delete(studyStr, query, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
