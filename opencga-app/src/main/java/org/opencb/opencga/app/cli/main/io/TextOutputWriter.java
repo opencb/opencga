@@ -19,12 +19,13 @@ package org.opencb.opencga.app.cli.main.io;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -421,8 +422,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     sb.append("#KEY\tVALUE\n");
                 }
 
-                for (Annotation annotation : annotationSet.getAnnotations()) {
-                    sb.append(String.format("%s\t%s\n", annotation.getName(), annotation.getValue()));
+                for (Map.Entry<String, Object> annotation : annotationSet.getAnnotations().entrySet()) {
+                    sb.append(String.format("%s\t%s\n", annotation.getKey(), annotation.getValue()));
                 }
             }
         }

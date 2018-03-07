@@ -461,7 +461,8 @@ public class VariantMongoDBQueryParser {
                     isValidParam(query, FILE)
                             || isValidParam(query, GENOTYPE)
                             || isValidParam(query, SAMPLE)
-                            || isValidParam(query, FILTER);
+                            || isValidParam(query, FILTER)
+                            || isValidParam(query, QUAL);
 
             // Use an elemMatch with all the study filters if there is more than one study registered,
             // or FILES and STUDIES filters are being used.
@@ -527,36 +528,49 @@ public class VariantMongoDBQueryParser {
                         f -> studyConfigurationManager.getFileIdPair(f, false, defaultStudyConfiguration).getValue());
             }
 
-            if (isValidParam(query, FILTER)) {
+            if (isValidParam(query, FILTER) || isValidParam(query, QUAL)) {
                 String values = query.getString(FILTER.key());
-                QueryOperation operation = checkOperator(values);
-                List<String> filterValues = splitValue(values, operation);
+                QueryOperation filterOperation = checkOperator(values);
+                List<String> filterValues = splitValue(values, filterOperation);
+//                values = query.getString(QUAL.key());
+//                QueryOperation qualOperation = checkOperator(values);
+//                List<String> qualValues = splitValue(values, qualOperation);
                 if (fileIds.isEmpty()) {
                     String key = studyQueryPrefix
                             + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                            + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.'
-                            + StudyEntry.FILTER;
+                            + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
 
-                    DBObject[] regexList = getFileFilterDBObjects(key, filterValues);
-                    if (operation == QueryOperation.OR) {
-                        studyBuilder.or(regexList);
-                    } else {
-                        studyBuilder.and(regexList);
+                    if (isValidParam(query, FILTER)) {
+                        DBObject[] regexList = getFileFilterDBObjects(key + StudyEntry.FILTER, filterValues);
+                        if (filterOperation == QueryOperation.OR) {
+                            studyBuilder.or(regexList);
+                        } else {
+                            studyBuilder.and(regexList);
+                        }
+                    }
+                    if (isValidParam(query, QUAL)) {
+                        addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), studyBuilder, false);
                     }
                 } else {
                     DBObject[] fileElemMatch = new DBObject[fileIds.size()];
-                    String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.' + StudyEntry.FILTER;
-                    DBObject[] regexList = getFileFilterDBObjects(key, filterValues);
+                    String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
+                    DBObject[] regexList = getFileFilterDBObjects(key + StudyEntry.FILTER, filterValues);
 
                     int i = 0;
                     for (Integer fileId : fileIds) {
                         QueryBuilder fileBuilder = QueryBuilder.start();
-                        if (operation == QueryOperation.OR) {
-                            fileBuilder.or(regexList);
-                        } else {
-                            fileBuilder.and(regexList);
-                        }
+
                         fileBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).is(fileId);
+                        if (isValidParam(query, FILTER)) {
+                            if (filterOperation == QueryOperation.OR) {
+                                fileBuilder.or(regexList);
+                            } else {
+                                fileBuilder.and(regexList);
+                            }
+                        }
+                        if (isValidParam(query, QUAL)) {
+                            addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileBuilder, false);
+                        }
                         fileElemMatch[i++] = new BasicDBObject(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD,
                                 new BasicDBObject("$elemMatch", fileBuilder.get()));
                     }

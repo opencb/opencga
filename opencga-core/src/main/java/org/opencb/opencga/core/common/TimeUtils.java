@@ -31,6 +31,10 @@ public class TimeUtils {
         return getTime(new Date());
     }
 
+    public static Date getDate() {
+        return new Date();
+    }
+
     public static String getTime(Date date) {
         SimpleDateFormat sdf = new SimpleDateFormat(yyyyMMddHHmmss);
         return sdf.format(date);

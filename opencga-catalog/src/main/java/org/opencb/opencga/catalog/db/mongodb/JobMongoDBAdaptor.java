@@ -21,6 +21,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -92,7 +93,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_ID, jobId);
         jobObject.put(PRIVATE_STUDY_ID, studyId);
-        jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
+        if (StringUtils.isNotEmpty(job.getCreationDate())) {
+            jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
+        } else {
+            jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
 
         jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0

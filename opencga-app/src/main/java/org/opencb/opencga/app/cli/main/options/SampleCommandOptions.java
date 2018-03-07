@@ -167,12 +167,6 @@ public class SampleCommandOptions {
         @Parameter(names = {"-a", "--annotation"}, description = "SampleAnnotations values. <variableName>:<annotationValue>(,<annotationValue>)*", arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variable-set"}, description = "Variable set id or name.", required = false, arity = 1)
-        public String variableSetId;
-
         @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
         public String type;
 

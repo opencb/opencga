@@ -309,7 +309,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setNumTasks(loadThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true).build();
-            if (options.getBoolean(DIRECT_LOAD_PARALLEL_WRITE.key(), DIRECT_LOAD_PARALLEL_WRITE.defaultValue())) {
+            if (isDirectLoadParallelWrite(options)) {
                 logger.info("Multi thread direct load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
                 ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converter).then(loader), null, config);
             } else {
@@ -366,10 +366,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         final int numReaders = 1;
 //        final int numTasks = loadThreads == 1 ? 1 : loadThreads - numReaders; //Subtract the reader thread
 
-        MongoDBCollection stageCollection = dbAdaptor.getStageCollection();
 
         try {
             StudyConfiguration studyConfiguration = getStudyConfiguration();
+            MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
 
             //Reader
             VariantReader variantReader;
@@ -391,7 +391,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setNumTasks(loadThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true).build();
-            if (options.getBoolean(STAGE_PARALLEL_WRITE.key(), STAGE_PARALLEL_WRITE.defaultValue())) {
+            if (isStageParallelWrite(options)) {
                 logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
                 ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converterTask).then(stageLoader), null, config);
             } else {
@@ -541,7 +541,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         StudyConfiguration studyConfiguration = preMerge(fileIds);
 
         //Stage collection where files are loaded.
-        MongoDBCollection stageCollection = dbAdaptor.getStageCollection();
+        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
 
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
@@ -687,7 +687,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private MongoDBVariantWriteResult mergeByChromosome(List<Integer> fileIds, int batchSize, int loadThreads,
             StudyConfiguration studyConfiguration, String chromosomeToLoad, Set<Integer> indexedFiles)
             throws StorageEngineException {
-        MongoDBCollection stageCollection = dbAdaptor.getStageCollection();
+        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
                 chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
         MergeMode mergeMode = MergeMode.from(studyConfiguration.getAttributes());
@@ -715,7 +715,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 .setBatchSize(batchSize)
                 .setAbortOnFail(true).build();
         try {
-            if (options.getBoolean(MERGE_PARALLEL_WRITE.key(), MERGE_PARALLEL_WRITE.defaultValue())) {
+            if (isMergeParallelWrite(options)) {
                 ptrMerge = new ParallelTaskRunner<>(reader, variantMerger.then(variantLoader), null, config);
             } else {
                 ptrMerge = new ParallelTaskRunner<>(reader, variantMerger, variantLoader, config);

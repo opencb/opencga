@@ -8,7 +8,10 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
@@ -148,16 +151,16 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
             sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));
             for (AnnotationSet annotationSet : annotationSets) {
                 String prefix = annotationSets.size() > 1 ? annotationSet.getName() + '.' : "";
-                Set<Annotation> annotations = annotationSet.getAnnotations();
-                for (Annotation annotation : annotations) {
-                    Object value = annotation.getValue();
+                Map<String, Object> annotations = annotationSet.getAnnotations();
+                for (Map.Entry<String, Object> annotationEntry : annotations.entrySet()) {
+                    Object value = annotationEntry.getValue();
                     String stringValue;
                     if (value instanceof Collection) {
                         stringValue = ((Collection<?>) value).stream().map(Object::toString).collect(Collectors.joining(","));
                     } else {
                         stringValue = value.toString();
                     }
-                    sample.getAnnotations().put(prefix + annotation.getName(), stringValue);
+                    sample.getAnnotations().put(prefix + annotationEntry.getKey(), stringValue);
                 }
             }
         }
