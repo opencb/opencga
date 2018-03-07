@@ -394,25 +394,55 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Override
     public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException {
-        filterOutDeleted(query);
+        Query finalQuery = new Query(query);
+        filterOutDeleted(finalQuery);
 
         if (studyPermission == null) {
             studyPermission = StudyAclEntry.StudyPermissions.VIEW_SAMPLES;
         }
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), finalQuery.getLong(QueryParams.STUDY_ID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + finalQuery.getLong(QueryParams.STUDY_ID.key()) + " not found");
         }
+
+        // Just in case the parameter is in the query object, we attempt to remove it from the query map
+        finalQuery.remove(QueryParams.INDIVIDUAL_ID.key());
 
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getSamplePermission().name());
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
-        logger.debug("Sample count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return sampleCollection.count(bson);
+        Bson bson = parseQuery(finalQuery, false, queryForAuthorisedEntries);
+
+        if (query.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
+            // We need to do a left join
+            Bson match = Aggregates.match(bson);
+            Bson lookup = Aggregates.lookup("individual", QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".id",
+                    "_individual");
+
+            // We create the match for the individual id
+            List<Bson> andBsonList = new ArrayList<>();
+            addAutoOrQuery("_individual.id", QueryParams.INDIVIDUAL_ID.key(), query, QueryParams.INDIVIDUAL_ID.type(), andBsonList);
+            Bson individualMatch = Aggregates.match(andBsonList.get(0));
+
+            Bson count = Aggregates.count("count");
+
+            logger.debug("Sample count aggregation: {} -> {} -> {} -> {}",
+                    match.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    lookup.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    individualMatch.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    count.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            QueryResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, lookup, individualMatch, count),
+                    QueryOptions.empty());
+            long numResults = aggregate.getNumResults() == 0 ? 0 : ((int) aggregate.first().get("count"));
+            return new QueryResult<>(null, aggregate.getDbTime(), 1, 1, null, null, Collections.singletonList(numResults));
+        } else {
+            logger.debug("Sample count query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            return sampleCollection.count(bson);
+        }
     }
 
     private void filterOutDeleted(Query query) {
@@ -617,8 +647,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
         }
 
-        filterOutDeleted(query);
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        Query finalQuery = new Query(query);
+        filterOutDeleted(finalQuery);
         QueryOptions qOptions;
         if (options != null) {
             qOptions = new QueryOptions(options);
@@ -628,7 +658,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
 
-        logger.debug("Sample get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        // Just in case the parameter is in the query object, we attempt to remove it from the query map
+        finalQuery.remove(QueryParams.INDIVIDUAL_ID.key());
+
+        Bson bson = parseQuery(finalQuery, false, queryForAuthorisedEntries);
 
         if (query.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
             // We need to do a left join
@@ -641,8 +674,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             addAutoOrQuery("_individual.id", QueryParams.INDIVIDUAL_ID.key(), query, QueryParams.INDIVIDUAL_ID.type(), andBsonList);
             Bson individualMatch = Aggregates.match(andBsonList.get(0));
 
+            logger.debug("Sample aggregation: {} -> {} -> {}",
+                    match.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    lookup.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    individualMatch.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
             return sampleCollection.nativeQuery().aggregate(Arrays.asList(match, lookup, individualMatch), qOptions).iterator();
         } else {
+            logger.debug("Sample query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
             return  sampleCollection.nativeQuery().find(bson, qOptions).iterator();
         }
     }
@@ -745,7 +784,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             QueryParams queryParam =  QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             if (queryParam == null) {
-                continue;
+                if (Constants.ALL_VERSIONS.equals(entry.getKey()) || Constants.PRIVATE_ANNOTATION_PARAM_TYPES.equals(entry.getKey())) {
+                    continue;
+                }
+                throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
+                        + "queried for.");
             }
             try {
                 switch (queryParam) {
@@ -798,7 +841,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
-                        break;
+                        throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
                 }
             } catch (Exception e) {
                 if (e instanceof CatalogDBException) {

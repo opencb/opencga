@@ -1272,20 +1272,21 @@ public class CatalogManagerTest extends GenericTest {
                 ("AGE", 25).append("PHEN", "CASE").append("ALIVE", true), sessionIdUser);
 
         List<String> individuals;
-        individuals = catalogManager.getIndividualManager().get(studyId, new Query(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                variableSet.getId()).append(IndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".NAME", "~^INDIVIDUAL_"), null, sessionIdUser)
+        individuals = catalogManager.getIndividualManager().get(studyId,
+                new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":NAME=~^INDIVIDUAL_"), null,
+                sessionIdUser)
                 .getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_1", "INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getIndividualManager().get(studyId, new Query(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                variableSet.getId()).append(IndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10"), null, sessionIdUser).getResult()
-                .stream().map(Individual::getName).collect(Collectors.toList());
+        individuals = catalogManager.getIndividualManager().get(studyId,
+                new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":AGE>10"), null, sessionIdUser)
+                .getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getIndividualManager().get(studyId, new Query(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                variableSet.getId()).append(IndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10").append(IndividualDBAdaptor
-                .QueryParams.ANNOTATION.key() + ".PHEN", "CASE"), null, sessionIdUser).getResult().stream().map(Individual::getName).collect
-                (Collectors.toList());
+        individuals = catalogManager.getIndividualManager().get(studyId,
+                new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":AGE>10;" + variableSet.getId()
+                        + ":PHEN=CASE"), null, sessionIdUser)
+                .getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
     }
 
