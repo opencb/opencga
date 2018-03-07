@@ -68,6 +68,11 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
 
+    @Override
+    public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
+        return null;
+    }
+
     /**
      * General method to create an annotation set that will have to be implemented. The managers implementing it will have to check the
      * validity of the sessionId and permissions and call the general createAnnotationSet implemented above.

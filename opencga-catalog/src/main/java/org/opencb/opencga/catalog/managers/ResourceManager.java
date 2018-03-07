@@ -1,10 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -251,6 +248,17 @@ public abstract class ResourceManager<R> extends AbstractManager {
      * @throws CatalogException catalogException.
      */
     public abstract QueryResult<R> count(String studyStr, Query query, String sessionId) throws CatalogException;
+
+    /**
+     * Delete all entries matching the query.
+     *
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param query Query object.
+     * @param params Map containing additional parameters to be considered for the deletion.
+     * @param sessionId Session id of the user logged in.
+     * @return A WriteResult object containing the number of matching elements, deleted and elements that could not be deleted.
+     */
+    public abstract WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId);
 
     /**
      * Delete entries from Catalog.

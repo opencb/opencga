@@ -68,7 +68,6 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
         PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
-        VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, "");

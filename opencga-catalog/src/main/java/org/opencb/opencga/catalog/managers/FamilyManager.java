@@ -20,10 +20,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -39,10 +37,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.OntologyTerm;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -329,6 +324,89 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         QueryResult<Long> queryResultAux = familyDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
+
+    @Override
+    public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+        WriteResult writeResult = new WriteResult("delete", -1, -1, -1, null, null, null);
+
+        String userId;
+        long studyId;
+
+        // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+        boolean checkPermissions;
+
+        // We try to get an iterator containing all the families to be deleted
+        DBIterator<Family> iterator;
+        try {
+            userId = catalogManager.getUserManager().getUserId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            // Fix query if it contains any annotation
+            fixQueryAnnotationSearch(studyId, finalQuery);
+            fixQueryObject(finalQuery, studyId, sessionId);
+            finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+            iterator = familyDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(studyId, userId);
+        } catch (CatalogException e) {
+            logger.error("Delete family: {}", e.getMessage(), e);
+            writeResult.setError(new Error(e.getMessage(), -1));
+            return writeResult;
+        }
+
+        long numMatches = 0;
+        long numModified = 0;
+        long startTime = System.currentTimeMillis();
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        while (iterator.hasNext()) {
+            Family family = iterator.next();
+            numMatches += 1;
+
+            try {
+                if (checkPermissions) {
+                    authorizationManager.checkFamilyPermission(studyId, family.getId(), userId, FamilyAclEntry.FamilyPermissions.DELETE);
+                }
+
+                // Check if the family can be deleted
+                // TODO: Check if the family is used in a clinical analysis. At this point, it can be deleted no matter what.
+
+                // Delete the family
+                Query updateQuery = new Query()
+                        .append(FamilyDBAdaptor.QueryParams.ID.key(), family.getId())
+                        .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(Constants.ALL_VERSIONS, true);
+                ObjectMap updateParams = new ObjectMap()
+                        .append(FamilyDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
+                        .append(FamilyDBAdaptor.QueryParams.NAME.key(), family.getName() + suffixName);
+                QueryResult<Long> update = familyDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.first() > 0) {
+                    numModified += 1;
+                } else {
+                    failList.add(new WriteResult.Fail(String.valueOf(family.getId()), "Unknown reason"));
+                }
+            } catch (Exception e) {
+                failList.add(new WriteResult.Fail(String.valueOf(family.getId()), e.getMessage()));
+                logger.debug("Cannot delete family {}: {}", family.getId(), e.getMessage(), e);
+            }
+        }
+
+        writeResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        writeResult.setNumMatches(numMatches);
+        writeResult.setNumModified(numModified);
+        writeResult.setFailed(failList);
+
+        if (!failList.isEmpty()) {
+            writeResult.setWarning(new Error("Not all the families could be deleted", -1));
+        }
+
+        return writeResult;
     }
 
     @Override

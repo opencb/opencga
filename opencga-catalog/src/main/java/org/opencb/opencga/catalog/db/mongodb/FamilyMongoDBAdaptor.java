@@ -330,7 +330,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
         if (parameters.containsKey(QueryParams.NAME.key())) {
             // That can only be done to one family...
-            QueryResult<Family> familyQueryResult = get(query, new QueryOptions());
+
+            Query tmpQuery = new Query(query);
+            // We take out ALL_VERSION from query just in case we get multiple results from the same family...
+            tmpQuery.remove(Constants.ALL_VERSIONS);
+
+            QueryResult<Family> familyQueryResult = get(tmpQuery, new QueryOptions());
             if (familyQueryResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update family: No family found to be updated");
             }
@@ -341,7 +346,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             // Check that the new sample name is still unique
             long studyId = getStudyId(familyQueryResult.first().getId());
 
-            Query tmpQuery = new Query()
+            tmpQuery = new Query()
                     .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
                     .append(QueryParams.STUDY_ID.key(), studyId);
             QueryResult<Long> count = count(tmpQuery);
