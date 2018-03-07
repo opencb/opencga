@@ -18,12 +18,14 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -36,10 +38,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -459,7 +458,137 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
-        return null;
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+        WriteResult writeResult = new WriteResult("delete", -1, -1, -1, null, null, null);
+
+        String userId;
+        long studyId;
+
+        // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+        boolean checkPermissions;
+
+        // We try to get an iterator containing all the individuals to be deleted
+        DBIterator<Individual> iterator;
+        try {
+            userId = catalogManager.getUserManager().getUserId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            // Fix query if it contains any annotation
+            fixQuery(studyId, finalQuery, sessionId);
+            // Fix query if it contains any annotation
+            fixQueryAnnotationSearch(studyId, finalQuery);
+
+            finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+            iterator = individualDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(studyId, userId);
+        } catch (CatalogException e) {
+            logger.error("Delete individual: {}", e.getMessage(), e);
+            writeResult.setError(new Error(e.getMessage(), -1));
+            return writeResult;
+        }
+
+        long numMatches = 0;
+        long numModified = 0;
+        long startTime = System.currentTimeMillis();
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        while (iterator.hasNext()) {
+            Individual individual = iterator.next();
+            numMatches += 1;
+
+            try {
+                if (checkPermissions) {
+                    authorizationManager.checkIndividualPermission(studyId, individual.getId(), userId,
+                            IndividualAclEntry.IndividualPermissions.DELETE);
+                }
+
+                // Get the families the individual is a member of
+                Query tmpQuery = new Query()
+                        .append(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), individual.getId())
+                        .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                QueryResult<Family> familyQueryResult = familyDBAdaptor.get(tmpQuery, new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.NAME.key(),
+                                FamilyDBAdaptor.QueryParams.MEMBERS.key())));
+
+                // Check if the individual can be deleted
+                if (!params.getBoolean(Constants.FORCE, false)) {
+                    if (familyQueryResult.getNumResults() > 0) {
+                        throw new CatalogException("Individual found in families: " + familyQueryResult.getResult()
+                                .stream()
+                                .map(f -> f.getId() + "-" + f.getName())
+                                .collect(Collectors.joining(", ")));
+                    }
+                } else {
+                    logger.info("Forcing deletion of individuals belonging to families");
+                }
+
+                // Remove references of the individual in those families
+                for (Family family : familyQueryResult.getResult()) {
+                    List<Individual> members = new ArrayList<>();
+                    for (Individual member : family.getMembers()) {
+                        if (member.getId() != individual.getId()) {
+                            members.add(member);
+                        }
+                    }
+
+                    // In theory, the array of member should contain 1 element less than the original one
+                    if (members.size() + 1 == family.getMembers().size()) {
+                        // Remove member from the array of members in the family entry
+                        Query familyQuery = new Query()
+                            .append(FamilyDBAdaptor.QueryParams.ID.key(), family.getId())
+                            .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                            .append(Constants.ALL_VERSIONS, true);
+                        ObjectMap familyUpdate = new ObjectMap()
+                                .append(FamilyDBAdaptor.UpdateParams.MEMBERS.key(), members);
+
+                        QueryResult<Long> update = familyDBAdaptor.update(familyQuery, familyUpdate, QueryOptions.empty());
+                        if (update.first() == 0) {
+                            throw new CatalogException("Individual could not be extracted from family " + family.getId() + ". "
+                                    + "Individual not deleted");
+                        }
+                    } else {
+                        logger.error("Could not delete individual {}. The family {} that in theory contains that individual has the "
+                                + "following members: {}", individual.getId(), family.getId(),
+                                family.getMembers().stream().map(Individual::getId).collect(Collectors.toList()));
+                        throw new CatalogException("Internal error: Could not delete individual");
+                    }
+                }
+
+                // Delete the individual
+                Query updateQuery = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId())
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(Constants.ALL_VERSIONS, true);
+                ObjectMap updateParams = new ObjectMap()
+                        .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
+                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), individual.getName() + suffixName);
+                QueryResult<Long> update = individualDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.first() > 0) {
+                    numModified += 1;
+                } else {
+                    failList.add(new WriteResult.Fail(String.valueOf(individual.getId()), "Unknown reason"));
+                }
+            } catch (Exception e) {
+                failList.add(new WriteResult.Fail(String.valueOf(individual.getId()), e.getMessage()));
+                logger.debug("Cannot delete individual {}: {}", individual.getId(), e.getMessage(), e);
+            }
+        }
+
+        writeResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        writeResult.setNumMatches(numMatches);
+        writeResult.setNumModified(numModified);
+        writeResult.setFailed(failList);
+
+        if (!failList.isEmpty()) {
+            writeResult.setWarning(new Error("Not all the individuals could be deleted", -1));
+        }
+
+        return writeResult;
     }
 
     @Override

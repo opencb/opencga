@@ -9,6 +9,12 @@ public class Constants {
      */
     public static final String SILENT = "silent";
 
+
+    /**
+     * Forces some operations that would not be possible to perform otherwise.
+     */
+    public static final String FORCE = "force";
+
     /* ****************************************    Variable constants for versioning     ************************************************/
     /**
      * Boolean indicating whether to create a new version of the document containing the updates or update the same document.

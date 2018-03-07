@@ -399,22 +399,45 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{individuals}/delete")
-//    @ApiOperation(value = "Delete individual information [WARNING]", position = 7,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names up to a maximum of 100", required = true)
-//                                     @PathParam("individuals") String individualIds,
-//                                     @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                                     @QueryParam("study") String studyStr) {
-//        try {
-//            List<QueryResult<Individual>> queryResult = individualManager.delete(studyStr, individualIds, queryOptions, sessionId);
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @DELETE
+    @Path("/delete")
+    @ApiOperation(value = "Delete existing individuals")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of individuals that already belong to families",
+                    dataType = "boolean", defaultValue = "false", paramType = "query")
+    })
+    public Response delete(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "id") @QueryParam("id") String id,
+            @ApiParam(value = "name") @QueryParam("name") String name,
+            @ApiParam(value = "father") @QueryParam("father") String father,
+            @ApiParam(value = "mother") @QueryParam("mother") String mother,
+            @ApiParam(value = "sex") @QueryParam("sex") String sex,
+            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+            @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
+                    String populationName,
+            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
+                    String populationSubpopulation,
+            @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
+                    String populationDescription,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
+                    Individual.KaryotypicSex karyotypicSex,
+            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
+                    Individual.LifeStatus lifeStatus,
+            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
+                    Individual.AffectationStatus affectationStatus,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)", required = false) @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
+                @QueryParam("release") String release) {
+        try {
+            return createOkResponse(individualManager.delete(studyStr, query, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/groupBy")

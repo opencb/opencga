@@ -473,7 +473,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
         if (parameters.containsKey(QueryParams.NAME.key())) {
             // That can only be done to one individual...
-            QueryResult<Individual> individualQueryResult = get(query, new QueryOptions());
+            Query tmpQuery = new Query(query);
+            // We take out ALL_VERSION from query just in case we get multiple results from the same individual...
+            tmpQuery.remove(Constants.ALL_VERSIONS);
+
+            QueryResult<Individual> individualQueryResult = get(tmpQuery, new QueryOptions());
             if (individualQueryResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update individual: No individual found to be updated");
             }
@@ -484,7 +488,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             // Check that the new individual name is still unique
             long studyId = getStudyId(individualQueryResult.first().getId());
 
-            Query tmpQuery = new Query()
+            tmpQuery = new Query()
                     .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
                     .append(QueryParams.STUDY_ID.key(), studyId);
             QueryResult<Long> count = count(tmpQuery);
