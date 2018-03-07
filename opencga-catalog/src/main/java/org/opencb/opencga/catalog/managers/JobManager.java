@@ -19,14 +19,12 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -271,6 +269,21 @@ public class JobManager extends ResourceManager<Job> {
 
         query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
+        fixQueryObject(studyId, query, sessionId);
+
+        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, userId);
+
+        if (jobQueryResult.getNumResults() == 0 && query.containsKey("id")) {
+            List<Long> idList = query.getAsLongList("id");
+            for (Long myId : idList) {
+                authorizationManager.checkJobPermission(studyId, myId, userId, JobAclEntry.JobPermissions.VIEW);
+            }
+        }
+
+        return jobQueryResult;
+    }
+
+    private void fixQueryObject(long studyId, Query query, String sessionId) throws CatalogException {
         if (query.containsKey("inputFiles")) {
             MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getAsStringList("inputFiles"), Long.toString(studyId),
                     sessionId);
@@ -283,17 +296,6 @@ public class JobManager extends ResourceManager<Job> {
             query.put(JobDBAdaptor.QueryParams.OUTPUT_ID.key(), inputFiles.getResourceIds());
             query.remove("outputFiles");
         }
-
-        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, userId);
-
-        if (jobQueryResult.getNumResults() == 0 && query.containsKey("id")) {
-            List<Long> idList = query.getAsLongList("id");
-            for (Long myId : idList) {
-                authorizationManager.checkJobPermission(studyId, myId, userId, JobAclEntry.JobPermissions.VIEW);
-            }
-        }
-
-        return jobQueryResult;
     }
 
     @Override
@@ -316,18 +318,7 @@ public class JobManager extends ResourceManager<Job> {
         }
         query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        if (query.containsKey("inputFiles")) {
-            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getAsStringList("inputFiles"), Long.toString(studyId),
-                    sessionId);
-            query.put(JobDBAdaptor.QueryParams.INPUT_ID.key(), inputFiles.getResourceIds());
-            query.remove("inputFiles");
-        }
-        if (query.containsKey("outputFiles")) {
-            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getAsStringList("outputFiles"), Long.toString(studyId),
-                    sessionId);
-            query.put(JobDBAdaptor.QueryParams.OUTPUT_ID.key(), inputFiles.getResourceIds());
-            query.remove("outputFiles");
-        }
+        fixQueryObject(studyId, query, sessionId);
 
         return jobDBAdaptor.iterator(query, options, userId);
     }
@@ -339,18 +330,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-        if (query.containsKey("inputFiles")) {
-            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getAsStringList("inputFiles"), Long.toString(studyId),
-                    sessionId);
-            query.put(JobDBAdaptor.QueryParams.INPUT_ID.key(), inputFiles.getResourceIds());
-            query.remove("inputFiles");
-        }
-        if (query.containsKey("outputFiles")) {
-            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getAsStringList("outputFiles"), Long.toString(studyId),
-                    sessionId);
-            query.put(JobDBAdaptor.QueryParams.OUTPUT_ID.key(), inputFiles.getResourceIds());
-            query.remove("outputFiles");
-        }
+        fixQueryObject(studyId, query, sessionId);
 
         query.append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Long> queryResultAux = jobDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
@@ -360,7 +340,99 @@ public class JobManager extends ResourceManager<Job> {
 
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
-        return null;
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+        WriteResult writeResult = new WriteResult("delete", -1, -1, -1, null, null, null);
+
+        String userId;
+        long studyId;
+
+        // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+        boolean checkPermissions;
+
+        // We try to get an iterator containing all the jobs to be deleted
+        DBIterator<Job> iterator;
+        try {
+            userId = catalogManager.getUserManager().getUserId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            fixQueryObject(studyId, query, sessionId);
+            finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+            iterator = jobDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(studyId, userId);
+        } catch (CatalogException e) {
+            logger.error("Delete job: {}", e.getMessage(), e);
+            writeResult.setError(new Error(e.getMessage(), -1));
+            return writeResult;
+        }
+
+        long numMatches = 0;
+        long numModified = 0;
+        long startTime = System.currentTimeMillis();
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        while (iterator.hasNext()) {
+            Job job = iterator.next();
+            numMatches += 1;
+
+            try {
+                if (checkPermissions) {
+                    authorizationManager.checkJobPermission(studyId, job.getId(), userId, JobAclEntry.JobPermissions.DELETE);
+                }
+
+                // Check if the job can be deleted
+                checkJobCanBeDeleted(job);
+
+                // Delete the job
+                Query updateQuery = new Query()
+                        .append(JobDBAdaptor.QueryParams.ID.key(), job.getId())
+                        .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                ObjectMap updateParams = new ObjectMap()
+                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
+                        .append(JobDBAdaptor.QueryParams.NAME.key(), job.getName() + suffixName);
+                QueryResult<Long> update = jobDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.first() > 0) {
+                    numModified += 1;
+                } else {
+                    failList.add(new WriteResult.Fail(String.valueOf(job.getId()), "Unknown reason"));
+                }
+            } catch (Exception e) {
+                failList.add(new WriteResult.Fail(String.valueOf(job.getId()), e.getMessage()));
+                logger.debug("Cannot delete job {}: {}", job.getId(), e.getMessage(), e);
+            }
+        }
+
+        writeResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        writeResult.setNumMatches(numMatches);
+        writeResult.setNumModified(numModified);
+        writeResult.setFailed(failList);
+
+        if (!failList.isEmpty()) {
+            writeResult.setWarning(new Error("Not all the jobs could be deleted", -1));
+        }
+
+        return writeResult;
+    }
+
+    private void checkJobCanBeDeleted(Job job) throws CatalogException {
+        switch (job.getStatus().getName()) {
+            case Job.JobStatus.DELETED:
+                throw new CatalogException("Job already deleted.");
+            case Job.JobStatus.PREPARED:
+            case Job.JobStatus.RUNNING:
+            case Job.JobStatus.QUEUED:
+                throw new CatalogException("The status of the job is " + job.getStatus().getName()
+                        + ". Please, stop the job before deleting it.");
+            case Job.JobStatus.DONE:
+            case Job.JobStatus.ERROR:
+            case Job.JobStatus.READY:
+            default:
+                break;
+        }
     }
 
     @Override
@@ -382,6 +454,7 @@ public class JobManager extends ResourceManager<Job> {
         return update(null, String.valueOf(jobId), parameters, options, sessionId);
     }
 
+    @Deprecated
     @Override
     public List<QueryResult<Job>> delete(@Nullable String studyStr, String jobIdStr, ObjectMap params, String sessionId)
             throws CatalogException {
@@ -445,11 +518,12 @@ public class JobManager extends ResourceManager<Job> {
 
             updateParams = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
             fileDBAdaptor.update(query, updateParams, QueryOptions.empty());
-    }
+        }
 
         return queryResultList;
-}
+    }
 
+    @Deprecated
     public List<QueryResult<Job>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key());
         QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, queryOptions);

@@ -224,20 +224,25 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{jobIds}/delete")
-    @ApiOperation(value = "Delete job", position = 4)
+    @DELETE
+    @Path("/delete")
+    @ApiOperation(value = "Delete existing jobs")
     public Response delete(
-            @ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true) @PathParam("jobIds")
-                String jobIds,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "If true, it will try to delete all possible job. Otherwise, it will fail if at least one of them "
-                    + "cannot be deleted") @QueryParam(Constants.SILENT) boolean silent) {
+            @ApiParam(value = "id") @DefaultValue("") @QueryParam("id") String id,
+            @ApiParam(value = "name") @QueryParam("name") String name,
+            @ApiParam(value = "tool name") @QueryParam("toolName") String tool,
+            @ApiParam(value = "status") @QueryParam("status") String status,
+            @ApiParam(value = "ownerId") @QueryParam("ownerId") String ownerId,
+            @ApiParam(value = "date") @QueryParam("date") String date,
+            @ApiParam(value = "Comma separated list of input file ids") @QueryParam("inputFiles") String inputFiles,
+            @ApiParam(value = "Comma separated list of output file ids") @QueryParam("outputFiles") String outputFiles,
+            @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
-            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(studyStr, jobIds, queryOptions, sessionId);
-            return createOkResponse(delete);
-        } catch (CatalogException e) {
+            query.remove("study");
+            return createOkResponse(jobManager.delete(studyStr, query, queryOptions, sessionId));
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
