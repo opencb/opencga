@@ -1501,11 +1501,13 @@ public class FileManager extends ResourceManager<File> {
                         if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
                             catalogManager.getFileManager().matchUpVariantFiles(Collections.singletonList(file), sessionId);
                         }
-                        for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
-                            if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
-                                Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), relatedFile.getFileId());
-                                file = get(studyId, query, null, sessionId).first();
-                                break;
+                        if (file.getRelatedFiles() != null) {
+                            for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
+                                if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
+                                    Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), relatedFile.getFileId());
+                                    file = get(studyId, query, null, sessionId).first();
+                                    break;
+                                }
                             }
                         }
                     }
