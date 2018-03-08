@@ -1075,6 +1075,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
                 List<Bson> updates = new ArrayList<>();
                 updates.add(push(STUDIES_FIELD, studyDocument));
+                // Study is new. Add study
                 updates.add(addToSet(RELEASE_FIELD, release));
                 if (newVariant) {
                     Document variantDocument = variantConverter.convertToStorageType(emptyVar);
@@ -1106,7 +1107,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             if (!ids.isEmpty()) {
                 mergeUpdates.add(addEachToSet(IDS_FIELD, ids));
             }
-            mergeUpdates.add(addToSet(RELEASE_FIELD, release));
 
             if (!excludeGenotypes) {
                 for (String gt : gts.keySet()) {
@@ -1133,6 +1133,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     mergeUpdates.add(pushEach(STUDIES_FIELD + ".$." + FILES_FIELD, fileDocuments));
                 }
                 mongoDBOps.getExistingStudy().getUpdates().add(combine(mergeUpdates));
+
+                // Add release only if there are files for this variant
+                mergeUpdates.add(addToSet(RELEASE_FIELD, release));
             } else if (!mergeUpdates.isEmpty()) {
                 // These files are not present in this variant. Increase the number of missing variants.
                 mongoDBOps.setMissingVariants(mongoDBOps.getMissingVariants() + 1);
