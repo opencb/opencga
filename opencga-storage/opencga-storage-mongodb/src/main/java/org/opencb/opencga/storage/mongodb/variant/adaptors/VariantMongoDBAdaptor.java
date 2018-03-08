@@ -954,10 +954,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.addStudyConfiguration(studyConfiguration);
         }
         if (query.containsKey(UNKNOWN_GENOTYPE.key())) {
-            samplesConverter.setReturnedUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
+            samplesConverter.setUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
         }
 
-        samplesConverter.setReturnedSamples(selectVariantElements.getSamples());
+        samplesConverter.setIncludeSamples(selectVariantElements.getSamples());
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
 

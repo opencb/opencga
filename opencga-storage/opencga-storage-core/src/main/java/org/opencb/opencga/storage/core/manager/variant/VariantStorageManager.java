@@ -467,13 +467,13 @@ public class VariantStorageManager extends StorageManager {
     Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, StudyConfigurationManager scm, String sessionId)
             throws CatalogException {
         final Map<Long, List<Sample>> samplesMap = new HashMap<>();
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(queryOptions);
+        Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (!returnedFields.contains(VariantField.STUDIES)) {
             return Collections.emptyMap();
         }
 
-        if (VariantQueryUtils.isReturnedSamplesDefined(query, returnedFields)) {
-            Map<Integer, List<Integer>> samplesToReturn = VariantQueryUtils.getReturnedSamples(query, queryOptions, scm);
+        if (VariantQueryUtils.isIncludeSamplesDefined(query, returnedFields)) {
+            Map<Integer, List<Integer>> samplesToReturn = VariantQueryUtils.getIncludeSamples(query, queryOptions, scm);
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
                     QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get((long) entry.getKey(),
@@ -492,7 +492,7 @@ public class VariantStorageManager extends StorageManager {
             }
         } else {
             logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
-            List<Integer> returnedStudies = VariantQueryUtils.getReturnedStudies(query, queryOptions, scm);
+            List<Integer> returnedStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, scm);
             List<Study> studies = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.ID.key(), returnedStudies),
                     new QueryOptions("include", "projects.studies.id"), sessionId).getResult();
             if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {

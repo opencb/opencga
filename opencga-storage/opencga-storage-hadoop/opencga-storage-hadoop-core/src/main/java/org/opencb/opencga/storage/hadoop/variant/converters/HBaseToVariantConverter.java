@@ -115,8 +115,8 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                 .collect(Collectors.toList());
     }
 
-    public HBaseToVariantConverter<T> setReturnedFields(Set<VariantField> fields) {
-        annotationConverter.setReturnedFields(fields);
+    public HBaseToVariantConverter<T> setIncludeFields(Set<VariantField> fields) {
+        annotationConverter.setIncludeFields(fields);
         return this;
     }
 
@@ -147,7 +147,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     public HBaseToVariantConverter<T> setSelectVariantElements(VariantQueryUtils.SelectVariantElements selectVariantElements) {
         studyEntryConverter.setSelectVariantElements(selectVariantElements);
-        annotationConverter.setReturnedFields(selectVariantElements.getFields());
+        annotationConverter.setIncludeFields(selectVariantElements.getFields());
         return this;
     }
 

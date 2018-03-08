@@ -102,7 +102,7 @@ public class CatalogUtils {
      * @throws CatalogException if there is an error with catalog
      */
     public List<Long> getStudies(Query query, String sessionId) throws CatalogException {
-        List<String> studies = VariantQueryUtils.getReturnedStudiesList(query, Collections.singleton(VariantField.STUDIES));
+        List<String> studies = VariantQueryUtils.getIncludeStudiesList(query, Collections.singleton(VariantField.STUDIES));
         if (studies == null) {
             if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
                 String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());

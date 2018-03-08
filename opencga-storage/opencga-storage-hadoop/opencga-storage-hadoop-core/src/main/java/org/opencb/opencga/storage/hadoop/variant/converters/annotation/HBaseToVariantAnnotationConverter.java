@@ -60,11 +60,11 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
         traitAssociationConverter = new VariantTraitAssociationToEvidenceEntryConverter();
     }
 
-    public HBaseToVariantAnnotationConverter setReturnedFields(Set<VariantField> allReturnedFields) {
+    public HBaseToVariantAnnotationConverter setIncludeFields(Set<VariantField> allIncludeFields) {
         List<String> list = new ArrayList<>();
-        if (allReturnedFields != null) {
+        if (allIncludeFields != null) {
             for (VariantField annotationField : VariantField.values()) {
-                if (annotationField.getParent() == VariantField.ANNOTATION && !allReturnedFields.contains(annotationField)) {
+                if (annotationField.getParent() == VariantField.ANNOTATION && !allIncludeFields.contains(annotationField)) {
                     list.add(annotationField.fieldName().replace(VariantField.ANNOTATION.fieldName() + '.', ""));
                 }
             }

@@ -103,7 +103,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         if (release != null) {
             // If no list of included files is specified:
-            if (VariantQueryUtils.isReturnedFilesDefined(query, Collections.singleton(VariantField.STUDIES_FILES))) {
+            if (VariantQueryUtils.isIncludeFilesDefined(query, Collections.singleton(VariantField.STUDIES_FILES))) {
                 List<String> includeFiles = new ArrayList<>();
                 QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
@@ -117,7 +117,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 query.append(VariantQueryParam.INCLUDE_FILE.key(), includeFiles);
             }
             // If no list of included samples is specified:
-            if (!VariantQueryUtils.isReturnedSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA))) {
+            if (!VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA))) {
                 List<String> includeSamples = new ArrayList<>();
                 Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
                 QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
