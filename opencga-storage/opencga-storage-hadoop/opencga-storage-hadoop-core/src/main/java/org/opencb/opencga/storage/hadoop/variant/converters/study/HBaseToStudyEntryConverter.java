@@ -288,9 +288,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         HashMap<Integer, StudyEntry> map = new HashMap<>();
         for (Integer studyId : studies) {
             StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
-            Integer fillMissingColumnValue = (Integer) PInteger.INSTANCE.toObject(result.getValue(columnFamily,
-                    VariantPhoenixHelper.getFillMissingColumn(studyId).bytes()));
-            fillMissingColumnValue = fillMissingColumnValue == null ? -1 : fillMissingColumnValue;
+            byte[] bytes = result.getValue(columnFamily,
+                    VariantPhoenixHelper.getFillMissingColumn(studyId).bytes());
+            Integer fillMissingColumnValue = bytes == null || bytes.length == 0 ? -1 : (Integer) PInteger.INSTANCE.toObject(bytes);
             StudyEntry studyEntry = convert(
                     sampleDataMap.getOrDefault(studyId, Collections.emptyList()),
                     filesMap.getOrDefault(studyId, Collections.emptyList()), variant, studyConfiguration, fillMissingColumnValue);
@@ -491,7 +491,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         Pair<Integer, Integer> pair = Pair.of(studyConfiguration.getStudyId(), fillMissingColumnValue);
         List<Boolean> missingUpdatedList = missingUpdatedSamplesMap.get(pair);
         if (missingUpdatedList == null) {
-            Set<Integer> sampleIds = new HashSet<>(selectVariantElements.getSamples().get(studyConfiguration.getStudyId()));
+            Set<Integer> sampleIds;
+            if (selectVariantElements == null) {
+                sampleIds = studyConfiguration.getSampleIds().values();
+            } else {
+                sampleIds = new HashSet<>(selectVariantElements.getSamples().get(studyConfiguration.getStudyId()));
+            }
             missingUpdatedList = Arrays.asList(new Boolean[sampleIds.size()]);
             // If fillMissingColumnValue has an invalid value, the variant is new, so gaps must be returned as ?/? for every sample
             if (studyConfiguration.getIndexedFiles().contains(fillMissingColumnValue)) {
