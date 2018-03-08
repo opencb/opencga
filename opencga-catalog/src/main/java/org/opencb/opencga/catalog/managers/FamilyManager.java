@@ -20,8 +20,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -354,7 +358,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(studyId, userId);
         } catch (CatalogException e) {
             logger.error("Delete family: {}", e.getMessage(), e);
-            writeResult.setError(new Error(e.getMessage(), -1));
+            writeResult.setError(new Error(-1, null, e.getMessage()));
             return writeResult;
         }
 
@@ -404,7 +408,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         writeResult.setFailed(failList);
 
         if (!failList.isEmpty()) {
-            writeResult.setWarning(new Error("Not all the families could be deleted", -1));
+            writeResult.setWarning(new Error(-1, null, "Not all the families could be deleted"));
         }
 
         return writeResult;

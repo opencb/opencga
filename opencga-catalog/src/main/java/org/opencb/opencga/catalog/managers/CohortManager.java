@@ -18,8 +18,12 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -377,7 +381,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(studyId, userId);
         } catch (CatalogException e) {
             logger.error("Delete cohort: {}", e.getMessage(), e);
-            writeResult.setError(new Error(e.getMessage(), -1));
+            writeResult.setError(new Error(-1, null, e.getMessage()));
             return writeResult;
         }
 
@@ -426,7 +430,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         writeResult.setFailed(failList);
 
         if (!failList.isEmpty()) {
-            writeResult.setWarning(new Error("Not all the cohorts could be deleted", -1));
+            writeResult.setWarning(new Error(-1, null, "Not all the cohorts could be deleted"));
         }
 
         return writeResult;

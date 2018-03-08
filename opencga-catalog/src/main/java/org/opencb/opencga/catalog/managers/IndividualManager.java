@@ -17,8 +17,12 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -486,7 +490,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(studyId, userId);
         } catch (CatalogException e) {
             logger.error("Delete individual: {}", e.getMessage(), e);
-            writeResult.setError(new Error(e.getMessage(), -1));
+            writeResult.setError(new Error(-1, null, e.getMessage()));
             return writeResult;
         }
 
@@ -587,7 +591,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         writeResult.setFailed(failList);
 
         if (!failList.isEmpty()) {
-            writeResult.setWarning(new Error("Not all the individuals could be deleted", -1));
+            writeResult.setWarning(new Error(-1, null, "Not all the individuals could be deleted"));
         }
 
         return writeResult;

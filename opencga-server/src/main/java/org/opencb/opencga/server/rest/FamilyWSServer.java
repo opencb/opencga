@@ -212,7 +212,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
-            @QueryParam("release") String release) {
+                @QueryParam("release") String release) {
         try {
             query.remove("study");
             return createOkResponse(familyManager.delete(studyStr, query, queryOptions, sessionId));
