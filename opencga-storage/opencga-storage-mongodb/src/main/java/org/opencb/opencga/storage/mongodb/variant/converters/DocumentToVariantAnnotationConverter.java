@@ -77,8 +77,17 @@ public class DocumentToVariantAnnotationConverter
     public static final String CT_PROTEIN_UNIPROT_ACCESSION = "uni_a";
     public static final String CT_PROTEIN_UNIPROT_NAME = "uni_n";
     public static final String CT_PROTEIN_UNIPROT_VARIANT_ID = "uni_var";
+    public static final String CT_PROTEIN_FUNCTIONAL_DESCRIPTION = "desc";
 
     public static final String DISPLAY_CONSEQUENCE_TYPE_FIELD = "d_ct";
+
+    public static final String HGVS_FIELD = "hgvs";
+
+    public static final String CYTOBANDS_FIELD = "cytob";
+    public static final String CYTOBAND_STAIN_FIELD = "stain";
+    public static final String CYTOBAND_NAME_FIELD = "name";
+    public static final String CYTOBAND_START_FIELD = "start";
+    public static final String CYTOBAND_END_FIELD = "end";
 
     public static final String XREFS_FIELD = "xrefs";
     public static final String XREF_ID_FIELD = "id";
@@ -87,10 +96,13 @@ public class DocumentToVariantAnnotationConverter
     public static final String POPULATION_FREQUENCIES_FIELD = "popFq";
     public static final String POPULATION_FREQUENCY_STUDY_FIELD = "study";
     public static final String POPULATION_FREQUENCY_POP_FIELD = "pop";
-    public static final String POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD = "ref";
-    public static final String POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD = "alt";
+//    public static final String POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD = "ref";
+//    public static final String POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD = "alt";
     public static final String POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD = "refFq";
     public static final String POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD = "altFq";
+    public static final String POPULATION_FREQUENCY_REF_HOM_GT_FIELD = "hetFq";
+    public static final String POPULATION_FREQUENCY_HET_GT_FIELD = "refHomFq";
+    public static final String POPULATION_FREQUENCY_ALT_HOM_GT_FIELD = "altHomFq";
 
     public static final String CONSERVED_REGION_SCORE_FIELD = "cr_score";
     public static final String CONSERVED_REGION_PHYLOP_FIELD = "cr_phylop";
@@ -102,9 +114,9 @@ public class DocumentToVariantAnnotationConverter
     public static final String GENE_TRAIT_NAME_FIELD = "name";
     public static final String GENE_TRAIT_HPO_FIELD = "hpo";
     public static final String GENE_TRAIT_SCORE_FIELD = "sc";
-//    public static final String GENE_TRAIT_PUBMEDS_FIELD = "nPubmed";
+    public static final String GENE_TRAIT_PUBMEDS_FIELD = "nPubmed";
     public static final String GENE_TRAIT_TYPES_FIELD = "types";
-//    public static final String GENE_TRAIT_SOURCES_FIELD = "srcs";
+    public static final String GENE_TRAIT_SOURCES_FIELD = "srcs";
     public static final String GENE_TRAIT_SOURCE_FIELD = "src";
 
     public static final String DRUG_FIELD = "drug";
@@ -112,6 +124,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String DRUG_GENE_FIELD = CT_GENE_NAME_FIELD;
     public static final String DRUG_SOURCE_FIELD = "src";
     public static final String DRUG_STUDY_TYPE_FIELD = "st";
+    public static final String DRUG_TYPE_FIELD = "type";
 
     public static final String SCORE_SCORE_FIELD = "sc";
     public static final String SCORE_SOURCE_FIELD = "src";
@@ -127,7 +140,8 @@ public class DocumentToVariantAnnotationConverter
     public static final String FUNCTIONAL_CADD_SCALED_FIELD = "fn_cadd_s";
 
     public static final String DEFAULT_STRAND_VALUE = "+";
-    public static final String DEFAULT_DRUB_SOURCE = "dgidb";
+    public static final String DEFAULT_DRUG_SOURCE = "dgidb";
+    public static final String DEFAULT_DRUG_TYPE = "n/a";
 
     public static final Map<String, String> SCORE_FIELD_MAP;
 
@@ -170,11 +184,12 @@ public class DocumentToVariantAnnotationConverter
 
     @Override
     public VariantAnnotation convertToDataModelType(Document object) {
-        return convertToDataModelType(object, null);
+        return convertToDataModelType(object, null, null, null, null);
     }
 
 
-    public VariantAnnotation convertToDataModelType(Document object, Document customAnnotation) {
+    public VariantAnnotation convertToDataModelType(Document object, Document customAnnotation,
+                                                    String chromosome, String reference, String alternate) {
         VariantAnnotation va = new VariantAnnotation();
 
         //ConsequenceType
@@ -225,12 +240,13 @@ public class DocumentToVariantAnnotationConverter
                     }
 
                     ProteinVariantAnnotation proteinVariantAnnotation = buildProteinVariantAnnotation(
-                            getDefault(ct, CT_PROTEIN_UNIPROT_ACCESSION, null),
-                            getDefault(ct, CT_PROTEIN_UNIPROT_NAME, null),
+                            getDefault(ct, CT_PROTEIN_UNIPROT_ACCESSION, (String) null),
+                            getDefault(ct, CT_PROTEIN_UNIPROT_NAME, (String) null),
                             getDefault(ct, CT_AA_POSITION_FIELD, 0),
                             getDefault(ct, CT_AA_REFERENCE_FIELD, ""),
                             getDefault(ct, CT_AA_ALTERNATE_FIELD, ""),
-                            getDefault(ct, CT_PROTEIN_UNIPROT_VARIANT_ID, null),
+                            getDefault(ct, CT_PROTEIN_UNIPROT_VARIANT_ID, (String) null),
+                            getDefault(ct, CT_PROTEIN_FUNCTIONAL_DESCRIPTION, (String) null),
                             proteinSubstitutionScores,
                             getDefault(ct, CT_PROTEIN_KEYWORDS, Collections.emptyList()),
                             features);
@@ -257,6 +273,21 @@ public class DocumentToVariantAnnotationConverter
             va.setDisplayConsequenceType(ConsequenceTypeMappings.accessionToTerm.get(displaySO));
         }
 
+        va.setHgvs(getDefault(object, HGVS_FIELD, Collections.emptyList()));
+
+        List<Document> cytobandsDocument = getDefault(object, CYTOBANDS_FIELD, Collections.emptyList());
+        for (Document c : cytobandsDocument) {
+            List<Cytoband> cytobands = new ArrayList<>(cytobandsDocument.size());
+            cytobands.add(new Cytoband(
+                    chromosome,
+                    getDefault(c, CYTOBAND_STAIN_FIELD, ""),
+                    getDefault(c, CYTOBAND_NAME_FIELD, ""),
+                    getDefault(c, CYTOBAND_START_FIELD, 0),
+                    getDefault(c, CYTOBAND_END_FIELD, 0)
+            ));
+            va.setCytoband(cytobands);
+        }
+
         //Conserved Region Scores
         List<Score> conservedRegionScores = new LinkedList<>();
         if (object.containsKey(CONSERVED_REGION_SCORE_FIELD)) {
@@ -278,13 +309,13 @@ public class DocumentToVariantAnnotationConverter
                 populationFrequencies.add(new PopulationFrequency(
                         getDefault(dbObject, POPULATION_FREQUENCY_STUDY_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_POP_FIELD, ""),
-                        getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD, ""),
-                        getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD, ""),
+                        reference,
+                        alternate,
                         getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, -1.0F),
                         getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, -1.0F),
-                        -1.0f,
-                        -1.0f,
-                        -1.0f
+                        getDefault(dbObject, POPULATION_FREQUENCY_REF_HOM_GT_FIELD, -1.0F),
+                        getDefault(dbObject, POPULATION_FREQUENCY_HET_GT_FIELD, -1.0F),
+                        getDefault(dbObject, POPULATION_FREQUENCY_ALT_HOM_GT_FIELD, -1.0F)
                 ));
             }
         }
@@ -298,11 +329,11 @@ public class DocumentToVariantAnnotationConverter
                 geneTraitAssociations.add(new GeneTraitAssociation(
                         getDefault(document, GENE_TRAIT_ID_FIELD, ""),
                         getDefault(document, GENE_TRAIT_NAME_FIELD, ""),
-                        getDefault(document, GENE_TRAIT_HPO_FIELD, ""),
-                        getDefault(document, GENE_TRAIT_SCORE_FIELD, 0F),
-                        0, //getDefault(document, GENE_TRAIT_PUBMEDS_FIELD, 0),
+                        getDefault(document, GENE_TRAIT_HPO_FIELD, (String) null),
+                        getDefault(document, GENE_TRAIT_SCORE_FIELD, (Float) null),
+                        getDefault(document, GENE_TRAIT_PUBMEDS_FIELD, 0),
                         getDefault(document, GENE_TRAIT_TYPES_FIELD, Collections.emptyList()),
-                        Collections.emptyList(),
+                        getDefault(document, GENE_TRAIT_SOURCES_FIELD, Collections.emptyList()),
                         getDefault(document, GENE_TRAIT_SOURCE_FIELD, "")
                 ));
             }
@@ -319,11 +350,9 @@ public class DocumentToVariantAnnotationConverter
                 drugs.add(new GeneDrugInteraction(
                         getDefault(dbObject, DRUG_GENE_FIELD, ""),
                         getDefault(dbObject, DRUG_NAME_FIELD, ""),
-                        getDefault(dbObject, DRUG_SOURCE_FIELD, DEFAULT_DRUB_SOURCE),
+                        getDefault(dbObject, DRUG_SOURCE_FIELD, DEFAULT_DRUG_SOURCE),
                         getDefault(dbObject, DRUG_STUDY_TYPE_FIELD, ""),
-                        ""));  // "convertToStorageType" stores the study_type within the
-                // DRUG_SOURCE_FIELD
-
+                        getDefault(dbObject, DRUG_TYPE_FIELD, DEFAULT_DRUG_TYPE)));
             }
         }
         va.setGeneDrugInteraction(drugs);
@@ -386,7 +415,7 @@ public class DocumentToVariantAnnotationConverter
         return new Score(
                 getDefault(document, SCORE_SCORE_FIELD, 0.0),
                 getDefault(document, SCORE_SOURCE_FIELD, source),
-                getDefault(document, SCORE_DESCRIPTION_FIELD, "")
+                getDefault(document, SCORE_DESCRIPTION_FIELD, (String) null)
         );
     }
 
@@ -412,14 +441,14 @@ public class DocumentToVariantAnnotationConverter
 
     private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, int aaPosition,
                                                                    String aaReference, String aaAlternate, String uniprotVariantId,
-                                                                   List<Score> proteinSubstitutionScores, List<String> keywords,
-                                                                   List<ProteinFeature> features) {
+                                                                   String functionalDescription, List<Score> proteinSubstitutionScores,
+                                                                   List<String> keywords, List<ProteinFeature> features) {
         if (areAllEmpty(uniprotAccession, uniprotName, aaPosition, aaReference, aaAlternate,
-                uniprotVariantId, proteinSubstitutionScores, keywords, features)) {
+                uniprotVariantId, proteinSubstitutionScores, keywords, features, functionalDescription)) {
             return null;
         } else {
             return new ProteinVariantAnnotation(uniprotAccession, uniprotName, aaPosition,
-                    aaReference, aaAlternate, uniprotVariantId, null, proteinSubstitutionScores, keywords, features);
+                    aaReference, aaAlternate, uniprotVariantId, functionalDescription, proteinSubstitutionScores, keywords, features);
         }
     }
 
@@ -523,6 +552,7 @@ public class DocumentToVariantAnnotationConverter
                 putNotNull(ct, CT_C_DNA_POSITION_FIELD, consequenceType.getCdnaPosition());
                 putNotNull(ct, CT_CDS_POSITION_FIELD, consequenceType.getCdsPosition());
 
+                ProteinVariantAnnotation proteinVariantAnnotation = consequenceType.getProteinVariantAnnotation();
                 if (consequenceType.getSequenceOntologyTerms() != null) {
                     List<Integer> soAccession = new LinkedList<>();
                     for (SequenceOntologyTerm entry : consequenceType.getSequenceOntologyTerms()) {
@@ -540,28 +570,29 @@ public class DocumentToVariantAnnotationConverter
                         if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
                             gnSo.add(buildGeneSO(consequenceType.getEnsemblTranscriptId(), so));
                         }
-                        if (consequenceType.getProteinVariantAnnotation() != null) {
-                            if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotAccession())) {
-                                gnSo.add(buildGeneSO(consequenceType.getProteinVariantAnnotation().getUniprotAccession(), so));
+                        if (proteinVariantAnnotation != null) {
+                            if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotAccession())) {
+                                gnSo.add(buildGeneSO(proteinVariantAnnotation.getUniprotAccession(), so));
                             }
-                            if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotName())) {
-                                gnSo.add(buildGeneSO(consequenceType.getProteinVariantAnnotation().getUniprotName(), so));
+                            if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotName())) {
+                                gnSo.add(buildGeneSO(proteinVariantAnnotation.getUniprotName(), so));
                             }
                         }
                     }
                 }
                 //Protein annotation
-                if (consequenceType.getProteinVariantAnnotation() != null) {
-                    putNotNull(ct, CT_AA_POSITION_FIELD, consequenceType.getProteinVariantAnnotation().getPosition());
-                    putNotNull(ct, CT_AA_REFERENCE_FIELD, consequenceType.getProteinVariantAnnotation().getReference());
-                    putNotNull(ct, CT_AA_ALTERNATE_FIELD, consequenceType.getProteinVariantAnnotation().getAlternate());
-                    putNotNull(ct, CT_PROTEIN_UNIPROT_ACCESSION, consequenceType.getProteinVariantAnnotation().getUniprotAccession());
-                    putNotNull(ct, CT_PROTEIN_UNIPROT_NAME, consequenceType.getProteinVariantAnnotation().getUniprotName());
-                    putNotNull(ct, CT_PROTEIN_UNIPROT_VARIANT_ID, consequenceType.getProteinVariantAnnotation().getUniprotVariantId());
+                if (proteinVariantAnnotation != null) {
+                    putNotNull(ct, CT_AA_POSITION_FIELD, proteinVariantAnnotation.getPosition());
+                    putNotNull(ct, CT_AA_REFERENCE_FIELD, proteinVariantAnnotation.getReference());
+                    putNotNull(ct, CT_AA_ALTERNATE_FIELD, proteinVariantAnnotation.getAlternate());
+                    putNotNull(ct, CT_PROTEIN_UNIPROT_ACCESSION, proteinVariantAnnotation.getUniprotAccession());
+                    putNotNull(ct, CT_PROTEIN_UNIPROT_NAME, proteinVariantAnnotation.getUniprotName());
+                    putNotNull(ct, CT_PROTEIN_UNIPROT_VARIANT_ID, proteinVariantAnnotation.getUniprotVariantId());
+                    putNotNull(ct, CT_PROTEIN_FUNCTIONAL_DESCRIPTION, proteinVariantAnnotation.getFunctionalDescription());
                     //Protein substitution region score
-                    if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                    if (proteinVariantAnnotation.getSubstitutionScores() != null) {
                         List<Document> proteinSubstitutionScores = new LinkedList<>();
-                        for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
+                        for (Score score : proteinVariantAnnotation.getSubstitutionScores()) {
                             if (score != null) {
                                 if (score.getSource().equals(POLYPHEN)) {
                                     putNotNull(ct, CT_PROTEIN_POLYPHEN_FIELD, convertScoreToStorageNoSource(score));
@@ -574,9 +605,9 @@ public class DocumentToVariantAnnotationConverter
                         }
                         putNotNull(ct, CT_PROTEIN_SUBSTITUTION_SCORE_FIELD, proteinSubstitutionScores);
                     }
-                    putNotNull(ct, CT_PROTEIN_KEYWORDS, consequenceType.getProteinVariantAnnotation().getKeywords());
+                    putNotNull(ct, CT_PROTEIN_KEYWORDS, proteinVariantAnnotation.getKeywords());
 
-                    List<ProteinFeature> features = consequenceType.getProteinVariantAnnotation().getFeatures();
+                    List<ProteinFeature> features = proteinVariantAnnotation.getFeatures();
                     if (features != null) {
                         List<Document> documentFeatures = new ArrayList<>(features.size());
                         for (ProteinFeature feature : features) {
@@ -591,14 +622,14 @@ public class DocumentToVariantAnnotationConverter
                         putNotNull(ct, CT_PROTEIN_FEATURE_FIELD, documentFeatures);
                     }
 
-                    if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotAccession())) {
-                        xrefs.add(convertXrefToStorage(consequenceType.getProteinVariantAnnotation().getUniprotAccession(), "UniProt"));
+                    if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotAccession())) {
+                        xrefs.add(convertXrefToStorage(proteinVariantAnnotation.getUniprotAccession(), "UniProt"));
                     }
-                    if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotName())) {
-                        xrefs.add(convertXrefToStorage(consequenceType.getProteinVariantAnnotation().getUniprotName(), "UniProt"));
+                    if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotName())) {
+                        xrefs.add(convertXrefToStorage(proteinVariantAnnotation.getUniprotName(), "UniProt"));
                     }
-                    if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotVariantId())) {
-                        xrefs.add(convertXrefToStorage(consequenceType.getProteinVariantAnnotation().getUniprotVariantId(), "UniProt"));
+                    if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotVariantId())) {
+                        xrefs.add(convertXrefToStorage(proteinVariantAnnotation.getUniprotVariantId(), "UniProt"));
                     }
                 }
 
@@ -623,6 +654,21 @@ public class DocumentToVariantAnnotationConverter
             Integer accession = ConsequenceTypeMappings.termToAccession.get(variantAnnotation.getDisplayConsequenceType());
             document.put(DISPLAY_CONSEQUENCE_TYPE_FIELD, accession);
         }
+
+        if (variantAnnotation.getCytoband() != null && !variantAnnotation.getCytoband().isEmpty()) {
+            List<Document> cytobands = new ArrayList<>(variantAnnotation.getCytoband().size());
+            for (Cytoband cytoband : variantAnnotation.getCytoband()) {
+                Document d = new Document();
+                putNotNull(d, CYTOBAND_STAIN_FIELD, cytoband.getStain());
+                putNotNull(d, CYTOBAND_NAME_FIELD, cytoband.getName());
+                putNotNull(d, CYTOBAND_START_FIELD, cytoband.getStart());
+                putNotNull(d, CYTOBAND_END_FIELD, cytoband.getEnd());
+                cytobands.add(d);
+            }
+            document.put(CYTOBANDS_FIELD, cytobands);
+        }
+
+        putNotNull(document, HGVS_FIELD, variantAnnotation.getHgvs());
 
         //Conserved region score
         if (variantAnnotation.getConservation() != null) {
@@ -656,9 +702,9 @@ public class DocumentToVariantAnnotationConverter
                     if (StringUtils.isNotEmpty(geneTraitAssociation.getHpo())) {
                         xrefs.add(convertXrefToStorage(geneTraitAssociation.getHpo(), "hpo"));
                     }
-//                    putNotNull(d, GENE_TRAIT_PUBMEDS_FIELD, geneTraitAssociation.getNumberOfPubmeds());
+                    putNotNull(d, GENE_TRAIT_PUBMEDS_FIELD, geneTraitAssociation.getNumberOfPubmeds());
                     putNotNull(d, GENE_TRAIT_TYPES_FIELD, geneTraitAssociation.getAssociationTypes());
-//                    putNotNull(d, GENE_TRAIT_SOURCES_FIELD, geneTraitAssociation.getSources());
+                    putNotNull(d, GENE_TRAIT_SOURCES_FIELD, geneTraitAssociation.getSources());
                     putNotNull(d, GENE_TRAIT_SOURCE_FIELD, geneTraitAssociation.getSource());
 
 //                    if (StringUtils.isNotEmpty(geneTraitAssociation.getHpo())) {
@@ -690,8 +736,9 @@ public class DocumentToVariantAnnotationConverter
                 for (GeneDrugInteraction geneDrugInteraction : geneDrugInteractionList) {
                     Document drugDbObject = new Document(DRUG_GENE_FIELD, geneDrugInteraction.getGeneName());
                     putNotNull(drugDbObject, DRUG_NAME_FIELD, geneDrugInteraction.getDrugName());
-                    putNotDefault(drugDbObject, DRUG_SOURCE_FIELD, geneDrugInteraction.getSource(), DEFAULT_DRUB_SOURCE);
+                    putNotDefault(drugDbObject, DRUG_SOURCE_FIELD, geneDrugInteraction.getSource(), DEFAULT_DRUG_SOURCE);
                     putNotNull(drugDbObject, DRUG_STUDY_TYPE_FIELD, geneDrugInteraction.getStudyType());
+                    putNotDefault(drugDbObject, DRUG_TYPE_FIELD, geneDrugInteraction.getType(), DEFAULT_DRUG_TYPE);
                     drugGeneInteractions.add(drugDbObject);
                 }
             }
@@ -799,6 +846,9 @@ public class DocumentToVariantAnnotationConverter
         putNotNull(dbObject, POPULATION_FREQUENCY_POP_FIELD, populationFrequency.getPopulation());
         putNotNull(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, populationFrequency.getRefAlleleFreq());
         putNotNull(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, populationFrequency.getAltAlleleFreq());
+        putNotNull(dbObject, POPULATION_FREQUENCY_REF_HOM_GT_FIELD, populationFrequency.getRefHomGenotypeFreq());
+        putNotNull(dbObject, POPULATION_FREQUENCY_HET_GT_FIELD, populationFrequency.getHetGenotypeFreq());
+        putNotNull(dbObject, POPULATION_FREQUENCY_ALT_HOM_GT_FIELD, populationFrequency.getAltHomGenotypeFreq());
         return dbObject;
     }
 

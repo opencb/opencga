@@ -52,6 +52,7 @@ public enum VariantField {
     ANNOTATION_ID(ANNOTATION, "annotation.id"),
     ANNOTATION_XREFS(ANNOTATION, "annotation.xrefs"),
     ANNOTATION_HGVS(ANNOTATION, "annotation.hgvs"),
+    ANNOTATION_CYTOBANDS(ANNOTATION, "annotation.cytobands"),
     ANNOTATION_DISPLAY_CONSEQUENCE_TYPE(ANNOTATION, "annotation.displayConsequenceType"),
     ANNOTATION_CONSEQUENCE_TYPES(ANNOTATION, "annotation.consequenceTypes"),
     ANNOTATION_POPULATION_FREQUENCIES(ANNOTATION, "annotation.populationFrequencies"),

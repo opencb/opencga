@@ -97,7 +97,7 @@ storageEngines:
       collection.files: "files"
       include.stats: false
       annotator: cellbase_rest
-      annotator.cellbase.exclude: "expression,hgvs,repeats,cytoband"
+      annotator.cellbase.exclude: "expression,repeats"
       annotator.cellbase.use_cache: true
       annotator.cellbase.imprecise_variants: false # Imprecise variants supported by cellbase (REST only)
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
@@ -140,7 +140,7 @@ storageEngines:
       database.name: "opencga"
       dbadaptor.phoenix.fetch_size : -1
       annotator: cellbase_rest
-      annotator.cellbase.exclude: "expression,hgvs,repeats,cytoband"
+      annotator.cellbase.exclude: "expression,repeats"
       annotator.cellbase.use_cache: true
       annotator.cellbase.imprecise_variants: false # Imprecise variants supported by cellbase (REST only)
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
