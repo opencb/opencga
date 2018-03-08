@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -185,14 +186,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
-
-        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
-            // First look for the sample ids.
-            AbstractManager.MyResourceIds samples = catalogManager.getSampleManager()
-                    .getIds(query.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
-            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
-            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
-        }
+        fixQueryObject(studyId, query, sessionId);
 
         Query myQuery = new Query(query).append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.get(myQuery, options, userId);
@@ -207,13 +201,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
-        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
-            // First look for the sample ids.
-            AbstractManager.MyResourceIds samples = catalogManager.getSampleManager()
-                    .getIds(query.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
-            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
-            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
-        }
+        fixQueryObject(studyId, query, sessionId);
 
         Query myQuery = new Query(query).append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         return cohortDBAdaptor.iterator(myQuery, options, userId);
@@ -325,20 +313,23 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         // Fix query if it contains any annotation
         fixQueryAnnotationSearch(studyId, query);
         fixQueryOptionAnnotation(options);
-
-        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
-            // First look for the sample ids.
-            AbstractManager.MyResourceIds samples = catalogManager.getSampleManager()
-                    .getIds(query.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key()), studyStr, sessionId);
-            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
-            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
-        }
+        fixQueryObject(studyId, query, sessionId);
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.get(query, options, userId);
 //        authorizationManager.filterCohorts(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
+    }
+
+    private void fixQueryObject(long studyId, Query query, String sessionId) throws CatalogException {
+        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
+            // First look for the sample ids.
+            MyResourceIds samples = catalogManager.getSampleManager()
+                    .getIds(query.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key()), String.valueOf(studyId), sessionId);
+            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
+            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
+        }
     }
 
     @Override
@@ -351,14 +342,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         // Fix query if it contains any annotation
         fixQueryAnnotationSearch(studyId, query);
-
-        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
-            // First look for the sample ids.
-            AbstractManager.MyResourceIds samples = catalogManager.getSampleManager()
-                    .getIds(query.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key()), studyStr, sessionId);
-            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
-            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
-        }
+        fixQueryObject(studyId, query, sessionId);
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Long> queryResultAux = cohortDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
@@ -368,7 +352,97 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
-        return null;
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+        WriteResult writeResult = new WriteResult("delete", -1, -1, -1, null, null, null);
+
+        String userId;
+        long studyId;
+
+        // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+        boolean checkPermissions;
+
+        // We try to get an iterator containing all the cohorts to be deleted
+        DBIterator<Cohort> iterator;
+        try {
+            userId = catalogManager.getUserManager().getUserId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            fixQueryAnnotationSearch(studyId, query);
+            fixQueryObject(studyId, query, sessionId);
+            finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+            iterator = cohortDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(studyId, userId);
+        } catch (CatalogException e) {
+            logger.error("Delete cohort: {}", e.getMessage(), e);
+            writeResult.setError(new Error(e.getMessage(), -1));
+            return writeResult;
+        }
+
+        long numMatches = 0;
+        long numModified = 0;
+        long startTime = System.currentTimeMillis();
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        while (iterator.hasNext()) {
+            Cohort cohort = iterator.next();
+            numMatches += 1;
+
+            try {
+                if (checkPermissions) {
+                    authorizationManager.checkCohortPermission(studyId, cohort.getId(), userId, CohortAclEntry.CohortPermissions.DELETE);
+                }
+
+                // Check if the cohort can be deleted
+                checkCohortCanBeDeleted(cohort);
+
+                // Delete the cohort
+                Query updateQuery = new Query()
+                        .append(CohortDBAdaptor.QueryParams.ID.key(), cohort.getId())
+                        .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                ObjectMap updateParams = new ObjectMap()
+                        .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
+                        .append(CohortDBAdaptor.QueryParams.NAME.key(), cohort.getName() + suffixName);
+                QueryResult<Long> update = jobDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.first() > 0) {
+                    numModified += 1;
+                    auditManager.recordDeletion(AuditRecord.Resource.cohort, cohort.getId(), userId, null, updateParams, null, null);
+                } else {
+                    failList.add(new WriteResult.Fail(String.valueOf(cohort.getId()), "Unknown reason"));
+                }
+            } catch (Exception e) {
+                failList.add(new WriteResult.Fail(String.valueOf(cohort.getId()), e.getMessage()));
+                logger.debug("Cannot delete cohort {}: {}", cohort.getId(), e.getMessage(), e);
+            }
+        }
+
+        writeResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        writeResult.setNumMatches(numMatches);
+        writeResult.setNumModified(numModified);
+        writeResult.setFailed(failList);
+
+        if (!failList.isEmpty()) {
+            writeResult.setWarning(new Error("Not all the cohorts could be deleted", -1));
+        }
+
+        return writeResult;
+    }
+
+    private void checkCohortCanBeDeleted(Cohort cohort) throws CatalogException {
+        // Check if the cohort is different from DEFAULT_COHORT
+        if (StudyEntry.DEFAULT_COHORT.equals(cohort.getName())) {
+            throw new CatalogException("Cohort " + StudyEntry.DEFAULT_COHORT + " cannot be deleted.");
+        }
+
+        // Check if the cohort can be deleted
+        if (cohort.getStatus() != null && cohort.getStatus().getName() != null
+                && !cohort.getStatus().getName().equals(Cohort.CohortStatus.NONE)) {
+            throw new CatalogException("The cohort is used in storage.");
+        }
     }
 
     @Override
@@ -438,6 +512,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return queryResult;
     }
 
+    @Deprecated
     @Override
     public List<QueryResult<Cohort>> delete(@Nullable String studyStr, String cohortIdStr, ObjectMap params, String sessionId)
             throws CatalogException {
@@ -533,6 +608,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
+    @Deprecated
     public List<QueryResult<Cohort>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ID.key());
         QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);

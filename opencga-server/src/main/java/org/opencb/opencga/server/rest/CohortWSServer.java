@@ -50,7 +50,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     private CohortManager cohortManager;
 
-    public CohortWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public CohortWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         cohortManager = catalogManager.getCohortManager();
     }
@@ -187,15 +188,16 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
-    public Response searchCohorts(@ApiParam(value = "Study [[user@]project:]study where study and project can be either "
-            + "the id or alias") @QueryParam("study") String studyStr,
-                                  @ApiParam(value = "Name of the cohort") @QueryParam("name") String name,
-                                  @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
-                                  @ApiParam(value = "Status") @QueryParam("status") String status,
-                                  @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
-                                  @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
-                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
-                                  @ApiParam(value = "Release value") @QueryParam("release") String release) {
+    public Response searchCohorts(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Name of the cohort") @QueryParam("name") String name,
+            @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
+            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+            @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             QueryResult<Cohort> queryResult;
@@ -276,19 +278,23 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{cohorts}/delete")
-    @ApiOperation(value = "Delete a cohort", position = 5)
-    public Response deleteCohort(
-            @ApiParam(value = "Comma separated list of cohort Ids", required = true) @PathParam("cohorts") String cohortsStr,
+    @DELETE
+    @Path("/delete")
+    @ApiOperation(value = "Delete existing cohorts")
+    public Response delete(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "If true, it will try to delete all possible cohorts. Otherwise, it will fail if at least one of them "
-                    + "cannot be deleted") @QueryParam(Constants.SILENT) boolean silent) {
+            @ApiParam(value = "Cohort id") @QueryParam("id") String id,
+            @ApiParam(value = "Cohort name") @QueryParam("name") String name,
+            @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
+            @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
-            List<QueryResult<Cohort>> delete = cohortManager.delete(studyStr, cohortsStr, queryOptions, sessionId);
-            return createOkResponse(delete);
-        } catch (CatalogException e) {
+            query.remove("study");
+            return createOkResponse(cohortManager.delete(studyStr, query, queryOptions, sessionId));
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
