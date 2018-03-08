@@ -570,6 +570,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 QueryResult<Long> update = individualDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
+                    auditManager.recordDeletion(AuditRecord.Resource.individual, individual.getId(), userId, null, updateParams, null,
+                            null);
                 } else {
                     failList.add(new WriteResult.Fail(String.valueOf(individual.getId()), "Unknown reason"));
                 }

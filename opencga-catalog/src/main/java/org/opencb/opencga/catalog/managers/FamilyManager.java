@@ -388,6 +388,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 QueryResult<Long> update = familyDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
+                    auditManager.recordDeletion(AuditRecord.Resource.family, family.getId(), userId, null, updateParams, null, null);
                 } else {
                     failList.add(new WriteResult.Fail(String.valueOf(family.getId()), "Unknown reason"));
                 }

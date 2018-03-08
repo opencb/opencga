@@ -24,7 +24,10 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -356,7 +359,7 @@ public class JobManager extends ResourceManager<Job> {
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             fixQueryObject(studyId, query, sessionId);
-            finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            finalQuery.append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
             iterator = jobDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
 
@@ -397,6 +400,7 @@ public class JobManager extends ResourceManager<Job> {
                 QueryResult<Long> update = jobDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
+                    auditManager.recordDeletion(AuditRecord.Resource.job, job.getId(), userId, null, updateParams, null, null);
                 } else {
                     failList.add(new WriteResult.Fail(String.valueOf(job.getId()), "Unknown reason"));
                 }
