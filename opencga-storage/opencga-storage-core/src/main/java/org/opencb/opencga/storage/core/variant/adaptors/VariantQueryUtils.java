@@ -497,7 +497,7 @@ public class VariantQueryUtils {
         if (getReturnedFilesList(query, returnedFields) != null) {
             return true;
         }
-        return isValidParam(query, SAMPLE, true) || isValidParam(query, INCLUDE_SAMPLE, true);
+        return isValidParam(query, SAMPLE, true) || isValidParam(query, INCLUDE_SAMPLE, false) || isValidParam(query, GENOTYPE, false);
     }
 
     /**
@@ -519,21 +519,7 @@ public class VariantQueryUtils {
     private static Map<Integer, List<Integer>> getReturnedFiles(
             Query query, Collection<Integer> studyIds, Set<VariantField> fields, Function<Integer, StudyConfiguration> studyProvider) {
 
-        List<String> sampleNames = Collections.emptyList();
-        if (isValidParam(query, SAMPLE)) {
-            String value = query.getString(SAMPLE.key());
-            sampleNames = splitValue(value, checkOperator(value))
-                    .stream()
-                    .filter((v) -> !isNegated(v)) // Discard negated
-                    .collect(Collectors.toList());
-        }
-        if (sampleNames.isEmpty() && isValidParam(query, INCLUDE_SAMPLE)) {
-            String value = query.getString(INCLUDE_SAMPLE.key());
-            sampleNames = splitValue(value, checkOperator(value))
-                    .stream()
-                    .filter((v) -> !isNegated(v)) // Discard negated
-                    .collect(Collectors.toList());
-        }
+        List<String> sampleNames = getReturnedSamplesList(query);
         List<String> returnedFilesList = getReturnedFilesList(query, fields);
         boolean returnAllFiles = ALL.equals(query.getString(INCLUDE_FILE.key()));
 
@@ -555,7 +541,7 @@ public class VariantQueryUtils {
                 }
             } else if (returnAllFiles) {
                 fileIds = new ArrayList<>(sc.getIndexedFiles());
-            } else if (!sampleNames.isEmpty()) {
+            } else if (sampleNames != null && !sampleNames.isEmpty()) {
                 Set<Integer> fileSet = new LinkedHashSet<>();
                 for (String sample : sampleNames) {
                     Integer sampleId = StudyConfigurationManager.getSampleIdFromStudy(sample, sc);
@@ -597,7 +583,15 @@ public class VariantQueryUtils {
         List<String> returnedFiles;
         if (!fields.contains(VariantField.STUDIES_FILES)) {
             returnedFiles = Collections.emptyList();
-        } else if (query.containsKey(INCLUDE_FILE.key())) {
+        } else {
+            returnedFiles = getReturnedFilesList(query);
+        }
+        return returnedFiles;
+    }
+
+    private static List<String> getReturnedFilesList(Query query) {
+        List<String> returnedFiles;
+        if (query.containsKey(INCLUDE_FILE.key())) {
             String files = query.getString(INCLUDE_FILE.key());
             if (files.equals(ALL)) {
                 returnedFiles = null;
@@ -682,22 +676,7 @@ public class VariantQueryUtils {
             Function<Integer, StudyConfiguration> studyProvider,
             BiFunction<StudyConfiguration, String, T> getSample, Function<StudyConfiguration, T> getStudyId) {
 
-        List<String> files = Collections.emptyList();
-        if (isValidParam(query, FILE)) {
-            String value = query.getString(FILE.key());
-            files = splitValue(value, checkOperator(value))
-                    .stream()
-                    .filter((v) -> !isNegated(v)) // Discard negated
-                    .collect(Collectors.toList());
-        }
-        if (files.isEmpty() && isValidParam(query, INCLUDE_FILE)) {
-            String value = query.getString(FILE.key());
-            files = splitValue(value, checkOperator(value))
-                    .stream()
-                    .filter((v) -> !isNegated(v)) // Discard negated
-                    .collect(Collectors.toList());
-        }
-
+        List<String> files = getReturnedFilesList(query);
         List<String> returnedSamples = getReturnedSamplesList(query, options);
         LinkedHashSet<String> returnedSamplesSet = returnedSamples != null ? new LinkedHashSet<>(returnedSamples) : null;
         boolean returnAllSamples = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).equals(ALL);
@@ -710,7 +689,7 @@ public class VariantQueryUtils {
             }
 
             List<T> sampleNames;
-            if (returnedSamplesSet != null || returnAllSamples || files.isEmpty()) {
+            if (returnedSamplesSet != null || returnAllSamples || files == null || files.isEmpty()) {
                 LinkedHashMap<String, Integer> returnedSamplesPosition
                         = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
                 @SuppressWarnings("unchecked")
@@ -774,17 +753,26 @@ public class VariantQueryUtils {
             } else {
                 samples = query.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
             }
-        } else if (isValidParam(query, SAMPLE)) {
-            String value = query.getString(SAMPLE.key());
-            samples = splitValue(value, checkOperator(value))
-                    .stream()
-                    .filter((v) -> !isNegated(v)) // Discard negated
-                    .collect(Collectors.toList());
-            if (samples.isEmpty()) {
-                samples = null;
-            }
         } else {
             samples = null;
+            if (isValidParam(query, SAMPLE)) {
+                String value = query.getString(SAMPLE.key());
+                samples = splitValue(value, checkOperator(value))
+                        .stream()
+                        .filter((v) -> !isNegated(v)) // Discard negated
+                        .collect(Collectors.toList());
+            }
+            if (isValidParam(query, GENOTYPE)) {
+                HashMap<Object, List<String>> map = new HashMap<>();
+                parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+                if (samples == null) {
+                    samples = new ArrayList<>(map.size());
+                }
+                map.keySet().stream().map(Object::toString).forEach(samples::add);
+            }
+            if (samples != null && samples.isEmpty()) {
+                samples = null;
+            }
         }
         if (samples != null) {
             samples = samples.stream()

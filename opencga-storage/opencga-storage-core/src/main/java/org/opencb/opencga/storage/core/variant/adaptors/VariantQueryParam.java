@@ -81,7 +81,8 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String GENOTYPE_DESCR
             = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)*"
-            + " e.g. HG0097:0/0;HG0098:0/1,1/1";
+            + " e.g. HG0097:0/0;HG0098:0/1,1/1. "
+            + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam GENOTYPE = new VariantQueryParam("genotype", TEXT_ARRAY, GENOTYPE_DESCR);
 
     public static final String INCLUDE_SAMPLE_DESCR
