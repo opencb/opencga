@@ -64,7 +64,7 @@ public class VariantHbaseTransformTaskTest {
     public Runnable createSerialRunner(int size, DataWriter<VcfSliceProtos.VcfSlice> collector) throws Exception {
         VcfVariantReader reader = VcfVariantReaderTest.createReader(size);
         Configuration conf = new Configuration();
-        ArchiveTableHelper helper = new ArchiveTableHelper(conf, 1, new VariantFileMetadata("", ""));
+        ArchiveTableHelper helper = new ArchiveTableHelper(conf, 1, new VariantFileMetadata("1", ""));
         ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper);
 
 

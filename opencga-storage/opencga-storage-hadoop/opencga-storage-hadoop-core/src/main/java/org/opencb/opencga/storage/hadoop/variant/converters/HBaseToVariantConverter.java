@@ -189,16 +189,12 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     protected Variant convert(Variant variant, Map<Integer, StudyEntry> studies,
                               VariantAnnotation annotation) {
-        if (annotation == null) {
-            annotation = new VariantAnnotation();
-            annotation.setConsequenceTypes(Collections.emptyList());
-        }
 
         for (StudyEntry studyEntry : studies.values()) {
             variant.addStudyEntry(studyEntry);
         }
         variant.setAnnotation(annotation);
-        if (StringUtils.isNotEmpty(annotation.getId())) {
+        if (annotation != null && StringUtils.isNotEmpty(annotation.getId())) {
             variant.setId(annotation.getId());
         } else {
             variant.setId(variant.toString());
@@ -246,13 +242,16 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
         @Override
         public Variant convert(ResultSet resultSet) {
-            Variant variant = null;
+            String chromosome = null;
+            Integer start = null;
+            String reference = null;
+            String alternate = null;
             try {
-                variant = new Variant(resultSet.getString(VariantPhoenixHelper.VariantColumn.CHROMOSOME.column()),
-                        resultSet.getInt(VariantPhoenixHelper.VariantColumn.POSITION.column()),
-                        resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column()),
-                        resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
-                );
+                chromosome = resultSet.getString(VariantPhoenixHelper.VariantColumn.CHROMOSOME.column());
+                start = resultSet.getInt(VariantPhoenixHelper.VariantColumn.POSITION.column());
+                reference = resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column());
+                alternate = resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column());
+                Variant variant = new Variant(chromosome, start, reference, alternate);
                 String type = resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column());
                 if (StringUtils.isNotBlank(type)) {
                     variant.setType(VariantType.valueOf(type));
@@ -263,7 +262,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                 Map<Integer, StudyEntry> samplesData = studyEntryConverter.convert(resultSet);
                 return convert(variant, samplesData, annotation);
             } catch (RuntimeException | SQLException e) {
-                logger.error("Fail to parse variant: " + variant);
+                logger.error("Fail to parse variant: " + chromosome + ':' + start + ':' + reference + ':' + alternate);
                 throw Throwables.propagate(e);
             }
         }

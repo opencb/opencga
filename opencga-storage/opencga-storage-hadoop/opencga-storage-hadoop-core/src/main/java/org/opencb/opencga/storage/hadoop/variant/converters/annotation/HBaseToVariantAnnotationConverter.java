@@ -68,19 +68,23 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
                 }
             }
         }
-        String[] returnedAnnotationFields = list.toArray(new String[list.size()]);
+        String[] excludedAnnotationFields = list.toArray(new String[list.size()]);
         objectMapper.setAnnotationIntrospector(
                 new JacksonAnnotationIntrospector() {
                     @Override
                     public String[] findPropertiesToIgnore(Annotated ac, boolean forSerialization) {
                         String[] propertiesToIgnore = super.findPropertiesToIgnore(ac, forSerialization);
-                        if (ArrayUtils.isNotEmpty(propertiesToIgnore)) {
+                        if (!ac.getRawType().equals(VariantAnnotation.class)) {
+                            // Not a VariantAnnotation class. Return propertiesToIgnore as is.
+                            return propertiesToIgnore;
+                        } else if (ArrayUtils.isNotEmpty(propertiesToIgnore)) {
+                            // If there is any property to ignore, merge them
                             List<String> list = new ArrayList<>();
-                            Collections.addAll(list, returnedAnnotationFields);
+                            Collections.addAll(list, excludedAnnotationFields);
                             Collections.addAll(list, propertiesToIgnore);
                             return list.toArray(new String[list.size()]);
                         } else {
-                            return returnedAnnotationFields;
+                            return excludedAnnotationFields;
                         }
                     }
                 });
