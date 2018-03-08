@@ -591,7 +591,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         writeResult.setFailed(failList);
 
         if (!failList.isEmpty()) {
-            writeResult.setWarning(new Error(-1, null, "Not all the individuals could be deleted"));
+            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are individuals that could not be deleted")));
         }
 
         return writeResult;

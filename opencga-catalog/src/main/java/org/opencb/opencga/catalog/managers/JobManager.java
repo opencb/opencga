@@ -420,7 +420,7 @@ public class JobManager extends ResourceManager<Job> {
         writeResult.setFailed(failList);
 
         if (!failList.isEmpty()) {
-            writeResult.setWarning(new Error(-1, null, "Not all the jobs could be deleted"));
+            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are jobs that could not be deleted")));
         }
 
         return writeResult;

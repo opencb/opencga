@@ -430,7 +430,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         writeResult.setFailed(failList);
 
         if (!failList.isEmpty()) {
-            writeResult.setWarning(new Error(-1, null, "Not all the cohorts could be deleted"));
+            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are cohorts that could not be deleted")));
         }
 
         return writeResult;
