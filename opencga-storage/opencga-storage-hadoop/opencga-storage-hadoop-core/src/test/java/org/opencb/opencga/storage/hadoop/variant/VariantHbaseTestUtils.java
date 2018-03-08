@@ -175,6 +175,8 @@ public class VariantHbaseTestUtils {
                     } else if (key.endsWith(VariantPhoenixHelper.MAF_SUFIX)
                             || key.endsWith(VariantPhoenixHelper.MGF_SUFIX)) {
                         os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
+                    } else if (key.startsWith(VariantPhoenixHelper.RELEASE_PREFIX)) {
+                        os.println("\t" + key + " = " + PBoolean.INSTANCE.toObject(entry.getValue()));
                     } else if (entry.getValue().length == 4) {
                         Object o = null;
                         try {

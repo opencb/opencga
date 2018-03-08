@@ -105,6 +105,18 @@ public class VariantQueryUtils {
                 || value instanceof Collection && ((Collection) value).isEmpty());
     }
 
+    public static boolean isValidParam(Query query, QueryParam param, boolean discardNegated) {
+        boolean validParam = isValidParam(query, param);
+        if (!discardNegated || !validParam) {
+            return validParam;
+        } else {
+            String strValue = query.getString(param.key());
+            return splitValue(strValue, checkOperator(strValue))
+                    .stream()
+                    .anyMatch((v) -> !isNegated(v)); // Discard negated
+        }
+    }
+
     public static Set<VariantQueryParam> validParams(Query query) {
         Set<VariantQueryParam> params = new HashSet<>(query.size());
 
@@ -443,29 +455,49 @@ public class VariantQueryUtils {
 
     private static List<Integer> getReturnedStudies(Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager,
                                                    Set<VariantField> returnedFields) {
+        List<String> studiesList = getReturnedStudiesList(query, returnedFields);
+
         List<Integer> studyIds;
+        if (studiesList == null) {
+            studyIds = studyConfigurationManager.getStudyIds(options);
+        } else {
+            studyIds = studyConfigurationManager.getStudyIds(studiesList, options);
+        }
+        return studyIds;
+    }
+
+    public static List<String> getReturnedStudiesList(Query query, Set<VariantField> returnedFields) {
+        List<String> studies;
         if (!returnedFields.contains(VariantField.STUDIES)) {
-            studyIds = Collections.emptyList();
+            studies = Collections.emptyList();
         } else if (isValidParam(query, INCLUDE_STUDY)) {
             String returnedStudies = query.getString(VariantQueryParam.INCLUDE_STUDY.key());
             if (NONE.equals(returnedStudies)) {
-                studyIds = Collections.emptyList();
+                studies = Collections.emptyList();
             } else if (ALL.equals(returnedStudies)) {
-                studyIds = studyConfigurationManager.getStudyIds(options);
+                studies = null;
             } else {
-                studyIds = studyConfigurationManager.getStudyIds(query.getAsList(VariantQueryParam.INCLUDE_STUDY.key()), options);
+                studies = query.getAsStringList(VariantQueryParam.INCLUDE_STUDY.key());
             }
         } else if (isValidParam(query, STUDY)) {
-            String studies = query.getString(VariantQueryParam.STUDY.key());
-            studyIds = studyConfigurationManager.getStudyIds(splitValue(studies, checkOperator(studies)), options);
+            String value = query.getString(VariantQueryParam.STUDY.key());
+            studies = new ArrayList<>(splitValue(value, checkOperator(value)));
+            studies.removeIf(VariantQueryUtils::isNegated);
             // if empty, all the studies
-            if (studyIds.isEmpty()) {
-                studyIds = studyConfigurationManager.getStudyIds(options);
+            if (studies.isEmpty()) {
+                studies = null;
             }
         } else {
-            studyIds = studyConfigurationManager.getStudyIds(options);
+            studies = null;
         }
-        return studyIds;
+        return studies;
+    }
+
+    public static boolean isReturnedFilesDefined(Query query, Set<VariantField> returnedFields) {
+        if (getReturnedFilesList(query, returnedFields) != null) {
+            return true;
+        }
+        return isValidParam(query, SAMPLE, true) || isValidParam(query, INCLUDE_SAMPLE, true);
     }
 
     /**
@@ -592,13 +624,8 @@ public class VariantQueryUtils {
     public static boolean isReturnedSamplesDefined(Query query, Set<VariantField> returnedFields) {
         if (getReturnedSamplesList(query, returnedFields) != null) {
             return true;
-        } else if (isValidParam(query, FILE)) {
-            String files = query.getString(FILE.key());
-            return splitValue(files, checkOperator(files))
-                    .stream()
-                    .anyMatch((value) -> !isNegated(value)); // Discard negated
         }
-        return false;
+        return isValidParam(query, FILE, true) || isValidParam(query, INCLUDE_FILE, true);
     }
 
     public static Map<String, List<String>> getSamplesMetadata(Query query, StudyConfigurationManager studyConfigurationManager) {

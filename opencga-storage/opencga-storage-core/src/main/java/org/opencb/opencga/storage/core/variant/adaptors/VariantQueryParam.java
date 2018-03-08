@@ -272,6 +272,11 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam UNKNOWN_GENOTYPE = new VariantQueryParam("unknownGenotype", TEXT, UNKNOWN_GENOTYPE_DESCR);
 
 
+    public static final String RELEASE_DESCR
+            = "";
+    public static final VariantQueryParam RELEASE
+            = new VariantQueryParam("release", INTEGER, RELEASE_DESCR);
+
     private VariantQueryParam(String key, Type type, String description) {
         this.key = key;
         this.type = type;

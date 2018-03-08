@@ -643,6 +643,21 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
             studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
         }
+
+        int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
+        // FIXME: CurrentRelease should be a global attribute, not a study attribute.
+        int currentRelease = studyConfiguration.getAttributes().getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
+        if (options.containsKey(Options.RELEASE.key())) {
+            if (release < currentRelease || release <= 0) {
+                //ERROR, asking to use a release lower than currentRelease
+                throw StorageEngineException.invalidReleaseException(release, currentRelease);
+            } else {
+                // Update currentRelease in StudyConfiguration
+                studyConfiguration.getAttributes().put(Options.RELEASE.key(), release);
+            }
+        } else {
+            options.put(Options.RELEASE.key(), currentRelease);
+        }
     }
 
     protected StudyConfiguration checkOrCreateStudyConfiguration(boolean forceFetch) throws StorageEngineException {

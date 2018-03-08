@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -68,6 +69,36 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
             loadFile(transformFile, new QueryOptions(), outputId);
         }
 
+
+        variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+            System.out.println("variant = " + variant);
+        });
+    }
+
+    @Test
+    public void testByStepsMultiRelease() throws Exception {
+
+        List<File> inputFiles = new ArrayList<>();
+        File transformFile;
+
+        for (int i = 77; i <= 79; i++) {
+            inputFiles.add(create("platinum/1K.end.platinum-genomes-vcf-NA128" + i + "_S1.genome.vcf.gz"));
+        }
+
+        for (File inputFile : inputFiles) {
+            transformFile = transformFile(inputFile, new QueryOptions());
+            loadFile(transformFile, new QueryOptions(), outputId);
+
+            opencga.getCatalogManager().getProjectManager().incrementRelease(projectAlias, sessionId);
+        }
+
+        int i = 1;
+        for (File inputFile : inputFiles) {
+            inputFile = opencga.getCatalogManager().getFileManager().get(inputFile.getId(), null, sessionId).first();
+            assertEquals(1, inputFile.getRelease());
+            assertEquals(i, inputFile.getIndex().getRelease());
+            i++;
+        }
 
         variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);

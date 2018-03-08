@@ -146,7 +146,7 @@ public class VariantStorageManager extends StorageManager {
         VariantExportStorageOperation op = new VariantExportStorageOperation(catalogManager, storageConfiguration);
 
         catalogUtils.parseQuery(query, sessionId);
-        Set<Long> studies = checkSamplesPermissions(query, queryOptions, sessionId).keySet();
+        Collection<Long> studies = checkSamplesPermissions(query, queryOptions, sessionId).keySet();
         if (studies.isEmpty()) {
             studies = catalogUtils.getStudies(query, sessionId);
         }

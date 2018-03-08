@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RELEASE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
@@ -284,6 +285,12 @@ public class VariantHBaseQueryParser {
 
         if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
             scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
+            if (defaultStudyConfiguration != null) {
+                int release = defaultStudyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
+                for (int i = 1; i <= release; i++) {
+                    scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildReleaseColumnKey(release));
+                }
+            }
         }
 
 //        if (!returnedFields.contains(VariantField.ANNOTATION) && !returnedFields.contains(VariantField.STUDIES)) {

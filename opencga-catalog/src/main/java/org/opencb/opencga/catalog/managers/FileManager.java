@@ -350,6 +350,11 @@ public class FileManager extends ResourceManager<File> {
 
     public QueryResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, String sessionId)
             throws CatalogException {
+        return updateFileIndexStatus(file, newStatus, message, null, sessionId);
+    }
+
+    public QueryResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, Integer release, String sessionId)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Long studyId = getStudyId(file.getId());
         authorizationManager.checkFilePermission(studyId, file.getId(), userId, FileAclEntry.FilePermissions.WRITE);
@@ -363,6 +368,11 @@ public class FileManager extends ResourceManager<File> {
             }
         } else {
             index = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(newStatus), -1, new ObjectMap());
+        }
+        if (release != null) {
+            if (newStatus.equals(FileIndex.IndexStatus.READY)) {
+                index.setRelease(release);
+            }
         }
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
         fileDBAdaptor.update(file.getId(), params, QueryOptions.empty());
