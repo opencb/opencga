@@ -819,12 +819,55 @@ public class FileManager extends ResourceManager<File> {
         String userId = userManager.getUserId(sessionId);
         File file = get(resource.getResourceId(), null, sessionId).first();
 
+        authorizationManager.checkFilePermission(resource.getStudyId(), resource.getResourceId(), userId,
+                FileAclEntry.FilePermissions.WRITE);
+
+        checkUpdateParams(parameters);
+
+        // We obtain the numeric ids of the samples given
+        if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
+            List<String> sampleIdStr = parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key());
+
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(sampleIdStr, Long.toString(resource.getStudyId()),
+                    sessionId);
+
+            // Avoid sample duplicates
+            Set<Long> sampleIdsSet = new LinkedHashSet<>();
+            sampleIdsSet.addAll(resourceIds.getResourceIds());
+
+            List<Sample> sampleList = new ArrayList<>(sampleIdsSet.size());
+            for (Long sampleId : sampleIdsSet) {
+                sampleList.add(new Sample().setId(sampleId));
+            }
+            parameters.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
+        }
+
+        //Name must be changed with "rename".
+        if (parameters.containsKey(FileDBAdaptor.QueryParams.NAME.key())) {
+            logger.info("Rename file using update method!");
+            rename(resource.getResourceId(), parameters.getString("name"), sessionId);
+        }
+
+        return unsafeUpdate(resource.getStudyId(), file, parameters, options, userId);
+    }
+
+    QueryResult<File> unsafeUpdate(long studyId, File file, ObjectMap parameters, QueryOptions options, String userId)
+            throws CatalogException {
         if (isRootFolder(file)) {
             throw new CatalogException("Cannot modify root folder");
         }
 
-        authorizationManager.checkFilePermission(resource.getStudyId(), resource.getResourceId(), userId,
-                FileAclEntry.FilePermissions.WRITE);
+        checkUpdateParams(parameters);
+
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+        fileDBAdaptor.update(file.getId(), parameters, QueryOptions.empty());
+        QueryResult<File> queryResult = fileDBAdaptor.get(file.getId(), options);
+        auditManager.recordUpdate(AuditRecord.Resource.file, file.getId(), userId, parameters, null, null);
+        userDBAdaptor.updateUserLastModified(ownerId);
+        return queryResult;
+    }
+
+    private void checkUpdateParams(ObjectMap parameters) throws CatalogException {
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             FileDBAdaptor.QueryParams queryParam = FileDBAdaptor.QueryParams.getParam(param.getKey());
             switch (queryParam) {
@@ -841,39 +884,6 @@ public class FileManager extends ResourceManager<File> {
                     throw new CatalogException("Parameter '" + queryParam + "' cannot be changed.");
             }
         }
-
-        // We obtain the numeric ids of the samples given
-        if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
-            List<String> sampleIdStr = parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key());
-//            parameters.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
-
-            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(sampleIdStr, Long.toString(resource.getStudyId()),
-                    sessionId);
-
-            // Avoid sample duplicates
-            Set<Long> sampleIdsSet = new LinkedHashSet<>();
-            sampleIdsSet.addAll(resourceIds.getResourceIds());
-
-            List<Sample> sampleList = new ArrayList<>(sampleIdsSet.size());
-            for (Long sampleId : sampleIdsSet) {
-                sampleList.add(new Sample().setId(sampleId));
-            }
-//            fileDBAdaptor.addSamplesToFile(fileId, sampleList);
-            parameters.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
-        }
-
-        //Name must be changed with "rename".
-        if (parameters.containsKey("name")) {
-            logger.info("Rename file using update method!");
-            rename(resource.getResourceId(), parameters.getString("name"), sessionId);
-        }
-
-        String ownerId = studyDBAdaptor.getOwnerId(resource.getStudyId());
-        fileDBAdaptor.update(resource.getResourceId(), parameters, QueryOptions.empty());
-        QueryResult<File> queryResult = fileDBAdaptor.get(resource.getResourceId(), options);
-        auditManager.recordUpdate(AuditRecord.Resource.file, resource.getResourceId(), userId, parameters, null, null);
-        userDBAdaptor.updateUserLastModified(ownerId);
-        return queryResult;
     }
 
     @Deprecated

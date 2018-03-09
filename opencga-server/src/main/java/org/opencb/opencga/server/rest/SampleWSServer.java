@@ -274,23 +274,48 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{samples}/delete")
-//    @ApiOperation(value = "Delete a sample [WARNING]", position = 9,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names up to a maximum of 100", required = true) @PathParam("samples")
-//                                   String sampleStr,
-//                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                           @QueryParam("study") String studyStr,
-//                           @QueryParam("silent") boolean silent) {
-//        try {
-//            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(studyStr, sampleStr, queryOptions, sessionId);
-//            return createOkResponse(delete);
-//        } catch (CatalogException | IOException e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @DELETE
+    @Path("/delete")
+    @ApiOperation(value = "Delete existing samples")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of samples even if they are associated to files, "
+                    + "individuals or cohorts.", dataType = "boolean", defaultValue = "false", paramType = "query"),
+            @ApiImplicitParam(name = Constants.EMPTY_FILES_ACTION, value = "Action to be performed over files that were associated only to"
+                    + " the sample to be deleted. Possible actions are NONE, TRASH, DELETE.", dataType = "string",
+                    defaultValue = "NONE", paramType = "query"),
+            @ApiImplicitParam(name = Constants.DELETE_EMPTY_COHORTS, value = "Boolean indicating if the cohorts associated only to the "
+                    + "sample to be deleted should be also deleted.", dataType = "boolean", defaultValue = "false",
+                    paramType = "query")
+    })
+    public Response delete(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Sample id") @QueryParam("id") String id,
+            @ApiParam(value = "Sample name") @QueryParam("name") String name,
+            @ApiParam(value = "Sample source") @QueryParam("source") String source,
+            @ApiParam(value = "Sample type") @QueryParam("type") String type,
+            @ApiParam(value = "Somatic") @QueryParam("somatic") Boolean somatic,
+            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
+            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
+            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
+                @QueryParam("release") String release) {
+        try {
+            query.remove("study");
+            queryOptions.put(Constants.EMPTY_FILES_ACTION, query.getString(Constants.EMPTY_FILES_ACTION, "NONE"));
+            queryOptions.put(Constants.DELETE_EMPTY_COHORTS, query.getBoolean(Constants.DELETE_EMPTY_COHORTS, false));
+
+            query.remove(Constants.EMPTY_FILES_ACTION);
+            query.remove(Constants.DELETE_EMPTY_COHORTS);
+
+            return createOkResponse(sampleManager.delete(studyStr, query, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/groupBy")

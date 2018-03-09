@@ -290,9 +290,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     sampleList.add((Sample) sample);
                 }
             }
-            if (sampleList.size() > 0) {
-                fileParameters.put(QueryParams.SAMPLES.key(), fileConverter.convertSamples(sampleList));
-            }
+            fileParameters.put(QueryParams.SAMPLES.key(), fileConverter.convertSamples(sampleList));
         }
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};

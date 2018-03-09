@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -357,10 +359,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        WriteResult writeResult = new WriteResult("delete", -1, -1, -1, null, null, null);
+        WriteResult writeResult = new WriteResult("delete");
 
         String userId;
         long studyId;
+
+        StopWatch watch = StopWatch.createStarted();
 
         // If the user is the owner or the admin, we won't check if he has permissions for every single entry
         boolean checkPermissions;
@@ -387,8 +391,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         long numMatches = 0;
         long numModified = 0;
-        long startTime = System.currentTimeMillis();
-        List<WriteResult.Fail> failList = new ArrayList<>();
+        List<WriteResult.Fail> failedList = new ArrayList<>();
 
         String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
 
@@ -411,32 +414,32 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
                         .append(CohortDBAdaptor.QueryParams.NAME.key(), cohort.getName() + suffixName);
-                QueryResult<Long> update = jobDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                QueryResult<Long> update = cohortDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.cohort, cohort.getId(), userId, null, updateParams, null, null);
                 } else {
-                    failList.add(new WriteResult.Fail(String.valueOf(cohort.getId()), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(String.valueOf(cohort.getId()), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failList.add(new WriteResult.Fail(String.valueOf(cohort.getId()), e.getMessage()));
+                failedList.add(new WriteResult.Fail(String.valueOf(cohort.getId()), e.getMessage()));
                 logger.debug("Cannot delete cohort {}: {}", cohort.getId(), e.getMessage(), e);
             }
         }
 
-        writeResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
         writeResult.setNumMatches(numMatches);
         writeResult.setNumModified(numModified);
-        writeResult.setFailed(failList);
+        writeResult.setFailed(failedList);
 
-        if (!failList.isEmpty()) {
+        if (!failedList.isEmpty()) {
             writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are cohorts that could not be deleted")));
         }
 
         return writeResult;
     }
 
-    private void checkCohortCanBeDeleted(Cohort cohort) throws CatalogException {
+    public void checkCohortCanBeDeleted(Cohort cohort) throws CatalogException {
         // Check if the cohort is different from DEFAULT_COHORT
         if (StudyEntry.DEFAULT_COHORT.equals(cohort.getName())) {
             throw new CatalogException("Cohort " + StudyEntry.DEFAULT_COHORT + " cannot be deleted.");
@@ -474,18 +477,18 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     CohortAclEntry.CohortPermissions.UPDATE);
         }
 
-        authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                CohortAclEntry.CohortPermissions.UPDATE);
+        Cohort cohort = cohortDBAdaptor.get(resource.getResourceId(), QueryOptions.empty()).first();
+        return unsafeUpdate(resource.getStudyId(), cohort, parameters, allowModifyCohortAll, options, resource.getUser());
+    }
 
+    QueryResult<Cohort> unsafeUpdate(long studyId, Cohort cohort, ObjectMap parameters, boolean allowModifyCohortAll, QueryOptions options,
+                                     String user) throws CatalogException {
         try {
             ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> CohortDBAdaptor.UpdateParams.getParam(a) != null);
         } catch (CatalogParameterException e) {
             throw new CatalogException("Could not update: " + e.getMessage(), e);
         }
 
-        Cohort cohort = cohortDBAdaptor.get(resource.getResourceId(),
-                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.NAME.key(),
-                        CohortDBAdaptor.QueryParams.STATUS_NAME.key()))).first();
         if (!allowModifyCohortAll) {
             if (StudyEntry.DEFAULT_COHORT.equals(cohort.getName())) {
                 throw new CatalogException("Cannot modify cohort " + StudyEntry.DEFAULT_COHORT);
@@ -508,6 +511,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     break;
             }
         }
+
+        MyResourceId resource = new MyResourceId(user, studyId, cohort.getId());
 
         List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, cohortDBAdaptor);
 

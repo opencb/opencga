@@ -192,7 +192,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private void checkSamplesNotInUseInOtherIndividual(Set<Long> sampleIds, long studyId, Long individualId) throws CatalogException {
         // Check if any of the existing samples already belong to an individual
         Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.SAMPLES_ID.key(), sampleIds)
+                .append(IndividualDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds)
                 .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 IndividualDBAdaptor.QueryParams.SAMPLES.key(), IndividualDBAdaptor.QueryParams.ID.key()));
@@ -237,7 +237,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         if (query.containsKey(IndividualDBAdaptor.QueryParams.SAMPLES.key())) {
             MyResourceIds ids = catalogManager.getSampleManager().getIds(
                     query.getAsStringList(IndividualDBAdaptor.QueryParams.SAMPLES.key()), String.valueOf(studyId), sessionId);
-            query.put(IndividualDBAdaptor.QueryParams.SAMPLES_ID.key(), ids.getResourceIds());
+            query.put(IndividualDBAdaptor.QueryParams.SAMPLE_IDS.key(), ids.getResourceIds());
             query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
         }
 
@@ -713,11 +713,23 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), tmpResource.getResourceId());
         }
 
+        return unsafeUpdate(studyId, individualId, parameters, options, userId);
+    }
+
+    QueryResult<Individual> unsafeUpdate(long studyId, long individualId, ObjectMap parameters, QueryOptions options, String userId)
+            throws CatalogException {
+        try {
+            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> IndividualDBAdaptor.UpdateParams.getParam(a) != null);
+        } catch (CatalogParameterException e) {
+            throw new CatalogException("Could not update: " + e.getMessage(), e);
+        }
+
+        MyResourceId resource = new MyResourceId(userId, studyId, individualId);
         List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, individualDBAdaptor);
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudyId()));
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(studyId));
         }
 
         QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, parameters, variableSetList, options);

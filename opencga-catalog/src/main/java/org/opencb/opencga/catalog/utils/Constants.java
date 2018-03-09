@@ -9,11 +9,26 @@ public class Constants {
      */
     public static final String SILENT = "silent";
 
-
     /**
      * Forces some operations that would not be possible to perform otherwise.
      */
     public static final String FORCE = "force";
+
+    /* ****************************************    Additional parameters                 ************************************************/
+
+    /**
+     * Used when deleting a sample.
+     *
+     * Action to be performed over files that were associated only to the sample to be deleted. Possible actions are NONE, TRASH, DELETE.
+     */
+    public static final String EMPTY_FILES_ACTION = "emptyFilesAction";
+
+    /**
+     * Used when deleting a sample.
+     *
+     * Boolean indicating if the cohorts associated only to the sample to be deleted should be also deleted.
+     */
+    public static final String DELETE_EMPTY_COHORTS = "deleteEmptyCohorts";
 
     /* ****************************************    Variable constants for versioning     ************************************************/
     /**

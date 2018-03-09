@@ -1068,7 +1068,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case AFFECTATION_STATUS:
                     case RELEASE:
                     case VERSION:
-                    case SAMPLES_ID:
+                    case SAMPLE_IDS:
 //                    case ANNOTATION_SETS:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
