@@ -375,8 +375,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-            fixQueryAnnotationSearch(studyId, query);
-            fixQueryObject(studyId, query, sessionId);
+            fixQueryAnnotationSearch(studyId, finalQuery);
+            fixQueryObject(studyId, finalQuery, sessionId);
             finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
             iterator = cohortDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);

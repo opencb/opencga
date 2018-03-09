@@ -410,8 +410,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-            fixQueryAnnotationSearch(studyId, query);
-            fixQueryObject(studyId, query, sessionId);
+            fixQueryAnnotationSearch(studyId, finalQuery);
+            fixQueryObject(studyId, finalQuery, sessionId);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
             iterator = sampleDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
@@ -445,10 +445,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 checkSampleCanBeDeleted(studyId, sample, params.getBoolean(Constants.FORCE, false));
 
                 // Update the files
-                query = new Query()
+                Query auxQuery = new Query()
                         .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sample.getId())
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-                DBIterator<File> fileIterator = fileDBAdaptor.iterator(query, QueryOptions.empty());
+                DBIterator<File> fileIterator = fileDBAdaptor.iterator(auxQuery, QueryOptions.empty());
                 while (fileIterator.hasNext()) {
                     File file = fileIterator.next();
 
@@ -484,10 +484,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 }
 
                 // Update the cohorts
-                query = new Query()
+                auxQuery = new Query()
                         .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), sample.getId())
                         .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-                DBIterator<Cohort> cohortIterator = cohortDBAdaptor.iterator(query, QueryOptions.empty());
+                DBIterator<Cohort> cohortIterator = cohortDBAdaptor.iterator(auxQuery, QueryOptions.empty());
                 while (cohortIterator.hasNext()) {
                     Cohort cohort = cohortIterator.next();
 
@@ -519,10 +519,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 }
 
                 // Update the individual
-                query = new Query()
+                auxQuery = new Query()
                         .append(IndividualDBAdaptor.QueryParams.SAMPLE_IDS.key(), sample.getId())
                         .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, QueryOptions.empty());
+                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(auxQuery, QueryOptions.empty());
                 if (individualQueryResult.getNumResults() > 0) {
                     if (individualQueryResult.getNumResults() > 1) {
                         logger.error("Critical error: More than one individual detected pointing to sample {}. The list of individual ids "
