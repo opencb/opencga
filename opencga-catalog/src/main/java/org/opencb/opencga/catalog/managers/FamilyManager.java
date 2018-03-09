@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -338,6 +340,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         String userId;
         long studyId;
 
+        StopWatch watch = StopWatch.createStarted();
+
         // If the user is the owner or the admin, we won't check if he has permissions for every single entry
         boolean checkPermissions;
 
@@ -359,13 +363,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } catch (CatalogException e) {
             logger.error("Delete family: {}", e.getMessage(), e);
             writeResult.setError(new Error(-1, null, e.getMessage()));
+            writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
             return writeResult;
         }
 
         long numMatches = 0;
         long numModified = 0;
-        long startTime = System.currentTimeMillis();
-        List<WriteResult.Fail> failList = new ArrayList<>();
+        List<WriteResult.Fail> failedList = new ArrayList<>();
 
         String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
 
@@ -394,20 +398,20 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.family, family.getId(), userId, null, updateParams, null, null);
                 } else {
-                    failList.add(new WriteResult.Fail(String.valueOf(family.getId()), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(String.valueOf(family.getId()), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failList.add(new WriteResult.Fail(String.valueOf(family.getId()), e.getMessage()));
+                failedList.add(new WriteResult.Fail(String.valueOf(family.getId()), e.getMessage()));
                 logger.debug("Cannot delete family {}: {}", family.getId(), e.getMessage(), e);
             }
         }
 
-        writeResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
         writeResult.setNumMatches(numMatches);
         writeResult.setNumModified(numModified);
-        writeResult.setFailed(failList);
+        writeResult.setFailed(failedList);
 
-        if (!failList.isEmpty()) {
+        if (!failedList.isEmpty()) {
             writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are families that could not be deleted")));
         }
 

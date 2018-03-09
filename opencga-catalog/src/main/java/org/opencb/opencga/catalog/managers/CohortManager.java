@@ -386,6 +386,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         } catch (CatalogException e) {
             logger.error("Delete cohort: {}", e.getMessage(), e);
             writeResult.setError(new Error(-1, null, e.getMessage()));
+            writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
             return writeResult;
         }
 

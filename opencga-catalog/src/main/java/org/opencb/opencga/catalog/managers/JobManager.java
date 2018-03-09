@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -55,6 +56,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -353,6 +355,8 @@ public class JobManager extends ResourceManager<Job> {
         String userId;
         long studyId;
 
+        StopWatch watch = StopWatch.createStarted();
+
         // If the user is the owner or the admin, we won't check if he has permissions for every single entry
         boolean checkPermissions;
 
@@ -372,13 +376,13 @@ public class JobManager extends ResourceManager<Job> {
         } catch (CatalogException e) {
             logger.error("Delete job: {}", e.getMessage(), e);
             writeResult.setError(new Error(-1, null, e.getMessage()));
+            writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
             return writeResult;
         }
 
         long numMatches = 0;
         long numModified = 0;
-        long startTime = System.currentTimeMillis();
-        List<WriteResult.Fail> failList = new ArrayList<>();
+        List<WriteResult.Fail> failedList = new ArrayList<>();
 
         String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
 
@@ -406,20 +410,20 @@ public class JobManager extends ResourceManager<Job> {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.job, job.getId(), userId, null, updateParams, null, null);
                 } else {
-                    failList.add(new WriteResult.Fail(String.valueOf(job.getId()), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(String.valueOf(job.getId()), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failList.add(new WriteResult.Fail(String.valueOf(job.getId()), e.getMessage()));
+                failedList.add(new WriteResult.Fail(String.valueOf(job.getId()), e.getMessage()));
                 logger.debug("Cannot delete job {}: {}", job.getId(), e.getMessage(), e);
             }
         }
 
-        writeResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
         writeResult.setNumMatches(numMatches);
         writeResult.setNumModified(numModified);
-        writeResult.setFailed(failList);
+        writeResult.setFailed(failedList);
 
-        if (!failList.isEmpty()) {
+        if (!failedList.isEmpty()) {
             writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are jobs that could not be deleted")));
         }
 
