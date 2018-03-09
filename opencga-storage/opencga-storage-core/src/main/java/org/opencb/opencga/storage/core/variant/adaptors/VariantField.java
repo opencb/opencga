@@ -123,13 +123,13 @@ public enum VariantField {
         return getNamesMap().get(field);
     }
 
-    public static Set<VariantField> getReturnedFields(QueryOptions options) {
-        return getReturnedFields(options, false);
+    public static Set<VariantField> getIncludeFields(QueryOptions options) {
+        return getIncludeFields(options, false);
     }
 
     /**
      * Given a QueryOptions, reads the {@link QueryOptions#INCLUDE}, {@link QueryOptions#EXCLUDE} and  {@link VariantField#SUMMARY}
-     * to determine which fields from Variant will be returned.
+     * to determine which fields from Variant will be included.
      * In case of more than one fields present, will use the first valid field in this order:
      *   1. {@link QueryOptions#INCLUDE}
      *   2. {@link QueryOptions#EXCLUDE}
@@ -137,10 +137,10 @@ public enum VariantField {
      *
      * @param options   Non null options
      * @param prune     Remove intermediate nodes some child is missing, or all children from a node if all are present
-     * @return          List of fields to be returned.
+     * @return          List of fields to be included.
      */
-    public static Set<VariantField> getReturnedFields(QueryOptions options, boolean prune) {
-        Set<VariantField> returnedFields;
+    public static Set<VariantField> getIncludeFields(QueryOptions options, boolean prune) {
+        Set<VariantField> includeFields;
 
         if (options == null) {
             options = QueryOptions.empty();
@@ -148,7 +148,7 @@ public enum VariantField {
 
         List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
         if (includeList != null && !includeList.isEmpty()) {
-            returnedFields = new HashSet<>();
+            includeFields = new HashSet<>();
             for (String include : includeList) {
                 VariantField field = get(include);
                 if (field == null) {
@@ -156,15 +156,15 @@ public enum VariantField {
 //                    continue;
                 }
                 if (field.getParent() != null) {
-                    returnedFields.add(field.getParent());
+                    includeFields.add(field.getParent());
                 }
-                returnedFields.add(field);
-                returnedFields.addAll(field.getChildren());
+                includeFields.add(field);
+                includeFields.addAll(field.getChildren());
             }
 
         } else {
             List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-            returnedFields = new HashSet<>(Arrays.asList(values()));
+            includeFields = new HashSet<>(Arrays.asList(values()));
             if (excludeList != null && !excludeList.isEmpty()) {
                 for (String exclude : excludeList) {
                     VariantField field = get(exclude);
@@ -172,39 +172,39 @@ public enum VariantField {
                         throw VariantQueryException.unknownVariantField(QueryOptions.EXCLUDE, exclude);
 //                        continue;
                     }
-                    returnedFields.remove(field);
-                    returnedFields.removeAll(field.getChildren());
+                    includeFields.remove(field);
+                    includeFields.removeAll(field.getChildren());
                 }
             } else if (options.getBoolean(SUMMARY, false)) {
-                returnedFields.removeAll(SUMMARY_EXCLUDED_FIELDS);
+                includeFields.removeAll(SUMMARY_EXCLUDED_FIELDS);
             }
         }
 
         if (prune) {
-            return prune(returnedFields);
+            return prune(includeFields);
         } else {
-            return returnedFields;
+            return includeFields;
         }
     }
 
     /**
      * Remove intermediate nodes some child is missing, or all children from a node if all are present.
      *
-     * @param returnedFields Set of non pruned fields
+     * @param includeFields Set of non pruned fields
      * @return  Pruned set of fields
      */
-    public static Set<VariantField> prune(Set<VariantField> returnedFields) {
-        if (returnedFields.containsAll(VariantField.STUDIES.getChildren())) {
-            returnedFields.removeAll(VariantField.STUDIES.getChildren());
+    public static Set<VariantField> prune(Set<VariantField> includeFields) {
+        if (includeFields.containsAll(VariantField.STUDIES.getChildren())) {
+            includeFields.removeAll(VariantField.STUDIES.getChildren());
         } else {
-            returnedFields.remove(VariantField.STUDIES);
+            includeFields.remove(VariantField.STUDIES);
         }
-        if (returnedFields.containsAll(VariantField.ANNOTATION.getChildren())) {
-            returnedFields.removeAll(VariantField.ANNOTATION.getChildren());
+        if (includeFields.containsAll(VariantField.ANNOTATION.getChildren())) {
+            includeFields.removeAll(VariantField.ANNOTATION.getChildren());
         } else {
-            returnedFields.remove(VariantField.ANNOTATION);
+            includeFields.remove(VariantField.ANNOTATION);
         }
-        return returnedFields;
+        return includeFields;
     }
 
     private static Map<String, VariantField> getNamesMap() {

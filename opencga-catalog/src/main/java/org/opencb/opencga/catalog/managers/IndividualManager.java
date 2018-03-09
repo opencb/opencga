@@ -385,7 +385,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             Map<String, Long> myIds = new HashMap<>();
             for (String individualstrAux : individualList) {
-                if (StringUtils.isNumeric(individualstrAux)) {
+                if (StringUtils.isNumeric(individualstrAux) && Long.parseLong(individualstrAux) > configuration.getCatalog().getOffset()) {
                     long individualId = getIndividualId(silent, individualstrAux);
                     myIds.put(individualstrAux, individualId);
                 }
@@ -426,7 +426,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         long studyId = studyManager.getId(userId, studyStr);
 
         Query finalQuery = new Query(query);
-        fixQuery(studyId, finalQuery, sessionId);
+        try {
+            fixQuery(studyId, finalQuery, sessionId);
+        } catch (CatalogException e) {
+            // Any of mother, father or sample ids or names do not exist or were not found
+            return new QueryResult<>("Get");
+        }
 
         // Fix query if it contains any annotation
         fixQueryAnnotationSearch(studyId, finalQuery);
@@ -450,7 +455,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         long studyId = studyManager.getId(userId, studyStr);
 
         Query finalQuery = new Query(query);
-        fixQuery(studyId, finalQuery, sessionId);
+        try {
+            fixQuery(studyId, finalQuery, sessionId);
+        } catch (CatalogException e) {
+            // Any of mother, father or sample ids or names do not exist or were not found
+            return new QueryResult<>(null);
+        }
 
         // Fix query if it contains any annotation
         fixQueryAnnotationSearch(studyId, finalQuery);
@@ -705,16 +715,26 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
-            MyResourceId tmpResource =
-                    getId(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()), String.valueOf(studyId), sessionId);
-            parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
-            parameters.put(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), tmpResource.getResourceId());
+            Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.FATHER.key());
+            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()))) {
+                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()), String.valueOf(studyId),
+                        sessionId);
+                parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
+                parameters.put(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), tmpResource.getResourceId());
+            } else {
+                throw new CatalogException("Cannot update father parameter. Father name or id not passed");
+            }
         }
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
-            MyResourceId tmpResource =
-                    getId(parameters.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
-            parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
-            parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), tmpResource.getResourceId());
+            Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.MOTHER.key());
+            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()))) {
+                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()), String.valueOf(studyId),
+                        sessionId);
+                parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
+                parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), tmpResource.getResourceId());
+            } else {
+                throw new CatalogException("Cannot update mother parameter. Mother name or id not passed");
+            }
         }
 
         return unsafeUpdate(studyId, individualId, parameters, options, userId);
@@ -855,14 +875,23 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
+        Query finalQuery = new Query(query);
+
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(studyId, userId, query, true);
+        fixQueryAnnotationSearch(studyId, userId, finalQuery, true);
         fixQueryOptionAnnotation(options);
 
-        // Add study id to the query
-        query.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        try {
+            fixQuery(studyId, finalQuery, sessionId);
+        } catch (CatalogException e) {
+            // Any of mother, father or sample ids or names do not exist or were not found
+            return new QueryResult<>(null);
+        }
 
-        QueryResult queryResult = individualDBAdaptor.groupBy(query, fields, options, userId);
+        // Add study id to the query
+        finalQuery.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        QueryResult queryResult = individualDBAdaptor.groupBy(finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
@@ -1040,6 +1069,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     getId(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
             query.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
             query.append(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), resource.getResourceId());
+        }
+        if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {
+            MyResourceIds resource = catalogManager.getSampleManager().getIds(
+                    query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()), String.valueOf(studyId), sessionId);
+            query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+            query.append(IndividualDBAdaptor.QueryParams.SAMPLES_ID.key(), resource.getResourceIds());
         }
     }
 

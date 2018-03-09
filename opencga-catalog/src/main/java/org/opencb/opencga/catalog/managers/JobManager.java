@@ -148,7 +148,7 @@ public class JobManager extends ResourceManager<Job> {
 
             Map<String, Long> myIds = new HashMap<>();
             for (String jobstrAux : jobList) {
-                if (StringUtils.isNumeric(jobstrAux)) {
+                if (StringUtils.isNumeric(jobstrAux) && Long.parseLong(jobstrAux) > configuration.getCatalog().getOffset()) {
                     long jobId = getJobId(silent, jobstrAux);
                     myIds.put(jobstrAux, jobId);
                 }

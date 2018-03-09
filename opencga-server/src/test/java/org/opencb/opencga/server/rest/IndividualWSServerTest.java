@@ -180,7 +180,8 @@ public class IndividualWSServerTest {
         assertEquals(0, response.getResponse().get(0).getNumResults());
 
         // We update to make the individual in1 be the child of in2
-        ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER.key(), "in2");
+        ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER.key(),
+                new ObjectMap(IndividualDBAdaptor.QueryParams.NAME.key(), "in2"));
         OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), "in1", params, QueryOptions.empty(),
                 sessionId);
         // and query again. We look for an individual with father "in2"

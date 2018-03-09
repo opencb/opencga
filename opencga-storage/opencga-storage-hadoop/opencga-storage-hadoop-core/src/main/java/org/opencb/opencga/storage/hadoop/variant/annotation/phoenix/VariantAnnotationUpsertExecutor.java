@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.variant.index.annotation;
+package org.opencb.opencga.storage.hadoop.variant.annotation.phoenix;
 
 import com.google.common.base.Function;
 import org.apache.phoenix.schema.types.PDataType;

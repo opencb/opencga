@@ -295,28 +295,29 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
 
-        VariantStorageEngine variantStorageManager = getVariantStorageEngine();
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
 
         URI chr1 = getResourceUri("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         URI chr22 = getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
-//        runDefaultETL(chr1, this.variantStorageManager,
+//        runDefaultETL(chr1, this.variantStorageEngine,
 //                studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 5));
 //        Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
 //        assertTrue(studyConfiguration.getCohorts().containsKey(defaultCohortId));
 //        assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
 //        assertTrue(studyConfiguration.getIndexedFiles().contains(5));
-//        checkLoadedVariants(variantStorageManager.getDBAdaptor(), studyConfiguration, true, false, -1);
+//        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, -1);
 //
-//        runDefaultETL(chr22, this.variantStorageManager,
-////        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageManager,
+//        runDefaultETL(chr22, this.variantStorageEngine,
+////        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageEngine,
 //                studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 6));
 
-        variantStorageManager.getOptions()
+        variantStorageEngine.getOptions()
                 .append(VariantStorageEngine.Options.STUDY_NAME.key(), STUDY_NAME)
-                .append(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID);
+                .append(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID)
+                .append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), true);
 
-        List<StoragePipelineResult> results = variantStorageManager.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
+        List<StoragePipelineResult> results = variantStorageEngine.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
 
         for (StoragePipelineResult result : results) {
             System.out.println(result.toString());

@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.bson.Document;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -33,12 +33,18 @@ import static org.junit.Assert.assertEquals;
  */
 public class DocumentToVariantStatsConverterTest {
 
-    private static Document mongoStats;
-    private static VariantStats stats;
+    private Document mongoStats;
+    private VariantStats stats;
 
-    @BeforeClass
-    public static void setUpClass() {
-        mongoStats = new Document(DocumentToVariantStatsConverter.MAF_FIELD, 0.1);
+    @Before
+    public void setUpClass() {
+        float numSamples = 160;
+        float numAlleles = 320;
+
+        mongoStats = new Document();
+        mongoStats.append(DocumentToVariantStatsConverter.REF_FREQ_FIELD, 250 / numAlleles);
+        mongoStats.append(DocumentToVariantStatsConverter.ALT_FREQ_FIELD, 70 / numAlleles);
+        mongoStats.append(DocumentToVariantStatsConverter.MAF_FIELD, 0.1);
         mongoStats.append(DocumentToVariantStatsConverter.MGF_FIELD, 0.01);
         mongoStats.append(DocumentToVariantStatsConverter.MAFALLELE_FIELD, "A");
         mongoStats.append(DocumentToVariantStatsConverter.MGFGENOTYPE_FIELD, "A/A");
@@ -56,8 +62,7 @@ public class DocumentToVariantStatsConverterTest {
         stats.addGenotype(new Genotype("0/1"), 50);
         stats.addGenotype(new Genotype("1/1"), 10);
         Map<Genotype, Float> genotypeFreq = new HashMap<>();
-        float numSamples = 160;
-        float numAlleles = 320;
+
         genotypeFreq.put(new Genotype("0/0"), 100 / numSamples);
         genotypeFreq.put(new Genotype("0/1"), 50 / numSamples);
         genotypeFreq.put(new Genotype("1/1"), 10 / numSamples);
@@ -72,6 +77,15 @@ public class DocumentToVariantStatsConverterTest {
     @Test
     public void testConvertToDataModelType() {
         DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
+        VariantStats converted = converter.convertToDataModelType(mongoStats);
+        assertEquals(stats, converted);
+    }
+
+    @Test
+    public void testConvertToDataModelTypeWithoutAF() {
+        DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
+        mongoStats.remove(DocumentToVariantStatsConverter.ALT_FREQ_FIELD);
+        mongoStats.remove(DocumentToVariantStatsConverter.REF_FREQ_FIELD);
         VariantStats converted = converter.convertToDataModelType(mongoStats);
         assertEquals(stats, converted);
     }

@@ -124,5 +124,9 @@ public class VariantQueryException extends IllegalArgumentException {
     public static VariantQueryException unknownVariantField(String projectionOp, String field) {
         return new VariantQueryException("Found unknown variant field '" + field + "' in " + projectionOp.toLowerCase());
     }
+
+    public static VariantQueryException internalException(Exception e) {
+        return new VariantQueryException("Internal exception: " + e.getMessage(), e);
+    }
 }
 

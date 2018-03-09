@@ -680,7 +680,8 @@ public class CatalogManagerTest extends GenericTest {
         rules.setId("rules2");
         permissionRulesQueryResult = catalogManager.getStudyManager().createPermissionRule(String.valueOf(studyId), Study.Entry.SAMPLES, rules,
                 sessionIdUser);
-        assertEquals(2, permissionRulesQueryResult.getNumResults());
+        assertEquals(1, permissionRulesQueryResult.getNumResults());
+        assertEquals(rules, permissionRulesQueryResult.first());
     }
 
     @Test

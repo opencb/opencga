@@ -27,6 +27,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -54,7 +55,7 @@ import static org.opencb.opencga.catalog.managers.AnnotationSetManager.ANNOTATIO
 /**
  * Created by pfurio on 07/07/16.
  */
-public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
+public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor implements AnnotationSetDBAdaptor<T> {
 
     private final AnnotationConverter annotationConverter;
 
@@ -168,7 +169,7 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         if (queryResult.first().getModifiedCount() != 1) {
             throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
         }
-        return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName(), null));
+        return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
     }
 
     /**
@@ -317,37 +318,6 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return retMap
                 .append(AnnotationSetManager.Action.CREATE.name(), createAnnotations)
                 .append(AnnotationSetManager.Action.UPDATE.name(), updateAnnotations);
-    }
-
-    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName, QueryOptions options)
-            throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, null, annotationSetName, options);
-
-        if (aggregate.getNumResults() == 0) {
-            return endQuery("Get annotation set", startTime, Collections.emptyList());
-        } else {
-            return endQuery("Get annotation set", startTime, aggregate.first().getAnnotationSets());
-        }
-    }
-
-    private QueryResult<? extends Annotable> commonGetAnnotationSet(long id, Document queryAnnotation, @Nullable String annotationSetName,
-                                                                    QueryOptions options) {
-        if (options == null) {
-            options = new QueryOptions();
-        }
-
-        Document queryDocument = new Document(PRIVATE_ID, id);
-
-        if (queryAnnotation != null && !queryAnnotation.isEmpty()) {
-            queryDocument.putAll(queryAnnotation);
-        }
-
-        logger.debug("Get annotation: {}", queryDocument.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
-
-        QueryResult<Document> documentQueryResult = getCollection().find(queryDocument, options);
-        return convertToDataModelQueryResult(documentQueryResult, annotationSetName, options);
     }
 
     private QueryResult<? extends Annotable> convertToDataModelQueryResult(QueryResult<Document> documentQueryResult,
@@ -820,16 +790,36 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
                         switch (operator) {
                             case "=":
                             case "==":
+                                // Return as long as that annotationSetName is present
                                 documentList.add(new Document(AnnotationSetParams.ANNOTATION_SETS_ANNOTATION_SET_NAME.key(), value));
+                                break;
+                            case "===":
+                                // Return if there is only that annotationSetName
+                                documentList.add(new Document("$and", Arrays.asList(
+                                        new Document(AnnotationSetParams.ANNOTATION_SETS_ANNOTATION_SET_NAME.key(), value),
+                                        new Document(AnnotationSetParams.ANNOTATION_SETS.key(),
+                                                new Document("$not", new Document("$elemMatch",
+                                                        new Document(AnnotationSetParams.ANNOTATION_SET_NAME.key(),
+                                                                new Document("$ne", value)))))
+                                )));
                                 break;
                             case "!":
                             case "!=":
+                                // If there is another annotationSet with a name different than the value, it will match
+                                documentList.add(new Document("$or", Arrays.asList(
+                                        new Document(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$size", 0)),
+                                        new Document(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$elemMatch",
+                                                new Document(AnnotationSetParams.ANNOTATION_SET_NAME.key(), new Document("$ne", value)))
+                                        ))));
+                                break;
+                            case "!==":
+                                // Even if there is another annotationSet with a name different than the value, it will NOT match
                                 documentList.add(new Document(AnnotationSetParams.ANNOTATION_SETS_ANNOTATION_SET_NAME.key(),
                                         new Document("$ne", value)));
                                 break;
                             default:
                                 throw new CatalogDBException("Internal error. Operator of " + annotation + " not understood. Accepted"
-                                        + " operators are =, ==, !, !=");
+                                        + " operators are =, ==, ===, !, !=, !==");
                         }
                     } else if (annotation.startsWith(Constants.VARIABLE_SET)) {
                         String operator = getOperator(valueString);
@@ -837,16 +827,36 @@ public abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
                         switch (operator) {
                             case "=":
                             case "==":
+                                // Return as long as that variable set is annotated
                                 documentList.add(new Document(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), value));
+                                break;
+                            case "===":
+                                // Only return if there is only that variable set annotated
+                                documentList.add(new Document("$and", Arrays.asList(
+                                        new Document(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), value),
+                                        new Document(AnnotationSetParams.ANNOTATION_SETS.key(),
+                                                new Document("$not", new Document("$elemMatch",
+                                                        new Document(AnnotationSetParams.VARIABLE_SET_ID.key(),
+                                                                new Document("$ne", value)))))
+                                )));
                                 break;
                             case "!":
                             case "!=":
+                                // If there is another variableSet different than the value, it will match
+                                documentList.add(new Document("$or", Arrays.asList(
+                                        new Document(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$size", 0)),
+                                        new Document(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$elemMatch",
+                                                new Document(AnnotationSetParams.VARIABLE_SET_ID.key(), new Document("$ne", value)))
+                                ))));
+                                break;
+                            case "!==":
+                                // Even if there is another variableSet different than the value, it will NOT match
                                 documentList.add(new Document(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(),
                                         new Document("$ne", value)));
                                 break;
                             default:
                                 throw new CatalogDBException("Internal error. Operator of " + annotation + " not understood. Accepted"
-                                        + " operators are =, ==, !, !=");
+                                        + " operators are =, ==, ===, !, !=, !==");
                         }
                     } else {
                         // Annotation...

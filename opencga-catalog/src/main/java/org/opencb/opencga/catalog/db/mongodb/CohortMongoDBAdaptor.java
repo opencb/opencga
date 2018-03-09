@@ -47,6 +47,7 @@ import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -56,7 +57,7 @@ import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.fi
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
-public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements CohortDBAdaptor {
+public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> implements CohortDBAdaptor {
 
     private final MongoDBCollection cohortCollection;
     private CohortConverter cohortConverter;
@@ -122,6 +123,28 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     @Override
     public QueryResult<Cohort> update(long cohortId, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(cohortId, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
+        QueryOptions queryOptions = new QueryOptions();
+        List<String> includeList = new ArrayList<>();
+        includeList.add(QueryParams.ANNOTATION_SETS.key());
+        if (StringUtils.isNotEmpty(annotationSetName)) {
+            includeList.add(Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+        }
+        queryOptions.put(QueryOptions.INCLUDE, includeList);
+
+        QueryResult<Cohort> cohortQueryResult = get(id, queryOptions);
+        if (cohortQueryResult.first().getAnnotationSets().isEmpty()) {
+            return new QueryResult<>("Get annotation set", cohortQueryResult.getDbTime(), 0, 0, cohortQueryResult.getWarningMsg(),
+                    cohortQueryResult.getErrorMsg(), Collections.emptyList());
+        } else {
+            List<AnnotationSet> annotationSets = cohortQueryResult.first().getAnnotationSets();
+            int size = annotationSets.size();
+            return new QueryResult<>("Get annotation set", cohortQueryResult.getDbTime(), size, size, cohortQueryResult.getWarningMsg(),
+                    cohortQueryResult.getErrorMsg(), annotationSets);
+        }
     }
 
     @Override

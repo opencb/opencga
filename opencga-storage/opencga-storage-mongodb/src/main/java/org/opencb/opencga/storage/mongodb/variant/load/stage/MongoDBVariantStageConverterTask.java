@@ -22,6 +22,7 @@ import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
 
@@ -41,10 +42,16 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
 
     private final ProgressLogger progressLogger;
     private final AtomicLong skippedVariants;
+    private ComplexTypeConverter<Variant, Binary> variantConverter;
 
     public MongoDBVariantStageConverterTask(ProgressLogger progressLogger) {
+        this(progressLogger, VARIANT_CONVERTER_DEFAULT);
+    }
+
+    public MongoDBVariantStageConverterTask(ProgressLogger progressLogger, ComplexTypeConverter<Variant, Binary> variantConverter) {
         this.progressLogger = progressLogger;
         skippedVariants = new AtomicLong(0);
+        this.variantConverter = variantConverter;
     }
 
     @Override
@@ -53,7 +60,16 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
     }
 
     @Override
+    public void post()  {
+    }
+
+    @Override
     public List<ListMultimap<Document, Binary>> apply(List<Variant> variants) throws RuntimeException {
+        ListMultimap<Document, Binary> ids = convert(variants);
+        return Collections.singletonList(ids);
+    }
+
+    public ListMultimap<Document, Binary> convert(List<Variant> variants) {
 //        final long start = System.nanoTime();
         int localSkippedVariants = 0;
 
@@ -64,7 +80,7 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
                 localSkippedVariants++;
                 continue;
             }
-            Binary binary = VARIANT_CONVERTER_DEFAULT.convertToStorageType(variant);
+            Binary binary = variantConverter.convertToStorageType(variant);
             Document id = STAGE_TO_VARIANT_CONVERTER.convertToStorageType(variant);
 
             ids.put(id, binary);
@@ -74,7 +90,7 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
         }
 
         skippedVariants.addAndGet(localSkippedVariants);
-        return Collections.singletonList(ids);
+        return ids;
     }
 
     public long getSkippedVariants() {

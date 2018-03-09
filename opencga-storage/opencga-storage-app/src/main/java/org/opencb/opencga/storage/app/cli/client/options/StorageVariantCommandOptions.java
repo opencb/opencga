@@ -275,6 +275,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR, arity = 1)
         public String filter;
 
+        @Parameter(names = {"--qual"}, description = VariantQueryParam.QUAL_DESCR, arity = 1)
+        public String qual;
+
         @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR, arity = 1)
         public String geneBiotype;
 
@@ -509,6 +512,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
         public List<String> samples;
 
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
+        public boolean resume;
+
 //        @Parameter(names = {"--exclude-hom-ref"}, description = "Do not fill gaps of samples with HOM-REF genotype (0/0)", arity = 0)
 //        public boolean excludeHomRef;
     }
@@ -543,6 +549,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
+        public boolean resume;
     }
 
     /**

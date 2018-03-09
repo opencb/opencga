@@ -277,7 +277,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
             Map<String, Long> myIds = new HashMap<>();
             for (String cohortStrAux : cohortList) {
-                if (StringUtils.isNumeric(cohortStrAux)) {
+                if (StringUtils.isNumeric(cohortStrAux) && Long.parseLong(cohortStrAux) > configuration.getCatalog().getOffset()) {
                     long cohortId = getCohortId(silent, cohortStrAux);
                     myIds.put(cohortStrAux, cohortId);
                 }

@@ -50,11 +50,10 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
      *
      * @param id id of the entity where the annotations are stored.
      * @param annotationSetName annotation set name of the annotation to be returned when provided.
-     * @param options query options object.
      * @return a queryResult containing either all the annotation sets or just the one corresponding to the annotation set name if provided.
      * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
      */
-    QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName, QueryOptions options)
+    QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName)
             throws CatalogDBException;
 
     QueryResult<T> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)

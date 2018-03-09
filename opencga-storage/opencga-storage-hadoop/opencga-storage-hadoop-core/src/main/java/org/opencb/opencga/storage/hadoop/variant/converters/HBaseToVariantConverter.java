@@ -27,7 +27,6 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
@@ -39,7 +38,6 @@ import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVa
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
@@ -73,9 +71,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     protected boolean failOnEmptyVariants = false;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
-        this(variantTableHelper, new StudyConfigurationManager(
-                new HBaseStudyConfigurationDBAdaptor(
-                        variantTableHelper.getAnalysisTableAsString(), variantTableHelper.getConf(), new ObjectMap())));
+        this(variantTableHelper, new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(variantTableHelper)));
     }
 
     public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
@@ -119,8 +115,8 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                 .collect(Collectors.toList());
     }
 
-    public HBaseToVariantConverter<T> setReturnedFields(Set<VariantField> fields) {
-        annotationConverter.setReturnedFields(fields);
+    public HBaseToVariantConverter<T> setIncludeFields(Set<VariantField> fields) {
+        annotationConverter.setIncludeFields(fields);
         return this;
     }
 
@@ -151,7 +147,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     public HBaseToVariantConverter<T> setSelectVariantElements(VariantQueryUtils.SelectVariantElements selectVariantElements) {
         studyEntryConverter.setSelectVariantElements(selectVariantElements);
-        annotationConverter.setReturnedFields(selectVariantElements.getFields());
+        annotationConverter.setIncludeFields(selectVariantElements.getFields());
         return this;
     }
 
@@ -191,26 +187,14 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return new ResultSetToVariantConverter(genomeHelper, scm);
     }
 
-    public static HBaseToVariantConverter<VariantTableStudyRow> fromRow(VariantTableHelper helper) throws IOException {
-        return new VariantTableStudyRowToVariantConverter(helper);
-    }
-
-    public static HBaseToVariantConverter<VariantTableStudyRow> fromRow(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
-        return new VariantTableStudyRowToVariantConverter(genomeHelper, scm);
-    }
-
     protected Variant convert(Variant variant, Map<Integer, StudyEntry> studies,
                               VariantAnnotation annotation) {
-        if (annotation == null) {
-            annotation = new VariantAnnotation();
-            annotation.setConsequenceTypes(Collections.emptyList());
-        }
 
         for (StudyEntry studyEntry : studies.values()) {
             variant.addStudyEntry(studyEntry);
         }
         variant.setAnnotation(annotation);
-        if (StringUtils.isNotEmpty(annotation.getId())) {
+        if (annotation != null && StringUtils.isNotEmpty(annotation.getId())) {
             variant.setId(annotation.getId());
         } else {
             variant.setId(variant.toString());
@@ -247,24 +231,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return this;
     }
 
-
-    private static class VariantTableStudyRowToVariantConverter extends HBaseToVariantConverter<VariantTableStudyRow> {
-        VariantTableStudyRowToVariantConverter(VariantTableHelper helper) throws IOException {
-            super(helper);
-        }
-
-        VariantTableStudyRowToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
-            super(genomeHelper, scm);
-        }
-
-        @Override
-        public Variant convert(VariantTableStudyRow row) {
-            Variant variant = new Variant(row.getChromosome(), row.getPos(), row.getRef(), row.getAlt());
-            StudyEntry studyEntry = studyEntryConverter.convert(variant, row);
-            return convert(variant, Collections.singletonMap(row.getStudyId(), studyEntry), null);
-        }
-    }
-
     private static class ResultSetToVariantConverter extends HBaseToVariantConverter<ResultSet> {
         ResultSetToVariantConverter(VariantTableHelper helper) throws IOException {
             super(helper);
@@ -276,13 +242,16 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
         @Override
         public Variant convert(ResultSet resultSet) {
-            Variant variant = null;
+            String chromosome = null;
+            Integer start = null;
+            String reference = null;
+            String alternate = null;
             try {
-                variant = new Variant(resultSet.getString(VariantPhoenixHelper.VariantColumn.CHROMOSOME.column()),
-                        resultSet.getInt(VariantPhoenixHelper.VariantColumn.POSITION.column()),
-                        resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column()),
-                        resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
-                );
+                chromosome = resultSet.getString(VariantPhoenixHelper.VariantColumn.CHROMOSOME.column());
+                start = resultSet.getInt(VariantPhoenixHelper.VariantColumn.POSITION.column());
+                reference = resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column());
+                alternate = resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column());
+                Variant variant = new Variant(chromosome, start, reference, alternate);
                 String type = resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column());
                 if (StringUtils.isNotBlank(type)) {
                     variant.setType(VariantType.valueOf(type));
@@ -293,7 +262,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                 Map<Integer, StudyEntry> samplesData = studyEntryConverter.convert(resultSet);
                 return convert(variant, samplesData, annotation);
             } catch (RuntimeException | SQLException e) {
-                logger.error("Fail to parse variant: " + variant);
+                logger.error("Fail to parse variant: " + chromosome + ':' + start + ':' + reference + ':' + alternate);
                 throw Throwables.propagate(e);
             }
         }

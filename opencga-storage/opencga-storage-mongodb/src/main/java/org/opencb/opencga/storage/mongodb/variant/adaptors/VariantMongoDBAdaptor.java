@@ -139,8 +139,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return variantsCollection;
     }
 
-    public MongoDBCollection getStageCollection() {
-        return db.getCollection(configuration.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
+    public MongoDBCollection getStageCollection(int studyId) {
+        String stageCollectionName = configuration.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue());
+        // Ensure retro-compatibility.
+        // If a "stage" collection exists, continue using one single stage collection for all the studies.
+        // Otherwise, build the stage collection name as: 'stage_study_<study-id>'
+        if (db.getCollectionNames().contains(stageCollectionName)) {
+            return db.getCollection(stageCollectionName);
+        } else {
+            return db.getCollection(stageCollectionName + "_study_" + studyId);
+        }
     }
 
     public MongoDBCollection getStudiesCollection() {
@@ -212,7 +220,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .batchSize(batchSize);
 
         logger.info("Remove files from stage collection - step 1/3"); // Remove study if only contains removed files
-        MongoDBCollection stageCollection = getStageCollection();
+        MongoDBCollection stageCollection = getStageCollection(studyId);
         int updatedStageDocuments = 0;
         try (MongoCursor<Document> cursor = findIterable.iterator()) {
             List<String> ids = new ArrayList<>(batchSize);
@@ -242,7 +250,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 combine(studyUpdate), new QueryOptions(MULTI, true)).first().getModifiedCount();
 
         logger.info("Remove files from stage collection - step 3/3"); // purge
-        long removedStageDocuments = removeEmptyVariantsFromStage();
+        long removedStageDocuments = removeEmptyVariantsFromStage(studyId);
 
         logger.info("Updated " + updatedStageDocuments + " documents from stage");
         logger.info("Removed " + removedStageDocuments + " documents from stage");
@@ -334,11 +342,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeStudy: stage query = " + eq.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         logger.debug("removeStudy: stage update = " + combine.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         logger.info("Remove study from stage collection - step 1/" + (purge ? '2' : '1'));
-        getStageCollection().update(eq, combine, new QueryOptions(MULTI, true));
+        getStageCollection(studyId).update(eq, combine, new QueryOptions(MULTI, true));
 
         if (purge) {
             logger.info("Remove study from stage collection - step 2/2");
-            removeEmptyVariantsFromStage();
+            removeEmptyVariantsFromStage(studyId);
         }
         return result;
     }
@@ -364,9 +372,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return variantsCollection.remove(purgeQuery, new QueryOptions(MULTI, true)).first().getDeletedCount();
     }
 
-    private long removeEmptyVariantsFromStage() {
+    private long removeEmptyVariantsFromStage(int studyId) {
         Bson purgeQuery = eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, Collections.emptyList());
-        return getStageCollection().remove(purgeQuery, new QueryOptions(MULTI, true)).first().getDeletedCount();
+        return getStageCollection(studyId).remove(purgeQuery, new QueryOptions(MULTI, true)).first().getDeletedCount();
     }
 
     @Override
@@ -946,10 +954,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.addStudyConfiguration(studyConfiguration);
         }
         if (query.containsKey(UNKNOWN_GENOTYPE.key())) {
-            samplesConverter.setReturnedUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
+            samplesConverter.setUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
         }
 
-        samplesConverter.setReturnedSamples(selectVariantElements.getSamples());
+        samplesConverter.setIncludeSamples(selectVariantElements.getSamples());
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
 

@@ -81,6 +81,9 @@ public class VariantFileMetadataMongoDBAdaptor implements VariantFileMetadataDBA
     @Override
     public void updateVariantFileMetadata(String studyId, VariantFileMetadata metadata) {
         MongoDBCollection coll = db.getCollection(collectionName);
+        if (Integer.valueOf(metadata.getId()) <= 0) {
+            throw new IllegalArgumentException("FileIds must be integer positive");
+        }
         Document document = variantFileMetadataConverter.convertToStorageType(studyId, metadata);
         String id = document.getString("_id");
         document.append("_id", id);

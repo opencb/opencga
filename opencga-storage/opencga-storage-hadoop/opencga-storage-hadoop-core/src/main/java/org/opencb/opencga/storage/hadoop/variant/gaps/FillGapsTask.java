@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -20,6 +22,9 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus.REFERENCE;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus.VARIANT;
+
 /**
  * Created on 15/01/18.
  *
@@ -35,71 +40,87 @@ public class FillGapsTask {
     private final boolean skipReferenceVariants;
 
     private Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
+    private boolean quiet = false;
 
     public FillGapsTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean skipReferenceVariants) {
         this.studyConfiguration = studyConfiguration;
+
         this.skipReferenceVariants = skipReferenceVariants;
 
         studyConverter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), studyConfiguration, true, Collections.singleton("?/?"));
         variantMerger = new VariantMerger(false).configure(studyConfiguration.getVariantHeader());
-
     }
 
-    public void fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId, VcfSliceProtos.VcfSlice vcfSlice) {
-        String chromosome = vcfSlice.getChromosome();
-        int position = vcfSlice.getPosition();
+    public FillGapsTask setQuiet(boolean quiet) {
+        this.quiet = quiet;
+        return this;
+    }
+
+    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
+                                             VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
+        return fillGaps(variant, missingSamples, put, fileId,
+                nonRefVcfSlice, nonRefVcfSlice.getRecordsList().listIterator(),
+                refVcfSlice, refVcfSlice.getRecordsList().listIterator());
+    }
+
+    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
+                                             VcfSliceProtos.VcfSlice nonRefVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> nonRefIterator,
+                                             VcfSliceProtos.VcfSlice refVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> refIterator) {
+        VariantOverlappingStatus overlappingStatus;
 
         // Three scenarios:
         //  Overlap with NO_VARIATION,
         //  Overlap with another variant
         //  No overlap
 
-        List<VcfSliceProtos.VcfRecord> overlappingRecords = new ArrayList<>(1);
-        for (VcfSliceProtos.VcfRecord vcfRecord : vcfSlice.getRecordsList()) {
-            int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
-            int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, position);
-            String reference = vcfRecord.getReference();
-            String alternate = vcfRecord.getAlternate();
-            if (overlapsWith(variant, chromosome, start, end)) {
-                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
-                    // Skip this variant
-                    continue;
-                }
-
-                // If the same variant is present for this file in the VcfSlice, the variant is already loaded
-                if (isVariantAlreadyLoaded(variant, vcfSlice, vcfRecord, chromosome, start, end, reference, alternate)) {
-                    // Variant already loaded. Nothing to do!
-                    return;
-                }
-
-                overlappingRecords.add(vcfRecord);
+        List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> overlappingRecords = new ArrayList<>(1);
+        if (nonRefVcfSlice != null) {
+            boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, fileId, nonRefVcfSlice, nonRefIterator, overlappingRecords);
+            if (isVariantAlreadyLoaded) {
+                return VariantOverlappingStatus.NONE;
+            }
+        }
+        if (refVcfSlice != null) {
+            boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, fileId, refVcfSlice, refIterator, overlappingRecords);
+            if (isVariantAlreadyLoaded) {
+                String msg = "Found that the variant " + variant + " was already loaded in refVcfSlice!";
+//                throw new IllegalStateException(msg);
+                logger.warn(msg);
             }
         }
 
         VcfSliceProtos.VcfRecord vcfRecord;
+        VcfSliceProtos.VcfSlice vcfSlice;
         if (overlappingRecords.isEmpty()) {
             // TODO: There was a gap in the gVCF?
             // May happen that the variant to fill is an insertion, and there is no overlapping
             // Should write "./." ? "0/0" for insertions?
             logger.debug("Not overlap for fileId " + fileId + " in variant " + variant);
             // Nothing to do!
-            return;
+            return null;
         } else if (overlappingRecords.size() > 1) {
             // TODO: What if multiple overlaps?
 
             // Discard ref_blocks
-            List<VcfSliceProtos.VcfRecord> realVariants = overlappingRecords
+            List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> realVariants = overlappingRecords
                     .stream()
-                    .filter(record -> record.getType() != VariantProto.VariantType.NO_VARIATION)
+                    .filter(pair -> pair.getRight().getType() != VariantProto.VariantType.NO_VARIATION)
                     .collect(Collectors.toList());
             // If there is only one real variant, use it
             if (realVariants.size() == 1) {
-                vcfRecord = realVariants.get(0);
+                vcfRecord = realVariants.get(0).getRight();
+                vcfSlice = realVariants.get(0).getLeft();
             } else {
-                throw new IllegalStateException("Found multiple overlaps for variant " + variant + " in file " + fileId);
+                String msg = "Found multiple overlaps for variant " + variant + " in file " + fileId;
+                if (!quiet) {
+//                    throw new IllegalStateException(msg);
+                    logger.warn(msg);
+                }
+                return null;
             }
         } else {
-            vcfRecord = overlappingRecords.get(0);
+            vcfRecord = overlappingRecords.get(0).getRight();
+            vcfSlice = overlappingRecords.get(0).getLeft();
         }
         if (VcfRecordProtoToVariantConverter.getVariantType(vcfRecord.getType()).equals(VariantType.NO_VARIATION)) {
             Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
@@ -108,7 +129,8 @@ public class FillGapsTask {
             if (StringUtils.isEmpty(fileEntry.getCall())) {
                 fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":.:0");
             }
-            studyConverter.convert(archiveVariant, put, missingSamples);
+            overlappingStatus = REFERENCE;
+            studyConverter.convert(archiveVariant, put, missingSamples, overlappingStatus);
         } else {
             Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
             Variant mergedVariant = new Variant(
@@ -126,8 +148,77 @@ public class FillGapsTask {
             mergedVariant.setType(variant.getType());
 
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
-            studyConverter.convert(mergedVariant, put, missingSamples);
+            overlappingStatus = VARIANT;
+            studyConverter.convert(mergedVariant, put, missingSamples, overlappingStatus);
         }
+        return overlappingStatus;
+    }
+
+    public boolean getOverlappingVariants(Variant variant, int fileId,
+                                          VcfSliceProtos.VcfSlice vcfSlice, ListIterator<VcfSliceProtos.VcfRecord> iterator,
+                                          List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> overlappingRecords) {
+        String chromosome = vcfSlice.getChromosome();
+        int position = vcfSlice.getPosition();
+        Integer resetPosition = null;
+        boolean isAlreadyPresent = false;
+        int firstIndex = iterator.nextIndex();
+        // Assume sorted VcfRecords
+        while (iterator.hasNext()) {
+            VcfSliceProtos.VcfRecord vcfRecord = iterator.next();
+            int start = VcfRecordProtoToVariantConverter.getStart(vcfRecord, position);
+            int end = VcfRecordProtoToVariantConverter.getEnd(vcfRecord, position);
+            String reference = vcfRecord.getReference();
+            String alternate = vcfRecord.getAlternate();
+            // If the VcfRecord starts after the variant, stop looking for variants
+            if (isRegionAfterVariantStart(start, end, variant)) {
+                if (resetPosition == null) {
+                    resetPosition = Math.max(iterator.previousIndex() - 1, firstIndex);
+                }
+                // Shouldn't happen that the first VcfRecord from the iterator is beyond the variant to process,
+                // and is not the first VcfRecord from the slice.
+                // If so, there may be a bug, or the variants or the VcfSlice is not sorted
+                if (firstIndex != 0 && firstIndex == iterator.previousIndex()) {
+                    // This should never happen
+                    throw new IllegalStateException("Variants or VcfSlice not in order!"
+                            + " First next VcfRecord from iterator (index : " + firstIndex + ") "
+                            + chromosome + ':' + start + '-' + end + ':' + reference + ':' + alternate
+                            + " is after the current variant to process for file " + fileId
+                    );
+//                    // Something weird happened. Go back to the first position
+//                    while (iterator.hasPrevious()) {
+//                        iterator.previous();
+//                    }
+//                    firstIndex = 0;
+                } else {
+                    break;
+                }
+            } else if (overlapsWith(variant, chromosome, start, end)) {
+                if (resetPosition == null) {
+                    resetPosition = Math.max(iterator.previousIndex() - 1, firstIndex);
+                }
+                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
+                    // Skip this variant
+                    continue;
+                }
+
+                // If the same variant is present for this file in the VcfSlice, the variant is already loaded
+                if (isVariantAlreadyLoaded(variant, vcfSlice, vcfRecord, chromosome, start, end, reference, alternate)) {
+                    // Variant already loaded. Nothing to do!
+                    isAlreadyPresent = true;
+                    break;
+                }
+
+                overlappingRecords.add(ImmutablePair.of(vcfSlice, vcfRecord));
+            }
+        }
+        // Send back the iterator
+        if (resetPosition != null) {
+//            logger.info("Reset from " + iterator.nextIndex() + " to " + resetPosition + ". fileId : " + fileId + " variant " + variant);
+            while (iterator.nextIndex() > resetPosition) {
+                iterator.previous();
+            }
+        }
+        return isAlreadyPresent;
     }
 
     /**
@@ -183,6 +274,12 @@ public class FillGapsTask {
             }
             return map;
         });
+    }
+
+    public static boolean isRegionAfterVariantStart(int start, int end, Variant variant) {
+        int pos = Math.min(start, end);
+        int variantPos = Math.min(variant.getStart(), variant.getEnd());
+        return pos > variantPos;
     }
 
     public static boolean overlapsWith(Variant variant, String chromosome, int start, int end) {

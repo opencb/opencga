@@ -45,6 +45,7 @@ import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -57,7 +58,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * Created by hpccoll1 on 14/08/15.
  */
-public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements SampleDBAdaptor {
+public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> implements SampleDBAdaptor {
 
     private final MongoDBCollection sampleCollection;
     private SampleConverter sampleConverter;
@@ -142,6 +143,28 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Override
     public QueryResult<Sample> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(id, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
+        QueryOptions queryOptions = new QueryOptions();
+        List<String> includeList = new ArrayList<>();
+        includeList.add(QueryParams.ANNOTATION_SETS.key());
+        if (StringUtils.isNotEmpty(annotationSetName)) {
+            includeList.add(Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+        }
+        queryOptions.put(QueryOptions.INCLUDE, includeList);
+
+        QueryResult<Sample> sampleQueryResult = get(id, queryOptions);
+        if (sampleQueryResult.first().getAnnotationSets().isEmpty()) {
+            return new QueryResult<>("Get annotation set", sampleQueryResult.getDbTime(), 0, 0, sampleQueryResult.getWarningMsg(),
+                    sampleQueryResult.getErrorMsg(), Collections.emptyList());
+        } else {
+            List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
+            int size = annotationSets.size();
+            return new QueryResult<>("Get annotation set", sampleQueryResult.getDbTime(), size, size, sampleQueryResult.getWarningMsg(),
+                    sampleQueryResult.getErrorMsg(), annotationSets);
+        }
     }
 
     @Override
