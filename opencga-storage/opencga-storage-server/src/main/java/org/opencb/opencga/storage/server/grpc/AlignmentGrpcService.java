@@ -50,6 +50,28 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
 
 
     @Override
+    public void getHeader(AlignmentServiceModel.AlignmentRequest request,
+                          StreamObserver<AlignmentServiceModel.StringResponse> responseObserver) {
+        try {
+            AlignmentStorageEngine alignmentStorageEngine =
+                    storageEngineFactory.getAlignmentStorageEngine(storageConfiguration.getDefaultStorageEngineId(), "");
+
+            Path path = Paths.get(request.getFile());
+            FileUtils.checkFile(path);
+
+            AlignmentDBAdaptor alignmentDBAdaptor = alignmentStorageEngine.getDBAdaptor();
+            AlignmentServiceModel.StringResponse headerResponse = AlignmentServiceModel.StringResponse
+                    .newBuilder()
+                    .setValue(alignmentDBAdaptor.getHeader(path).first())
+                    .build();
+            responseObserver.onNext(headerResponse);
+            responseObserver.onCompleted();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public void get(AlignmentServiceModel.AlignmentRequest request, StreamObserver<Reads.ReadAlignment> responseObserver) {
         try {
             AlignmentStorageEngine alignmentStorageEngine =

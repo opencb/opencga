@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -102,6 +103,8 @@ public interface AlignmentDBAdaptor {
     //String QO_AVERAGE = "average";
     String QO_INTERVAL_SIZE = "interval_size";
     String QO_COVERAGE_CHUNK_SIZE = "chunk_size";
+
+    QueryResult<String> getHeader(Path path) throws IOException;
 
     QueryResult<ReadAlignment> get(Path path, Query query, QueryOptions options);
 

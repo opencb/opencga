@@ -11,6 +11,8 @@ import "ga4gh/reads.proto";
 
 service AlignmentService {
 
+    rpc GetHeader(AlignmentRequest) returns (StringResponse) {}
+
     rpc Get(AlignmentRequest) returns (stream ReadAlignment) {}
 
     rpc Coverage(AlignmentRequest) returns (stream FloatResponse) {}

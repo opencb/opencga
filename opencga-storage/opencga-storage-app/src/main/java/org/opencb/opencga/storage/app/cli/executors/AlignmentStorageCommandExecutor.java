@@ -251,6 +251,7 @@ public class AlignmentStorageCommandExecutor extends CommandExecutor {
                     System.out.println(count.getValue());
                 } else {
                     if (queryAlignmentsCommandOptions.outputFormat.equalsIgnoreCase("SAM")) {
+                        System.out.println(alignmentServiceBlockingStub.getHeader(alignmentRequest).getValue());
                         Iterator<AlignmentServiceModel.StringResponse> samRecordString = alignmentServiceBlockingStub.getAsSam(alignmentRequest);
                         while (samRecordString.hasNext()) {
                             System.out.print(samRecordString.next().getValue());
@@ -278,6 +279,7 @@ public class AlignmentStorageCommandExecutor extends CommandExecutor {
                         QueryResult<ReadAlignment> readAlignmentQueryResult = this.alignmentStorageEngine.getDBAdaptor().get(path, query, queryOptions);
                         if (readAlignmentQueryResult != null) {
                             if (queryAlignmentsCommandOptions.outputFormat.equalsIgnoreCase("SAM")) {
+                                System.out.println(alignmentStorageEngine.getDBAdaptor().getHeader(path));
                                 SAMRecordToAvroReadAlignmentBiConverter samRecordToAvroReadAlignmentBiConverter =
                                         new SAMRecordToAvroReadAlignmentBiConverter(queryAlignmentsCommandOptions.binQualities);
                                 for (ReadAlignment readAlignment : readAlignmentQueryResult.getResult()) {

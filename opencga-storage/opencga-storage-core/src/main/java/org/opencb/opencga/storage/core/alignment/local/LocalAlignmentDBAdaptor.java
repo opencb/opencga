@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.SamRecordAlignmentIterator;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -67,6 +68,17 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         this.chunkSize = chunkSize;
     }
 
+
+    @Override
+    public QueryResult<String> getHeader(Path path) throws IOException {
+        StopWatch watch = StopWatch.createStarted();
+        BamManager bamManager = new BamManager(path);
+        String header = bamManager.header();
+        bamManager.close();
+        watch.stop();
+        return new QueryResult<>("header", ((int) watch.getTime()), 1, 1, null, null,
+                Collections.singletonList(header));
+    }
 
     @Override
     public QueryResult<ReadAlignment> get(Path path, Query query, QueryOptions options) {
