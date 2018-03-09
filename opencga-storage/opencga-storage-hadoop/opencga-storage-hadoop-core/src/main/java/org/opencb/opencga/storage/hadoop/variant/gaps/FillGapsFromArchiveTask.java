@@ -34,14 +34,16 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
     protected final String archiveTableName;
     protected Table archiveTable;
+    protected final HBaseManager hBaseManager;
 
     public FillGapsFromArchiveTask(HBaseManager hBaseManager,
                                    String archiveTableName,
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
                                    Collection<Integer> samples) {
-        super(hBaseManager, studyConfiguration, helper, samples, false);
+        super(studyConfiguration, helper, samples, false);
         this.archiveTableName = archiveTableName;
+        this.hBaseManager = hBaseManager;
 
         fileToRefColumnMap = new HashMap<>();
         for (Integer fileId : fileIds) {

@@ -16,7 +16,6 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -46,7 +45,6 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
             .thenComparing(Variant::compareTo);
 //    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
 
-    protected final HBaseManager hBaseManager;
     protected final StudyConfiguration studyConfiguration;
     protected final GenomeHelper helper;
     protected final FillGapsTask fillGapsTask;
@@ -58,12 +56,10 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
 
     private final Map<String, Long> stats = new HashMap<>();
 
-    protected AbstractFillFromArchiveTask(HBaseManager hBaseManager,
-                                          StudyConfiguration studyConfiguration,
+    protected AbstractFillFromArchiveTask(StudyConfiguration studyConfiguration,
                                           GenomeHelper helper,
                                           Collection<Integer> samples,
                                           boolean skipReferenceVariants) {
-        this.hBaseManager = hBaseManager;
         this.studyConfiguration = studyConfiguration;
         this.helper = helper;
 

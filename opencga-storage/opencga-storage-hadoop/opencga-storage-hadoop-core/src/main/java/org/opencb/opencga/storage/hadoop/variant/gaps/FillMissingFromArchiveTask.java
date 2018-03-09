@@ -12,7 +12,6 @@ import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -36,8 +35,8 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
     private final List<Integer> indexedFiles;
     private Map<Integer, Set<Integer>> filesToProcessMap = new HashMap<>();
 
-    public FillMissingFromArchiveTask(HBaseManager hBaseManager, StudyConfiguration studyConfiguration, GenomeHelper helper) {
-        super(hBaseManager, studyConfiguration, helper, Collections.emptyList(), true);
+    public FillMissingFromArchiveTask(StudyConfiguration studyConfiguration, GenomeHelper helper) {
+        super(studyConfiguration, helper, Collections.emptyList(), true);
         fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyConfiguration.getStudyId());
         Integer lastFile = new ArrayList<>(studyConfiguration.getIndexedFiles()).get(studyConfiguration.getIndexedFiles().size() - 1);
         lastFileBytes = PInteger.INSTANCE.toBytes(lastFile);

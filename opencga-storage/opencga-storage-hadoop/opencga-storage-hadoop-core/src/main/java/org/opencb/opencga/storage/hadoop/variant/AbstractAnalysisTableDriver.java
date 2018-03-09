@@ -141,7 +141,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         // do nothing
     }
 
-    protected abstract void parseAndValidateParameters();
+    protected abstract void parseAndValidateParameters() throws IOException;
 
     protected abstract Class<?> getMapperClass();
 

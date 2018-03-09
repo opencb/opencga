@@ -59,7 +59,7 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
                     getStudyConfiguration(), getHelper(),
                     samples);
         } else {
-            task = new FillMissingFromArchiveTask(getHBaseManager(), getStudyConfiguration(), getHelper());
+            task = new FillMissingFromArchiveTask(getStudyConfiguration(), getHelper());
         }
         task.setQuiet(true);
         task.pre();

@@ -1,9 +1,14 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileAsBinaryOutputFormat;
+import org.apache.hadoop.util.ToolRunner;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -12,6 +17,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -23,6 +29,7 @@ import java.util.Collections;
 
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQuery;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQueryOptions;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver.FILL_MISSING_INTERMEDIATE_FILE;
 
 /**
  * Created on 30/10/17.
@@ -74,12 +81,33 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
+        super.postExecution(succeed);
+        if (succeed && !FillGapsFromArchiveMapper.isFillGaps(getConf())) {
+            try {
+                logger.info("Prepare archive table for " + FILL_MISSING_OPERATION_NAME);
+                String args = FillMissingHBaseWriterDriver.buildCommandLineArgs(
+                        getArchiveTable(), getAnalysisTable(), getStudyId(), Collections.emptyList(), new ObjectMap());
+//                new FillMissingHBaseWriterDriver().privateMain(Commandline.translateCommandline(args), getConf());
+                int exitValue = ToolRunner.run(getConf(), new FillMissingHBaseWriterDriver(), Commandline.translateCommandline(args));
+                if (exitValue != 0) {
+                    throw new StorageEngineException("Error executing FillMissingHBaseWriterDriver");
+                }
+            } catch (Exception e) {
+                throw new StorageEngineException("Error executing FillMissingHBaseWriterDriver", e);
+            }
+
+        }
+    }
+
+    @Override
     protected Job setupJob(Job job, String archiveTableName, String variantTableName) throws IOException {
         String input = getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT);
         if (input.equalsIgnoreCase("archive")) {
             // scan
             Scan scan;
-            if (FillGapsFromArchiveMapper.isFillGaps(getConf())) {
+            boolean fillGaps = FillGapsFromArchiveMapper.isFillGaps(getConf());
+            if (fillGaps) {
                 scan = FillGapsFromArchiveTask.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
             } else {
                 scan = FillMissingFromArchiveTask.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
@@ -91,8 +119,23 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
             scan.setCacheBlocks(false);      // don't set to true for MR jobs
             logger.info("Scan archive table " + archiveTableName + " with scan " + scan.toString(50));
 
-            // input
-            VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, variantTableName, scan, FillGapsFromArchiveMapper.class);
+            boolean directWrite = false;
+            if (fillGaps || directWrite) {
+                VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, variantTableName, scan, FillGapsFromArchiveMapper.class);
+            } else {
+                // input
+                VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, scan, FillMissingFromArchiveMapper.class);
+
+                // output
+                job.setOutputFormatClass(SequenceFileAsBinaryOutputFormat.class);
+                job.setMapOutputKeyClass(BytesWritable.class);
+                job.setMapOutputValueClass(BytesWritable.class);
+                String outputPath = getConf().get(FILL_MISSING_INTERMEDIATE_FILE);
+                logger.info("Using intermediate file : " + outputPath);
+                FileOutputFormat.setOutputPath(job, new Path(outputPath));
+//                FileOutputFormat.setCompressOutput(job, true);
+//                FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+            }
         } else if (input.equalsIgnoreCase("phoenix")) {
             // Sql
             Query query = buildQuery(getStudyId(), samples, getFiles());
@@ -105,16 +148,18 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
             // input
             VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, FillGapsMapper.class);
+            // output
+            VariantMapReduceUtil.setOutputHBaseTable(job, variantTableName);
         } else {
             // scan
             Scan scan = new Scan();
 
             // input
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, FillGapsMapper.class);
+            // output
+            VariantMapReduceUtil.setOutputHBaseTable(job, variantTableName);
         }
 
-        // output
-        VariantMapReduceUtil.setOutputHBaseTable(job, variantTableName);
         // only mapper
         VariantMapReduceUtil.setNoneReduce(job);
 

@@ -83,6 +83,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_GAPS_OPERATION_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_MISSING_OPERATION_NAME;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver.FILL_MISSING_INTERMEDIATE_FILE;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -398,6 +399,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
             return sc;
         });
+
+        if (!fillGaps) {
+            URI directory = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY));
+            if (directory.getScheme() != null && !directory.getScheme().equals("hdfs")) {
+                throw new StorageEngineException("Output must be in HDFS");
+            }
+            String outputPath = directory.resolve("fill_missing_study_" + studyId + ".bin").toString();
+            logger.info("Using intermediate file = " + outputPath);
+            options.put(FILL_MISSING_INTERMEDIATE_FILE, outputPath);
+        }
 
         Thread hook = scm.buildShutdownHook(FILL_GAPS_OPERATION_NAME, studyId, Collections.emptyList());
         Exception exception = null;
