@@ -33,7 +33,6 @@
 
 {"collection": "sample", "fields": {"name": 1, "_studyId": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "sample", "fields": {"id": 1, "version": 1}, "options": {"unique": true, "background": true}}
-{"collection": "sample", "fields": {"individual.id": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"annotationSets.name": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}
@@ -49,6 +48,7 @@
 {"collection": "individual", "fields": {"father.id": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"_acl": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"samples.id": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"phenotypes.id": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"annotationSets.name": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"annotationSets.variableSetId": 1}, "options": {"background": true}}

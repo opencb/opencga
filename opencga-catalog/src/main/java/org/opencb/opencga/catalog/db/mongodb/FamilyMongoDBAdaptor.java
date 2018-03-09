@@ -753,9 +753,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case FATHER_ID:
-                    case MOTHER_ID:
-                    case MEMBER_ID:
+                    case MEMBERS_ID:
                     case NAME:
                     case DESCRIPTION:
                     case RELEASE:

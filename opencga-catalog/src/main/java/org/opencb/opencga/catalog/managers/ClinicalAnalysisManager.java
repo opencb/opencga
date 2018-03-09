@@ -137,7 +137,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             Map<String, Long> myIds = new HashMap<>();
             for (String clinicalStrAux : clinicalList) {
-                if (StringUtils.isNumeric(clinicalStrAux)) {
+                if (StringUtils.isNumeric(clinicalStrAux) && Long.parseLong(clinicalStrAux) > configuration.getCatalog().getOffset()) {
                     long clinicalId = getClinicalId(silent, clinicalStrAux);
                     myIds.put(clinicalStrAux, clinicalId);
                 }
@@ -328,7 +328,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 // Check the proband is an actual member of the family
                 Query query = new Query()
                         .append(FamilyDBAdaptor.QueryParams.ID.key(), familyResource.getResourceId())
-                        .append(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), subject.getId());
+                        .append(FamilyDBAdaptor.QueryParams.MEMBERS_ID.key(), subject.getId());
                 QueryResult<Family> count = catalogManager.getFamilyManager().count(Long.toString(studyId), query, sessionId);
                 if (count.getNumTotalResults() == 0) {
                     throw new CatalogException("The member " + subject.getId() + " does not belong to the family "
