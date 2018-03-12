@@ -16,7 +16,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -263,20 +262,6 @@ public abstract class ResourceManager<R> extends AbstractManager {
      * @return A WriteResult object containing the number of matching elements, deleted and elements that could not be deleted.
      */
     public abstract WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId);
-
-    /**
-     * Delete entries from Catalog.
-     *
-     * @param studyStr  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param entries   Comma separated list of ids corresponding to the objects to delete.
-     * @param params    Map containing additional parameters that might be needed for the delete.
-     * @param sessionId Session id of the user logged in.
-     * @return A list with the deleted objects.
-     * @throws CatalogException CatalogException
-     * @throws IOException      IOException.
-     */
-    public abstract List<QueryResult<R>> delete(String studyStr, String entries, ObjectMap params, String sessionId)
-            throws CatalogException, IOException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

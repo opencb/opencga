@@ -30,14 +30,11 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -53,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -464,84 +460,6 @@ public class JobManager extends ResourceManager<Job> {
 
     public QueryResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
         return update(null, String.valueOf(jobId), parameters, options, sessionId);
-    }
-
-    @Deprecated
-    @Override
-    public List<QueryResult<Job>> delete(@Nullable String studyStr, String jobIdStr, ObjectMap params, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkParameter(jobIdStr, "id");
-        params = ParamUtils.defaultObject(params, ObjectMap::new);
-        boolean silent = params.getBoolean(Constants.SILENT, false);
-
-        MyResourceIds resourceIds = getIds(Arrays.asList(StringUtils.split(jobIdStr, ",")), studyStr, silent, sessionId);
-        String userId = resourceIds.getUser();
-
-        List<Job> jobsToDelete = new ArrayList<>(resourceIds.getResourceIds().size());
-        for (Long jobId : resourceIds.getResourceIds()) {
-            try {
-                authorizationManager.checkJobPermission(resourceIds.getStudyId(), jobId, userId, JobAclEntry.JobPermissions.DELETE);
-
-                Query query = new Query(JobDBAdaptor.QueryParams.ID.key(), jobId);
-                QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, QueryOptions.empty(), userId);
-                if (jobQueryResult.getNumResults() == 0) {
-                    throw CatalogAuthorizationException.deny(userId, "VIEW", "Job", jobId, null);
-                }
-
-                switch (jobQueryResult.first().getStatus().getName()) {
-                    case Job.JobStatus.DELETED:
-                        throw new CatalogException("The job {" + jobId + "} was already " + jobQueryResult.first().getStatus().getName());
-                    case Job.JobStatus.PREPARED:
-                    case Job.JobStatus.RUNNING:
-                    case Job.JobStatus.QUEUED:
-                        throw new CatalogException("The job {" + jobId + "} is " + jobQueryResult.first().getStatus().getName()
-                                + ". Please, stop the job before deleting it.");
-                    case Job.JobStatus.DONE:
-                    case Job.JobStatus.ERROR:
-                    case Job.JobStatus.READY:
-                    default:
-                        break;
-                }
-
-                // Add job to the list of jobs to be deleted
-                jobsToDelete.add(jobQueryResult.first());
-            } catch (CatalogException e) {
-                if (silent) {
-                    logger.warn("Cohort " + jobId + " could not be deleted: " + e.getMessage());
-                } else {
-                    throw e;
-                }
-            }
-        }
-
-        List<QueryResult<Job>> queryResultList = new ArrayList<>(jobsToDelete.size());
-        for (Job job : jobsToDelete) {
-            // Create update parameter
-            ObjectMap updateParams = new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
-
-            QueryResult<Job> update = jobDBAdaptor.update(job.getId(), updateParams, QueryOptions.empty());
-            auditManager.recordDeletion(AuditRecord.Resource.job, job.getId(), userId, null, updateParams, null, null);
-            queryResultList.add(update);
-
-            // Remove jobId references from file
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(FileDBAdaptor.QueryParams.JOB_ID.key(), job.getId());
-
-            updateParams = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
-            fileDBAdaptor.update(query, updateParams, QueryOptions.empty());
-        }
-
-        return queryResultList;
-    }
-
-    @Deprecated
-    public List<QueryResult<Job>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key());
-        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, queryOptions);
-        List<Long> jobIds = jobQueryResult.getResult().stream().map(Job::getId).collect(Collectors.toList());
-        String jobStr = StringUtils.join(jobIds, ",");
-        return delete(null, jobStr, QueryOptions.empty(), sessionId);
     }
 
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {

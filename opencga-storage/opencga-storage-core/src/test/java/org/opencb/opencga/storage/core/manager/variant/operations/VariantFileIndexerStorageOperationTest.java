@@ -26,15 +26,17 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -168,9 +170,11 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         File inputFile = getFile(0);
         indexFile(inputFile, queryOptions, outputId);
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("used in storage");
-        catalogManager.getFileManager().delete(null, inputFile.getId() + "", null, sessionId);
+
+        WriteResult result = catalogManager.getFileManager().delete(String.valueOf(catalogManager.getFileManager().getStudyId(inputFile
+                .getId())), new Query(FileDBAdaptor.QueryParams.ID.key(), inputFile.getId()), null, sessionId);
+        assertEquals(0, result.getNumModified());
+        assertTrue(result.getFailed().get(0).getMessage().contains("index status"));
     }
 
     @Test
@@ -211,8 +215,12 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File inputFile = getFile(0);
         File transformedFile = transformFile(inputFile, queryOptions);
 
-        catalogManager.getFileManager().delete(studyStr, transformedFile.getName(), new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
-        catalogManager.getFileManager().delete(studyStr, VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName()), new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
+        catalogManager.getFileManager().delete(studyStr,
+                new Query(FileDBAdaptor.QueryParams.NAME.key(), transformedFile.getName()), new ObjectMap(FileManager.SKIP_TRASH, true),
+                        sessionId);
+        catalogManager.getFileManager().delete(studyStr, new Query(FileDBAdaptor.QueryParams.NAME.key(),
+                VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName())),
+                new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
 
         indexFile(inputFile, queryOptions, outputId);
     }
@@ -234,9 +242,10 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File transformedFile = transformFile(getFile(0), queryOptions);
         loadFile(transformedFile, queryOptions, outputId);
 
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("used in storage");
-        catalogManager.getCohortManager().delete(studyStr, "ALL", null, sessionId);
+        WriteResult result = catalogManager.getCohortManager().delete(studyStr, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"),
+                null, sessionId);
+        assertEquals(0, result.getNumModified());
+        assertTrue(result.getFailed().get(0).getMessage().contains("ALL cannot be deleted"));
     }
 
     @Test

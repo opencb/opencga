@@ -16,15 +16,16 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
@@ -245,8 +246,9 @@ public class FileScanner {
                     case DELETE:
                         logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
-                        catalogManager.getFileManager().delete(null, Long.toString(existingFile.getId()),
-                                new QueryOptions(FileManager.SKIP_TRASH, true), sessionId);
+                        catalogManager.getFileManager().delete(String.valueOf(studyId),
+                                new Query(FileDBAdaptor.QueryParams.ID.key(), existingFile.getId()),
+                                new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
                         break;
                     case REPLACE:
                         file = existingFile;

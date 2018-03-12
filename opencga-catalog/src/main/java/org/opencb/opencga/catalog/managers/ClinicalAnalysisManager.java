@@ -517,12 +517,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    public List<QueryResult<ClinicalAnalysis>> delete(@Nullable String studyStr, String entries, ObjectMap params, String sessionId)
-            throws CatalogException, IOException {
-        return null;
-    }
-
-    @Override
     public QueryResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         return null;

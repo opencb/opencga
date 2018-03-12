@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
@@ -1229,10 +1230,10 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(myCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()).contains(sampleId2.getId()));
         assertTrue(myCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()).contains(sampleId3.getId()));
 
-        Cohort myDeletedCohort = catalogManager.getCohortManager().delete(Long.toString(studyId), Long.toString(myCohort.getId()), null,
-                sessionIdUser).get(0).first();
+        WriteResult deleteResult = catalogManager.getCohortManager().delete(Long.toString(studyId),
+                new Query(CohortDBAdaptor.QueryParams.ID.key(), myCohort.getId()), null, sessionIdUser);
 
-        assertEquals(myCohort.getId(), myDeletedCohort.getId());
+        assertEquals(1, deleteResult.getNumModified());
 
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.ID.key(), myCohort.getId())

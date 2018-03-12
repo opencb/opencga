@@ -16,16 +16,10 @@
 
 package org.opencb.opencga.catalog.monitor.daemons;
 
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
 
 /**
  * Created by imedina on 16/06/16.
@@ -59,9 +53,9 @@ public class FileDaemon extends MonitorParentDaemon {
             logger.info("----- FILE DAEMON -----", TimeUtils.getTimeMillis());
 
             try {
-                checkDeletedFiles();
-
-                checkPendingRemoveFiles();
+//                checkDeletedFiles();
+//
+//                checkPendingRemoveFiles();
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -69,48 +63,48 @@ public class FileDaemon extends MonitorParentDaemon {
         }
     }
 
-    private void checkDeletedFiles() throws CatalogException {
-        QueryResult<File> files = catalogManager.getFileManager().get((long) -1, new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
-                File.FileStatus.TRASHED), new QueryOptions(), sessionId);
+//    private void checkDeletedFiles() throws CatalogException {
+//        QueryResult<File> files = catalogManager.getFileManager().get((long) -1, new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
+//                File.FileStatus.TRASHED), new QueryOptions(), sessionId);
+//
+//        long currentTimeMillis = System.currentTimeMillis();
+//        for (File file: files.getResult()) {
+//            try {
+//                //TODO: skip if the file is a non-empty folder
+//                long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
+////                long deleteDate = new ObjectMap(file.getAttributes()).getLong(file.getName().getCreationDate(), 0);
+//                if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
+////                            QueryResult<Study> studyQueryResult =
+////                                    catalogManager.getStudy(catalogManager.getStudyIdByFileId(file.getId()), sessionId);
+////                            Study study = studyQueryResult.getResult().get(0);
+////                            logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
+//                    catalogFileUtils.delete(file, sessionId);
+//                } else {
+//                    logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(),
+//                            file.getAttributes());
+//                    logger.info("{}s", (currentTimeMillis - deleteTimeMillis) / 1000);
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
 
-        long currentTimeMillis = System.currentTimeMillis();
-        for (File file: files.getResult()) {
-            try {
-                //TODO: skip if the file is a non-empty folder
-                long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
-//                long deleteDate = new ObjectMap(file.getAttributes()).getLong(file.getName().getCreationDate(), 0);
-                if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
-//                            QueryResult<Study> studyQueryResult =
-//                                    catalogManager.getStudy(catalogManager.getStudyIdByFileId(file.getId()), sessionId);
-//                            Study study = studyQueryResult.getResult().get(0);
-//                            logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
-                    catalogFileUtils.delete(file, sessionId);
-                } else {
-                    logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(),
-                            file.getAttributes());
-                    logger.info("{}s", (currentTimeMillis - deleteTimeMillis) / 1000);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void checkPendingRemoveFiles() throws CatalogException {
-        QueryResult<File> files = catalogManager.getFileManager().get((long) -1, new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
-                File.FileStatus.DELETED), new QueryOptions(), sessionId);
-
-        long currentTimeMillis = System.currentTimeMillis();
-        for (File file: files.getResult()) {
-            long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
-            if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
-                if (file.getType().equals(File.Type.FILE)) {
-                    catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, sessionId);
-                } else {
-                    System.out.println("empty block");
-                }
-            }
-        }
-    }
+//    private void checkPendingRemoveFiles() throws CatalogException {
+//        QueryResult<File> files = catalogManager.getFileManager().get((long) -1, new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
+//                File.FileStatus.DELETED), new QueryOptions(), sessionId);
+//
+//        long currentTimeMillis = System.currentTimeMillis();
+//        for (File file: files.getResult()) {
+//            long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
+//            if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
+//                if (file.getType().equals(File.Type.FILE)) {
+//                    catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, sessionId);
+//                } else {
+//                    System.out.println("empty block");
+//                }
+//            }
+//        }
+//    }
 
 }

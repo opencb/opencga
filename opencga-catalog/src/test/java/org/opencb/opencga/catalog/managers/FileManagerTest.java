@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -492,7 +493,7 @@ public class FileManagerTest extends GenericTest {
 
         // We send the unlink command again
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("File not found");
+        thrown.expectMessage("already deleted or unlinked");
         catalogManager.getFileManager().unlink(Long.toString(studyId), "35", sessionIdUser);
     }
 
@@ -1182,23 +1183,30 @@ public class FileManagerTest extends GenericTest {
         catalogManager.getFileManager()
                 .setStatus(Long.toString(fileQueryResult.first().getId()), File.FileStatus.MISSING, null, sessionIdUser);
 
-        try {
-            catalogManager.getFileManager().delete(null, Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);
-            fail("The call should prohibit deleting a folder in status missing");
-        } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("Cannot delete"));
-        }
+        WriteResult deleteResult = catalogManager.getFileManager().delete(String.valueOf(studyId),
+                new Query(FileDBAdaptor.QueryParams.ID.key(), fileQueryResult.first().getId()), null, sessionIdUser);
+        assertEquals(1, deleteResult.getNumMatches());
+        assertEquals(0, deleteResult.getNumModified());
+        assertTrue(deleteResult.getFailed().get(0).getMessage().contains("Cannot delete"));
 
         // Change the status to STAGED
         catalogManager.getFileManager()
                 .setStatus(Long.toString(fileQueryResult.first().getId()), File.FileStatus.STAGE, null, sessionIdUser);
 
-        try {
-            catalogManager.getFileManager().delete(null, Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);
-            fail("The call should prohibit deleting a folder in status staged");
-        } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("Cannot delete"));
-        }
+        deleteResult = catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(),
+                fileQueryResult.first().getId()), null, sessionIdUser);
+        assertEquals(1, deleteResult.getNumMatches());
+        assertEquals(0, deleteResult.getNumModified());
+        assertTrue(deleteResult.getFailed().get(0).getMessage().contains("Cannot delete"));
+
+        // Change the status to READY
+        catalogManager.getFileManager()
+                .setStatus(Long.toString(fileQueryResult.first().getId()), File.FileStatus.READY, null, sessionIdUser);
+
+        deleteResult = catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(),
+                fileQueryResult.first().getId()), null, sessionIdUser);
+        assertEquals(6, deleteResult.getNumMatches());
+        assertEquals(6, deleteResult.getNumModified());
     }
 
     // It will try to delete a folder in status ready
@@ -1219,7 +1227,8 @@ public class FileManagerTest extends GenericTest {
         assertEquals(6, numResults);
 
         // We delete it
-        catalogManager.getFileManager().delete(Long.toString(studyId), Long.toString(file.getId()), null, sessionIdUser);
+        catalogManager.getFileManager().delete(Long.toString(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), file.getId()), null,
+                sessionIdUser);
 
         // The files should have been moved to trashed status
         numResults = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser).getNumResults();
@@ -1249,7 +1258,8 @@ public class FileManagerTest extends GenericTest {
 
         // We delete it
         QueryOptions queryOptions = new QueryOptions(FileManager.SKIP_TRASH, true);
-        catalogManager.getFileManager().delete(null, Long.toString(file.getId()), queryOptions, sessionIdUser);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), file.getId()),
+                queryOptions, sessionIdUser);
 
         // The files should have been moved to trashed status
         numResults = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser).getNumResults();
@@ -1264,7 +1274,8 @@ public class FileManagerTest extends GenericTest {
     public void testDeleteFile() throws CatalogException, IOException {
         List<File> result = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResult();
         for (File file : result) {
-            catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, sessionIdUser);
+            catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), file.getId()),
+                    null, sessionIdUser);
         }
 //        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResult().forEach(f -> {
@@ -1274,7 +1285,8 @@ public class FileManagerTest extends GenericTest {
 
         result = catalogManager.getFileManager().get(studyId2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResult();
         for (File file : result) {
-            catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, sessionIdUser);
+            catalogManager.getFileManager().delete(String.valueOf(studyId2), new Query(FileDBAdaptor.QueryParams.ID.key(), file.getId()),
+                    null, sessionIdUser);
         }
         catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResult().forEach(f -> {
             assertEquals(f.getStatus().getName(), File.FileStatus.TRASHED);
@@ -1298,8 +1310,14 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void testDeleteRootFolder() throws CatalogException, IOException {
         long deletable = catalogManager.getFileManager().getId("/", "user@1000G:phase3", sessionIdUser).getResourceId();
-        thrown.expect(CatalogException.class);
-        deleteFolderAndCheck(deletable);
+
+        long studyIdByFileId = catalogManager.getFileManager().getStudyId(deletable);
+        WriteResult result = catalogManager.getFileManager().delete(String.valueOf(studyIdByFileId), new Query(FileDBAdaptor.QueryParams
+                .ID.key(), deletable), null, sessionIdUser);
+
+        assertEquals(1, result.getNumMatches());
+        assertEquals(0, result.getNumModified());
+        assertEquals("Root directories cannot be deleted", result.getFailed().get(0).getMessage());
     }
 
     // Cannot delete staged files
@@ -1319,20 +1337,21 @@ public class FileManagerTest extends GenericTest {
                 "folder/subfolder/subsubfolder/my_staged.txt", null, null, new File.FileStatus(File.FileStatus.STAGE), (long) 0, (long)
                         -1, null, (long) -1, null, null, true, null, null, sessionIdUser).first();
 
-        thrown.expect(CatalogException.class);
-        try {
-            catalogManager.getFileManager().delete(null, Long.toString(folder.getId()), null, sessionIdUser);
-        } finally {
-            File fileTmp = catalogManager.getFileManager().get(folder.getId(), null, sessionIdUser).first();
-            assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());
-            assertTrue(ioManager.exists(fileTmp.getUri()));
 
-            for (File file : folderFiles) {
-                fileTmp = catalogManager.getFileManager().get(file.getId(), null, sessionIdUser).first();
-                assertEquals("File name should not be modified", file.getPath(), fileTmp.getPath());
-                assertTrue("File uri: " + fileTmp.getUri() + " should exist", ioManager.exists(fileTmp.getUri()));
-            }
+        WriteResult deleteResult = catalogManager.getFileManager().delete(String.valueOf(studyId),
+                new Query(FileDBAdaptor.QueryParams.ID.key(), folder.getId()), null, sessionIdUser);
+        assertEquals(0, deleteResult.getNumModified());
+
+        File fileTmp = catalogManager.getFileManager().get(folder.getId(), null, sessionIdUser).first();
+        assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());
+        assertTrue(ioManager.exists(fileTmp.getUri()));
+
+        for (File file : folderFiles) {
+            fileTmp = catalogManager.getFileManager().get(file.getId(), null, sessionIdUser).first();
+            assertEquals("File name should not be modified", file.getPath(), fileTmp.getPath());
+            assertTrue("File uri: " + fileTmp.getUri() + " should exist", ioManager.exists(fileTmp.getUri()));
         }
+
     }
 
     // Deleted folders should be all put to TRASHED
@@ -1348,7 +1367,8 @@ public class FileManagerTest extends GenericTest {
             assertTrue(ioManager.exists(catalogManager.getFileManager().getUri(file)));
         }
 
-        catalogManager.getFileManager().delete(null, Long.toString(folder.getId()), null, sessionIdUser);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), folder.getId()),
+                null, sessionIdUser);
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
@@ -1383,8 +1403,8 @@ public class FileManagerTest extends GenericTest {
             assertTrue(ioManager.exists(catalogManager.getFileManager().getUri(file)));
         }
 
-        catalogManager.getFileManager().delete(null, Long.toString(folder.getId()), new ObjectMap(FileManager.SKIP_TRASH, true),
-                sessionIdUser);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), folder.getId()),
+                new ObjectMap(FileManager.SKIP_TRASH, true), sessionIdUser);
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
@@ -1424,7 +1444,8 @@ public class FileManagerTest extends GenericTest {
                 .append(FileManager.SKIP_TRASH, true)
                 .append(FileManager.FORCE_DELETE, true);
         // We now delete and they should be passed to PENDING_DELETE (test deleteFolderTest3)
-        catalogManager.getFileManager().delete(null, Long.toString(folder.getId()), params, sessionIdUser);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), folder.getId()),
+                params, sessionIdUser);
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
@@ -1464,7 +1485,8 @@ public class FileManagerTest extends GenericTest {
         ObjectMap params = new ObjectMap()
                 .append(FileManager.SKIP_TRASH, true)
                 .append(FileManager.FORCE_DELETE, true);
-        catalogManager.getFileManager().delete(null, Long.toString(folder.getId()), params, sessionIdUser);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), folder.getId()),
+                params, sessionIdUser);
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
@@ -1529,9 +1551,10 @@ public class FileManagerTest extends GenericTest {
 
     private void deleteFolderAndCheck(long deletable) throws CatalogException, IOException {
         List<File> allFilesInFolder;
-        catalogManager.getFileManager().delete(null, Long.toString(deletable), null, sessionIdUser);
-
         long studyIdByFileId = catalogManager.getFileManager().getStudyId(deletable);
+
+        catalogManager.getFileManager().delete(String.valueOf(studyIdByFileId), new Query(FileDBAdaptor.QueryParams.ID.key(), deletable),
+                null, sessionIdUser);
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), deletable)

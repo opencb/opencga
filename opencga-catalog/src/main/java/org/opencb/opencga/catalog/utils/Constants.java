@@ -30,6 +30,20 @@ public class Constants {
      */
     public static final String DELETE_EMPTY_COHORTS = "deleteEmptyCohorts";
 
+    /**
+     * Used when deleting a file.
+     *
+     * Force the physical deletion of external files and folders.
+     */
+    public static final String DELETE_EXTERNAL_FILES = "deleteExternal";
+
+    /**
+     * Used when deleting a file.
+     *
+     * Skip the trash and perform a physical deletion of local files and folders directly.
+     */
+    public static final String SKIP_TRASH = "skipTrash";
+
     /* ****************************************    Variable constants for versioning     ************************************************/
     /**
      * Boolean indicating whether to create a new version of the document containing the updates or update the same document.

@@ -440,12 +440,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public List<QueryResult<Family>> delete(@Nullable String studyStr, String entries, ObjectMap params, String sessionId)
-            throws CatalogException, IOException {
-        return null;
-    }
-
-    @Override
     public QueryResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId) throws
             CatalogException {
         return null;

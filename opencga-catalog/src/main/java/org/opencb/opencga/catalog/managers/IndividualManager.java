@@ -51,7 +51,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -527,7 +526,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
                 // Get the families the individual is a member of
                 Query tmpQuery = new Query()
-                        .append(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), individual.getId())
+                        .append(FamilyDBAdaptor.QueryParams.MEMBERS_ID.key(), individual.getId())
                         .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                 QueryResult<Family> familyQueryResult = familyDBAdaptor.get(tmpQuery, new QueryOptions(QueryOptions.INCLUDE,
                         Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.NAME.key(),
@@ -763,79 +762,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         addSampleInformation(queryResult, studyId, userId);
 
         return queryResult;
-    }
-
-    public List<QueryResult<Individual>> delete(@Nullable String studyStr, String individualIdStr, ObjectMap options, String sessionId)
-            throws CatalogException, IOException {
-        ParamUtils.checkParameter(individualIdStr, "id");
-        options = ParamUtils.defaultObject(options, ObjectMap::new);
-
-        MyResourceIds resourceId = getIds(Arrays.asList(StringUtils.split(individualIdStr, ",")), studyStr, sessionId);
-        List<Long> individualIds = resourceId.getResourceIds();
-        String userId = resourceId.getUser();
-
-        List<QueryResult<Individual>> queryResultList = new ArrayList<>(individualIds.size());
-        for (Long individualId : individualIds) {
-            QueryResult<Individual> queryResult = null;
-            try {
-                authorizationManager.checkIndividualPermission(resourceId.getStudyId(), individualId, userId,
-                        IndividualAclEntry.IndividualPermissions.DELETE);
-
-                // We can delete an individual if their samples can be deleted
-                // We obtain the samples associated to the individual and check if those can be deleted
-                Query query = new Query()
-                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                        .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
-                QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
-
-                if (sampleQueryResult.getNumResults() > 0) {
-                    List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-                    MyResourceIds sampleResource = new MyResourceIds(resourceId.getUser(), resourceId.getStudyId(), sampleIds);
-                    // FIXME:
-                    // We are first checking and deleting later because that delete method does not check if all the samples can be deleted
-                    // directly. Instead, it makes a loop and checks one by one. Changes should be done there.
-                    catalogManager.getSampleManager().checkCanDeleteSamples(sampleResource);
-                    catalogManager.getSampleManager().delete(Long.toString(resourceId.getStudyId()), StringUtils.join(sampleIds, ","),
-                            QueryOptions.empty(), sessionId);
-                }
-
-                // Get the individual info before the update
-                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId, QueryOptions.empty());
-
-                String newIndividualName = individualQueryResult.first().getName() + ".DELETED_" + TimeUtils.getTime();
-                ObjectMap updateParams = new ObjectMap()
-                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), newIndividualName)
-                        .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
-                queryResult = individualDBAdaptor.update(individualId, updateParams, QueryOptions.empty());
-
-                auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, resourceId.getUser(),
-                        individualQueryResult.first(), queryResult.first(), null, null);
-
-            } catch (CatalogAuthorizationException e) {
-                auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, resourceId.getUser(), null, e.getMessage(),
-                        null);
-
-                queryResult = new QueryResult<>("Delete individual " + individualId);
-                queryResult.setErrorMsg(e.getMessage());
-            } catch (CatalogException e) {
-                e.printStackTrace();
-                queryResult = new QueryResult<>("Delete individual " + individualId);
-                queryResult.setErrorMsg(e.getMessage());
-            } finally {
-                queryResultList.add(queryResult);
-            }
-        }
-
-        return queryResultList;
-    }
-
-    public List<QueryResult<Individual>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
-        List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
-        String individualStr = StringUtils.join(individualIds, ",");
-        return delete(null, individualStr, options, sessionId);
     }
 
     @Override
@@ -1074,7 +1000,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             MyResourceIds resource = catalogManager.getSampleManager().getIds(
                     query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()), String.valueOf(studyId), sessionId);
             query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
-            query.append(IndividualDBAdaptor.QueryParams.SAMPLES_ID.key(), resource.getResourceIds());
+            query.append(IndividualDBAdaptor.QueryParams.SAMPLE_IDS.key(), resource.getResourceIds());
         }
     }
 

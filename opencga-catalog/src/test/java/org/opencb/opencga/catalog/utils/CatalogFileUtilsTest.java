@@ -24,17 +24,18 @@ import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.CatalogManagerTest;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
@@ -309,14 +310,14 @@ public class CatalogFileUtilsTest {
 //    }
 
     @Test
-    public void unlinkFileNoUriTest() throws CatalogException, IOException {
+    public void unlinkNonExternalFile() throws CatalogException, IOException {
         File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN,
                 File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", null, "file at root", null, 0, -1, null, (long) -1, null,
                 null, true, null, null, userSessionId).first();
 
         // Now we try to unlink it
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("Cannot delete file");
+        thrown.expectMessage("use delete instead");
         catalogManager.getFileManager().unlink(Long.toString(studyId), Long.toString(file.getId()), userSessionId);
     }
 
@@ -341,7 +342,8 @@ public class CatalogFileUtilsTest {
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(file.getUri());
         assertTrue(ioManager.exists(file.getUri()));
 
-        catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), file.getId()),
+                null, userSessionId);
         assertTrue(ioManager.exists(file.getUri()));
 
 //        catalogFileUtils.delete(file.getId(), userSessionId);
@@ -357,7 +359,8 @@ public class CatalogFileUtilsTest {
             assertTrue(ioManager.exists(catalogManager.getFileManager().getUri(file)));
         }
 
-        catalogManager.getFileManager().delete(null, Long.toString(folder.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), folder.getId()), null,
+                userSessionId);
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
@@ -384,15 +387,18 @@ public class CatalogFileUtilsTest {
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult1.first(), userSessionId, false, false, true);
 
         File toDelete = catalogManager.getFileManager().get(queryResult1.first().getId(), null, userSessionId).first();
-        catalogManager.getFileManager().delete(null, Long.toString(toDelete.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), toDelete.getId()),
+                null, userSessionId);
 //        catalogFileUtils.delete(toDelete.getId(), userSessionId);
 
         QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, userSessionId);
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult.first(), userSessionId, false, false, true);
         File toTrash = catalogManager.getFileManager().get(queryResult.first().getId(), null, userSessionId).first();
-        catalogManager.getFileManager().delete(null, Long.toString(toTrash.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), toTrash.getId()),
+                null, userSessionId);
 
-        catalogManager.getFileManager().delete(null, Long.toString(folder.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), folder.getId()),
+                null, userSessionId);
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
@@ -465,7 +471,8 @@ public class CatalogFileUtilsTest {
         assertEquals(File.FileStatus.READY, returnedFile.getStatus().getName());
 
         /** Check TRASHED file with found file **/
-        catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.ID.key(), file.getId()), null,
+                userSessionId);
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())

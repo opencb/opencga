@@ -22,12 +22,12 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.CatalogManagerTest;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.*;
 
@@ -127,7 +127,8 @@ public class FileScannerTest {
         new FileUtils(catalogManager).upload(CatalogManagerTest.createDebugFile().toURI(), queryResult.first(), null, sessionIdUser, false, false, true, true, Long.MAX_VALUE);
         File file = catalogManager.getFileManager().get(queryResult.first().getId(), null, sessionIdUser).first();
 
-        catalogManager.getFileManager().delete(null, Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().delete(String.valueOf(study.getId()),
+                new Query(FileDBAdaptor.QueryParams.ID.key(), file.getId()), new QueryOptions(), sessionIdUser);
 
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(String.valueOf(study.getId()),
                 new Query()

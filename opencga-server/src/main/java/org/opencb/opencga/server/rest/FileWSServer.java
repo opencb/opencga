@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -32,6 +33,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
@@ -578,8 +580,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of file names") @DefaultValue("") @QueryParam("name") String name,
             @ApiParam(value = "Comma separated list of paths", required = false) @DefaultValue("") @QueryParam("path") String path,
             @ApiParam(value = "Available types (FILE, DIRECTORY)", required = false) @DefaultValue("") @QueryParam("type") String type,
-            @ApiParam(value = "Comma separated Bioformat values. For existing Bioformats see files/help", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
-            @ApiParam(value = "Comma separated Format values. For existing Formats see files/help", required = false) @DefaultValue("") @QueryParam("format") String formats,
+            @ApiParam(value = "Comma separated Bioformat values. For existing Bioformats see files/bioformats", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
+            @ApiParam(value = "Comma separated Format values. For existing Formats see files/formats", required = false) @DefaultValue("") @QueryParam("format") String formats,
             @ApiParam(value = "Status", required = false) @DefaultValue("") @QueryParam("status") String status,
             @ApiParam(value = "Directory under which we want to look for files or folders", required = false) @DefaultValue("") @QueryParam("directory") String directory,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
@@ -993,8 +995,7 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr) throws CatalogException {
         try {
-            QueryResult<File> queryResult = catalogManager.getFileManager().unlink(studyStr, fileIdStr, sessionId);
-            return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
+            return createOkResponse(catalogManager.getFileManager().unlink(studyStr, fileIdStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1074,28 +1075,67 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{file}/delete")
-    @ApiOperation(value = "Delete file [NOT TESTED]", position = 23, response = QueryResponse.class)
-    public Response deleteGET(
-            @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
+    @DELETE
+    @Path("/delete")
+    @ApiOperation(value = "Delete existing files and folders")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = Constants.DELETE_EXTERNAL_FILES, value = "Delete files and folders from disk (only applicable for "
+                    + "linked files/folders)", dataType = "boolean", defaultValue = "false", paramType = "query"),
+            @ApiImplicitParam(name = Constants.SKIP_TRASH, value = "Skip trash and delete the files/folders from disk directly (CANNOT BE"
+                    + " RECOVERED)", dataType = "boolean", defaultValue = "false", paramType = "query")
+    })
+    public Response delete(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Delete files and folders from disk (only applicable for linked files/folders)")
-                @DefaultValue("false") @QueryParam("deleteExternal") boolean deleteExternal,
-            @ApiParam(value = "Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)")
-                @DefaultValue("false") @QueryParam("skipTrash") boolean skipTrash) {
+            @ApiParam(value = "Comma separated list of file names") @QueryParam("name") String name,
+            @ApiParam(value = "Comma separated list of paths") @QueryParam("path") String path,
+            @ApiParam(value = "Available types (FILE, DIRECTORY)") @QueryParam("type") String type,
+            @ApiParam(value = "Comma separated bioformat values. For existing bioformats see files/bioformats")
+                @QueryParam("bioformat")String bioformat,
+            @ApiParam(value = "Comma separated format values. For existing formats see files/formats")
+                @QueryParam("format") String formats,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Directory under which we want to look for files or folders") @QueryParam("directory") String directory,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)") @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Description") @QueryParam("description") String description,
+            @ApiParam(value = "Size") @QueryParam("size") String size,
+            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
+            @ApiParam(value = "Job id that created the file(s) or folder(s)") @QueryParam("job.id") String jobId,
+            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
+            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)")  @QueryParam("nattributes") String nattributes,
+            @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
-//            QueryOptions qOptions = new QueryOptions(queryOptions)
-            ObjectMap params = new ObjectMap()
-                    .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
-                    .append(FileManager.SKIP_TRASH, skipTrash);
-            List<QueryResult<File>> result = fileManager.delete(studyStr, fileIdStr, params, sessionId);
-            return createOkResponse(result);
+            query.remove("study");
+
+            return createOkResponse(fileManager.delete(studyStr, query, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
+
+//    @GET
+//    @Path("/{file}/delete")
+//    @ApiOperation(value = "Delete file [NOT TESTED]", position = 23, response = QueryResponse.class)
+//    public Response deleteGET(
+//            @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
+//            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+//                @QueryParam("study") String studyStr,
+//            @ApiParam(value = "Delete files and folders from disk (only applicable for linked files/folders)")
+//                @DefaultValue("false") @QueryParam("deleteExternal") boolean deleteExternal,
+//            @ApiParam(value = "Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)")
+//                @DefaultValue("false") @QueryParam("skipTrash") boolean skipTrash) {
+//        try {
+////            QueryOptions qOptions = new QueryOptions(queryOptions)
+//            ObjectMap params = new ObjectMap()
+//                    .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
+//                    .append(FileManager.SKIP_TRASH, skipTrash);
+//            List<QueryResult<File>> result = fileManager.delete(studyStr, fileIdStr, params, sessionId);
+//            return createOkResponse(result);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/groupBy")
