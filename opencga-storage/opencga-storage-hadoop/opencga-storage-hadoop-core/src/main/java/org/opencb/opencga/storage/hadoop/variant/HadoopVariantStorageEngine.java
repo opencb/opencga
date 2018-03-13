@@ -83,7 +83,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_GAPS_OPERATION_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_MISSING_OPERATION_NAME;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver.FILL_MISSING_INTERMEDIATE_FILE;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_MISSING_INTERMEDIATE_FILE;
 
 /**
  * Created by mh719 on 16/06/15.

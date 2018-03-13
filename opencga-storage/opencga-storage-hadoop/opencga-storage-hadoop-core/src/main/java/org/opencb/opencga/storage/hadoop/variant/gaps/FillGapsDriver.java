@@ -29,7 +29,6 @@ import java.util.Collections;
 
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQuery;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQueryOptions;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver.FILL_MISSING_INTERMEDIATE_FILE;
 
 /**
  * Created on 30/10/17.
@@ -42,6 +41,8 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
     public static final String FILL_MISSING_OPERATION_NAME = "fill_missing";
     public static final String FILL_GAPS_INPUT = "fill-gaps.input";
     public static final String FILL_GAPS_INPUT_DEFAULT = "archive";
+    public static final String FILL_MISSING_INTERMEDIATE_FILE = "fill_missing.intermediate.file";
+    public static final String FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR = "fill_missing.write.mappers.limit.factor";
     private Collection<Integer> samples;
     private final Logger logger = LoggerFactory.getLogger(FillGapsDriver.class);
 

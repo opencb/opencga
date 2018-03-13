@@ -8,7 +8,9 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
@@ -18,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import static org.apache.hadoop.mapreduce.MRJobConfig.JOB_RUNNING_MAP_LIMIT;
+
 /**
  * Created on 09/03/18.
  *
@@ -26,7 +30,6 @@ import java.io.IOException;
 public class FillMissingHBaseWriterDriver extends AbstractAnalysisTableDriver {
 
     private static final Logger LOG = LoggerFactory.getLogger(FillMissingHBaseWriterDriver.class);
-    public static final String FILL_MISSING_INTERMEDIATE_FILE = "fill.missing.intermediate.file";
     private String inputPath;
     private FileSystem fs;
 
@@ -40,7 +43,7 @@ public class FillMissingHBaseWriterDriver extends AbstractAnalysisTableDriver {
     @Override
     protected void parseAndValidateParameters() throws IOException {
         fs = FileSystem.get(getConf());
-        inputPath = getConf().get(FILL_MISSING_INTERMEDIATE_FILE);
+        inputPath = getConf().get(FillGapsDriver.FILL_MISSING_INTERMEDIATE_FILE);
         if (!fs.exists(new Path(inputPath))) {
             throw new FileNotFoundException("Intermediate file not found: " + inputPath);
         }
@@ -55,6 +58,15 @@ public class FillMissingHBaseWriterDriver extends AbstractAnalysisTableDriver {
     protected Job setupJob(Job job, String archiveTableName, String variantTableName) throws IOException {
         ObjectMap options = new ObjectMap();
         getConf().iterator().forEachRemaining(entry -> options.put(entry.getKey(), entry.getValue()));
+        int serversSize;
+        try (HBaseManager hBaseManager = new HBaseManager(getConf())) {
+            serversSize = hBaseManager.act(variantTableName, (table, admin) -> admin.getClusterStatus().getServersSize());
+        }
+        float factor = getConf().getFloat(FillGapsDriver.FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR, 1.5F);
+        if (factor <= 0) {
+            throw new IllegalArgumentException(FillGapsDriver.FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR + " must be positive!");
+        }
+        getConf().setInt(JOB_RUNNING_MAP_LIMIT, Math.round(serversSize * factor));
 
         // input
         FileInputFormat.setInputPaths(job, inputPath);
