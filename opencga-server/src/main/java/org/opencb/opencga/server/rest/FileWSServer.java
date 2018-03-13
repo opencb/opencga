@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -995,7 +994,8 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr) throws CatalogException {
         try {
-            return createOkResponse(catalogManager.getFileManager().unlink(studyStr, fileIdStr, sessionId));
+            QueryResult<File> queryResult = catalogManager.getFileManager().unlink(studyStr, fileIdStr, sessionId);
+            return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1079,8 +1079,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/delete")
     @ApiOperation(value = "Delete existing files and folders")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = Constants.DELETE_EXTERNAL_FILES, value = "Delete files and folders from disk (only applicable for "
-                    + "linked files/folders)", dataType = "boolean", defaultValue = "false", paramType = "query"),
+//            @ApiImplicitParam(name = Constants.DELETE_EXTERNAL_FILES, value = "Delete files and folders from disk (only applicable for "
+//                    + "linked files/folders)", dataType = "boolean", defaultValue = "false", paramType = "query"),
             @ApiImplicitParam(name = Constants.SKIP_TRASH, value = "Skip trash and delete the files/folders from disk directly (CANNOT BE"
                     + " RECOVERED)", dataType = "boolean", defaultValue = "false", paramType = "query")
     })

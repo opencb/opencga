@@ -931,7 +931,7 @@ public class FileManager extends ResourceManager<File> {
         return writeResult;
     }
 
-    public WriteResult unlink(@Nullable String studyStr, String fileIdStr, String sessionId) throws CatalogException, IOException {
+    public QueryResult<File> unlink(@Nullable String studyStr, String fileIdStr, String sessionId) throws CatalogException, IOException {
         ParamUtils.checkParameter(fileIdStr, "File");
 
         AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
@@ -980,7 +980,10 @@ public class FileManager extends ResourceManager<File> {
             throw new CatalogException("Could not remove relation references: " + e.getMessage(), e);
         }
 
-        return unlink(studyId, file);
+        unlink(studyId, file);
+
+        query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+        return fileDBAdaptor.get(query, new QueryOptions(), userId);
     }
 
     /**
