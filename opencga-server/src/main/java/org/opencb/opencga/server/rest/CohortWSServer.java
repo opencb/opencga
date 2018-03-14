@@ -199,6 +199,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
+            query.remove("study");
+
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             QueryResult<Cohort> queryResult;
             if (count) {
@@ -489,6 +491,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds) {
         try {
+            query.remove("study");
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }

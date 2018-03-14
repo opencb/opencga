@@ -119,6 +119,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
+            query.remove("study");
+
             List<String> annotationList = new ArrayList<>();
             if (StringUtils.isNotEmpty(annotation)) {
                 annotationList.add(annotation);
@@ -246,6 +248,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot) {
         try {
+            query.remove("study");
             QueryResult result = familyManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {

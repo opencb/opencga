@@ -593,6 +593,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
+            query.remove("study");
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
@@ -1165,6 +1166,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Comma separated sampleIds", hidden = true) @QueryParam("sampleIds") String sampleIds,
                             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples) {
         try {
+            query.remove("study");
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }

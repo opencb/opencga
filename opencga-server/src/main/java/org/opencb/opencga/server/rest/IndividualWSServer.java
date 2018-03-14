@@ -169,6 +169,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Snapshot value (Latest version of individuals in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
+            query.remove("study");
+
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             List<String> annotationList = new ArrayList<>();
@@ -481,6 +483,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
                 int snapshot) {
         try {
+            query.remove("study");
+
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }

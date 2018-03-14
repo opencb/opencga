@@ -189,6 +189,7 @@ public class JobWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+            query.remove("study");
 
             if (StringUtils.isNotEmpty(studyId)) {
                 studyStr = studyId;
@@ -269,6 +270,8 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "creationDate", required = false) @DefaultValue("")
                             @QueryParam("creationDate") String creationDate) {
         try {
+            query.remove("study");
+
             if (StringUtils.isEmpty(fields)) {
                 throw new CatalogException("Empty fields parameter.");
             }
