@@ -396,7 +396,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             return sc;
         });
 
-        Thread hook = scm.buildShutdownHook(FILL_GAPS_OPERATION_NAME, studyId, Collections.emptyList());
+        Thread hook = scm.buildShutdownHook(jobOperationName, studyId, fileIdsList);
         Exception exception = null;
         try {
             Runtime.getRuntime().addShutdownHook(hook);
@@ -416,7 +416,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");
-            logger.info("Fill gaps of samples {} into variants table '{}'",
+            logger.info(jobOperationName + " of samples {} into variants table '{}'",
                     fillGaps ? sampleIds.toString() : "\"ALL\"", getVariantTableName());
             logger.debug(executable + ' ' + args);
             logger.info("------------------------------------------------------");
@@ -425,12 +425,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             logger.info("Exit value: {}", exitValue);
             logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
             if (exitValue != 0) {
-                throw new StorageEngineException("Error filling gaps for samples " + sampleIds);
+                throw new StorageEngineException("Error " + jobOperationName + " for samples " + sampleIds);
             }
 
         } catch (RuntimeException e) {
             exception = e;
-            throw new StorageEngineException("Error filling gaps for samples " + sampleIds, e);
+            throw new StorageEngineException("Error " + jobOperationName + " for samples " + sampleIds, e);
         } catch (StorageEngineException e) {
             exception = e;
             throw e;
