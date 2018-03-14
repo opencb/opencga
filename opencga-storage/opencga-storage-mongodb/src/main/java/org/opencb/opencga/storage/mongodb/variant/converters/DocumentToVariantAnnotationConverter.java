@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.ANNOTATION_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
 
 /**
  * Created by jacobo on 13/01/15.
@@ -96,7 +96,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String POPULATION_FREQUENCIES_FIELD = "popFq";
     public static final String POPULATION_FREQUENCY_STUDY_FIELD = "study";
     public static final String POPULATION_FREQUENCY_POP_FIELD = "pop";
-//    public static final String POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD = "ref";
+    //    public static final String POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD = "ref";
 //    public static final String POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD = "alt";
     public static final String POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD = "refFq";
     public static final String POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD = "altFq";
@@ -138,6 +138,19 @@ public class DocumentToVariantAnnotationConverter
     public static final String FUNCTIONAL_SCORE = "fn_score";
     public static final String FUNCTIONAL_CADD_RAW_FIELD = "fn_cadd_r";
     public static final String FUNCTIONAL_CADD_SCALED_FIELD = "fn_cadd_s";
+
+    public static final String REPEATS_FIELD = "repeats";
+    public static final String REPEATS_CHROMOSOME_FIELD = "chr";
+    public static final String REPEATS_START_FIELD = "start";
+    public static final String REPEATS_END_FIELD = "end";
+    public static final String REPEATS_CONSENSUS_SIZE_FIELD = "consensusSize";
+    public static final String REPEATS_COPY_NUMBER_FIELD = "cn";
+    public static final String REPEATS_PERCENTAGE_MATCH_FIELD = "pm";
+    public static final String REPEATS_ID_FIELD = "id";
+    public static final String REPEATS_PERIOD_FIELD = "period";
+    public static final String REPEATS_SCORE_FIELD = "sc";
+    public static final String REPEATS_SEQUENCE_FIELD = "sequence";
+    public static final String REPEATS_SOURCE_FIELD = "src";
 
     public static final String DEFAULT_STRAND_VALUE = "+";
     public static final String DEFAULT_DRUG_SOURCE = "dgidb";
@@ -397,6 +410,26 @@ public class DocumentToVariantAnnotationConverter
             va.setAdditionalAttributes(additionalAttributes);
         }
 
+        List<Document> repeats = getList(object, REPEATS_FIELD);
+        if (repeats != null && !repeats.isEmpty()) {
+            va.setRepeat(new ArrayList<>(repeats.size()));
+            for (Document repeat : repeats) {
+                va.getRepeat().add(new Repeat(
+                        repeat.getString(REPEATS_ID_FIELD),
+                        repeat.getString(REPEATS_CHROMOSOME_FIELD),
+                        repeat.getInteger(REPEATS_START_FIELD),
+                        repeat.getInteger(REPEATS_END_FIELD),
+                        repeat.getInteger(REPEATS_PERIOD_FIELD),
+                        repeat.getInteger(REPEATS_CONSENSUS_SIZE_FIELD),
+                        getDefault(repeat, REPEATS_COPY_NUMBER_FIELD, (Float) null),
+                        getDefault(repeat, REPEATS_PERCENTAGE_MATCH_FIELD, (Float) null),
+                        getDefault(repeat, REPEATS_SCORE_FIELD, (Float) null),
+                        repeat.getString(REPEATS_SEQUENCE_FIELD),
+                        repeat.getString(REPEATS_SOURCE_FIELD)
+                ));
+            }
+        }
+
         return va;
     }
 
@@ -544,7 +577,7 @@ public class DocumentToVariantAnnotationConverter
                     List<Document> exonOverlapDocuments = new ArrayList<>(consequenceType.getExonOverlap().size());
                     for (ExonOverlap exonOverlap : consequenceType.getExonOverlap()) {
                         exonOverlapDocuments.add(new Document(CT_EXON_OVERLAP_NUMBER_FIELD, exonOverlap.getNumber())
-                                        .append(CT_EXON_OVERLAP_PERCENTAGE_FIELD, exonOverlap.getPercentage()));
+                                .append(CT_EXON_OVERLAP_PERCENTAGE_FIELD, exonOverlap.getPercentage()));
                     }
                     ct.put(CT_EXON_OVERLAP_FIELD, exonOverlapDocuments);
                 }
@@ -796,6 +829,26 @@ public class DocumentToVariantAnnotationConverter
         }
         if (!clinicalDocument.isEmpty()) {
             document.put(CLINICAL_DATA_FIELD, clinicalDocument);
+        }
+
+        if (variantAnnotation.getRepeat() != null && !variantAnnotation.getRepeat().isEmpty()) {
+            List<Document> repeats = new ArrayList<>(variantAnnotation.getRepeat().size());
+            for (Repeat repeat : variantAnnotation.getRepeat()) {
+                Document repeatDocument = new Document();
+                putNotNull(repeatDocument, REPEATS_CHROMOSOME_FIELD, repeat.getChromosome());
+                putNotNull(repeatDocument, REPEATS_START_FIELD, repeat.getStart());
+                putNotNull(repeatDocument, REPEATS_END_FIELD, repeat.getEnd());
+                putNotNull(repeatDocument, REPEATS_CONSENSUS_SIZE_FIELD, repeat.getConsensusSize());
+                putNotNull(repeatDocument, REPEATS_COPY_NUMBER_FIELD, repeat.getCopyNumber());
+                putNotNull(repeatDocument, REPEATS_PERCENTAGE_MATCH_FIELD, repeat.getPercentageMatch());
+                putNotNull(repeatDocument, REPEATS_ID_FIELD, repeat.getId());
+                putNotNull(repeatDocument, REPEATS_PERIOD_FIELD, repeat.getPeriod());
+                putNotNull(repeatDocument, REPEATS_SCORE_FIELD, repeat.getScore());
+                putNotNull(repeatDocument, REPEATS_SEQUENCE_FIELD, repeat.getSequence());
+                putNotNull(repeatDocument, REPEATS_SOURCE_FIELD, repeat.getSource());
+                repeats.add(repeatDocument);
+            }
+            document.put(REPEATS_FIELD, repeats);
         }
 
         return document;
