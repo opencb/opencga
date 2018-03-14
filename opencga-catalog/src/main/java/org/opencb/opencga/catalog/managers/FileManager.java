@@ -2610,7 +2610,7 @@ public class FileManager extends ResourceManager<File> {
             pathDestiny = "";
         } else {
             if (pathDestiny.startsWith("/")) {
-                pathDestiny.substring(1);
+                pathDestiny = pathDestiny.substring(1);
             }
             if (!pathDestiny.isEmpty() && !pathDestiny.endsWith("/")) {
                 pathDestiny = pathDestiny + "/";
