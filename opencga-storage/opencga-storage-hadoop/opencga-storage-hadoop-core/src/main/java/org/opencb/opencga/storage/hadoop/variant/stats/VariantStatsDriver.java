@@ -25,7 +25,7 @@ import java.util.Collection;
  */
 public class VariantStatsDriver extends AbstractAnalysisTableDriver {
     public static final String STATS_INPUT = "stats.input";
-    public static final String STATS_INPUT_DEFAULT = "phoenix";
+    public static final String STATS_INPUT_DEFAULT = "native";
     private static final String STATS_OPERATION_NAME = "stats";
 
     private Collection<Integer> cohorts;
@@ -44,8 +44,8 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected Class<VariantStatsMapper> getMapperClass() {
-        return VariantStatsMapper.class;
+    protected Class<VariantStatsFromResultMapper> getMapperClass() {
+        return VariantStatsFromResultMapper.class;
     }
 
     @Override
@@ -61,7 +61,15 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
         QueryOptions queryOptions = VariantStatisticsManager.buildIncludeExclude();
         LOG.info("Query : " + query.toJson());
 
-        if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
+        if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("native")) {
+            // Some of the filters in query are not supported by VariantHBaseQueryParser
+            Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, queryOptions);
+
+            LOG.info(scan.toString());
+
+            // input
+            VariantMapReduceUtil.initTableMapperJob(job, variantTableName, variantTableName, scan, VariantStatsFromResultMapper.class);
+        } else if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
             // Sql
             String sql = new VariantSqlQueryParser(getHelper(), getAnalysisTable(), getStudyConfigurationManager())
                     .parse(query, queryOptions).getSql();
@@ -69,7 +77,7 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
             LOG.info(sql);
 
             // input
-            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, getMapperClass());
+            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, VariantStatsMapper.class);
         } else {
             // scan
             // TODO: Improve filter!
@@ -78,7 +86,7 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
 
             LOG.info(scan.toString());
             // input
-            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, getMapperClass());
+            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, VariantStatsMapper.class);
         }
         VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
                 VariantStatisticsManager.UNKNOWN_GENOTYPE);

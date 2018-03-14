@@ -336,6 +336,14 @@ public class VariantQueryUtils {
         private final Map<Integer, List<Integer>> files;
 //        private final Map<Integer, List<Integer>> cohortIds;
 
+        public SelectVariantElements(StudyConfiguration studyConfiguration, List<Integer> samples, List<Integer> files) {
+            this.fields = VariantField.getIncludeFields(null);
+            this.studies = Collections.singletonList(studyConfiguration.getStudyId());
+            this.studyConfigurations = Collections.singletonMap(studyConfiguration.getStudyId(), studyConfiguration);
+            this.samples = Collections.singletonMap(studyConfiguration.getStudyId(), samples);
+            this.files = Collections.singletonMap(studyConfiguration.getStudyId(), files);
+        }
+
         private SelectVariantElements(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyConfiguration> studyConfigurations,
                                       Map<Integer, List<Integer>> samples, Map<Integer, List<Integer>> files) {
             this.fields = fields;

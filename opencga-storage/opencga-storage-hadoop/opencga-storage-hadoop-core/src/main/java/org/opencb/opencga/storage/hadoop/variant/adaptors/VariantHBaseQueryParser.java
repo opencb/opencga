@@ -163,6 +163,7 @@ public class VariantHBaseQueryParser {
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
             for (Integer studyId : selectElements.getStudies()) {
                 scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getFillMissingColumn(studyId).bytes());
             }
 
             if (selectElements.getFields().contains(VariantField.STUDIES_STATS)) {

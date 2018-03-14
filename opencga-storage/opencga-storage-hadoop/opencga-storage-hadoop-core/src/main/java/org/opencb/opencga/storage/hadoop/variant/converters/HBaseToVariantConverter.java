@@ -78,7 +78,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         this.genomeHelper = genomeHelper;
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper);
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
-        this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper, scm, statsConverter);
+        this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), scm, statsConverter);
     }
 
     /**

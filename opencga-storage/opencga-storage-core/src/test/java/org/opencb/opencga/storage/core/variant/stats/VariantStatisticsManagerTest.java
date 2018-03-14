@@ -165,7 +165,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
     }
 
-    public StudyConfiguration stats(VariantStatisticsManager vsm, QueryOptions options, StudyConfiguration studyConfiguration, Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds, VariantDBAdaptor dbAdaptor, URI resolve) throws IOException, StorageEngineException {
+    public static StudyConfiguration stats(VariantStatisticsManager vsm, QueryOptions options, StudyConfiguration studyConfiguration, Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds, VariantDBAdaptor dbAdaptor, URI resolve) throws IOException, StorageEngineException {
         if (vsm instanceof DefaultVariantStatisticsManager) {
             DefaultVariantStatisticsManager dvsm = (DefaultVariantStatisticsManager) vsm;
             URI stats = dvsm.createStats(dbAdaptor, resolve, cohorts, cohortIds, studyConfiguration, options);
@@ -182,17 +182,20 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         return dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
     }
 
-    private static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
+    static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
                 Map<String, VariantStats> cohortStats = sourceEntry.getStats();
                 String calculatedCohorts = cohortStats.keySet().toString();
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getCohortIds().entrySet()) {
+                    if (!studyConfiguration.getCalculatedStats().contains(entry.getValue())) {
+                        continue;
+                    }
                     assertTrue("CohortStats should contain stats for cohort " + entry.getKey() + ". Only contains stats for " +
                                     calculatedCohorts,
                             cohortStats.containsKey(entry.getKey()));    //Check stats are calculated
 
-                    assertEquals("Stats have less genotypes than expected.",
+                    assertEquals("Stats for cohort " + entry.getKey() + " have less genotypes than expected. " + cohortStats.get(entry.getKey()).getGenotypesCount(),
                             studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to
                             // the number of samples)
                             cohortStats.get(entry.getKey()).getGenotypesCount().values().stream().reduce(0, (a, b) -> a + b).intValue());

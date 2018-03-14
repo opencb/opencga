@@ -75,6 +75,7 @@ public class VariantPhoenixHelper {
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
     public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(CHROMOSOME, POSITION, REFERENCE, ALTERNATE));
     public static final String FILL_MISSING_SUFIX = "_FM";
+    public static final byte[] FILL_MISSING_SUFIX_BYTES = Bytes.toBytes(FILL_MISSING_SUFIX);
 
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
