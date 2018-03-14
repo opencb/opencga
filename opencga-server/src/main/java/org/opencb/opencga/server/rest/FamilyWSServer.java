@@ -80,6 +80,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
+            query.remove("study");
+            query.remove("families");
+
             List<String> familyList = getIdList(familyStr);
             List<QueryResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, sessionId);
             return createOkResponse(familyQueryResult);

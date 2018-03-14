@@ -139,6 +139,9 @@ public class FileWSServer extends OpenCGAWSServer {
                          @QueryParam("study") String studyStr,
                          @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
+            query.remove("study");
+            query.remove("files");
+
             List<String> idList = getIdList(fileStr);
             List<QueryResult<File>> fileQueryResult = fileManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
             for (QueryResult<File> queryResult : fileQueryResult) {
@@ -755,6 +758,10 @@ public class FileWSServer extends OpenCGAWSServer {
                              @QueryParam("study") String studyStr,
                              @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
         try {
+            query.remove("study");
+            query.remove("folder");
+            query.remove("maxDepth");
+
             isSingleId(folderId);
             query.remove("maxDepth");
             QueryResult result = fileManager

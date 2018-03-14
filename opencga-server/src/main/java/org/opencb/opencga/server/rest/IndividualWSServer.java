@@ -106,6 +106,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                    @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
                                    @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
+            query.remove("study");
+            query.remove("individuals");
+
             List<String> individualList = getIdList(individualStr);
             List<QueryResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions,
                     silent, sessionId);

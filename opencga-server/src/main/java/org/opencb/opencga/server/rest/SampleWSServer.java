@@ -79,6 +79,9 @@ public class SampleWSServer extends OpenCGAWSServer {
                     boolean allVersions,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
+            query.remove("study");
+            query.remove("samples");
+
             List<String> sampleList = getIdList(samplesStr);
             List<QueryResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, sessionId);
             return createOkResponse(sampleQueryResult);

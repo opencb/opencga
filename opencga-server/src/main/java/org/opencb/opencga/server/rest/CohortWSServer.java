@@ -160,12 +160,15 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
-    public Response infoSample(@ApiParam(value = "Comma separated list of cohort names or ids up to a maximum of 100", required = true) @PathParam("cohorts")
-                                       String cohortsStr,
-                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                               @QueryParam("study") String studyStr,
-                               @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response infoSample(
+            @ApiParam(value = "Comma separated list of cohort names or ids up to a maximum of 100", required = true)
+                @PathParam("cohorts") String cohortsStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
+            query.remove("study");
+
             List<String> cohortList = getIdList(cohortsStr);
             List<QueryResult<Cohort>> cohortQueryResult = cohortManager.get(studyStr, cohortList, query, queryOptions, silent, sessionId);
             return createOkResponse(cohortQueryResult);
