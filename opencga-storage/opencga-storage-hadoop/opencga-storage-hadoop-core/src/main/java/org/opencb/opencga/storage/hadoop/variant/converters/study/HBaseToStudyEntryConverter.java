@@ -591,9 +591,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
      * @param studyConfiguration StudyConfiguration from the study
      * @param alternateFileIdMap Map from SecondaryAlternate to FileId
      */
-    private void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, StudyConfiguration studyConfiguration,
+    protected void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, StudyConfiguration studyConfiguration,
                                         Map<String, List<String>> alternateFileIdMap) {
-
 
         final List<AlternateCoordinate> alternateCoordinates;
         if (alternateFileIdMap.isEmpty()) {
@@ -614,6 +613,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
             for (Map.Entry<String, List<String>> entry : alternateFileIdMap.entrySet()) {
                 String secondaryAlternates = entry.getKey();
+                List<String> fileIds = entry.getValue();
 
                 Variant sampleVariant = new Variant(
                         variant.getChromosome(),
@@ -624,7 +624,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 se.setSecondaryAlternates(getAlternateCoordinates(secondaryAlternates));
                 se.setFormat(studyEntry.getFormat());
 
-                for (String fileId : entry.getValue()) {
+                for (String fileId : fileIds) {
                     se.getFiles().add(studyEntry.getFile(fileId));
                     for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(Integer.parseInt(fileId))) {
                         String sample = studyConfiguration.getSampleIds().inverse().get(sampleId);

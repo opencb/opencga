@@ -38,16 +38,19 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         VariantStorageEngine storageEngine = getVariantStorageEngine();
         List<URI> inputFiles = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            int fileId = i + 12877;
+
+       // 12877, 12889 and 12890 have an overlapping at M:16184:C:A , M:16184:C:- , M:16184:CC:-
+//        for (int i : new int[]{0, 12, 13}) {
+
+        for (int fileId = 12877; fileId < 12877 + 17; fileId++) {
             String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             inputFiles.add(getResourceUri("platinum/" + fileName));
         }
         storageEngine.getOptions().put(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID);
         storageEngine.getOptions().put(VariantStorageEngine.Options.STUDY_NAME.key(), STUDY_NAME);
         storageEngine.getOptions().put(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
-//        storageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);
-//        storageEngine.index(inputFiles.subList(2, 4), outputUri, true, true, true);
+//        storageEngine.index(inputFiles.subList(0, inputFiles.size()/2), outputUri, true, true, true);
+//        storageEngine.index(inputFiles.subList(inputFiles.size()/2, inputFiles.size()), outputUri, true, true, true);
         storageEngine.index(inputFiles, outputUri, true, true, true);
         studyConfiguration = storageEngine.getStudyConfigurationManager().getStudyConfiguration(STUDY_ID, null).first();
     }
@@ -62,16 +65,12 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
         QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
-        Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
+
+        List<String> samples = new ArrayList<>(studyConfiguration.getSampleIds().keySet());
 
         /** Create cohorts **/
-        HashSet<String> cohort1 = new HashSet<>();
-        cohort1.add(iterator.next());
-        cohort1.add(iterator.next());
-
-        HashSet<String> cohort2 = new HashSet<>();
-        cohort2.add(iterator.next());
-        cohort2.add(iterator.next());
+        HashSet<String> cohort1 = new HashSet<>(samples.subList(0, samples.size() / 2));
+        HashSet<String> cohort2 = new HashSet<>(samples.subList(samples.size() / 2, samples.size()));
 
         Map<String, Set<String>> cohorts = new HashMap<>();
         Map<String, Integer> cohortIds = new HashMap<>();

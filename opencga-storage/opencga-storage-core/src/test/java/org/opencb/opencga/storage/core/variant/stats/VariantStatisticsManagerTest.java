@@ -18,16 +18,18 @@ package org.opencb.opencga.storage.core.variant.stats;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
@@ -165,7 +167,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
     }
 
-    public static StudyConfiguration stats(VariantStatisticsManager vsm, QueryOptions options, StudyConfiguration studyConfiguration, Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds, VariantDBAdaptor dbAdaptor, URI resolve) throws IOException, StorageEngineException {
+    public static StudyConfiguration stats(VariantStatisticsManager vsm, QueryOptions options, StudyConfiguration studyConfiguration,
+                                           Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds, VariantDBAdaptor dbAdaptor,
+                                           URI resolve) throws IOException, StorageEngineException {
         if (vsm instanceof DefaultVariantStatisticsManager) {
             DefaultVariantStatisticsManager dvsm = (DefaultVariantStatisticsManager) vsm;
             URI stats = dvsm.createStats(dbAdaptor, resolve, cohorts, cohortIds, studyConfiguration, options);
@@ -185,20 +189,37 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
-                Map<String, VariantStats> cohortStats = sourceEntry.getStats();
-                String calculatedCohorts = cohortStats.keySet().toString();
+                Map<String, VariantStats> cohortsStats = sourceEntry.getStats();
+                String calculatedCohorts = cohortsStats.keySet().toString();
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getCohortIds().entrySet()) {
                     if (!studyConfiguration.getCalculatedStats().contains(entry.getValue())) {
                         continue;
                     }
                     assertTrue("CohortStats should contain stats for cohort " + entry.getKey() + ". Only contains stats for " +
                                     calculatedCohorts,
-                            cohortStats.containsKey(entry.getKey()));    //Check stats are calculated
+                            cohortsStats.containsKey(entry.getKey()));    //Check stats are calculated
 
-                    assertEquals("Stats for cohort " + entry.getKey() + " have less genotypes than expected. " + cohortStats.get(entry.getKey()).getGenotypesCount(),
+                    VariantStats cohortStats = cohortsStats.get(entry.getKey());
+                    assertEquals("Stats for cohort " + entry.getKey() + " have less genotypes than expected. "
+                                    + cohortStats.getGenotypesCount(),
                             studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to
                             // the number of samples)
-                            cohortStats.get(entry.getKey()).getGenotypesCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
+                            cohortStats.getGenotypesCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
+
+                    HashMap<Genotype, Integer> genotypeCount = new HashMap<>();
+                    for (Integer sampleId : studyConfiguration.getCohorts().get(entry.getValue())) {
+                        String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                        String gt = sourceEntry.getSampleData(sampleName, "GT");
+                        genotypeCount.compute(new Genotype(gt), (key, value) -> value == null ? 1 : value + 1);
+                    }
+
+                    VariantStats stats = VariantStatsCalculator.calculate(variant, genotypeCount);
+
+                    assertEquals(stats.getGenotypesCount(), cohortStats.getGenotypesCount());
+                    assertEquals(stats.getGenotypesFreq(), cohortStats.getGenotypesFreq());
+                    assertEquals(stats.getMaf(), cohortStats.getMaf());
+                    assertEquals(stats.getMafAllele(), cohortStats.getMafAllele());
+                    assertEquals(stats.getRefAlleleFreq(), cohortStats.getAltAlleleFreq());
                 }
             }
         }
