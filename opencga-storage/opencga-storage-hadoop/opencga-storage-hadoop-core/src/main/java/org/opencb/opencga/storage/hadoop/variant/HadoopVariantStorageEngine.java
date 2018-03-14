@@ -431,6 +431,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         } catch (RuntimeException e) {
             exception = e;
             throw new StorageEngineException("Error filling gaps for samples " + sampleIds, e);
+        } catch (StorageEngineException e) {
+            exception = e;
+            throw e;
         } finally {
             boolean fail = exception != null;
             scm.lockAndUpdate(study, sc -> {

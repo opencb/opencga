@@ -279,9 +279,14 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
         @Override
         public Variant convert(Result result) {
-            VariantAnnotation annotation = annotationConverter.convert(result);
-            Map<Integer, StudyEntry> studies = studyEntryConverter.convert(result);
-            return convert(extractVariantFromVariantRowKey(result.getRow()), studies, annotation);
+            Variant variant = extractVariantFromVariantRowKey(result.getRow());
+            try {
+                VariantAnnotation annotation = annotationConverter.convert(result);
+                Map<Integer, StudyEntry> studies = studyEntryConverter.convert(result);
+                return convert(variant, studies, annotation);
+            } catch (RuntimeException e) {
+                throw new IllegalStateException("Fail to parse variant: " + variant, e);
+            }
         }
     }
 }
