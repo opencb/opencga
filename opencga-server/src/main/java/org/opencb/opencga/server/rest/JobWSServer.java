@@ -271,6 +271,7 @@ public class JobWSServer extends OpenCGAWSServer {
                             @QueryParam("creationDate") String creationDate) {
         try {
             query.remove("study");
+            query.remove("fields");
 
             if (StringUtils.isEmpty(fields)) {
                 throw new CatalogException("Empty fields parameter.");

@@ -318,8 +318,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                    .append(CohortDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId())
-                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+                    .append(CohortDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
 
             String variableSetId = String.valueOf(catalogManager.getStudyManager()
                     .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
@@ -341,8 +340,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             }
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
-            QueryResult<Cohort> search = cohortManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
-                    sessionId);
+            QueryResult<Cohort> search = cohortManager.search(String.valueOf(resourceId.getStudyId()), query,
+                    new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap), sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
@@ -370,9 +369,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(CohortDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
-                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
-            QueryOptions queryOptions = new QueryOptions();
+                    .append(CohortDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
+            QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
                 query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
@@ -495,6 +493,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds) {
         try {
             query.remove("study");
+            query.remove("fields");
+
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }

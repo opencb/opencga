@@ -1174,6 +1174,8 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples) {
         try {
             query.remove("study");
+            query.remove("fields");
+
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }

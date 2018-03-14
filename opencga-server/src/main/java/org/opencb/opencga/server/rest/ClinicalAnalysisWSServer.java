@@ -177,6 +177,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Sample") @QueryParam("sample") String sample,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release) {
         try {
+            query.remove("study");
+            query.remove("fields");
+
             QueryResult result = clinicalManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {

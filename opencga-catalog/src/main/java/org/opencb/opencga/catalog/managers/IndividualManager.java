@@ -635,12 +635,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     IndividualAclEntry.IndividualPermissions.UPDATE);
         }
 
-        try {
-            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> IndividualDBAdaptor.UpdateParams.getParam(a) != null);
-        } catch (CatalogParameterException e) {
-            throw new CatalogException("Could not update: " + e.getMessage(), e);
-        }
-
         if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.NAME.key())) {
             ParamUtils.checkAlias(parameters.getString(IndividualDBAdaptor.UpdateParams.NAME.key()), "name",
                     configuration.getCatalog().getOffset());
@@ -734,6 +728,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             } else {
                 throw new CatalogException("Cannot update mother parameter. Mother name or id not passed");
             }
+        }
+
+        try {
+            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> IndividualDBAdaptor.UpdateParams.getParam(a) != null);
+        } catch (CatalogParameterException e) {
+            throw new CatalogException("Could not update: " + e.getMessage(), e);
         }
 
         return unsafeUpdate(studyId, individualId, parameters, options, userId);

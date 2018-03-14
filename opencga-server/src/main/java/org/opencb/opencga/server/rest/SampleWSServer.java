@@ -353,6 +353,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     int snapshot) {
         try {
             query.remove("study");
+            query.remove("fields");
             
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -386,8 +387,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId())
-                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
 
             String variableSetId = String.valueOf(catalogManager.getStudyManager()
                     .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
@@ -409,8 +409,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
-            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
-                    sessionId);
+            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceId.getStudyId()), query,
+                    new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap), sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
@@ -438,9 +438,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
-                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
-            QueryOptions queryOptions = new QueryOptions();
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
+            QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
                 query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
