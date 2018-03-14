@@ -214,8 +214,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
         long t = System.currentTimeMillis();
 
-        if (relativeFilePath.endsWith("/")) {
-            relativeFilePath = relativeFilePath.substring(0, relativeFilePath.length() - 1);
+        if (!relativeFilePath.endsWith("/")) {
+            relativeFilePath = relativeFilePath + "/";
         }
 
         if (relativeFilePath.startsWith("/")) {
@@ -236,12 +236,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
         try {
             filePath = Paths.get(catalogManager.getFileManager().getUri(studyId, relativeFilePath));
-            System.out.println(filePath);
-        } catch (CatalogIOException e) {
-            System.out.println("catalogManager.getFilePath");
-            e.printStackTrace();
         } catch (CatalogException e) {
-            e.printStackTrace();
+            return createErrorResponse(e);
         }
 
         if (chunkBytes != null && filePath != null) {

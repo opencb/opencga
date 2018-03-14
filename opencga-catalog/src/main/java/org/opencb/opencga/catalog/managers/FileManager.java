@@ -35,10 +35,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
@@ -97,7 +94,8 @@ public class FileManager extends ResourceManager<File> {
     static {
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
         INCLUDE_FILE_URI_PATH = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key()));
+                Arrays.asList(FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
+                        FileDBAdaptor.QueryParams.EXTERNAL.key()));
         ROOT_FIRST_COMPARATOR = (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length())
                 - (f2.getPath() == null ? 0 : f2.getPath().length());
         ROOT_LAST_COMPARATOR = (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length())
@@ -128,7 +126,6 @@ public class FileManager extends ResourceManager<File> {
         }
     }
 
-    @Deprecated
     public URI getUri(long studyId, String filePath) throws CatalogException {
         ParamUtils.checkObj(filePath, "filePath");
 
@@ -136,6 +133,9 @@ public class FileManager extends ResourceManager<File> {
 
         for (File parent : parents) {
             if (parent.getUri() != null) {
+                if (parent.isExternal()) {
+                    throw new CatalogException("Cannot upload files to an external folder");
+                }
                 String relativePath = filePath.replaceFirst(parent.getPath(), "");
                 return Paths.get(parent.getUri()).resolve(relativePath).toUri();
             }
