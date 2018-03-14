@@ -199,6 +199,7 @@ public class VariantSqlQueryParser {
                     StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
                     Column studyColumn = VariantPhoenixHelper.getStudyColumn(studyId);
                     sb.append(",\"").append(studyColumn.column()).append('"');
+                    sb.append(",\"").append(VariantPhoenixHelper.getFillMissingColumn(studyId).column()).append('"');
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
                         for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);

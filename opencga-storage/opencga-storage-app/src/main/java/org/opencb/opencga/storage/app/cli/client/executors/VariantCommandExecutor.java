@@ -547,7 +547,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantStorageEngine.fillMissing(cliOptions.study, options);
+        variantStorageEngine.fillMissing(cliOptions.study, options, cliOptions.overwrite);
     }
 
     private void export() throws URISyntaxException, StorageEngineException, IOException {

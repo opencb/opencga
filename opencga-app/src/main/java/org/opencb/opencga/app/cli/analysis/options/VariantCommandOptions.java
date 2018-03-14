@@ -620,8 +620,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
-        public boolean resume;
+        @ParametersDelegate
+        public StorageVariantCommandOptions.GenericFillMissingCommandOptions fillMissingCommandOptions = new StorageVariantCommandOptions.GenericFillMissingCommandOptions();
+
     }
 
     @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")

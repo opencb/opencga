@@ -327,13 +327,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void fillMissing(String study, ObjectMap options) throws StorageEngineException {
+    public void fillMissing(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
         logger.info("FillMissing: Study " + study);
 
         StudyConfigurationManager scm = getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = scm.getStudyConfiguration(study, null).first();
 
-        fillGapsOrMissing(study, studyConfiguration, studyConfiguration.getIndexedFiles(), Collections.emptyList(), false, options);
+        fillGapsOrMissing(study, studyConfiguration, studyConfiguration.getIndexedFiles(), Collections.emptyList(), false, overwrite,
+                options);
     }
 
     @Override
@@ -366,11 +367,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         logger.info("FillGaps: Study " + study + ", samples " + samples);
-        fillGapsOrMissing(study, studyConfiguration, fileIds, sampleIds, true, options);
+        fillGapsOrMissing(study, studyConfiguration, fileIds, sampleIds, true, false, options);
     }
 
     private void fillGapsOrMissing(String study, StudyConfiguration studyConfiguration, Set<Integer> fileIds, List<Integer> sampleIds,
-                                   boolean fillGaps, ObjectMap inputOptions) throws StorageEngineException {
+                                   boolean fillGaps, boolean overwrite, ObjectMap inputOptions) throws StorageEngineException {
         ObjectMap options = new ObjectMap(getOptions());
         if (inputOptions != null) {
             options.putAll(inputOptions);
@@ -385,7 +386,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         scm.lockAndUpdate(study, sc -> {
             boolean resume = options.getBoolean(RESUME.key(), RESUME.defaultValue());
-            StudyConfigurationManager.addBatchOperation(
+            BatchFileOperation operation = StudyConfigurationManager.addBatchOperation(
                     sc,
                     jobOperationName,
                     fileIdsList,
@@ -393,6 +394,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     BatchFileOperation.Type.OTHER,
                     // Allow concurrent operations if fillGaps.
                     (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
+
+            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
             return sc;
         });
 
@@ -406,6 +409,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             options.put(FillGapsFromArchiveMapper.SAMPLES, sampleIds);
             options.put(FillGapsFromArchiveMapper.FILL_GAPS, fillGaps);
+            options.put(FillGapsFromArchiveMapper.OVERWRITE, overwrite);
 
             Class execClass = FillGapsDriver.class;
             String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();

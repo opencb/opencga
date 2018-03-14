@@ -3,17 +3,21 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.core.Region;
+import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
 import java.util.*;
@@ -27,9 +31,17 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
 
     public static final String VARIANT_COLUMN_PREFIX = "_V";
     public static final byte[] VARIANT_COLUMN_B_PREFIX = Bytes.toBytes(VARIANT_COLUMN_PREFIX);
+    private final PhoenixHelper.Column fillMissingColumn;
+    private final byte[] lastFileBytes;
+    private final List<Integer> indexedFiles;
+    private Map<Integer, Set<Integer>> filesToProcessMap = new HashMap<>();
 
     public FillMissingFromArchiveTask(HBaseManager hBaseManager, StudyConfiguration studyConfiguration, GenomeHelper helper) {
         super(hBaseManager, studyConfiguration, helper, Collections.emptyList(), true);
+        fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyConfiguration.getStudyId());
+        Integer lastFile = new ArrayList<>(studyConfiguration.getIndexedFiles()).get(studyConfiguration.getIndexedFiles().size() - 1);
+        lastFileBytes = PInteger.INSTANCE.toBytes(lastFile);
+        indexedFiles = new ArrayList<>(studyConfiguration.getIndexedFiles());
     }
 
     @Override
@@ -37,27 +49,15 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
         return new FillMissingContext(result);
     }
 
+    @Override
+    protected Put createPut(Variant v) {
+        return super.createPut(v).addColumn(helper.getColumnFamily(), fillMissingColumn.bytes(), lastFileBytes);
+    }
 
     private class FillMissingContext extends Context {
 
         protected FillMissingContext(Result result) throws IOException {
             super(result);
-        }
-
-        @Override
-        protected List<Variant> extractVariantsToFill() throws IOException {
-            // Fill all variants from the study. Read variants from _V
-
-            List<Variant> variants = new ArrayList<>();
-            Region region = rowKeyFactory.extractRegionFromBlockId(Bytes.toString(result.getRow()));
-
-            for (Cell cell : result.rawCells()) {
-                if (Bytes.startsWith(CellUtil.cloneQualifier(cell), VARIANT_COLUMN_B_PREFIX)) {
-                    variants.add(getVariantFromArchiveVariantColumn(region.getChromosome(), CellUtil.cloneQualifier(cell)));
-                }
-            }
-
-            return variants;
         }
 
         @Override
@@ -79,8 +79,45 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
         }
 
         @Override
-        public Set<Integer> getAllFiles() {
-            return fileIdsInBatch;
+        public TreeMap<Variant, Set<Integer>> getVariantsToFill() {
+            TreeMap<Variant, Set<Integer>> variantsToFill = new TreeMap<>(VARIANT_COMPARATOR);
+
+            for (Cell cell : result.rawCells()) {
+                if (Bytes.startsWith(CellUtil.cloneQualifier(cell), VARIANT_COLUMN_B_PREFIX)) {
+                    Variant variant = getVariantFromArchiveVariantColumn(region.getChromosome(), CellUtil.cloneQualifier(cell));
+                    if (cell.getValueLength() > 0) {
+                        byte[] bytes = CellUtil.cloneValue(cell);
+                        Integer lastFile = (Integer) PInteger.INSTANCE.toObject(bytes);
+                        Set<Integer> filesToProcess = filesToProcessMap.computeIfAbsent(lastFile,
+                                (key) -> getFilesToProcess(lastFile, variant));
+
+                        variantsToFill.put(variant, filesToProcess);
+                    } else {
+                        variantsToFill.put(variant, fileIdsInBatch);
+                    }
+                }
+            }
+
+//            System.out.println(Bytes.toString(result.getRow()) + " variantsToFill = " + variantsToFill);
+            return variantsToFill;
+        }
+
+        public Set<Integer> getFilesToProcess(Integer lastFile, Variant variant) {
+            List<Integer> allfilesToProcess = indexedFiles.subList(indexedFiles.indexOf(lastFile) + 1, indexedFiles.size());
+
+            Set<Integer> filesToProcess = new HashSet<>();
+
+            for (Integer fileToProcess : allfilesToProcess) {
+                if (fileIdsInBatch.contains(fileToProcess)) {
+                    filesToProcess.add(fileToProcess);
+                }
+            }
+
+            if (filesToProcess.isEmpty()) {
+                throw new IllegalStateException("No files found for variant " + variant
+                        + " in row " + Bytes.toString(result.getRow()));
+            }
+            return filesToProcess;
         }
     }
 
@@ -92,7 +129,10 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
             byte[] value = Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId));
             filterList.addFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL, new BinaryComparator(value)));
         }
-        filterList.addFilter(new ColumnPrefixFilter(VARIANT_COLUMN_B_PREFIX));
+        filterList.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL,
+                new ColumnPrefixFilter(VARIANT_COLUMN_B_PREFIX),
+                new TimestampsFilter(Arrays.asList(conf.getLong(AbstractAnalysisTableDriver.TIMESTAMP, 0)))
+        ));
         if (scan.getFilter() == null) {
             scan.setFilter(filterList);
         } else {
