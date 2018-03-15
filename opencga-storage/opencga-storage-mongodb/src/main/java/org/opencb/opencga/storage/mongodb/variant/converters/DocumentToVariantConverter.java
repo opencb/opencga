@@ -114,9 +114,14 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.ANNOTATION, Arrays.asList(ANNOTATION_FIELD, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
         map.put(VariantField.ANNOTATION_ANCESTRAL_ALLELE, emptyList());
         map.put(VariantField.ANNOTATION_ID, emptyList());
+        map.put(VariantField.ANNOTATION_CHROMOSOME, emptyList());
+        map.put(VariantField.ANNOTATION_START, emptyList());
+        map.put(VariantField.ANNOTATION_END, emptyList());
+        map.put(VariantField.ANNOTATION_REFERENCE, emptyList());
+        map.put(VariantField.ANNOTATION_ALTERNATE, emptyList());
         map.put(VariantField.ANNOTATION_XREFS, singletonList(ANNOTATION_FIELD + '.' + XREFS_FIELD));
-        map.put(VariantField.ANNOTATION_HGVS, singletonList(ANNOTATION_FIELD + '.' + HGVS_FIELD));
-        map.put(VariantField.ANNOTATION_CYTOBANDS, singletonList(ANNOTATION_FIELD + '.' + CYTOBANDS_FIELD));
+        map.put(VariantField.ANNOTATION_HGVS, singletonList(ANNOTATION_FIELD + '.' + DocumentToVariantAnnotationConverter.HGVS_FIELD));
+        map.put(VariantField.ANNOTATION_CYTOBAND, singletonList(ANNOTATION_FIELD + '.' + CYTOBANDS_FIELD));
         map.put(VariantField.ANNOTATION_DISPLAY_CONSEQUENCE_TYPE, singletonList(ANNOTATION_FIELD + '.' + DISPLAY_CONSEQUENCE_TYPE_FIELD));
         map.put(VariantField.ANNOTATION_CONSEQUENCE_TYPES, singletonList(ANNOTATION_FIELD + '.' + CONSEQUENCE_TYPE_FIELD));
         map.put(VariantField.ANNOTATION_POPULATION_FREQUENCIES, singletonList(ANNOTATION_FIELD + '.' + POPULATION_FREQUENCIES_FIELD));
@@ -135,6 +140,8 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.ANNOTATION_FUNCTIONAL_SCORE, Arrays.asList(
                 ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_RAW_FIELD,
                 ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_SCALED_FIELD));
+        map.put(VariantField.ANNOTATION_REPEAT, singletonList(ANNOTATION_FIELD + '.' + REPEATS_FIELD));
+        map.put(VariantField.ANNOTATION_DRUGS, emptyList());
         map.put(VariantField.ANNOTATION_ADDITIONAL_ATTRIBUTES, Arrays.asList(CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
 
         FIELDS_MAP = unmodifiableMap(map);

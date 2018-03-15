@@ -157,6 +157,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String DEFAULT_DRUG_TYPE = "n/a";
 
     public static final Map<String, String> SCORE_FIELD_MAP;
+    public static final String DB_SNP = "dbSNP";
 
     private final ObjectMapper jsonObjectMapper;
     private final ObjectWriter writer;
@@ -377,11 +378,12 @@ public class DocumentToVariantAnnotationConverter
             for (Object o : (List) xrs) {
                 if (o instanceof Document) {
                     Document xref = (Document) o;
-
-                    xrefs.add(new Xref(
-                            (String) xref.get(XREF_ID_FIELD),
-                            (String) xref.get(XREF_SOURCE_FIELD))
-                    );
+                    String id = xref.getString(XREF_ID_FIELD);
+                    String source = xref.getString(XREF_SOURCE_FIELD);
+                    if (source.equals(DB_SNP)) {
+                        va.setId(id);
+                    }
+                    xrefs.add(new Xref(id, source));
                 }
             }
             va.setXrefs(xrefs);
@@ -556,7 +558,7 @@ public class DocumentToVariantAnnotationConverter
 
         //Variant ID
         if (variantAnnotation.getId() != null && !variantAnnotation.getId().isEmpty()) {
-            xrefs.add(convertXrefToStorage(variantAnnotation.getId(), "dbSNP"));
+            xrefs.add(convertXrefToStorage(variantAnnotation.getId(), DB_SNP));
         }
 
         //ConsequenceType
