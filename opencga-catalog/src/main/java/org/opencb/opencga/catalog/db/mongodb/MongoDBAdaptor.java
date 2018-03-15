@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
  */
 public class MongoDBAdaptor extends AbstractDBAdaptor {
 
+    static final String PRIVATE_UID = "uid";
     static final String PRIVATE_ID = "id";
     static final String PRIVATE_PROJECT_ID = "_projectId";
     static final String PRIVATE_OWNER_ID = "_ownerId";
@@ -147,11 +148,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     // Auxiliar methods used in family/get and clinicalAnalysis/get to retrieve the whole referenced documents
     protected Individual getIndividual(Individual individual) {
         Individual retIndividual = individual;
-        if (individual != null && individual.getId() > 0) {
+        if (individual != null && individual.getUid() > 0) {
             // Fetch individual information
             QueryResult<Individual> individualQueryResult = null;
             try {
-                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getId(),
+                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getUid(),
                         QueryOptions.empty());
             } catch (CatalogDBException e) {
                 logger.error(e.getMessage(), e);
@@ -160,8 +161,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 retIndividual = individualQueryResult.first();
 
                 // Fetch samples from individual
-                List<Long> samples = individual.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-                Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), samples);
+                List<Long> samples = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+                Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), samples);
                 try {
                     QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty());
                     retIndividual.setSamples(sampleQueryResult.getResult());
@@ -175,10 +176,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     protected Sample getSample(Sample sample) {
         Sample retSample = sample;
-        if (sample != null && sample.getId() > 0) {
+        if (sample != null && sample.getUid() > 0) {
             QueryResult<Sample> sampleQueryResult = null;
             try {
-                sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sample.getId(), QueryOptions.empty());
+                sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sample.getUid(), QueryOptions.empty());
             } catch (CatalogDBException e) {
                 logger.error(e.getMessage(), e);
             }
@@ -191,10 +192,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     protected Family getFamily(Family family) {
         Family retFamily = family;
-        if (family != null && family.getId() > 0) {
+        if (family != null && family.getUid() > 0) {
             QueryResult<Family> familyQueryResult = null;
             try {
-                familyQueryResult = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(family.getId(), QueryOptions.empty());
+                familyQueryResult = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(family.getUid(), QueryOptions.empty());
             } catch (CatalogDBException e) {
                 logger.error(e.getMessage(), e);
             }

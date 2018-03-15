@@ -44,7 +44,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createFileToStudyTest() throws CatalogException, IOException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         assertTrue(studyId >= 0);
         File file;
         file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", "",
@@ -84,7 +84,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void getFileTest() throws CatalogDBException {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
-        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getId(), null);
+        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getUid(), null);
         System.out.println(fileQueryResult);
         try {
             System.out.println(catalogFileDBAdaptor.get(-1, null));
@@ -110,7 +110,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getAllFilesTest() throws CatalogDBException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         QueryResult<File> allFiles = catalogFileDBAdaptor.getAllInStudy(studyId, null);
         List<File> files = allFiles.getResult();
         List<File> expectedFiles = user3.getProjects().get(0).getStudies().get(0).getFiles();
@@ -118,7 +118,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         for (File expectedFile : expectedFiles) {
             boolean found = false;
             for (File fileResult : allFiles.getResult()) {
-                if (fileResult.getId() == expectedFile.getId())
+                if (fileResult.getUid() == expectedFile.getUid())
                     found = true;
             }
             if (!found) {
@@ -130,7 +130,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     // Test if the lookup operation works fine
     @Test
     public void getFileWithJob() throws CatalogDBException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         QueryOptions queryOptions = new QueryOptions();
 
         // We create a job
@@ -144,12 +144,12 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         QueryResult<File> fileInsert = catalogFileDBAdaptor.insert(file, studyId, queryOptions);
 
         // Get the file
-        QueryResult<File> noJobInfoQueryResult = catalogFileDBAdaptor.get(fileInsert.first().getId(), queryOptions);
+        QueryResult<File> noJobInfoQueryResult = catalogFileDBAdaptor.get(fileInsert.first().getUid(), queryOptions);
         assertNull(noJobInfoQueryResult.first().getJob().getName());
         assertNull(noJobInfoQueryResult.first().getJob().getDescription());
 
         queryOptions.put("lazy", false);
-        QueryResult<File> jobInfoQueryResult = catalogFileDBAdaptor.get(fileInsert.first().getId(), queryOptions);
+        QueryResult<File> jobInfoQueryResult = catalogFileDBAdaptor.get(fileInsert.first().getUid(), queryOptions);
         assertEquals(jobName, jobInfoQueryResult.first().getJob().getName());
         assertEquals(jobDescription, jobInfoQueryResult.first().getJob().getDescription());
     }
@@ -157,7 +157,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void modifyFileTest() throws CatalogDBException, IOException {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
-        long fileId = file.getId();
+        long fileId = file.getUid();
 
         Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20));
 
@@ -182,7 +182,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void renameFileTest() throws CatalogDBException {
         String newName = "newFile.bam";
         String parentPath = "data/";
-        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getUid(), "data/file.vcf");
         System.out.println(catalogFileDBAdaptor.rename(fileId, parentPath + newName, "", null));
 
         File file = catalogFileDBAdaptor.get(fileId, null).first();
@@ -196,7 +196,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
             System.out.println("correct exception: " + e);
         }
 
-        long folderId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/");
+        long folderId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getUid(), "data/");
         String folderName = "folderName";
         catalogFileDBAdaptor.rename(folderId, folderName, "", null);
         assertTrue(catalogFileDBAdaptor.get(fileId, null).first().getPath().equals(folderName + "/" + newName));
@@ -303,37 +303,37 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testAddSamples() throws Exception {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
-        catalogFileDBAdaptor.addSamplesToFile(file.getId(),
-                Arrays.asList(new Sample().setId(5), new Sample().setId(6)));
+        catalogFileDBAdaptor.addSamplesToFile(file.getUid(),
+                Arrays.asList(new Sample().setUid(5), new Sample().setUid(6)));
 
-        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getId(), QueryOptions.empty());
+        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(2, fileQueryResult.first().getSamples().size());
         assertTrue(Arrays.asList(5L, 6L).containsAll(
-                fileQueryResult.first().getSamples().stream().map(Sample::getId).collect(Collectors.toList())));
+                fileQueryResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
 
         // Test we avoid duplicities
-        catalogFileDBAdaptor.addSamplesToFile(file.getId(),
-                Arrays.asList(new Sample().setId(6), new Sample().setId(7)));
-        fileQueryResult = catalogFileDBAdaptor.get(file.getId(), QueryOptions.empty());
+        catalogFileDBAdaptor.addSamplesToFile(file.getUid(),
+                Arrays.asList(new Sample().setUid(6), new Sample().setUid(7)));
+        fileQueryResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(3, fileQueryResult.first().getSamples().size());
         assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(
-                fileQueryResult.first().getSamples().stream().map(Sample::getId).collect(Collectors.toList())));
+                fileQueryResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
     }
 
     @Test
     public void testRemoveSamples() throws Exception {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
-        catalogFileDBAdaptor.addSamplesToFile(file.getId(), Arrays.asList(new Sample().setId(5), new Sample().setId(6), new Sample().setId(7)));
+        catalogFileDBAdaptor.addSamplesToFile(file.getUid(), Arrays.asList(new Sample().setUid(5), new Sample().setUid(6), new Sample().setUid(7)));
 
-        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getId(), QueryOptions.empty());
+        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(3, fileQueryResult.first().getSamples().size());
-        assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(fileQueryResult.first().getSamples().stream().map(Sample::getId).collect
+        assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(fileQueryResult.first().getSamples().stream().map(Sample::getUid).collect
                 (Collectors.toList())));
 
-        catalogFileDBAdaptor.extractSampleFromFiles(new Query(FileDBAdaptor.QueryParams.ID.key(), file.getId()), Arrays.asList(5L, 7L));
-        fileQueryResult = catalogFileDBAdaptor.get(file.getId(), QueryOptions.empty());
+        catalogFileDBAdaptor.extractSampleFromFiles(new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), Arrays.asList(5L, 7L));
+        fileQueryResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(1, fileQueryResult.first().getSamples().size());
-        assertTrue(fileQueryResult.first().getSamples().get(0).getId() == 6);
+        assertTrue(fileQueryResult.first().getSamples().get(0).getUid() == 6);
     }
 
     @Test

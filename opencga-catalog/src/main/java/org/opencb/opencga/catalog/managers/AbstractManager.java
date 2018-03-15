@@ -175,7 +175,7 @@ public abstract class AbstractManager {
             QueryResult<Project> allProjects = projectDBAdaptor.get(ownerId,
                     new QueryOptions(QueryOptions.INCLUDE, "projects.id"));
             if (allProjects.getNumResults() > 0) {
-                projectIds.addAll(allProjects.getResult().stream().map(Project::getId).collect(Collectors.toList()));
+                projectIds.addAll(allProjects.getResult().stream().map(Project::getUid).collect(Collectors.toList()));
             } else {
                 throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
             }
@@ -189,7 +189,7 @@ public abstract class AbstractManager {
         QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, qOptions);
         List<Long> studyIds = new ArrayList<>();
         if (studyQueryResult.getNumResults() > 0) {
-            studyIds.addAll(studyQueryResult.getResult().stream().map(Study::getId).collect(Collectors.toList()));
+            studyIds.addAll(studyQueryResult.getResult().stream().map(Study::getUid).collect(Collectors.toList()));
         } else {
             throw new CatalogException("Error: Could not retrieve any study id for the user " + ownerId);
         }

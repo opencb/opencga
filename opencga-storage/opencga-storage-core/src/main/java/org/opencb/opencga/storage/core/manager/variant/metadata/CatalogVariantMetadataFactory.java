@@ -29,20 +29,20 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
 
     private static final QueryOptions SAMPLE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(
-                    SampleDBAdaptor.QueryParams.ID.key(),
+                    SampleDBAdaptor.QueryParams.UID.key(),
                     SampleDBAdaptor.QueryParams.NAME.key(),
                     SampleDBAdaptor.QueryParams.DESCRIPTION.key(),
                     SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()
             ));
     private static final QueryOptions INDIVIDUAL_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(
-                    IndividualDBAdaptor.QueryParams.ID.key(),
+                    IndividualDBAdaptor.QueryParams.UID.key(),
                     IndividualDBAdaptor.QueryParams.NAME.key(),
                     IndividualDBAdaptor.QueryParams.SEX.key(),
                     IndividualDBAdaptor.QueryParams.FAMILY.key(),
                     IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
-                    IndividualDBAdaptor.QueryParams.MOTHER_ID.key(),
-                    IndividualDBAdaptor.QueryParams.FATHER_ID.key()
+                    IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
+                    IndividualDBAdaptor.QueryParams.FATHER_UID.key()
             ));
     public static final int CATALOG_QUERY_BATCH_SIZE = 1000;
     public static final String BASIC_METADATA = "basic";

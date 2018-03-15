@@ -144,22 +144,22 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         externalSessionId = catalogManager.getUserManager().login(externalUser, password);
 
         p1 = catalogManager.getProjectManager().create("p1", "p1", null, null, "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), ownerSessionId).first().getId();
+                null, null, "GRCh38", new QueryOptions(), ownerSessionId).first().getUid();
         s1 = catalogManager.getStudyManager().create(String.valueOf(p1), "s1", "s1", Study.Type.CASE_CONTROL, null, null, null, null,
-                null, null, null, null, null, null, ownerSessionId).first().getId();
+                null, null, null, null, null, null, ownerSessionId).first().getUid();
         data_d1 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/").toString(), null, true, null,
-                QueryOptions.empty(), ownerSessionId).first().getId();
+                QueryOptions.empty(), ownerSessionId).first().getUid();
         data_d1_d2 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/").toString(), null, false,
-                null, QueryOptions.empty(), ownerSessionId).first().getId();
+                null, QueryOptions.empty(), ownerSessionId).first().getUid();
         data_d1_d2_d3 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/").toString(), null,
-        false, null, QueryOptions.empty(), ownerSessionId).first().getId();
+        false, null, QueryOptions.empty(), ownerSessionId).first().getUid();
         data_d1_d2_d3_d4 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/d4/").toString(),
-                null, false, null, QueryOptions.empty(), ownerSessionId).first().getId();
+                null, false, null, QueryOptions.empty(), ownerSessionId).first().getUid();
         QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(s1), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, false, null, null, ownerSessionId);
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(("file " +
                 "content").getBytes()), queryResult.first(), ownerSessionId, false, false, true);
-        data_d1_d2_d3_d4_txt = catalogManager.getFileManager().get(queryResult.first().getId(), null, ownerSessionId).first().getId();
-        data = catalogManager.getFileManager().get(s1, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), null, ownerSessionId).first().getId();
+        data_d1_d2_d3_d4_txt = catalogManager.getFileManager().get(queryResult.first().getUid(), null, ownerSessionId).first().getUid();
+        data = catalogManager.getFileManager().get(s1, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), null, ownerSessionId).first().getUid();
 
         // Add studyAdminUser1 and studyAdminUser2 to admin group and admin role.
         catalogManager.getStudyManager().updateGroup(Long.toString(s1), groupAdmin, new GroupParams(studyAdminUser1 + "," +
@@ -198,19 +198,19 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 ownerSessionId);
         ind1 = catalogManager.getIndividualManager().create(s1, "ind1", "", (long) 0, (long) 0, Individual.Sex.UNKNOWN, "", "", "", "",
                 "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,
-                ownerSessionId).first().getId();
+                ownerSessionId).first().getUid();
         ind2 = catalogManager.getIndividualManager().create(s1, "ind2", "", (long) 0, (long) 0, Individual.Sex.UNKNOWN, "", "", "", "",
-                "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, ownerSessionId).first().getId();
-        catalogManager.getSampleManager().update(smp1.getId(), new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), ind1),
+                "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, ownerSessionId).first().getUid();
+        catalogManager.getSampleManager().update(smp1.getUid(), new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), ind1),
                 QueryOptions.empty(), ownerSessionId);
-        catalogManager.getSampleManager().update(smp2.getId(), new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), ind2),
+        catalogManager.getSampleManager().update(smp2.getUid(), new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), ind2),
                 QueryOptions.empty(), ownerSessionId);
 
-        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp1.getId())), externalUser, allSamplePermissions, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp3.getId())), externalUser, noSamplePermissions, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp2.getId())), "*", noSamplePermissions, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp5.getId())), externalUser, noSamplePermissions, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp6.getId())), "@members", allSamplePermissions, ownerSessionId);
+        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp1.getUid())), externalUser, allSamplePermissions, ownerSessionId);
+        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp3.getUid())), externalUser, noSamplePermissions, ownerSessionId);
+        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp2.getUid())), "*", noSamplePermissions, ownerSessionId);
+        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp5.getUid())), externalUser, noSamplePermissions, ownerSessionId);
+        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp6.getUid())), "@members", allSamplePermissions, ownerSessionId);
     }
 
     @After
@@ -674,47 +674,47 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readSampleOwnerUser() throws CatalogException {
-        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp1.getId(), null, ownerSessionId);
+        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp1.getUid(), null, ownerSessionId);
         assertEquals(1, sample.getNumResults());
-        sample = catalogManager.getSampleManager().get(smp2.getId(), null, ownerSessionId);
+        sample = catalogManager.getSampleManager().get(smp2.getUid(), null, ownerSessionId);
         assertEquals(1, sample.getNumResults());
-        sample = catalogManager.getSampleManager().get(smp3.getId(), null, ownerSessionId);
+        sample = catalogManager.getSampleManager().get(smp3.getUid(), null, ownerSessionId);
         assertEquals(1, sample.getNumResults());
 
         // Owner always have access even if he has been removed all the permissions
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, null);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(s1)), ownerUser, aclParams, ownerSessionId).get(0);
-        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp1.getId())), ownerUser, noSamplePermissions, ownerSessionId);
+        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp1.getUid())), ownerUser, noSamplePermissions, ownerSessionId);
 
-        sample = catalogManager.getSampleManager().get(smp1.getId(), null, ownerSessionId);
+        sample = catalogManager.getSampleManager().get(smp1.getUid(), null, ownerSessionId);
         assertEquals(1, sample.getNumResults());
     }
 
     @Test
     public void readSampleExplicitShared() throws CatalogException {
-        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp1.getId(), null, externalSessionId);
+        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp1.getUid(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
     }
 
     @Test
     public void readSampleExplicitUnshared() throws CatalogException {
-        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp1.getId(), null, externalSessionId);
+        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp1.getUid(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
-        catalogManager.getAuthorizationManager().removeAcls(Arrays.asList(smp1.getId()), Arrays.asList(externalUser), null, Entity.SAMPLE);
+        catalogManager.getAuthorizationManager().removeAcls(Arrays.asList(smp1.getUid()), Arrays.asList(externalUser), null, Entity.SAMPLE);
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getSampleManager().get(smp1.getId(), null, externalSessionId);
+        catalogManager.getSampleManager().get(smp1.getUid(), null, externalSessionId);
     }
 
     @Test
     public void readSampleNoShared() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getSampleManager().get(smp2.getId(), null, externalSessionId);
+        catalogManager.getSampleManager().get(smp2.getUid(), null, externalSessionId);
     }
 
     @Test
     public void readSampleExplicitForbidden() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getSampleManager().get(smp3.getId(), null, externalSessionId);
+        catalogManager.getSampleManager().get(smp3.getUid(), null, externalSessionId);
     }
 
     @Test
@@ -723,14 +723,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.FULL, null, null);
         String sessionId = catalogManager.getUserManager().login(newUser, password);
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getSampleManager().get(smp2.getId(), null, sessionId);
+        catalogManager.getSampleManager().get(smp2.getUid(), null, sessionId);
     }
 
     @Test
     public void readSampleAdminUser() throws CatalogException {
-        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp1.getId(), null, studyAdmin1SessionId);
+        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp1.getUid(), null, studyAdmin1SessionId);
         assertEquals(1, sample.getNumResults());
-        sample = catalogManager.getSampleManager().get(smp3.getId(), null, studyAdmin1SessionId);
+        sample = catalogManager.getSampleManager().get(smp3.getUid(), null, studyAdmin1SessionId);
         assertEquals(1, sample.getNumResults());
     }
 
@@ -739,7 +739,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getSampleManager().updateAcl(String.valueOf(s1), Arrays.asList(smp2.getName()), externalUser, new Sample.SampleAclParams("",
                 AclParams.Action.SET, null, null, null), ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getSampleManager().get(smp2.getId(), null, externalSessionId);
+        catalogManager.getSampleManager().get(smp2.getUid(), null, externalSessionId);
     }
 
     @Test
@@ -756,15 +756,15 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(s1)), newGroup, aclParams, ownerSessionId).get(0);
 
         // Share the sample with the group
-        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp4.getId())), newGroup, allSamplePermissions, ownerSessionId);
+        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp4.getUid())), newGroup, allSamplePermissions, ownerSessionId);
 
-        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp4.getId(), null, sessionId);
+        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp4.getUid(), null, sessionId);
         assertEquals(1, sample.getNumResults());
     }
 
     @Test
     public void readSampleSharedForOthers() throws CatalogException {
-        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp6.getId(), null, externalSessionId);
+        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp6.getUid(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
     }
 
@@ -778,25 +778,25 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateGroup(Long.toString(s1), "@members", new GroupParams(newUser, GroupParams.Action.ADD),
                 ownerSessionId);
 
-        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp6.getId(), null, sessionId);
+        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp6.getUid(), null, sessionId);
         assertEquals(1, sample.getNumResults());
     }
 
     @Test
     public void adminShareSampleWithOtherUser() throws CatalogException {
-        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp4.getId())), externalUser, allSamplePermissions, studyAdmin1SessionId);
-        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp4.getId(), null, externalSessionId);
+        catalogManager.getSampleManager().updateAcl(Long.toString(s1), Arrays.asList(Long.toString(smp4.getUid())), externalUser, allSamplePermissions, studyAdmin1SessionId);
+        QueryResult<Sample> sample = catalogManager.getSampleManager().get(smp4.getUid(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
     }
 
     @Test
     public void readAllSamplesOwner() throws CatalogException {
         Map<Long, Sample> sampleMap = catalogManager.getSampleManager().get(s1, new Query(), new QueryOptions(), ownerSessionId)
-                .getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
+                .getResult().stream().collect(Collectors.toMap(Sample::getUid, f -> f));
 
-        assertTrue(sampleMap.containsKey(smp1.getId()));
-        assertTrue(sampleMap.containsKey(smp2.getId()));
-        assertTrue(sampleMap.containsKey(smp3.getId()));
+        assertTrue(sampleMap.containsKey(smp1.getUid()));
+        assertTrue(sampleMap.containsKey(smp2.getUid()));
+        assertTrue(sampleMap.containsKey(smp3.getUid()));
     }
 
 //    @Test
@@ -812,11 +812,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readAllSamplesMember() throws CatalogException {
         Map<Long, Sample> sampleMap = catalogManager.getSampleManager().get(s1, new Query(), new QueryOptions(), externalSessionId)
-                .getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
+                .getResult().stream().collect(Collectors.toMap(Sample::getUid, f -> f));
 
-        assertTrue(sampleMap.containsKey(smp1.getId()));
-        assertFalse(sampleMap.containsKey(smp2.getId()));
-        assertFalse(sampleMap.containsKey(smp3.getId()));
+        assertTrue(sampleMap.containsKey(smp1.getUid()));
+        assertFalse(sampleMap.containsKey(smp2.getUid()));
+        assertFalse(sampleMap.containsKey(smp3.getUid()));
     }
 
     @Test
@@ -866,16 +866,16 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         URI tmpJobOutDir = catalogManager.getJobManager().createJobOutDir(studyId, StringUtils.randomString(5), ownerSessionId);
         long job1 = catalogManager.getJobManager().create(studyId, "job1", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello " +
                 "World!\"", tmpJobOutDir, outDirId, Collections.emptyList(), Collections.emptyList(), new HashMap<>(), null, new Job
-                .JobStatus(Job.JobStatus.ERROR), (long) 0, (long) 0, null, ownerSessionId).first().getId();
+                .JobStatus(Job.JobStatus.ERROR), (long) 0, (long) 0, null, ownerSessionId).first().getUid();
         long job2 = catalogManager.getJobManager().create(studyId, "job2", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello " +
-                "World!\"", tmpJobOutDir, outDirId, Collections.singletonList(new File().setId(data_d1_d2)), Collections.emptyList(), new
-                HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), (long) 0, (long) 0, null, ownerSessionId).first().getId();
+                "World!\"", tmpJobOutDir, outDirId, Collections.singletonList(new File().setUid(data_d1_d2)), Collections.emptyList(), new
+                HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), (long) 0, (long) 0, null, ownerSessionId).first().getUid();
         long job3 = catalogManager.getJobManager().create(studyId, "job3", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello " +
-                "World!\"", tmpJobOutDir, outDirId, Collections.singletonList(new File().setId(data_d1_d2_d3)), Collections.emptyList(),
-                new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), (long) 0, (long) 0, null, ownerSessionId).first().getId();
+                "World!\"", tmpJobOutDir, outDirId, Collections.singletonList(new File().setUid(data_d1_d2_d3)), Collections.emptyList(),
+                new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), (long) 0, (long) 0, null, ownerSessionId).first().getUid();
         long job4 = catalogManager.getJobManager().create(studyId, "job4", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello " +
-                "World!\"", tmpJobOutDir, outDirId, Collections.singletonList(new File().setId(data_d1_d2_d3_d4)), Collections.emptyList
-                (), new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), (long) 0, (long) 0, null, ownerSessionId).first().getId();
+                "World!\"", tmpJobOutDir, outDirId, Collections.singletonList(new File().setUid(data_d1_d2_d3_d4)), Collections.emptyList
+                (), new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), (long) 0, (long) 0, null, ownerSessionId).first().getUid();
 
         checkGetAllJobs(studyId, Arrays.asList(job1, job2, job3, job4), ownerSessionId);    //Owner can see everything
         checkGetAllJobs(studyId, Collections.emptyList(), externalSessionId);               //Can't see inside data_d1_d2_d3
@@ -886,7 +886,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         assertEquals(expectedJobs.size(), allJobs.getNumResults());
         allJobs.getResult().forEach(job -> assertTrue(expectedJobs + " does not contain job " + job.getName(), expectedJobs.contains(job
-                .getId())));
+                .getUid())));
     }
 
     /////////// Aux methods

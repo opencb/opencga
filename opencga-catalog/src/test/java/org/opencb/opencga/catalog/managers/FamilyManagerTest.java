@@ -68,7 +68,7 @@ public class FamilyManagerTest extends GenericTest {
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         long projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getUid();
         catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser);
 
     }
@@ -88,10 +88,10 @@ public class FamilyManagerTest extends GenericTest {
         boolean motherIdUpdated = false;
         boolean fatherIdUpdated = false;
         for (Individual relatives : familyQueryResult.first().getMembers()) {
-            if (relatives.getMother().getId() > 0) {
+            if (relatives.getMother().getUid() > 0) {
                 motherIdUpdated = true;
             }
-            if (relatives.getFather().getId() > 0) {
+            if (relatives.getFather().getUid() > 0) {
                 fatherIdUpdated = true;
             }
         }
@@ -109,10 +109,10 @@ public class FamilyManagerTest extends GenericTest {
         motherIdUpdated = false;
         fatherIdUpdated = false;
         for (Individual relatives : familyQueryResult.first().getMembers()) {
-            if (relatives.getMother().getId() > 0) {
+            if (relatives.getMother().getUid() > 0) {
                 motherIdUpdated = true;
             }
-            if (relatives.getFather().getId() > 0) {
+            if (relatives.getFather().getUid() > 0) {
                 fatherIdUpdated = true;
             }
         }

@@ -22,9 +22,9 @@ import java.util.Map;
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysis {
+public class ClinicalAnalysis extends PrivateFields {
 
-    private long id;
+    private String id;
     private String name;
     private String description;
     private Type type;
@@ -57,7 +57,7 @@ public class ClinicalAnalysis {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(long id, String name, String description, Type type, OntologyTerm disease, File germline, File somatic,
+    public ClinicalAnalysis(String id, String name, String description, Type type, OntologyTerm disease, File germline, File somatic,
                             List<Individual> subjects, Family family, List<ClinicalInterpretation> interpretations, String creationDate,
                             Status status, int release, Map<String, Object> attributes) {
         this.id = id;
@@ -97,12 +97,18 @@ public class ClinicalAnalysis {
         return sb.toString();
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
-    public ClinicalAnalysis setId(long id) {
+    public ClinicalAnalysis setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    @Override
+    public ClinicalAnalysis setUid(long uid) {
+        super.setUid(uid);
         return this;
     }
 

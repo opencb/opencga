@@ -102,7 +102,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
 
         checkAnnotation(v -> false);
 
-        QueryOptions config = new QueryOptions(VariantAnnotationManager.LOAD_FILE, files.get(0).getId());
+        QueryOptions config = new QueryOptions(VariantAnnotationManager.LOAD_FILE, files.get(0).getUid());
 
         dbAdaptor = mockVariantDBAdaptor();
         annotate(new Query(), config);
@@ -141,7 +141,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
 
         File file = opencga.createFile(studyId, "custom_annotation/myannot.gff", sessionId);
         QueryOptions options = new QueryOptions()
-                .append(VariantAnnotationManager.LOAD_FILE, file.getId())
+                .append(VariantAnnotationManager.LOAD_FILE, file.getUid())
                 .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot");
         options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId), options, sessionId);
@@ -150,7 +150,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
 
         file = opencga.createFile(studyId, "custom_annotation/myannot.bed", sessionId);
         options = new QueryOptions()
-                .append(VariantAnnotationManager.LOAD_FILE, file.getId())
+                .append(VariantAnnotationManager.LOAD_FILE, file.getUid())
                 .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot2");
         options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId), options, sessionId);

@@ -76,19 +76,19 @@ public class ProjectManagerTest extends GenericTest {
         sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
 
         project1 = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getUid();
         project2 = catalogManager.getProjectManager().create("Project Management Project", "pmp", "life art intelligent system",
                 "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(),
-                sessionIdUser2).first().getId();
+                sessionIdUser2).first().getUid();
         project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getId();
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getUid();
 
         studyId = catalogManager.getStudyManager().create(String.valueOf(project1), "Phase 1", "phase1", Study.Type.TRIO, null, "Done",
-                null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
+                null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
         studyId2 = catalogManager.getStudyManager().create(String.valueOf(project1), "Phase 3", "phase3", Study.Type.CASE_CONTROL, null,
-                "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
+                "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
         studyId3 = catalogManager.getStudyManager().create(String.valueOf(project2), "Study 1", "s1", Study.Type.CONTROL_SET, null, "",
-                null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
+                null, null, null, null, null, null, null, null, sessionIdUser2).first().getUid();
     }
 
     @Test
@@ -109,7 +109,7 @@ public class ProjectManagerTest extends GenericTest {
 
         // Create a new study in project2 with some dummy permissions for user
         long s2 = catalogManager.getStudyManager().create(String.valueOf(project2), "Study 2", "s2", Study.Type.CONTROL_SET, null, "",
-                null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
+                null, null, null, null, null, null, null, null, sessionIdUser2).first().getUid();
         catalogManager.getStudyManager().updateGroup(String.valueOf(s2), "@members", new GroupParams("user", GroupParams.Action.ADD),
                 sessionIdUser2);
 
@@ -128,14 +128,14 @@ public class ProjectManagerTest extends GenericTest {
 
         // Add permissions to user in a study of user3
         long s3 = catalogManager.getStudyManager().create(String.valueOf(project3), "StudyProject3", "s3", Study.Type.CONTROL_SET, null,
-                "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getId();
+                "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getUid();
         catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", new GroupParams("user", GroupParams.Action.ADD),
                 sessionIdUser3);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(2, queryResult.getNumResults());
         for (Project project : queryResult.getResult()) {
-            if (project.getId() == project2) {
+            if (project.getUid() == project2) {
                 assertEquals(2, project.getStudies().size());
             } else {
                 assertEquals(1, project.getStudies().size());
@@ -148,7 +148,7 @@ public class ProjectManagerTest extends GenericTest {
         Project pr = catalogManager.getProjectManager().create("Project about some genomes", "project2", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", null, sessionIdUser).first();
 
-        long myProject = pr.getId();
+        long myProject = pr.getUid();
 
         assertEquals("Homo sapiens", pr.getOrganism().getScientificName());
         assertEquals("", pr.getOrganism().getCommonName());

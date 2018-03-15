@@ -28,7 +28,7 @@ import java.util.Objects;
  */
 public class Cohort extends Annotable {
 
-    private long id;
+    private String id;
     private String name;
     private Study.Type type;
     private String creationDate;
@@ -48,18 +48,18 @@ public class Cohort extends Annotable {
 
     public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
+        this(name, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
                 Collections.emptyMap(), release, attributes);
     }
 
     public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, annotationSetList,
+        this(name, name, type, creationDate, new CohortStatus(), description, samples, null, annotationSetList,
                 Collections.emptyMap(), release, attributes);
     }
 
-    public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description, List<Sample> samples,
-                  Family family, List<AnnotationSet> annotationSets, Map<String, Object> stats, int release,
+    public Cohort(String id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
+                  List<Sample> samples, Family family, List<AnnotationSet> annotationSets, Map<String, Object> stats, int release,
                   Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -183,11 +183,17 @@ public class Cohort extends Annotable {
         return sb.toString();
     }
 
-    public long getId() {
+    @Override
+    public Cohort setUid(long uid) {
+        super.setUid(uid);
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public Cohort setId(long id) {
+    public Cohort setId(String id) {
         this.id = id;
         return this;
     }

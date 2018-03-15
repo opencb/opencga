@@ -61,10 +61,10 @@ public class JobFactoryTest {
 
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
+                null, null, "GRCh38", new QueryOptions(), sessionId).first().getUid();
         studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
                 "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null,
-                null, null, sessionId).first().getId();
+                null, null, sessionId).first().getUid();
         output = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null, false,
                 null, QueryOptions.empty(), sessionId).first();
 
@@ -80,9 +80,9 @@ public class JobFactoryTest {
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
         assertEquals(2, job.getOutput().size());
         for (File fileAux : job.getOutput()) {
-            File file = catalogManager.getFileManager().get(fileAux.getId(), null, sessionId).first();
+            File file = catalogManager.getFileManager().get(fileAux.getUid(), null, sessionId).first();
             if (file.getName().contains("out")) {
-                String contentFile = new BufferedReader(new InputStreamReader(catalogManager.getFileManager().download(fileAux.getId(),
+                String contentFile = new BufferedReader(new InputStreamReader(catalogManager.getFileManager().download(fileAux.getUid(),
                         -1, -1, null, sessionId))).readLine();
                 assertEquals(helloWorld, contentFile);
             }

@@ -558,7 +558,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //            options.put(VariantStorageEngine.Options.DB_NAME.key(), exportVariantsCommandOptions.dbName);
 //        }
 //        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), exportVariantsCommandOptions.fileId);
-//        options.put(VariantStorageEngine.Options.STUDY_ID.key(), exportVariantsCommandOptions.studyId);
+//        options.put(VariantStorageEngine.Options.STUDY_UID.key(), exportVariantsCommandOptions.studyId);
 //        if (exportVariantsCommandOptions.studyConfigurationFile != null && !exportVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
 //            options.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, exportVariantsCommandOptions.studyConfigurationFile);
 //        }

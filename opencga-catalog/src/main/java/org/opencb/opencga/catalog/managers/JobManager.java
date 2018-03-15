@@ -106,10 +106,10 @@ public class JobManager extends ResourceManager<Job> {
             Query query = new Query()
                     .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(JobDBAdaptor.QueryParams.NAME.key(), jobStr);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key());
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.UID.key());
             QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, queryOptions);
             if (jobQueryResult.getNumResults() == 1) {
-                jobId = jobQueryResult.first().getId();
+                jobId = jobQueryResult.first().getUid();
             } else {
                 if (jobQueryResult.getNumResults() == 0) {
                     throw new CatalogException("Job " + jobStr + " not found in study " + studyStr);
@@ -156,11 +156,11 @@ public class JobManager extends ResourceManager<Job> {
                         .append(JobDBAdaptor.QueryParams.NAME.key(), jobList);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.NAME.key()));
+                        JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.NAME.key()));
                 QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, queryOptions);
 
                 if (jobQueryResult.getNumResults() > 0) {
-                    myIds.putAll(jobQueryResult.getResult().stream().collect(Collectors.toMap(Job::getName, Job::getId)));
+                    myIds.putAll(jobQueryResult.getResult().stream().collect(Collectors.toMap(Job::getName, Job::getUid)));
                 }
             }
             if (myIds.size() < jobList.size() && !silent) {
@@ -189,7 +189,7 @@ public class JobManager extends ResourceManager<Job> {
                                    Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
                                    long endTime, QueryOptions options, String sessionId) throws CatalogException {
         Job job = new Job(-1, name, "", toolName, null, "", description, startTime, endTime, executor, "", commandLine, false, status,
-                -1, new File().setId(outDirId), inputFiles, outputFiles, Collections.emptyList(), params, -1, attributes,
+                -1, new File().setUid(outDirId), inputFiles, outputFiles, Collections.emptyList(), params, -1, attributes,
                 resourceManagerAttributes);
         return create(String.valueOf(studyId), job, options, sessionId);
     }
@@ -235,15 +235,15 @@ public class JobManager extends ResourceManager<Job> {
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
         for (File inputFile : job.getInput()) {
-            authorizationManager.checkFilePermission(studyId, inputFile.getId(), userId, FileAclEntry.FilePermissions.VIEW);
+            authorizationManager.checkFilePermission(studyId, inputFile.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
         }
         if (job.getOutDir() != null) {
-            authorizationManager.checkFilePermission(studyId, job.getOutDir().getId(), userId, FileAclEntry.FilePermissions.WRITE);
+            authorizationManager.checkFilePermission(studyId, job.getOutDir().getUid(), userId, FileAclEntry.FilePermissions.WRITE);
             QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
                     "projects.studies.files.id",
                     "projects.studies.files.type",
                     "projects.studies.files.path"));
-            File outDir = fileDBAdaptor.get(job.getOutDir().getId(), fileQueryOptions).first();
+            File outDir = fileDBAdaptor.get(job.getOutDir().getUid(), fileQueryOptions).first();
 
             if (!outDir.getType().equals(File.Type.DIRECTORY)) {
                 throw new CatalogException("Bad outDir type. Required type : " + File.Type.DIRECTORY);
@@ -251,7 +251,7 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, options);
-        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
     }
@@ -278,8 +278,8 @@ public class JobManager extends ResourceManager<Job> {
 
         QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, userId);
 
-        if (jobQueryResult.getNumResults() == 0 && query.containsKey("id")) {
-            List<Long> idList = query.getAsLongList("id");
+        if (jobQueryResult.getNumResults() == 0 && query.containsKey(JobDBAdaptor.QueryParams.UID.key())) {
+            List<Long> idList = query.getAsLongList(JobDBAdaptor.QueryParams.UID.key());
             for (Long myId : idList) {
                 authorizationManager.checkJobPermission(studyId, myId, userId, JobAclEntry.JobPermissions.VIEW);
             }
@@ -292,13 +292,13 @@ public class JobManager extends ResourceManager<Job> {
         if (query.containsKey("inputFiles")) {
             MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getAsStringList("inputFiles"), Long.toString(studyId),
                     sessionId);
-            query.put(JobDBAdaptor.QueryParams.INPUT_ID.key(), inputFiles.getResourceIds());
+            query.put(JobDBAdaptor.QueryParams.INPUT_UID.key(), inputFiles.getResourceIds());
             query.remove("inputFiles");
         }
         if (query.containsKey("outputFiles")) {
             MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getAsStringList("outputFiles"), Long.toString(studyId),
                     sessionId);
-            query.put(JobDBAdaptor.QueryParams.OUTPUT_ID.key(), inputFiles.getResourceIds());
+            query.put(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), inputFiles.getResourceIds());
             query.remove("outputFiles");
         }
     }
@@ -388,7 +388,7 @@ public class JobManager extends ResourceManager<Job> {
 
             try {
                 if (checkPermissions) {
-                    authorizationManager.checkJobPermission(studyId, job.getId(), userId, JobAclEntry.JobPermissions.DELETE);
+                    authorizationManager.checkJobPermission(studyId, job.getUid(), userId, JobAclEntry.JobPermissions.DELETE);
                 }
 
                 // Check if the job can be deleted
@@ -396,7 +396,7 @@ public class JobManager extends ResourceManager<Job> {
 
                 // Delete the job
                 Query updateQuery = new Query()
-                        .append(JobDBAdaptor.QueryParams.ID.key(), job.getId())
+                        .append(JobDBAdaptor.QueryParams.UID.key(), job.getUid())
                         .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                 ObjectMap updateParams = new ObjectMap()
                         .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
@@ -404,13 +404,13 @@ public class JobManager extends ResourceManager<Job> {
                 QueryResult<Long> update = jobDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
-                    auditManager.recordDeletion(AuditRecord.Resource.job, job.getId(), userId, null, updateParams, null, null);
+                    auditManager.recordDeletion(AuditRecord.Resource.job, job.getUid(), userId, null, updateParams, null, null);
                 } else {
-                    failedList.add(new WriteResult.Fail(String.valueOf(job.getId()), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(String.valueOf(job.getUid()), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(String.valueOf(job.getId()), e.getMessage()));
-                logger.debug("Cannot delete job {}: {}", job.getId(), e.getMessage(), e);
+                failedList.add(new WriteResult.Fail(String.valueOf(job.getUid()), e.getMessage()));
+                logger.debug("Cannot delete job {}: {}", job.getUid(), e.getMessage(), e);
             }
         }
 
@@ -494,7 +494,7 @@ public class JobManager extends ResourceManager<Job> {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-        //query.append(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        //query.append(CatalogJobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -537,7 +537,7 @@ public class JobManager extends ResourceManager<Job> {
                 .setAttributes(attributes);
 
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, new QueryOptions());
-        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
     }

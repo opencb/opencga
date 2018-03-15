@@ -45,7 +45,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
 
     default Long exists(long studyId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), studyId)).first();
+        return count(new Query(QueryParams.UID.key(), studyId)).first();
     }
 
     default void checkId(long studyId) throws CatalogDBException {
@@ -212,7 +212,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     Long variableSetExists(long variableSetId);
 
     default Long variableSetExists(String variableSetName, long studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSetName).append(QueryParams.ID.key(), studyId);
+        Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSetName).append(QueryParams.UID.key(), studyId);
         return count(query).first();
     }
 
@@ -277,7 +277,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     QueryResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        ID("id", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", DATE, ""),
@@ -305,11 +306,6 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         GROUP_SYNCED_FROM_AUTH_ORIGIN("groups.syncedFrom.authOrigin", TEXT, ""),
         GROUP_SYNCED_FROM_REMOTE_GROUP("groups.syncedFrom.remoteGroup", TEXT, ""),
 
-        ROLES("roles", TEXT_ARRAY, ""),
-        ROLES_ID("roles.id", TEXT, ""),
-        ROLES_USERS("roles.users", TEXT_ARRAY, ""),
-        ROLES_PERMISSIONS("roles.permissions", TEXT, ""),
-
         PERMISSION_RULES("permissionRules", TEXT_ARRAY, ""),
 
         EXPERIMENT_ID("experiments.id", INTEGER_ARRAY, ""),
@@ -330,7 +326,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 //        FILE_BIOFORMAT("files.bioformat", TEXT_ARRAY, ""),
 //        FILE_DISK_USAGE("files.size", INTEGER_ARRAY, ""),
 
-//        JOB_ID("jobs.id", INTEGER_ARRAY, ""),
+//        JOB_UID("jobs.id", INTEGER_ARRAY, ""),
 //        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
 //        JOB_USER_ID("jobs.userId", TEXT_ARRAY, ""),
 //        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
@@ -338,14 +334,14 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 //        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
 //        JOB_DISK_USAGE("jobs.size", DECIMAL, ""),
 
-//        INDIVIDUAL_ID("individuals.id", INTEGER_ARRAY, ""),
+//        INDIVIDUAL_UID("individuals.id", INTEGER_ARRAY, ""),
 //        INDIVIDUAL_NAME("individuals.name", TEXT_ARRAY, ""),
 //        INDIVIDUAL_FATHER_ID("individuals.fatherId", INTEGER_ARRAY, ""),
 //        INDIVIDUAL_MOTHER_ID("individuals.motherId", INTEGER_ARRAY, ""),
 //        INDIVIDUAL_FAMILY("individuals.family", TEXT_ARRAY, ""),
 //        INDIVIDUAL_RACE("individuals.race", TEXT_ARRAY, ""),
 
-//        SAMPLE_ID("samples.id", INTEGER_ARRAY, ""),
+//        SAMPLE_UID("samples.id", INTEGER_ARRAY, ""),
 //        SAMPLE_NAME("samples.name", TEXT_ARRAY, ""),
 //        SAMPLE_SOURCE("samples.source", TEXT_ARRAY, ""),
 //        SAMPLE_INDIVIDUAL_ID("samples.individualId", INTEGER_ARRAY, ""),

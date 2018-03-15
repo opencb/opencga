@@ -39,7 +39,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     enum QueryParams implements QueryParam {
-        ID("id", DECIMAL, ""),
+        UID("uid", DECIMAL, ""),
+        ID("id", TEXT, ""),
         NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
@@ -51,7 +52,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         RELEASE("release", INTEGER, ""),
 
         SAMPLES("samples", TEXT_ARRAY, ""),
-        SAMPLE_IDS("samples.id", INTEGER, ""),
+        SAMPLE_UIDS("samples.uid", INTEGER, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
 //        VARIABLE_NAME("variableName", TEXT, ""),
@@ -145,7 +146,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
     }
 
     default boolean exists(long cohortId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), cohortId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), cohortId)).first() > 0;
     }
 
     default void checkId(long cohortId) throws CatalogDBException {

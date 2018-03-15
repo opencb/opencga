@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.util.*;
 
@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class Sample extends Annotable {
 
-    private long id;
+    private String id;
     private String name;
     private String source;
     @Deprecated
@@ -48,13 +48,13 @@ public class Sample extends Annotable {
     public Sample() {
     }
 
-    public Sample(long id, String name, String source, Individual individual, String description, int release) {
+    public Sample(String id, String name, String source, Individual individual, String description, int release) {
         this(id, name, source, individual, description, "", false, release, 1, new LinkedList<>(),
                 new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }
 
-    public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic, int release,
-                  int version, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList, Map<String, Object> stats,
+    public Sample(String id, String name, String source, Individual individual, String description, String type, boolean somatic,
+                  int release, int version, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList, Map<String, Object> stats,
                   Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -124,11 +124,17 @@ public class Sample extends Annotable {
                 description, type, somatic, phenotypes, attributes);
     }
 
-    public long getId() {
+    @Override
+    public Sample setUid(long uid) {
+        super.setUid(uid);
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public Sample setId(long id) {
+    public Sample setId(String id) {
         this.id = id;
         return this;
     }

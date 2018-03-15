@@ -40,17 +40,18 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        ID("id", TEXT, ""),
         NAME("name", TEXT, ""),
         FATHER("father", TEXT, ""),
         MOTHER("mother", TEXT, ""),
-        FATHER_ID("father.id", DECIMAL, ""),
-        MOTHER_ID("mother.id", DECIMAL, ""),
+        FATHER_UID("father.uid", DECIMAL, ""),
+        MOTHER_UID("mother.uid", DECIMAL, ""),
         MULTIPLES("multiples", TEXT, ""),
         FAMILY("family", TEXT, ""),
         SEX("sex", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
-        SAMPLE_IDS("samples.id", INTEGER_ARRAY, ""),
+        SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
         ETHNICITY("ethnicity", TEXT, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
@@ -132,8 +133,8 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         SEX(QueryParams.SEX.key()),
         MULTIPLES(QueryParams.MULTIPLES.key()),
         SAMPLES(QueryParams.SAMPLES.key()),
-        FATHER_ID(QueryParams.FATHER_ID.key()),
-        MOTHER_ID(QueryParams.MOTHER_ID.key()),
+        FATHER_ID(QueryParams.FATHER_UID.key()),
+        MOTHER_ID(QueryParams.MOTHER_UID.key()),
         ETHNICITY(QueryParams.ETHNICITY.key()),
         POPULATION_DESCRIPTION(QueryParams.POPULATION_DESCRIPTION.key()),
         POPULATION_NAME(QueryParams.POPULATION_NAME.key()),
@@ -169,7 +170,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     }
 
     default boolean exists(long sampleId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), sampleId)).first() > 0;
     }
 
     default void checkId(long individualId) throws CatalogDBException {

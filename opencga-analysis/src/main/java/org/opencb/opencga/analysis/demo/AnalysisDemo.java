@@ -21,17 +21,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.old.AnalysisExecutionException;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -71,16 +68,16 @@ public class AnalysisDemo {
         FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(), sessionId, false);
 
 
-        long inputFileId = file.getId();
+        long inputFileId = file.getUid();
 
         QueryResult<File> outdirResult = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                 "data/jobs/"), null, sessionId);
         long outDirId;
         if (outdirResult.getResult().isEmpty()) {
             outDirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data/jobs/").toString(), null,
-                    true, null, QueryOptions.empty(), sessionId).first().getId();
+                    true, null, QueryOptions.empty(), sessionId).first().getUid();
         } else {
-            outDirId = outdirResult.first().getId();
+            outDirId = outdirResult.first().getUid();
         }
 
         boolean doTransform = false;

@@ -63,7 +63,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
         // Update study configuration to synchronize
         updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
 
-        return catalogManager.getFileManager().get(studyInfo.getStudyId(), new Query(FileDBAdaptor.QueryParams.ID.key(), files), new
+        return catalogManager.getFileManager().get(studyInfo.getStudyId(), new Query(FileDBAdaptor.QueryParams.UID.key(), files), new
                 QueryOptions(), sessionId)
                 .getResult();
     }

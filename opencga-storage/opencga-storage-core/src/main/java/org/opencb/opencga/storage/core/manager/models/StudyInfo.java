@@ -69,7 +69,7 @@ public class StudyInfo {
     }
 
     public long getStudyId() {
-        return study != null ? study.getId() : -1;
+        return study != null ? study.getUid() : -1;
     }
 
     public Study getStudy() {

@@ -227,7 +227,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
+                    .append(IndividualDBAdaptor.QueryParams.UID.key(), resourceId.getResourceId());
 
             String variableSetId = String.valueOf(catalogManager.getStudyManager()
                     .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
@@ -278,7 +278,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
+                    .append(IndividualDBAdaptor.QueryParams.UID.key(), resourceIds.getResourceIds());
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -633,7 +633,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
+            return new Individual(name, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
         }
@@ -659,7 +659,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     sampleList.add(sample.toSample(studyStr, studyManager, sessionId));
                 }
             }
-            return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
+            return new Individual(name, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
         }

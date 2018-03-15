@@ -32,7 +32,7 @@ public class StudyConverter extends GenericDocumentComplexConverter<Study> {
     @Override
     public Document convertToStorageType(Study object) {
         Document document = super.convertToStorageType(object);
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", document.getInteger("uid").longValue());
         return document;
     }
 }

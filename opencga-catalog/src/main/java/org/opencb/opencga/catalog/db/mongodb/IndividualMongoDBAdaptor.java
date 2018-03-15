@@ -83,7 +83,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public boolean exists(long individualId) {
-        return individualCollection.count(new Document(PRIVATE_ID, individualId)).first() != 0;
+        return individualCollection.count(new Document(PRIVATE_UID, individualId)).first() != 0;
     }
 
     @Override
@@ -111,7 +111,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         long individualId = getNewId();
 
-        individual.setId(individualId);
+        individual.setUid(individualId);
         individual.setVersion(1);
 
         Document individualDocument = individualConverter.convertToStorageType(individual, variableSetList);
@@ -139,7 +139,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 //        long startTime = startQuery();
 //
 //        QueryResult<Long> count = individualCollection.count(
-//                new Document("annotationSets.name", annotationSet.getName()).append(PRIVATE_ID, individualId));
+//                new Document("annotationSets.name", annotationSet.getName()).append(PRIVATE_UID, individualId));
 //
 //        if (overwrite) {
 //            if (count.first() == 0) {
@@ -154,7 +154,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 //        Document document = getMongoDBDocument(annotationSet, "AnnotationSet");
 //
 //        Bson query;
-//        Bson individualQuery = Filters.eq(PRIVATE_ID, individualId);
+//        Bson individualQuery = Filters.eq(PRIVATE_UID, individualId);
 //        if (overwrite) {
 ////            query.put("annotationSets.id", annotationSet.getId());
 //            query = Filters.and(individualQuery, Filters.eq("annotationSets.name", annotationSet.getName()));
@@ -198,7 +198,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 //            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
 //        }
 //
-//        Bson eq = Filters.eq(PRIVATE_ID, individualId);
+//        Bson eq = Filters.eq(PRIVATE_UID, individualId);
 //        Bson pull = Updates.pull("annotationSets", new Document("name", annotationId));
 //        QueryResult<UpdateResult> update = individualCollection.update(eq, pull, null);
 //        if (update.first().getModifiedCount() < 1) {
@@ -210,32 +210,32 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     public void checkInUse(long individualId) throws CatalogDBException {
         long studyId = getStudyId(individualId);
-        QueryResult<Individual> individuals = get(new Query(QueryParams.FATHER_ID.key(), individualId)
+        QueryResult<Individual> individuals = get(new Query(QueryParams.FATHER_UID.key(), individualId)
                 .append(QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         if (individuals.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"fatherId\" of individual : [";
             for (Individual individual : individuals.getResult()) {
-                msg += " { id: " + individual.getId() + ", name: \"" + individual.getName() + "\" },";
+                msg += " { id: " + individual.getUid() + ", name: \"" + individual.getName() + "\" },";
             }
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        individuals = get(new Query(QueryParams.MOTHER_ID.key(), individualId)
+        individuals = get(new Query(QueryParams.MOTHER_UID.key(), individualId)
                 .append(QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         if (individuals.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"motherId\" of individual : [";
             for (Individual individual : individuals.getResult()) {
-                msg += " { id: " + individual.getId() + ", name: \"" + individual.getName() + "\" },";
+                msg += " { id: " + individual.getUid() + ", name: \"" + individual.getName() + "\" },";
             }
             msg += "]";
             throw new CatalogDBException(msg);
         }
         QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(
-                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId), new QueryOptions());
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), individualId), new QueryOptions());
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"individualId\" of sample : [";
             for (Sample sample : samples.getResult()) {
-                msg += " { id: " + sample.getId() + ", name: \"" + sample.getName() + "\" },";
+                msg += " { id: " + sample.getUid() + ", name: \"" + sample.getName() + "\" },";
             }
             msg += "]";
             throw new CatalogDBException(msg);
@@ -246,7 +246,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     @Override
     public long getStudyId(long individualId) throws CatalogDBException {
         QueryResult<Document> result =
-                individualCollection.find(new Document(PRIVATE_ID, individualId), new Document(PRIVATE_STUDY_ID, 1), null);
+                individualCollection.find(new Document(PRIVATE_UID, individualId), new Document(PRIVATE_STUDY_ID, 1), null);
 
         if (!result.getResult().isEmpty()) {
             return (long) result.getResult().get(0).get(PRIVATE_STUDY_ID);
@@ -290,7 +290,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 ? StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS : studyPermissions);
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -353,14 +353,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     public QueryResult<Individual> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, variableSetList, queryOptions);
+        QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
         if (update.getNumTotalResults() != 1 && parameters.size() > 0 && !(parameters.size() <= 3
                 && (parameters.containsKey(QueryParams.ANNOTATION_SETS.key()) || parameters.containsKey(Constants.DELETE_ANNOTATION_SET)
                 || parameters.containsKey(Constants.DELETE_ANNOTATION)))) {
             throw new CatalogDBException("Could not update individual with id " + id);
         }
         Query query = new Query()
-                .append(QueryParams.ID.key(), id)
+                .append(QueryParams.UID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
         return endQuery("Update individual", startTime, get(query, queryOptions));
     }
@@ -379,9 +379,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         Document individualParameters = parseAndValidateUpdateParams(parameters, query);
-        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.ID.key(), -1L), parameters, variableSetList);
+        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList);
         if (individualParameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
+            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
             query.put(Constants.ALL_VERSIONS, true);
             QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
                     new Document("$set", individualParameters), new QueryOptions("multi", true));
@@ -390,7 +390,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
+            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
             if (!individualParameters.isEmpty()) {
                 QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
                         new Document("$set", individualParameters), new QueryOptions("multi", true));
@@ -425,11 +425,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             return;
         }
 
-        List<Long> sampleIds = individual.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        List<Long> sampleIds = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
         Query sampleQuery = new Query()
-                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+                .append(SampleDBAdaptor.QueryParams.UID.key(), sampleIds);
         options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.VERSION.key()
+                SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.VERSION.key()
         ));
         QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sampleQuery, options);
         parameters.put(QueryParams.SAMPLES.key(), sampleQueryResult.getResult());
@@ -466,7 +466,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             Document queryDocument = new Document()
                     .append(PRIVATE_STUDY_ID, individualDocument.getLong(PRIVATE_STUDY_ID))
                     .append(QueryParams.VERSION.key(), individualDocument.getInteger(QueryParams.VERSION.key()))
-                    .append(PRIVATE_ID, individualDocument.getLong(PRIVATE_ID));
+                    .append(PRIVATE_UID, individualDocument.getLong(PRIVATE_UID));
             QueryResult<UpdateResult> updateResult = individualCollection.update(queryDocument, new Document("$set", updateOldVersion),
                     null);
             if (updateResult.first().getModifiedCount() == 0) {
@@ -485,7 +485,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             // Insert the new version document
             individualCollection.insert(individualDocument, QueryOptions.empty());
 
-            applyAnnotationUpdates(query.getLong(QueryParams.ID.key(), -1L), annotationUpdateMap, true);
+            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
         }
 
         return endQuery("Update individual", startTime, Arrays.asList(queryResult.getNumTotalResults()));
@@ -509,7 +509,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             }
 
             // Check that the new individual name is still unique
-            long studyId = getStudyId(individualQueryResult.first().getId());
+            long studyId = getStudyId(individualQueryResult.first().getUid());
 
             tmpQuery = new Query()
                     .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
@@ -532,7 +532,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), Individual.Sex.class);
         filterEnumParams(parameters, individualParameters, acceptedEnums);
 
-        String[] acceptedIntParams = {QueryParams.FATHER_ID.key(), QueryParams.MOTHER_ID.key()};
+        String[] acceptedIntParams = {QueryParams.FATHER_UID.key(), QueryParams.MOTHER_UID.key()};
         filterLongParams(parameters, individualParameters, acceptedIntParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
@@ -547,7 +547,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         //Check individualIds exist
-        String[] individualIdParams = {QueryParams.FATHER_ID.key(), QueryParams.MOTHER_ID.key()};
+        String[] individualIdParams = {QueryParams.FATHER_UID.key(), QueryParams.MOTHER_UID.key()};
         for (String individualIdParam : individualIdParams) {
             if (individualParameters.containsKey(individualIdParam)) {
                 Long individualId1 = (Long) individualParameters.get(individualIdParam);
@@ -564,7 +564,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), id);
+        Query query = new Query(QueryParams.UID.key(), id);
         delete(query);
     }
 
@@ -581,7 +581,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         long startTime = startQuery();
         checkId(id);
         QueryResult<Individual> individual = get(id, new QueryOptions());
-        Bson bson = Filters.eq(QueryParams.ID.key(), id);
+        Bson bson = Filters.eq(QueryParams.UID.key(), id);
         QueryResult<DeleteResult> remove = individualCollection.remove(bson, null);
         return endQuery("Delete individual", startTime, individual);
     }
@@ -591,7 +591,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         long startTime = startQuery();
         checkId(id);
         // Check the file is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+        Query query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
                 + File.FileStatus.DELETED);
         if (count(query).first() == 0) {
             query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
@@ -612,7 +612,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         // Change the status of the project to deleted
         setStatus(id, Status.DELETED);
 
-        query = new Query(QueryParams.ID.key(), id)
+        query = new Query(QueryParams.UID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
 
         return endQuery("Delete individual", startTime, get(query, queryOptions));
@@ -657,12 +657,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 List<Individual> individualListDatabase = get(tmpQuery, new QueryOptions()).getResult();
                 if (individualListDatabase.size() == indFamily.getValue().size()) {
                     individualIdsToDelete.addAll(indFamily.getValue().stream()
-                            .map(Individual::getId).collect(Collectors.toList()));
+                            .map(Individual::getUid).collect(Collectors.toList()));
                 } else {
                     // Remove in order from children to parents
                     List<Individual> indCopyDatabase = new ArrayList<>(individualListDatabase);
                     Set<Long> desiredIdsToDelete = indFamily.getValue().stream()
-                            .map(Individual::getId).collect(Collectors.toSet());
+                            .map(Individual::getUid).collect(Collectors.toSet());
                     boolean changed = true;
                     // While we still have some individuals to remove
                     while (indCopyDatabase.size() > 0 && changed) {
@@ -675,8 +675,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                             parents.add(individual.getMotherId());
 
                             // Add child
-                            if (!parents.contains(individual.getId())) {
-                                children.add(individual.getId());
+                            if (!parents.contains(individual.getUid())) {
+                                children.add(individual.getUid());
                             }
 
                             // Check whether any of the new parents were already inserted in children
@@ -703,7 +703,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                             // Update indCopyDatabase removing the ids that have been marked to be deleted.
                             List<Individual> temporalIndCopyDatabase = new ArrayList<>(indCopyDatabase);
                             for (Individual individual : temporalIndCopyDatabase) {
-                                if (newIdsToDelete.contains(individual.getId())) {
+                                if (newIdsToDelete.contains(individual.getUid())) {
                                     indCopyDatabase.remove(individual);
                                 }
                             }
@@ -712,7 +712,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 }
             }
 
-            updateQuery.append(QueryParams.ID.key(), individualIdsToDelete)
+            updateQuery.append(QueryParams.UID.key(), individualIdsToDelete)
                     .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
         } else {
@@ -747,7 +747,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         checkId(id);
         // Check if the cohort is active
-        Query query = new Query(QueryParams.ID.key(), id)
+        Query query = new Query(QueryParams.UID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The individual {" + id + "} is not deleted");
@@ -755,7 +755,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // Change the status of the cohort to deleted
         setStatus(id, File.FileStatus.READY);
-        query = new Query(QueryParams.ID.key(), id);
+        query = new Query(QueryParams.UID.key(), id);
 
         return endQuery("Restore individual", startTime, get(query, null));
     }
@@ -763,7 +763,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     @Override
     public QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException {
         checkId(individualId);
-        Query query = new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
     }
 
@@ -772,7 +772,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             throws CatalogDBException, CatalogAuthorizationException {
         long studyId = getStudyId(individualId);
         Query query = new Query()
-                .append(QueryParams.ID.key(), individualId)
+                .append(QueryParams.UID.key(), individualId)
                 .append(QueryParams.STUDY_ID.key(), studyId)
                 .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options, userId);
@@ -827,17 +827,17 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         for (Individual individual : queryResult.getResult()) {
-            if (individual == null || individual.getId() <= 0) {
+            if (individual == null || individual.getUid() <= 0) {
                 continue;
             }
             Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual.getId())
+                    .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), individual.getUid())
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
             try {
                 QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options, user);
                 individual.setSamples(sampleQueryResult.getResult());
             } catch (CatalogDBException e) {
-                logger.warn("Could not retrieve samples for individual {}", individual.getId(), e);
+                logger.warn("Could not retrieve samples for individual {}", individual.getUid(), e);
             }
         }
     }
@@ -936,7 +936,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -1041,8 +1041,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             }
             try {
                 switch (queryParam) {
-                    case ID:
-                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                    case UID:
+                        addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_ID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
@@ -1074,8 +1074,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case NAME:
-                    case FATHER_ID:
-                    case MOTHER_ID:
+                    case FATHER_UID:
+                    case MOTHER_UID:
                     case FAMILY:
                     case DATE_OF_BIRTH:
                     case SEX:
@@ -1091,7 +1091,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case AFFECTATION_STATUS:
                     case RELEASE:
                     case VERSION:
-                    case SAMPLE_IDS:
+                    case SAMPLE_UIDS:
 //                    case ANNOTATION_SETS:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
@@ -1151,7 +1151,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     private void checkCanDelete(long individualId) throws CatalogDBException {
         // Check if the individual is father
         Query query = new Query()
-                .append(QueryParams.FATHER_ID.key(), individualId)
+                .append(QueryParams.FATHER_UID.key(), individualId)
                 .append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + File.FileStatus.DELETED);
         Long count = count(query).first();
         if (count > 0) {
@@ -1161,7 +1161,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // Check if the individual is mother
         query = new Query()
-                .append(QueryParams.MOTHER_ID.key(), individualId)
+                .append(QueryParams.MOTHER_UID.key(), individualId)
                 .append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + File.FileStatus.DELETED);
         count = count(query).first();
         if (count > 0) {
@@ -1186,17 +1186,17 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * @throws CatalogDBException when there is any kind of error.
      */
     private void deleteReferences(long individualId) throws CatalogDBException {
-        Query query = new Query(QueryParams.FATHER_ID.key(), individualId);
-        Long count = update(query, new ObjectMap(QueryParams.FATHER_ID.key(), -1), QueryOptions.empty()).first();
+        Query query = new Query(QueryParams.FATHER_UID.key(), individualId);
+        Long count = update(query, new ObjectMap(QueryParams.FATHER_UID.key(), -1), QueryOptions.empty()).first();
         logger.debug("Individual id {} extracted as father from {} individuals", individualId, count);
 
-        query = new Query(QueryParams.MOTHER_ID.key(), individualId);
-        count = update(query, new ObjectMap(QueryParams.MOTHER_ID.key(), -1), QueryOptions.empty()).first();
+        query = new Query(QueryParams.MOTHER_UID.key(), individualId);
+        count = update(query, new ObjectMap(QueryParams.MOTHER_UID.key(), -1), QueryOptions.empty()).first();
         logger.debug("Individual id {} extracted as mother from {} individuals", individualId, count);
 
-        query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+        query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), individualId);
         count = dbAdaptorFactory.getCatalogSampleDBAdaptor()
-                .update(query, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1), QueryOptions.empty()).first();
+                .update(query, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), -1), QueryOptions.empty()).first();
         logger.debug("Individual id {} extracted from {} samples", individualId, count);
     }
 

@@ -72,7 +72,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public boolean exists(long projectId) {
-        QueryResult<Long> count = userCollection.count(new Document("projects.id", projectId));
+        QueryResult<Long> count = userCollection.count(new Document("projects.uid", projectId));
         return count.getResult().get(0) != 0;
     }
 
@@ -106,7 +106,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             throw new CatalogDBException("Project {alias:\"" + project.getAlias() + "\"} already exists for this user");
         }
         long projectId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
-        project.setId(projectId);
+        project.setUid(projectId);
         Bson query = Filters.and(Filters.eq("id", userId), Filters.ne("projects.alias", project.getAlias()));
 
         Document projectDocument = projectConverter.convertToStorageType(project);
@@ -127,20 +127,20 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         String errorMsg = "";
         for (Study study : studies) {
-            String studyErrorMsg = dbAdaptorFactory.getCatalogStudyDBAdaptor().insert(project.getId(), study, userId, options)
+            String studyErrorMsg = dbAdaptorFactory.getCatalogStudyDBAdaptor().insert(project.getUid(), study, userId, options)
                     .getErrorMsg();
             if (studyErrorMsg != null && !studyErrorMsg.isEmpty()) {
                 errorMsg += ", " + study.getAlias() + ":" + studyErrorMsg;
             }
         }
-        List<Project> result = get(project.getId(), null).getResult();
+        List<Project> result = get(project.getUid(), null).getResult();
         return endQuery("Create Project", startTime, result, errorMsg, null);
     }
 
     @Override
     public QueryResult<Integer> incrementCurrentRelease(long projectId) throws CatalogDBException {
         long startTime = startQuery();
-        Query query = new Query(QueryParams.ID.key(), projectId);
+        Query query = new Query(QueryParams.UID.key(), projectId);
         Bson update = new Document("$inc", new Document("projects.$." + QueryParams.CURRENT_RELEASE.key(), 1));
 
         QueryResult<UpdateResult> updateQR = userCollection.update(parseQuery(query), update, null);
@@ -164,7 +164,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         //String oldAlias = project.getAlias();
         project.setAlias(newProjectAlias);
 
-        Bson query = Filters.and(Filters.eq("projects.id", projectId),
+        Bson query = Filters.and(Filters.eq("projects.uid", projectId),
                 Filters.ne("projects.alias", newProjectAlias));
         Bson update = Updates.set("projects.$.alias", newProjectAlias);
 
@@ -187,21 +187,21 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         QueryResult<Document> queryResult = userCollection.find(
                 new BsonDocument("projects.alias", new BsonString(projectAlias))
                         .append("id", new BsonString(userId)),
-                Projections.fields(Projections.include("projects.id"),
+                Projections.fields(Projections.include("projects.uid"),
                         Projections.elemMatch("projects", Filters.eq("alias", projectAlias))),
                 null);
         User user = parseUser(queryResult);
         if (user == null || user.getProjects().isEmpty()) {
             return -1;
         } else {
-            return user.getProjects().get(0).getId();
+            return user.getProjects().get(0).getUid();
         }
     }
 
     @Override
     public String getOwnerId(long projectId) throws CatalogDBException {
-//        DBObject query = new BasicDBObject("projects.id", projectId);
-        Bson query = Filters.eq("projects.id", projectId);
+//        DBObject query = new BasicDBObject("projects.uid", projectId);
+        Bson query = Filters.eq("projects.uid", projectId);
 
 //        DBObject projection = new BasicDBObject("id", "true");
         Bson projection = Projections.include("id");
@@ -281,7 +281,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             Bson updates = new Document("$set", projectParameters);
             // Fixme: Updates
                     /*
-            BasicDBObject query = new BasicDBObject("projects.id", projectId);
+            BasicDBObject query = new BasicDBObject("projects.uid", projectId);
             BasicDBObject updates = new BasicDBObject("$set", projectParameters);
             */
             updateResult = userCollection.update(bsonQuery, updates, null);
@@ -293,7 +293,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public QueryResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         checkId(id);
-        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters, QueryOptions.empty());
+        QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
         if (update.getNumTotalResults() != 1) {
             throw new CatalogDBException("Could not update project with id " + id);
         }
@@ -301,7 +301,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), id);
+        Query query = new Query(QueryParams.UID.key(), id);
 
         Document pull = new Document("$pull", new Document("projects", new Document("id", id)));
         QueryResult<UpdateResult> update = userCollection.update(parseQuery(query), pull, null);
@@ -323,7 +323,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         checkId(id);
         // Check the project is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
+        Query query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
         if (count(query).first() == 0) {
             query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
@@ -345,7 +345,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         // Change the status of the project to deleted
         setStatus(id, Status.DELETED);
 
-        query = new Query(QueryParams.ID.key(), id)
+        query = new Query(QueryParams.UID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
 
         return endQuery("Delete project", startTime, get(query, queryOptions));
@@ -355,9 +355,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         query.append(QueryParams.STATUS_NAME.key(), Status.READY);
-        QueryResult<Project> projectQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
+        QueryResult<Project> projectQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
         for (Project project : projectQueryResult.getResult()) {
-            delete(project.getId(), queryOptions);
+            delete(project.getUid(), queryOptions);
         }
         return endQuery("Delete project", startTime, Collections.singletonList(projectQueryResult.getNumTotalResults()));
     }
@@ -393,7 +393,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         checkId(id);
         // Check if the cohort is active
-        Query query = new Query(QueryParams.ID.key(), id)
+        Query query = new Query(QueryParams.UID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The project {" + id + "} is not deleted");
@@ -401,7 +401,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         // Change the status of the cohort to deleted
         setStatus(id, Status.READY);
-        query = new Query(QueryParams.ID.key(), id);
+        query = new Query(QueryParams.UID.key(), id);
 
         return endQuery("Restore project", startTime, get(query, null));
     }
@@ -412,7 +412,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 //    @Override
 //    public QueryResult<Integer> deleteProject(int projectId) throws CatalogDBException {
 //        long startTime = startQuery();
-//        DBObject query = new BasicDBObject("projects.id", projectId);
+//        DBObject query = new BasicDBObject("projects.uid", projectId);
 //        DBObject pull = new BasicDBObject("$pull",
 //                new BasicDBObject("projects",
 //                        new BasicDBObject("id", projectId)));
@@ -437,7 +437,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public QueryResult<Project> get(long projectId, QueryOptions options) throws CatalogDBException {
         checkId(projectId);
-        Query query = new Query(QueryParams.ID.key(), projectId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), projectId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
 //        // Fixme: Check the code below
 //        List<Project> projects = user.getProjects();
@@ -462,7 +462,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
                 && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
             for (Project project : queryResult.getResult()) {
-                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getId());
+                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getUid());
                 try {
                     QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
                     project.setStudies(studyQueryResult.getResult());
@@ -492,7 +492,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
                 && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
             for (Project project : queryResult.getResult()) {
-                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getId());
+                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getUid());
                 try {
                     QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options, user);
                     project.setStudies(studyQueryResult.getResult());
@@ -547,12 +547,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             throws CatalogDBException, CatalogAuthorizationException {
 
         // Fetch all the studies that the user can see
-        List<Long> projectIds = query.getAsLongList(QueryParams.ID.key());
+        List<Long> projectIds = query.getAsLongList(QueryParams.UID.key());
         Query studyQuery = new Query();
         if (projectIds != null && projectIds.size() > 0) {
             studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
         }
-        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ID.key()));
+        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.UID.key(), query.getString(QueryParams.STUDY_UID.key()));
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), query.getString(QueryParams.STUDY_ALIAS.key()));
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), query.getString(QueryParams.USER_ID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, new QueryOptions(), user);
@@ -587,7 +587,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             // We get all the projects the user can see
             projectIds = queryResult.getResult().stream().map(document -> document.getLong("_projectId")).collect(Collectors.toList());
         }
-        query.put(QueryParams.ID.key(), projectIds);
+        query.put(QueryParams.UID.key(), projectIds);
 
         return getMongoCursor(query, options);
     }
@@ -609,8 +609,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             List<String> includeList = new ArrayList<>();
             List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
             includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
-            if (!includeList.contains(QueryParams.ID.key())) {
-                includeList.add(QueryParams.ID.key());
+            if (!includeList.contains(QueryParams.UID.key())) {
+                includeList.add(QueryParams.UID.key());
             }
 
             // Check if they start with projects.
@@ -685,7 +685,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
             try {
                 switch (queryParam) {
-                    case ID:
+                    case UID:
                         addOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case USER_ID:

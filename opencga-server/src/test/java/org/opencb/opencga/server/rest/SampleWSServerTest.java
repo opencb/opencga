@@ -69,16 +69,16 @@ public class SampleWSServerTest {
         studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
         in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in1", "f1", (long) -1, (long) -1, null, "", "", "",
                 "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,
-                sessionId).first().getId();
+                sessionId).first().getUid();
         s1 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s1", "f1", "", null, false, null, new HashMap<>(), null,
-                null, sessionId).first().getId();
+                null, sessionId).first().getUid();
         s2 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s2", "f1", "", null, false, null, new
                         HashMap<>(), null,
-                null, sessionId).first().getId();
+                null, sessionId).first().getUid();
         s3 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s3", "f1", "", null, false, null, new HashMap<>(), null,
-                null, sessionId).first().getId();
+                null, sessionId).first().getUid();
         s4 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s4", "f1", "", null, false, null, new HashMap<>(), null,
-                null, sessionId).first().getId();
+                null, sessionId).first().getUid();
     }
 
     @After
@@ -113,7 +113,7 @@ public class SampleWSServerTest {
                 .queryParam("individualId", in1).queryParam("sid", sessionId).request().get(String.class);
 
         Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
-        assertEquals(in1, sample.getIndividual().getId());
+        assertEquals(in1, sample.getIndividual().getUid());
     }
 
     @Test
@@ -125,7 +125,7 @@ public class SampleWSServerTest {
                 .request().post(Entity.json(entity), String.class);
 
         Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
-        assertEquals(entity.individualId, sample.getIndividual().getId());
+        assertEquals(entity.individualId, sample.getIndividual().getUid());
         assertEquals(entity.attributes, sample.getAttributes());
     }
 

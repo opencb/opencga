@@ -413,9 +413,9 @@ public class AnnotationConverter {
                 document.put(ARRAY_LEVEL, variableLevel.getArrayLevel());
             }
             document.put(ID, StringUtils.join(variableLevel.getKeys(), "."));
-            document.put(VARIABLE_SET, variableSet.getId());
+            document.put(VARIABLE_SET, variableSet.getUid());
             document.put(ANNOTATION_SET_NAME, annotationSetName);
-            document.put(getAnnotationPrivateId(String.valueOf(variableSet.getId()), annotationSetName, document.getString(ID)),
+            document.put(getAnnotationPrivateId(String.valueOf(variableSet.getUid()), annotationSetName, document.getString(ID)),
                     document.get(VALUE));
             documentList.add(document);
         }

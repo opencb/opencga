@@ -46,7 +46,7 @@ public class FamilyConverter extends AnnotableConverter<Family> {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", document.getInteger("uid").longValue());
         validateDocumentToUpdate(document);
         return document;
     }
@@ -57,17 +57,20 @@ public class FamilyConverter extends AnnotableConverter<Family> {
             // We make sure we don't store duplicates
             Map<Long, Individual> individualMap = new HashMap<>();
             for (Document individual : memberList) {
-                long id = individual.getInteger("id").longValue();
+                long id = individual.getInteger("uid").longValue();
                 int version = individual.getInteger("version");
                 if (id > 0) {
-                    individualMap.put(id, new Individual().setId(id).setVersion(version));
+                    Individual tmpIndividual = new Individual()
+                            .setVersion(version);
+                    tmpIndividual.setUid(id);
+                    individualMap.put(id, tmpIndividual);
                 }
             }
 
             document.put("members",
                     individualMap.entrySet().stream()
                             .map(entry -> new Document()
-                                    .append("id", entry.getValue().getId())
+                                    .append("uid", entry.getValue().getUid())
                                     .append("version", entry.getValue().getVersion()))
                             .collect(Collectors.toList()));
         }

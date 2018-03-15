@@ -82,18 +82,18 @@ public class CatalogStudyConfigurationFactoryTest {
 
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
+                null, null, "GRCh38", new QueryOptions(), sessionId).first().getUid();
         studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
                 "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null,
-                null, null, sessionId).first().getId();
+                null, null, sessionId).first().getUid();
         outputId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null,
-                true, null, QueryOptions.empty(), sessionId).first().getId();
+                true, null, QueryOptions.empty(), sessionId).first().getUid();
 //        files.add(create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 //        files.add(create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
 //        files.add(create("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 //        files.add(create("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
 //        files.add(create("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
-        cohortId = catalogManager.getCohortManager().create(studyId, "ALL", null, null, Collections.emptyList(), null, null, sessionId).first().getId();
+        cohortId = catalogManager.getCohortManager().create(studyId, "ALL", null, null, Collections.emptyList(), null, null, sessionId).first().getUid();
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz", true));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12879_S1.genome.vcf.gz"));
@@ -119,13 +119,13 @@ public class CatalogStudyConfigurationFactoryTest {
         if (indexed) {
             FileIndex fileIndex = new FileIndex("user", "today", new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234,
                     Collections.emptyMap());
-            catalogManager.getFileManager().setFileIndex(file.getId(), fileIndex, sessionId);
-            indexedFiles.add((int) file.getId());
-            List<Long> samples = catalogManager.getCohortManager().getSamples(studyId + "", cohortId + "", null, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
-            samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+            catalogManager.getFileManager().setFileIndex(file.getUid(), fileIndex, sessionId);
+            indexedFiles.add((int) file.getUid());
+            List<Long> samples = catalogManager.getCohortManager().getSamples(studyId + "", cohortId + "", null, sessionId).getResult().stream().map(Sample::getUid).collect(Collectors.toList());
+            samples.addAll(file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
             catalogManager.getCohortManager().update(studyId + "", cohortId + "", new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), null, sessionId);
         }
-        return catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
+        return catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
     }
 
     @Test
@@ -161,7 +161,7 @@ public class CatalogStudyConfigurationFactoryTest {
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
 
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
-        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getId(), "user@p1:s1");
+        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getUid(), "user@p1:s1");
         studyConfigurationToReturn.setIndexedFiles(indexedFiles);
         doReturn(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfigurationToReturn)))
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
@@ -175,7 +175,7 @@ public class CatalogStudyConfigurationFactoryTest {
 
     private void checkStudyConfiguration(Study study, StudyConfiguration studyConfiguration) throws CatalogException {
         assertEquals("user@p1:s1", studyConfiguration.getStudyName());
-        assertEquals(study.getId(), studyConfiguration.getStudyId());
+        assertEquals(study.getUid(), studyConfiguration.getStudyId());
 
         assertTrue(studyConfiguration.getInvalidStats().isEmpty());
 
@@ -183,8 +183,8 @@ public class CatalogStudyConfigurationFactoryTest {
             File file = catalogManager.getFileManager().get((long) entry.getValue(), null, sessionId).first();
 
             assertEquals(file.getName(), entry.getKey());
-            int id = (int) file.getId();
-            assertEquals(file.getSamples().stream().map(Sample::getId).map(Long::intValue).collect(Collectors.toSet()),
+            int id = (int) file.getUid();
+            assertEquals(file.getSamples().stream().map(Sample::getUid).map(Long::intValue).collect(Collectors.toSet()),
                     studyConfiguration.getSamplesInFiles().get((id)));
             if (file.getIndex() == null || file.getIndex().getStatus() == null || file.getIndex().getStatus().getName() == null
                     || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
@@ -206,7 +206,7 @@ public class CatalogStudyConfigurationFactoryTest {
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
 
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
-        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getId(), "user@p1:s1");
+        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getUid(), "user@p1:s1");
         studyConfigurationToReturn.setIndexedFiles(indexedFiles);
         doReturn(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfigurationToReturn)))
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
@@ -217,9 +217,9 @@ public class CatalogStudyConfigurationFactoryTest {
         List<Long> samples = catalogManager.getCohortManager().getSamples(String.valueOf(studyId), String.valueOf(cohortId), null, sessionId)
                 .getResult()
                 .stream()
-                .map(Sample::getId)
+                .map(Sample::getUid)
                 .collect(Collectors.toList());
-        samples.add(files.get(0).getSamples().get(0).getId());
+        samples.add(files.get(0).getSamples().get(0).getUid());
 
         sc.getCohorts().put((int) cohortId, samples.stream().map(Long::intValue).collect(Collectors.toSet()));
 

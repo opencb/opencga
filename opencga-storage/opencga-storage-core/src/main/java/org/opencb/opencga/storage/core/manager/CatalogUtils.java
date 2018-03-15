@@ -107,13 +107,13 @@ public class CatalogUtils {
             if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
                 String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                        Arrays.asList(ProjectDBAdaptor.QueryParams.STUDY_ID.key(), ProjectDBAdaptor.QueryParams.ID.key()));
+                        Arrays.asList(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), ProjectDBAdaptor.QueryParams.UID.key()));
                 return catalogManager.getProjectManager()
                         .get(project, queryOptions, sessionId)
                         .first()
                         .getStudies()
                         .stream()
-                        .map(Study::getId)
+                        .map(Study::getUid)
                         .collect(Collectors.toList());
             } else {
                 String userId = catalogManager.getUserManager().getUserId(sessionId);
@@ -131,7 +131,7 @@ public class CatalogUtils {
         } else {
             long studyId = getAnyStudyId(query, sessionId);
             Long projectId = catalogManager.getStudyManager().getProjectId(studyId);
-            return catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId), options, sessionId)
+            return catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectId), options, sessionId)
                     .first();
         }
     }

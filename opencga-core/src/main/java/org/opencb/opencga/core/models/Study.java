@@ -28,9 +28,9 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Study {
+public class Study extends PrivateFields {
 
-    private long id;
+    private String id;
     private String name;
     private String alias;
     private Type type;
@@ -73,16 +73,16 @@ public class Study {
     }
 
     public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
-        this(-1, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
+        this(name, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
                 new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new HashMap<>(),
                 uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>()
         );
     }
 
-    public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastModified,
-                 long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files, List<Job> jobs,
-                 List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
+    public Study(String id, String name, String alias, Type type, String creationDate, String description, Status status,
+                 String lastModified, long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files,
+                 List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
                  List<DiseasePanel> panels, List<VariableSet> variableSets, Map<Entry, List<PermissionRule>> permissionRules,
                  URI uri, Map<File.Bioformat, DataStore> dataStores, int release, Map<String, Object> stats,
                  Map<String, Object> attributes) {
@@ -180,12 +180,18 @@ public class Study {
         return sb.toString();
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
-    public Study setId(long id) {
+    public Study setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    @Override
+    public Study setUid(long uid) {
+        super.setUid(uid);
         return this;
     }
 

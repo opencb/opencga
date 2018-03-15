@@ -672,14 +672,14 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     /*
      * Before load file, the StudyConfiguration has to be updated with the new sample names.
-     * Will read param SAMPLE_IDS like [<sampleName>:<sampleId>,]*
-     * If SAMPLE_IDS is missing, will auto-generate sampleIds
+     * Will read param SAMPLE_UIDS like [<sampleName>:<sampleId>,]*
+     * If SAMPLE_UIDS is missing, will auto-generate sampleIds
      * Will fail if:
-     * param SAMPLE_IDS is malformed
+     * param SAMPLE_UIDS is malformed
      * any given sampleId is not an integer
      * any given sampleName is not in the input file
      * any given sampleName was already in the StudyConfiguration (so, was already loaded)
-     * some sample was missing in the given SAMPLE_IDS param
+     * some sample was missing in the given SAMPLE_UIDS param
      *
      */
     public static void checkAndUpdateStudyConfiguration(StudyConfiguration studyConfiguration, int fileId, VariantFileMetadata fileMetadata,

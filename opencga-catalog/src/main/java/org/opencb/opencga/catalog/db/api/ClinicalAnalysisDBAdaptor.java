@@ -36,7 +36,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER, ""),
+        UID("uid", INTEGER, ""),
+        ID("id", TEXT, ""),
         NAME("name", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
@@ -51,14 +52,14 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         RELEASE("release", INTEGER, ""),
 
         FAMILY("family", TEXT_ARRAY, ""),
-        FAMILY_ID("family.id", INTEGER, ""),
+        FAMILY_UID("family.uid", INTEGER, ""),
         SOMATIC("somatic", TEXT_ARRAY, ""),
-        SOMATIC_ID("somatic.id", INTEGER, ""),
+        SOMATIC_UID("somatic.uid", INTEGER, ""),
         GERMLINE("germline", TEXT_ARRAY, ""),
-        GERMLINE_ID("germline.id", INTEGER, ""),
+        GERMLINE_UID("germline.uid", INTEGER, ""),
         SUBJECTS("subjects", TEXT_ARRAY, ""),
-        SUBJECT_ID("subjects.id", INTEGER, ""),
-        SAMPLE_ID("subjects.samples.id", INTEGER, ""),
+        SUBJECT_UID("subjects.uid", INTEGER, ""),
+        SAMPLE_UID("subjects.samples.uid", INTEGER, ""),
         INTERPRETATIONS("interpretations", TEXT_ARRAY, ""),
         INTERPRETATIONS_ID("interpretations.id", TEXT_ARRAY, ""),
 
@@ -112,7 +113,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
     }
 
     default boolean exists(long clinicalAnalysisId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), clinicalAnalysisId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), clinicalAnalysisId)).first() > 0;
     }
 
     default void checkId(long clinicalAnalysisId) throws CatalogDBException {

@@ -351,7 +351,7 @@ public class FileUtils {
         ObjectMap objectMap = new ObjectMap("uri", externalUri);
         objectMap.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         updateFileAttributes(file, checksum, externalUri, objectMap, sessionId);
-        return catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
+        return catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
     }
 
     @Deprecated
@@ -371,7 +371,7 @@ public class FileUtils {
         //Only list files if request to create found files
         if (createFoundFiles) {
             //List files in folder
-            long studyId = catalogManager.getFileManager().getStudyId(folder.getId());
+            long studyId = catalogManager.getFileManager().getStudyId(folder.getUid());
             Stream<URI> uris = ioManager.listFilesStream(externalUri);
             Path folderPath = Paths.get(folder.getPath());
             Map<URI, String> uriPathMap = uris
@@ -385,7 +385,7 @@ public class FileUtils {
             if (!relink) {
                 if (existingFiles.size() != 0) {
                     for (File f : existingFiles) {
-                        logger.warn("File already existing: { id:{}, path:\"{}\"}", f.getId(), f.getPath());
+                        logger.warn("File already existing: { id:{}, path:\"{}\"}", f.getUid(), f.getPath());
                     }
                     throw new CatalogException("Unable to link folder " + folder.getPath() + " to uri " + externalUri + ". Existing files"
                             + " on folder");
@@ -394,7 +394,7 @@ public class FileUtils {
             Map<String, File> pathFileMap = existingFiles.stream().collect(Collectors.toMap(File::getPath, f -> f));
 
             //Set URI to folder. This will mark the directory as "external"
-            catalogManager.getFileManager().update(folder.getId(), new ObjectMap("uri", externalUri), new QueryOptions(), sessionId);
+            catalogManager.getFileManager().update(folder.getUid(), new ObjectMap("uri", externalUri), new QueryOptions(), sessionId);
 
             //Create and link files.
             for (Map.Entry<URI, String> entry : uriPathMap.entrySet()) {
@@ -415,13 +415,13 @@ public class FileUtils {
             }
         } else {
             //Set URI to folder. This will mark the directory as "external"
-            catalogManager.getFileManager().update(folder.getId(), new ObjectMap("uri", externalUri), new QueryOptions(), sessionId);
+            catalogManager.getFileManager().update(folder.getUid(), new ObjectMap("uri", externalUri), new QueryOptions(), sessionId);
         }
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         updateFileAttributes(folder, null, externalUri, objectMap, sessionId);
-        return catalogManager.getFileManager().get(folder.getId(), null, sessionId).first();
+        return catalogManager.getFileManager().get(folder.getUid(), null, sessionId).first();
     }
 
     @Deprecated
@@ -436,7 +436,7 @@ public class FileUtils {
         if (!file.getStatus().getName().equals(File.FileStatus.TRASHED)) {
             throw new CatalogIOException("Only deleted files can be physically deleted");
         }
-        long studyId = catalogManager.getFileManager().getStudyId(file.getId());
+        long studyId = catalogManager.getFileManager().getStudyId(file.getUid());
         if (file.getType().equals(File.Type.DIRECTORY)) {
             Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "..*")
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.DELETED);
@@ -470,7 +470,7 @@ public class FileUtils {
             }
             ioManager.deleteFile(fileUri);
         }
-        catalogManager.getFileManager().setStatus(Long.toString(file.getId()), File.FileStatus.TRASHED, null, sessionId);
+        catalogManager.getFileManager().setStatus(Long.toString(file.getUid()), File.FileStatus.TRASHED, null, sessionId);
     }
 
     /**
@@ -493,39 +493,39 @@ public class FileUtils {
             case File.FileStatus.MISSING: {
                 URI fileUri = catalogManager.getFileManager().getUri(file);
                 if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
-                    logger.warn("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
+                    logger.warn("File { id:" + file.getUid() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
                     if (!file.getStatus().getName().equals(File.FileStatus.MISSING)) {
                         logger.info("Set status to " + File.FileStatus.MISSING);
-                        catalogManager.getFileManager().setStatus(Long.toString(file.getId()), File.FileStatus.MISSING, null, sessionId);
-                        modifiedFile = catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
+                        catalogManager.getFileManager().setStatus(Long.toString(file.getUid()), File.FileStatus.MISSING, null, sessionId);
+                        modifiedFile = catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
                     }
                 } else if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
-                    logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
+                    logger.info("File { id:" + file.getUid() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
                     logger.info("Set status to " + File.FileStatus.READY);
                     ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
                     if (params.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()) != null) {
                         ObjectMap attributes = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
                                 params.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
-                        catalogManager.getFileManager().update(file.getId(), attributes, new QueryOptions(), sessionId);
+                        catalogManager.getFileManager().update(file.getUid(), attributes, new QueryOptions(), sessionId);
                     }
                     if (params.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                         catalogManager.getFileManager()
-                                .setDiskUsage(file.getId(), params.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
+                                .setDiskUsage(file.getUid(), params.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
                     }
                     if (params.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
                         catalogManager.getFileManager()
-                                .setModificationDate(file.getId(), params.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                                .setModificationDate(file.getUid(), params.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
                                         sessionId);
                     }
                     if (params.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
                         catalogManager.getFileManager()
-                                .setUri(file.getId(), params.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
+                                .setUri(file.getUid(), params.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
                         params.remove(FileDBAdaptor.QueryParams.URI.key());
                     }
                     // Update status
                     catalogManager.getFileManager()
-                            .setStatus(Long.toString(file.getId()), File.FileStatus.READY, null, sessionId);
-                    modifiedFile = catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
+                            .setStatus(Long.toString(file.getUid()), File.FileStatus.READY, null, sessionId);
+                    modifiedFile = catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
                 }
                 break;
             }
@@ -612,25 +612,25 @@ public class FileUtils {
                 if (parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()) != null) {
                     ObjectMap attributes = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
                             parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
-                    catalogManager.getFileManager().update(file.getId(), attributes, new QueryOptions(), sessionId);
+                    catalogManager.getFileManager().update(file.getUid(), attributes, new QueryOptions(), sessionId);
                 }
                 if (parameters.get(FileDBAdaptor.QueryParams.STATUS_NAME.key()) != null) {
                     catalogManager.getFileManager()
-                            .setStatus(Long.toString(file.getId()), parameters.getString(FileDBAdaptor.QueryParams.STATUS_NAME.key()), null,
-                                    sessionId);
+                            .setStatus(Long.toString(file.getUid()), parameters.getString(FileDBAdaptor.QueryParams.STATUS_NAME.key()),
+                                    null, sessionId);
                 }
                 if (parameters.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                     catalogManager.getFileManager()
-                            .setDiskUsage(file.getId(), parameters.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
+                            .setDiskUsage(file.getUid(), parameters.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
                 }
                 if (parameters.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
                     catalogManager.getFileManager()
-                            .setModificationDate(file.getId(), parameters.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                            .setModificationDate(file.getUid(), parameters.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
                                     sessionId);
                 }
                 if (parameters.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
                     catalogManager.getFileManager()
-                            .setUri(file.getId(), parameters.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
+                            .setUri(file.getUid(), parameters.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
                 }
             }
         } catch (CatalogException e) {
@@ -690,7 +690,7 @@ public class FileUtils {
     private void checkTarget(File file, URI targetUri, CatalogIOManager targetIOManager, boolean overwrite) throws CatalogIOException {
         if (!overwrite && targetIOManager.exists(targetUri)) {
             throw new CatalogIOException("There is a file in the target!"
-                    + "file:{id:" + file.getId() + ", targetUri: '" + targetUri + "' } "
+                    + "file:{id:" + file.getUid() + ", targetUri: '" + targetUri + "' } "
                     + "Needs 'overwrite = true' for continue.");
         }
     }
@@ -704,7 +704,7 @@ public class FileUtils {
     private void checkStatus(File file) throws CatalogIOException {
         if (!file.getStatus().getName().equals(File.FileStatus.STAGE)) {
             throw new CatalogIOException("File status is already uploaded and ready! "
-                    + "file:{ path: '" + file.getPath() + "', id:" + file.getId() + ", status: '" + file.getStatus().getName() + "' } "
+                    + "file:{ path: '" + file.getPath() + "', id:" + file.getUid() + ", status: '" + file.getStatus().getName() + "' } "
                     + "Needs 'ignoreStatus = true' for continue.");
         }
     }

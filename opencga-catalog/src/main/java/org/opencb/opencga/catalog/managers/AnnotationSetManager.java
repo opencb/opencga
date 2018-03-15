@@ -113,7 +113,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             return new QueryResult<>("Create annotation set", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
                     Collections.emptyList());
         } else {
-            Query query = new Query("id", resourceId.getResourceId());
+            Query query = new Query("uid", resourceId.getResourceId());
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
 
             QueryResult<Annotable> queryResult = (QueryResult<Annotable>) get(String.valueOf(resourceId.getStudyId()), query, options,
@@ -158,7 +158,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             return new QueryResult<>("Update annotation set", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
                     Collections.emptyList());
         } else {
-            Query query = new Query("id", resourceId.getResourceId());
+            Query query = new Query("uid", resourceId.getResourceId());
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
 
             QueryResult<Annotable> queryResult = (QueryResult<Annotable>) get(String.valueOf(resourceId.getStudyId()), query, options,
@@ -310,7 +310,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             if (variableSetMap == null) {
                 variableSetMap = getVariableSetMap(studyId);
                 for (VariableSet variableSet : variableSetMap.values()) {
-                    variableTypeMap.put(String.valueOf(variableSet.getId()), getVariableMap(variableSet));
+                    variableTypeMap.put(String.valueOf(variableSet.getUid()), getVariableMap(variableSet));
                 }
             }
 
@@ -413,7 +413,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
         List<VariableSet> variableSets = studyQueryResult.first().getVariableSets();
         if (variableSets != null) {
             for (VariableSet variableSet : variableSets) {
-                variableSetMap.put(String.valueOf(variableSet.getId()), variableSet);
+                variableSetMap.put(String.valueOf(variableSet.getUid()), variableSet);
             }
         }
 
@@ -522,7 +522,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
 
         Map<Long, VariableSet> variableSetMap = new HashMap<>();
         for (VariableSet variableSet : variableSetList) {
-            variableSetMap.put(variableSet.getId(), variableSet);
+            variableSetMap.put(variableSet.getUid(), variableSet);
         }
 
         List<AnnotationSet> consideredAnnotationSetsList = new ArrayList<>(annotationSetList.size());
@@ -581,7 +581,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
                     // Create a map variableSetId - VariableSet
                     Map<Long, VariableSet> variableSetMap = new HashMap<>();
                     for (VariableSet variableSet : variableSetList) {
-                        variableSetMap.put(variableSet.getId(), variableSet);
+                        variableSetMap.put(variableSet.getUid(), variableSet);
                     }
 
                     // Get all the annotation sets from the entry
@@ -714,7 +714,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
             // Create a map variableSetId - VariableSet
             Map<Long, VariableSet> variableSetMap = new HashMap<>();
             for (VariableSet variableSet : variableSetList) {
-                variableSetMap.put(variableSet.getId(), variableSet);
+                variableSetMap.put(variableSet.getUid(), variableSet);
             }
 
             // Get all the annotation sets from the entry

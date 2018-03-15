@@ -82,7 +82,7 @@ public class JobWSServerTest {
         String description = "A job";
         String commandLine = "samtools --do-magic";
         JobWSServer.InputJob.Status status = JobWSServer.InputJob.Status.READY;
-        long outDirId = folder.getId();
+        long outDirId = folder.getUid();
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
@@ -97,7 +97,7 @@ public class JobWSServerTest {
         assertEquals(description, job.getDescription());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().getName());
-        assertEquals(outDirId, job.getOutDir().getId());
+        assertEquals(outDirId, job.getOutDir().getUid());
     }
 
     @Test
@@ -109,7 +109,7 @@ public class JobWSServerTest {
         String description = "A job";
         String commandLine = "samtools --do-magic";
         JobWSServer.InputJob.Status status = JobWSServer.InputJob.Status.ERROR;
-        long outDirId = folder.getId();
+        long outDirId = folder.getUid();
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
@@ -126,7 +126,7 @@ public class JobWSServerTest {
         assertEquals(20, job.getEndTime());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().getName());
-        assertEquals(outDirId, job.getOutDir().getId());
+        assertEquals(outDirId, job.getOutDir().getUid());
     }
 
     @Test
@@ -137,7 +137,7 @@ public class JobWSServerTest {
         String description = "A job";
         String commandLine = "samtools --do-magic";
         JobWSServer.InputJob.Status status = JobWSServer.InputJob.Status.READY;
-        long outDirId = folder.getId();
+        long outDirId = folder.getUid();
 
         thrown.expect(Exception.class);
         webTarget.path("jobs").path("create")

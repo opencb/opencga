@@ -147,22 +147,22 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectAlias = "p1";
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
+                null, null, "GRCh38", new QueryOptions(), sessionId).first().getUid();
         studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
                 "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)),
                 null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()), null, sessionId)
                 .first()
-                .getId();
+                .getUid();
         studyStr = String.valueOf(studyId);
         outputId = catalogManager.getFileManager().createFolder(studyStr, Paths.get("data", "index").toString(), null,  true, null,
-                QueryOptions.empty(), sessionId).first().getId();
+                QueryOptions.empty(), sessionId).first().getUid();
         outputStr = String.valueOf(outputId);
         outputPath = "data/index/";
         studyId2 = catalogManager.getStudyManager().create(String.valueOf(projectId), "s2", "s2", Study.Type.CASE_CONTROL, null, "Study " +
                 "2", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)),
-                null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()), null, sessionId).first().getId();
+                null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()), null, sessionId).first().getUid();
         outputId2 = catalogManager.getFileManager().createFolder(Long.toString(studyId2), Paths.get("data", "index").toString(), null,
-                true, null, QueryOptions.empty(), sessionId).first().getId();
+                true, null, QueryOptions.empty(), sessionId).first().getUid();
 
         files = Arrays.asList(new File[5]);
     }
@@ -207,7 +207,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 //        File.Bioformat bioformat = BioformatDetector.detect(uri);
 //        file = catalogManager.createFile(studyId, format, bioformat, "data/vcfs/", "", true, -1, sessionId).first();
         catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
-        return catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
+        return catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
     }
 
     protected Cohort getDefaultCohort(long studyId) throws CatalogException {
@@ -231,13 +231,13 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         queryOptions.append(StorageOperation.CATALOG_PATH, path);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
-        long studyId = catalogManager.getFileManager().getStudyId(inputFile.getId());
+        long studyId = catalogManager.getFileManager().getStudyId(inputFile.getUid());
 
         //Default cohort should not be modified
         Cohort defaultCohort = getDefaultCohort(studyId);
         String outdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
-        variantManager.index(null, String.valueOf(inputFile.getId()), outdir, queryOptions, sessionId);
-        inputFile = catalogManager.getFileManager().get(inputFile.getId(), null, sessionId).first();
+        variantManager.index(null, String.valueOf(inputFile.getUid()), outdir, queryOptions, sessionId);
+        inputFile = catalogManager.getFileManager().get(inputFile.getUid(), null, sessionId).first();
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getIndex().getStatus().getName());
         assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
@@ -254,9 +254,9 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                 .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
                 .collect(Collectors.toList());
         assertEquals(1, relatedFiles.size());
-        assertEquals(inputFile.getId(), relatedFiles.get(0).getFileId());
+        assertEquals(inputFile.getUid(), relatedFiles.get(0).getFileId());
 
-        assertEquals(transformedFile.getId(), inputFile.getIndex().getTransformedFile().getId());
+        assertEquals(transformedFile.getUid(), inputFile.getIndex().getTransformedFile().getId());
 
         return transformedFile;
     }
@@ -275,9 +275,9 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
-        Long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getId());
+        Long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getUid());
 
-        List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
+        List<String> fileIds = files.stream().map(File::getUid).map(Object::toString).collect(Collectors.toList());
         String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
         List<StoragePipelineResult> etlResults = variantManager.index(studyId.toString(), fileIds, outdir, queryOptions, sessionId);
 
@@ -286,8 +286,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         for (File file : expectedLoadedFiles) {
-            List<Long> samplesInFile = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-            List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+            List<Long> samplesInFile = file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+            List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
             assertTrue(samplesInCohort.containsAll(samplesInFile));
         }
         if (calculateStats) {
@@ -311,10 +311,10 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
-        Long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getId());
+        Long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getUid());
 
         String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
-        List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
+        List<String> fileIds = files.stream().map(File::getUid).map(Object::toString).collect(Collectors.toList());
 
         List<StoragePipelineResult> etlResults = variantManager.index(studyId.toString(), fileIds, outdir, queryOptions, sessionId);
 
@@ -324,8 +324,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         Cohort defaultCohort = getDefaultCohort(studyId);
         assertNotNull(defaultCohort);
         for (File file : expectedLoadedFiles) {
-            List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-            List<Long> samplesInFiles = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+            List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+            List<Long> samplesInFiles = file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
             assertTrue(samplesInCohort.containsAll(samplesInFiles));
         }
         if (calculateStats) {
@@ -335,7 +335,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         // Check transformed file relations
         for (File inputFile : expectedLoadedFiles) {
-            inputFile = catalogManager.getFileManager().get(inputFile.getId(), null, sessionId).first();
+            inputFile = catalogManager.getFileManager().get(inputFile.getUid(), null, sessionId).first();
             assertNotNull(inputFile.getIndex().getTransformedFile());
             File transformedFile = catalogManager.getFileManager().get(inputFile.getIndex().getTransformedFile().getId(), new QueryOptions(), sessionId).first();
 
@@ -343,7 +343,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                     .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
                     .collect(Collectors.toList());
             assertEquals(1, relatedFiles.size());
-            assertEquals(inputFile.getId(), relatedFiles.get(0).getFileId());
+            assertEquals(inputFile.getUid(), relatedFiles.get(0).getFileId());
         }
 
 
@@ -356,7 +356,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
             ), null, sessionId).first();
             long indexedFileId;
             if (input.getRelatedFiles().isEmpty()) {
-                indexedFileId = input.getId();
+                indexedFileId = input.getUid();
             } else {
                 indexedFileId = input.getRelatedFiles().get(0).getFileId();
             }

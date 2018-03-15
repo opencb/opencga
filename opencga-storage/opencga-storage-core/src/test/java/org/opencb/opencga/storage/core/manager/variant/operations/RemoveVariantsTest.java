@@ -100,15 +100,15 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
     }
 
     private void removeFile(List<File> files, QueryOptions options, long outputId) throws Exception {
-        List<String> fileIds = files.stream().map(File::getId).map(String::valueOf).collect(Collectors.toList());
+        List<String> fileIds = files.stream().map(File::getUid).map(String::valueOf).collect(Collectors.toList());
 
-        long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getId());
+        long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getUid());
 
         List<File> removedFiles = variantManager.removeFile(fileIds, String.valueOf(studyId), sessionId, new QueryOptions());
         assertEquals(files.size(), removedFiles.size());
 
         Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
-        Set<Long> allSampleIds = all.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+        Set<Long> allSampleIds = all.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
 
         assertThat(all.getStatus().getName(), anyOf(is(Cohort.CohortStatus.INVALID), is(Cohort.CohortStatus.NONE)));
         Set<Long> loadedSamples = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key
@@ -116,7 +116,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
                 .getResult()
                 .stream()
                 .flatMap(f -> f.getSamples().stream())
-                .map(Sample::getId)
+                .map(Sample::getUid)
                 .collect(Collectors.toSet());
         assertEquals(loadedSamples, allSampleIds);
 

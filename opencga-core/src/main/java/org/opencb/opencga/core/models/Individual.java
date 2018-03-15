@@ -28,7 +28,7 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Individual extends Annotable {
 
-    private long id;
+    private String id;
     private String name;
 
     private Individual father;
@@ -81,23 +81,23 @@ public class Individual extends Annotable {
     public Individual() {
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
+    public Individual(String id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
                       int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, new Individual(), new Individual(), new Multiples(), fatherId, motherId, family, sex, null, ethnicity, new Species(),
                 population, "", release, 1, TimeUtils.getTime(), new Status(), LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN,
                 Collections.emptyList(), Collections.emptyList(), false, annotationSets, attributes);
     }
 
-    public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
-                      List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList) {
+    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Sex sex,
+                      KaryotypicSex karyotypicSex, String ethnicity, Population population, LifeStatus lifeStatus,
+                      AffectationStatus affectationStatus, String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity,
+                      int release, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList) {
         this(id, name, father, mother, multiples, -1, -1, null, sex, karyotypicSex, ethnicity, null, population, dateOfBirth,
                 release, 1, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, phenotypeList, samples, parentalConsanguinity,
                 annotationSets, Collections.emptyMap());
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
+    public Individual(String id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
                       String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
                       List<OntologyTerm> phenotypeList) {
@@ -107,7 +107,7 @@ public class Individual extends Annotable {
                 phenotypeList, new ArrayList<>(), parentalConsanguinity, annotationSets, Collections.emptyMap());
     }
 
-    public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, long fatherId, long motherId,
+    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, long fatherId, long motherId,
                       String family, Sex sex, KaryotypicSex karyotypicSex, String ethnicity, Species species, Population population,
                       String dateOfBirth, int release, int version, String creationDate, Status status, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, List<OntologyTerm> phenotypes, List<Sample> samples,
@@ -282,11 +282,17 @@ public class Individual extends Annotable {
         return sb.toString();
     }
 
-    public long getId() {
+    @Override
+    public Individual setUid(long uid) {
+        super.setUid(uid);
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public Individual setId(long id) {
+    public Individual setId(String id) {
         this.id = id;
         return this;
     }

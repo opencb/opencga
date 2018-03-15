@@ -275,7 +275,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                    .append(FamilyDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
+                    .append(FamilyDBAdaptor.QueryParams.UID.key(), resourceId.getResourceId());
 
             String variableSetId = String.valueOf(catalogManager.getStudyManager()
                     .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
@@ -326,7 +326,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(FamilyDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
+                    .append(FamilyDBAdaptor.QueryParams.UID.key(), resourceIds.getResourceIds());
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -482,7 +482,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
+            return new Individual(name, name, father != null ? new Individual().setName(father) : null,
                     mother != null ? new Individual().setName(mother) : null, multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);

@@ -221,11 +221,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {
                 if (!query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key()));
                 }
-                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
 
             QueryResult<Sample> queryResult;
@@ -262,11 +262,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             params.putIfNotEmpty(SampleDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
             params.putIfNotEmpty(SampleDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
 
-            if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+            if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {
                 if (!params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), params.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                    params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), params.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key()));
                 }
-                params.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+                params.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
 
             if (params.size() == 0) {
@@ -360,11 +360,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {
                 if (!query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key()));
                 }
-                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
             QueryResult result = sampleManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
@@ -387,7 +387,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
+                    .append(SampleDBAdaptor.QueryParams.UID.key(), resourceId.getResourceId());
 
             String variableSetId = String.valueOf(catalogManager.getStudyManager()
                     .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
@@ -438,7 +438,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(SampleDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
+                    .append(SampleDBAdaptor.QueryParams.UID.key(), resourceIds.getResourceIds());
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -656,7 +656,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
+            return new Sample(name, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
                     description, type, somatic, 1, 1, annotationSets, phenotypes, stats, attributes);
         }
     }

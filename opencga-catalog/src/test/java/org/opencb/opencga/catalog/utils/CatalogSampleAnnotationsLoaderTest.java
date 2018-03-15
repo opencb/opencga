@@ -69,14 +69,14 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         sessionId = catalogManager.getUserManager().login(userId, userId);
         Project project = catalogManager.getProjectManager().create("default", "def", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
-        Study study = catalogManager.getStudyManager().create(String.valueOf(project.getId()), "default", "def", Study.Type.FAMILY, null,
+        Study study = catalogManager.getStudyManager().create(String.valueOf(project.getUid()), "default", "def", Study.Type.FAMILY, null,
                 "", null, null, null, null, null, null, null, null, sessionId).getResult().get(0);
-        studyId = study.getId();
+        studyId = study.getUid();
         pedFile = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PED, File.Bioformat
                 .OTHER_PED, "data/" + pedFileName, null, "", null, 0, -1, null, (long) -1, null, null, true, null, null, sessionId)
                 .getResult().get(0);
         new FileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
-        pedFile = catalogManager.getFileManager().get(pedFile.getId(), null, sessionId).getResult().get(0);
+        pedFile = catalogManager.getFileManager().get(pedFile.getUid(), null, sessionId).getResult().get(0);
     }
 
     @AfterClass
@@ -108,7 +108,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         variables.add(new Variable("NonExistingField", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, null, "",
                 null, null));
 
-        VariableSet variableSet = new VariableSet(5, "", false, false, "", variables, 1, null);
+        VariableSet variableSet = new VariableSet("", "", false, false, "", variables, 1, null);
 
         validate(pedigree, variableSet);
     }
@@ -143,7 +143,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     private void validate(Pedigree pedigree, VariableSet variableSet) throws CatalogException {
         for (Map.Entry<String, Individual> entry : pedigree.getIndividuals().entrySet()) {
             Map<String, Object> annotation = loader.getAnnotation(entry.getValue(), null, variableSet, pedigree.getFields());
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation, "", 1,
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getUid(), annotation, "", 1,
                     null), null);
         }
     }

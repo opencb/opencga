@@ -24,7 +24,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
@@ -139,7 +138,7 @@ public class JobWSServer extends OpenCGAWSServer {
         }
         List<File> fileList = new ArrayList<>(longList.size());
         for (Long myLong : longList) {
-            fileList.add(new File().setId(myLong));
+            fileList.add(new File().setUid(myLong));
         }
         return fileList;
     }

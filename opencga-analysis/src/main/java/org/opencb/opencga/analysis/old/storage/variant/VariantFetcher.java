@@ -112,15 +112,15 @@ public class VariantFetcher implements AutoCloseable {
         File file = catalogManager.getFileManager().get(fileIdNum, null, sessionId).first();
 
         if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
-            throw new Exception("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
+            throw new Exception("File {id:" + file.getUid() + " name:'" + file.getName() + "'} " +
                     " is not an indexed file.");
         }
         if (!file.getBioformat().equals(File.Bioformat.VARIANT)) {
-            throw new Exception("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
+            throw new Exception("File {id:" + file.getUid() + " name:'" + file.getName() + "'} " +
                     " is not a Variant file.");
         }
 
-        long studyId = catalogManager.getFileManager().getStudyId(file.getId());
+        long studyId = catalogManager.getFileManager().getStudyId(file.getUid());
         result = getVariantsPerStudy(studyId, region, histogram, groupBy, interval, fileIdNum, sessionId, queryOptions);
         return result;
     }
@@ -291,7 +291,7 @@ public class VariantFetcher implements AutoCloseable {
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
                     QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get((long) entry.getKey(), new Query
-                            (SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()), new QueryOptions("exclude", Arrays.asList("projects" +
+                            (SampleDBAdaptor.QueryParams.UID.key(), entry.getValue()), new QueryOptions("exclude", Arrays.asList("projects" +
                             ".studies.samples.annotationSets", "projects.studies.samples.attributes")), sessionId);
                     if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserManager().getUserId
@@ -304,17 +304,17 @@ public class VariantFetcher implements AutoCloseable {
         } else {
             logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
             List<Integer> returnedStudies = dbAdaptor.getReturnedStudies(query, queryOptions);
-            List<Study> studies = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.ID.key(), returnedStudies),
+            List<Study> studies = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.UID.key(), returnedStudies),
                     new QueryOptions("include", "projects.studies.id"), sessionId).getResult();
             samplesMap = new HashMap<>();
             List<Long> returnedSamples = new LinkedList<>();
             for (Study study : studies) {
-                QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getId(), new Query(), new
+                QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getUid(), new Query(), new
                         QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples" +
                         ".attributes")), sessionId);
-                samplesQueryResult.getResult().sort((o1, o2) -> Long.compare(o1.getId(), o2.getId()));
-                samplesMap.put(study.getId(), samplesQueryResult.getResult());
-                samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
+                samplesQueryResult.getResult().sort((o1, o2) -> Long.compare(o1.getUid(), o2.getUid()));
+                samplesMap.put(study.getUid(), samplesQueryResult.getResult());
+                samplesQueryResult.getResult().stream().map(Sample::getUid).forEach(returnedSamples::add);
             }
             query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), returnedSamples);
         }

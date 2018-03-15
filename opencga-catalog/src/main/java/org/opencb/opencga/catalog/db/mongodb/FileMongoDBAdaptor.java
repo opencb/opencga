@@ -105,10 +105,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         //new File Id
         long newFileId = getNewId();
-        file.setId(newFileId);
+        file.setUid(newFileId);
         Document fileDocument = fileConverter.convertToStorageType(file);
         fileDocument.append(PRIVATE_STUDY_ID, studyId);
-        fileDocument.append(PRIVATE_ID, newFileId);
+        fileDocument.append(PRIVATE_UID, newFileId);
         if (StringUtils.isNotEmpty(file.getCreationDate())) {
             fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
         } else {
@@ -133,9 +133,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public long getId(long studyId, String path) throws CatalogDBException {
         Query query = new Query(QueryParams.STUDY_ID.key(), studyId).append(QueryParams.PATH.key(), path);
-        QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, "id");
+        QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_UID);
         QueryResult<File> fileQueryResult = get(query, options);
-        return fileQueryResult.getNumTotalResults() == 1 ? fileQueryResult.getResult().get(0).getId() : -1;
+        return fileQueryResult.getNumTotalResults() == 1 ? fileQueryResult.getResult().get(0).getUid() : -1;
     }
 
     @Override
@@ -156,7 +156,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public long getStudyIdByFileId(long fileId) throws CatalogDBException {
         Query query = new Query()
-                .append(QueryParams.ID.key(), fileId)
+                .append(QueryParams.UID.key(), fileId)
                 .append(QueryParams.STATUS_NAME.key(), "!=null");
         QueryResult queryResult = nativeGet(query, null);
 
@@ -170,7 +170,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public QueryResult<File> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
+        Bson query = parseQuery(new Query(QueryParams.UID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
 
         if (myParams.isEmpty()) {
@@ -268,13 +268,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     getMongoDBDocument(parameters.get(QueryParams.INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
         }
 
-        String[] acceptedLongParams = {QueryParams.SIZE.key(), QueryParams.JOB_ID.key()};
+        String[] acceptedLongParams = {QueryParams.SIZE.key(), QueryParams.JOB_UID.key()};
         filterLongParams(parameters, fileParameters, acceptedLongParams);
 
         // Check if the job exists.
-        if (parameters.containsKey(QueryParams.JOB_ID.key()) && parameters.getLong(QueryParams.JOB_ID.key()) > 0) {
-            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().exists(parameters.getLong(QueryParams.JOB_ID.key()))) {
-                throw CatalogDBException.idNotFound("Job", parameters.getLong(QueryParams.JOB_ID.key()));
+        if (parameters.containsKey(QueryParams.JOB_UID.key()) && parameters.getLong(QueryParams.JOB_UID.key()) > 0) {
+            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().exists(parameters.getLong(QueryParams.JOB_UID.key()))) {
+                throw CatalogDBException.idNotFound("Job", parameters.getLong(QueryParams.JOB_UID.key()));
             }
         }
 
@@ -284,8 +284,8 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             List<Sample> sampleList = new ArrayList<>();
             for (Object sample : objectSampleList) {
                 if (sample instanceof Sample) {
-                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(((Sample) sample).getId())) {
-                        throw CatalogDBException.idNotFound("Sample", ((Sample) sample).getId());
+                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(((Sample) sample).getUid())) {
+                        throw CatalogDBException.idNotFound("Sample", ((Sample) sample).getUid());
                     }
                     sampleList.add((Sample) sample);
                 }
@@ -304,7 +304,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     @Override
     public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), id);
+        Query query = new Query(QueryParams.UID.key(), id);
         delete(query);
     }
 
@@ -327,7 +327,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Path path = Paths.get(filePath);
         String fileName = path.getFileName().toString();
 
-        Document fileDoc = (Document) nativeGet(new Query(QueryParams.ID.key(), fileId), null).getResult().get(0);
+        Document fileDoc = (Document) nativeGet(new Query(QueryParams.UID.key(), fileId), null).getResult().get(0);
         File file = fileConverter.convertToDataModelType(fileDoc);
 
         long studyId = (long) fileDoc.get(PRIVATE_STUDY_ID);
@@ -345,11 +345,11 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             for (File subFile : allFilesInFolder.getResult()) {
                 String replacedPath = subFile.getPath().replaceFirst(oldPath, filePath);
                 String replacedUri = subFile.getUri().toString().replaceFirst(oldUri, fileUri);
-                rename(subFile.getId(), replacedPath, replacedUri, null); // first part of the path in the subfiles 3
+                rename(subFile.getUid(), replacedPath, replacedUri, null); // first part of the path in the subfiles 3
             }
         }
 
-        Document query = new Document(PRIVATE_ID, fileId);
+        Document query = new Document(PRIVATE_UID, fileId);
         Document set = new Document("$set", new Document()
                 .append(QueryParams.NAME.key(), fileName)
                 .append(QueryParams.PATH.key(), filePath)
@@ -374,7 +374,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         checkId(id);
         // Check if the cohort is active
-        Query query = new Query(QueryParams.ID.key(), id)
+        Query query = new Query(QueryParams.UID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The file {" + id + "} is not deleted");
@@ -382,7 +382,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         // Change the status of the cohort to deleted
         setStatus(id, File.FileStatus.READY);
-        query = new Query(QueryParams.ID.key(), id);
+        query = new Query(QueryParams.UID.key(), id);
 
         return endQuery("Restore file", startTime, get(query, null));
     }
@@ -402,7 +402,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                 ? StudyAclEntry.StudyPermissions.VIEW_FILES : studyPermissions);
 
            // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -450,7 +450,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public QueryResult<File> get(long fileId, QueryOptions options) throws CatalogDBException {
         checkId(fileId);
-        Query query = new Query(QueryParams.ID.key(), fileId);
+        Query query = new Query(QueryParams.UID.key(), fileId);
         return get(query, options);
     }
 
@@ -558,7 +558,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         // TODO: Add the lookup for experiments
         if (qOptions.get("lazy") != null && !qOptions.getBoolean("lazy")) {
             Bson match = Aggregates.match(bson);
-            Bson lookup = Aggregates.lookup("job", QueryParams.JOB_ID.key(), JobDBAdaptor.QueryParams.ID.key(), "job");
+            Bson lookup = Aggregates.lookup("job", QueryParams.JOB_UID.key(), JobDBAdaptor.QueryParams.UID.key(), "job");
             return fileCollection.nativeQuery().aggregate(Arrays.asList(match, lookup), qOptions).iterator();
         } else {
             return fileCollection.nativeQuery().find(bson, qOptions).iterator();
@@ -566,7 +566,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     private void filterOutDeleted(Query query) {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key()) && !query.containsKey(QueryParams.ID.key())) {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key()) && !query.containsKey(QueryParams.UID.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                     + File.FileStatus.REMOVED + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.DELETING);
         }
@@ -574,7 +574,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -662,8 +662,8 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             }
             try {
                 switch (queryParam) {
-                    case ID:
-                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                    case UID:
+                        addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_ID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
@@ -707,9 +707,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case RELATED_FILES:
                     case RELATED_FILES_RELATION:
                     case SIZE:
-                    case EXPERIMENT_ID:
-                    case SAMPLE_IDS:
-                    case JOB_ID:
+                    case EXPERIMENT_UID:
+                    case SAMPLE_UIDS:
+                    case JOB_UID:
                     case INDEX:
                     case INDEX_USER_ID:
                     case INDEX_CREATION_DATE:
@@ -757,7 +757,8 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException {
         long startTime = startQuery();
         Bson bsonQuery = parseQuery(query, true);
-        Bson update = new Document("$pull", new Document(QueryParams.SAMPLES.key(), new Document("id", new Document("$in", sampleIds))));
+        Bson update = new Document("$pull", new Document(QueryParams.SAMPLES.key(), new Document(PRIVATE_UID,
+                new Document("$in", sampleIds))));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
         return endQuery("Extract samples from files", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
@@ -770,7 +771,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
         List<Document> sampleList = fileConverter.convertSamples(samples);
         Bson update = Updates.addEachToSet(QueryParams.SAMPLES.key(), sampleList);
-        fileCollection.update(Filters.eq(PRIVATE_ID, fileId), update, QueryOptions.empty());
+        fileCollection.update(Filters.eq(PRIVATE_UID, fileId), update, QueryOptions.empty());
     }
 
     @Override

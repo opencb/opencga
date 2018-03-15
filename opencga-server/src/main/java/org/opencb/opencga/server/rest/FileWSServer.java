@@ -300,7 +300,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     try {
                         QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), relativeFilePath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
                         new FileUtils(catalogManager).upload(completedFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
-                        QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getId(), null, sessionId);
+                        QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getUid(), null, sessionId);
                         File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
                                 new QueryOptions(queryOptions), sessionId, false);
                         queryResult.setResult(Collections.singletonList(file));
@@ -389,7 +389,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), destinationPath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
                 new FileUtils(catalogManager).upload(tempFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
 
-                QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getId(), null, sessionId);
+                QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getUid(), null, sessionId);
                 File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
                         new QueryOptions(queryOptions), sessionId, false);
                 queryResult.setResult(Collections.singletonList(file));
@@ -614,8 +614,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 logger.debug("Name attribute empty, it's been removed");
             }
             // TODO: jobId is deprecated. Remember to remove this if after next release
-            if (query.containsKey("jobId") && !query.containsKey(FileDBAdaptor.QueryParams.JOB_ID.key())) {
-                query.put(FileDBAdaptor.QueryParams.JOB_ID.key(), query.get("jobId"));
+            if (query.containsKey("jobId") && !query.containsKey(FileDBAdaptor.QueryParams.JOB_UID.key())) {
+                query.put(FileDBAdaptor.QueryParams.JOB_UID.key(), query.get("jobId"));
                 query.remove("jobId");
             }
 
@@ -918,7 +918,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap map = new ObjectMap(jsonObjectMapper.writeValueAsString(params));
             // TODO: jobId is deprecated. Remember to remove this if after next release
             if (map.get("jobId") != null) {
-                map.put(FileDBAdaptor.QueryParams.JOB_ID.key(), map.get("jobId"));
+                map.put(FileDBAdaptor.QueryParams.JOB_UID.key(), map.get("jobId"));
                 map.remove("jobId");
             }
 
@@ -1028,7 +1028,7 @@ public class FileWSServer extends OpenCGAWSServer {
             File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
 
             new FileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
-            file = catalogManager.getFileManager().get(file.getId(), queryOptions, sessionId).first();
+            file = catalogManager.getFileManager().get(file.getUid(), queryOptions, sessionId).first();
             file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(queryOptions), sessionId,
                     false);
 
@@ -1063,7 +1063,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     files = Collections.singletonList(file);
                 }
             } else {
-                List<File> result = catalogManager.getFileManager().getFilesFromFolder(String.valueOf(file.getId()),
+                List<File> result = catalogManager.getFileManager().getFilesFromFolder(String.valueOf(file.getUid()),
                         String.valueOf(resource.getStudyId()), null, sessionId).getResult();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
@@ -1311,7 +1311,7 @@ public class FileWSServer extends OpenCGAWSServer {
     private void populateOldDeprecatedSampleIdsField(QueryResult<File> queryResult) {
         for (File file : queryResult.getResult()) {
             if (file.getSamples() != null && CollectionUtils.isNotEmpty(file.getSamples())) {
-                List<Long> sampleIds = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+                List<Long> sampleIds = file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
                 file.setSampleIds(sampleIds);
             }
         }

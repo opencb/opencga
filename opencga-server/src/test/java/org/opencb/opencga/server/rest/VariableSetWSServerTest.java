@@ -74,7 +74,7 @@ public class VariableSetWSServerTest {
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
         studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
         variableSetId = OpenCGAWSServer.catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId), null,null, sessionId)
-                .first().getId();
+                .first().getUid();
 
     }
 

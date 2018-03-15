@@ -39,10 +39,11 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER, ""),
+        UID("uid", INTEGER, ""),
+        ID("id", TEXT, ""),
         NAME("name", TEXT, ""),
         MEMBERS("members", TEXT_ARRAY, ""),
-        MEMBERS_ID("members.id", INTEGER, ""),
+        MEMBERS_UID("members.uid", INTEGER, ""),
         MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),
         CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
@@ -144,7 +145,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
     }
 
     default boolean exists(long familyId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), familyId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), familyId)).first() > 0;
     }
 
     default void checkId(long familyId) throws CatalogDBException {

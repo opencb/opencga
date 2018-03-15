@@ -153,12 +153,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 if (user.getProjects().size() > 0) {
                     for (Project project : user.getProjects()) {
                         sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\t%d\n", " * ", project.getAlias(), project.getName(),
-                                project.getOrganization(), project.getDescription(), project.getId(), project.getSize()));
+                                project.getOrganization(), project.getDescription(), project.getUid(), project.getSize()));
 
                         if (project.getStudies().size() > 0) {
                             for (Study study : project.getStudies()) {
                                 sb.append(String.format("    - %s\t%s\t%s\t%s\t%d\t%s\t%d\n", study.getAlias(), study.getName(),
-                                        study.getType(), study.getDescription(), study.getId(),
+                                        study.getType(), study.getDescription(), study.getUid(),
                                         study.getGroups() == null ? ""
                                                 : study.getGroups().stream().map(Group::getName).collect(Collectors.joining(",")),
                                         study.getSize()));
@@ -199,7 +199,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 }
 
                 sb.append(String.format("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n", project.getAlias(), project.getName(),
-                        project.getId(), project.getOrganization(), organism, assembly, project.getDescription(), project.getSize(),
+                        project.getUid(), project.getOrganization(), organism, assembly, project.getDescription(), project.getSize(),
                         project.getStudies().size(), project.getStatus().getName()));
             }
         }
@@ -215,7 +215,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
             for (Study study : queryResult.getResult()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n",
-                        study.getAlias(), study.getName(), study.getType(), study.getDescription(), study.getId(), study.getGroups().size(),
+                        study.getAlias(), study.getName(), study.getType(), study.getDescription(), study.getUid(), study.getGroups().size(),
                         study.getSize(), study.getFiles().size(), study.getSamples().size(), study.getCohorts().size(),
                         study.getIndividuals().size(), study.getJobs().size(), study.getVariableSets().size(),
                         study.getStatus().getName()));
@@ -254,10 +254,10 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 indexStatus = file.getIndex().getStatus().getName();
             }
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\n", format, file.getName(), file.getType(),
-                    file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getId(),
+                    file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getUid(),
                     file.getStatus().getName(), file.getSize(), indexStatus,
                     StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
-                    StringUtils.join(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), ", ")));
+                    StringUtils.join(file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()), ", ")));
         }
     }
 
@@ -266,7 +266,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Sample> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#NAME\tID\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_NAME\tINDIVIDUAL_ID\n");
+                sb.append("#NAME\tID\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_NAME\tINDIVIDUAL_UID\n");
             }
 
             printSamples(queryResult.getResult(), sb, "");
@@ -281,14 +281,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
             String individualName = "NA";
             String individualId = "NA";
             if (sample.getIndividual() != null) {
-                if (sample.getIndividual().getId() >= 0) {
-                    individualId = Long.toString(sample.getIndividual().getId());
+                if (sample.getIndividual().getUid() >= 0) {
+                    individualId = Long.toString(sample.getIndividual().getUid());
                 }
                 if (StringUtils.isNotEmpty(sample.getIndividual().getName())) {
                     individualName = sample.getIndividual().getName();
                 }
             }
-            sb.append(String.format("%s%s\t%d\t%s\t%s\t%s\t%s\t%s\n", format, sample.getName(), sample.getId(), sample.getSource(),
+            sb.append(String.format("%s%s\t%d\t%s\t%s\t%s\t%s\t%s\n", format, sample.getName(), sample.getUid(), sample.getSource(),
                     sample.getDescription(), sample.getStatus().getName(), individualName, individualId));
         }
     }
@@ -302,7 +302,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             }
 
             for (Cohort cohort : queryResult.getResult()) {
-                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%d\t%s\t%s\n", cohort.getName(), cohort.getId(), cohort.getType(),
+                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%d\t%s\t%s\n", cohort.getName(), cohort.getUid(), cohort.getType(),
                         cohort.getDescription(), cohort.getStatus().getName(), cohort.getSamples().size(),
                         cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA",
                         cohort.getFamily() != null && StringUtils.isNotEmpty(cohort.getFamily().getId()) ? cohort.getFamily().getId() : "NA"));
@@ -318,7 +318,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#NAME\tID\tFAMILY\tAFFECTATION_STATUS\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
-                        .append("\tSTATUS\tFATHER_ID\tMOTHER_ID\tCREATION_DATE\n");
+                        .append("\tSTATUS\tFATHER_UID\tMOTHER_UID\tCREATION_DATE\n");
             }
 
             for (Individual individual : queryResult.getResult()) {
@@ -333,7 +333,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     }
                 }
                 sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                        individual.getName(), individual.getId(), individual.getFamily(), individual.getAffectationStatus(),
+                        individual.getName(), individual.getUid(), individual.getFamily(), individual.getAffectationStatus(),
                         individual.getSex(), individual.getKaryotypicSex(), individual.getEthnicity(), population, subpopulation,
                         individual.getLifeStatus(), individual.getStatus().getName(),
                         individual.getFatherId() > 0 ? Long.toString(individual.getFatherId()) : "NA",
@@ -387,9 +387,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
             for (Job job : queryResult.getResult()) {
                 sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\n",
-                        job.getName(), job.getId(), job.getType(), job.getToolId(), job.getCreationDate(), job.getExecutable(),
+                        job.getName(), job.getUid(), job.getType(), job.getToolId(), job.getCreationDate(), job.getExecutable(),
                         job.getExecution(), job.isVisited(), job.getStatus().getName(), StringUtils.join(job.getInput(), ", "),
-                        StringUtils.join(job.getOutput(), ", "), job.getOutDir().getId()));
+                        StringUtils.join(job.getOutput(), ", "), job.getOutDir().getUid()));
             }
         }
 
@@ -405,7 +405,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             }
 
             for (VariableSet variableSet : queryResult.getResult()) {
-                sb.append(String.format("%s\t%s\t%s\t%s\n", variableSet.getName(), variableSet.getId(), variableSet.getDescription(),
+                sb.append(String.format("%s\t%s\t%s\t%s\n", variableSet.getName(), variableSet.getUid(), variableSet.getDescription(),
                         variableSet.getVariables().stream().map(variable -> variable.getName()).collect(Collectors.joining(", "))));
             }
         }
@@ -451,7 +451,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             sb.append(String.format("%s %s  [%d, %s, %s]\n",
                     indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                     file.getType() == File.Type.FILE ? file.getName() : file.getName() + "/",
-                    file.getId(),
+                    file.getUid(),
                     file.getStatus() != null ? file.getStatus().getName() : "",
                     humanReadableByteCount(file.getSize(), false)));
 

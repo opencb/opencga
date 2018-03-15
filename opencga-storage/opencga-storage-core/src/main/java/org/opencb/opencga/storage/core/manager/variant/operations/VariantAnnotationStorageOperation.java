@@ -93,12 +93,12 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 studyStr = null;
                 alias = project.getAlias();
                 organism = project.getOrganism();
-                dataStore = getDataStoreByProjectId(catalogManager, project.getId(), File.Bioformat.VARIANT, sessionId);
+                dataStore = getDataStoreByProjectId(catalogManager, project.getUid(), File.Bioformat.VARIANT, sessionId);
                 studyIds = Collections.emptyList();
             } else {
                 StudyInfo info = studyInfos.get(0);
                 if (studyInfos.size() == 1) {
-                    studyStr = String.valueOf(info.getStudy().getId());
+                    studyStr = String.valueOf(info.getStudy().getUid());
                     alias = info.getStudyAlias();
                 } else {
                     studyStr = null;

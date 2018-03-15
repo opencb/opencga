@@ -30,7 +30,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -82,7 +81,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             ObjectMap parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(params.toClinicalAnalysis()));
 
             // We remove the following parameters that are always going to appear because of Jackson
-            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.ID.key());
+            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.UID.key());
             parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key());
 
             System.out.println(parameters.safeToString());
@@ -252,8 +251,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             ? interpretations.stream()
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
-            return new ClinicalAnalysis(-1, name, description, type, disease, germlineFile, somaticFile, individuals, f, interpretationList,
-                    null, null, 1, attributes);
+            return new ClinicalAnalysis(name, name, description, type, disease, germlineFile, somaticFile, individuals, f,
+                    interpretationList, null, null, 1, attributes);
         }
     }
 

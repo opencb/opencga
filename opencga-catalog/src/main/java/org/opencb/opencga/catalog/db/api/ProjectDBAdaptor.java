@@ -34,7 +34,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        ID("id", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", DATE, ""),
@@ -58,7 +59,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         STUDY("study", TEXT, ""), // For the project/search ws
-        STUDY_ID("study.id", INTEGER_ARRAY, ""),
+        STUDY_UID("study.uid", INTEGER_ARRAY, ""),
         STUDY_ALIAS("study.alias", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check parameter user_others_id.
@@ -107,7 +108,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
 
     default boolean exists(long projectId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), projectId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), projectId)).first() > 0;
     }
 
     default void checkId(long projectId) throws CatalogDBException {

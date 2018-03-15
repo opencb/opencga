@@ -91,16 +91,16 @@ public class StudyManager extends AbstractManager {
         }
 
         Query query = new Query();
-        final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key());
+        final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key());
 
         if (studyList == null || studyList.isEmpty()) {
             if (!userId.equals(ANONYMOUS)) {
                 // Obtain the projects of the user
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.UID.key());
                 QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
                 if (projectQueryResult.getNumResults() == 1) {
-                    projectDBAdaptor.checkId(projectQueryResult.first().getId());
-                    query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectQueryResult.first().getId());
+                    projectDBAdaptor.checkId(projectQueryResult.first().getUid());
+                    query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectQueryResult.first().getUid());
                 } else {
                     if (projectQueryResult.getNumResults() == 0) {
                         throw new CatalogException("No projects found for user " + userId);
@@ -114,7 +114,7 @@ public class StudyManager extends AbstractManager {
             if (studyQueryResult.getNumResults() == 0) {
                 throw new CatalogException("No studies found for user " + userId);
             } else {
-                return studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList());
+                return studyQueryResult.getResult().stream().map(study -> study.getUid()).collect(Collectors.toList());
             }
         } else {
             // We check that all the studies contains the same user@project structure if present
@@ -169,12 +169,12 @@ public class StudyManager extends AbstractManager {
                     projectIds = Arrays.asList(catalogManager.getProjectManager().getId(userId, aliasProject));
                 } else {
                     // Obtain the projects of the user
-                    QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+                    QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.UID.key());
                     QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
                     if (projectQueryResult.getNumResults() == 0) {
                         throw new CatalogException("No projects found for user " + userId);
                     } else {
-                        projectIds = projectQueryResult.getResult().stream().map(project -> project.getId()).collect(Collectors.toList());
+                        projectIds = projectQueryResult.getResult().stream().map(project -> project.getUid()).collect(Collectors.toList());
                     }
                 }
                 query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
@@ -200,7 +200,7 @@ public class StudyManager extends AbstractManager {
                             + aliasList.size());
 
                 } else {
-                    retStudies.addAll(studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList()));
+                    retStudies.addAll(studyQueryResult.getResult().stream().map(study -> study.getUid()).collect(Collectors.toList()));
                     return retStudies;
                 }
             }
@@ -278,7 +278,7 @@ public class StudyManager extends AbstractManager {
         // We set all the permissions for the owner of the study.
         // StudyAcl studyAcl = new StudyAcl(userId, AuthorizationManager.getAdminAcls());
 
-        Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
+        Study study = new Study(name, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, Arrays.asList(new Group(MEMBERS, Collections.emptyList()), new Group(ADMINS, Collections.emptyList())),
                 experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 Collections.emptyList(), new LinkedList<>(), null, null, datastores, getProjectCurrentRelease(projectId), stats,
@@ -291,10 +291,10 @@ public class StudyManager extends AbstractManager {
         //URI studyUri;
         if (uri == null) {
             try {
-                uri = catalogIOManager.createStudy(userId, Long.toString(projectId), Long.toString(study.getId()));
+                uri = catalogIOManager.createStudy(userId, Long.toString(projectId), Long.toString(study.getUid()));
             } catch (CatalogIOException e) {
                 try {
-                    studyDBAdaptor.delete(study.getId());
+                    studyDBAdaptor.delete(study.getUid());
                 } catch (Exception e1) {
                     logger.error("Can't delete study after failure creating study", e1);
                 }
@@ -302,12 +302,12 @@ public class StudyManager extends AbstractManager {
             }
         }
 
-        study = studyDBAdaptor.update(study.getId(), new ObjectMap("uri", uri), QueryOptions.empty()).first();
-        auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
+        study = studyDBAdaptor.update(study.getUid(), new ObjectMap("uri", uri), QueryOptions.empty()).first();
+        auditManager.recordCreation(AuditRecord.Resource.study, study.getUid(), userId, study, null, null);
 
-        long rootFileId = fileDBAdaptor.getId(study.getId(), "");    //Set studyUri to the root folder too
+        long rootFileId = fileDBAdaptor.getId(study.getUid(), "");    //Set studyUri to the root folder too
         rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty()).first();
-        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
+        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getUid(), userId, rootFile, null, null);
 
         userDBAdaptor.updateUserLastModified(userId);
 
@@ -332,11 +332,11 @@ public class StudyManager extends AbstractManager {
             variableSetId = Long.parseLong(variableStr);
             Query query = new Query(StudyDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
             QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
-                    StudyDBAdaptor.QueryParams.ID.key()));
+                    StudyDBAdaptor.QueryParams.UID.key()));
             if (studyQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Variable set " + variableStr + " not found");
             }
-            studyId = studyQueryResult.first().getId();
+            studyId = studyQueryResult.first().getUid();
             userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
             if (variableStr.contains(",")) {
@@ -356,7 +356,7 @@ public class StudyManager extends AbstractManager {
             } else if (variableSetQueryResult.getNumResults() > 1) {
                 throw new CatalogException("More than one variable set found under " + variableStr + " in study " + studyStr);
             }
-            variableSetId = variableSetQueryResult.first().getId();
+            variableSetId = variableSetQueryResult.first().getUid();
         }
 
         return new MyResourceId(userId, studyId, variableSetId);
@@ -377,7 +377,7 @@ public class StudyManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Long studyId = getId(userId, studyStr);
 
-        Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
+        Query query = new Query(StudyDBAdaptor.QueryParams.UID.key(), studyId);
         QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options, userId);
         if (studyQueryResult.getNumResults() <= 0) {
             throw CatalogAuthorizationException.deny(userId, "view", "study", studyId, "");
@@ -550,7 +550,7 @@ public class StudyManager extends AbstractManager {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -893,7 +893,7 @@ public class StudyManager extends AbstractManager {
 
         // Check the group exists
         Query query = new Query()
-                .append(StudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(StudyDBAdaptor.QueryParams.UID.key(), studyId)
                 .append(StudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
         if (studyDBAdaptor.count(query).first() == 0) {
             throw new CatalogException("The group " + groupId + " does not exist.");
@@ -1093,12 +1093,13 @@ public class StudyManager extends AbstractManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        VariableSet variableSet = new VariableSet(-1, name, unique, confidential, description, variables, getCurrentRelease(studyId),
+        VariableSet variableSet = new VariableSet(name, name, unique, confidential, description, variables, getCurrentRelease(studyId),
                 attributes);
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(studyId, variableSet);
-        auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getUid(), userId, queryResult.first(), null,
+                null);
 
         return queryResult;
     }
@@ -1318,7 +1319,7 @@ public class StudyManager extends AbstractManager {
 
     private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
         Query query = new Query()
-                .append(StudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(StudyDBAdaptor.QueryParams.UID.key(), studyId)
                 .append(StudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
         return studyDBAdaptor.count(query).first() > 0;
     }

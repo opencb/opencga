@@ -87,7 +87,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
         QueryResult<Project> result = catalogProjectDBAdaptor.insert(p, user1.getId(), null);
         System.out.println(result.first().getStatus());
         p = result.first();
-        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getId(), new QueryOptions());
+        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getUid(), new QueryOptions());
         System.out.println(queryResult.first().getStatus());
         assertTrue(queryResult.getNumResults() == 1);
 
@@ -120,7 +120,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 "", 3000, "", null, 1), user1.getId(), null).first();
         Project p2 = catalogProjectDBAdaptor.insert(new Project("project2", "p2", "Tomorrow", "Cool", new Status(),
                 "", 3000, "", null, 1), user1.getId(), null).first();
-        System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), "newpmp"));
+        System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getUid(), "newpmp"));
 
         try {
             System.out.println(catalogProjectDBAdaptor.renameAlias(-1, "falseProject"));
@@ -129,7 +129,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
             System.out.println("correct exception: " + e);
         }
         try {
-            System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), p2.getAlias().split("@")[1]));
+            System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getUid(), p2.getAlias().split("@")[1]));
             fail("renamed project with name collision");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

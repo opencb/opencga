@@ -88,7 +88,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -146,7 +146,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         if (!analysisParams.isEmpty()) {
             clinicalConverter.validateDocumentToUpdate(analysisParams);
 
-            Bson query = Filters.eq(PRIVATE_ID, id);
+            Bson query = Filters.eq(PRIVATE_UID, id);
             Bson operation = new Document("$set", analysisParams);
             QueryResult<UpdateResult> update = clinicalCollection.update(query, operation, null);
 
@@ -177,7 +177,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         clinicalConverter.validateInterpretation(clinicalInterpretation);
 
         Document match = new Document()
-                .append(PRIVATE_ID, clinicalAnalysisId)
+                .append(PRIVATE_UID, clinicalAnalysisId)
                 .append(QueryParams.INTERPRETATIONS_ID.key(), new Document("$ne", interpretation.getId()));
         Document update = new Document("$push", new Document(QueryParams.INTERPRETATIONS.key(), clinicalInterpretation));
 
@@ -191,7 +191,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         long startTime = startQuery();
 
         Document match = new Document()
-                .append(PRIVATE_ID, clinicalAnalysisId)
+                .append(PRIVATE_UID, clinicalAnalysisId)
                 .append(QueryParams.INTERPRETATIONS_ID.key(), interpretationId);
         Document update = new Document("$pull", new Document(QueryParams.INTERPRETATIONS.key(), new Document("id", interpretationId)));
         QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
@@ -344,7 +344,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -426,11 +426,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
 
         long clinicalAnalysisId = getNewId();
-        clinicalAnalysis.setId(clinicalAnalysisId);
+        clinicalAnalysis.setUid(clinicalAnalysisId);
 
         Document clinicalObject = clinicalConverter.convertToStorageType(clinicalAnalysis);
         clinicalObject.put(PRIVATE_STUDY_ID, studyId);
-        clinicalObject.put(PRIVATE_ID, clinicalAnalysisId);
+        clinicalObject.put(PRIVATE_UID, clinicalAnalysisId);
         if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
             clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
         } else {
@@ -445,7 +445,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public QueryResult<ClinicalAnalysis> get(long clinicalAnalysisId, QueryOptions options) throws CatalogDBException {
         checkId(clinicalAnalysisId);
-        return get(new Query(QueryParams.ID.key(), clinicalAnalysisId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED),
+        return get(new Query(QueryParams.UID.key(), clinicalAnalysisId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED),
                 options);
     }
 
@@ -455,7 +455,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         long startTime = startQuery();
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -485,7 +485,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     @Override
     public long getStudyId(long clinicalAnalysisId) throws CatalogDBException {
-        Bson query = new Document(PRIVATE_ID, clinicalAnalysisId);
+        Bson query = new Document(PRIVATE_UID, clinicalAnalysisId);
         Bson projection = Projections.include(PRIVATE_STUDY_ID);
         QueryResult<Document> queryResult = clinicalCollection.find(query, projection, null);
 
@@ -523,8 +523,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
             try {
                 switch (queryParam) {
-                    case ID:
-                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                    case UID:
+                        addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_ID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
@@ -546,11 +546,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     // Other parameter that can be queried.
                     case NAME:
                     case TYPE:
-                    case SAMPLE_ID:
-                    case SUBJECT_ID:
-                    case FAMILY_ID:
-                    case GERMLINE_ID:
-                    case SOMATIC_ID:
+                    case SAMPLE_UID:
+                    case SUBJECT_UID:
+                    case FAMILY_UID:
+                    case GERMLINE_UID:
+                    case SOMATIC_UID:
                     case DESCRIPTION:
                     case RELEASE:
                     case STATUS:

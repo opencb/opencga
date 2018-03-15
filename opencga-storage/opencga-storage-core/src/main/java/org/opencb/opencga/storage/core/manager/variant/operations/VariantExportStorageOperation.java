@@ -231,8 +231,8 @@ public class VariantExportStorageOperation extends StorageOperation {
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getSampleIds().entrySet()) {
                     Sample sample = catalogManager.getSampleManager().create(studyStr, entry.getKey(), source, description,
                             null, false, null, new HashMap<>(), Collections.emptyMap(), QueryOptions.empty(), sessionId).first();
-                    samplesMap.put(sample.getName(), (int) sample.getId());
-                    samplesIdMap.put(entry.getValue(), (int) sample.getId());
+                    samplesMap.put(sample.getName(), (int) sample.getUid());
+                    samplesIdMap.put(entry.getValue(), (int) sample.getUid());
                 }
 
                 // Create cohorts
@@ -245,7 +245,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                     List<Sample> newSampleList = new ArrayList<>();
                     for (Integer sampleId : sampleIds) {
                         if (samplesIdMap.containsKey(sampleId)) {
-                            newSampleList.add(new Sample().setId(samplesIdMap.get(sampleId)));
+                            newSampleList.add(new Sample().setUid(samplesIdMap.get(sampleId)));
                         }
                     }
 
@@ -256,10 +256,10 @@ public class VariantExportStorageOperation extends StorageOperation {
                     }
                     Cohort cohort = catalogManager.getCohortManager().create((long) studyConfiguration.getStudyId(), cohortName, Study
                             .Type.COLLECTION, description, newSampleList, null, Collections.emptyMap(), sessionId).first();
-                    newCohortIds.put(cohortName, (int) cohort.getId());
-                    newCohorts.put((int) cohort.getId(), newSampleList.stream().map(Sample::getId).map(Long::intValue)
+                    newCohortIds.put(cohortName, (int) cohort.getUid());
+                    newCohorts.put((int) cohort.getUid(), newSampleList.stream().map(Sample::getUid).map(Long::intValue)
                             .collect(Collectors.toSet()));
-                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.READY, "", sessionId);
+                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getUid()), Cohort.CohortStatus.READY, "", sessionId);
                 }
                 studyConfiguration.setCohortIds(newCohortIds);
                 studyConfiguration.setCohorts(newCohorts);
@@ -287,7 +287,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                     List<Sample> samples = studyConfiguration.getSamplesInFiles()
                             .get(oldFileId)
                             .stream()
-                            .map(integer -> new Sample().setId(((long) integer)))
+                            .map(integer -> new Sample().setUid(((long) integer)))
                             .collect(Collectors.toList());
 
                     File file = new File(fileName, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, fileName,
@@ -297,7 +297,7 @@ public class VariantExportStorageOperation extends StorageOperation {
 
                     file = catalogManager.getFileManager().create(studyStr, file, false, null, null, sessionId).first();
 
-                    long fileId = file.getId();
+                    long fileId = file.getUid();
                     LinkedHashSet<Integer> samplesInFile = studyConfiguration.getSamplesInFiles().remove(oldFileId);
                     studyConfiguration.getSamplesInFiles().put(((int) fileId), samplesInFile);
                     newFileIds.put(fileName, (int) fileId);

@@ -173,11 +173,11 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
 //
 //        ObjectMap params = new ObjectMap();
 //        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.NAME.key(), familyCommandOptions.updateCommandOptions.name);
-//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), familyCommandOptions.updateCommandOptions.fatherId);
-//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), familyCommandOptions.updateCommandOptions.motherId);
+//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.FATHER_UID.key(), familyCommandOptions.updateCommandOptions.fatherId);
+//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MOTHER_UID.key(), familyCommandOptions.updateCommandOptions.motherId);
 //        if (StringUtils.isNotEmpty(familyCommandOptions.updateCommandOptions.children)) {
 //            List<String> childIds = Arrays.asList(StringUtils.split(familyCommandOptions.updateCommandOptions.children, ","));
-//            params.put(FamilyDBAdaptor.QueryParams.MEMBERS_ID.key(), childIds);
+//            params.put(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(), childIds);
 //        }
 //        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.DESCRIPTION.key(), familyCommandOptions.updateCommandOptions.description);
 //        params.putIfNotNull(FamilyDBAdaptor.QueryParams.MEMBERS_PARENTAL_CONSANGUINITY.key(),

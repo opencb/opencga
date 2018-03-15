@@ -158,7 +158,7 @@ public class FileWSServerTest {
 
 
         fileUri = ROOT_DIR.resolve("file2.txt").toUri();
-        json = webTarget.path("files").path(Long.toString(file.getId())).path("relink")
+        json = webTarget.path("files").path(Long.toString(file.getUid())).path("relink")
                 .queryParam("sid", sessionId)
                 .queryParam("uri", fileUri).request().get(String.class);
 
@@ -174,11 +174,11 @@ public class FileWSServerTest {
                 new QueryOptions(), sessionId).first();
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.DESCRIPTION.key(), "Change description");
-        String json = webTarget.path("files").path(Long.toString(file.getId())).path("update")
+        String json = webTarget.path("files").path(Long.toString(file.getUid())).path("update")
                 .queryParam("sid", sessionId).request().post(Entity.json(params), String.class);
 
         QueryResponse<Object> response = WSServerTestUtils.parseResult(json, Object.class);
-        file = OpenCGAWSServer.catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
+        file = OpenCGAWSServer.catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
         assertEquals(params.getString(FileDBAdaptor.QueryParams.DESCRIPTION.key()), file.getDescription());
     }
 

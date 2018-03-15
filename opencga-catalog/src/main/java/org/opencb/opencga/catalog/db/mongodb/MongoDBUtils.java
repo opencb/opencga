@@ -44,6 +44,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_ID;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_UID;
 
 /**
  * Created by imedina on 21/11/14.
@@ -329,11 +330,9 @@ class MongoDBUtils {
                     }
                 }
                 if (listName.equals("include")) {
-                    filteredList.add("id");
-                    filteredList.add(PRIVATE_ID);
+                    filteredList.add(PRIVATE_UID);
                 } else if (listName.equals("exclude")) {
-                    filteredList.remove("id");
-                    filteredList.remove(PRIVATE_ID);
+                    filteredList.remove(PRIVATE_UID);
                 }
                 filteredOptions.put(listName, filteredList);
             }

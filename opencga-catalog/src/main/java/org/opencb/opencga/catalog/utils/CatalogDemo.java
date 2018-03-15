@@ -81,7 +81,7 @@ public final class CatalogDemo {
         for (Map.Entry<String, String> userSession : userSessions.entrySet()) {
             projects.put(userSession.getKey(), catalogManager.getProjectManager().create("DefaultProject", "default",
                     "Description", "Organization", "Homo sapiens", null, null, "GrCh38",
-                    new QueryOptions(), userSession.getValue()).first().getId());
+                    new QueryOptions(), userSession.getValue()).first().getUid());
         }
 
         // Create two studies per user
@@ -93,7 +93,8 @@ public final class CatalogDemo {
                 String name = "Name of study" + i;
                 String alias = "study" + i;
                 studiesTmp.add(catalogManager.getStudyManager().create(String.valueOf(projectId), name, alias, Study.Type.FAMILY, null,
-                        "Description of " + alias, null, null, null, null, null, null, null, null, userSession.getValue()).first().getId());
+                        "Description of " + alias, null, null, null, null, null, null, null, null,
+                        userSession.getValue()).first().getUid());
             }
             studies.put(userSession.getKey(), studiesTmp);
         }

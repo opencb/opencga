@@ -25,7 +25,7 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Job {
+public class Job extends PrivateFields {
 
     /* Attributes known keys */
     @Deprecated
@@ -54,7 +54,6 @@ public class Job {
         ERROR_DESCRIPTIONS = Collections.unmodifiableMap(map);
     }
 
-    private long id;
     private String name;
 
     /**
@@ -123,11 +122,11 @@ public class Job {
                 null, commandLine, false, new JobStatus(JobStatus.PREPARED), 0, outDir, input, null, null, null, release, null, null);
     }
 
-    public Job(long id, String name, String userId, String toolId, Type type, String creationDate, String description, long startTime,
+    public Job(long uid, String name, String userId, String toolId, Type type, String creationDate, String description, long startTime,
                long endTime, String execution, String executable, String commandLine, boolean visited, JobStatus status, long size,
                File outDir, List<File> input, List<File> output, List<String> tags, Map<String, String> params, int release,
                Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
-        this.id = id;
+        super(uid);
         this.name = name;
         this.userId = userId;
         this.toolId = toolId;
@@ -220,7 +219,6 @@ public class Job {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Job{");
-        sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", toolId='").append(toolId).append('\'');
@@ -248,12 +246,9 @@ public class Job {
         return sb.toString();
     }
 
-    public long getId() {
-        return id;
-    }
-
-    public Job setId(long id) {
-        this.id = id;
+    @Override
+    public Job setUid(long uid) {
+        super.setUid(uid);
         return this;
     }
 

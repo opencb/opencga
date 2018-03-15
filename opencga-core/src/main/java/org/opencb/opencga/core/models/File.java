@@ -28,9 +28,8 @@ import java.util.Objects;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class File {
+public class File extends PrivateFields {
 
-    private long id;
     private String name;
 
     /**
@@ -92,14 +91,14 @@ public class File {
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes) {
         this(-1, "", type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, new Experiment(), samples, new Job().setId(jobId), Collections.emptyList(), new FileIndex(), stats, -1, attributes);
+                size, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), stats, -1, attributes);
     }
 
-    public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
+    public File(long uid, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
                 String modificationDate, String description, FileStatus status, boolean external, long size, Experiment experiment,
                 List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index, Map<String, Object> stats, int release,
                 Map<String, Object> attributes) {
-        this.id = id;
+        super(uid);
         this.name = name;
         this.type = type;
         this.format = format;
@@ -313,7 +312,6 @@ public class File {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
-        sb.append(", id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", format=").append(format);
@@ -338,12 +336,9 @@ public class File {
         return sb.toString();
     }
 
-    public long getId() {
-        return id;
-    }
-
-    public File setId(long id) {
-        this.id = id;
+    @Override
+    public File setUid(long uid) {
+        super.setUid(uid);
         return this;
     }
 

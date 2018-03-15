@@ -209,7 +209,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), study);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.groupByCommandOptions.id);
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.UID.key(), samplesCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.groupByCommandOptions.source);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), samplesCommandOptions.groupByCommandOptions.individual);

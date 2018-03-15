@@ -38,7 +38,7 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
     @Override
     public Document convertToStorageType(Job object) {
         Document document = super.convertToStorageType(object);
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", document.getInteger("uid").longValue());
         document.put("outDir", convertFileToDocument(object.getOutDir()));
         document.put("input", convertFilesToDocument(object.getInput()));
         document.put("output", convertFilesToDocument(object.getOutput()));
@@ -47,7 +47,7 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
 
     private Document convertFileToDocument(File file) {
         if (file == null) {
-            return new Document("id", -1L);
+            return new Document("uid", -1L);
         }
         return convertFilesToDocument(Arrays.asList(file)).get(0);
     }
@@ -58,9 +58,9 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
         }
         List<Document> files = new ArrayList(fileList.size());
         for (File file : fileList) {
-            long fileId = file != null ? (file.getId() == 0 ? -1L : file.getId()) : -1L;
+            long fileId = file != null ? (file.getUid() == 0 ? -1L : file.getUid()) : -1L;
             if (fileId > 0) {
-                files.add(new Document("id", fileId));
+                files.add(new Document("uid", fileId));
             }
         }
         return files;

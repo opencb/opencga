@@ -56,7 +56,7 @@ public class AnalysisFileIndexerAggregatedTest extends AbstractVariantStorageOpe
 
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
-        variantManager.index(null, String.valueOf(files.get(0).getId()), opencga.createTmpOutdir(studyId, "index", sessionId), queryOptions, sessionId);
+        variantManager.index(null, String.valueOf(files.get(0).getUid()), opencga.createTmpOutdir(studyId, "index", sessionId), queryOptions, sessionId);
         assertEquals(0, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
         StatsVariantStorageTest.checkCalculatedAggregatedStats(Collections.singleton(DEFAULT_COHORT), dbName);

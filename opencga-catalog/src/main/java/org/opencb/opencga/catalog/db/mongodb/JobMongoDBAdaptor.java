@@ -88,10 +88,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         this.dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
 
         long jobId = getNewId();
-        job.setId(jobId);
+        job.setUid(jobId);
 
         Document jobObject = jobConverter.convertToStorageType(job);
-        jobObject.put(PRIVATE_ID, jobId);
+        jobObject.put(PRIVATE_UID, jobId);
         jobObject.put(PRIVATE_STUDY_ID, studyId);
         if (StringUtils.isNotEmpty(job.getCreationDate())) {
             jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
@@ -103,44 +103,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0
 
         return endQuery("Create Job", startTime, get(jobId, filterOptions(options, FILTER_ROUTE_JOBS)));
-    }
-
-    @Override
-    public QueryResult<Long> extractFilesFromJobs(Query query, List<Long> fileIds) throws CatalogDBException {
-        if (fileIds == null || fileIds.isEmpty()) {
-            throw new CatalogDBException("The array of fileIds is empty");
-        }
-
-        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
-
-        Query queryAux = new Query(query);
-        queryAux.append(QueryParams.OUT_DIR_ID.key(), fileIds);
-        ObjectMap params = new ObjectMap(QueryParams.OUT_DIR_ID.key(), -1);
-        Document update = new Document("$set", params);
-        QueryResult<UpdateResult> update1 = jobCollection.update(parseQuery(queryAux, false), update, multi);
-        logger.debug("{} out of {} documents changed to have outDirId = -1", update1.first().getMatchedCount(),
-                update1.first().getModifiedCount());
-
-        queryAux = new Query(query);
-        queryAux.append(QueryParams.INPUT_ID.key(), fileIds);
-        update = new Document("$pull", new Document(QueryParams.INPUT.key(), new Document("id", new Document("$in", fileIds))));
-        QueryResult<UpdateResult> update2 = jobCollection.update(parseQuery(queryAux, false), update, multi);
-        logger.debug("{} out of {} documents changed to pull input file ids", update2.first().getMatchedCount(),
-                update2.first().getModifiedCount());
-
-        queryAux = new Query(query);
-        queryAux.append(QueryParams.OUTPUT_ID.key(), fileIds);
-        update = new Document("$pull", new Document(QueryParams.OUTPUT.key(), new Document("id", new Document("$in", fileIds))));
-        QueryResult<UpdateResult> update3 = jobCollection.update(parseQuery(queryAux, false), update, multi);
-        logger.debug("{} out of {} documents changed to pull input file ids", update3.first().getMatchedCount(),
-                update3.first().getModifiedCount());
-
-        QueryResult retResult = new QueryResult("Extract fileIds from jobs");
-        retResult.setNumResults(1);
-        retResult.setNumTotalResults(1);
-        retResult.setResult(Arrays.asList(update1.first().getModifiedCount() + update2.first().getModifiedCount()
-                + update3.first().getModifiedCount()));
-        return retResult;
     }
 
     @Override
@@ -160,7 +122,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public long getStudyId(long jobId) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), jobId);
+        Query query = new Query(QueryParams.UID.key(), jobId);
         QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID);
         QueryResult<Document> queryResult = nativeGet(query, queryOptions);
 
@@ -193,7 +155,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 ? StudyAclEntry.StudyPermissions.VIEW_JOBS : studyPermissions);
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -238,7 +200,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), id);
+        Query query = new Query(QueryParams.UID.key(), id);
         delete(query);
     }
 
@@ -254,7 +216,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<Job> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
+        Bson query = parseQuery(new Query(QueryParams.UID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
 
         if (myParams.isEmpty()) {
@@ -296,7 +258,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         filterBooleanParams(parameters, jobParameters, acceptedBooleanParams);
 
         String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key(),
-                QueryParams.OUT_DIR_ID.key(), };
+                QueryParams.OUT_DIR_UID.key(), };
         filterLongParams(parameters, jobParameters, acceptedLongParams);
 
         if (parameters.containsKey(QueryParams.INPUT.key())) {
@@ -315,7 +277,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     public QueryResult<Job> clean(int id) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), id);
+        Query query = new Query(QueryParams.UID.key(), id);
         QueryResult<Job> jobQueryResult = get(query, null);
         if (jobQueryResult.getResult().size() == 1) {
             QueryResult<DeleteResult> delete = jobCollection.remove(parseQuery(query, false), null);
@@ -352,7 +314,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         checkId(id);
         // Check if the cohort is active
-        Query query = new Query(QueryParams.ID.key(), id)
+        Query query = new Query(QueryParams.UID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The job {" + id + "} is not deleted");
@@ -360,7 +322,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         // Change the status of the cohort to deleted
         setStatus(id, Status.READY);
-        query = new Query(QueryParams.ID.key(), id);
+        query = new Query(QueryParams.UID.key(), id);
 
         return endQuery("Restore job", startTime, get(query, null));
     }
@@ -371,7 +333,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
         checkId(jobId);
-        Query query = new Query(QueryParams.ID.key(), jobId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), jobId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
     }
 
@@ -499,7 +461,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
@@ -586,8 +548,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             }
             try {
                 switch (queryParam) {
-                    case ID:
-                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                    case UID:
+                        addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_ID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
@@ -607,12 +569,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
                     case INPUT:
-                    case INPUT_ID:
-                        addQueryFilter(QueryParams.INPUT_ID.key(), queryParam.key(), query, queryParam.type(),
+                    case INPUT_UID:
+                        addQueryFilter(QueryParams.INPUT_UID.key(), queryParam.key(), query, queryParam.type(),
                                 MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
                     case OUTPUT:
-                    case OUTPUT_ID:
-                        addQueryFilter(QueryParams.OUTPUT_ID.key(), queryParam.key(), query, queryParam.type(),
+                    case OUTPUT_UID:
+                        addQueryFilter(QueryParams.OUTPUT_UID.key(), queryParam.key(), query, queryParam.type(),
                                 MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
                         break;
                     case CREATION_DATE:
@@ -635,7 +597,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case SIZE:
-                    case OUT_DIR_ID:
+                    case OUT_DIR_UID:
                     case TMP_OUT_DIR_URI:
                     case TAGS:
                     case ERROR:

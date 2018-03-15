@@ -39,11 +39,12 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
+        UID("uid", INTEGER, ""),
+        ID("id", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         SOURCE("source", TEXT_ARRAY, ""),
         INDIVIDUAL("individual", TEXT, ""),
-        INDIVIDUAL_ID("individual.id", INTEGER_ARRAY, ""),
+        INDIVIDUAL_UID("individual.uid", INTEGER_ARRAY, ""),
         DESCRIPTION("description", TEXT, ""),
         TYPE("type", TEXT, ""),
         SOMATIC("somatic", BOOLEAN, ""),
@@ -152,7 +153,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     }
 
     default boolean exists(long sampleId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), sampleId)).first() > 0;
     }
 
     default void checkId(long sampleId) throws CatalogDBException {

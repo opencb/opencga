@@ -130,7 +130,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
     public QueryResult<R> get(String studyStr, String entryStr, QueryOptions options, String sessionId) throws CatalogException {
         Query query = new Query();
         MyResourceId resources = getId(entryStr, studyStr, sessionId);
-        query.put("id", resources.getResourceId());
+        query.put("uid", resources.getResourceId());
         return get(String.valueOf(resources.getStudyId()), query, options, sessionId);
     }
 
@@ -155,7 +155,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
         for (int i = 0; i < resourceIds.size(); i++) {
             Long entityId = resourceIds.get(i);
             Query queryCopy = new Query(query);
-            queryCopy.put("id", entityId);
+            queryCopy.put("uid", entityId);
             QueryResult<R> rQueryResult = get(String.valueOf(resources.getStudyId()), queryCopy, options, sessionId);
             rQueryResult.setId(entryList.get(i));
             resultList.add(rQueryResult);
@@ -175,7 +175,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
         for (int i = 0; i < resourceIds.size(); i++) {
             Long entityId = resourceIds.get(i);
             Query queryCopy = new Query(query);
-            queryCopy.put("id", entityId);
+            queryCopy.put("uid", entityId);
             try {
                 QueryResult<R> rQueryResult = get(String.valueOf(resources.getStudyId()), queryCopy, options, sessionId);
                 rQueryResult.setId(entryList.get(i));

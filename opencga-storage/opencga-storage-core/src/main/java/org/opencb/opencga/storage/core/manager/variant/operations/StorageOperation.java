@@ -216,7 +216,7 @@ public abstract class StorageOperation {
         if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
             dataStore = study.getDataStores().get(bioformat);
         } else {
-            long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
+            long projectId = catalogManager.getStudyManager().getProjectId(study.getUid());
             dataStore = getDataStoreByProjectId(catalogManager, projectId, bioformat, sessionId);
         }
         return dataStore;

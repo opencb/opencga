@@ -70,7 +70,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
                         null, Collections.<String, Object>emptyMap())
         ));
-        VariableSet variableSet = new VariableSet(-1, name, false, confidential, "My description", variables, 1, Collections.emptyMap());
+        VariableSet variableSet = new VariableSet(name, name, false, confidential, "My description", variables, 1, Collections.emptyMap());
         return catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
     }
 
@@ -78,14 +78,14 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void createVariableSetTest() throws CatalogDBException {
         QueryResult<VariableSet> queryResult = createExampleVariableSet("VARSET_1", false);
         assertEquals("VARSET_1", queryResult.first().getName());
-        assertTrue("The id of the variableSet is wrong.", queryResult.first().getId() > -1);
+        assertTrue("The id of the variableSet is wrong.", queryResult.first().getUid() > -1);
     }
 
     @Test
     public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException {
         QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1", false);
         QueryResult<VariableSet> queryResult =
-                catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetQueryResult.first().getId(), "NAME", user3.getId());
+                catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetQueryResult.first().getUid(), "NAME", user3.getId());
         assertTrue(queryResult.first().getVariables()
                 .stream()
                 .filter(v -> "NAME".equals(v.getName()))

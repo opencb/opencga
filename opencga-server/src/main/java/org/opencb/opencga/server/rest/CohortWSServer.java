@@ -72,7 +72,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 AbstractManager.MyResourceIds samples = catalogManager.getSampleManager().getIds(idList, Long.toString(studyId), sessionId);
                 List<Sample> sampleList = new ArrayList<>(samples.getResourceIds().size());
                 for (Long sampleId : samples.getResourceIds()) {
-                    sampleList.add(new Sample().setId(sampleId));
+                    sampleList.add(new Sample().setUid(sampleId));
                 }
                 QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyId, cohortName, type,
                         cohortDescription, sampleList, annotationSetList, null, sessionId);
@@ -95,7 +95,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 for (String s : variable.getAllowedValues()) {
                     QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
                     Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
-                            .append("variableSetId", variableSet.getId());
+                            .append("variableSetId", variableSet.getUid());
 
                     cohorts.add(createCohort(studyId, cohortName + "_" + s, type, cohortDescription, annotationSetList, samplesQuery, samplesQOptions));
                 }
@@ -318,7 +318,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                    .append(CohortDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
+                    .append(CohortDBAdaptor.QueryParams.UID.key(), resourceId.getResourceId());
 
             String variableSetId = String.valueOf(catalogManager.getStudyManager()
                     .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
@@ -369,7 +369,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(CohortDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
+                    .append(CohortDBAdaptor.QueryParams.UID.key(), resourceIds.getResourceIds());
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {

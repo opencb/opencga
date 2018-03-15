@@ -477,7 +477,7 @@ public class VariantStorageManager extends StorageManager {
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
                     QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get((long) entry.getKey(),
-                            new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()),
+                            new Query(SampleDBAdaptor.QueryParams.UID.key(), entry.getValue()),
                             new QueryOptions("exclude",
                                     Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples.attributes")),
                             sessionId);
@@ -493,7 +493,7 @@ public class VariantStorageManager extends StorageManager {
         } else {
             logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
             List<Integer> returnedStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, scm);
-            List<Study> studies = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.ID.key(), returnedStudies),
+            List<Study> studies = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.UID.key(), returnedStudies),
                     new QueryOptions("include", "projects.studies.id"), sessionId).getResult();
             if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
                 for (Integer returnedStudy : returnedStudies) {
@@ -502,13 +502,13 @@ public class VariantStorageManager extends StorageManager {
             } else {
                 List<Long> returnedSamples = new LinkedList<>();
                 for (Study study : studies) {
-                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getId(), new Query(),
+                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getUid(), new Query(),
                             new QueryOptions("exclude",
                                     Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples.attributes")),
                             sessionId);
-                    samplesQueryResult.getResult().sort((o1, o2) -> Long.compare(o1.getId(), o2.getId()));
-                    samplesMap.put(study.getId(), samplesQueryResult.getResult());
-                    samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
+                    samplesQueryResult.getResult().sort((o1, o2) -> Long.compare(o1.getUid(), o2.getUid()));
+                    samplesMap.put(study.getUid(), samplesQueryResult.getResult());
+                    samplesQueryResult.getResult().stream().map(Sample::getUid).forEach(returnedSamples::add);
                 }
                 query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), returnedSamples);
             }

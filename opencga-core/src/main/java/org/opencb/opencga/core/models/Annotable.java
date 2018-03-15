@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Created by pfurio on 07/07/16.
  */
-public abstract class Annotable {
+public abstract class Annotable extends PrivateFields {
 
     protected List<AnnotationSet> annotationSets;
 

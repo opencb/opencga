@@ -19,7 +19,7 @@ public class AnnotableConverterTest {
         Variable v = new Variable().setName("a").setType(Variable.VariableType.BOOLEAN);
         Set<Variable> setOfVariables = new HashSet<>();
         setOfVariables.add(v);
-        VariableSet variableSet = new VariableSet().setVariables(setOfVariables).setId(1);
+        VariableSet variableSet = new VariableSet().setVariables(setOfVariables).setUid(1);
 
         Map<String, Object> myMap = new HashMap<>();
         myMap.put("b", "nothing");
@@ -48,7 +48,7 @@ public class AnnotableConverterTest {
         Set<Variable> rootSet = new HashSet<>();
         rootSet.add(new Variable().setName("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bSet));
 
-        VariableSet vs = new VariableSet().setVariables(rootSet).setId(1);
+        VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1);
 
         Map<String, Object> myMap = new HashMap<>();
         myMap.put("nothing", "nothing");
@@ -93,7 +93,7 @@ public class AnnotableConverterTest {
         Set<Variable> rootSet = new HashSet<>();
         rootSet.add(new Variable().setName("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bSet));
 
-        VariableSet vs = new VariableSet().setVariables(rootSet).setId(1);
+        VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1);
 
         Map<String, Object> myMap = new HashMap<>();
         myMap.put("nothing", "nothing");
@@ -151,7 +151,7 @@ public class AnnotableConverterTest {
         Set<Variable> rootSet = new HashSet<>();
         rootSet.add(new Variable().setName("a").setType(Variable.VariableType.OBJECT).setVariableSet(aSet));
 
-        VariableSet vs = new VariableSet().setVariables(rootSet).setId(1);
+        VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1);
 
         // We create a dummy full annotation for the variable set we just created
         Map<String, Object> myMap = new HashMap<>();
@@ -200,7 +200,7 @@ public class AnnotableConverterTest {
         List<AnnotationSet> annotationSets = annotableConverter.fromDBToAnnotation(documentList, new QueryOptions());
         assertEquals(1, annotationSets.size());
         assertEquals("annotName", annotationSets.get(0).getName());
-        assertEquals(vs.getId(), annotationSets.get(0).getVariableSetId());
+        assertEquals(vs.getUid(), annotationSets.get(0).getVariableSetId());
 
         // And back again to the mongo properties
         List<Document> documentList2 = annotableConverter.annotationToDB(vs, "annotName", annotationSets.get(0).getAnnotations());

@@ -299,7 +299,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkFilePermission(long studyId, long fileId, String userId, FileAclEntry.FilePermissions permission)
             throws CatalogException {
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.ID.key(), fileId)
+                .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
@@ -352,7 +352,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkSamplePermission(long studyId, long sampleId, String userId, SampleAclEntry.SamplePermissions permission)
             throws CatalogException {
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
                 .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
@@ -388,7 +388,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkIndividualPermission(long studyId, long individualId, String userId,
                                           IndividualAclEntry.IndividualPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId)
+                .append(IndividualDBAdaptor.QueryParams.UID.key(), individualId)
                 .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
@@ -423,7 +423,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkJobPermission(long studyId, long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.ID.key(), jobId)
+                .append(JobDBAdaptor.QueryParams.UID.key(), jobId)
                 .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
@@ -450,7 +450,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkCohortPermission(long studyId, long cohortId, String userId, CohortAclEntry.CohortPermissions permission)
             throws CatalogException {
         Query query = new Query()
-                .append(CohortDBAdaptor.QueryParams.ID.key(), cohortId)
+                .append(CohortDBAdaptor.QueryParams.UID.key(), cohortId)
                 .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
@@ -514,7 +514,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkFamilyPermission(long studyId, long familyId, String userId, FamilyAclEntry.FamilyPermissions permission)
             throws CatalogException {
         Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.ID.key(), familyId)
+                .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
                 .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
@@ -551,7 +551,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkClinicalAnalysisPermission(long studyId, long analysisId, String userId,
                                                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), analysisId)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), analysisId)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {

@@ -101,7 +101,7 @@ public class ProjectManager extends AbstractManager {
             if (!userOwner.equals(ANONYMOUS)) {
                 query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userOwner);
             }
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.UID.key());
             QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
 
             if (projectQueryResult.getNumResults() != 1) {
@@ -112,7 +112,7 @@ public class ProjectManager extends AbstractManager {
                 }
             }
 
-            return projectQueryResult.first().getId();
+            return projectQueryResult.first().getUid();
         }
     }
 
@@ -140,14 +140,14 @@ public class ProjectManager extends AbstractManager {
         } else {
             // Anonymous user
             Query query = new Query(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.UID.key());
             QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
 
             if (projectQueryResult.getNumResults() == 0) {
                 throw new CatalogException("No projects found with alias " + projectAlias);
             }
 
-            return projectQueryResult.getResult().stream().map(project -> project.getId()).collect(Collectors.toList());
+            return projectQueryResult.getResult().stream().map(project -> project.getUid()).collect(Collectors.toList());
         }
     }
 
@@ -209,10 +209,10 @@ public class ProjectManager extends AbstractManager {
         project = queryResult.getResult().get(0);
 
         try {
-            catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getId()));
+            catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getUid()));
         } catch (CatalogIOException e) {
             try {
-                projectDBAdaptor.delete(project.getId());
+                projectDBAdaptor.delete(project.getUid());
             } catch (Exception e1) {
                 logger.error("Error deleting project from catalog after failing creating the folder in the filesystem", e1);
                 throw e;
@@ -220,7 +220,7 @@ public class ProjectManager extends AbstractManager {
             throw e;
         }
         userDBAdaptor.updateUserLastModified(userId);
-        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
     }
@@ -238,7 +238,7 @@ public class ProjectManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long projectId = getId(userId, projectStr);
 
-        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        Query query = new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectId);
         QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
         if (projectQueryResult.getNumResults() <= 0) {
             throw CatalogAuthorizationException.deny(userId, "view", "project", projectId, "");
@@ -296,7 +296,7 @@ public class ProjectManager extends AbstractManager {
 
             query.remove(ProjectDBAdaptor.QueryParams.STUDY.key());
             if (CollectionUtils.isNotEmpty(idList)) {
-                query.put(ProjectDBAdaptor.QueryParams.STUDY_ID.key(), StringUtils.join(idList, ","));
+                query.put(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), StringUtils.join(idList, ","));
             }
             if (CollectionUtils.isNotEmpty(aliasList)) {
                 query.put(ProjectDBAdaptor.QueryParams.STUDY_ALIAS.key(), StringUtils.join(aliasList, ","));
@@ -416,7 +416,7 @@ public class ProjectManager extends AbstractManager {
         int currentRelease = projectQueryResult.first().getCurrentRelease();
         // Check current release has been used at least in one study or file or cohort or individual...
         QueryResult<Study> allStudiesInProject = studyDBAdaptor.getAllStudiesInProject(projectId, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.RELEASE.key())));
+                Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.RELEASE.key())));
         if (allStudiesInProject == null || allStudiesInProject.getNumResults() == 0) {
             throw new CatalogException("Cannot increment current release number. No studies found for release " + currentRelease);
         }
@@ -427,11 +427,11 @@ public class ProjectManager extends AbstractManager {
 
             // Upgrade release in sample, family and individuals
             QueryResult<Study> studiesInProject = studyDBAdaptor.getAllStudiesInProject(projectId,
-                    new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key()));
+                    new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key()));
             for (Study study : studiesInProject.getResult()) {
-                sampleDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
-                individualDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
-                familyDBAdaptor.updateProjectRelease(study.getId(), integerQueryResult.first());
+                sampleDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
+                individualDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
+                familyDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
             }
 
             return integerQueryResult;
@@ -483,11 +483,11 @@ public class ProjectManager extends AbstractManager {
         // Reading project
         Map<String, Object> project = (Map<String, Object>) objectMapper.readValue(inputDir.resolve("projects.json").toFile(), Map.class)
                 .get("projects");
-        project.put(ProjectDBAdaptor.QueryParams.ID.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.ID.key())));
+        project.put(ProjectDBAdaptor.QueryParams.UID.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.UID.key())));
         project.put(ProjectDBAdaptor.QueryParams.SIZE.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.SIZE.key())));
 
         // Check the projectId
-        if (projectDBAdaptor.exists((Long) project.get(ProjectDBAdaptor.QueryParams.ID.key()))) {
+        if (projectDBAdaptor.exists((Long) project.get(ProjectDBAdaptor.QueryParams.UID.key()))) {
             throw new CatalogException("The database is not empty. Project " + project.get(ProjectDBAdaptor.QueryParams.NAME.key())
                     + " already exists");
         }
@@ -596,7 +596,7 @@ public class ProjectManager extends AbstractManager {
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        Query query = new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectId);
         DBIterator dbIterator = projectDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("projects.json").toFile(), objectMapper, "project");
 
@@ -605,7 +605,7 @@ public class ProjectManager extends AbstractManager {
                 .append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
                 .append(StudyDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query,
-                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key()));
+                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key()));
         if (studyQueryResult.getNumResults() == 0) {
             logger.info("The project does not contain any study under the specified release");
             return;
@@ -613,7 +613,7 @@ public class ProjectManager extends AbstractManager {
         dbIterator = studyDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("studies.json").toFile(), objectMapper, "studies");
 
-        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getId).collect(Collectors.toList());
+        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getUid).collect(Collectors.toList());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
@@ -709,7 +709,7 @@ public class ProjectManager extends AbstractManager {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -775,7 +775,7 @@ public class ProjectManager extends AbstractManager {
                 return true;
             }
         }
-        List<Long> studyIds = allStudiesInProject.getResult().stream().map(Study::getId).collect(Collectors.toList());
+        List<Long> studyIds = allStudiesInProject.getResult().stream().map(Study::getUid).collect(Collectors.toList());
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
                 .append(FileDBAdaptor.QueryParams.RELEASE.key(), currentRelease);

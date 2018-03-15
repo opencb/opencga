@@ -148,12 +148,12 @@ public abstract class StorageManager {
         }
         Study study = studyQueryResult.first();
         studyInfo.setStudy(study);
-        long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
+        long projectId = catalogManager.getStudyManager().getProjectId(study.getUid());
         Project project = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), new QueryOptions(), sessionId).first();
-        studyInfo.setProjectId(project.getId());
+        studyInfo.setProjectId(project.getUid());
         studyInfo.setProjectAlias(project.getAlias());
         studyInfo.setOrganism(project.getOrganism());
-        String user = catalogManager.getProjectManager().getOwner(project.getId());
+        String user = catalogManager.getProjectManager().getOwner(project.getUid());
         studyInfo.setUserId(user);
 
 //        Path workspace = Paths.get(study.getUri().getRawPath()).resolve(".opencga").resolve("alignments");

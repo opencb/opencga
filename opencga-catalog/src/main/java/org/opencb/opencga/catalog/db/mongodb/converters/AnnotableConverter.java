@@ -32,7 +32,7 @@ public class AnnotableConverter<T extends Annotable> extends GenericDocumentComp
 
             Map<Long, VariableSet> variableSetMap = new HashMap<>();
             for (VariableSet variableSet : variableSetList) {
-                variableSetMap.put(variableSet.getId(), variableSet);
+                variableSetMap.put(variableSet.getUid(), variableSet);
             }
 
             for (AnnotationSet annotationSet : object.getAnnotationSets()) {

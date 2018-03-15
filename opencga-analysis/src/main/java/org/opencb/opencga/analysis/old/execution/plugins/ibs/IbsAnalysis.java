@@ -93,7 +93,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
             List<Long> sampleIds = catalogManager.getSampleManager().getIds(params.getAsStringList(SAMPLES), String.valueOf(studyId),
                     userId)
                     .getResourceIds();
-            samplesQuery.append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+            samplesQuery.append(SampleDBAdaptor.QueryParams.UID.key(), sampleIds);
             query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
         }
         samples = catalogManager.getSampleManager().get(studyId, samplesQuery, new QueryOptions(), sessionId)

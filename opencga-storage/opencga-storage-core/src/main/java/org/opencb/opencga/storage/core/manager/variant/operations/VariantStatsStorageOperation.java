@@ -275,13 +275,13 @@ public class VariantStatsStorageOperation extends StorageOperation {
         Map<String, Long> catalogCohorts = catalogManager.getCohortManager().get(studyId, null, new QueryOptions(QueryOptions.INCLUDE,
                 "name,id"), sessionId).getResult()
                 .stream()
-                .collect(Collectors.toMap(Cohort::getName, Cohort::getId));
+                .collect(Collectors.toMap(Cohort::getName, Cohort::getUid));
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.containsKey(cohortName)) {
                 QueryResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
                         Collections.emptyList(), null, null, sessionId);
                 logger.info("Creating cohort {}", cohortName);
-                cohorts.add(cohort.first().getId());
+                cohorts.add(cohort.first().getUid());
             } else {
                 logger.debug("cohort {} was already created", cohortName);
                 cohorts.add(catalogCohorts.get(cohortName));
@@ -422,14 +422,14 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     static CatalogException unableToCalculateCohortReady(Cohort cohort) {
         return new CatalogException("Unable to calculate stats for cohort "
-                + "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }"
+                + "{ id: " + cohort.getUid() + " name: \"" + cohort.getName() + "\" }"
                 + " with status \"" + cohort.getStatus().getName() + "\". "
                 + "Resume or update stats for continue calculation");
     }
 
     static CatalogException unableToCalculateCohortCalculating(Cohort cohort) {
         return new CatalogException("Unable to calculate stats for cohort "
-                + "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }"
+                + "{ id: " + cohort.getUid() + " name: \"" + cohort.getName() + "\" }"
                 + " with status \"" + cohort.getStatus().getName() + "\". "
                 + "Resume for continue calculation.");
     }

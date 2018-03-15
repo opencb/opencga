@@ -77,7 +77,7 @@ public class FileScanner {
         Query query = new Query();
         query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(
                 File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
-        QueryResult<File> files = catalogManager.getFileManager().get(study.getId(), query, new QueryOptions(), sessionId);
+        QueryResult<File> files = catalogManager.getFileManager().get(study.getUid(), query, new QueryOptions(), sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
         for (File file : files.getResult()) {
@@ -101,7 +101,7 @@ public class FileScanner {
      */
     public List<File> reSync(Study study, boolean calculateChecksum, String sessionId)
             throws CatalogException, IOException {
-        long studyId = study.getId();
+        long studyId = study.getUid();
 //        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
         Query query = new Query();
         query.put(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists
@@ -129,7 +129,7 @@ public class FileScanner {
      */
     public Map<String, URI> untrackedFiles(Study study, String sessionId)
             throws CatalogException {
-        long studyId = study.getId();
+        long studyId = study.getUid();
         URI studyUri = study.getUri();
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
@@ -215,7 +215,7 @@ public class FileScanner {
         if (!directory.getType().equals(File.Type.DIRECTORY)) {
             throw new CatalogException("Expected folder where place the found files.");
         }
-        long studyId = catalogManager.getFileManager().getStudyId(directory.getId());
+        long studyId = catalogManager.getFileManager().getStudyId(directory.getUid());
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
         Stream<URI> uris = catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan);
@@ -244,10 +244,10 @@ public class FileScanner {
                 logger.info("File already existing in target \"" + filePath + "\". FileScannerPolicy = " + policy);
                 switch (policy) {
                     case DELETE:
-                        logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
+                        logger.info("Deleting file { id:" + existingFile.getUid() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
                         catalogManager.getFileManager().delete(String.valueOf(studyId),
-                                new Query(FileDBAdaptor.QueryParams.ID.key(), existingFile.getId()),
+                                new Query(FileDBAdaptor.QueryParams.UID.key(), existingFile.getUid()),
                                 new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
                         break;
                     case REPLACE:
@@ -286,11 +286,11 @@ public class FileScanner {
                     uploadFilesTime += uploadFileTime;
                     returnFile = true;      //Return file because is new
                 }
-                logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
+                logger.debug("Created new file entry for " + uri + " { id:" + file.getUid() + ", path:\"" + file.getPath() + "\" } ");
             } else {
                 if (file.getType() == File.Type.FILE) {
                     if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
-                        logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
+                        logger.info("File { id:" + file.getUid() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
                         logger.debug("Set status to " + File.FileStatus.READY);
                         returnFile = true;      //Return file because was missing
                     }
@@ -309,11 +309,11 @@ public class FileScanner {
                 metadataReadTime += metadataFileTime;
             } catch (Exception e) {
                 logger.error("Unable to read metadata information from file "
-                        + "{ id:" + file.getId() + ", name: \"" + file.getName() + "\" }", e);
+                        + "{ id:" + file.getUid() + ", name: \"" + file.getName() + "\" }", e);
             }
 
             if (returnFile) { //Return only new and found files.
-                files.add(catalogManager.getFileManager().get(file.getId(), null, sessionId).first());
+                files.add(catalogManager.getFileManager().get(file.getUid(), null, sessionId).first());
             }
             logger.info("Added file {}", filePath);
             logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart) / 1000.0,

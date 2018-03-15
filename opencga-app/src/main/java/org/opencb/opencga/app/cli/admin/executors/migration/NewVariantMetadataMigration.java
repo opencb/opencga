@@ -157,7 +157,7 @@ public class NewVariantMetadataMigration {
 
     private void migrateCatalogFileMetadata(String sessionId, VariantSourceToVariantFileMetadataConverter converter, Query vcfFilesQuery, Study study) throws IOException, CatalogException {
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(study.getId(), vcfFilesQuery, new QueryOptions(), sessionId)) {
+                .iterator(study.getUid(), vcfFilesQuery, new QueryOptions(), sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 logger.info("Migrating file " + file.getName());
@@ -174,14 +174,14 @@ public class NewVariantMetadataMigration {
                     parameters.append(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(FileMetadataReader.VARIANT_FILE_STATS, variantSetStats));
                 }
 
-                catalogManager.getFileManager().update(null, String.valueOf(file.getId()), parameters, null, sessionId);
+                catalogManager.getFileManager().update(null, String.valueOf(file.getUid()), parameters, null, sessionId);
             }
         }
     }
 
     private void migrateMetadataFiles(String sessionId, Query metadataFilesQuery, Study study) throws IOException, CatalogException {
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(study.getId(), metadataFilesQuery, new QueryOptions(), sessionId)) {
+                .iterator(study.getUid(), metadataFilesQuery, new QueryOptions(), sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 Path metaFile = Paths.get(file.getUri());

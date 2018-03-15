@@ -96,13 +96,13 @@ public class IndividualWSServerTest {
         studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
         in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in1", "f1", (long) -1, (long) -1, null, "", "", "",
                 "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,
-                sessionId).first().getId();
+                sessionId).first().getUid();
         in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in2", "f1", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
+                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getUid();
         in3 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in3", "f2", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
+                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getUid();
         in4 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in4", "f2", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
+                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getUid();
     }
 
     @After
@@ -128,7 +128,7 @@ public class IndividualWSServerTest {
         Individual individual = response.getResponse().get(0).first();
         assertEquals(Individual.Sex.FEMALE, individual.getSex());
         assertEquals("new_individual1", individual.getName());
-        assertTrue(individual.getId() > 0);
+        assertTrue(individual.getUid() > 0);
     }
 
     @Test
@@ -145,7 +145,7 @@ public class IndividualWSServerTest {
         Individual individual = response.getResponse().get(0).first();
         assertEquals("f1", individual.getFamily());
         assertEquals(null, individual.getSex());
-        assertTrue(individual.getId() > 0);
+        assertTrue(individual.getUid() > 0);
     }
 
     @Test
@@ -166,7 +166,7 @@ public class IndividualWSServerTest {
         for (Individual individual : result) {
             assertEquals("f1", individual.getFamily());
             assertEquals(null, individual.getSex());
-            assertTrue(individual.getId() > 0);
+            assertTrue(individual.getUid() > 0);
         }
 
         // We look for an individual with father "in2"
@@ -213,8 +213,8 @@ public class IndividualWSServerTest {
         QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         Individual individual = response.getResponse().get(0).first();
-        assertTrue(individual.getFather().getId() > 0);
-        assertTrue(individual.getMother().getId() > 0);
+        assertTrue(individual.getFather().getUid() > 0);
+        assertTrue(individual.getMother().getUid() > 0);
         assertEquals(1, individual.getMultiples().getSiblings().size());
         assertEquals("in4", individual.getMultiples().getSiblings().get(0));
     }
@@ -264,7 +264,7 @@ public class IndividualWSServerTest {
 
         // FIXME: This will have to return an exception once we improve the delete behaviour
 //        thrown.expect(CatalogException.class);
-        OpenCGAWSServer.catalogManager.getIndividualManager().get(null, String.valueOf((Long) individual.getId()), null, sessionId);
+        OpenCGAWSServer.catalogManager.getIndividualManager().get(null, String.valueOf((Long) individual.getUid()), null, sessionId);
 
     }
 

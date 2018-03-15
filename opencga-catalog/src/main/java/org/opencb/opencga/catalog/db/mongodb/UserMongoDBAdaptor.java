@@ -329,7 +329,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             if (user.getProjects() != null) {
                 List<Project> projects = new ArrayList<>(user.getProjects().size());
                 for (Project project : user.getProjects()) {
-                    Query query1 = new Query(ProjectDBAdaptor.QueryParams.ID.key(), project.getId());
+                    Query query1 = new Query(ProjectDBAdaptor.QueryParams.UID.key(), project.getUid());
                     QueryResult<Project> projectQueryResult = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(query1, options);
                     projects.add(projectQueryResult.first());
                 }
@@ -357,8 +357,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             if (projects.size() > 0) {
                 List<Document> projectsTmp = new ArrayList<>(projects.size());
                 for (Document project : projects) {
-                    Query query1 = new Query(ProjectDBAdaptor.QueryParams.ID.key(), project.get(ProjectDBAdaptor
-                            .QueryParams.ID.key()));
+                    Query query1 = new Query(ProjectDBAdaptor.QueryParams.UID.key(), project.get(ProjectDBAdaptor
+                            .QueryParams.UID.key()));
                     QueryResult<Document> queryResult1 = dbAdaptorFactory.getCatalogProjectDbAdaptor().nativeGet(query1, options);
                     projectsTmp.add(queryResult1.first());
                 }

@@ -29,7 +29,7 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Family extends Annotable {
 
-    private long id;
+    private String id;
     private String name;
 
     private List<OntologyTerm> phenotypes;
@@ -48,7 +48,8 @@ public class Family extends Annotable {
 
     public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, -1, 1, annotationSets, attributes);
+        this(name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, -1, 1, annotationSets,
+                attributes);
     }
 
     public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate, FamilyStatus status,
@@ -114,11 +115,17 @@ public class Family extends Annotable {
         return sb.toString();
     }
 
-    public long getId() {
+    @Override
+    public Family setUid(long uid) {
+        super.setUid(uid);
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public Family setId(long id) {
+    public Family setId(String id) {
         this.id = id;
         return this;
     }

@@ -199,7 +199,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         MongoDBCollection collection = dbCollectionMap.get(entry);
 
         List<Bson> aggregation = new ArrayList<>();
-        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, resourceId)));
+        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_UID, resourceId)));
         aggregation.add(Aggregates.project(
                 Projections.include(QueryParams.ID.key(), QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key())));
 
@@ -402,7 +402,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));
             Document queryDocument = new Document()
                     .append("$isolated", 1)
-                    .append(PRIVATE_ID, resourceId);
+                    .append(PRIVATE_UID, resourceId);
             Document update;
             if (isPermissionRuleEntity(entry)) {
                 update = new Document("$set", new Document()
@@ -435,7 +435,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         Document queryDocument = new Document()
                 .append("$isolated", 1)
-                .append(PRIVATE_ID, new Document("$in", resourceIds));
+                .append(PRIVATE_UID, new Document("$in", resourceIds));
         Document update;
         if (isPermissionRuleEntity(entry)) {
             update = new Document("$addToSet", new Document()
@@ -474,7 +474,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         List<String> removePermissions = createPermissionArray(members, permissions);
         Document queryDocument = new Document()
                 .append("$isolated", 1)
-                .append(PRIVATE_ID, new Document("$in", resourceIds));
+                .append(PRIVATE_UID, new Document("$in", resourceIds));
         Document update;
         if (isPermissionRuleEntity(entity)) {
             update = new Document("$pullAll", new Document()
@@ -531,7 +531,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
             Document queryDocument = new Document()
                     .append("$isolated", 1)
-                    .append(PRIVATE_ID, resourceId);
+                    .append(PRIVATE_UID, resourceId);
             Document update;
             if (isPermissionRuleEntity(entity)) {
                 update = new Document("$set", new Document()
@@ -596,10 +596,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         // 1. Get all the entries that have the permission rule to be removed applied
         Document query = new Document()
-                .append(PRIVATE_STUDY_ID, study.getId())
+                .append(PRIVATE_STUDY_ID, study.getUid())
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_ID));
+                Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
         MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
         while (iterator.hasNext()) {
             Document myDocument = iterator.next();
@@ -642,8 +642,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             }
 
             Document tmpQuery = new Document()
-                    .append(PRIVATE_ID, myDocument.get(PRIVATE_ID))
-                    .append(PRIVATE_STUDY_ID, study.getId())
+                    .append(PRIVATE_UID, myDocument.get(PRIVATE_UID))
+                    .append(PRIVATE_STUDY_ID, study.getUid())
                     .append("$isolated", true);
 
             Document update = new Document("$set", new Document()
@@ -656,12 +656,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
             QueryResult<UpdateResult> updateResult = collection.update(tmpQuery, update, new QueryOptions("multi", true));
             if (updateResult.first().getModifiedCount() == 0) {
-                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_ID));
+                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
             }
         }
 
         // 2. Remove the permission rule from the map in the study
-        removeReferenceToPermissionRuleInStudy(study.getId(), permissionRuleToDeleteId, entry);
+        removeReferenceToPermissionRuleInStudy(study.getUid(), permissionRuleToDeleteId, entry);
     }
 
     @Override
@@ -683,10 +683,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         // 1. Get all the entries that have the permission rule to be removed applied
         Document query = new Document()
-                .append(PRIVATE_STUDY_ID, study.getId())
+                .append(PRIVATE_STUDY_ID, study.getUid())
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_ID));
+                Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
         MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
         while (iterator.hasNext()) {
             Document myDocument = iterator.next();
@@ -726,8 +726,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             }
 
             Document tmpQuery = new Document()
-                    .append(PRIVATE_ID, myDocument.get(PRIVATE_ID))
-                    .append(PRIVATE_STUDY_ID, study.getId())
+                    .append(PRIVATE_UID, myDocument.get(PRIVATE_UID))
+                    .append(PRIVATE_STUDY_ID, study.getUid())
                     .append("$isolated", true);
 
             Document update = new Document("$set", new Document()
@@ -739,12 +739,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
             QueryResult<UpdateResult> updateResult = collection.update(tmpQuery, update, new QueryOptions("multi", true));
             if (updateResult.first().getModifiedCount() == 0) {
-                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_ID));
+                throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
             }
         }
 
         // 2. Remove the permission rule from the map in the study
-        removeReferenceToPermissionRuleInStudy(study.getId(), permissionRuleToDeleteId, entry);
+        removeReferenceToPermissionRuleInStudy(study.getUid(), permissionRuleToDeleteId, entry);
     }
 
     @Override
@@ -785,7 +785,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Study.Entry entry)
             throws CatalogException {
         Document query = new Document()
-                .append(PRIVATE_ID, studyId)
+                .append(PRIVATE_UID, studyId)
                 .append(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry + ".id", permissionRuleToDelete);
         Document update = new Document("$pull",
                 new Document(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry,

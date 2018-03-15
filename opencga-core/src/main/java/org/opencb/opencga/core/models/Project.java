@@ -23,9 +23,9 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Project {
+public class Project extends PrivateFields {
 
-    private long id;
+    private String id;
     private String name;
     private String alias;
     private String creationDate;
@@ -48,17 +48,17 @@ public class Project {
 
     public Project(String name, String alias, String description, Status status, String organization, Organism organism,
                    int currentRelease) {
-        this(-1, name, alias, TimeUtils.getTime(), description, organization, organism, status, null, 0, new LinkedList<>(),
+        this(name, name, alias, TimeUtils.getTime(), description, organization, organism, status, null, 0, new LinkedList<>(),
                 new HashMap<>(), new HashMap<>(), currentRelease);
     }
 
     public Project(String name, String alias, String creationDate, String description, Status status, String lastModified, long size,
                    String organization, Organism organism, int currentRelease) {
-        this(-1, name, alias, creationDate, description, organization, organism, status, lastModified, size, new LinkedList<>(),
+        this(name, name, alias, creationDate, description, organization, organism, status, lastModified, size, new LinkedList<>(),
                 new HashMap<>(), new HashMap<>(), currentRelease);
     }
 
-    public Project(long id, String name, String alias, String creationDate, String description, String organization, Organism organism,
+    public Project(String id, String name, String alias, String creationDate, String description, String organization, Organism organism,
                    Status status, String lastModified, long size, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
                    Map<String, Object> attributes, int currentRelease) {
         this.id = id;
@@ -185,12 +185,18 @@ public class Project {
         return sb.toString();
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
-    public Project setId(long id) {
+    public Project setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    @Override
+    public Project setUid(long uid) {
+        super.setUid(uid);
         return this;
     }
 

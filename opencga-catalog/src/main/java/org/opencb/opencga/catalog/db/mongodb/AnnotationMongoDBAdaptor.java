@@ -138,7 +138,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         QueryResult<Long> count = getCollection().count(
                 new Document()
                         .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getName())
-                        .append(PRIVATE_ID, id));
+                        .append(PRIVATE_UID, id));
         if (count.first() > 0) {
             throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
         }
@@ -148,7 +148,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             count = getCollection().count(
                     new Document()
                             .append(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), annotationSet.getVariableSetId())
-                            .append(PRIVATE_ID, id));
+                            .append(PRIVATE_UID, id));
             if (count.first() > 0) {
                 throw new CatalogDBException("Repeated annotation for a unique VariableSet");
             }
@@ -159,7 +159,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
         // Insert the annotation set in the database
         Bson query = Filters.and(
-                Filters.eq(PRIVATE_ID, id),
+                Filters.eq(PRIVATE_UID, id),
                 Filters.eq(AnnotationSetParams.ANNOTATION_SET_NAME.key(), new Document("$ne", annotationSet.getName()))
         );
         Bson update = new Document("$addToSet", new Document(AnnotationSetParams.ANNOTATION_SETS.key(),
@@ -273,7 +273,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
         Map<Long, VariableSet> variableSetMap = new HashMap<>();
         for (VariableSet variableSet : variableSetList) {
-            variableSetMap.put(variableSet.getId(), variableSet);
+            variableSetMap.put(variableSet.getUid(), variableSet);
         }
 
         List<Document> createAnnotations = new ArrayList<>();
@@ -289,7 +289,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                     QueryResult<Long> count = getCollection().count(
                             new Document()
                                     .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getName())
-                                    .append(PRIVATE_ID, entryId));
+                                    .append(PRIVATE_UID, entryId));
                     if (count.first() > 0) {
                         throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
                     }
@@ -299,7 +299,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                         count = getCollection().count(
                                 new Document()
                                         .append(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), annotationSet.getVariableSetId())
-                                        .append(PRIVATE_ID, entryId));
+                                        .append(PRIVATE_UID, entryId));
                         if (count.first() > 0) {
                             throw new CatalogDBException("Repeated annotation for a unique VariableSet");
                         }
@@ -354,7 +354,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         List<Document> documentList = (List<Document>) annotationUpdateMap.get(AnnotationSetManager.Action.CREATE.name());
         if (documentList != null && !documentList.isEmpty()) {
             // Insert the annotation set in the database
-            Document query = new Document(PRIVATE_ID, entryId);
+            Document query = new Document(PRIVATE_UID, entryId);
             if (isVersioned) {
                 query.append(LAST_OF_VERSION, true);
             }
@@ -373,7 +373,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 long variableSetId = document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key());
 
                 Document queryDocument = new Document()
-                        .append(PRIVATE_ID, entryId)
+                        .append(PRIVATE_UID, entryId)
                         .append(AnnotationSetParams.ANNOTATION_SETS.key(),
                                 new Document("$elemMatch", new Document()
                                         .append(AnnotationSetParams.ID.key(), annotationId)
@@ -397,7 +397,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 if (update.first().getMatchedCount() == 0) {
                     // That annotation did not exist already, so we need to add that new annotation to the array
                     queryDocument = new Document()
-                            .append(PRIVATE_ID, entryId)
+                            .append(PRIVATE_UID, entryId)
                             .append(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$not",
                                     new Document("$elemMatch", new Document()
                                             .append(AnnotationSetParams.ID.key(), annotationId)
@@ -423,7 +423,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
         String annotationSetToRemove = (String) annotationUpdateMap.get(AnnotationSetManager.Action.DELETE_ANNOTATION_SET.name());
         if (StringUtils.isNotEmpty(annotationSetToRemove)) {
-            Document queryDocument = new Document(PRIVATE_ID, entryId);
+            Document queryDocument = new Document(PRIVATE_UID, entryId);
             if (isVersioned) {
                 queryDocument.append(LAST_OF_VERSION, true);
             }
@@ -449,7 +449,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 String variable = split[1];
 
                 Document queryDocument = new Document()
-                        .append(PRIVATE_ID, entryId)
+                        .append(PRIVATE_UID, entryId)
                         .append(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$elemMatch",
                                 new Document()
                                         .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSetName)
@@ -485,7 +485,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 //            long variableSetId = document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key());
 //
 //            Document queryDocument = new Document()
-//                    .append(PRIVATE_ID, id)
+//                    .append(PRIVATE_UID, id)
 //                    .append(AnnotationSetParams.ANNOTATION_SETS.key(),
 //                            new Document("$elemMatch", new Document()
 //                                    .append(AnnotationSetParams.ID.key(), annotationId)
@@ -501,7 +501,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 //            if (update.first().getMatchedCount() == 0) {
 //                // That annotation did not exist already, so we need to add that new annotation to the array
 //                queryDocument = new Document()
-//                        .append(PRIVATE_ID, id)
+//                        .append(PRIVATE_UID, id)
 //                        .append(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$not",
 //                                new Document("$elemMatch", new Document()
 //                                        .append(AnnotationSetParams.ID.key(), annotationId)
@@ -536,7 +536,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 //                if (!annotationKeysSet.contains(annotationKey)) {
 //                    // Remove this annotation from mongo
 //                    Document queryDocument = new Document()
-//                            .append(PRIVATE_ID, id)
+//                            .append(PRIVATE_UID, id)
 //                            .append(AnnotationSetParams.ANNOTATION_SETS.key(),
 //                                    new Document("$elemMatch", new Document()
 //                                            .append(AnnotationSetParams.ID.key(), annotationKey)
@@ -568,7 +568,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         setOfVariables.add(variable);
 
         VariableSet variableSet = new VariableSet()
-                .setId(variableSetId)
+                .setUid(variableSetId)
                 .setVariables(setOfVariables);
 
         // This can actually be a list of more than 1 element if the new variable added is an object. In such a case, we could have
@@ -637,7 +637,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 ////
 ////                // Build a query to look for the particular annotations
 ////                Bson bsonQuery = Filters.and(
-////                        Filters.eq(PRIVATE_ID, entityId),
+////                        Filters.eq(PRIVATE_UID, entityId),
 ////                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName),
 ////                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key(), oldName)
 ////                );
@@ -662,7 +662,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 ////                Document annotation = new Document(newName, value);
 ////
 ////                bsonQuery = Filters.and(
-////                        Filters.eq(PRIVATE_ID, entityId),
+////                        Filters.eq(PRIVATE_UID, entityId),
 ////                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName)
 ////                );
 ////
