@@ -24,7 +24,6 @@ import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -40,6 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
@@ -735,11 +735,11 @@ public class VariantSqlQueryParser {
                     }
                     String key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
                     final String filter;
-                    if (new Genotype(genotype).isAllelesRefs()) {
+                    if (FillGapsTask.isHomRefDiploid(genotype)) {
                         if (negated) {
-                            filter = '"' + key + "\" IS NOT NULL";
+                            filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
                         } else {
-                            filter = '"' + key + "\" IS NULL";
+                            filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
                         }
                     } else {
                         if (negated) {
