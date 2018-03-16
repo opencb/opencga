@@ -53,7 +53,6 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantLocalConflictResolver.NOCALL;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 
@@ -80,6 +79,9 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("~", "LIKE");
         SQL_OPERATOR.put("!", "!=");
     }
+
+    // Internal usage only
+    private static final String ALT_GT = "ALT";
 
     public static class VariantPhoenixSQLQuery {
         private String sql;
@@ -705,7 +707,8 @@ public class VariantSqlQueryParser {
             QueryOperation op = checkOperator(value);
             List<String> samples = splitValue(value, op);
             for (String sample : samples) {
-                genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
+                genotypesMap.put(sample, Collections.singletonList(ALT_GT));
+//                genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
             }
         }
 
@@ -735,7 +738,14 @@ public class VariantSqlQueryParser {
                     }
                     String key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
                     final String filter;
-                    if (FillGapsTask.isHomRefDiploid(genotype)) {
+                    if (ALT_GT.equals(genotype)) {
+                        // Either starts or ends by 1 : 0/1, 1/1, 0|1, 1|0, 1/2, ...
+//                        filter = "( \"" + key + "\"[1] LIKE '%1' OR \"" + key + "\"[1] LIKE '1%' )";
+
+                        // The genotype contains a 1: 0/1, 1/1, 0|1, 1|0, 1/2, ...
+                        filter = '"' + key + "\"[1] LIKE '%1%'";
+                        // FIXME: This may return unwanted values at big multi-allelic variants like : 5/10
+                    } else if (FillGapsTask.isHomRefDiploid(genotype)) {
                         if (negated) {
                             filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
                         } else {
