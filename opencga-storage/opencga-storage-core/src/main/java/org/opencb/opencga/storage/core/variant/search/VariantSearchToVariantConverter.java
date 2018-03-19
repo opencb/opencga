@@ -91,6 +91,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // process annotation
         VariantAnnotation variantAnnotation = new VariantAnnotation();
 
+        // Set 'release' if it was not missing
+        if (variantSearchModel.getRelease() > 0) {
+            Map<String, String> attribute = new HashMap<>();
+            attribute.put("release", String.valueOf(variantSearchModel.getRelease()));
+            variantAnnotation.getAdditionalAttributes().put("opencga", new AdditionalAttribute(attribute));
+        }
+
         // Xrefs
         List<String> hgvs = new ArrayList<>();
         List<Xref> xrefs = new ArrayList<>();
@@ -287,10 +294,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         cosmicList.add(cosmic);
                         break;
                     case "KW":
-                        //TODO: Parse Keyword
-                        break;
                     case "PD":
-                        //TODO: Parse Protein Feature
+                        // These are taken from consequence type non-indexed field
                         break;
                     default: {
                         logger.warn("Unknown trait type: " + fields[0] + ", it should be HPO, ClinVar or Cosmic");
@@ -321,20 +326,44 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
 
-//        VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
-//        if (CollectionUtils.isNotEmpty(clinVarList) || CollectionUtils.isNotEmpty(cosmicList)) {
-//            if (CollectionUtils.isNotEmpty(clinVarList)) {
-//                variantTraitAssociation.setClinvar(clinVarList);
-//            }
-//            if (CollectionUtils.isNotEmpty(cosmicList)) {
-//                variantTraitAssociation.setCosmic(cosmicList);
-//            }
-//            variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
-//        }
-
-//        if (CollectionUtils.isNotEmpty(geneTraitAssociationList)) {
-//            variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
-//        }
+        // Set displayConsequenceType, hgvs, cytobands and repeats from 'other' field
+        variantAnnotation.setHgvs(new ArrayList<>());
+        variantAnnotation.setCytoband(new ArrayList<>());
+        variantAnnotation.setRepeat(new ArrayList<>());
+        for (String other : variantSearchModel.getOther()) {
+            String[] fields = other.split(" -- ");
+            switch (fields[0]) {
+                case "DCT":
+                    variantAnnotation.setDisplayConsequenceType(fields[1]);
+                    break;
+                case "HGVS":
+                    variantAnnotation.getHgvs().add(fields[1]);
+                    break;
+                case "CB":
+                    Cytoband cytoband = Cytoband.newBuilder()
+                            .setChromosome(variant.getChromosome())
+                            .setName(fields[1])
+                            .setStain(fields[2])
+                            .setStart(Integer.parseInt(fields[3])).setEnd(Integer.parseInt(fields[4]))
+                            .build();
+                    variantAnnotation.getCytoband().add(cytoband);
+                    break;
+                case "RP":
+                    Repeat repeat = Repeat.newBuilder()
+                            .setId(fields[1])
+                            .setSource(fields[2])
+                            .setChromosome(variant.getChromosome())
+                            .setStart(Integer.parseInt(fields[5])).setEnd(Integer.parseInt(fields[6]))
+                            .setCopyNumber(Float.parseFloat(fields[3]))
+                            .setPercentageMatch(Float.parseFloat(fields[4]))
+                            .build();
+                    variantAnnotation.getRepeat().add(repeat);
+                    break;
+                default:
+                    logger.warn("Unknown key in 'other' array in Solr: " + fields[0]);
+                    break;
+            }
+        }
 
         // set variant annotation
         variant.setAnnotation(variantAnnotation);
@@ -416,8 +445,22 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantAnnotation variantAnnotation = variant.getAnnotation();
         if (variantAnnotation != null) {
 
-            // This object store all info and descriptions for full-text search
+            // This object will store all info and descriptions for full-text search
             Set<String> traits = new HashSet<>();
+
+            // Set release field
+            if (variantAnnotation.getAdditionalAttributes() != null && variantAnnotation.getAdditionalAttributes().get("opencga") != null) {
+                int release = -1;   // default value if missing is -1
+                String releaseStr = variantAnnotation.getAdditionalAttributes().get("opencga").getAttribute().get("release");
+                // example: release = "2,3,4"
+                if (StringUtils.isNotEmpty(releaseStr)) {
+                    releaseStr = releaseStr.split(",")[0];
+                    if (StringUtils.isNumeric(releaseStr)) {
+                        release = Integer.parseInt(releaseStr);
+                    }
+                }
+                variantSearchModel.setRelease(release);
+            }
 
             // Add cytoband names
             if (variantAnnotation.getCytoband() != null) {
@@ -437,9 +480,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // Add all HGVS coming from the variant annotation
             if (variantAnnotation.getHgvs() != null && !variantAnnotation.getHgvs().isEmpty()) {
-                for (String hgvs : variantAnnotation.getHgvs()) {
-                    xrefs.add("hgvs:" + hgvs);
-                }
+                xrefs.addAll(variantAnnotation.getHgvs());
             }
 
             // Set Genes and Consequence Types
@@ -620,6 +661,30 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
             variantSearchModel.setTraits(new ArrayList<>(traits));
+
+            // Now we fill other field
+            List<String> other = new ArrayList<>();
+            if (StringUtils.isNotEmpty(variantAnnotation.getDisplayConsequenceType())) {
+                other.add("DCT -- " + variantAnnotation.getDisplayConsequenceType());
+            }
+            if (variantAnnotation.getHgvs() != null) {
+                for (String hgvs : variantAnnotation.getHgvs()) {
+                    other.add("HGVS -- " + hgvs);
+                }
+            }
+            if (variantAnnotation.getCytoband() != null) {
+                for (Cytoband cytoband : variantAnnotation.getCytoband()) {
+                    other.add("CB -- " + cytoband.getName() + " -- " + cytoband.getStain()
+                            + " -- " + cytoband.getStart() + " -- " + cytoband.getEnd());
+                }
+            }
+            if (variantAnnotation.getRepeat() != null) {
+                for (Repeat repeat : variantAnnotation.getRepeat()) {
+                    other.add("RP -- " + repeat.getId() + " -- " + repeat.getSource() + " -- " + repeat.getCopyNumber()
+                            + " -- " + repeat.getPercentageMatch() + " -- " + repeat.getStart() + " -- " + repeat.getEnd());
+                }
+            }
+            variantSearchModel.setOther(other);
         }
 
         variantSearchModel.setXrefs(new ArrayList<>(xrefs));

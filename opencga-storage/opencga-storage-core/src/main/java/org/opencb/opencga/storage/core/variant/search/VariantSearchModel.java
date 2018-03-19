@@ -80,6 +80,9 @@ public class VariantSearchModel {
     @Field("type")
     private String type;
 
+    @Field("release")
+    private int release;
+
     @Field("studies")
     private List<String> studies;
 
@@ -125,6 +128,9 @@ public class VariantSearchModel {
     @Field("traits")
     private List<String> traits;
 
+    @Field("other")
+    private List<String> other;
+
     @Field("stats_*")
     private Map<String, Float> stats;
 
@@ -145,6 +151,7 @@ public class VariantSearchModel {
         this.genes = new ArrayList<>();
         this.soAcc = new ArrayList<>();
         this.geneToSoAcc = new ArrayList<>();
+        this.other = new ArrayList<>();
         this.popFreq = new HashMap<>();
     }
 
@@ -158,6 +165,7 @@ public class VariantSearchModel {
         sb.append(", end=").append(end);
         sb.append(", xrefs=").append(xrefs);
         sb.append(", type='").append(type).append('\'');
+        sb.append(", release=").append(release);
         sb.append(", studies=").append(studies);
         sb.append(", phastCons=").append(phastCons);
         sb.append(", phylop=").append(phylop);
@@ -173,6 +181,7 @@ public class VariantSearchModel {
         sb.append(", soAcc=").append(soAcc);
         sb.append(", geneToSoAcc=").append(geneToSoAcc);
         sb.append(", traits=").append(traits);
+        sb.append(", other=").append(other);
         sb.append(", stats=").append(stats);
         sb.append(", popFreq=").append(popFreq);
         sb.append('}');
@@ -239,6 +248,15 @@ public class VariantSearchModel {
 
     public VariantSearchModel setType(String type) {
         this.type = type;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public VariantSearchModel setRelease(int release) {
+        this.release = release;
         return this;
     }
 
@@ -374,6 +392,15 @@ public class VariantSearchModel {
 
     public VariantSearchModel setTraits(List<String> traits) {
         this.traits = traits;
+        return this;
+    }
+
+    public List<String> getOther() {
+        return other;
+    }
+
+    public VariantSearchModel setOther(List<String> other) {
+        this.other = other;
         return this;
     }
 
