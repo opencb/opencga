@@ -248,12 +248,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantAnnotation.setFunctionalScore(scores);
 
         // set HPO, ClinVar and Cosmic
-//        Map<String, List<String>> clinVarMap = new HashMap<>();
-        Map<String, ClinVar> clinVarMap = new HashMap<>();
-        List<ClinVar> clinVarList = new ArrayList<>();
-        List<Cosmic> cosmicList = new ArrayList<>();
-        List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
         if (variantSearchModel.getTraits() != null) {
+            Map<String, ClinVar> clinVarMap = new HashMap<>();
+            List<ClinVar> clinVarList = new ArrayList<>();
+            List<Cosmic> cosmicList = new ArrayList<>();
+            List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
+
             for (String trait : variantSearchModel.getTraits()) {
                 String[] fields = StringUtils.splitByWholeSeparatorPreserveAllTokens(trait, " -- ");
                 switch (fields[0]) {
@@ -298,10 +298,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                 }
             }
-        }
 
-        VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
-        if (CollectionUtils.isNotEmpty(clinVarList) || CollectionUtils.isNotEmpty(cosmicList)) {
+            // TODO to be removed in next versions
+            VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
+            // This fills the old data model: variantTraitAssociation
             if (CollectionUtils.isNotEmpty(clinVarList)) {
                 variantTraitAssociation.setClinvar(clinVarList);
             }
@@ -309,10 +309,32 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 variantTraitAssociation.setCosmic(cosmicList);
             }
             variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
+
+            List<EvidenceEntry> evidenceEntries = new ArrayList<>();
+            // This fills the new data model: traitAssociation
+            // TODO jtarraga please.
+            variantAnnotation.setTraitAssociation(evidenceEntries);
+
+            // Set the gene disease annotation
+            if (CollectionUtils.isNotEmpty(geneTraitAssociationList)) {
+                variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
+            }
         }
-        if (CollectionUtils.isNotEmpty(geneTraitAssociationList)) {
-            variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
-        }
+
+//        VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
+//        if (CollectionUtils.isNotEmpty(clinVarList) || CollectionUtils.isNotEmpty(cosmicList)) {
+//            if (CollectionUtils.isNotEmpty(clinVarList)) {
+//                variantTraitAssociation.setClinvar(clinVarList);
+//            }
+//            if (CollectionUtils.isNotEmpty(cosmicList)) {
+//                variantTraitAssociation.setCosmic(cosmicList);
+//            }
+//            variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
+//        }
+
+//        if (CollectionUtils.isNotEmpty(geneTraitAssociationList)) {
+//            variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
+//        }
 
         // set variant annotation
         variant.setAnnotation(variantAnnotation);
