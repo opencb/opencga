@@ -38,7 +38,6 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
     enum QueryParams implements QueryParam {
         UID("uid", INTEGER, ""),
         ID("id", TEXT, ""),
-        NAME("name", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         TYPE("type", TEXT, ""),

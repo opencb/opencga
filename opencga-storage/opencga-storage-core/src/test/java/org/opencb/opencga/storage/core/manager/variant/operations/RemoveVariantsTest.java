@@ -107,7 +107,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         List<File> removedFiles = variantManager.removeFile(fileIds, String.valueOf(studyId), sessionId, new QueryOptions());
         assertEquals(files.size(), removedFiles.size());
 
-        Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
+        Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         Set<Long> allSampleIds = all.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
 
         assertThat(all.getStatus().getName(), anyOf(is(Cohort.CohortStatus.INVALID), is(Cohort.CohortStatus.NONE)));
@@ -132,7 +132,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
         assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());
 
-        Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
+        Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         assertTrue(all.getSamples().isEmpty());
     }
 

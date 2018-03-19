@@ -120,7 +120,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
             calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             variantStorageEngine.getOptions().putAll(calculateStatsOptions);
-            List<String> cohortsName = cohortsMap.values().stream().map(Cohort::getName).collect(Collectors.toList());
+            List<String> cohortsName = cohortsMap.values().stream().map(Cohort::getId).collect(Collectors.toList());
             variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohortsName,
                     calculateStatsOptions);
 
@@ -188,7 +188,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
             }
             for (Iterator<Long> iterator = cohortIds.iterator(); iterator.hasNext();) {
                 Long cohortId = iterator.next();
-                outputFileNameBuilder.append(cohortsMap.get(cohortId).getName());
+                outputFileNameBuilder.append(cohortsMap.get(cohortId).getId());
                 if (iterator.hasNext()) {
                     outputFileNameBuilder.append('_');
                 }
@@ -275,7 +275,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         Map<String, Long> catalogCohorts = catalogManager.getCohortManager().get(studyId, null, new QueryOptions(QueryOptions.INCLUDE,
                 "name,id"), sessionId).getResult()
                 .stream()
-                .collect(Collectors.toMap(Cohort::getName, Cohort::getUid));
+                .collect(Collectors.toMap(Cohort::getId, Cohort::getUid));
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.containsKey(cohortName)) {
                 QueryResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
@@ -422,14 +422,14 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     static CatalogException unableToCalculateCohortReady(Cohort cohort) {
         return new CatalogException("Unable to calculate stats for cohort "
-                + "{ id: " + cohort.getUid() + " name: \"" + cohort.getName() + "\" }"
+                + "{ id: " + cohort.getUid() + " name: \"" + cohort.getId() + "\" }"
                 + " with status \"" + cohort.getStatus().getName() + "\". "
                 + "Resume or update stats for continue calculation");
     }
 
     static CatalogException unableToCalculateCohortCalculating(Cohort cohort) {
         return new CatalogException("Unable to calculate stats for cohort "
-                + "{ id: " + cohort.getUid() + " name: \"" + cohort.getName() + "\" }"
+                + "{ id: " + cohort.getUid() + " name: \"" + cohort.getId() + "\" }"
                 + " with status \"" + cohort.getStatus().getName() + "\". "
                 + "Resume for continue calculation.");
     }

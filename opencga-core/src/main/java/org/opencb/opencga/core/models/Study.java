@@ -73,7 +73,7 @@ public class Study extends PrivateFields {
     }
 
     public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
-        this(name, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
+        this(alias, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
                 new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new HashMap<>(),
                 uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>()

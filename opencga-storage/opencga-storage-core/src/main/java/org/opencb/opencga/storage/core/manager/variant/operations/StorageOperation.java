@@ -227,7 +227,7 @@ public abstract class StorageOperation {
             throws CatalogException {
         DataStore dataStore;
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(ProjectDBAdaptor.QueryParams.ALIAS.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
+                Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
         Project project = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), queryOptions, sessionId).first();
         if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
             dataStore = project.getDataStores().get(bioformat);
@@ -239,7 +239,7 @@ public abstract class StorageOperation {
 
             String databasePrefix = catalogManager.getConfiguration().getDatabasePrefix();
 
-            String dbName = buildDatabaseName(databasePrefix, userId, project.getAlias());
+            String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
             dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageManagerName(), dbName);
         }
         return dataStore;

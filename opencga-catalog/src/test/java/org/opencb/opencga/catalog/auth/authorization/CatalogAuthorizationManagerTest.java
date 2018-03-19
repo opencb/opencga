@@ -736,7 +736,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readSampleForbiddenForExternalUser() throws CatalogException {
-        catalogManager.getSampleManager().updateAcl(String.valueOf(s1), Arrays.asList(smp2.getName()), externalUser, new Sample.SampleAclParams("",
+        catalogManager.getSampleManager().updateAcl(String.valueOf(s1), Arrays.asList(smp2.getId()), externalUser, new Sample.SampleAclParams("",
                 AclParams.Action.SET, null, null, null), ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(smp2.getUid(), null, externalSessionId);

@@ -41,7 +41,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
     enum QueryParams implements QueryParam {
         UID("uid", DECIMAL, ""),
         ID("id", TEXT, ""),
-        NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         STATUS("status", TEXT_ARRAY, ""),
@@ -113,7 +112,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
     }
 
     enum UpdateParams {
-        NAME(QueryParams.NAME.key()),
+        NAME(QueryParams.ID.key()),
         CREATION_DATE(QueryParams.CREATION_DATE.key()),
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
         SAMPLES(QueryParams.SAMPLES.key()),

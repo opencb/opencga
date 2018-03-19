@@ -90,7 +90,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(studyId, new Query
-                        (CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()),
+                        (CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()),
                 catalogManager, dbName, sessionId);
         assertNotNull(catalogManager.getFileManager().get(getFile(2).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
@@ -106,7 +106,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(getFile(4).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(studyId, new Query
-                        (CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()),
+                        (CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()),
                 catalogManager, dbName, sessionId);
     }
 
@@ -242,7 +242,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File transformedFile = transformFile(getFile(0), queryOptions);
         loadFile(transformedFile, queryOptions, outputId);
 
-        WriteResult result = catalogManager.getCohortManager().delete(studyStr, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"),
+        WriteResult result = catalogManager.getCohortManager().delete(studyStr, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"),
                 null, sessionId);
         assertEquals(0, result.getNumModified());
         assertTrue(result.getFailed().get(0).getMessage().contains("ALL cannot be deleted"));

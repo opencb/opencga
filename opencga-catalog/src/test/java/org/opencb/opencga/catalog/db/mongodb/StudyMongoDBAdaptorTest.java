@@ -70,14 +70,14 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
                         null, Collections.<String, Object>emptyMap())
         ));
-        VariableSet variableSet = new VariableSet(name, name, false, confidential, "My description", variables, 1, Collections.emptyMap());
+        VariableSet variableSet = new VariableSet(name, false, confidential, "My description", variables, 1, Collections.emptyMap());
         return catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
     }
 
     @Test
     public void createVariableSetTest() throws CatalogDBException {
         QueryResult<VariableSet> queryResult = createExampleVariableSet("VARSET_1", false);
-        assertEquals("VARSET_1", queryResult.first().getName());
+        assertEquals("VARSET_1", queryResult.first().getId());
         assertTrue("The id of the variableSet is wrong.", queryResult.first().getUid() > -1);
     }
 

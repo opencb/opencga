@@ -96,7 +96,7 @@ public class ProjectManager extends AbstractManager {
             // Anonymous user
             Query query = new Query();
             if (StringUtils.isNotBlank(projectAlias)) {
-                query.put(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
+                query.put(ProjectDBAdaptor.QueryParams.ID.key(), projectAlias);
             }
             if (!userOwner.equals(ANONYMOUS)) {
                 query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userOwner);
@@ -139,7 +139,7 @@ public class ProjectManager extends AbstractManager {
             return Arrays.asList(projectDBAdaptor.getId(userOwner, projectAlias));
         } else {
             // Anonymous user
-            Query query = new Query(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
+            Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectAlias);
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.UID.key());
             QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
 
@@ -203,7 +203,7 @@ public class ProjectManager extends AbstractManager {
             organism.setCommonName(assembly);
         }
 
-        Project project = new Project(name, alias, description, new Status(), organization, organism, 1);
+        Project project = new Project(alias, name, description, new Status(), organization, organism, 1);
 
         QueryResult<Project> queryResult = projectDBAdaptor.insert(project, userId, options);
         project = queryResult.getResult().get(0);

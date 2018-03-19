@@ -48,12 +48,18 @@ public class Family extends Annotable {
 
     public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, -1, 1, annotationSets,
+        this(name, name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, -1, 1, annotationSets,
                 attributes);
     }
 
     public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate, FamilyStatus status,
                   String description, int release, int version, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(name, name, phenotypes, members, creationDate, status, description, release, version, annotationSets, attributes);
+    }
+
+    public Family(String id, String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate, FamilyStatus
+            status, String description, int release, int version, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this.id = id;
         this.name = name;
         this.phenotypes = defaultObject(phenotypes, Collections::emptyList);
         this.members = defaultObject(members, Collections::emptyList);

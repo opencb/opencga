@@ -137,11 +137,11 @@ public class FileManagerTest extends GenericTest {
         Project project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first();
 
 
-        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 1", "phase1", Study.Type.TRIO, null, "Done",
+        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "phase1", "Phase 1", Study.Type.TRIO, null, "Done",
                 null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
-        studyId2 = catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 3", "phase3", Study.Type.CASE_CONTROL, null,
+        studyId2 = catalogManager.getStudyManager().create(String.valueOf(projectId), "phase3", "Phase 3", Study.Type.CASE_CONTROL, null,
                 "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
-        catalogManager.getStudyManager().create(String.valueOf(project2.getUid()), "Study 1", "s1", Study.Type.CONTROL_SET, null, "",
+        catalogManager.getStudyManager().create(String.valueOf(project2.getUid()), "s1", "Study 1", Study.Type.CONTROL_SET, null, "",
                 null, null, null, null, null, null, null, null, sessionIdUser2).first().getUid();
 
         catalogManager.getFileManager().createFolder(Long.toString(studyId2), Paths.get("data/test/folder/").toString(), null, true, null, QueryOptions.empty(), sessionIdUser);
@@ -389,7 +389,7 @@ public class FileManagerTest extends GenericTest {
                 sessionIdUser);
 
         assertEquals(4, sampleQueryResult.getNumResults());
-        List<String> sampleNames = sampleQueryResult.getResult().stream().map(Sample::getName).collect(Collectors.toList());
+        List<String> sampleNames = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
         assertTrue(sampleNames.contains("test-name.bam"));
         assertTrue(sampleNames.contains("NA19660"));
         assertTrue(sampleNames.contains("NA19661"));
@@ -559,7 +559,7 @@ public class FileManagerTest extends GenericTest {
                 null, QueryOptions.empty(), sessionIdUser2).first();
 
         Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
-        long id = catalogManager.getStudyManager().create(String.valueOf(projectId), "name", "alias", Study.Type.CASE_CONTROL, "", "",
+        long id = catalogManager.getStudyManager().create(String.valueOf(projectId), "alias", "name", Study.Type.CASE_CONTROL, "", "",
                 null, null, null, myStudy.toUri(), null, null, null, null, sessionIdUser2).first().getUid();
         System.out.println("studyId = " + id);
         folder = catalogManager.getFileManager().createFolder(Long.toString(id), Paths.get("WOLOLO").toString(), null, true, null,
@@ -766,7 +766,7 @@ public class FileManagerTest extends GenericTest {
 
         // Create a new study so more than one file will be found under the root /. However, it should be able to consider the study given
         // properly
-        catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 2", "phase2", Study.Type.TRIO, null, "Done", null,
+        catalogManager.getStudyManager().create(String.valueOf(projectId), "phase2", "Phase 2", Study.Type.TRIO, null, "Done", null,
                 null, null, null, null, null, null, null, sessionIdUser).first().getUid();
 
         QueryResult<FileTree> fileTree = catalogManager.getFileManager().getTree("/", "user@1000G:phase1", new Query(), new QueryOptions(),

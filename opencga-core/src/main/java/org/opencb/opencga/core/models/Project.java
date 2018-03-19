@@ -27,6 +27,7 @@ public class Project extends PrivateFields {
 
     private String id;
     private String name;
+    @Deprecated
     private String alias;
     private String creationDate;
     private String description;
@@ -46,24 +47,22 @@ public class Project extends PrivateFields {
     public Project() {
     }
 
-    public Project(String name, String alias, String description, Status status, String organization, Organism organism,
-                   int currentRelease) {
-        this(name, name, alias, TimeUtils.getTime(), description, organization, organism, status, null, 0, new LinkedList<>(),
+    public Project(String id, String name, String description, Status status, String organization, Organism organism, int currentRelease) {
+        this(id, name, TimeUtils.getTime(), description, organization, organism, status, null, 0, new LinkedList<>(),
                 new HashMap<>(), new HashMap<>(), currentRelease);
     }
 
-    public Project(String name, String alias, String creationDate, String description, Status status, String lastModified, long size,
+    public Project(String id, String name, String creationDate, String description, Status status, String lastModified, long size,
                    String organization, Organism organism, int currentRelease) {
-        this(name, name, alias, creationDate, description, organization, organism, status, lastModified, size, new LinkedList<>(),
+        this(id, name, creationDate, description, organization, organism, status, lastModified, size, new LinkedList<>(),
                 new HashMap<>(), new HashMap<>(), currentRelease);
     }
 
-    public Project(String id, String name, String alias, String creationDate, String description, String organization, Organism organism,
-                   Status status, String lastModified, long size, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
+    public Project(String id, String name, String creationDate, String description, String organization, Organism organism, Status status,
+                   String lastModified, long size, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
                    Map<String, Object> attributes, int currentRelease) {
         this.id = id;
         this.name = name;
-        this.alias = alias;
         this.creationDate = creationDate;
         this.description = description;
         this.organization = organization;
@@ -169,7 +168,6 @@ public class Project extends PrivateFields {
         final StringBuilder sb = new StringBuilder("Project{");
         sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
-        sb.append(", alias='").append(alias).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", organization='").append(organization).append('\'');

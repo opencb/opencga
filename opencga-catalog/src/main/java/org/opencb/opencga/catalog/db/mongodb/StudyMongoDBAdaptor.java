@@ -74,12 +74,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         this.variableSetConverter = new VariableSetConverter();
     }
 
-    private boolean studyAliasExists(long projectId, String studyAlias) throws CatalogDBException {
+    private boolean studyIdExists(long projectId, String studyId) throws CatalogDBException {
         if (projectId < 0) {
             throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
         }
 
-        Query query = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
+        Query query = new Query(QueryParams.PROJECT_ID.key(), projectId).append(QueryParams.ID.key(), studyId);
         QueryResult<Long> count = count(query);
         return count.first() != 0;
     }
@@ -99,8 +99,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         // Check if study.alias already exists.
-        if (studyAliasExists(projectId, study.getAlias())) {
-            throw new CatalogDBException("Study {alias:\"" + study.getAlias() + "\"} already exists");
+        if (studyIdExists(projectId, study.getId())) {
+            throw new CatalogDBException("Study {id:\"" + study.getId() + "\"} already exists");
         }
 
         //Set new ID
@@ -161,7 +161,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         for (Cohort cohort : cohorts) {
             String fileErrorMsg = dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(study.getUid(), cohort, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += cohort.getName() + ":" + fileErrorMsg + ", ";
+                errorMsg += cohort.getId() + ":" + fileErrorMsg + ", ";
             }
         }
 
@@ -213,7 +213,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public long getId(long projectId, String studyAlias) throws CatalogDBException {
-        Query query1 = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
+        Query query1 = new Query(QueryParams.PROJECT_ID.key(), projectId).append(QueryParams.ID.key(), studyAlias);
         QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key());
         QueryResult<Study> studyQueryResult = get(query1, queryOptions);
         List<Study> studies = studyQueryResult.getResult();
@@ -568,10 +568,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public Long variableSetExists(long variableSetId) {
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(),
-                Filters.eq(VariableSetParams.ID.key(), variableSetId))));
+                Filters.eq(VariableSetParams.UID.key(), variableSetId))));
         aggregation.add(Aggregates.project(Projections.include(QueryParams.VARIABLE_SET.key())));
         aggregation.add(Aggregates.unwind("$" + QueryParams.VARIABLE_SET.key()));
-        aggregation.add(Aggregates.match(Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId)));
+        aggregation.add(Aggregates.match(Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId)));
         QueryResult<VariableSet> queryResult = studyCollection.aggregate(aggregation, variableSetConverter, new QueryOptions());
 
         return (long) queryResult.getResult().size();
@@ -581,14 +581,14 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException {
         long startTime = startQuery();
 
-        if (variableSetExists(variableSet.getName(), studyId) > 0) {
-            throw new CatalogDBException("VariableSet { name: '" + variableSet.getName() + "'} already exists.");
+        if (variableSetExists(variableSet.getId(), studyId) > 0) {
+            throw new CatalogDBException("VariableSet { name: '" + variableSet.getId() + "'} already exists.");
         }
 
         long variableSetId = getNewId();
         variableSet.setUid(variableSetId);
         Document object = getMongoDBDocument(variableSet, "VariableSet");
-        object.put("id", variableSetId);
+        object.put(PRIVATE_UID, variableSetId);
 
         Bson bsonQuery = Filters.eq(PRIVATE_UID, studyId);
         Bson update = Updates.push("variableSets", object);
@@ -609,7 +609,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableNotInVariableSet(variableSet.first(), variable.getName());
 
-        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
         Bson update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
                 getMongoDBDocument(variable, "variable"));
         QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
@@ -644,7 +644,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 //        }
 //
 //        // 2. we take it out from the array.
-//        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+//        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
 //        Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
 // Filters.eq("name", oldName));
 //        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
@@ -685,7 +685,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableInVariableSet(variableSet.first(), name);
 
-        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
         Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
                 Filters.eq("name", name));
         QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
@@ -742,8 +742,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        Query query = new Query(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-        Bson projection = Projections.elemMatch("variableSets", Filters.eq("id", variableSetId));
+        Query query = new Query(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
+        Bson projection = Projections.elemMatch("variableSets", Filters.eq(PRIVATE_UID, variableSetId));
         if (options == null) {
             options = new QueryOptions();
         }
@@ -763,7 +763,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        Bson query = new Document("variableSets", new Document("$elemMatch", new Document("id", variableSetId)));
+        Bson query = new Document("variableSets", new Document("$elemMatch", new Document(PRIVATE_UID, variableSetId)));
         QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "variableSets.$,_ownerId,groups,_acl");
         QueryResult<Document> studyQueryResult = studyCollection.find(query, qOptions);
 
@@ -924,8 +924,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions, user);
         checkVariableSetInUse(variableSetId);
 
-        Bson query = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-        Bson operation = Updates.pull("variableSets", Filters.eq("id", variableSetId));
+        Bson query = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
+        Bson operation = Updates.pull("variableSets", Filters.eq(PRIVATE_UID, variableSetId));
         QueryResult<UpdateResult> update = studyCollection.update(query, operation, null);
 
         if (update.first().getModifiedCount() == 0) {
@@ -940,7 +940,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
             for (Sample sample : samples.getResult()) {
-                msg += " { id: " + sample.getUid() + ", name: \"" + sample.getName() + "\" },";
+                msg += " { id: " + sample.getUid() + ", name: \"" + sample.getId() + "\" },";
             }
             msg += "]";
             throw new CatalogDBException(msg);
@@ -961,7 +961,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (cohorts.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of cohorts : [";
             for (Cohort cohort : cohorts.getResult()) {
-                msg += " { id: " + cohort.getUid() + ", name: \"" + cohort.getName() + "\" },";
+                msg += " { id: " + cohort.getUid() + ", name: \"" + cohort.getId() + "\" },";
             }
             msg += "]";
             throw new CatalogDBException(msg);
@@ -982,14 +982,14 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException {
 //        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
-        Bson query = Filters.eq("variableSets.id", variableSetId);
-        Bson projection = Projections.include("id");
+        Bson query = Filters.eq("variableSets." + PRIVATE_UID, variableSetId);
+        Bson projection = Projections.include(PRIVATE_UID);
 
-//        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
+//        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject(PRIVATE_UID, true), null);
         QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
 
         if (!queryResult.getResult().isEmpty()) {
-            Object id = queryResult.getResult().get(0).get("id");
+            Object id = queryResult.getResult().get(0).get(PRIVATE_UID);
             return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
         } else {
             throw CatalogDBException.idNotFound("VariableSet", variableSetId);
@@ -1597,7 +1597,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case NAME:
-                    case ALIAS:
+                    case ID:
                     case DESCRIPTION:
                     case CIPHER:
                     case STATUS_NAME:
@@ -1624,7 +1624,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case EXPERIMENT_RESPONSIBLE:
                     case COHORTS:
                     case VARIABLE_SET:
-                    case VARIABLE_SET_ID:
+                    case VARIABLE_SET_UID:
                     case VARIABLE_SET_NAME:
                     case VARIABLE_SET_DESCRIPTION:
                     case OWNER:

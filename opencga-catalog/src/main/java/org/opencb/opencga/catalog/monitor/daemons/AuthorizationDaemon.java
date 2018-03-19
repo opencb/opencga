@@ -34,7 +34,7 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
 
         Query allStudies = new Query();
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                        Arrays.asList(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
+                        Arrays.asList(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key(), StudyDBAdaptor.QueryParams.ID.key(),
                                 StudyDBAdaptor.QueryParams.UID.key()));
 
         while (!exit) {
@@ -62,7 +62,7 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
             return;
         }
 
-        logger.info("Analysing study {} ({})", study.getAlias(), study.getUid());
+        logger.info("Analysing study {} ({})", study.getId(), study.getUid());
 
         for (Map.Entry<Study.Entry, List<PermissionRule>> myMap : study.getPermissionRules().entrySet()) {
             Study.Entry entry = myMap.getKey();

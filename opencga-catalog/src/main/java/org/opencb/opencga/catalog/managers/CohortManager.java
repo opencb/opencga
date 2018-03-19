@@ -88,7 +88,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
 
         ParamUtils.checkObj(cohort, "Cohort");
-        ParamUtils.checkParameter(cohort.getName(), "name");
+        ParamUtils.checkParameter(cohort.getId(), "name");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
         cohort.setType(ParamUtils.defaultObject(cohort.getType(), Study.Type.COLLECTION));
         cohort.setCreationDate(TimeUtils.getTime());
@@ -236,7 +236,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(CohortDBAdaptor.QueryParams.NAME.key(), cohortStr);
+                    .append(CohortDBAdaptor.QueryParams.ID.key(), cohortStr);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.UID.key());
             QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
             if (cohortQueryResult.getNumResults() == 1) {
@@ -284,14 +284,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             if (myIds.size() < cohortList.size()) {
                 Query query = new Query()
                         .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CohortDBAdaptor.QueryParams.NAME.key(), cohortList);
+                        .append(CohortDBAdaptor.QueryParams.ID.key(), cohortList);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        CohortDBAdaptor.QueryParams.UID.key(), CohortDBAdaptor.QueryParams.NAME.key()));
+                        CohortDBAdaptor.QueryParams.UID.key(), CohortDBAdaptor.QueryParams.ID.key()));
                 QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
 
                 if (cohortQueryResult.getNumResults() > 0) {
-                    myIds.putAll(cohortQueryResult.getResult().stream().collect(Collectors.toMap(Cohort::getName, Cohort::getUid)));
+                    myIds.putAll(cohortQueryResult.getResult().stream().collect(Collectors.toMap(Cohort::getId, Cohort::getUid)));
                 }
             }
             if (myIds.size() < cohortList.size() && !silent) {
@@ -412,7 +412,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                 ObjectMap updateParams = new ObjectMap()
                         .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(CohortDBAdaptor.QueryParams.NAME.key(), cohort.getName() + suffixName);
+                        .append(CohortDBAdaptor.QueryParams.ID.key(), cohort.getId() + suffixName);
                 QueryResult<Long> update = cohortDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
@@ -440,7 +440,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     public void checkCohortCanBeDeleted(Cohort cohort) throws CatalogException {
         // Check if the cohort is different from DEFAULT_COHORT
-        if (StudyEntry.DEFAULT_COHORT.equals(cohort.getName())) {
+        if (StudyEntry.DEFAULT_COHORT.equals(cohort.getId())) {
             throw new CatalogException("Cohort " + StudyEntry.DEFAULT_COHORT + " cannot be deleted.");
         }
 
@@ -489,13 +489,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         if (!allowModifyCohortAll) {
-            if (StudyEntry.DEFAULT_COHORT.equals(cohort.getName())) {
+            if (StudyEntry.DEFAULT_COHORT.equals(cohort.getId())) {
                 throw new CatalogException("Cannot modify cohort " + StudyEntry.DEFAULT_COHORT);
             }
         }
 
         if (parameters.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())
-                || parameters.containsKey(CohortDBAdaptor.QueryParams.NAME.key())/* || params.containsKey("type")*/) {
+                || parameters.containsKey(CohortDBAdaptor.QueryParams.ID.key())/* || params.containsKey("type")*/) {
             switch (cohort.getStatus().getName()) {
                 case Cohort.CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.CohortStatus.CALCULATING

@@ -83,11 +83,11 @@ public class ProjectManagerTest extends GenericTest {
         project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getUid();
 
-        studyId = catalogManager.getStudyManager().create(String.valueOf(project1), "Phase 1", "phase1", Study.Type.TRIO, null, "Done",
+        studyId = catalogManager.getStudyManager().create(String.valueOf(project1), "phase1", "Phase 1", Study.Type.TRIO, null, "Done",
                 null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
-        studyId2 = catalogManager.getStudyManager().create(String.valueOf(project1), "Phase 3", "phase3", Study.Type.CASE_CONTROL, null,
+        studyId2 = catalogManager.getStudyManager().create(String.valueOf(project1), "phase3", "Phase 3", Study.Type.CASE_CONTROL, null,
                 "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
-        studyId3 = catalogManager.getStudyManager().create(String.valueOf(project2), "Study 1", "s1", Study.Type.CONTROL_SET, null, "",
+        studyId3 = catalogManager.getStudyManager().create(String.valueOf(project2), "s1", "Study 1", Study.Type.CONTROL_SET, null, "",
                 null, null, null, null, null, null, null, null, sessionIdUser2).first().getUid();
     }
 
@@ -108,7 +108,7 @@ public class ProjectManagerTest extends GenericTest {
         }
 
         // Create a new study in project2 with some dummy permissions for user
-        long s2 = catalogManager.getStudyManager().create(String.valueOf(project2), "Study 2", "s2", Study.Type.CONTROL_SET, null, "",
+        long s2 = catalogManager.getStudyManager().create(String.valueOf(project2), "s2", "Study 2", Study.Type.CONTROL_SET, null, "",
                 null, null, null, null, null, null, null, null, sessionIdUser2).first().getUid();
         catalogManager.getStudyManager().updateGroup(String.valueOf(s2), "@members", new GroupParams("user", GroupParams.Action.ADD),
                 sessionIdUser2);
@@ -116,7 +116,7 @@ public class ProjectManagerTest extends GenericTest {
         QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
         assertEquals(1, queryResult.first().getStudies().size());
-        assertEquals("s2", queryResult.first().getStudies().get(0).getAlias());
+        assertEquals("s2", queryResult.first().getStudies().get(0).getId());
 
         // Add permissions to a group were user belongs
         catalogManager.getStudyManager().createGroup(Long.toString(studyId3), "@member", "user", sessionIdUser2);
@@ -124,10 +124,10 @@ public class ProjectManagerTest extends GenericTest {
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
         assertEquals(2, queryResult.first().getStudies().size());
-        assertEquals("user2@pmp", queryResult.first().getAlias());
+        assertEquals("user2@pmp", queryResult.first().getId());
 
         // Add permissions to user in a study of user3
-        long s3 = catalogManager.getStudyManager().create(String.valueOf(project3), "StudyProject3", "s3", Study.Type.CONTROL_SET, null,
+        long s3 = catalogManager.getStudyManager().create(String.valueOf(project3), "s3", "StudyProject3", Study.Type.CONTROL_SET, null,
                 "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getUid();
         catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", new GroupParams("user", GroupParams.Action.ADD),
                 sessionIdUser3);

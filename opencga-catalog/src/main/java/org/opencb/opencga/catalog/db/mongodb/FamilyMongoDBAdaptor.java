@@ -92,7 +92,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.NAME.key(), family.getName()));
+        filterList.add(Filters.eq(QueryParams.ID.key(), family.getName()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
@@ -351,7 +351,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.PHENOTYPES.key()};
         filterObjectParams(parameters, familyParameters, acceptedObjectParams);
 
-        if (parameters.containsKey(QueryParams.NAME.key())) {
+        if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one family...
 
             Query tmpQuery = new Query(query);
@@ -370,15 +370,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             long studyId = getStudyId(familyQueryResult.first().getUid());
 
             tmpQuery = new Query()
-                    .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
+                    .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_ID.key(), studyId);
             QueryResult<Long> count = count(tmpQuery);
             if (count.getResult().get(0) > 0) {
                 throw new CatalogDBException("Cannot set name for family. A family with { name: '"
-                        + parameters.get(QueryParams.NAME.key()) + "'} already exists.");
+                        + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 
-            familyParameters.put(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()));
+            familyParameters.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
@@ -618,7 +618,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(familyCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(familyCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -636,7 +636,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(familyCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+        return groupBy(familyCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -763,6 +763,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case MEMBERS_UID:
+                    case ID:
                     case NAME:
                     case DESCRIPTION:
                     case RELEASE:

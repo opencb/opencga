@@ -91,13 +91,13 @@ public class SampleWSServerTest {
     public void search() throws IOException {
         String json = webTarget.path("samples").path("search").queryParam("sid", sessionId)
                 .queryParam(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .queryParam(SampleDBAdaptor.QueryParams.NAME.key(), "s1")
+                .queryParam(SampleDBAdaptor.QueryParams.ID.key(), "s1")
                 .request().get(String.class);
 
         QueryResult<Sample> queryResult = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0);
         assertEquals(1, queryResult.getNumTotalResults());
         Sample sample = queryResult.first();
-        assertEquals("s1", sample.getName());
+        assertEquals("s1", sample.getId());
 
 //        json = webTarget.path("samples").path("search").queryParam("sid", sessionId)
 //                .queryParam(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId)

@@ -98,7 +98,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         long startQuery = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        if (!get(new Query(QueryParams.NAME.key(), individual.getName())
+        if (!get(new Query(QueryParams.ID.key(), individual.getName())
                 .append(QueryParams.STUDY_ID.key(), studyId), new QueryOptions()).getResult().isEmpty()) {
             throw CatalogDBException.alreadyExists("Individual", "name", individual.getName());
         }
@@ -235,7 +235,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"individualId\" of sample : [";
             for (Sample sample : samples.getResult()) {
-                msg += " { id: " + sample.getUid() + ", name: \"" + sample.getName() + "\" },";
+                msg += " { id: " + sample.getUid() + ", name: \"" + sample.getId() + "\" },";
             }
             msg += "]";
             throw new CatalogDBException(msg);
@@ -494,7 +494,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
         Document individualParameters = new Document();
 
-        if (parameters.containsKey(QueryParams.NAME.key())) {
+        if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one individual...
             Query tmpQuery = new Query(query);
             // We take out ALL_VERSION from query just in case we get multiple results from the same individual...
@@ -512,15 +512,15 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             long studyId = getStudyId(individualQueryResult.first().getUid());
 
             tmpQuery = new Query()
-                    .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
+                    .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_ID.key(), studyId);
             QueryResult<Long> count = count(tmpQuery);
             if (count.getResult().get(0) > 0) {
                 throw new CatalogDBException("Cannot set name for individual. A individual with { name: '"
-                        + parameters.get(QueryParams.NAME.key()) + "'} already exists.");
+                        + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 
-            individualParameters.put(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()));
+            individualParameters.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
         String[] acceptedParams = {QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
@@ -981,7 +981,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(individualCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(individualCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -999,7 +999,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(individualCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+        return groupBy(individualCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -1073,6 +1073,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case ID:
                     case NAME:
                     case FATHER_UID:
                     case MOTHER_UID:

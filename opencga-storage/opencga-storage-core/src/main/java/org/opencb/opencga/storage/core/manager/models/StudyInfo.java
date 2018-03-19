@@ -91,7 +91,7 @@ public class StudyInfo {
     }
 
     public String getStudyAlias() {
-        return study != null ? study.getAlias() : null;
+        return study != null ? study.getId() : null;
     }
 
 

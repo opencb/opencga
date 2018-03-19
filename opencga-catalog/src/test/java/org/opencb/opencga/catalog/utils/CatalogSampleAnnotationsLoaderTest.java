@@ -69,7 +69,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         sessionId = catalogManager.getUserManager().login(userId, userId);
         Project project = catalogManager.getProjectManager().create("default", "def", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
-        Study study = catalogManager.getStudyManager().create(String.valueOf(project.getUid()), "default", "def", Study.Type.FAMILY, null,
+        Study study = catalogManager.getStudyManager().create(String.valueOf(project.getUid()), "def", "default", Study.Type.FAMILY, null,
                 "", null, null, null, null, null, null, null, null, sessionId).getResult().get(0);
         studyId = study.getUid();
         pedFile = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PED, File.Bioformat
@@ -108,7 +108,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         variables.add(new Variable("NonExistingField", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, null, "",
                 null, null));
 
-        VariableSet variableSet = new VariableSet("", "", false, false, "", variables, 1, null);
+        VariableSet variableSet = new VariableSet("", false, false, "", variables, 1, null);
 
         validate(pedigree, variableSet);
     }

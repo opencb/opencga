@@ -142,8 +142,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tSIZE\tQUOTA\n");
-                sb.append("#(P)\tALIAS\tNAME\tORGANIZATION\tDESCRIPTION\tID\tSIZE\n");
-                sb.append("#(S)\t\tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tSIZE\n");
+                sb.append("#(P)\tID\tNAME\tORGANIZATION\tDESCRIPTION\tID\tSIZE\n");
+                sb.append("#(S)\t\tID\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tSIZE\n");
             }
 
             for (User user : queryResult.getResult()) {
@@ -152,12 +152,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
                 if (user.getProjects().size() > 0) {
                     for (Project project : user.getProjects()) {
-                        sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\t%d\n", " * ", project.getAlias(), project.getName(),
+                        sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\t%d\n", " * ", project.getId(), project.getName(),
                                 project.getOrganization(), project.getDescription(), project.getUid(), project.getSize()));
 
                         if (project.getStudies().size() > 0) {
                             for (Study study : project.getStudies()) {
-                                sb.append(String.format("    - %s\t%s\t%s\t%s\t%d\t%s\t%d\n", study.getAlias(), study.getName(),
+                                sb.append(String.format("    - %s\t%s\t%s\t%s\t%d\t%s\t%d\n", study.getId(), study.getName(),
                                         study.getType(), study.getDescription(), study.getUid(),
                                         study.getGroups() == null ? ""
                                                 : study.getGroups().stream().map(Group::getName).collect(Collectors.joining(",")),
@@ -183,7 +183,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Project> queryResult : queryResultList) {
             // Write header
-            sb.append("#ALIAS\tNAME\tID\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tSIZE\t#STUDIES\tSTATUS\n");
+            sb.append("#ID\tNAME\tID\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tSIZE\t#STUDIES\tSTATUS\n");
 
             for (Project project : queryResult.getResult()) {
                 String organism = "NA";
@@ -198,7 +198,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     }
                 }
 
-                sb.append(String.format("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n", project.getAlias(), project.getName(),
+                sb.append(String.format("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n", project.getId(), project.getName(),
                         project.getUid(), project.getOrganization(), organism, assembly, project.getDescription(), project.getSize(),
                         project.getStudies().size(), project.getStatus().getName()));
             }
@@ -210,12 +210,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Study> queryResult : queryResultList) {
             // Write header
-            sb.append("#ALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tSIZE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
+            sb.append("#ID\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tSIZE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
                     .append("#VARIABLE_SETS\tSTATUS\n");
 
             for (Study study : queryResult.getResult()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n",
-                        study.getAlias(), study.getName(), study.getType(), study.getDescription(), study.getUid(), study.getGroups().size(),
+                        study.getId(), study.getName(), study.getType(), study.getDescription(), study.getUid(), study.getGroups().size(),
                         study.getSize(), study.getFiles().size(), study.getSamples().size(), study.getCohorts().size(),
                         study.getIndividuals().size(), study.getJobs().size(), study.getVariableSets().size(),
                         study.getStatus().getName()));
@@ -288,7 +288,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     individualName = sample.getIndividual().getName();
                 }
             }
-            sb.append(String.format("%s%s\t%d\t%s\t%s\t%s\t%s\t%s\n", format, sample.getName(), sample.getUid(), sample.getSource(),
+            sb.append(String.format("%s%s\t%d\t%s\t%s\t%s\t%s\t%s\n", format, sample.getId(), sample.getUid(), sample.getSource(),
                     sample.getDescription(), sample.getStatus().getName(), individualName, individualId));
         }
     }
@@ -302,7 +302,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             }
 
             for (Cohort cohort : queryResult.getResult()) {
-                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%d\t%s\t%s\n", cohort.getName(), cohort.getUid(), cohort.getType(),
+                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%d\t%s\t%s\n", cohort.getId(), cohort.getUid(), cohort.getType(),
                         cohort.getDescription(), cohort.getStatus().getName(), cohort.getSamples().size(),
                         cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA",
                         cohort.getFamily() != null && StringUtils.isNotEmpty(cohort.getFamily().getId()) ? cohort.getFamily().getId() : "NA"));
@@ -405,7 +405,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             }
 
             for (VariableSet variableSet : queryResult.getResult()) {
-                sb.append(String.format("%s\t%s\t%s\t%s\n", variableSet.getName(), variableSet.getUid(), variableSet.getDescription(),
+                sb.append(String.format("%s\t%s\t%s\t%s\n", variableSet.getId(), variableSet.getUid(), variableSet.getDescription(),
                         variableSet.getVariables().stream().map(variable -> variable.getName()).collect(Collectors.joining(", "))));
             }
         }

@@ -87,7 +87,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     }
                 }
                 if (variable == null) {
-                    return createErrorResponse("", "Variable " + variableName + " does not exist in variableSet " + variableSet.getName());
+                    return createErrorResponse("", "Variable " + variableName + " does not exist in variableSet " + variableSet.getId());
                 }
                 if (variable.getType() != Variable.VariableType.CATEGORICAL) {
                     return createErrorResponse("", "Can only create cohorts by variable, when is a categorical variable");

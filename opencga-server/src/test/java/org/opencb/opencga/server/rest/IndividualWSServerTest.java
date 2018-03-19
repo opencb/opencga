@@ -181,7 +181,7 @@ public class IndividualWSServerTest {
 
         // We update to make the individual in1 be the child of in2
         ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER.key(),
-                new ObjectMap(IndividualDBAdaptor.QueryParams.NAME.key(), "in2"));
+                new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "in2"));
         OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), "in1", params, QueryOptions.empty(),
                 sessionId);
         // and query again. We look for an individual with father "in2"
@@ -225,12 +225,12 @@ public class IndividualWSServerTest {
         Individual individual = new Individual()
                 .setName("individual")
                 .setSamples(Arrays.asList(
-                        new Sample().setName("sample1"),
-                        new Sample().setName("sample2")
+                        new Sample().setId("sample1"),
+                        new Sample().setId("sample2")
                 ));
         OpenCGAWSServer.catalogManager.getIndividualManager().create(String.valueOf(studyId), individual, null, sessionId);
 
-        Sample sample = new Sample().setName("sample3");
+        Sample sample = new Sample().setId("sample3");
         OpenCGAWSServer.catalogManager.getSampleManager().create(String.valueOf(studyId), sample, null, sessionId);
 
         // Update the individual information to contain a third sample as well
@@ -247,7 +247,7 @@ public class IndividualWSServerTest {
 
         individual = response.getResponse().get(0).first();
         assertEquals(3, individual.getSamples().size());
-        assertTrue(individual.getSamples().stream().map(Sample::getName).collect(Collectors.toSet())
+        assertTrue(individual.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("sample1", "sample2", "sample3")));
     }
 

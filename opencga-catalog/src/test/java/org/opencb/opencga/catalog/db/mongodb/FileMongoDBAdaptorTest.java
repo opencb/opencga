@@ -204,9 +204,8 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void includeFields() throws CatalogDBException {
-
         QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(7,
-                new QueryOptions("include", "projects.studies.files.id,projects.studies.files.path"));
+                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key()));
         List<File> files = fileQueryResult.getResult();
         assertEquals("Include path does not work.", "data/file.vcf", files.get(0).getPath());
         assertEquals("Include not working.", null, files.get(0).getName());

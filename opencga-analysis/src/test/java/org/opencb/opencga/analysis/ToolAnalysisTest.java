@@ -54,7 +54,7 @@ public class ToolAnalysisTest extends GenericTest {
 
         long projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens", null,
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first().getUid();
-        catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null,
+        catalogManager.getStudyManager().create(String.valueOf(projectId), "phase1", "Phase 1", Study.Type.TRIO, null, "Done", null, null,
                 null, null, null, null, null, null, sessionIdUser);
     }
 

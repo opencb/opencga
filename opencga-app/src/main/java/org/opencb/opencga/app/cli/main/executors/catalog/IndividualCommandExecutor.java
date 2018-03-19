@@ -117,7 +117,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating individual");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.createCommandOptions.name);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.createCommandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.createCommandOptions.family);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), individualsCommandOptions.createCommandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), individualsCommandOptions.createCommandOptions.motherId);
@@ -171,7 +171,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(),
                 resolveStudy(individualsCommandOptions.searchCommandOptions.study));
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.searchCommandOptions.name);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), individualsCommandOptions.searchCommandOptions.fatherId);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), individualsCommandOptions.searchCommandOptions.motherId);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.searchCommandOptions.family);
@@ -213,7 +213,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating individual information");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.updateCommandOptions.name);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.updateCommandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.updateCommandOptions.family);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), individualsCommandOptions.updateCommandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), individualsCommandOptions.updateCommandOptions.motherId);
@@ -261,7 +261,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.groupByCommandOptions.study));
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.UID.key(), individualsCommandOptions.groupByCommandOptions.id);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.groupByCommandOptions.name);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), individualsCommandOptions.groupByCommandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), individualsCommandOptions.groupByCommandOptions.motherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.groupByCommandOptions.family);

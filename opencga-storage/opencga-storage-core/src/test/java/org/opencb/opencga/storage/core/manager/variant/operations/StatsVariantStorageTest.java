@@ -76,7 +76,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         variantManager.index(null, String.valueOf(file.getUid()), createTmpOutdir(file), queryOptions, sessionId);
 
-        all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new
+        all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new
                 QueryOptions(), sessionId).first().getUid();
     }
 
@@ -113,7 +113,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         List<Cohort> queryResults = new ArrayList<>();
         Properties tagmap = new Properties();
         tagmap.load(new FileInputStream(tagmapPath));
-        Map<String, Cohort> cohorts = catalogManager.getCohortManager().get(studyId, null, null, sessionId).getResult().stream().collect(Collectors.toMap(Cohort::getName, c->c));
+        Map<String, Cohort> cohorts = catalogManager.getCohortManager().get(studyId, null, null, sessionId).getResult().stream().collect(Collectors.toMap(Cohort::getId, c->c));
         Set<String> catalogCohorts = cohorts.keySet();
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
@@ -350,7 +350,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         List<Cohort> cohorts = catalogManager.getCohortManager().get(studyId, null, null, sessionId).getResult();
         Set<String> cohortNames = cohorts
                 .stream()
-                .map(Cohort::getName)
+                .map(Cohort::getId)
                 .collect(Collectors.toSet());
         assertEquals(8, cohortNames.size());
         for (Cohort cohort : cohorts) {
@@ -371,7 +371,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         List<Cohort> cohorts = catalogManager.getCohortManager().get(studyId, null, null, sessionId).getResult();
         Set<String> cohortNames = cohorts
                 .stream()
-                .map(Cohort::getName)
+                .map(Cohort::getId)
                 .collect(Collectors.toSet());
         assertEquals(8, cohortNames.size());
         for (Cohort cohort : cohorts) {
@@ -426,7 +426,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         List<Cohort> cohorts = catalogManager.getCohortManager().get(studyId, null, null, sessionId).getResult();
         Set<String> cohortNames = cohorts
                 .stream()
-                .map(Cohort::getName)
+                .map(Cohort::getId)
                 .collect(Collectors.toSet());
         assertEquals(8, cohortNames.size());
         for (Cohort cohort : cohorts) {

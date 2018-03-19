@@ -92,7 +92,7 @@ public final class CatalogDemo {
             for (int i = 1; i <= 2; i++) {
                 String name = "Name of study" + i;
                 String alias = "study" + i;
-                studiesTmp.add(catalogManager.getStudyManager().create(String.valueOf(projectId), name, alias, Study.Type.FAMILY, null,
+                studiesTmp.add(catalogManager.getStudyManager().create(String.valueOf(projectId), alias, name, Study.Type.FAMILY, null,
                         "Description of " + alias, null, null, null, null, null, null, null, null,
                         userSession.getValue()).first().getUid());
             }

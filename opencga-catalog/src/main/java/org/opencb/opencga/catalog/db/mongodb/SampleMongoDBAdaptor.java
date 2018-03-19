@@ -98,7 +98,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.NAME.key(), sample.getName()));
+        filterList.add(Filters.eq(QueryParams.ID.key(), sample.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
@@ -106,7 +106,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         QueryResult<Long> count = sampleCollection.count(bson);
 
         if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Sample { name: '" + sample.getName() + "'} already exists.");
+            throw new CatalogDBException("Sample { name: '" + sample.getId() + "'} already exists.");
         }
 
         long sampleId = getNewId();
@@ -295,7 +295,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key()};
         filterObjectParams(parameters, sampleParameters, acceptedObjectParams);
 
-        if (parameters.containsKey(QueryParams.NAME.key())) {
+        if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one sample...
             QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
             if (sampleQueryResult.getNumResults() == 0) {
@@ -309,14 +309,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             long studyId = getStudyId(sampleQueryResult.first().getUid());
 
             Query tmpQuery = new Query()
-                    .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
+                    .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_ID.key(), studyId);
             QueryResult<Long> count = count(tmpQuery);
             if (count.getResult().get(0) > 0) {
-                throw new CatalogDBException("Sample { name: '" + parameters.get(QueryParams.NAME.key()) + "'} already exists.");
+                throw new CatalogDBException("Sample { name: '" + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 
-            sampleParameters.put(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()));
+            sampleParameters.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
@@ -380,12 +380,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         queryOptions = new QueryOptions(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId)
                 .append(MongoDBCollection.INCLUDE, Arrays.asList(FILTER_ROUTE_COHORTS + CohortDBAdaptor.QueryParams.UID.key(),
-                        FILTER_ROUTE_COHORTS + CohortDBAdaptor.QueryParams.NAME.key()));
+                        FILTER_ROUTE_COHORTS + CohortDBAdaptor.QueryParams.ID.key()));
         QueryResult<Cohort> cohortQueryResult = dbAdaptorFactory.getCatalogCohortDBAdaptor().getAllInStudy(studyId, queryOptions);
         if (cohortQueryResult.getNumResults() != 0) {
             String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : "
                     + cohortQueryResult.getResult().stream()
-                    .map(cohort -> "{ id: " + cohort.getUid() + ", name: \"" + cohort.getName() + "\" }")
+                    .map(cohort -> "{ id: " + cohort.getUid() + ", name: \"" + cohort.getId() + "\" }")
                     .collect(Collectors.joining(", ", "[", "]"));
             throw new CatalogDBException(msg);
         }
@@ -755,7 +755,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(sampleCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(sampleCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -773,7 +773,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(sampleCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+        return groupBy(sampleCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -847,7 +847,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case NAME:
+                    case ID:
                     case RELEASE:
                     case VERSION:
                     case SOURCE:

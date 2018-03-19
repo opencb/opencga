@@ -230,7 +230,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                     Individual individual = new Individual().setName(subject.name);
                     if (subject.samples != null) {
                         List<Sample> sampleList = subject.samples.stream()
-                                .map(sample -> new Sample().setName(sample.name))
+                                .map(sample -> new Sample().setId(sample.name))
                                 .collect(Collectors.toList());
                         individual.setSamples(sampleList);
                     }
@@ -251,7 +251,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             ? interpretations.stream()
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
-            return new ClinicalAnalysis(name, name, description, type, disease, germlineFile, somaticFile, individuals, f,
+            return new ClinicalAnalysis(name, description, type, disease, germlineFile, somaticFile, individuals, f,
                     interpretationList, null, null, 1, attributes);
         }
     }

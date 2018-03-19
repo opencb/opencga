@@ -29,6 +29,7 @@ import java.util.Objects;
 public class Cohort extends Annotable {
 
     private String id;
+    @Deprecated
     private String name;
     private Study.Type type;
     private String creationDate;
@@ -46,23 +47,22 @@ public class Cohort extends Annotable {
     public Cohort() {
     }
 
-    public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
+    public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
-        this(name, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
+        this(id, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
                 Collections.emptyMap(), release, attributes);
     }
 
-    public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples,
+    public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(name, name, type, creationDate, new CohortStatus(), description, samples, null, annotationSetList,
+        this(id, type, creationDate, new CohortStatus(), description, samples, null, annotationSetList,
                 Collections.emptyMap(), release, attributes);
     }
 
-    public Cohort(String id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
-                  List<Sample> samples, Family family, List<AnnotationSet> annotationSets, Map<String, Object> stats, int release,
-                  Map<String, Object> attributes) {
+    public Cohort(String id, Study.Type type, String creationDate, CohortStatus status, String description, List<Sample> samples,
+                  Family family, List<AnnotationSet> annotationSets, Map<String, Object> stats, int release, Map<String,
+            Object> attributes) {
         this.id = id;
-        this.name = name;
         this.type = type;
         this.creationDate = creationDate;
         this.status = status;
@@ -168,7 +168,6 @@ public class Cohort extends Annotable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Cohort{");
         sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);

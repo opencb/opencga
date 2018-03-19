@@ -123,7 +123,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
 
                 for (Long study : studies) {
-                    Query cohortQuery = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+                    Query cohortQuery = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
                     QueryOptions cohortOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key());
                     // Get default cohort. It contains the list of indexed samples. If it doesn't exist, or is empty, do not include any
                     // sample from this study.

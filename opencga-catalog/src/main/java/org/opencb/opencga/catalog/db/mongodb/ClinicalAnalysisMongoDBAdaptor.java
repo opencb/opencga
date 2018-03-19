@@ -127,15 +127,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, analysisParams, acceptedParams);
 
-        if (analysisParams.containsKey(QueryParams.NAME.key())) {
+        if (analysisParams.containsKey(QueryParams.ID.key())) {
             // Check that the new sample name is still unique
             long studyId = getStudyId(id);
 
             QueryResult<Long> count = clinicalCollection.count(
-                    new Document(QueryParams.NAME.key(), analysisParams.get(QueryParams.NAME.key()))
+                    new Document(QueryParams.ID.key(), analysisParams.get(QueryParams.ID.key()))
                             .append(PRIVATE_STUDY_ID, studyId));
             if (count.getResult().get(0) > 0) {
-                throw new CatalogDBException("Clinical analysis { name: '" + analysisParams.get(QueryParams.NAME.key())
+                throw new CatalogDBException("Clinical analysis { name: '" + analysisParams.get(QueryParams.ID.key())
                         + "'} already exists.");
             }
         }
@@ -362,14 +362,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false);
-        return groupBy(clinicalCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+        return groupBy(clinicalCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -381,7 +381,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name());
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(clinicalCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -393,7 +393,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name());
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(clinicalCollection, bsonQuery, fields, SampleDBAdaptor.QueryParams.NAME.key(), options);
+        return groupBy(clinicalCollection, bsonQuery, fields, SampleDBAdaptor.QueryParams.ID.key(), options);
     }
 
     @Override
@@ -414,7 +414,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.NAME.key(), clinicalAnalysis.getName()));
+        filterList.add(Filters.eq(QueryParams.ID.key(), clinicalAnalysis.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
@@ -422,7 +422,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         QueryResult<Long> count = clinicalCollection.count(bson);
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { name: '"
-                    + clinicalAnalysis.getName() + "'} already exists.");
+                    + clinicalAnalysis.getId() + "'} already exists.");
         }
 
         long clinicalAnalysisId = getNewId();
@@ -544,7 +544,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
-                    case NAME:
+                    case ID:
                     case TYPE:
                     case SAMPLE_UID:
                     case SUBJECT_UID:

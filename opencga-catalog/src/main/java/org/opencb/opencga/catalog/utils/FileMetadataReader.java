@@ -355,14 +355,14 @@ public class FileMetadataReader {
                 //Use a LinkedHashSet to keep the order
                 Set<String> set = new LinkedHashSet<>(sortedSampleNames);
                 for (Sample sample : sampleList) {
-                    set.remove(sample.getName());
+                    set.remove(sample.getId());
                 }
                 logger.warn("Some samples from file \"{}\" were not registered in Catalog. Registering new samples: {}",
                         file.getName(), set);
                 if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
-                            sampleList.add(new Sample(sampleName, sampleName, file.getName(), new Individual(), null, 1));
+                            sampleList.add(new Sample(sampleName, file.getName(), new Individual(), null, 1));
                         } else {
                             try {
                                 sampleList.add(catalogManager.getSampleManager().create(Long.toString(study.getUid()), sampleName, file
@@ -386,7 +386,7 @@ public class FileMetadataReader {
 
             //Samples may not be sorted.
             //Sort samples as they appear in the original file.
-            Map<String, Sample> sampleMap = sampleList.stream().collect(Collectors.toMap(Sample::getName, Function.identity()));
+            Map<String, Sample> sampleMap = sampleList.stream().collect(Collectors.toMap(Sample::getId, Function.identity()));
             sampleList = new ArrayList<>(sampleList.size());
             for (String sampleName : sortedSampleNames) {
                 sampleList.add(sampleMap.get(sampleName));

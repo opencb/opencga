@@ -183,7 +183,7 @@ public abstract class AbstractManager {
 
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
         if (aliasStudy != null) {
-            query.append(StudyDBAdaptor.QueryParams.ALIAS.key(), aliasStudy);
+            query.append(StudyDBAdaptor.QueryParams.ID.key(), aliasStudy);
         }
         QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.id");
         QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, qOptions);

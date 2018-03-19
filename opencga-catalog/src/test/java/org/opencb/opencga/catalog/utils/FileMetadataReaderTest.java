@@ -75,7 +75,7 @@ public class FileMetadataReaderTest {
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         project = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(String.valueOf(project.getUid()), "Phase 1", "phase1", Study.Type.TRIO, null,
+        study = catalogManager.getStudyManager().create(String.valueOf(project.getUid()), "phase1", "Phase 1", Study.Type.TRIO, null,
                 "Done", null, null, null, null, null, null, null, null, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(Long.toString(study.getUid()), Paths.get("data/vcf/").toString(), null, true,
                 null, QueryOptions.empty(), sessionIdUser).first();
@@ -186,10 +186,10 @@ public class FileMetadataReaderTest {
         List<Sample> samples = catalogManager.getSampleManager().get(study.getUid(), new Query(SampleDBAdaptor.QueryParams.UID.key(), file
                 .getSamples().stream().map(Sample::getUid).collect(Collectors.toList())), new QueryOptions(), sessionIdUser).getResult();
         Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getUid, Function.identity()));
-        assertEquals(expectedSampleNames.get(0), sampleMap.get(file.getSamples().get(0).getUid()).getName());
-        assertEquals(expectedSampleNames.get(1), sampleMap.get(file.getSamples().get(1).getUid()).getName());
-        assertEquals(expectedSampleNames.get(2), sampleMap.get(file.getSamples().get(2).getUid()).getName());
-        assertEquals(expectedSampleNames.get(3), sampleMap.get(file.getSamples().get(3).getUid()).getName());
+        assertEquals(expectedSampleNames.get(0), sampleMap.get(file.getSamples().get(0).getUid()).getId());
+        assertEquals(expectedSampleNames.get(1), sampleMap.get(file.getSamples().get(1).getUid()).getId());
+        assertEquals(expectedSampleNames.get(2), sampleMap.get(file.getSamples().get(2).getUid()).getId());
+        assertEquals(expectedSampleNames.get(3), sampleMap.get(file.getSamples().get(3).getUid()).getId());
 
     }
 
@@ -284,7 +284,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.Bioformat.ALIGNMENT, file.getBioformat());
         assertNotNull(file.getAttributes().get("alignmentHeader"));
         assertEquals(1, file.getSamples().size());
-        assertEquals("HG00096", catalogManager.getSampleManager().get(file.getSamples().get(0).getUid(), null, sessionIdUser).first().getName());
+        assertEquals("HG00096", catalogManager.getSampleManager().get(file.getSamples().get(0).getUid(), null, sessionIdUser).first().getId());
     }
 
 

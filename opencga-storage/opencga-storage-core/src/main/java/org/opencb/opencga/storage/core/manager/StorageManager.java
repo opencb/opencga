@@ -139,7 +139,7 @@ public abstract class StorageManager {
 
         QueryOptions studyOptions = new QueryOptions();
 //        studyOptions.put(QueryOptions.INCLUDE,
-//                Arrays.asList(StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
+//                Arrays.asList(StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.ID.key(),
 //                        StudyDBAdaptor.QueryParams.DATASTORES.key()));
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(String.valueOf(studyId), studyOptions, sessionId);
         if (studyQueryResult.getNumResults() != 1) {
@@ -151,7 +151,7 @@ public abstract class StorageManager {
         long projectId = catalogManager.getStudyManager().getProjectId(study.getUid());
         Project project = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), new QueryOptions(), sessionId).first();
         studyInfo.setProjectId(project.getUid());
-        studyInfo.setProjectAlias(project.getAlias());
+        studyInfo.setProjectAlias(project.getId());
         studyInfo.setOrganism(project.getOrganism());
         String user = catalogManager.getProjectManager().getOwner(project.getUid());
         studyInfo.setUserId(user);

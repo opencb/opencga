@@ -68,7 +68,7 @@ public class CatalogStudyConfigurationFactory {
 
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             SampleDBAdaptor.QueryParams.UID.key(),
-            SampleDBAdaptor.QueryParams.NAME.key()));
+            SampleDBAdaptor.QueryParams.ID.key()));
 
     public static final Query COHORTS_QUERY = new Query();
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
@@ -79,7 +79,7 @@ public class CatalogStudyConfigurationFactory {
 
     public static final QueryOptions STUDY_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             StudyDBAdaptor.QueryParams.UID.key(),
-            StudyDBAdaptor.QueryParams.ALIAS.key(),
+            StudyDBAdaptor.QueryParams.ID.key(),
             StudyDBAdaptor.QueryParams.ATTRIBUTES.key() + '.' + VariantStorageEngine.Options.AGGREGATED_TYPE.key()
     ));
 
@@ -116,13 +116,13 @@ public class CatalogStudyConfigurationFactory {
         }
         studyConfiguration.setStudyId((int) study.getUid());
         long projectId = catalogManager.getStudyManager().getProjectId(study.getUid());
-        String projectAlias = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), null, sessionId).first().getAlias();
+        String projectAlias = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), null, sessionId).first().getId();
         if (projectAlias.contains("@")) {
             // Already contains user in projectAlias
-            studyConfiguration.setStudyName(projectAlias + ':' + study.getAlias());
+            studyConfiguration.setStudyName(projectAlias + ':' + study.getId());
         } else {
             String userId = catalogManager.getProjectManager().getOwner(projectId);
-            studyConfiguration.setStudyName(userId + '@' + projectAlias + ':' + study.getAlias());
+            studyConfiguration.setStudyName(userId + '@' + projectAlias + ':' + study.getId());
         }
 
         fillNullMaps(studyConfiguration);
@@ -195,7 +195,7 @@ public class CatalogStudyConfigurationFactory {
                 .iterator(studyId, new Query(), SAMPLES_QUERY_OPTIONS, sessionId)) {
             while (iterator.hasNext()) {
                 Sample sample = iterator.next();
-                studyConfiguration.getSampleIds().forcePut(sample.getName(), toIntExact(sample.getUid()));
+                studyConfiguration.getSampleIds().forcePut(sample.getId(), toIntExact(sample.getUid()));
             }
         }
 
@@ -206,8 +206,8 @@ public class CatalogStudyConfigurationFactory {
             while (iterator.hasNext()) {
                 Cohort cohort = iterator.next();
                 int cohortId = (int) cohort.getUid();
-                studyConfiguration.getCohortIds().forcePut(cohort.getName(), cohortId);
-                if (cohort.getName().equals(StudyEntry.DEFAULT_COHORT)) {
+                studyConfiguration.getCohortIds().forcePut(cohort.getId(), cohortId);
+                if (cohort.getId().equals(StudyEntry.DEFAULT_COHORT)) {
                     // Skip default cohort
                     // Members of this cohort are managed by storage
                     // Only register cohortId
@@ -311,7 +311,7 @@ public class CatalogStudyConfigurationFactory {
                     Cohort cohort = iterator.next();
                     if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
                         logger.debug("Cohort \"{}\":{} change status from {} to {}",
-                                cohort.getName(), cohort.getUid(), cohort.getStats(), Cohort.CohortStatus.READY);
+                                cohort.getId(), cohort.getUid(), cohort.getStats(), Cohort.CohortStatus.READY);
                         catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getUid()), Cohort.CohortStatus.READY,
                                 "Update status from Storage", sessionId);
                     }
@@ -328,7 +328,7 @@ public class CatalogStudyConfigurationFactory {
                     Cohort cohort = iterator.next();
                     if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
                         logger.debug("Cohort \"{}\":{} change status from {} to {}",
-                                cohort.getName(), cohort.getUid(), cohort.getStats(), Cohort.CohortStatus.INVALID);
+                                cohort.getId(), cohort.getUid(), cohort.getStats(), Cohort.CohortStatus.INVALID);
                         catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getUid()), Cohort.CohortStatus.INVALID,
                                 "Update status from Storage", sessionId);
                     }

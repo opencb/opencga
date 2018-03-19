@@ -27,6 +27,7 @@ import java.util.*;
 public class Sample extends Annotable {
 
     private String id;
+    @Deprecated
     private String name;
     private String source;
     @Deprecated
@@ -48,16 +49,15 @@ public class Sample extends Annotable {
     public Sample() {
     }
 
-    public Sample(String id, String name, String source, Individual individual, String description, int release) {
-        this(id, name, source, individual, description, "", false, release, 1, new LinkedList<>(),
-                new ArrayList<>(), new HashMap<>(), new HashMap<>());
+    public Sample(String id, String source, Individual individual, String description, int release) {
+        this(id, source, individual, description, "", false, release, 1, new LinkedList<>(), new ArrayList<>(), new HashMap<>(),
+                new HashMap<>());
     }
 
-    public Sample(String id, String name, String source, Individual individual, String description, String type, boolean somatic,
-                  int release, int version, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList, Map<String, Object> stats,
+    public Sample(String id, String source, Individual individual, String description, String type, boolean somatic, int release,
+                  int version, List<AnnotationSet> annotationSets, List<OntologyTerm> phenotypeList, Map<String, Object> stats,
                   Map<String, Object> attributes) {
         this.id = id;
-        this.name = name;
         this.source = source;
         this.version = version;
         this.individual = individual;
@@ -77,7 +77,6 @@ public class Sample extends Annotable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Sample{");
         sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
         sb.append(", source='").append(source).append('\'');
         sb.append(", individual=").append(individual);
         sb.append(", release=").append(release);
@@ -107,7 +106,6 @@ public class Sample extends Annotable {
         return id == sample.id
                 && release == sample.release
                 && somatic == sample.somatic
-                && Objects.equals(name, sample.name)
                 && Objects.equals(source, sample.source)
                 && Objects.equals(individual, sample.individual)
                 && Objects.equals(creationDate, sample.creationDate)

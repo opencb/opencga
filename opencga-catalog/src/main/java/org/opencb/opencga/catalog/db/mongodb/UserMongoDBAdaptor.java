@@ -102,7 +102,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         for (Project p : projects) {
             String projectErrorMsg = dbAdaptorFactory.getCatalogProjectDbAdaptor().insert(p, user.getId(), options).getErrorMsg();
             if (projectErrorMsg != null && !projectErrorMsg.isEmpty()) {
-                errorMsg += ", " + p.getAlias() + ":" + projectErrorMsg;
+                errorMsg += ", " + p.getId() + ":" + projectErrorMsg;
             }
         }
 
@@ -665,9 +665,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case SIZE:
                     case QUOTA:
                     case PROJECTS:
-                    case PROJECT_ID:
+                    case PROJECTS_UID:
                     case PROJECT_NAME:
-                    case PROJECT_ALIAS:
+                    case PROJECTS_ID:
                     case PROJECT_ORGANIZATION:
                     case PROJECT_STATUS:
                     case PROJECT_LAST_MODIFIED:

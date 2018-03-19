@@ -57,7 +57,7 @@ public abstract class AnalysisCommandExecutor extends CommandExecutor {
                 ".alias"), sessionId)
                 .getResult()
                 .stream()
-                .collect(Collectors.toMap(Study::getUid, Study::getAlias));
+                .collect(Collectors.toMap(Study::getUid, Study::getId));
     }
 
 }

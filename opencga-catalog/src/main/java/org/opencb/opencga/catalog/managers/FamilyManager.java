@@ -107,7 +107,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FamilyDBAdaptor.QueryParams.NAME.key(), familyStr);
+                    .append(FamilyDBAdaptor.QueryParams.ID.key(), familyStr);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.UID.key());
             QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
             if (familyQueryResult.getNumResults() == 1) {
@@ -164,10 +164,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             if (myIds.size() < familyList.size()) {
                 Query query = new Query()
                         .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(FamilyDBAdaptor.QueryParams.NAME.key(), familyList);
+                        .append(FamilyDBAdaptor.QueryParams.ID.key(), familyList);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.NAME.key()));
+                        FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.ID.key()));
                 QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
 
                 if (familyQueryResult.getNumResults() > 0) {
@@ -413,7 +413,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         .append(Constants.ALL_VERSIONS, true);
                 ObjectMap updateParams = new ObjectMap()
                         .append(FamilyDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(FamilyDBAdaptor.QueryParams.NAME.key(), family.getName() + suffixName);
+                        .append(FamilyDBAdaptor.QueryParams.ID.key(), family.getName() + suffixName);
                 QueryResult<Long> update = familyDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
@@ -512,8 +512,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // fields are valid.
         Family family = null;
 
-        if (parameters.containsKey(FamilyDBAdaptor.QueryParams.NAME.key())) {
-            ParamUtils.checkAlias(parameters.getString(FamilyDBAdaptor.QueryParams.NAME.key()), "name",
+        if (parameters.containsKey(FamilyDBAdaptor.QueryParams.ID.key())) {
+            ParamUtils.checkAlias(parameters.getString(FamilyDBAdaptor.QueryParams.ID.key()), "name",
                     configuration.getCatalog().getOffset());
         }
         if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())
@@ -682,7 +682,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        Query query = new Query(IndividualDBAdaptor.QueryParams.NAME.key(), individualNames);
+        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualNames);
         QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId), query,
                 new QueryOptions(), sessionId);
         for (Individual individual : individualQueryResult.getResult()) {

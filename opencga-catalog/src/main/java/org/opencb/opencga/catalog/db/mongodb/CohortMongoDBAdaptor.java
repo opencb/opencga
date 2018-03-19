@@ -91,7 +91,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        checkCohortNameExists(studyId, cohort.getName());
+        checkCohortNameExists(studyId, cohort.getId());
 
         long newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         cohort.setUid(newId);
@@ -109,7 +109,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         try {
             cohortCollection.insert(cohortObject, null);
         } catch (MongoWriteException e) {
-            throw ifDuplicateKeyException(() -> CatalogDBException.alreadyExists("Cohort", studyId, "name", cohort.getName(), e), e);
+            throw ifDuplicateKeyException(() -> CatalogDBException.alreadyExists("Cohort", studyId, "name", cohort.getId(), e), e);
         }
 
         return endQuery("createCohort", startTime, get(newId, options));
@@ -224,7 +224,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         long startTime = startQuery();
         Map<String, Object> cohortParams = new HashMap<>();
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.ID.key(), QueryParams.CREATION_DATE.key()};
         filterStringParams(parameters, cohortParams, acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Study.Type.class);
@@ -548,7 +548,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(cohortCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(cohortCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -566,7 +566,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
-        return groupBy(cohortCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+        return groupBy(cohortCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -581,7 +581,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     private void checkCohortNameExists(long studyId, String cohortName) throws CatalogDBException {
         QueryResult<Long> count = cohortCollection.count(Filters.and(
-                Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.eq(QueryParams.NAME.key(), cohortName)));
+                Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.eq(QueryParams.ID.key(), cohortName)));
         if (count.getResult().get(0) > 0) {
             throw CatalogDBException.alreadyExists("Cohort", "name", cohortName);
         }
@@ -638,7 +638,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                             annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
                                     query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
 //                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
-//                                    query.getLong(QueryParams.VARIABLE_SET_ID.key()),
+//                                    query.getLong(QueryParams.VARIABLE_SET_UID.key()),
 //                                    query.getString(QueryParams.ANNOTATION_SET_NAME.key()));
                         }
                         break;
@@ -649,7 +649,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case NAME:
+                    case ID:
                     case TYPE:
                     case RELEASE:
                     case STATUS_NAME:

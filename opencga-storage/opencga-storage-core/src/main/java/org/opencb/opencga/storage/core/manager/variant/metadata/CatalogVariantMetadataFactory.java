@@ -30,14 +30,14 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
     private static final QueryOptions SAMPLE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(
                     SampleDBAdaptor.QueryParams.UID.key(),
-                    SampleDBAdaptor.QueryParams.NAME.key(),
+                    SampleDBAdaptor.QueryParams.ID.key(),
                     SampleDBAdaptor.QueryParams.DESCRIPTION.key(),
                     SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()
             ));
     private static final QueryOptions INDIVIDUAL_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(
                     IndividualDBAdaptor.QueryParams.UID.key(),
-                    IndividualDBAdaptor.QueryParams.NAME.key(),
+                    IndividualDBAdaptor.QueryParams.ID.key(),
                     IndividualDBAdaptor.QueryParams.SEX.key(),
                     IndividualDBAdaptor.QueryParams.FAMILY.key(),
                     IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
@@ -109,7 +109,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         Map<String, org.opencb.biodata.models.metadata.Individual> individualMap = individuals
                 .stream()
                 .collect(Collectors.toMap(org.opencb.biodata.models.metadata.Individual::getId, i -> i));
-        Query query = new Query(IndividualDBAdaptor.QueryParams.NAME.key(), new ArrayList<>(individualMap.keySet()));
+        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), new ArrayList<>(individualMap.keySet()));
 
         List<Individual> catalogIndividuals = catalogManager.getIndividualManager().get(studyId, query, INDIVIDUAL_QUERY_OPTIONS, sessionId)
                 .getResult();
@@ -121,7 +121,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
             individual.setFamily(catalogIndividual.getFamily());
             individual.setPhenotype(catalogIndividual.getAffectationStatus().toString());
 
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.NAME.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
             if (catalogIndividual.getMotherId() > 0) {
                 String motherName = catalogManager.getIndividualManager().get(String.valueOf(studyId),
                         String.valueOf(catalogIndividual.getMotherId()), options, sessionId).first().getName();
@@ -140,12 +140,12 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                 .stream()
                 .collect(Collectors.toMap(org.opencb.biodata.models.metadata.Sample::getId, i -> i));
         Query query = new Query(2)
-                .append(SampleDBAdaptor.QueryParams.NAME.key(), new ArrayList<>(samplesMap.keySet()))
+                .append(SampleDBAdaptor.QueryParams.ID.key(), new ArrayList<>(samplesMap.keySet()))
                 .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         List<Sample> catalogSamples = catalogManager.getSampleManager().get(studyId, query, SAMPLE_QUERY_OPTIONS, sessionId).getResult();
         for (Sample catalogSample : catalogSamples) {
-            org.opencb.biodata.models.metadata.Sample sample = samplesMap.get(catalogSample.getName());
+            org.opencb.biodata.models.metadata.Sample sample = samplesMap.get(catalogSample.getId());
 
             List<AnnotationSet> annotationSets = catalogSample.getAnnotationSets();
             sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));

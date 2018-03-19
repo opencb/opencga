@@ -89,7 +89,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             Query query = new Query()
                     .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(ClinicalAnalysisDBAdaptor.QueryParams.NAME.key(), clinicalStr);
+                    .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), clinicalStr);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.UID.key());
             QueryResult<ClinicalAnalysis> clinicalQueryResult = clinicalDBAdaptor.get(query, queryOptions);
             if (clinicalQueryResult.getNumResults() == 1) {
@@ -147,15 +147,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             if (myIds.size() < clinicalList.size()) {
                 Query query = new Query()
                         .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(ClinicalAnalysisDBAdaptor.QueryParams.NAME.key(), clinicalList);
+                        .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), clinicalList);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.NAME.key()));
+                        ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.ID.key()));
                 QueryResult<ClinicalAnalysis> clinicalQueryResult = clinicalDBAdaptor.get(query, queryOptions);
 
                 if (clinicalQueryResult.getNumResults() > 0) {
                     myIds.putAll(clinicalQueryResult.getResult().stream()
-                            .collect(Collectors.toMap(ClinicalAnalysis::getName, ClinicalAnalysis::getUid)));
+                            .collect(Collectors.toMap(ClinicalAnalysis::getId, ClinicalAnalysis::getUid)));
                 }
             }
             if (myIds.size() < clinicalList.size() && !silent) {
@@ -224,7 +224,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(clinicalAnalysis, "clinicalAnalysis");
-        ParamUtils.checkAlias(clinicalAnalysis.getName(), "name", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(clinicalAnalysis.getId(), "name", configuration.getCatalog().getOffset());
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
 
         validateSubjects(clinicalAnalysis, studyId, sessionId);
@@ -294,7 +294,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     sessionId);
             subject.setUid(probandResources.getResourceId());
 
-            List<String> sampleNames = subject.getSamples().stream().map(Sample::getName).collect(Collectors.toList());
+            List<String> sampleNames = subject.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
             MyResourceIds sampleResources = catalogManager.getSampleManager().getIds(sampleNames, Long.toString(studyId), sessionId);
             if (sampleResources.getResourceIds().size() < subject.getSamples().size()) {
                 throw new CatalogException("Missing some samples. Found " + sampleResources.getResourceIds().size() + " out of "
@@ -352,7 +352,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             ClinicalAnalysisDBAdaptor.QueryParams queryParam = ClinicalAnalysisDBAdaptor.QueryParams.getParam(param.getKey());
             switch (queryParam) {
-                case NAME:
+                case ID:
                     ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
                     break;
                 case INTERPRETATIONS:

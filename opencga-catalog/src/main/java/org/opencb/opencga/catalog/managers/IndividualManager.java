@@ -139,7 +139,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         if (individual.getSamples().size() > 0) {
             for (Sample sample : individual.getSamples()) {
                 try {
-                    MyResourceId resource = catalogManager.getSampleManager().getId(sample.getName(), String.valueOf(studyId), sessionId);
+                    MyResourceId resource = catalogManager.getSampleManager().getId(sample.getId(), String.valueOf(studyId), sessionId);
                     existingSampleIds.add(resource.getResourceId());
                 } catch (CatalogException e) {
                     // Sample does not exist so we need to check if the user has permissions to create the samples
@@ -345,7 +345,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), individualStr);
+                    .append(IndividualDBAdaptor.QueryParams.ID.key(), individualStr);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
             QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
             if (individualQueryResult.getNumResults() == 1) {
@@ -393,10 +393,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             if (myIds.size() < individualList.size()) {
                 Query query = new Query()
                         .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), individualList);
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individualList);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.NAME.key()));
+                        IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.ID.key()));
                 QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
 
                 if (individualQueryResult.getNumResults() > 0) {
@@ -529,7 +529,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         .append(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(), individual.getUid())
                         .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                 QueryResult<Family> familyQueryResult = familyDBAdaptor.get(tmpQuery, new QueryOptions(QueryOptions.INCLUDE,
-                        Arrays.asList(FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.NAME.key(),
+                        Arrays.asList(FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.ID.key(),
                                 FamilyDBAdaptor.QueryParams.MEMBERS.key())));
 
                 // Check if the individual can be deleted
@@ -583,7 +583,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         .append(Constants.ALL_VERSIONS, true);
                 ObjectMap updateParams = new ObjectMap()
                         .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), individual.getName() + suffixName);
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individual.getName() + suffixName);
                 QueryResult<Long> update = individualDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
@@ -639,10 +639,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             ParamUtils.checkAlias(parameters.getString(IndividualDBAdaptor.UpdateParams.NAME.key()), "name",
                     configuration.getCatalog().getOffset());
 
-            String myName = parameters.getString(IndividualDBAdaptor.QueryParams.NAME.key());
+            String myName = parameters.getString(IndividualDBAdaptor.QueryParams.ID.key());
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), myName);
+                    .append(IndividualDBAdaptor.QueryParams.ID.key(), myName);
             if (individualDBAdaptor.count(query).first() > 0) {
                 throw new CatalogException("Individual name " + myName + " already in use");
             }
@@ -678,7 +678,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             List<String> siblingList = (List<String>) multiples.get("siblings");
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), StringUtils.join(siblingList, ","));
+                    .append(IndividualDBAdaptor.QueryParams.ID.key(), StringUtils.join(siblingList, ","));
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
             QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
             if (individualQueryResult.getNumResults() < siblingList.size()) {
@@ -709,8 +709,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
             Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.FATHER.key());
-            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()))) {
-                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()), String.valueOf(studyId),
+            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()))) {
+                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()), String.valueOf(studyId),
                         sessionId);
                 parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
                 parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), tmpResource.getResourceId());
@@ -720,8 +720,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
             Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.MOTHER.key());
-            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()))) {
-                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.NAME.key()), String.valueOf(studyId),
+            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()))) {
+                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()), String.valueOf(studyId),
                         sessionId);
                 parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
                 parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), tmpResource.getResourceId());

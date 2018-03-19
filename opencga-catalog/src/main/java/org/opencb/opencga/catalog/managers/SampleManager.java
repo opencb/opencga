@@ -82,7 +82,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     public QueryResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkAlias(sample.getName(), "name", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(sample.getId(), "name", configuration.getCatalog().getOffset());
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setType(ParamUtils.defaultString(sample.getType(), ""));
@@ -182,7 +182,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                                       Individual individual, Map<String, Object> stats, Map<String, Object> attributes,
                                       QueryOptions options, String sessionId)
             throws CatalogException {
-        Sample sample = new Sample(name, name, source, individual, description, type, somatic, -1, 1, Collections.emptyList(),
+        Sample sample = new Sample(name, source, individual, description, type, somatic, -1, 1, Collections.emptyList(),
                 Collections.emptyList(), stats, attributes);
         return create(studyStr, sample, options, sessionId);
     }
@@ -212,7 +212,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(SampleDBAdaptor.QueryParams.NAME.key(), sampleStr);
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleStr);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
             QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
             if (sampleQueryResult.getNumResults() == 1) {
@@ -261,14 +261,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (myIds.size() < sampleList.size()) {
                 Query query = new Query()
                         .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(SampleDBAdaptor.QueryParams.NAME.key(), sampleList);
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), sampleList);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.NAME.key()));
+                        SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.ID.key()));
                 QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
 
                 if (sampleQueryResult.getNumResults() > 0) {
-                    myIds.putAll(sampleQueryResult.getResult().stream().collect(Collectors.toMap(Sample::getName, Sample::getUid)));
+                    myIds.putAll(sampleQueryResult.getResult().stream().collect(Collectors.toMap(Sample::getId, Sample::getUid)));
                 }
             }
             if (myIds.size() < sampleList.size() && !silent) {
@@ -476,7 +476,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                                 sessionId);
                         if (delete.getWarning() != null || delete.getError() != null) {
                             logger.warn("File {} ({}) could not be deleted after extracting the sample {} ({}). WriteResult: {}",
-                                    file.getPath(), file.getUid(), sample.getName(), sample.getUid(), delete);
+                                    file.getPath(), file.getUid(), sample.getId(), sample.getUid(), delete);
                             warningList.add(new Error(-1, "", "File " + file.getPath() + "(" + file.getUid() + ") could not be deleted"
                                     + " after extracting the sample."));
                         }
@@ -511,8 +511,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                                 sessionId);
                         if (delete.getWarning() != null || delete.getError() != null) {
                             logger.warn("Cohort {} ({}) could not be deleted after extracting the sample {} ({}). WriteResult: {}",
-                                    cohort.getName(), cohort.getUid(), sample.getName(), sample.getUid(), delete);
-                            warningList.add(new Error(-1, "", "Cohort " + cohort.getName() + "(" + cohort.getUid()
+                                    cohort.getId(), cohort.getUid(), sample.getId(), sample.getUid(), delete);
+                            warningList.add(new Error(-1, "", "Cohort " + cohort.getId() + "(" + cohort.getUid()
                                     + ") could not be deleted after extracting the sample."));
                         }
                     }
@@ -551,7 +551,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                 ObjectMap updateParams = new ObjectMap()
                         .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(SampleDBAdaptor.QueryParams.NAME.key(), sample.getName() + suffixName);
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId() + suffixName);
                 QueryResult<Long> update = sampleDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
@@ -617,16 +617,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             Cohort cohort = cohortIterator.next();
             if (force) {
                 // Check it is not the default cohort
-                if (StudyEntry.DEFAULT_COHORT.equals(cohort.getName())) {
+                if (StudyEntry.DEFAULT_COHORT.equals(cohort.getId())) {
                     associatedToDefaultCohort = true;
                 }
 
                 // Check the status of the cohort
                 if (cohort.getStatus() != null && Cohort.CohortStatus.CALCULATING.equals(cohort.getStatus().getName())) {
-                    errorCohorts.add(cohort.getName() + "(" + cohort.getUid() + ")");
+                    errorCohorts.add(cohort.getId() + "(" + cohort.getUid() + ")");
                 }
             } else {
-                errorCohorts.add(cohort.getName() + "(" + cohort.getUid() + ")");
+                errorCohorts.add(cohort.getId() + "(" + cohort.getUid() + ")");
             }
         }
         if (associatedToDefaultCohort) {
@@ -647,7 +647,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
                     .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
             QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
-                    Arrays.asList(IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.NAME.key())));
+                    Arrays.asList(IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.ID.key())));
             if (individualQueryResult.getNumResults() > 0) {
                 throw new CatalogException("Sample from individual " + individualQueryResult.first().getName() + "("
                         + individualQueryResult.first().getUid() + ")");
@@ -674,9 +674,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 // Get the sample info before the update
                 QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleId, QueryOptions.empty());
 
-                String newSampleName = sampleQueryResult.first().getName() + ".DELETED_" + TimeUtils.getTime();
+                String newSampleName = sampleQueryResult.first().getId() + ".DELETED_" + TimeUtils.getTime();
                 ObjectMap updateParams = new ObjectMap()
-                        .append(SampleDBAdaptor.QueryParams.NAME.key(), newSampleName)
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), newSampleName)
                         .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
                 queryResult = sampleDBAdaptor.update(sampleId, updateParams, QueryOptions.empty());
 

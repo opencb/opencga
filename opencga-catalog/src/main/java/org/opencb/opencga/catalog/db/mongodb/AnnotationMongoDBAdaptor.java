@@ -482,14 +482,14 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 //            String annotationId = document.getString(AnnotationSetParams.ID.key());
 //            Object annotationValue = document.get(AnnotationSetParams.VALUE.key());
 //            String annotationName = document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key());
-//            long variableSetId = document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key());
+//            long variableSetId = document.getLong(AnnotationSetParams.VARIABLE_SET_UID.key());
 //
 //            Document queryDocument = new Document()
 //                    .append(PRIVATE_UID, id)
 //                    .append(AnnotationSetParams.ANNOTATION_SETS.key(),
 //                            new Document("$elemMatch", new Document()
 //                                    .append(AnnotationSetParams.ID.key(), annotationId)
-//                                    .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetId)
+//                                    .append(AnnotationSetParams.VARIABLE_SET_UID.key(), variableSetId)
 //                                    .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationName)));
 //
 //            // We make a first attempt trying only to update the value of the annotation
@@ -505,7 +505,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 //                        .append(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$not",
 //                                new Document("$elemMatch", new Document()
 //                                        .append(AnnotationSetParams.ID.key(), annotationId)
-//                                        .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetId)
+//                                        .append(AnnotationSetParams.VARIABLE_SET_UID.key(), variableSetId)
 //                                        .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationName))));
 //
 //                updateDocument = new Document("$push", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), document));
@@ -540,14 +540,14 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 //                            .append(AnnotationSetParams.ANNOTATION_SETS.key(),
 //                                    new Document("$elemMatch", new Document()
 //                                            .append(AnnotationSetParams.ID.key(), annotationKey)
-//                                            .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSet.getId())
+//                                            .append(AnnotationSetParams.VARIABLE_SET_UID.key(), variableSet.getId())
 //                                            .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getName())));
 //
 //                    Document pull = new Document("$pull",
 //                            new Document(AnnotationSetParams.ANNOTATION_SETS.key(),
 //                                    new Document()
 //                                            .append(AnnotationSetParams.ID.key(), annotationKey)
-//                                            .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSet.getId())
+//                                            .append(AnnotationSetParams.VARIABLE_SET_UID.key(), variableSet.getId())
 //                                            .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getName())
 //                            ));
 //

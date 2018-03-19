@@ -48,15 +48,15 @@ public class VariantCatalogUtilMultiReleaseTest {
         createFile("file2.vcf");
         createSample("sample1");
         createSample("sample2");
-        catalog.getCohortManager().create("s1", new Cohort().setName("c1").setSamples(Collections.emptyList()), null, sessionId);
+        catalog.getCohortManager().create("s1", new Cohort().setId("c1").setSamples(Collections.emptyList()), null, sessionId);
 
         catalog.getProjectManager().incrementRelease("p1", sessionId);
         createFile("file3.vcf");
         createFile("file4.vcf");
         createSample("sample3");
         createSample("sample4");
-        catalog.getCohortManager().create("s1", new Cohort().setName("c2").setSamples(Collections.emptyList()), null, sessionId);
-        catalog.getCohortManager().create("s1", new Cohort().setName(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
+        catalog.getCohortManager().create("s1", new Cohort().setId("c2").setSamples(Collections.emptyList()), null, sessionId);
+        catalog.getCohortManager().create("s1", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
         queryUtils = new VariantCatalogQueryUtils(catalog);
     }
 

@@ -25,6 +25,7 @@ import java.util.Map;
 public class ClinicalAnalysis extends PrivateFields {
 
     private String id;
+    @Deprecated
     private String name;
     private String description;
     private Type type;
@@ -57,11 +58,10 @@ public class ClinicalAnalysis extends PrivateFields {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String name, String description, Type type, OntologyTerm disease, File germline, File somatic,
+    public ClinicalAnalysis(String id, String description, Type type, OntologyTerm disease, File germline, File somatic,
                             List<Individual> subjects, Family family, List<ClinicalInterpretation> interpretations, String creationDate,
                             Status status, int release, Map<String, Object> attributes) {
         this.id = id;
-        this.name = name;
         this.description = description;
         this.type = type;
         this.disease = disease;
@@ -80,7 +80,6 @@ public class ClinicalAnalysis extends PrivateFields {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysis{");
         sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
         sb.append(", disease=").append(disease);

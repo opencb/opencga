@@ -211,7 +211,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected Cohort getDefaultCohort(long studyId) throws CatalogException {
-        return catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new
+        return catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new
                 QueryOptions(), sessionId).first();
     }
 

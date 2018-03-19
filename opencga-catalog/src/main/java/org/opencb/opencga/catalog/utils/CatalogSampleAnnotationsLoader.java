@@ -105,7 +105,7 @@ public class CatalogSampleAnnotationsLoader {
         Query samplesQuery = new Query("name", new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
         for (Sample sample : catalogManager.getSampleManager().get(studyId, samplesQuery, null, sessionId).getResult()) {
-            loadedSamples.put(sample.getName(), sample);
+            loadedSamples.put(sample.getId(), sample);
         }
 
         auxTime = System.currentTimeMillis();
@@ -291,7 +291,7 @@ public class CatalogSampleAnnotationsLoader {
                     variableList.size(), null, "", null, null));
         }
 
-        VariableSet variableSet = new VariableSet("", "", false, false, "", new HashSet(variableList), 1, null);
+        VariableSet variableSet = new VariableSet("", false, false, "", new HashSet(variableList), 1, null);
         return variableSet;
     }
 

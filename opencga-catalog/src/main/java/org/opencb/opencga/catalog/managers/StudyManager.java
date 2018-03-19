@@ -188,7 +188,7 @@ public class StudyManager extends AbstractManager {
 
             if (aliasList.size() > 0) {
                 // This if is justified by the fact that we might not have any alias or id but an *
-                query.put(StudyDBAdaptor.QueryParams.ALIAS.key(), aliasList);
+                query.put(StudyDBAdaptor.QueryParams.ID.key(), aliasList);
             }
 
             QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
@@ -221,14 +221,14 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public QueryResult<Study> create(String projectStr, String name, String alias, Study.Type type, String creationDate,
-                                     String description, Status status, String cipher, String uriScheme, URI uri,
-                                     Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
-                                     QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Study> create(String projectStr, String id, String name, Study.Type type, String creationDate, String description,
+                                     Status status, String cipher, String uriScheme, URI uri, Map<File.Bioformat, DataStore> datastores,
+                                     Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options, String sessionId)
+            throws CatalogException {
         ParamUtils.checkParameter(name, "name");
-        ParamUtils.checkParameter(alias, "alias");
+        ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(type, "type");
-        ParamUtils.checkAlias(alias, "alias", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(id, "id", configuration.getCatalog().getOffset());
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
@@ -278,7 +278,7 @@ public class StudyManager extends AbstractManager {
         // We set all the permissions for the owner of the study.
         // StudyAcl studyAcl = new StudyAcl(userId, AuthorizationManager.getAdminAcls());
 
-        Study study = new Study(name, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
+        Study study = new Study(id, name, id, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, Arrays.asList(new Group(MEMBERS, Collections.emptyList()), new Group(ADMINS, Collections.emptyList())),
                 experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 Collections.emptyList(), new LinkedList<>(), null, null, datastores, getProjectCurrentRelease(projectId), stats,
@@ -330,7 +330,7 @@ public class StudyManager extends AbstractManager {
 
         if (StringUtils.isNumeric(variableStr) && Long.parseLong(variableStr) > configuration.getCatalog().getOffset()) {
             variableSetId = Long.parseLong(variableStr);
-            Query query = new Query(StudyDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+            Query query = new Query(StudyDBAdaptor.QueryParams.VARIABLE_SET_UID.key(), variableSetId);
             QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
                     StudyDBAdaptor.QueryParams.UID.key()));
             if (studyQueryResult.getNumResults() == 0) {
@@ -348,7 +348,7 @@ public class StudyManager extends AbstractManager {
 
             Query query = new Query()
                     .append(StudyDBAdaptor.VariableSetParams.STUDY_ID.key(), studyId)
-                    .append(StudyDBAdaptor.VariableSetParams.NAME.key(), variableStr);
+                    .append(StudyDBAdaptor.VariableSetParams.ID.key(), variableStr);
             QueryOptions queryOptions = new QueryOptions();
             QueryResult<VariableSet> variableSetQueryResult = studyDBAdaptor.getVariableSets(query, queryOptions);
             if (variableSetQueryResult.getNumResults() == 0) {
@@ -596,7 +596,7 @@ public class StudyManager extends AbstractManager {
         Study studyInfo = get(String.valueOf(studyId), queryOptions, sessionId).first();
 
         StudySummary studySummary = new StudySummary()
-                .setAlias(studyInfo.getAlias())
+                .setAlias(studyInfo.getId())
                 .setAttributes(studyInfo.getAttributes())
                 .setCipher(studyInfo.getCipher())
                 .setCreationDate(studyInfo.getCreationDate())
@@ -1030,7 +1030,7 @@ public class StudyManager extends AbstractManager {
 
         int dbTime = 0;
 
-        VariableSetSummary variableSetSummary = new VariableSetSummary(resource.getResourceId(), variableSet.first().getName());
+        VariableSetSummary variableSetSummary = new VariableSetSummary(resource.getResourceId(), variableSet.first().getId());
 
         QueryResult<VariableSummary> annotationSummary = sampleDBAdaptor.getAnnotationSummary(resource.getStudyId(),
                 resource.getResourceId());
@@ -1093,7 +1093,7 @@ public class StudyManager extends AbstractManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        VariableSet variableSet = new VariableSet(name, name, unique, confidential, description, variables, getCurrentRelease(studyId),
+        VariableSet variableSet = new VariableSet(name, unique, confidential, description, variables, getCurrentRelease(studyId),
                 attributes);
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
@@ -1118,11 +1118,11 @@ public class StudyManager extends AbstractManager {
 //        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
-        if (query.containsKey(StudyDBAdaptor.VariableSetParams.ID.key())) {
+        if (query.containsKey(StudyDBAdaptor.VariableSetParams.UID.key())) {
             // Id could be either the id or the name
-            MyResourceId resource = getVariableSetId(query.getString(StudyDBAdaptor.VariableSetParams.ID.key()),
+            MyResourceId resource = getVariableSetId(query.getString(StudyDBAdaptor.VariableSetParams.UID.key()),
                     Long.toString(studyId), sessionId);
-            query.put(StudyDBAdaptor.VariableSetParams.ID.key(), resource.getResourceId());
+            query.put(StudyDBAdaptor.VariableSetParams.UID.key(), resource.getResourceId());
         }
         query.put(StudyDBAdaptor.VariableSetParams.STUDY_ID.key(), studyId);
         return studyDBAdaptor.getVariableSets(query, options, userId);

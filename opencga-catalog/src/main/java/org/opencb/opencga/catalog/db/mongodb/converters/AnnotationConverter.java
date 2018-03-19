@@ -522,7 +522,7 @@ public class AnnotationConverter {
 //        if (projectionString.startsWith(Constants.VARIABLE_SET + ".")) {
 //            String variableSetString = projectionString.replace(Constants.VARIABLE_SET + ".", "");
 //            if (!variableSetString.isEmpty() && StringUtils.isNumeric(variableSetString)
-//                    && Long.parseLong(variableSetString) == document.getLong(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID
+//                    && Long.parseLong(variableSetString) == document.getLong(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_UID
 //                    .key())) {
 //                return true;
 //            }

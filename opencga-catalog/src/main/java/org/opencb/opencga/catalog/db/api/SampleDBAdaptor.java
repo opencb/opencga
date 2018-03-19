@@ -41,7 +41,6 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     enum QueryParams implements QueryParam {
         UID("uid", INTEGER, ""),
         ID("id", TEXT, ""),
-        NAME("name", TEXT_ARRAY, ""),
         SOURCE("source", TEXT_ARRAY, ""),
         INDIVIDUAL("individual", TEXT, ""),
         INDIVIDUAL_UID("individual.uid", INTEGER_ARRAY, ""),
@@ -116,7 +115,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     }
 
     enum UpdateParams {
-        NAME(QueryParams.NAME.key()),
+        NAME(QueryParams.ID.key()),
         SOURCE(QueryParams.SOURCE.key()),
         INDIVIDUAL(QueryParams.INDIVIDUAL.key()),
         TYPE(QueryParams.TYPE.key()),

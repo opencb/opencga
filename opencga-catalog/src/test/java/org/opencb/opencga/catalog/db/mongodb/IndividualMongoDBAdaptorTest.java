@@ -93,23 +93,24 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testGetAllIndividuals() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "ind_1", -1, -1, "Family1", Individual.Sex.MALE, "", new Individual.Population(), 1, Collections.emptyList(), null), null);
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("in2", "ind_2", -1, -1, "Family1", Individual.Sex.FEMALE, "", new
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_1", "ind_1", -1, -1, "Family1", Individual.Sex.MALE, "", new Individual.Population(), 1, Collections.emptyList(), null), null);
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_2", "ind_2", -1, -1, "Family1", Individual.Sex.FEMALE, "", new
                 Individual.Population(), 1, Collections.emptyList(), null), null);
 
-        Individual father = catalogIndividualDBAdaptor.insert(studyId, new Individual("in3", "ind_3", -1, -1, "Family2", Individual.Sex
+        Individual father = catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_3", "ind_3", -1, -1, "Family2", Individual.Sex
                 .MALE, "", new Individual.Population(), 1, Collections.emptyList(), null), null).first();
-        Individual mother = catalogIndividualDBAdaptor.insert(studyId, new Individual("in4", "ind_4", -1, -1, "Family2", Individual.Sex
+        Individual mother = catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_4", "ind_4", -1, -1, "Family2", Individual.Sex
                 .FEMALE, "", new Individual.Population(), 1, Collections.emptyList(), null), null).first();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("in5", "ind_5", father, mother, null, Individual.Sex.MALE, Individual
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_5", "ind_5", father, mother, null, Individual.Sex.MALE, Individual
                 .KaryotypicSex.XY,
                 "", new Individual.Population(), null, null, null, null, true, 1, Collections.emptyList(), null).setFamily("Family2"), null);
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("in6", "ind_6", -1, -1, "Family3", Individual.Sex.FEMALE, "",
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_6", "ind_6", -1, -1, "Family3", Individual.Sex.FEMALE, "",
                 new Individual.Population(), 1, Collections.emptyList(), null), null);
 
         QueryResult<Individual> result;
-        result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.NAME.key(),
+        result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.ID.key(),
                 "~ind_[1-3]").append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
+
         assertEquals(3, result.getNumResults());
 
         result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.SEX.key(),

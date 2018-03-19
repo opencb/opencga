@@ -513,7 +513,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
             boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
             if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {
-                Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+                Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
                 QueryResult<Cohort> queryResult = catalogManager.getCohortManager().get(study.getUid(), query, new QueryOptions(),
                         sessionId);
                 if (queryResult.getNumResults() != 0) {
@@ -600,7 +600,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         Cohort defaultCohort;
-        Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+        Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
         QueryResult<Cohort> cohorts = catalogManager.getCohortManager().get(study.getUid(), query, new QueryOptions(), sessionId);
 
         if (cohorts.getResult().isEmpty()) {
@@ -627,7 +627,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     }
 
     private Cohort createDefaultCohortIfNeeded(Study study, String sessionId) throws CatalogException {
-        Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+        Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
         Cohort cohort = catalogManager.getCohortManager().get(study.getUid(), query, null, sessionId).first();
         if (cohort == null) {
             return createDefaultCohort(study, sessionId);
@@ -650,7 +650,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     }
 
     private String updateDefaultCohortStatus(Study study, String status, String sessionId) throws CatalogException {
-        Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+        Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
         Cohort defaultCohort = catalogManager.getCohortManager().get(study.getUid(), query, new QueryOptions(), sessionId).first();
         String prevStatus = defaultCohort.getStatus().getName();
 
