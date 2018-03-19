@@ -788,7 +788,7 @@ public class FileManagerTest extends GenericTest {
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult.first(), sessionIdUser, false, false, true);
         catalogManager.getFileManager().get(queryResult.first().getUid(), null, sessionIdUser);
 
-        catalogManager.getFileManager().rename(catalogManager.getFileManager().getId("data/nested/", "user@1000G:phase1", sessionIdUser)
+        catalogManager.getFileManager().rename(catalogManager.getFileManager().getUid("data/nested/", "user@1000G:phase1", sessionIdUser)
                         .getResourceId(), "nested2",
                 sessionIdUser);
         Set<String> paths = catalogManager.getFileManager().get(studyId, new Query(), new QueryOptions(), sessionIdUser).getResult()
@@ -800,7 +800,7 @@ public class FileManagerTest extends GenericTest {
         assertTrue(paths.contains("data/nested2/folder/file2.txt"));
         assertTrue(paths.contains("data/file.txt"));
 
-        catalogManager.getFileManager().rename(catalogManager.getFileManager().getId("data/", "user@1000G:phase1", sessionIdUser).getResourceId(), "Data",
+        catalogManager.getFileManager().rename(catalogManager.getFileManager().getUid("data/", "user@1000G:phase1", sessionIdUser).getResourceId(), "Data",
                 sessionIdUser);
         paths = catalogManager.getFileManager().get(studyId, new Query(), new QueryOptions(), sessionIdUser).getResult()
                 .stream().map(File::getPath).collect(Collectors.toSet());
@@ -818,13 +818,13 @@ public class FileManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "user2", aclParams, sessionIdUser).get(0);
         File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat
                 .NONE, "data/test/folder/file.txt", null, "My description", null, 0, -1, null, (long) -1, null, null, true, null, null, sessionIdUser2).first();
-        long fileId = catalogManager.getFileManager().getId(file.getPath(), Long.toString(studyId), sessionIdUser).getResourceId();
+        long fileId = catalogManager.getFileManager().getUid(file.getPath(), Long.toString(studyId), sessionIdUser).getResourceId();
         assertEquals(file.getUid(), fileId);
 
-        fileId = catalogManager.getFileManager().getId(Long.toString(file.getUid()), Long.toString(studyId), sessionIdUser).getResourceId();
+        fileId = catalogManager.getFileManager().getUid(Long.toString(file.getUid()), Long.toString(studyId), sessionIdUser).getResourceId();
         assertEquals(file.getUid(), fileId);
 
-        fileId = catalogManager.getFileManager().getId("/", Long.toString(studyId), sessionIdUser).getResourceId();
+        fileId = catalogManager.getFileManager().getUid("/", Long.toString(studyId), sessionIdUser).getResourceId();
         System.out.println(fileId);
     }
 
@@ -833,14 +833,14 @@ public class FileManagerTest extends GenericTest {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("null or empty"));
 
-        long fileId = catalogManager.getFileManager().getId("data/", "user@1000G:phase1", sessionIdUser).getResourceId();
+        long fileId = catalogManager.getFileManager().getUid("data/", "user@1000G:phase1", sessionIdUser).getResourceId();
         catalogManager.getFileManager().rename(fileId, "", sessionIdUser);
     }
 
     @Test
     public void renameFileSlashInName() throws CatalogException {
         thrown.expect(CatalogParameterException.class);
-        long fileId = catalogManager.getFileManager().getId("data/", "user@1000G:phase1", sessionIdUser).getResourceId();
+        long fileId = catalogManager.getFileManager().getUid("data/", "user@1000G:phase1", sessionIdUser).getResourceId();
         catalogManager.getFileManager().rename(fileId, "my/folder", sessionIdUser);
     }
 
@@ -851,7 +851,7 @@ public class FileManagerTest extends GenericTest {
         catalogManager.getFileManager().createFolder(Long.toString(studyId), "analysis/", new File.FileStatus(), false, "",
                 new QueryOptions(), sessionIdUser);
         thrown.expect(CatalogIOException.class);
-        catalogManager.getFileManager().rename(catalogManager.getFileManager().getId("data/", "user@1000G:phase1", sessionIdUser).getResourceId(), "analysis",
+        catalogManager.getFileManager().rename(catalogManager.getFileManager().getUid("data/", "user@1000G:phase1", sessionIdUser).getResourceId(), "analysis",
                 sessionIdUser);
     }
 
@@ -1102,11 +1102,11 @@ public class FileManagerTest extends GenericTest {
     public void testGetFileParent() throws CatalogException, IOException {
 
         long fileId;
-        fileId = catalogManager.getFileManager().getId("data/test/folder/", "user@1000G:phase1", sessionIdUser).getResourceId();
+        fileId = catalogManager.getFileManager().getUid("data/test/folder/", "user@1000G:phase1", sessionIdUser).getResourceId();
         QueryResult<File> fileParent = catalogManager.getFileManager().getParent(fileId, null, sessionIdUser);
         assertEquals("data/test/", fileParent.first().getPath());
 
-        fileId = catalogManager.getFileManager().getId("data/", "user@1000G:phase1", sessionIdUser).getResourceId();
+        fileId = catalogManager.getFileManager().getUid("data/", "user@1000G:phase1", sessionIdUser).getResourceId();
         fileParent = catalogManager.getFileManager().getParent(fileId, null, sessionIdUser);
         assertEquals("", fileParent.first().getPath());
         assertEquals(".", fileParent.first().getName());
@@ -1121,7 +1121,7 @@ public class FileManagerTest extends GenericTest {
         long fileId;
         QueryResult<File> fileParents;
 
-        fileId = catalogManager.getFileManager().getId("data/test/folder/", "user@1000G:phase1", sessionIdUser).getResourceId();
+        fileId = catalogManager.getFileManager().getUid("data/test/folder/", "user@1000G:phase1", sessionIdUser).getResourceId();
         fileParents = catalogManager.getFileManager().getParents(fileId, null, sessionIdUser);
 
         assertEquals(4, fileParents.getNumResults());
@@ -1136,7 +1136,7 @@ public class FileManagerTest extends GenericTest {
         long fileId;
         QueryResult<File> fileParents;
 
-        fileId = catalogManager.getFileManager().getId("data/test/folder/test_1K.txt.gz", "user@1000G:phase1", sessionIdUser)
+        fileId = catalogManager.getFileManager().getUid("data/test/folder/test_1K.txt.gz", "user@1000G:phase1", sessionIdUser)
                 .getResourceId();
         fileParents = catalogManager.getFileManager().getParents(fileId, null, sessionIdUser);
 
@@ -1153,7 +1153,7 @@ public class FileManagerTest extends GenericTest {
         long fileId;
         QueryResult<File> fileParents;
 
-        fileId = catalogManager.getFileManager().getId("data/test/", "user@1000G:phase1", sessionIdUser).getResourceId();
+        fileId = catalogManager.getFileManager().getUid("data/test/", "user@1000G:phase1", sessionIdUser).getResourceId();
         fileParents = catalogManager.getFileManager().getParents(fileId, new QueryOptions("include", "projects.studies.files.path," +
                 "projects.studies.files.id"), sessionIdUser);
 
@@ -1297,19 +1297,19 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testDeleteLeafFolder() throws CatalogException, IOException {
-        long deletable = catalogManager.getFileManager().getId("/data/test/folder/", "user@1000G:phase3", sessionIdUser).getResourceId();
+        long deletable = catalogManager.getFileManager().getUid("/data/test/folder/", "user@1000G:phase3", sessionIdUser).getResourceId();
         deleteFolderAndCheck(deletable);
     }
 
     @Test
     public void testDeleteMiddleFolder() throws CatalogException, IOException {
-        long deletable = catalogManager.getFileManager().getId("/data/", "user@1000G:phase3", sessionIdUser).getResourceId();
+        long deletable = catalogManager.getFileManager().getUid("/data/", "user@1000G:phase3", sessionIdUser).getResourceId();
         deleteFolderAndCheck(deletable);
     }
 
     @Test
     public void testDeleteRootFolder() throws CatalogException, IOException {
-        long deletable = catalogManager.getFileManager().getId("/", "user@1000G:phase3", sessionIdUser).getResourceId();
+        long deletable = catalogManager.getFileManager().getUid("/", "user@1000G:phase3", sessionIdUser).getResourceId();
 
         long studyIdByFileId = catalogManager.getFileManager().getStudyId(deletable);
         WriteResult result = catalogManager.getFileManager().delete(String.valueOf(studyIdByFileId), new Query(FileDBAdaptor.QueryParams

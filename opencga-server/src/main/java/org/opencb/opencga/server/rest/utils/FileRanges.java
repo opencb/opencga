@@ -55,7 +55,7 @@ public class FileRanges extends OpenCGAWSServer {
                               @QueryParam("study") String studyStr) {
         DataInputStream stream = null;
         try {
-            AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId);
             QueryResult<File> queryResult = catalogManager.getFileManager().get(resource.getResourceId(), this.queryOptions, sessionId);
             File file = queryResult.getResult().get(0);
 

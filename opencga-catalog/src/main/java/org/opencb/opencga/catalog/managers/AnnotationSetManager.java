@@ -92,7 +92,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
     public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           String annotationSetName, Map<String, Object> annotations, String sessionId)
             throws CatalogException {
-        MyResourceId resourceId = getId(id, studyStr, sessionId);
+        MyResourceId resourceId = getUid(id, studyStr, sessionId);
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resourceId.getStudyId()), sessionId);
         AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetResource.getResourceId(), annotations,
@@ -140,7 +140,7 @@ public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
     public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr,
                                                           String annotationSetName, Map<String, Object> newAnnotations, String sessionId)
             throws CatalogException {
-        MyResourceId resourceId = getId(id, studyStr, sessionId);
+        MyResourceId resourceId = getUid(id, studyStr, sessionId);
         AnnotationSet annotationSet = new AnnotationSet(annotationSetName, -1, newAnnotations, Collections.emptyMap());
         ObjectMap parameters;
         ObjectMapper jsonObjectMapper = new ObjectMapper();

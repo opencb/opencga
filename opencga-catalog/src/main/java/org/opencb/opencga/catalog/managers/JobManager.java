@@ -81,7 +81,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public MyResourceId getId(String jobStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceId getUid(String jobStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(jobStr)) {
             throw new CatalogException("Missing job parameter");
         }
@@ -123,7 +123,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    MyResourceIds getIds(List<String> jobList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
+    MyResourceIds getUids(List<String> jobList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
         if (jobList == null || jobList.isEmpty()) {
             throw new CatalogException("Missing job parameter");
         }
@@ -176,7 +176,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public QueryResult<Job> visit(long jobId, String sessionId) throws CatalogException {
-        MyResourceId resource = getId(Long.toString(jobId), null, sessionId);
+        MyResourceId resource = getUid(Long.toString(jobId), null, sessionId);
 
         authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.VIEW);
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
@@ -290,13 +290,13 @@ public class JobManager extends ResourceManager<Job> {
 
     private void fixQueryObject(long studyId, Query query, String sessionId) throws CatalogException {
         if (query.containsKey("inputFiles")) {
-            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getAsStringList("inputFiles"), Long.toString(studyId),
+            MyResourceIds inputFiles = catalogManager.getFileManager().getUids(query.getAsStringList("inputFiles"), Long.toString(studyId),
                     sessionId);
             query.put(JobDBAdaptor.QueryParams.INPUT_UID.key(), inputFiles.getResourceIds());
             query.remove("inputFiles");
         }
         if (query.containsKey("outputFiles")) {
-            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getAsStringList("outputFiles"), Long.toString(studyId),
+            MyResourceIds inputFiles = catalogManager.getFileManager().getUids(query.getAsStringList("outputFiles"), Long.toString(studyId),
                     sessionId);
             query.put(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), inputFiles.getResourceIds());
             query.remove("outputFiles");
@@ -449,7 +449,7 @@ public class JobManager extends ResourceManager<Job> {
         ParamUtils.checkObj(parameters, "parameters");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        MyResourceId resource = getUid(entryStr, studyStr, sessionId);
         authorizationManager.checkJobPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 JobAclEntry.JobPermissions.UPDATE);
 
@@ -464,7 +464,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        MyResourceId resource = getId(id, null, sessionId);
+        MyResourceId resource = getUid(id, null, sessionId);
 
         authorizationManager.checkJobPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 JobAclEntry.JobPermissions.UPDATE);
@@ -558,7 +558,7 @@ public class JobManager extends ResourceManager<Job> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<JobAclEntry>> getAcls(String studyStr, List<String> jobList, String member, boolean silent, String sessionId)
             throws CatalogException {
-        MyResourceIds resource = getIds(jobList, studyStr, silent, sessionId);
+        MyResourceIds resource = getUids(jobList, studyStr, silent, sessionId);
 
         List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();
@@ -602,7 +602,7 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         // Obtain the resource ids
-        MyResourceIds resourceIds = getIds(jobList, studyStr, sessionId);
+        MyResourceIds resourceIds = getUids(jobList, studyStr, sessionId);
         authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members

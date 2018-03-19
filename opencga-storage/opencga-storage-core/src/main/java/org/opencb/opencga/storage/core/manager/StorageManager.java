@@ -104,7 +104,7 @@ public abstract class StorageManager {
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyIdStr);
         } else {
-            AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(fileIdStrs, studyIdStr, sessionId);
+            AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getUids(fileIdStrs, studyIdStr, sessionId);
             fileIds = resource.getResourceIds();
             studyId = resource.getStudyId();
         }

@@ -122,7 +122,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 jobStatus = new Job.JobStatus();
                 jobStatus.setMessage(job.statusMessage);
             }
-            long outDir = catalogManager.getFileManager().getId(job.outDir, Long.toString(studyId), sessionId).getResourceId();
+            long outDir = catalogManager.getFileManager().getUid(job.outDir, Long.toString(studyId), sessionId).getResourceId();
             QueryResult<Job> result = catalogManager.getJobManager().create(studyId, job.name, job.toolName, job.description, job
                             .execution, job.params, job.commandLine, null, outDir, parseToListOfFiles(job.input), parseToListOfFiles(job.output),
                     job.attributes, job.resourceManagerAttributes, jobStatus, job.startTime, job.endTime, queryOptions, sessionId);

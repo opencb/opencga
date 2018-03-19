@@ -141,7 +141,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (variableSetId != null) {
                 variableSet = Long.toString(variableSetId);
             }
-            AbstractManager.MyResourceId resourceId = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resourceId = catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId);
             Long varSetId;
             if (StringUtils.isNotBlank(variableSet)) {
                 varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
@@ -383,7 +383,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResourceId resourceId = sampleManager.getId(sampleStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resourceId = sampleManager.getUid(sampleStr, studyStr, sessionId);
 
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
@@ -434,7 +434,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
                 @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResourceIds resourceIds = sampleManager.getIds(samplesStr, studyStr, sessionId);
+            AbstractManager.MyResourceIds resourceIds = sampleManager.getUids(samplesStr, studyStr, sessionId);
 
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())

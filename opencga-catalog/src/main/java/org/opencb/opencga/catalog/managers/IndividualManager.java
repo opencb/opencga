@@ -139,7 +139,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         if (individual.getSamples().size() > 0) {
             for (Sample sample : individual.getSamples()) {
                 try {
-                    MyResourceId resource = catalogManager.getSampleManager().getId(sample.getId(), String.valueOf(studyId), sessionId);
+                    MyResourceId resource = catalogManager.getSampleManager().getUid(sample.getId(), String.valueOf(studyId), sessionId);
                     existingSampleIds.add(resource.getResourceId());
                 } catch (CatalogException e) {
                     // Sample does not exist so we need to check if the user has permissions to create the samples
@@ -236,7 +236,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         if (query.containsKey(IndividualDBAdaptor.QueryParams.SAMPLES.key())) {
-            MyResourceIds ids = catalogManager.getSampleManager().getIds(
+            MyResourceIds ids = catalogManager.getSampleManager().getUids(
                     query.getAsStringList(IndividualDBAdaptor.QueryParams.SAMPLES.key()), String.valueOf(studyId), sessionId);
             query.put(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), ids.getResourceIds());
             query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
@@ -278,7 +278,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         ParamUtils.checkParameter(individualIdStr, "id");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceIds resource = getIds(Arrays.asList(StringUtils.split(individualIdStr, ",")), null, sessionId);
+        MyResourceIds resource = getUids(Arrays.asList(StringUtils.split(individualIdStr, ",")), null, sessionId);
 
         List<QueryResult<Individual>> queryResultList = new ArrayList<>(resource.getResourceIds().size());
         for (Long individualId : resource.getResourceIds()) {
@@ -321,7 +321,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public MyResourceId getId(String individualStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceId getUid(String individualStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(individualStr)) {
             throw new CatalogException("Missing individual parameter");
         }
@@ -363,7 +363,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    MyResourceIds getIds(List<String> individualList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
+    MyResourceIds getUids(List<String> individualList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
         if (individualList == null || individualList.isEmpty()) {
             throw new CatalogException("Missing individual parameter");
         }
@@ -617,7 +617,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         parameters = new ObjectMap(parameters);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        MyResourceId resource = getUid(entryStr, studyStr, sessionId);
         String userId = resource.getUser();
         long studyId = resource.getStudyId();
         long individualId = resource.getResourceId();
@@ -689,7 +689,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.SAMPLES.key())) {
             // Check those samples can be used
             List<String> samples = parameters.getAsStringList(IndividualDBAdaptor.UpdateParams.SAMPLES.key());
-            MyResourceIds sampleResource = catalogManager.getSampleManager().getIds(samples, String.valueOf(studyId), sessionId);
+            MyResourceIds sampleResource = catalogManager.getSampleManager().getUids(samples, String.valueOf(studyId), sessionId);
             checkSamplesNotInUseInOtherIndividual(new HashSet<>(sampleResource.getResourceIds()), studyId, individualId);
 
             // Fetch the samples to obtain the latest version as well
@@ -710,7 +710,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
             Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.FATHER.key());
             if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()))) {
-                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()), String.valueOf(studyId),
+                MyResourceId tmpResource = getUid((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()), String.valueOf(studyId),
                         sessionId);
                 parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
                 parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), tmpResource.getResourceId());
@@ -721,7 +721,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
             Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.MOTHER.key());
             if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()))) {
-                MyResourceId tmpResource = getId((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()), String.valueOf(studyId),
+                MyResourceId tmpResource = getUid((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()), String.valueOf(studyId),
                         sessionId);
                 parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
                 parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), tmpResource.getResourceId());
@@ -826,7 +826,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<IndividualAclEntry>> getAcls(String studyStr, List<String> individualList, String member,
                                                          boolean silent, String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(individualList, studyStr, silent, sessionId);
+        MyResourceIds resource = getUids(individualList, studyStr, silent, sessionId);
 
         List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();
@@ -878,7 +878,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         if (StringUtils.isNotEmpty(aclParams.getSample())) {
             // Obtain the sample ids
-            MyResourceIds ids = catalogManager.getSampleManager().getIds(Arrays.asList(StringUtils.split(aclParams.getSample(), ",")),
+            MyResourceIds ids = catalogManager.getSampleManager().getUids(Arrays.asList(StringUtils.split(aclParams.getSample(), ",")),
                     studyStr, sessionId);
 
             Query query = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ids.getResourceIds());
@@ -891,7 +891,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         // Obtain the resource ids
-        MyResourceIds resourceIds = getIds(individualList, studyStr, sessionId);
+        MyResourceIds resourceIds = getUids(individualList, studyStr, sessionId);
 
         authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
@@ -986,18 +986,18 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private void fixQuery(long studyId, Query query, String sessionId) throws CatalogException {
         if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
             MyResourceId resource =
-                    getId(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()), String.valueOf(studyId), sessionId);
+                    getUid(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()), String.valueOf(studyId), sessionId);
             query.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
             query.append(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), resource.getResourceId());
         }
         if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
             MyResourceId resource =
-                    getId(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
+                    getUid(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
             query.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
             query.append(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), resource.getResourceId());
         }
         if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {
-            MyResourceIds resource = catalogManager.getSampleManager().getIds(
+            MyResourceIds resource = catalogManager.getSampleManager().getUids(
                     query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()), String.valueOf(studyId), sessionId);
             query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
             query.append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), resource.getResourceIds());

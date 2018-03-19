@@ -423,7 +423,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             isSingleId(fileIdStr);
             DataInputStream stream;
-            AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.DOWNLOAD);
 
@@ -446,7 +446,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit) {
         try {
             isSingleId(fileIdStr);
-            AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
 
@@ -471,7 +471,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Return multiple matches", required = false) @DefaultValue("true") @QueryParam("multi") Boolean multi) {
         try {
             isSingleId(fileIdStr);
-            AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
 
@@ -498,7 +498,7 @@ public class FileWSServer extends OpenCGAWSServer {
         InputStream streamBody = null;
         try {
             isSingleId(fileStr);
-            AbstractManager.MyResourceId resource = fileManager.getId(fileStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = fileManager.getUid(fileStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.WRITE);
 
@@ -843,7 +843,7 @@ public class FileWSServer extends OpenCGAWSServer {
         List<QueryResult> queryResults = new LinkedList<>();
         try {
             List<String> idList = getIdList(fileIdCsv);
-            AbstractManager.MyResourceIds resource = fileManager.getIds(idList, studyStr, sessionId);
+            AbstractManager.MyResourceIds resource = fileManager.getUids(idList, studyStr, sessionId);
 //            String[] splitFileId = fileIdCsv.split(",");
             for (long fileId : resource.getResourceIds()) {
                 QueryResult queryResult;
@@ -913,7 +913,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new ObjectMap());
 
-            AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
 
             ObjectMap map = new ObjectMap(jsonObjectMapper.writeValueAsString(params));
             // TODO: jobId is deprecated. Remember to remove this if after next release
@@ -1024,7 +1024,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 throw new CatalogIOException("File " + uri + " does not exist");
             }
 
-            AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
             File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
 
             new FileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
@@ -1047,7 +1047,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @QueryParam("study") String studyStr) {
         try {
             isSingleId(fileIdStr);
-            AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
 
             File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
 
@@ -1296,7 +1296,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                  boolean calculateChecksum) {
         try {
             isSingleId(folderIdStr);
-            AbstractManager.MyResourceId resource = fileManager.getId(folderIdStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = fileManager.getUid(folderIdStr, studyStr, sessionId);
 
             File directory = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
             List<File> scan = new FileScanner(catalogManager)

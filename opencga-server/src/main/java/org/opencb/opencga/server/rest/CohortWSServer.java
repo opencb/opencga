@@ -69,7 +69,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             if (StringUtils.isNotEmpty(sampleIdsStr)) {
                 List<String> idList = getIdList(sampleIdsStr);
-                AbstractManager.MyResourceIds samples = catalogManager.getSampleManager().getIds(idList, Long.toString(studyId), sessionId);
+                AbstractManager.MyResourceIds samples = catalogManager.getSampleManager().getUids(idList, Long.toString(studyId), sessionId);
                 List<Sample> sampleList = new ArrayList<>(samples.getResourceIds().size());
                 for (Long sampleId : samples.getResourceIds()) {
                     sampleList.add(new Sample().setUid(sampleId));
@@ -314,7 +314,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResourceId resourceId = cohortManager.getId(cohortStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resourceId = cohortManager.getUid(cohortStr, studyStr, sessionId);
 
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
@@ -365,7 +365,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResourceIds resourceIds = cohortManager.getIds(cohortsStr, studyStr, sessionId);
+            AbstractManager.MyResourceIds resourceIds = cohortManager.getUids(cohortsStr, studyStr, sessionId);
 
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())

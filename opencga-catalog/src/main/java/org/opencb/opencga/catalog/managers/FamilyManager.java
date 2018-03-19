@@ -83,7 +83,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException when more than one family id is found.
      */
-    public MyResourceId getId(String familyStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceId getUid(String familyStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(familyStr)) {
             throw new CatalogException("Missing family parameter");
         }
@@ -134,7 +134,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * @throws CatalogException CatalogException.
      */
     @Override
-    MyResourceIds getIds(List<String> familyList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
+    MyResourceIds getUids(List<String> familyList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
         if (familyList == null || familyList.isEmpty()) {
             throw new CatalogException("Missing family parameter");
         }
@@ -304,7 +304,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // We change the MEMBERS parameters for MEMBERS_UID which is what the DBAdaptor understands
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBERS.key()))) {
             try {
-                MyResourceIds resourceIds = catalogManager.getIndividualManager().getIds(
+                MyResourceIds resourceIds = catalogManager.getIndividualManager().getUids(
                         query.getAsStringList(FamilyDBAdaptor.QueryParams.MEMBERS.key()), Long.toString(studyId), sessionId);
                 query.put(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(), resourceIds.getResourceIds());
             } catch (CatalogException e) {
@@ -479,7 +479,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         parameters = new ObjectMap(parameters);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        MyResourceId resource = getUid(entryStr, studyStr, sessionId);
         long familyId = resource.getResourceId();
 
         // Check permissions...
@@ -582,7 +582,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(familyList, studyStr, silent, sessionId);
+        MyResourceIds resource = getUids(familyList, studyStr, silent, sessionId);
 
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();
@@ -624,7 +624,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             checkPermissions(permissions, FamilyAclEntry.FamilyPermissions::valueOf);
         }
 
-        MyResourceIds resourceIds = getIds(familyList, studyStr, sessionId);
+        MyResourceIds resourceIds = getUids(familyList, studyStr, sessionId);
         authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members

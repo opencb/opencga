@@ -271,7 +271,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResourceId resourceId = familyManager.getId(familyStr, studyStr, sessionId);
+            AbstractManager.MyResourceId resourceId = familyManager.getUid(familyStr, studyStr, sessionId);
 
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
@@ -322,7 +322,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResourceIds resourceIds = familyManager.getIds(familiesStr, studyStr, sessionId);
+            AbstractManager.MyResourceIds resourceIds = familyManager.getUids(familiesStr, studyStr, sessionId);
 
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())

@@ -155,7 +155,7 @@ public class FileManager extends ResourceManager<File> {
     }
 
     @Override
-    public MyResourceId getId(String fileStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceId getUid(String fileStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(fileStr)) {
             throw new CatalogException("Missing file parameter");
         }
@@ -183,7 +183,7 @@ public class FileManager extends ResourceManager<File> {
     }
 
     @Override
-    public MyResourceIds getIds(List<String> fileList, @Nullable String studyStr, boolean silent, String sessionId)
+    public MyResourceIds getUids(List<String> fileList, @Nullable String studyStr, boolean silent, String sessionId)
             throws CatalogException {
         if (fileList == null || fileList.isEmpty()) {
             throw new CatalogException("Missing file parameter");
@@ -343,7 +343,7 @@ public class FileManager extends ResourceManager<File> {
     }
 
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        MyResourceId resource = getId(id, null, sessionId);
+        MyResourceId resource = getUid(id, null, sessionId);
         String userId = resource.getUser();
         long fileId = resource.getResourceId();
 
@@ -692,7 +692,7 @@ public class FileManager extends ResourceManager<File> {
             }
         }
 
-        MyResourceId resource = getId(fileIdStr, studyStr, sessionId);
+        MyResourceId resource = getUid(fileIdStr, studyStr, sessionId);
 
         query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudyId());
 
@@ -722,7 +722,7 @@ public class FileManager extends ResourceManager<File> {
     public QueryResult<File> getFilesFromFolder(String folderStr, String studyStr, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(folderStr, "folder");
-        MyResourceId resource = getId(folderStr, studyStr, sessionId);
+        MyResourceId resource = getUid(folderStr, studyStr, sessionId);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         File folder = get(resource.getResourceId(), null, sessionId).first();
@@ -785,7 +785,7 @@ public class FileManager extends ResourceManager<File> {
     void fixQueryObject(long studyId, Query query, String sessionId) throws CatalogException {
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
-            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getUids(
                     query.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
             query.put(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), resourceIds.getResourceIds());
             query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
@@ -937,7 +937,7 @@ public class FileManager extends ResourceManager<File> {
     public QueryResult<File> unlink(@Nullable String studyStr, String fileIdStr, String sessionId) throws CatalogException, IOException {
         ParamUtils.checkParameter(fileIdStr, "File");
 
-        AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
+        AbstractManager.MyResourceId resource = catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId);
         String userId = resource.getUser();
         long fileId = resource.getResourceId();
         long studyId = resource.getStudyId();
@@ -1251,7 +1251,7 @@ public class FileManager extends ResourceManager<File> {
         ParamUtils.checkObj(parameters, "Parameters");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        MyResourceId resource = getUid(entryStr, studyStr, sessionId);
 
         String userId = userManager.getUserId(sessionId);
         File file = get(resource.getResourceId(), null, sessionId).first();
@@ -1265,7 +1265,7 @@ public class FileManager extends ResourceManager<File> {
         if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             List<String> sampleIdStr = parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key());
 
-            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(sampleIdStr, Long.toString(resource.getStudyId()),
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getUids(sampleIdStr, Long.toString(resource.getStudyId()),
                     sessionId);
 
             // Avoid sample duplicates
@@ -1669,7 +1669,7 @@ public class FileManager extends ResourceManager<File> {
     public QueryResult<Job> index(List<String> fileList, String studyStr, String type, Map<String, String> params, String sessionId)
             throws CatalogException {
         params = ParamUtils.defaultObject(params, HashMap::new);
-        MyResourceIds resourceIds = getIds(fileList, studyStr, sessionId);
+        MyResourceIds resourceIds = getUids(fileList, studyStr, sessionId);
         List<Long> fileFolderIdList = resourceIds.getResourceIds();
         long studyId = resourceIds.getStudyId();
         String userId = resourceIds.getUser();
@@ -1697,7 +1697,7 @@ public class FileManager extends ResourceManager<File> {
 
         File outDir;
         try {
-            outDir = new File().setUid(getId(outDirPath, Long.toString(studyId), sessionId).getResourceId());
+            outDir = new File().setUid(getUid(outDirPath, Long.toString(studyId), sessionId).getResourceId());
         } catch (CatalogException e) {
             logger.warn("'{}' does not exist. Trying to create the output directory.", outDirPath);
             QueryResult<File> folder = createFolder(Long.toString(studyId), outDirPath, new File.FileStatus(), true, "",
@@ -1721,7 +1721,7 @@ public class FileManager extends ResourceManager<File> {
                 }
                 // It is a path, so we will try to create the folder
                 createFolder(Long.toString(studyId), path, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
-                outDir = new File().setUid(getId(path, Long.toString(studyId), sessionId).getResourceId());
+                outDir = new File().setUid(getUid(path, Long.toString(studyId), sessionId).getResourceId());
                 logger.info("Outdir {} -> {}", outDir, path);
             }
         }
@@ -1937,7 +1937,7 @@ public class FileManager extends ResourceManager<File> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<FileAclEntry>> getAcls(String studyStr, List<String> fileList, String member, boolean silent, String sessionId)
             throws CatalogException {
-        MyResourceIds resource = getIds(fileList, studyStr, silent, sessionId);
+        MyResourceIds resource = getUids(fileList, studyStr, silent, sessionId);
         List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
 
         List<Long> resourceIds = resource.getResourceIds();
@@ -1988,7 +1988,7 @@ public class FileManager extends ResourceManager<File> {
 
         if (StringUtils.isNotEmpty(fileAclParams.getSample())) {
             // Obtain the sample ids
-            MyResourceIds ids = catalogManager.getSampleManager().getIds(Arrays.asList(StringUtils.split(fileAclParams.getSample(), ",")),
+            MyResourceIds ids = catalogManager.getSampleManager().getUids(Arrays.asList(StringUtils.split(fileAclParams.getSample(), ",")),
                     studyStr, sessionId);
 
             Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), ids.getResourceIds());
@@ -2001,7 +2001,7 @@ public class FileManager extends ResourceManager<File> {
         }
 
         // Obtain the resource ids
-        MyResourceIds resourceIds = getIds(fileList, studyStr, sessionId);
+        MyResourceIds resourceIds = getUids(fileList, studyStr, sessionId);
         authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Increase the list with the files/folders within the list of ids that correspond with folders

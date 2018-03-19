@@ -140,7 +140,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             String loadFileStr = options.getString(VariantAnnotationManager.LOAD_FILE);
             if (StringUtils.isNotEmpty(loadFileStr)) {
                 if (!Paths.get(UriUtils.createUri(loadFileStr)).toFile().exists()) {
-                    long fileId = catalogManager.getFileManager().getId(loadFileStr, studyStr, sessionId).getResourceId();
+                    long fileId = catalogManager.getFileManager().getUid(loadFileStr, studyStr, sessionId).getResourceId();
                     if (fileId < 0) {
                         throw new CatalogException("File '" + loadFileStr + "' does not exist!");
                     }

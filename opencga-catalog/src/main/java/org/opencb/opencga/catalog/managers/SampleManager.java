@@ -188,7 +188,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public MyResourceId getId(String sampleStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceId getUid(String sampleStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(sampleStr)) {
             throw new CatalogException("Missing sample parameter");
         }
@@ -230,7 +230,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public MyResourceIds getIds(List<String> sampleList, @Nullable String studyStr, boolean silent, String sessionId)
+    public MyResourceIds getUids(List<String> sampleList, @Nullable String studyStr, boolean silent, String sessionId)
             throws CatalogException {
         if (sampleList == null || sampleList.isEmpty()) {
             throw new CatalogException("Missing sample parameter");
@@ -353,7 +353,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     private void fixQueryObject(long studyId, Query query, String sessionId) throws CatalogException {
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
-            MyResourceIds resourceIds = catalogManager.getIndividualManager().getIds(
+            MyResourceIds resourceIds = catalogManager.getIndividualManager().getUids(
                     query.getAsStringList(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), Long.toString(studyId), sessionId);
             query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), resourceIds.getResourceIds());
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
@@ -662,7 +662,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throws CatalogException, IOException {
         ParamUtils.checkParameter(sampleIdStr, "id");
 //        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        MyResourceIds resourceId = getIds(Arrays.asList(StringUtils.split(sampleIdStr, ",")), studyStr, sessionId);
+        MyResourceIds resourceId = getUids(Arrays.asList(StringUtils.split(sampleIdStr, ",")), studyStr, sessionId);
 
         List<QueryResult<Sample>> queryResultList = new ArrayList<>(resourceId.getResourceIds().size());
         for (Long sampleId : resourceId.getResourceIds()) {
@@ -754,7 +754,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        MyResourceId resource = getUid(entryStr, studyStr, sessionId);
 
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
@@ -975,7 +975,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
                 query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), -1);
             } else {
-                MyResourceId resource = catalogManager.getIndividualManager().getId(individualStr, Long.toString(studyId), sessionId);
+                MyResourceId resource = catalogManager.getIndividualManager().getUid(individualStr, Long.toString(studyId), sessionId);
                 query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), resource.getResourceId());
             }
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
@@ -989,7 +989,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<SampleAclEntry>> getAcls(String studyStr, List<String> sampleList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(sampleList, studyStr, silent, sessionId);
+        MyResourceIds resource = getUids(sampleList, studyStr, silent, sessionId);
 
         List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();
@@ -1044,7 +1044,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         if (StringUtils.isNotEmpty(sampleAclParams.getIndividual())) {
             // Obtain the individual ids
-            MyResourceIds ids = catalogManager.getIndividualManager().getIds(
+            MyResourceIds ids = catalogManager.getIndividualManager().getUids(
                     Arrays.asList(StringUtils.split(sampleAclParams.getIndividual(), ",")), studyStr, sessionId);
 
             // I do this to make faster the search of the studyId when looking for the individuals
@@ -1067,7 +1067,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         if (StringUtils.isNotEmpty(sampleAclParams.getFile())) {
             // Obtain the file ids
-            MyResourceIds ids = catalogManager.getFileManager().getIds(Arrays.asList(StringUtils.split(sampleAclParams.getFile(), ",")),
+            MyResourceIds ids = catalogManager.getFileManager().getUids(Arrays.asList(StringUtils.split(sampleAclParams.getFile(), ",")),
                     studyStr, sessionId);
 
             Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), ids.getResourceIds());
@@ -1087,7 +1087,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         if (StringUtils.isNotEmpty(sampleAclParams.getCohort())) {
             // Obtain the cohort ids
-            MyResourceIds ids = catalogManager.getCohortManager().getIds(Arrays.asList(StringUtils.split(sampleAclParams.getCohort(), ",")),
+            MyResourceIds ids = catalogManager.getCohortManager().getUids(Arrays.asList(StringUtils.split(sampleAclParams.getCohort(), ",")),
                     studyStr, sessionId);
 
             Query query = new Query(CohortDBAdaptor.QueryParams.UID.key(), ids.getResourceIds());
@@ -1105,7 +1105,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             studyStr = Long.toString(ids.getStudyId());
         }
 
-        MyResourceIds resourceIds = getIds(sampleList, studyStr, sessionId);
+        MyResourceIds resourceIds = getUids(sampleList, studyStr, sessionId);
         authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
         // Validate that the members are actually valid members

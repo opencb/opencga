@@ -268,7 +268,7 @@ public class VariantStorageManager extends StorageManager {
             throw new IllegalArgumentException("Fill gaps operation requires at least two samples!");
         }
         String sampleIds = String.join(",", samples);
-        catalogManager.getSampleManager().getIds(sampleIds, study, sessionId);
+        catalogManager.getSampleManager().getUids(sampleIds, study, sessionId);
 
         variantStorageEngine.fillGaps(String.valueOf(studyId), samples, config);
     }

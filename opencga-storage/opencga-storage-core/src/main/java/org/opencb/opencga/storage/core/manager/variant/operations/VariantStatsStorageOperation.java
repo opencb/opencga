@@ -68,7 +68,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
         boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
-        final Long fileId = fileIdStr == null ? null : catalogManager.getFileManager().getId(fileIdStr, Long.toString(studyId),
+        final Long fileId = fileIdStr == null ? null : catalogManager.getFileManager().getUid(fileIdStr, Long.toString(studyId),
                 sessionId).getResourceId();
 
 
@@ -240,7 +240,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         } else {
             cohortIds = new ArrayList<>(cohorts.size());
             for (String cohort : cohorts) {
-                long cohortId = catalogManager.getCohortManager().getId(cohort, String.valueOf(studyId), sessionId).getResourceId();
+                long cohortId = catalogManager.getCohortManager().getUid(cohort, String.valueOf(studyId), sessionId).getResourceId();
                 if (cohortId < 0) {
                     throw new CatalogException("Cohort '" + cohort + "' not found");
                 }

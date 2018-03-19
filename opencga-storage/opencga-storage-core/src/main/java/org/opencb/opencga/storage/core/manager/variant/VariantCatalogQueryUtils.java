@@ -305,7 +305,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         @Override
         protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getFileManager().getId(value, defaultStudyStr, sessionId).getResourceId();
+            return catalogManager.getFileManager().getUid(value, defaultStudyStr, sessionId).getResourceId();
         }
 
         @Override
@@ -327,7 +327,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         @Override
         protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getSampleManager().getId(value, defaultStudyStr, sessionId).getResourceId();
+            return catalogManager.getSampleManager().getUid(value, defaultStudyStr, sessionId).getResourceId();
         }
 
         @Override
@@ -342,7 +342,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public class CohortTransformFilter extends TransformFilter {
         @Override
         protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getCohortManager().getId(value, defaultStudyStr, sessionId).getResourceId();
+            return catalogManager.getCohortManager().getUid(value, defaultStudyStr, sessionId).getResourceId();
         }
 
         @Override

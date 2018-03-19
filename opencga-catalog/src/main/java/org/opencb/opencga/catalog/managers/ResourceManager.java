@@ -39,7 +39,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException when more than one entry id is found.
      */
-    abstract AbstractManager.MyResourceId getId(String entryStr, @Nullable String studyStr, String sessionId)
+    abstract AbstractManager.MyResourceId getUid(String entryStr, @Nullable String studyStr, String sessionId)
             throws CatalogException;
 
     /**
@@ -51,9 +51,9 @@ public abstract class ResourceManager<R> extends AbstractManager {
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
      */
-    public AbstractManager.MyResourceIds getIds(String entryStr, @Nullable String studyStr, String sessionId)
+    public AbstractManager.MyResourceIds getUids(String entryStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
-        return getIds(Arrays.asList(entryStr.split(",")), studyStr, false, sessionId);
+        return getUids(Arrays.asList(entryStr.split(",")), studyStr, false, sessionId);
     }
     /**
      * Obtains the resource java bean containing the requested ids.
@@ -64,9 +64,9 @@ public abstract class ResourceManager<R> extends AbstractManager {
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
      */
-    public AbstractManager.MyResourceIds getIds(List<String> entryStr, @Nullable String studyStr, String sessionId)
+    public AbstractManager.MyResourceIds getUids(List<String> entryStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
-        return getIds(entryStr, studyStr, false, sessionId);
+        return getUids(entryStr, studyStr, false, sessionId);
     }
     /**
      * Obtains the resource java bean containing the requested ids.
@@ -78,7 +78,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
      */
-    abstract AbstractManager.MyResourceIds getIds(List<String> entryStr, @Nullable String studyStr, boolean silent, String sessionId)
+    abstract AbstractManager.MyResourceIds getUids(List<String> entryStr, @Nullable String studyStr, boolean silent, String sessionId)
             throws CatalogException;
 
     /**
@@ -129,7 +129,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
      */
     public QueryResult<R> get(String studyStr, String entryStr, QueryOptions options, String sessionId) throws CatalogException {
         Query query = new Query();
-        MyResourceId resources = getId(entryStr, studyStr, sessionId);
+        MyResourceId resources = getUid(entryStr, studyStr, sessionId);
         query.put("uid", resources.getResourceId());
         return get(String.valueOf(resources.getStudyId()), query, options, sessionId);
     }
@@ -150,7 +150,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
         List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
         query = ParamUtils.defaultObject(query, Query::new);
 
-        MyResourceIds resources = getIds(entryList, studyStr, sessionId);
+        MyResourceIds resources = getUids(entryList, studyStr, sessionId);
         List<Long> resourceIds = resources.getResourceIds();
         for (int i = 0; i < resourceIds.size(); i++) {
             Long entityId = resourceIds.get(i);
@@ -170,7 +170,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
         List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
         query = ParamUtils.defaultObject(query, Query::new);
 
-        MyResourceIds resources = getIds(entryList, studyStr, silent, sessionId);
+        MyResourceIds resources = getUids(entryList, studyStr, silent, sessionId);
         List<Long> resourceIds = resources.getResourceIds();
         for (int i = 0; i < resourceIds.size(); i++) {
             Long entityId = resourceIds.get(i);

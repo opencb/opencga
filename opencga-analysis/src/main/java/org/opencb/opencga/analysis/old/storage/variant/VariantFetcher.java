@@ -108,7 +108,7 @@ public class VariantFetcher implements AutoCloseable {
         QueryResult result;
         long fileIdNum;
 
-        fileIdNum = catalogManager.getFileManager().getId(fileId, null, sessionId).getResourceId();
+        fileIdNum = catalogManager.getFileManager().getUid(fileId, null, sessionId).getResourceId();
         File file = catalogManager.getFileManager().get(fileIdNum, null, sessionId).first();
 
         if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {

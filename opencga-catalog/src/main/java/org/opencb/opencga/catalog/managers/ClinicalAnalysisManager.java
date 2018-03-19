@@ -59,13 +59,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     /**
      * Obtains the resource java bean containing the requested ids.
      *
-     * @param clinicalStr Clinical analysis id in string format. Could be either the id or name.
+     * @param clinicalStr Clinical analysis id in string format.
      * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param sessionId Session id of the user logged.
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException when more than one clinical analysis id is found.
      */
-    public MyResourceId getId(String clinicalStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceId getUid(String clinicalStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(clinicalStr)) {
             throw new CatalogException("Missing clinical analysis parameter");
         }
@@ -116,7 +116,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
      * @return the resource java bean containing the requested ids.
      * @throws CatalogException CatalogException.
      */
-    public MyResourceIds getIds(List<String> clinicalList, @Nullable String studyStr, boolean silent, String sessionId)
+    public MyResourceIds getUids(List<String> clinicalList, @Nullable String studyStr, boolean silent, String sessionId)
             throws CatalogException {
         if (clinicalList == null || clinicalList.isEmpty()) {
             throw new CatalogException("Missing clinical analysis parameter");
@@ -232,13 +232,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         validateInterpretations(clinicalAnalysis.getInterpretations(), String.valueOf(studyId), sessionId);
 
         if (clinicalAnalysis.getGermline() != null && StringUtils.isNotEmpty(clinicalAnalysis.getGermline().getName())) {
-            MyResourceId resource = catalogManager.getFileManager().getId(clinicalAnalysis.getGermline().getName(), String.valueOf(studyId),
+            MyResourceId resource = catalogManager.getFileManager().getUid(clinicalAnalysis.getGermline().getName(), String.valueOf(studyId),
                     sessionId);
             clinicalAnalysis.getGermline().setUid(resource.getResourceId());
         }
 
         if (clinicalAnalysis.getSomatic() != null && StringUtils.isNotEmpty(clinicalAnalysis.getSomatic().getName())) {
-            MyResourceId resource = catalogManager.getFileManager().getId(clinicalAnalysis.getSomatic().getName(), String.valueOf(studyId),
+            MyResourceId resource = catalogManager.getFileManager().getUid(clinicalAnalysis.getSomatic().getName(), String.valueOf(studyId),
                     sessionId);
             clinicalAnalysis.getSomatic().setUid(resource.getResourceId());
         }
@@ -290,12 +290,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         for (Individual subject : clinicalAnalysis.getSubjects()) {
-            MyResourceId probandResources = catalogManager.getIndividualManager().getId(subject.getName(), Long.toString(studyId),
+            MyResourceId probandResources = catalogManager.getIndividualManager().getUid(subject.getName(), Long.toString(studyId),
                     sessionId);
             subject.setUid(probandResources.getResourceId());
 
             List<String> sampleNames = subject.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-            MyResourceIds sampleResources = catalogManager.getSampleManager().getIds(sampleNames, Long.toString(studyId), sessionId);
+            MyResourceIds sampleResources = catalogManager.getSampleManager().getUids(sampleNames, Long.toString(studyId), sessionId);
             if (sampleResources.getResourceIds().size() < subject.getSamples().size()) {
                 throw new CatalogException("Missing some samples. Found " + sampleResources.getResourceIds().size() + " out of "
                         + subject.getSamples().size());
@@ -324,7 +324,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     private void validateFamilyAndSubjects(ClinicalAnalysis clinicalAnalysis, long studyId, String sessionId) throws CatalogException {
         if (clinicalAnalysis.getFamily() != null && StringUtils.isNotEmpty(clinicalAnalysis.getFamily().getName())) {
-            MyResourceId familyResource = catalogManager.getFamilyManager().getId(clinicalAnalysis.getFamily().getName(),
+            MyResourceId familyResource = catalogManager.getFamilyManager().getUid(clinicalAnalysis.getFamily().getName(),
                     Long.toString(studyId), sessionId);
             clinicalAnalysis.getFamily().setUid(familyResource.getResourceId());
 
@@ -345,7 +345,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     @Override
     public QueryResult<ClinicalAnalysis> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options,
                                                 String sessionId) throws CatalogException {
-        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        MyResourceId resource = getUid(entryStr, studyStr, sessionId);
         authorizationManager.checkClinicalAnalysisPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
@@ -359,7 +359,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     List<LinkedHashMap<String, Object>> interpretationList = (List<LinkedHashMap<String, Object>>) param.getValue();
                     for (LinkedHashMap<String, Object> interpretationMap : interpretationList) {
                         LinkedHashMap<String, Object> fileMap = (LinkedHashMap<String, Object>) interpretationMap.get("file");
-                        MyResourceId fileResource = catalogManager.getFileManager().getId(String.valueOf(fileMap.get("name")),
+                        MyResourceId fileResource = catalogManager.getFileManager().getUid(String.valueOf(fileMap.get("name")),
                                 String.valueOf(resource.getStudyId()), sessionId);
                         fileMap.put(FileDBAdaptor.QueryParams.UID.key(), fileResource.getResourceId());
                     }
@@ -423,7 +423,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                                 ClinicalAnalysis.Action action, QueryOptions queryOptions, String sessionId)
             throws CatalogException {
 
-        MyResourceId resource = getId(clinicalAnalysisStr, studyStr, sessionId);
+        MyResourceId resource = getUid(clinicalAnalysisStr, studyStr, sessionId);
         authorizationManager.checkClinicalAnalysisPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
@@ -473,31 +473,31 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     private void fixQueryObject(Query query, long studyId, String sessionId) throws CatalogException {
         if (query.containsKey("family")) {
-            MyResourceId familyResource = catalogManager.getFamilyManager().getId(query.getString("family"),
+            MyResourceId familyResource = catalogManager.getFamilyManager().getUid(query.getString("family"),
                     Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), familyResource.getResourceId());
             query.remove("family");
         }
         if (query.containsKey("sample")) {
-            MyResourceId sampleResource = catalogManager.getSampleManager().getId(query.getString("sample"),
+            MyResourceId sampleResource = catalogManager.getSampleManager().getUid(query.getString("sample"),
                     Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE_UID.key(), sampleResource.getResourceId());
             query.remove("sample");
         }
         if (query.containsKey("subject")) {
-            MyResourceId probandResource = catalogManager.getIndividualManager().getId(query.getString("subject"),
+            MyResourceId probandResource = catalogManager.getIndividualManager().getUid(query.getString("subject"),
                     Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SUBJECT_UID.key(), probandResource.getResourceId());
             query.remove("subject");
         }
         if (query.containsKey("germline")) {
-            MyResourceId resource = catalogManager.getFileManager().getId(query.getString("germline"),
+            MyResourceId resource = catalogManager.getFileManager().getUid(query.getString("germline"),
                     Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.GERMLINE_UID.key(), resource.getResourceId());
             query.remove("germline");
         }
         if (query.containsKey("somatic")) {
-            MyResourceId resource = catalogManager.getFileManager().getId(query.getString("somatic"),
+            MyResourceId resource = catalogManager.getFileManager().getUid(query.getString("somatic"),
                     Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SOMATIC_UID.key(), resource.getResourceId());
             query.remove("somatic");

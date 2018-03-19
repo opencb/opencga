@@ -161,7 +161,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceId resource = getId(cohortStr, studyStr, sessionId);
+        MyResourceId resource = getUid(cohortStr, studyStr, sessionId);
         QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(resource.getResourceId(),
                 new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key()));
 
@@ -212,7 +212,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public MyResourceId getId(String cohortStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+    public MyResourceId getUid(String cohortStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(cohortStr)) {
             throw new CatalogException("Missing cohort parameter");
         }
@@ -254,7 +254,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    MyResourceIds getIds(List<String> cohortList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
+    MyResourceIds getUids(List<String> cohortList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
         if (cohortList == null || cohortList.isEmpty()) {
             throw new CatalogException("Missing cohort parameter");
         }
@@ -330,7 +330,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
             // First look for the sample ids.
             MyResourceIds samples = catalogManager.getSampleManager()
-                    .getIds(query.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key()), String.valueOf(studyId), sessionId);
+                    .getUids(query.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key()), String.valueOf(studyId), sessionId);
             query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
             query.append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), samples.getResourceIds());
         }
@@ -461,7 +461,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                                       QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(parameters, "Update parameters");
         parameters = new ObjectMap(parameters);
-        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        MyResourceId resource = getUid(entryStr, studyStr, sessionId);
 
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
@@ -546,7 +546,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkParameter(cohortIdStr, "id");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceIds resource = getIds(Arrays.asList(StringUtils.split(cohortIdStr, ",")), null, sessionId);
+        MyResourceIds resource = getUids(Arrays.asList(StringUtils.split(cohortIdStr, ",")), null, sessionId);
 
         List<QueryResult<Cohort>> queryResultList = new ArrayList<>(resource.getResourceIds().size());
         for (Long cohortId : resource.getResourceIds()) {
@@ -583,7 +583,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        MyResourceId resource = getId(id, null, sessionId);
+        MyResourceId resource = getUid(id, null, sessionId);
 
         authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 CohortAclEntry.CohortPermissions.UPDATE);
@@ -627,7 +627,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, List<String> cohortList, String member,
                                                      boolean silent, String sessionId) throws CatalogException {
-        MyResourceIds resource = getIds(cohortList, studyStr, silent, sessionId);
+        MyResourceIds resource = getUids(cohortList, studyStr, silent, sessionId);
 
         List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
         List<Long> resourceIds = resource.getResourceIds();
@@ -671,7 +671,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         // Obtain the resource ids
-        MyResourceIds resourceIds = getIds(cohortList, studyStr, sessionId);
+        MyResourceIds resourceIds = getUids(cohortList, studyStr, sessionId);
 
         authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
 
