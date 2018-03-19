@@ -248,7 +248,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantAnnotation.setFunctionalScore(scores);
 
         // set HPO, ClinVar and Cosmic
-        Map<String, List<String>> clinVarMap = new HashMap<>();
+//        Map<String, List<String>> clinVarMap = new HashMap<>();
+        Map<String, ClinVar> clinVarMap = new HashMap<>();
+        List<ClinVar> clinVarList = new ArrayList<>();
         List<Cosmic> cosmicList = new ArrayList<>();
         List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
         if (variantSearchModel.getTraits() != null) {
@@ -266,9 +268,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     case "CV":
                         // Variant trait: CV -- accession -- trait
                         if (!clinVarMap.containsKey(fields[1])) {
-                            clinVarMap.put(fields[1], new ArrayList<>());
+                            String clinicalSignificance = "";
+                            if (fields[3].length() > 3) {
+                                clinicalSignificance = fields[3].substring(3);
+                            }
+                            ClinVar clinVar = new ClinVar(fields[1], clinicalSignificance, new ArrayList<>(), new ArrayList<>(), "");
+                            clinVarMap.put(fields[1], clinVar);
+                            clinVarList.add(clinVar);
                         }
-                        clinVarMap.get(fields[1]).add(fields[2]);
+                        clinVarMap.get(fields[1]).getTraits().add(fields[2]);
                         break;
                     case "CM":
                         // Variant trait: CM -- mutation id -- primary histology -- histology subtype
@@ -293,13 +301,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
-        List<ClinVar> clinVarList = new ArrayList<>(clinVarMap.size());
-        for (String key : clinVarMap.keySet()) {
-            ClinVar clinVar = new ClinVar();
-            clinVar.setAccession(key);
-            clinVar.setTraits(clinVarMap.get(key));
-            clinVarList.add(clinVar);
-        }
         if (CollectionUtils.isNotEmpty(clinVarList) || CollectionUtils.isNotEmpty(cosmicList)) {
             if (CollectionUtils.isNotEmpty(clinVarList)) {
                 variantTraitAssociation.setClinvar(clinVarList);
@@ -563,7 +564,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     variantAnnotation.getVariantTraitAssociation().getClinvar()
                             .forEach(cv -> {
                                 xrefs.add(cv.getAccession());
-                                cv.getTraits().forEach(cvt -> traits.add("CV" + " -- " + cv.getAccession() + " -- " + cvt));
+                                cv.getTraits().forEach(cvt -> traits.add("CV" + " -- " + cv.getAccession() + " -- " + cvt
+                                        + " -- cs:" + cv.getClinicalSignificance()));
                             });
                 }
                 if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
