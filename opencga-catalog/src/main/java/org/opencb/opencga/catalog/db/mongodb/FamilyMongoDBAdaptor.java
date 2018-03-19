@@ -388,6 +388,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 //        addMemberInfoToFamily(queryResult);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
+
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             QueryResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
@@ -406,6 +410,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             }
         }
         queryResult = endQuery("Native get", startTime, documentList);
+
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -437,6 +445,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 //        addMemberInfoToFamily(queryResult);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
+
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
             queryResult.setNumTotalResults(count.first());

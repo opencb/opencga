@@ -1050,6 +1050,16 @@ public class FileManagerTest extends GenericTest {
         result = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
+        QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2);
+        result = catalogManager.getFileManager().get(studyId, new Query(), options, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertEquals(7, result.getNumTotalResults());
+
+        options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.SKIP_COUNT, true);
+        result = catalogManager.getFileManager().get(studyId, new Query(), options, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertEquals(2, result.getNumTotalResults());
+
     }
 
     @Test
