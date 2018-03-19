@@ -390,6 +390,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             // This object store all info and descriptions for full-text search
             Set<String> traits = new HashSet<>();
 
+            // Add cytoband names
+            if (variantAnnotation.getCytoband() != null) {
+                for (Cytoband cytoband : variantAnnotation.getCytoband()) {
+                    xrefs.add(cytoband.getName());
+                }
+            }
+
             // Add all XRefs coming from the variant annotation
             if (variantAnnotation.getXrefs() != null && !variantAnnotation.getXrefs().isEmpty()) {
                 variantAnnotation.getXrefs().forEach(xref -> {
@@ -397,6 +404,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         xrefs.add(xref.getId());
                     }
                 });
+            }
+
+            // Add all HGVS coming from the variant annotation
+            if (variantAnnotation.getHgvs() != null && !variantAnnotation.getHgvs().isEmpty()) {
+                for (String hgvs : variantAnnotation.getHgvs()) {
+                    xrefs.add("hgvs:" + hgvs);
+                }
             }
 
             // Set Genes and Consequence Types
@@ -462,9 +476,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                 traits.add("KW -- " + proteinVariantAnnotation.getUniprotAccession() + " -- " + keyword);
                             }
                         }
+
+                        // Add protein domains
                         if (proteinVariantAnnotation.getFeatures() != null) {
                             for (ProteinFeature proteinFeature : proteinVariantAnnotation.getFeatures()) {
-                                traits.add("PD -- " + proteinFeature.getId() + " -- " + proteinFeature.getDescription());
+                                if (StringUtils.isNotEmpty(proteinFeature.getId())) {
+                                    // We store them in xrefs and traits, the number of these IDs is very small
+                                    xrefs.add(proteinFeature.getId());
+                                    traits.add("PD -- " + proteinFeature.getId() + " -- " + proteinFeature.getDescription());
+                                }
                             }
                         }
                     }
