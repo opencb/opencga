@@ -92,6 +92,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantAnnotation variantAnnotation = new VariantAnnotation();
 
         // Xrefs
+        List<String> hgvs = new ArrayList<>();
         List<Xref> xrefs = new ArrayList<>();
         if (variantSearchModel.getXrefs() != null) {
             for (String xref : variantSearchModel.getXrefs()) {
@@ -106,8 +107,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 if (xref.startsWith("ENST")) {
                     xrefs.add(new Xref(xref, "ensemblTranscript"));
                 }
+                if (xref.startsWith("hgvs:")) {
+                    // HGVS are stored with the prefix 'hgvs:'
+                    hgvs.add(xref.substring(5));
+                }
             }
         }
+        variantAnnotation.setHgvs(hgvs);
         variantAnnotation.setXrefs(xrefs);
 
         // consequence types
