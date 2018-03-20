@@ -315,9 +315,38 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
             variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
 
-            List<EvidenceEntry> evidenceEntries = new ArrayList<>();
             // This fills the new data model: traitAssociation
-            // TODO jtarraga please.
+            List<EvidenceEntry> evidenceEntries = new ArrayList<>();
+
+            // Clinvar -> traitAssociation
+            for (ClinVar clinvar: clinVarList) {
+                EvidenceEntry evidenceEntry = new EvidenceEntry();
+
+                evidenceEntry.setSource(new EvidenceSource("clinvar", null, null));
+                evidenceEntry.setId(clinvar.getAccession());
+                List<HeritableTrait> heritableTraits = new ArrayList<>();
+                for (String trait: clinvar.getTraits()) {
+                    heritableTraits.add(new HeritableTrait(trait, null));
+                }
+                evidenceEntry.setHeritableTraits(heritableTraits);
+                evidenceEntry.setVariantClassification(
+                        new VariantClassification(ClinicalSignificance.valueOf(clinvar.getClinicalSignificance()), null, null, null, null));
+
+                evidenceEntries.add(evidenceEntry);
+            }
+
+            // Cosmic -> traitAssociation
+            for (Cosmic cosmic: cosmicList) {
+                EvidenceEntry evidenceEntry = new EvidenceEntry();
+
+                evidenceEntry.setSource(new EvidenceSource("cosmic", null, null));
+                evidenceEntry.setId(cosmic.getMutationId());
+                evidenceEntry.setSomaticInformation(new SomaticInformation(cosmic.getPrimarySite(), cosmic.getSiteSubtype(),
+                        cosmic.getPrimaryHistology(), cosmic.getHistologySubtype(), cosmic.getTumourOrigin(), cosmic.getSampleSource()));
+
+                evidenceEntries.add(evidenceEntry);
+            }
+
             variantAnnotation.setTraitAssociation(evidenceEntries);
 
             // Set the gene disease annotation
