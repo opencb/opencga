@@ -320,8 +320,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // Clinvar -> traitAssociation
             for (ClinVar clinvar: clinVarList) {
+//                EvidenceEntry.newBuilder()
+//                        .setSource(new EvidenceSource("clinvar", null, null))
+//                        .setId(clinvar.getAccession()).build();
                 EvidenceEntry evidenceEntry = new EvidenceEntry();
-
                 evidenceEntry.setSource(new EvidenceSource("clinvar", null, null));
                 evidenceEntry.setId(clinvar.getAccession());
                 List<HeritableTrait> heritableTraits = new ArrayList<>();
@@ -338,7 +340,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             // Cosmic -> traitAssociation
             for (Cosmic cosmic: cosmicList) {
                 EvidenceEntry evidenceEntry = new EvidenceEntry();
-
                 evidenceEntry.setSource(new EvidenceSource("cosmic", null, null));
                 evidenceEntry.setId(cosmic.getMutationId());
                 evidenceEntry.setSomaticInformation(new SomaticInformation(cosmic.getPrimarySite(), cosmic.getSiteSubtype(),
@@ -478,8 +479,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             Set<String> traits = new HashSet<>();
 
             // Set release field
+            int release = -1;   // default value if missing is -1
             if (variantAnnotation.getAdditionalAttributes() != null && variantAnnotation.getAdditionalAttributes().get("opencga") != null) {
-                int release = -1;   // default value if missing is -1
                 String releaseStr = variantAnnotation.getAdditionalAttributes().get("opencga").getAttribute().get("release");
                 // example: release = "2,3,4"
                 if (StringUtils.isNotEmpty(releaseStr)) {
@@ -488,8 +489,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         release = Integer.parseInt(releaseStr);
                     }
                 }
-                variantSearchModel.setRelease(release);
             }
+            variantSearchModel.setRelease(release);
 
             // Add cytoband names
             if (variantAnnotation.getCytoband() != null) {
