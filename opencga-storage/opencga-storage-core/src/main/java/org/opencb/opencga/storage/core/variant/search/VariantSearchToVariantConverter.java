@@ -320,30 +320,29 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // Clinvar -> traitAssociation
             for (ClinVar clinvar: clinVarList) {
-//                EvidenceEntry.newBuilder()
-//                        .setSource(new EvidenceSource("clinvar", null, null))
-//                        .setId(clinvar.getAccession()).build();
-                EvidenceEntry evidenceEntry = new EvidenceEntry();
-                evidenceEntry.setSource(new EvidenceSource("clinvar", null, null));
-                evidenceEntry.setId(clinvar.getAccession());
                 List<HeritableTrait> heritableTraits = new ArrayList<>();
                 for (String trait: clinvar.getTraits()) {
-                    heritableTraits.add(new HeritableTrait(trait, null));
+                    heritableTraits.add(HeritableTrait.newBuilder().setTrait(trait).build());
                 }
-                evidenceEntry.setHeritableTraits(heritableTraits);
-                evidenceEntry.setVariantClassification(
-                        new VariantClassification(ClinicalSignificance.valueOf(clinvar.getClinicalSignificance()), null, null, null, null));
+                EvidenceEntry evidenceEntry = EvidenceEntry.newBuilder()
+                        .setSource(EvidenceSource.newBuilder().setName("clinvar").build())
+                        .setId(clinvar.getAccession())
+                        .setHeritableTraits(heritableTraits)
+                        .setVariantClassification(VariantClassification.newBuilder()
+                                .setClinicalSignificance(ClinicalSignificance.valueOf(clinvar.getClinicalSignificance())).build())
+                        .build();
 
                 evidenceEntries.add(evidenceEntry);
             }
 
             // Cosmic -> traitAssociation
             for (Cosmic cosmic: cosmicList) {
-                EvidenceEntry evidenceEntry = new EvidenceEntry();
-                evidenceEntry.setSource(new EvidenceSource("cosmic", null, null));
-                evidenceEntry.setId(cosmic.getMutationId());
-                evidenceEntry.setSomaticInformation(new SomaticInformation(cosmic.getPrimarySite(), cosmic.getSiteSubtype(),
-                        cosmic.getPrimaryHistology(), cosmic.getHistologySubtype(), cosmic.getTumourOrigin(), cosmic.getSampleSource()));
+                EvidenceEntry evidenceEntry = EvidenceEntry.newBuilder()
+                        .setSource(EvidenceSource.newBuilder().setName("cosmic").build())
+                        .setId(cosmic.getMutationId())
+                        .setSomaticInformation(SomaticInformation.newBuilder().setPrimaryHistology(cosmic.getPrimaryHistology())
+                                .setHistologySubtype(cosmic.getHistologySubtype()).build())
+                        .build();
 
                 evidenceEntries.add(evidenceEntry);
             }
