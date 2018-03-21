@@ -128,6 +128,12 @@ public class Sample extends Annotable {
         return this;
     }
 
+    @Override
+    public Sample setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
+        return this;
+    }
+
     public String getId() {
         return id;
     }

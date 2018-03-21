@@ -38,7 +38,8 @@ public class SampleConverter extends AnnotableConverter<Sample> {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
-        document.put("uid", document.getInteger("uid").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
         document.put("individual", new Document());
         return document;
     }

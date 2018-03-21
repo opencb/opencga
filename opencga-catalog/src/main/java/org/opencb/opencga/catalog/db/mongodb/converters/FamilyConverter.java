@@ -46,7 +46,8 @@ public class FamilyConverter extends AnnotableConverter<Family> {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
-        document.put("uid", document.getInteger("uid").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
         validateDocumentToUpdate(document);
         return document;
     }

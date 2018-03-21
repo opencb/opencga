@@ -95,10 +95,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         long newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         cohort.setUid(newId);
+        cohort.setStudyUid(studyId);
 
         Document cohortObject = cohortConverter.convertToStorageType(cohort, variableSetList);
-        cohortObject.append(PRIVATE_STUDY_ID, studyId);
-        cohortObject.append(PRIVATE_UID, newId);
         if (StringUtils.isNotEmpty(cohort.getCreationDate())) {
             cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
         } else {
@@ -161,7 +160,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         QueryResult queryResult = nativeGet(new Query(QueryParams.UID.key(), cohortId),
                 new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID));
         if (queryResult.getResult().isEmpty()) {
-            throw CatalogDBException.idNotFound("Cohort", cohortId);
+            throw CatalogDBException.uidNotFound("Cohort", cohortId);
         } else {
             return ((Document) queryResult.first()).getLong(PRIVATE_STUDY_ID);
         }
@@ -236,7 +235,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             List<Sample> sampleList = new ArrayList<>();
             for (Long sampleId : objectSampleList) {
                 if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists((sampleId))) {
-                    throw CatalogDBException.idNotFound("Sample", (sampleId));
+                    throw CatalogDBException.uidNotFound("Sample", (sampleId));
                 }
                 Sample sample = new Sample();
                 sample.setUid(sampleId);

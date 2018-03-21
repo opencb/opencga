@@ -53,7 +53,8 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
     @Override
     public Document convertToStorageType(File file) {
         Document document = super.convertToStorageType(file);
-        document.put("uid", document.getInteger("uid").longValue());
+        document.put("uid", file.getUid());
+        document.put("studyUid", file.getStudyUid());
 
         long jobId = file.getJob() != null ? (file.getJob().getUid() == 0 ? -1L : file.getJob().getUid()) : -1L;
         document.put("job", new Document("uid", jobId));

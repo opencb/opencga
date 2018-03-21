@@ -103,19 +103,19 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             throw CatalogDBException.alreadyExists("Individual", "name", individual.getName());
         }
         if (individual.getFatherId() > 0 && !exists(individual.getFatherId())) {
-            throw CatalogDBException.idNotFound("Individual", individual.getFatherId());
+            throw CatalogDBException.uidNotFound("Individual", individual.getFatherId());
         }
         if (individual.getMotherId() > 0 && !exists(individual.getMotherId())) {
-            throw CatalogDBException.idNotFound("Individual", individual.getMotherId());
+            throw CatalogDBException.uidNotFound("Individual", individual.getMotherId());
         }
 
         long individualId = getNewId();
 
         individual.setUid(individualId);
+        individual.setStudyUid(studyId);
         individual.setVersion(1);
 
         Document individualDocument = individualConverter.convertToStorageType(individual, variableSetList);
-        individualDocument.put(PRIVATE_STUDY_ID, studyId);
 
         // Versioning private parameters
         individualDocument.put(RELEASE_FROM_VERSION, Arrays.asList(individual.getRelease()));
@@ -251,7 +251,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (!result.getResult().isEmpty()) {
             return (long) result.getResult().get(0).get(PRIVATE_STUDY_ID);
         } else {
-            throw CatalogDBException.idNotFound("Individual", individualId);
+            throw CatalogDBException.uidNotFound("Individual", individualId);
         }
     }
 
@@ -552,7 +552,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             if (individualParameters.containsKey(individualIdParam)) {
                 Long individualId1 = (Long) individualParameters.get(individualIdParam);
                 if (individualId1 > 0 && !exists(individualId1)) {
-                    throw CatalogDBException.idNotFound("Individual " + individualIdParam, individualId1);
+                    throw CatalogDBException.uidNotFound("Individual " + individualIdParam, individualId1);
                 }
             }
         }

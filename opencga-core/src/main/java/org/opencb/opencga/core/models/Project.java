@@ -29,6 +29,7 @@ public class Project extends PrivateFields {
     private String name;
     @Deprecated
     private String alias;
+    private String fqn;
     private String creationDate;
     private String description;
     private String organization;
@@ -213,6 +214,15 @@ public class Project extends PrivateFields {
 
     public Project setAlias(String alias) {
         this.alias = alias;
+        return this;
+    }
+
+    public String getFqn() {
+        return fqn;
+    }
+
+    public Project setFqn(String fqn) {
+        this.fqn = fqn;
         return this;
     }
 

@@ -111,10 +111,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         long sampleId = getNewId();
         sample.setUid(sampleId);
+        sample.setStudyUid(studyId);
         sample.setVersion(1);
 
         Document sampleObject = sampleConverter.convertToStorageType(sample, variableSetList);
-        sampleObject.put(PRIVATE_STUDY_ID, studyId);
 
         // Versioning private parameters
         sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
@@ -337,7 +337,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
-            throw CatalogDBException.idNotFound("Sample", sampleId);
+            throw CatalogDBException.uidNotFound("Sample", sampleId);
         }
     }
 

@@ -300,7 +300,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW_HEADER:

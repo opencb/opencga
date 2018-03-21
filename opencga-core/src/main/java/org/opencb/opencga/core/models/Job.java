@@ -25,7 +25,7 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Job extends PrivateFields {
+public class Job extends PrivateStudyUid {
 
     /* Attributes known keys */
     @Deprecated
@@ -249,6 +249,12 @@ public class Job extends PrivateFields {
     @Override
     public Job setUid(long uid) {
         super.setUid(uid);
+        return this;
+    }
+
+    @Override
+    public Job setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
         return this;
     }
 

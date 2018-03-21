@@ -188,6 +188,12 @@ public class Cohort extends Annotable {
         return this;
     }
 
+    @Override
+    public Cohort setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
+        return this;
+    }
+
     public String getId() {
         return id;
     }

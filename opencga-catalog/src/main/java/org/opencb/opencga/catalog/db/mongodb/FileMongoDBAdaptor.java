@@ -106,9 +106,8 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         //new File Id
         long newFileId = getNewId();
         file.setUid(newFileId);
+        file.setStudyUid(studyId);
         Document fileDocument = fileConverter.convertToStorageType(file);
-        fileDocument.append(PRIVATE_STUDY_ID, studyId);
-        fileDocument.append(PRIVATE_UID, newFileId);
         if (StringUtils.isNotEmpty(file.getCreationDate())) {
             fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
         } else {
@@ -132,7 +131,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     @Override
     public long getId(long studyId, String path) throws CatalogDBException {
-        Query query = new Query(QueryParams.STUDY_ID.key(), studyId).append(QueryParams.PATH.key(), path);
+        Query query = new Query(QueryParams.STUDY_UID.key(), studyId).append(QueryParams.PATH.key(), path);
         QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_UID);
         QueryResult<File> fileQueryResult = get(query, options);
         return fileQueryResult.getNumTotalResults() == 1 ? fileQueryResult.getResult().get(0).getUid() : -1;
@@ -141,7 +140,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public QueryResult<File> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
+        Query query = new Query(QueryParams.STUDY_UID.key(), studyId);
         return get(query, options);
     }
 
@@ -163,7 +162,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         if (!queryResult.getResult().isEmpty()) {
             return (long) ((Document) queryResult.getResult().get(0)).get(PRIVATE_STUDY_ID);
         } else {
-            throw CatalogDBException.idNotFound("File", fileId);
+            throw CatalogDBException.uidNotFound("File", fileId);
         }
     }
 
@@ -274,7 +273,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         // Check if the job exists.
         if (parameters.containsKey(QueryParams.JOB_UID.key()) && parameters.getLong(QueryParams.JOB_UID.key()) > 0) {
             if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().exists(parameters.getLong(QueryParams.JOB_UID.key()))) {
-                throw CatalogDBException.idNotFound("Job", parameters.getLong(QueryParams.JOB_UID.key()));
+                throw CatalogDBException.uidNotFound("Job", parameters.getLong(QueryParams.JOB_UID.key()));
             }
         }
 
@@ -285,7 +284,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             for (Object sample : objectSampleList) {
                 if (sample instanceof Sample) {
                     if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(((Sample) sample).getUid())) {
-                        throw CatalogDBException.idNotFound("Sample", ((Sample) sample).getUid());
+                        throw CatalogDBException.uidNotFound("Sample", ((Sample) sample).getUid());
                     }
                     sampleList.add((Sample) sample);
                 }
@@ -356,7 +355,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                 .append(QueryParams.URI.key(), fileUri));
         QueryResult<UpdateResult> update = fileCollection.update(query, set, null);
         if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
-            throw CatalogDBException.idNotFound("File", fileId);
+            throw CatalogDBException.uidNotFound("File", fileId);
         }
         return endQuery("Rename file", startTime, get(fileId, options));
     }
@@ -402,10 +401,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                 ? StudyAclEntry.StudyPermissions.VIEW_FILES : studyPermissions);
 
            // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
 
         // Get the document query needed to check the permissions as well
@@ -574,10 +573,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
         return queryResult.first();
     }
@@ -665,7 +664,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case UID:
                         addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STUDY_ID:
+                    case STUDY_UID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case DIRECTORY:

@@ -283,10 +283,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return new MyResourceIds(userId, studyId, sampleIds);
     }
 
+    @Deprecated
     public QueryResult<Sample> get(Long sampleId, QueryOptions options, String sessionId) throws CatalogException {
         return get(null, String.valueOf(sampleId), options, sessionId);
     }
 
+    @Deprecated
     public QueryResult<Sample> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         return get(String.valueOf(studyId), query, options, sessionId);
     }
@@ -447,7 +449,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 // Update the files
                 Query auxQuery = new Query()
                         .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
-                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
                 DBIterator<File> fileIterator = fileDBAdaptor.iterator(auxQuery, QueryOptions.empty());
                 while (fileIterator.hasNext()) {
                     File file = fileIterator.next();
@@ -583,7 +585,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Look for files related with the sample
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         DBIterator<File> fileIterator = fileDBAdaptor.iterator(query, QueryOptions.empty());
         List<String> errorFiles = new ArrayList<>();
         while (fileIterator.hasNext()) {
@@ -685,7 +687,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 // Remove the references to the sample id from the array of files
                 Query query = new Query()
-                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId());
+                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resourceId.getStudyId());
                 fileDBAdaptor.extractSampleFromFiles(query, Arrays.asList(sampleId));
 
             } catch (CatalogAuthorizationException e) {
@@ -1087,8 +1089,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         if (StringUtils.isNotEmpty(sampleAclParams.getCohort())) {
             // Obtain the cohort ids
-            MyResourceIds ids = catalogManager.getCohortManager().getUids(Arrays.asList(StringUtils.split(sampleAclParams.getCohort(), ",")),
-                    studyStr, sessionId);
+            MyResourceIds ids = catalogManager.getCohortManager().getUids(Arrays.asList(
+                    StringUtils.split(sampleAclParams.getCohort(), ",")), studyStr, sessionId);
 
             Query query = new Query(CohortDBAdaptor.QueryParams.UID.key(), ids.getResourceIds());
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());

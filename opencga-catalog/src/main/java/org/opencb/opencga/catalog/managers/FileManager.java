@@ -108,10 +108,8 @@ public class FileManager extends ResourceManager<File> {
     }
 
     FileManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
-                configuration);
+                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         file = new FileMetadataReader(this.catalogManager);
         this.userManager = catalogManager.getUserManager();
     }
@@ -129,6 +127,7 @@ public class FileManager extends ResourceManager<File> {
         }
     }
 
+    @Deprecated
     public URI getUri(long studyId, String filePath) throws CatalogException {
         ParamUtils.checkObj(filePath, "filePath");
 
@@ -233,7 +232,7 @@ public class FileManager extends ResourceManager<File> {
             // Search in the same path
             logger.info("Looking for vcf file in path {}", variantPathName);
             Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), variantPathName)
                     .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
 
@@ -244,7 +243,7 @@ public class FileManager extends ResourceManager<File> {
                 String variantFileName = getOriginalFile(transformedFile.getName());
                 logger.info("Looking for vcf file by name {}", variantFileName);
                 query = new Query()
-                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                         .append(FileDBAdaptor.QueryParams.NAME.key(), variantFileName)
                         .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
                 fileList = new ArrayList<>(fileDBAdaptor.get(query, new QueryOptions()).getResult());
@@ -276,7 +275,7 @@ public class FileManager extends ResourceManager<File> {
             // Look for the json file. It should be in the same directory where the transformed file is.
             String jsonPathName = getMetaFile(transformedFile.getPath());
             query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), jsonPathName)
                     .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.JSON);
             fileList = fileDBAdaptor.get(query, new QueryOptions()).getResult();
@@ -411,7 +410,7 @@ public class FileManager extends ResourceManager<File> {
         long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         String user = userManager.getUserId(sessionId);
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), parentPath);
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, user);
         if (fileQueryResult.getNumResults() == 0) {
@@ -427,7 +426,7 @@ public class FileManager extends ResourceManager<File> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
 
         if (path.startsWith("/")) {
             path = path.substring(1);
@@ -437,14 +436,14 @@ public class FileManager extends ResourceManager<File> {
         }
 
         QueryResult<File> fileQueryResult;
-        switch (checkPathExists(path, studyId)) {
+        switch (checkPathExists(path, study.getUid())) {
             case FREE_PATH:
-                fileQueryResult = create(Long.toString(studyId), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null,
+                fileQueryResult = create(studyStr, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null,
                         description, status, 0, -1, null, -1, null, null, parents, null, options, sessionId);
                 break;
             case DIRECTORY_EXISTS:
                 Query query = new Query()
-                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(FileDBAdaptor.QueryParams.PATH.key(), path);
                 fileQueryResult = fileDBAdaptor.get(query, options, userId);
                 fileQueryResult.setWarningMsg("Folder was already created");
@@ -498,7 +497,14 @@ public class FileManager extends ResourceManager<File> {
     public QueryResult<File> create(String studyStr, File file, boolean parents, String content, QueryOptions options, String sessionId)
             throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        return create(study, file, parents, content, options, sessionId);
+    }
+
+    QueryResult<File> create(Study study, File file, boolean parents, String content, QueryOptions options, String sessionId)
+            throws CatalogException {
+        String userId = userManager.getUserId(sessionId);
+        long studyId = study.getUid();
 
         /** Check and set all the params and create a File object **/
         ParamUtils.checkObj(file, "File");
@@ -522,7 +528,7 @@ public class FileManager extends ResourceManager<File> {
 //            throw new CatalogException("Experiment { id: " + file.getExperiment().getId() + "} does not exist.");
 //        }
 
-        file.setSamples(ParamUtils.defaultObject(file.getSamples(), ArrayList<Sample>::new));
+        file.setSamples(ParamUtils.defaultObject(file.getSamples(), ArrayList::new));
         for (Sample sample : file.getSamples()) {
             if (sample.getUid() <= 0 || !sampleDBAdaptor.exists(sample.getUid())) {
                 throw new CatalogException("Sample { id: " + sample.getUid() + "} does not exist.");
@@ -531,8 +537,8 @@ public class FileManager extends ResourceManager<File> {
         if (file.getJob().getUid() > 0 && !jobDBAdaptor.exists(file.getJob().getUid())) {
             throw new CatalogException("Job { id: " + file.getJob().getUid() + "} does not exist.");
         }
-        file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap<String, Object>::new));
-        file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap<String, Object>::new));
+        file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
+        file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap::new));
 
         if (file.getType() == File.Type.DIRECTORY && !file.getPath().endsWith("/")) {
             file.setPath(file.getPath() + "/");
@@ -557,7 +563,7 @@ public class FileManager extends ResourceManager<File> {
         // FIXME: Why am I doing this? Why am I not throwing an exception if it already exists?
         // Check if it already exists
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";" + File.FileStatus.DELETED
                         + ";" + File.FileStatus.DELETING + ";" + File.FileStatus.PENDING_DELETE + ";" + File.FileStatus.REMOVED);
@@ -565,7 +571,7 @@ public class FileManager extends ResourceManager<File> {
             logger.warn("The file {} already exists in catalog", file.getPath());
         }
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.URI.key(), uri)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";" + File.FileStatus.DELETED
                         + ";" + File.FileStatus.DELETING + ";" + File.FileStatus.PENDING_DELETE + ";" + File.FileStatus.REMOVED);
@@ -573,9 +579,9 @@ public class FileManager extends ResourceManager<File> {
             logger.warn("The uri {} of the file is already in catalog but on a different path", uri);
         }
 
-        boolean external = isExternal(studyId, file.getPath(), uri);
+        boolean external = isExternal(study, file.getPath(), uri);
         file.setExternal(external);
-        file.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+        file.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
 
         //Find parent. If parents == true, create folders.
         String parentPath = getParentPath(file.getPath());
@@ -588,7 +594,7 @@ public class FileManager extends ResourceManager<File> {
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath, "",
                         new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1, Collections.emptyMap(),
                         Collections.emptyMap());
-                parentFileId = create(Long.toString(studyId), parentFile, parents, null, options, sessionId).first().getUid();
+                parentFileId = create(study, parentFile, parents, null, options, sessionId).first().getUid();
             } else {
                 throw new CatalogDBException("Directory not found " + parentPath);
             }
@@ -641,7 +647,7 @@ public class FileManager extends ResourceManager<File> {
 
         String userId = userManager.getUserId(sessionId);
         Long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
 
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, userId);
 
@@ -694,7 +700,7 @@ public class FileManager extends ResourceManager<File> {
 
         MyResourceId resource = getUid(fileIdStr, studyStr, sessionId);
 
-        query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudyId());
+        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudyId());
 
         // Check if we can obtain the file from the dbAdaptor properly.
         QueryOptions qOptions = new QueryOptions()
@@ -741,7 +747,7 @@ public class FileManager extends ResourceManager<File> {
         if (studyId <= 0) {
             throw new CatalogDBException("Permission denied. Only the files of one study can be seen at a time.");
         } else {
-            query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         }
 
         fixQueryObject(studyId, query, sessionId);
@@ -761,7 +767,7 @@ public class FileManager extends ResourceManager<File> {
         if (studyId <= 0) {
             throw new CatalogDBException("Permission denied. Only the files of one study can be seen at a time.");
         } else {
-            query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         }
 
         fixQueryObject(studyId, query, sessionId);
@@ -776,7 +782,7 @@ public class FileManager extends ResourceManager<File> {
         fixQueryObject(studyId, query, sessionId);
 
 
-        query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         QueryResult<File> queryResult = fileDBAdaptor.get(query, options, userId);
 
         return queryResult;
@@ -800,7 +806,7 @@ public class FileManager extends ResourceManager<File> {
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         fixQueryObject(studyId, query, sessionId);
 
-        query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         QueryResult<Long> queryResultAux = fileDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
@@ -948,7 +954,7 @@ public class FileManager extends ResourceManager<File> {
         // Check if we can obtain the file from the dbAdaptor properly.
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_TRASHED_FILES);
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
         if (fileQueryResult == null || fileQueryResult.getNumResults() != 1) {
@@ -1090,7 +1096,7 @@ public class FileManager extends ResourceManager<File> {
 
             // Obtain all files and folders within the folder
             Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
             logger.debug("Looking for files and folders inside {} to mark as {}", file.getPath(), forceDelete
@@ -1172,7 +1178,7 @@ public class FileManager extends ResourceManager<File> {
         // subfiles and subdirectories doing a single query as I don't need to rename anything
         // Obtain all files within the folder
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
         ObjectMap params = new ObjectMap()
@@ -1209,7 +1215,7 @@ public class FileManager extends ResourceManager<File> {
         } else {
             // Obtain all files within the folder
             Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
 
@@ -1391,7 +1397,7 @@ public class FileManager extends ResourceManager<File> {
         // We obtain the current information of those files
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), relatedFileMap.keySet())
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resources.getStudyId())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
 
@@ -1549,7 +1555,7 @@ public class FileManager extends ResourceManager<File> {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-        query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -1574,7 +1580,7 @@ public class FileManager extends ResourceManager<File> {
         fixQueryObject(studyId, query, sessionId);
 
         // Add study id to the query
-        query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
 
         // We do not need to check for permissions when we show the count of files
         QueryResult queryResult = fileDBAdaptor.groupBy(query, fields, options, userId);
@@ -1770,7 +1776,7 @@ public class FileManager extends ResourceManager<File> {
                     String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
                     Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
                             .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
-                            .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                            .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
                     QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions);
 
                     if (fileQueryResult.getNumResults() == 0) {
@@ -1841,7 +1847,7 @@ public class FileManager extends ResourceManager<File> {
                     String path = file.first().getPath().endsWith("/") ? file.first().getPath() : file.first().getPath() + "/";
                     Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.SAM, File.Format.BAM))
                             .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
-                            .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                            .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
                     QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions);
 
                     if (fileQueryResult.getNumResults() == 0) {
@@ -2053,7 +2059,7 @@ public class FileManager extends ResourceManager<File> {
 
         // Get info of the files to see if they are files or folders
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resourceIds.getStudyId())
                 .append(FileDBAdaptor.QueryParams.UID.key(), resourceIds.getResourceIds());
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key()));
@@ -2075,7 +2081,7 @@ public class FileManager extends ResourceManager<File> {
         if (CollectionUtils.isNotEmpty(pathList)) {
             // Search for all the files within the list of paths
             query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resourceIds.getStudyId())
                     .append(FileDBAdaptor.QueryParams.PATH.key(), pathList);
             QueryResult<File> fileQueryResult1 = fileDBAdaptor.get(query, options);
             fileIdSet.addAll(fileQueryResult1.getResult().stream().map(File::getUid).collect(Collectors.toSet()));
@@ -2119,7 +2125,7 @@ public class FileManager extends ResourceManager<File> {
         }
 
         // We search as a path
-        Query query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+        Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), fileName);
 //                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
         QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.files.id");
@@ -2130,7 +2136,7 @@ public class FileManager extends ResourceManager<File> {
 
         if (!fileName.contains("/")) {
             // We search as a fileName as well
-            query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+            query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.NAME.key(), fileName);
 //                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
             QueryResult<File> nameQueryResult = fileDBAdaptor.get(query, qOptions);
@@ -2193,7 +2199,7 @@ public class FileManager extends ResourceManager<File> {
         List<String> paths = getParentPaths(filePath);
 
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), paths);
-        query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         QueryResult<File> result = fileDBAdaptor.get(query, options);
         result.getResult().sort(rootFirst ? ROOT_FIRST_COMPARATOR : ROOT_LAST_COMPARATOR);
         return result;
@@ -2238,8 +2244,8 @@ public class FileManager extends ResourceManager<File> {
         }
     }
 
-    private boolean isExternal(long studyId, String catalogFilePath, URI fileUri) throws CatalogException {
-        URI studyUri = getStudyUri(studyId);
+    private boolean isExternal(Study study, String catalogFilePath, URI fileUri) throws CatalogException {
+        URI studyUri = study.getUri();
 
         String studyFilePath = studyUri.resolve(catalogFilePath).getPath();
         String originalFilePath = fileUri.getPath();
@@ -2318,7 +2324,7 @@ public class FileManager extends ResourceManager<File> {
                 FileDBAdaptor.QueryParams.SIZE.key(), FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
                 FileDBAdaptor.QueryParams.INDEX.key(), FileDBAdaptor.QueryParams.STATUS.key(), FileDBAdaptor.QueryParams.EXTERNAL.key()));
         Query myQuery = new Query(query);
-        myQuery.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        myQuery.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         myQuery.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), statusQuery);
 
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(myQuery, options);
@@ -2358,7 +2364,7 @@ public class FileManager extends ResourceManager<File> {
 
             // Get all recursive files and folders
             Query newQuery = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), statusQuery);
             QueryResult<File> recursiveFileQueryResult = fileDBAdaptor.get(newQuery, options);
@@ -2469,7 +2475,7 @@ public class FileManager extends ResourceManager<File> {
 
         // We check if any of the files to be removed are transformation files
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                 .append(FileDBAdaptor.QueryParams.RELATED_FILES_RELATION.key(), File.RelatedFile.Relation.PRODUCED_FROM);
         QueryResult<File> fileQR = fileDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
@@ -2559,7 +2565,7 @@ public class FileManager extends ResourceManager<File> {
 
         // Check if the folder exists
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), stringPath);
 
         if (fileDBAdaptor.count(query).first() == 0) {
@@ -2630,7 +2636,7 @@ public class FileManager extends ResourceManager<File> {
 
         // Check if the path already exists and is not external
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr)
@@ -2642,7 +2648,7 @@ public class FileManager extends ResourceManager<File> {
         // Check if the uri was already linked to that same path
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.URI.key(), normalizedUri)
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr)
@@ -2673,7 +2679,7 @@ public class FileManager extends ResourceManager<File> {
         // Check if the uri was linked to other path
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.URI.key(), normalizedUri)
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
@@ -2697,7 +2703,7 @@ public class FileManager extends ResourceManager<File> {
         } else {
             // Check if the folder exists
             query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), pathDestiny);
             if (fileDBAdaptor.count(query).first() == 0) {
                 if (parents) {
@@ -2723,7 +2729,7 @@ public class FileManager extends ResourceManager<File> {
 
             // Check if there is already a file in the same path
             query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr);
 
             // Create the file
@@ -2789,7 +2795,7 @@ public class FileManager extends ResourceManager<File> {
                         }
 
                         Query query = new Query()
-                                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
 
                         if (fileDBAdaptor.count(query).first() == 0) {
@@ -2838,7 +2844,7 @@ public class FileManager extends ResourceManager<File> {
                         }
 
                         Query query = new Query()
-                                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
 
                         if (fileDBAdaptor.count(query).first() == 0) {
@@ -2910,7 +2916,7 @@ public class FileManager extends ResourceManager<File> {
             // Check if the uri was already linked to that same path
             query = new Query()
                     .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + normalizedUri)
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                             + File.FileStatus.REMOVED)
                     .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
@@ -2937,7 +2943,7 @@ public class FileManager extends ResourceManager<File> {
         }
 
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), myPath);
         QueryResult<Long> fileQueryResult = fileDBAdaptor.count(query);
 
@@ -2946,7 +2952,7 @@ public class FileManager extends ResourceManager<File> {
         }
 
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), myPath + "/");
         fileQueryResult = fileDBAdaptor.count(query);
 

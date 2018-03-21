@@ -221,7 +221,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
         List<String> distinctFormats = catalogFileDBAdaptor.distinct(
-                new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+                new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
                 FileDBAdaptor.QueryParams.FORMAT.key()).getResult();
         assertEquals(Arrays.asList("UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM"), distinctFormats);
 
@@ -237,7 +237,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testRank() throws Exception {
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
         List<Document> rankedFilesPerDiskUsage = catalogFileDBAdaptor.rank(
-                new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+                new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
                 FileDBAdaptor.QueryParams.SIZE.key(), 100, false).getResult();
 
         assertEquals(3, rankedFilesPerDiskUsage.size());
@@ -256,7 +256,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testGroupBy() throws Exception {
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
 
-        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
         assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
@@ -266,7 +266,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/")
                 .containsAll((Collection<?>) groupByBioformat.get(1).get("items")));
 
-        groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), 14), // MINECO study
+        groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), 14), // MINECO study
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
         assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
@@ -282,7 +282,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
         List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(
-                new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+                new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
                 Arrays.asList(FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.TYPE.key()),
                 new QueryOptions()).getResult();
 
@@ -340,7 +340,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
 
         List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(
-                new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+                new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
                 Arrays.asList(FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.TYPE.key(), "day"),
                 new QueryOptions()).getResult();
 

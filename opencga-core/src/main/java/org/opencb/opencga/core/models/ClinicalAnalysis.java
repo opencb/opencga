@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysis extends PrivateFields {
+public class ClinicalAnalysis extends PrivateStudyUid {
 
     private String id;
     @Deprecated
@@ -108,6 +108,12 @@ public class ClinicalAnalysis extends PrivateFields {
     @Override
     public ClinicalAnalysis setUid(long uid) {
         super.setUid(uid);
+        return this;
+    }
+
+    @Override
+    public ClinicalAnalysis setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
         return this;
     }
 

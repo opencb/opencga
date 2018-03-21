@@ -28,7 +28,7 @@ import java.util.Objects;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class File extends PrivateFields {
+public class File extends PrivateStudyUid {
 
     private String name;
 
@@ -339,6 +339,12 @@ public class File extends PrivateFields {
     @Override
     public File setUid(long uid) {
         super.setUid(uid);
+        return this;
+    }
+
+    @Override
+    public File setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
         return this;
     }
 

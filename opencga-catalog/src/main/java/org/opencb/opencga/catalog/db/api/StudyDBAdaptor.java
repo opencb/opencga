@@ -61,7 +61,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     void nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException;
 
-    QueryResult<Study> insert(long projectId, Study study, String owner, QueryOptions options) throws CatalogDBException;
+    QueryResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
 
     boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException;
 
@@ -278,8 +278,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     enum QueryParams implements QueryParam {
         UID("uid", INTEGER_ARRAY, ""),
         ID("id", TEXT, ""),
-        NAME("name", TEXT_ARRAY, ""),
-        ALIAS("alias", TEXT_ARRAY, ""),
+        NAME("name", TEXT, ""),
+        ALIAS("alias", TEXT, ""),
+        FQN("fqn", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
         CIPHER("cipher", TEXT, ""),

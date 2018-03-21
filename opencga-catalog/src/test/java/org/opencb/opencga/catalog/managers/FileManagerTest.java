@@ -275,20 +275,20 @@ public class FileManagerTest extends GenericTest {
         // Now we try to create it into a folder that does not exist with parents = true
         link(uri, "myDirectory", Long.toString(studyId), new ObjectMap("parents", true), sessionIdUser);
         QueryResult<File> folderQueryResult = catalogManager.getFileManager().get(studyId, new Query().append(FileDBAdaptor.QueryParams
-                .STUDY_ID.key(), studyId).append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/"), null, sessionIdUser);
+                .STUDY_UID.key(), studyId).append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/"), null, sessionIdUser);
         assertEquals(1, folderQueryResult.getNumResults());
         assertTrue(!folderQueryResult.first().isExternal());
 
-        folderQueryResult = catalogManager.getFileManager().get(studyId, new Query().append(FileDBAdaptor.QueryParams.STUDY_ID.key(),
+        folderQueryResult = catalogManager.getFileManager().get(studyId, new Query().append(FileDBAdaptor.QueryParams.STUDY_UID.key(),
                 studyId).append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/data/"), null, sessionIdUser);
         assertEquals(1, folderQueryResult.getNumResults());
         assertTrue(folderQueryResult.first().isExternal());
 
-        folderQueryResult = catalogManager.getFileManager().get(studyId, new Query().append(FileDBAdaptor.QueryParams.STUDY_ID.key(),
+        folderQueryResult = catalogManager.getFileManager().get(studyId, new Query().append(FileDBAdaptor.QueryParams.STUDY_UID.key(),
                 studyId).append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/data/test/"), null, sessionIdUser);
         assertEquals(1, folderQueryResult.getNumResults());
         assertTrue(folderQueryResult.first().isExternal());
-        folderQueryResult = catalogManager.getFileManager().get(studyId, new Query().append(FileDBAdaptor.QueryParams.STUDY_ID.key(),
+        folderQueryResult = catalogManager.getFileManager().get(studyId, new Query().append(FileDBAdaptor.QueryParams.STUDY_UID.key(),
                 studyId).append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/data/test/folder/"), null, sessionIdUser);
         assertEquals(1, folderQueryResult.getNumResults());
         assertTrue(folderQueryResult.first().isExternal());
@@ -437,7 +437,7 @@ public class FileManagerTest extends GenericTest {
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);
 
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         QueryResult<File> fileQueryResultLinked = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser);
@@ -450,7 +450,7 @@ public class FileManagerTest extends GenericTest {
         assertEquals(1, fileQueryResultLinked.getNumResults());
 
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
         QueryResult<File> fileQueryResultUnlinked = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser);
@@ -471,7 +471,7 @@ public class FileManagerTest extends GenericTest {
         link(uri, "myDirectory", Long.toString(studyId), new ObjectMap("parents", true), sessionIdUser);
 
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         QueryResult<File> fileQueryResultLinked = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser);
@@ -1175,7 +1175,7 @@ public class FileManagerTest extends GenericTest {
     public void testDelete1() throws CatalogException, IOException {
         String filePath = "data/";
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), filePath);
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser);
 
@@ -1214,13 +1214,13 @@ public class FileManagerTest extends GenericTest {
     public void testDelete2() throws CatalogException, IOException {
         String filePath = "data/";
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), filePath);
         File file = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser).first();
 
         // We look for all the files and folders that fall within that folder
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         int numResults = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser).getNumResults();
@@ -1244,13 +1244,13 @@ public class FileManagerTest extends GenericTest {
     public void testDelete3() throws CatalogException, IOException {
         String filePath = "data/";
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), filePath);
         File file = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser).first();
 
         // We look for all the files and folders that fall within that folder
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         int numResults = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser).getNumResults();

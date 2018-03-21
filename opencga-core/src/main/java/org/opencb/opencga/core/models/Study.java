@@ -41,6 +41,7 @@ public class Study extends PrivateFields {
     private long size;
     // TODO: Pending !!!
     private String cipher;
+    private String fqn;
 
     private List<Group> groups;
 
@@ -160,6 +161,7 @@ public class Study extends PrivateFields {
         sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", size=").append(size);
         sb.append(", cipher='").append(cipher).append('\'');
+        sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", groups=").append(groups);
         sb.append(", experiments=").append(experiments);
         sb.append(", files=").append(files);
@@ -390,6 +392,15 @@ public class Study extends PrivateFields {
 
     public Study setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public String getFqn() {
+        return fqn;
+    }
+
+    public Study setFqn(String fqn) {
+        this.fqn = fqn;
         return this;
     }
 

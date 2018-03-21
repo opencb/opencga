@@ -40,7 +40,8 @@ public class CohortConverter extends AnnotableConverter<Cohort> {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
-        document.put("uid", document.getInteger("uid").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
         document.put("samples", convertSamplesToDocument(object.getSamples()));
         return document;
     }

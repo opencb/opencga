@@ -38,7 +38,8 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
     @Override
     public Document convertToStorageType(Job object) {
         Document document = super.convertToStorageType(object);
-        document.put("uid", document.getInteger("uid").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
         document.put("outDir", convertFileToDocument(object.getOutDir()));
         document.put("input", convertFilesToDocument(object.getInput()));
         document.put("output", convertFilesToDocument(object.getOutput()));

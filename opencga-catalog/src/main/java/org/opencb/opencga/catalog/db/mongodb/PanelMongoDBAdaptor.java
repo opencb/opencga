@@ -81,7 +81,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), panelId),
                 new QueryOptions(QueryOptions.INCLUDE, PRIVATE_STUDY_ID));
         if (queryResult.getResult().isEmpty()) {
-            throw CatalogDBException.idNotFound("Panel", panelId);
+            throw CatalogDBException.uidNotFound("Panel", panelId);
         } else {
             return ((Document) queryResult.first()).getLong(PRIVATE_STUDY_ID);
         }

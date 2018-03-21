@@ -187,7 +187,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         if (parameters.containsKey(QueryParams.FILES.key())) {
             for (Long fileId : parameters.getAsLongList(QueryParams.FILES.key())) {
                 if (!dbAdaptorFactory.getCatalogFileDBAdaptor().exists(fileId)) {
-                    throw CatalogDBException.idNotFound("File", fileId);
+                    throw CatalogDBException.uidNotFound("File", fileId);
                 }
             }
         }

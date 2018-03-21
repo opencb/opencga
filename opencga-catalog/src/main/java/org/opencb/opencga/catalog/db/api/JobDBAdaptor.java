@@ -66,7 +66,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         Query query = new Query(QueryParams.UID.key(), jobId);
         QueryResult<Job> jobQueryResult = get(query, options);
         if (jobQueryResult == null || jobQueryResult.getResult().size() == 0) {
-            throw CatalogDBException.idNotFound("Job", jobId);
+            throw CatalogDBException.uidNotFound("Job", jobId);
         }
         return jobQueryResult;
     }

@@ -288,6 +288,12 @@ public class Individual extends Annotable {
         return this;
     }
 
+    @Override
+    public Individual setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
+        return this;
+    }
+
     public String getId() {
         return id;
     }

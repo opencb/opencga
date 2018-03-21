@@ -88,6 +88,7 @@ public abstract class ResourceManager<R> extends AbstractManager {
      * @return The study id where the entry belongs to.
      * @throws CatalogException If the entry id is not found.
      */
+    @Deprecated
     abstract Long getStudyId(long entryId) throws CatalogException;
 
     /**

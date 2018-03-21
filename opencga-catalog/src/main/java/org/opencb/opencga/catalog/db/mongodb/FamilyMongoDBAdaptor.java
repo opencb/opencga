@@ -104,10 +104,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         long familyId = getNewId();
         family.setUid(familyId);
+        family.setStudyUid(studyId);
         family.setVersion(1);
 
         Document familyObject = familyConverter.convertToStorageType(family, variableSetList);
-        familyObject.put(PRIVATE_STUDY_ID, studyId);
 
         // Versioning private parameters
         familyObject.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
@@ -669,7 +669,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
-            throw CatalogDBException.idNotFound("Family", familyId);
+            throw CatalogDBException.uidNotFound("Family", familyId);
         }
     }
 

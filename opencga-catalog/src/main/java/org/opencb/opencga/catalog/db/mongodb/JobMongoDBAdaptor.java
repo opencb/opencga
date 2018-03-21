@@ -89,10 +89,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         long jobId = getNewId();
         job.setUid(jobId);
+        job.setStudyUid(studyId);
 
         Document jobObject = jobConverter.convertToStorageType(job);
-        jobObject.put(PRIVATE_UID, jobId);
-        jobObject.put(PRIVATE_STUDY_ID, studyId);
         if (StringUtils.isNotEmpty(job.getCreationDate())) {
             jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
         } else {
@@ -130,7 +129,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             Object id = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
             return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
         } else {
-            throw CatalogDBException.idNotFound("Job", jobId);
+            throw CatalogDBException.uidNotFound("Job", jobId);
         }
     }
 
@@ -285,7 +284,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
             }
         } else {
-            throw CatalogDBException.idNotFound("Job id '{}' does not exist (or there are too many)", id);
+            throw CatalogDBException.uidNotFound("Job id '{}' does not exist (or there are too many)", id);
         }
         return jobQueryResult;
     }

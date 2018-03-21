@@ -41,7 +41,8 @@ public class IndividualConverter extends AnnotableConverter<Individual> {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
-        document.put("uid", document.getInteger("uid").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
 
         Document father = (Document) document.get("father");
         long fatherId = father != null ? (father.getInteger("uid") == 0 ? -1L : father.getInteger("uid").longValue()) : -1L;

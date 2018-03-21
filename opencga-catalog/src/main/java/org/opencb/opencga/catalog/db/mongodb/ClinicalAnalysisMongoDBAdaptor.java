@@ -151,7 +151,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             QueryResult<UpdateResult> update = clinicalCollection.update(query, operation, null);
 
             if (update.getResult().isEmpty() || update.getResult().get(0).getMatchedCount() == 0) {
-                throw CatalogDBException.idNotFound("Clinical Analysis", id);
+                throw CatalogDBException.uidNotFound("Clinical Analysis", id);
             }
         }
 
@@ -427,10 +427,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         long clinicalAnalysisId = getNewId();
         clinicalAnalysis.setUid(clinicalAnalysisId);
+        clinicalAnalysis.setStudyUid(studyId);
 
         Document clinicalObject = clinicalConverter.convertToStorageType(clinicalAnalysis);
-        clinicalObject.put(PRIVATE_STUDY_ID, studyId);
-        clinicalObject.put(PRIVATE_UID, clinicalAnalysisId);
         if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
             clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
         } else {
@@ -493,7 +492,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
-            throw CatalogDBException.idNotFound("ClinicalAnalysis", clinicalAnalysisId);
+            throw CatalogDBException.uidNotFound("ClinicalAnalysis", clinicalAnalysisId);
         }
     }
 

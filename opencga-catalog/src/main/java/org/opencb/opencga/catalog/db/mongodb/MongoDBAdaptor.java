@@ -47,9 +47,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     static final String PRIVATE_UID = "uid";
     static final String PRIVATE_ID = "id";
-    static final String PRIVATE_PROJECT_ID = "_projectId";
+    static final String PRIVATE_PROJECT = "_project";
+    static final String PRIVATE_PROJECT_UID = "_project.uid";
+    static final String PRIVATE_PROJECT_ID = "_project.id";
     static final String PRIVATE_OWNER_ID = "_ownerId";
-    static final String PRIVATE_STUDY_ID = "_studyId";
+    static final String PRIVATE_STUDY_ID = "studyUid";
 
     static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";

@@ -92,19 +92,21 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Study> insert(long projectId, Study study, String ownerId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (projectId < 0) {
-            throw CatalogDBException.idNotFound("Project", projectId);
+        if (project.getUid() < 0) {
+            throw CatalogDBException.uidNotFound("Project", project.getUid());
+        }
+        if (StringUtils.isEmpty(project.getId())) {
+            throw CatalogDBException.idNotFound("Project", project.getId());
         }
 
-        // Check if study.alias already exists.
-        if (studyIdExists(projectId, study.getId())) {
+        // Check if study.id already exists.
+        if (studyIdExists(project.getUid(), study.getId())) {
             throw new CatalogDBException("Study {id:\"" + study.getId() + "\"} already exists");
         }
 
         //Set new ID
-//        int newId = getNewAutoIncrementId(metaCollection);
         long newId = getNewId();
         study.setUid(newId);
 
@@ -124,13 +126,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<DiseasePanel> panels = study.getPanels();
         study.setPanels(Collections.emptyList());
 
+        study.setFqn(project.getFqn() + ":" + study.getId());
+
         //Create DBObject
         Document studyObject = studyConverter.convertToStorageType(study);
         studyObject.put(PRIVATE_UID, newId);
 
         //Set ProjectId
-        studyObject.put(PRIVATE_PROJECT_ID, projectId);
-        studyObject.put(PRIVATE_OWNER_ID, ownerId);
+        studyObject.put(PRIVATE_PROJECT, new Document()
+                .append(PRIVATE_ID, project.getId())
+                .append(PRIVATE_UID, project.getUid())
+        );
+        studyObject.put(PRIVATE_OWNER_ID, StringUtils.split(project.getFqn(), "@")[0]);
 
         if (StringUtils.isNotEmpty(study.getCreationDate())) {
             studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(study.getCreationDate()));
@@ -223,15 +230,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public long getProjectIdByStudyId(long studyId) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), studyId);
-        QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + PRIVATE_PROJECT_ID);
+        QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + PRIVATE_PROJECT_UID);
         QueryResult result = nativeGet(query, queryOptions);
 
         if (!result.getResult().isEmpty()) {
             Document study = (Document) result.getResult().get(0);
-            Object id = study.get(PRIVATE_PROJECT_ID);
+            Object id = study.get(PRIVATE_PROJECT_UID);
             return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
         } else {
-            throw CatalogDBException.idNotFound("Study", studyId);
+            throw CatalogDBException.uidNotFound("Study", studyId);
         }
     }
 
@@ -241,7 +248,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_OWNER_ID);
         QueryResult<Document> documentQueryResult = nativeGet(query, options);
         if (documentQueryResult.getNumResults() == 0) {
-            throw CatalogDBException.idNotFound("Study", studyId);
+            throw CatalogDBException.uidNotFound("Study", studyId);
         }
         return documentQueryResult.first().getString(PRIVATE_OWNER_ID);
     }
@@ -929,7 +936,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<UpdateResult> update = studyCollection.update(query, operation, null);
 
         if (update.first().getModifiedCount() == 0) {
-            throw CatalogDBException.idNotFound("VariableSet", variableSetId);
+            throw CatalogDBException.uidNotFound("VariableSet", variableSetId);
         }
         return endQuery("Delete VariableSet", startTime, variableSet);
     }
@@ -992,7 +999,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             Object id = queryResult.getResult().get(0).get(PRIVATE_UID);
             return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
         } else {
-            throw CatalogDBException.idNotFound("VariableSet", variableSetId);
+            throw CatalogDBException.uidNotFound("VariableSet", variableSetId);
         }
     }
 
@@ -1064,7 +1071,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             if (StringUtils.isEmpty(user)) {
                 study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().getAllInStudy(studyId, options).getResult());
             } else {
-                Query query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
                 study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().get(query, options, user).getResult());
             }
         }
@@ -1395,7 +1402,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
             }
         } else {
-            throw CatalogDBException.idNotFound("Study id '{}' does not exist (or there are too many)", studyId);
+            throw CatalogDBException.uidNotFound("Study id '{}' does not exist (or there are too many)", studyId);
         }
         return studyQueryResult;
     }
@@ -1566,6 +1573,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
+        // Flag indicating whether and OR between ID and ALIAS has been performed and already added to the andBsonList object
+        boolean idOrAliasFlag = false;
+
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
@@ -1580,7 +1590,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case PROJECT_ID:
-                        addOrQuery(PRIVATE_PROJECT_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addOrQuery(PRIVATE_PROJECT_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
@@ -1596,8 +1606,25 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case NAME:
                     case ID:
+                    case ALIAS:
+                        // We perform an OR if both ID and ALIAS are present in the query and both have the exact same value
+                        if (StringUtils.isNotEmpty(query.getString(QueryParams.ID.key()))
+                                && StringUtils.isNotEmpty(query.getString(QueryParams.ALIAS.key()))
+                                && query.getString(QueryParams.ID.key()).equals(query.getString(QueryParams.ALIAS.key()))) {
+                            if (!idOrAliasFlag) {
+                                List<Document> orList = Arrays.asList(
+                                    new Document(QueryParams.ID.key(), query.getString(QueryParams.ID.key())),
+                                    new Document(QueryParams.ALIAS.key(), query.getString(QueryParams.ALIAS.key()))
+                                );
+                                andBsonList.add(new Document("$or", orList));
+                                idOrAliasFlag = true;
+                            }
+                        } else {
+                            addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        }
+                        break;
+                    case NAME:
                     case DESCRIPTION:
                     case CIPHER:
                     case STATUS_NAME:

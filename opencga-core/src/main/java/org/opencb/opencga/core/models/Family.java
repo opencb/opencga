@@ -127,6 +127,12 @@ public class Family extends Annotable {
         return this;
     }
 
+    @Override
+    public Family setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
+        return this;
+    }
+
     public String getId() {
         return id;
     }

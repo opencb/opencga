@@ -363,7 +363,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    MyResourceIds getUids(List<String> individualList, @Nullable String studyStr, boolean silent, String sessionId) throws CatalogException {
+    MyResourceIds getUids(List<String> individualList, @Nullable String studyStr, boolean silent, String sessionId)
+            throws CatalogException {
         if (individualList == null || individualList.isEmpty()) {
             throw new CatalogException("Missing individual parameter");
         }

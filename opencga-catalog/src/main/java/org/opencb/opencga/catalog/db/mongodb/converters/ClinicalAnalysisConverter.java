@@ -37,7 +37,8 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     @Override
     public Document convertToStorageType(ClinicalAnalysis object) {
         Document document = super.convertToStorageType(object);
-        document.put("uid", document.getInteger("uid").longValue());
+        document.put("uid", object.getUid());
+        document.put("studyUid", object.getStudyUid());
 
         long familyId = object.getFamily() != null ? (object.getFamily().getUid() == 0 ? -1L : object.getFamily().getUid()) : -1L;
         document.put("family", new Document("uid", familyId));
