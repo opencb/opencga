@@ -217,7 +217,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             isSingleId(studyStr);
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult queryResult = catalogManager.getFileManager().get(studyId, query, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().get(String.valueOf(studyId), query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -250,7 +250,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult queryResult = catalogManager.getSampleManager().get(studyId, query, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getSampleManager().get(String.valueOf(studyId), query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

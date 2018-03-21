@@ -42,7 +42,8 @@ public class JobWSServer extends OpenCGAWSServer {
 
     private JobManager jobManager;
 
-    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         jobManager = catalogManager.getJobManager();
     }
@@ -103,29 +104,32 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response createJobPOST(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
                                   @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                   @QueryParam("study") String studyStr,
-                                  @ApiParam(value = "job", required = true) InputJob job) {
+                                  @ApiParam(value = "job", required = true) InputJob inputJob) {
         try {
-            ObjectUtils.defaultIfNull(job, new InputJob());
+            ObjectUtils.defaultIfNull(inputJob, new InputJob());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            if (StringUtils.isNotEmpty(job.outDirId) && StringUtils.isEmpty(job.outDir)) {
-                job.outDir = job.outDirId;
+            if (StringUtils.isNotEmpty(inputJob.outDirId) && StringUtils.isEmpty(inputJob.outDir)) {
+                inputJob.outDir = inputJob.outDirId;
             }
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
             Job.JobStatus jobStatus;
-            if (Job.JobStatus.isValid(job.status.toString())) {
-                jobStatus = new Job.JobStatus(job.status.toString(), job.statusMessage);
+            if (Job.JobStatus.isValid(inputJob.status.toString())) {
+                jobStatus = new Job.JobStatus(inputJob.status.toString(), inputJob.statusMessage);
             } else {
                 jobStatus = new Job.JobStatus();
-                jobStatus.setMessage(job.statusMessage);
+                jobStatus.setMessage(inputJob.statusMessage);
             }
-            long outDir = catalogManager.getFileManager().getUid(job.outDir, Long.toString(studyId), sessionId).getResourceId();
-            QueryResult<Job> result = catalogManager.getJobManager().create(studyId, job.name, job.toolName, job.description, job
-                            .execution, job.params, job.commandLine, null, outDir, parseToListOfFiles(job.input), parseToListOfFiles(job.output),
-                    job.attributes, job.resourceManagerAttributes, jobStatus, job.startTime, job.endTime, queryOptions, sessionId);
+
+            Job job = new Job(-1, inputJob.name, inputJob.name, "", inputJob.toolName, null, "", inputJob.description, inputJob.startTime,
+                    inputJob.endTime, inputJob.execution, "", inputJob.commandLine, false, jobStatus, -1,
+                    new File().setUid(Long.parseLong(inputJob.outDir)), parseToListOfFiles(inputJob.input),
+                    parseToListOfFiles(inputJob.output), Collections.emptyList(), inputJob.params, -1, inputJob.attributes,
+                    inputJob.resourceManagerAttributes);
+
+            QueryResult<Job> result = catalogManager.getJobManager().create(studyStr, job, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -216,9 +220,12 @@ public class JobWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{jobId}/visit")
     @ApiOperation(value = "Increment job visits", position = 3)
-    public Response visit(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId) {
+    public Response visit(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobId) {
         try {
-            return createOkResponse(catalogManager.getJobManager().visit(jobId, sessionId));
+            return createOkResponse(catalogManager.getJobManager().visit(studyStr, jobId, sessionId));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }

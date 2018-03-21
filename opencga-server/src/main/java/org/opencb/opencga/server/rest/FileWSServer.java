@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -40,7 +39,6 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
-import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
@@ -60,7 +58,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
@@ -144,9 +141,6 @@ public class FileWSServer extends OpenCGAWSServer {
 
             List<String> idList = getIdList(fileStr);
             List<QueryResult<File>> fileQueryResult = fileManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
-            for (QueryResult<File> queryResult : fileQueryResult) {
-                populateOldDeprecatedSampleIdsField(queryResult);
-            }
             return createOkResponse(fileQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -422,15 +416,8 @@ public class FileWSServer extends OpenCGAWSServer {
                              @QueryParam("study") String studyStr) {
         try {
             isSingleId(fileIdStr);
-            DataInputStream stream;
-            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
-                    resource.getUser(), FileAclEntry.FilePermissions.DOWNLOAD);
-
-            QueryResult<File> queryResult = catalogManager.getFileManager().get(resource.getResourceId(), this.queryOptions, sessionId);
-            File file = queryResult.getResult().get(0);
-            stream = catalogManager.getFileManager().download(resource.getResourceId(), -1, -1, null, sessionId);
-            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
+            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, null, sessionId);
+            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileIdStr);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -446,12 +433,11 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit) {
         try {
             isSingleId(fileIdStr);
-            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
+            AbstractManager.MyResource resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
+            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudy().getUid(), resource.getResource().getUid(),
                     resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
 
-            DataInputStream stream = catalogManager.getFileManager().download(resource.getResourceId(), start, limit, null, sessionId);
-//             String content = org.apache.commons.io.IOUtils.toString(stream);
+            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, start, limit, null, sessionId);
             return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -471,13 +457,13 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Return multiple matches", required = false) @DefaultValue("true") @QueryParam("multi") Boolean multi) {
         try {
             isSingleId(fileIdStr);
-            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
+            AbstractManager.MyResource<File> resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
+            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudy().getUid(), resource.getResource().getUid(),
                     resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
 
             QueryOptions options = new QueryOptions("ignoreCase", ignoreCase);
             options.put("multi", multi);
-            DataInputStream stream = catalogManager.getFileManager().grep(resource.getResourceId(), pattern, options, sessionId);
+            DataInputStream stream = catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, options, sessionId);
             return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -498,17 +484,17 @@ public class FileWSServer extends OpenCGAWSServer {
         InputStream streamBody = null;
         try {
             isSingleId(fileStr);
-            AbstractManager.MyResourceId resource = fileManager.getUid(fileStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
+            AbstractManager.MyResource<File> resource = fileManager.getUid(fileStr, studyStr, sessionId);
+            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudy().getUid(), resource.getResource().getUid(),
                     resource.getUser(), FileAclEntry.FilePermissions.WRITE);
 
             /** Obtain file uri **/
-            File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).getResult().get(0);
+            File file = resource.getResource();
             URI fileUri = catalogManager.getFileManager().getUri(file);
             System.out.println("getUri: " + fileUri.getPath());
 
             /** Set header **/
-            stream = catalogManager.getFileManager().download(resource.getResourceId(), -1, -1, null, sessionId);
+            stream = catalogManager.getFileManager().download(studyStr, fileStr, -1, -1, null, sessionId);
             content = org.apache.commons.io.IOUtils.toString(stream);
             String lines[] = content.split(System.getProperty("line.separator"));
             StringBuilder body = new StringBuilder();
@@ -625,7 +611,7 @@ public class FileWSServer extends OpenCGAWSServer {
             } else {
                 result = fileManager.search(studyStr, query, queryOptions, sessionId);
             }
-            populateOldDeprecatedSampleIdsField(result);
+
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -649,7 +635,6 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             isSingleId(folder);
             QueryResult<File> result = catalogManager.getFileManager().getFilesFromFolder(folder, studyStr, queryOptions, sessionId);
-            populateOldDeprecatedSampleIdsField(result);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -843,14 +828,14 @@ public class FileWSServer extends OpenCGAWSServer {
         List<QueryResult> queryResults = new LinkedList<>();
         try {
             List<String> idList = getIdList(fileIdCsv);
-            AbstractManager.MyResourceIds resource = fileManager.getUids(idList, studyStr, sessionId);
+            AbstractManager.MyResources<File> resource = fileManager.getUids(idList, studyStr, sessionId);
 //            String[] splitFileId = fileIdCsv.split(",");
-            for (long fileId : resource.getResourceIds()) {
+            for (File file : resource.getResourceList()) {
                 QueryResult queryResult;
                 // Get all query options
                 QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
                 Query query = VariantStorageManager.getVariantQuery(queryOptions);
-                query.put(VariantQueryParam.FILE.key(), fileId);
+                query.put(VariantQueryParam.FILE.key(), file.getUid());
                 if (count) {
                     queryResult = variantManager.count(query, sessionId);
                 } else if (histogram) {
@@ -913,8 +898,6 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new ObjectMap());
 
-            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
-
             ObjectMap map = new ObjectMap(jsonObjectMapper.writeValueAsString(params));
             // TODO: jobId is deprecated. Remember to remove this if after next release
             if (map.get("jobId") != null) {
@@ -929,8 +912,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 params.remove("sampleIds");
             }
 
-            QueryResult<File> queryResult = fileManager.update(resource.getResourceId(), map, queryOptions, sessionId);
-            populateOldDeprecatedSampleIdsField(queryResult);
+            QueryResult<File> queryResult = fileManager.update(studyStr, fileIdStr, map, queryOptions, sessionId);
             queryResult.setId("Update file");
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -1024,8 +1006,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 throw new CatalogIOException("File " + uri + " does not exist");
             }
 
-            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
-            File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
+            AbstractManager.MyResource<File> resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
+            File file = resource.getResource();
 
             new FileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
             file = catalogManager.getFileManager().get(file.getUid(), queryOptions, sessionId).first();
@@ -1047,9 +1029,9 @@ public class FileWSServer extends OpenCGAWSServer {
                             @QueryParam("study") String studyStr) {
         try {
             isSingleId(fileIdStr);
-            AbstractManager.MyResourceId resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
+            AbstractManager.MyResource<File> resource = fileManager.getUid(fileIdStr, studyStr, sessionId);
 
-            File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
+            File file = resource.getResource();
 
             List<File> files;
             FileUtils catalogFileUtils = new FileUtils(catalogManager);
@@ -1063,8 +1045,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     files = Collections.singletonList(file);
                 }
             } else {
-                List<File> result = catalogManager.getFileManager().getFilesFromFolder(String.valueOf(file.getUid()),
-                        String.valueOf(resource.getStudyId()), null, sessionId).getResult();
+                List<File> result = catalogManager.getFileManager().getFilesFromFolder(fileIdStr, studyStr, null, sessionId).getResult();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
                     File file1 = fileMetadataReader.setMetadataInformation(f, null, new QueryOptions(queryOptions), sessionId, false);
@@ -1296,24 +1277,13 @@ public class FileWSServer extends OpenCGAWSServer {
                                  boolean calculateChecksum) {
         try {
             isSingleId(folderIdStr);
-            AbstractManager.MyResourceId resource = fileManager.getUid(folderIdStr, studyStr, sessionId);
+            AbstractManager.MyResource<File> resource = fileManager.getUid(folderIdStr, studyStr, sessionId);
 
-            File directory = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
             List<File> scan = new FileScanner(catalogManager)
-                    .scan(directory, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
+                    .scan(resource.getResource(), null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
             return createOkResponse(new QueryResult<>("Scan", 0, scan.size(), scan.size(), "", "", scan));
         } catch (Exception e) {
             return createErrorResponse(e);
-        }
-    }
-
-    @Deprecated
-    private void populateOldDeprecatedSampleIdsField(QueryResult<File> queryResult) {
-        for (File file : queryResult.getResult()) {
-            if (file.getSamples() != null && CollectionUtils.isNotEmpty(file.getSamples())) {
-                List<Long> sampleIds = file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
-                file.setSampleIds(sampleIds);
-            }
         }
     }
 

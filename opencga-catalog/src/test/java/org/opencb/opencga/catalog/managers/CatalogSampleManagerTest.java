@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
@@ -88,8 +89,9 @@ public class CatalogSampleManagerTest extends GenericTest {
         Project project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first();
 
-        studyId = catalogManager.getStudyManager().create(String.valueOf(project1), "phase1", "Phase 1", Study.Type.TRIO, null, "Done",
-                null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
+        Study study = catalogManager.getStudyManager().create(String.valueOf(project1), "phase1", "Phase 1", Study.Type.TRIO, null, "Done",
+                null, null, null, null, null, null, null, null, sessionIdUser).first();
+        studyId = study.getUid();
         studyId2 = catalogManager.getStudyManager().create(String.valueOf(project1), "phase3", "Phase 3", Study.Type.CASE_CONTROL, null,
                 "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
         catalogManager.getStudyManager().create(String.valueOf(project2), "s1", "Study 1", Study.Type.CONTROL_SET, null, "", null, null,
@@ -145,7 +147,7 @@ public class CatalogSampleManagerTest extends GenericTest {
         attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
         catalogManager.getFileManager().update(test01k.getUid(), new ObjectMap("attributes", attributes), new QueryOptions(), sessionIdUser);
 
-        Set<Variable> variables = new HashSet<>();
+        List<Variable> variables = new ArrayList<>();
         variables.addAll(Arrays.asList(
                 new Variable("NAME", "", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
                         Collections.<String, Object>emptyMap()),
@@ -160,7 +162,8 @@ public class CatalogSampleManagerTest extends GenericTest {
                 new Variable("EXTRA", "", "", Variable.VariableType.TEXT, "", false, false, Collections.emptyList(), 5, "", "", null,
                         Collections.<String, Object>emptyMap())
         ));
-        VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyId, "vs", true, false, "", null, variables, sessionIdUser)
+        VariableSet vs = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs", true, false, "", null, variables,
+                sessionIdUser)
                 .first();
 
         Sample sample = new Sample().setId("s_1");
@@ -342,14 +345,15 @@ public class CatalogSampleManagerTest extends GenericTest {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionIdUser).first();
 
-        Set<Variable> variables = new HashSet<>();
+        List<Variable> variables = new ArrayList<>();
         variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "",
                 null, Collections.<String, Object>emptyMap()));
         variables.add(new Variable("AGE", "", Variable.VariableType.INTEGER, "", false, false, Collections.<String>emptyList(), 0, "", "",
                 null, Collections.<String, Object>emptyMap()));
         variables.add(new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "", false, false, Collections.<String>emptyList(), 0, "",
                 "", null, Collections.<String, Object>emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getUid(), "vs1", false, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", false, false, "", null, variables,
+                sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "Joe");
@@ -394,14 +398,14 @@ public class CatalogSampleManagerTest extends GenericTest {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionIdUser).first();
 
-        Set<Variable> variables = new HashSet<>();
+        List<Variable> variables = new ArrayList<>();
         variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
                 "", null, Collections.emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getUid(), "vs1", false, false, "", null, variables,
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", false, false, "", null, variables,
                 sessionIdUser).first();
 
         ObjectMap annotations = new ObjectMap()
@@ -485,7 +489,8 @@ public class CatalogSampleManagerTest extends GenericTest {
         Set<Variable> variables = new HashSet<>();
         variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "",
                 null, Collections.<String, Object>emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getUid(), "vs1", false, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", false, false, "", null, variables,
+                sessionIdUser).first();
 
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -513,7 +518,8 @@ public class CatalogSampleManagerTest extends GenericTest {
         Set<Variable> variables = new HashSet<>();
         variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "",
                 null, Collections.<String, Object>emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getUid(), "vs1", true, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", true, false, "", null, variables,
+                sessionIdUser).first();
 
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -539,7 +545,8 @@ public class CatalogSampleManagerTest extends GenericTest {
         Set<Variable> variables = new HashSet<>();
         variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "",
                 null, Collections.<String, Object>emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getUid(), "vs1", true, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", true, false, "", null, variables,
+                sessionIdUser).first();
 
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -566,7 +573,8 @@ public class CatalogSampleManagerTest extends GenericTest {
         Set<Variable> variables = new HashSet<>();
         variables.add(new Variable("NUM", "", Variable.VariableType.DOUBLE, "", true, false, null, 0, "", "", null, Collections.<String,
                 Object>emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getUid(), "vs1", false, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", false, false, "", null, variables,
+                sessionIdUser).first();
 
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -595,7 +603,8 @@ public class CatalogSampleManagerTest extends GenericTest {
         Set<Variable> variables = new HashSet<>();
         variables.add(new Variable("RANGE_NUM", "", Variable.VariableType.DOUBLE, "", true, false, Arrays.asList("1:14", "16:22", "50:")
                 , 0, "", "", null, Collections.<String, Object>emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getUid(), "vs1", false, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", false, false, "", null, variables,
+                sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("RANGE_NUM", "1");  // 1:14
@@ -629,7 +638,8 @@ public class CatalogSampleManagerTest extends GenericTest {
         Set<Variable> variables = new HashSet<>();
         variables.add(new Variable("COOL_NAME", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("LUKE", "LEIA",
                 "VADER", "YODA"), 0, "", "", null, Collections.<String, Object>emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getUid(), "vs1", false, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", false, false, "", null, variables,
+                sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("COOL_NAME", "LUKE");
@@ -664,7 +674,7 @@ public class CatalogSampleManagerTest extends GenericTest {
         long sampleId2 = catalogManager.getSampleManager().create(Long.toString(study.getUid()), new Sample().setId("SAMPLE_2"),
                 new QueryOptions(), sessionIdUser).first().getUid();
 
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getUid(), "vs1", false, false, "", null,
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", false, false, "", null,
                 Collections.singleton(CatalogAnnotationsValidatorTest.nestedObject), sessionIdUser).first();
 
         QueryResult<AnnotationSet> annotationSetQueryResult;
@@ -689,60 +699,60 @@ public class CatalogSampleManagerTest extends GenericTest {
 
         List<Sample> samples;
         Query query = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=li");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=lo");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=LL");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=lo,li,LL");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.object.string=my value");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=lo,lu,LL;" + vs1.getUid()
                         + ":nestedObject.object.string=my value");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=lo,lu,LL;" + vs1.getUid()
                 + ":nestedObject.object.numberList=7");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=lo,lu,LL;"
                 + vs1.getUid() + ":nestedObject.object.numberList=3");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=lo,lu,LL;" + vs1.getUid()
                 + ":nestedObject.object.numberList=5;" + vs1.getUid() + ":nestedObject.object.string=stringValue");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=lo,lu,LL;" + vs1.getUid()
                 + ":nestedObject.object.numberList=2,5");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":nestedObject.stringList=lo,lu,LL;" + vs1.getUid()
                 + ":nestedObject.object.numberList=0");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
 
         query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), vs1.getUid() + ":unexisting=lo,lu,LL");
         thrown.expect(CatalogException.class);
         thrown.expectMessage("does not exist");
-        catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
     }
 
 //    @Test
@@ -821,36 +831,36 @@ public class CatalogSampleManagerTest extends GenericTest {
         List<Sample> samples;
         Query query = new Query();
 
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(9, samples.size());
 
         query = new Query(ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSet.getUid());
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(8, samples.size());
 
         query = new Query(ANNOTATION.key(), Constants.ANNOTATION_SET_NAME + "=annot2");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
         query = new Query(ANNOTATION.key(), Constants.ANNOTATION_SET_NAME + "=noExist");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
         query = new Query(ANNOTATION.key(), variableSet.getUid() + ":NAME=s_1,s_2,s_3");
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
         query = new Query(ANNOTATION.key(), variableSet.getUid() + ":AGE>30;" + Constants.VARIABLE_SET + "=" + variableSet.getUid());
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
         query = new Query(ANNOTATION.key(), variableSet.getUid() + ":AGE>30;" + Constants.VARIABLE_SET + "=" + variableSet.getUid());
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
         query = new Query(ANNOTATION.key(), variableSet.getUid() + ":AGE>30;" + variableSet.getUid() + ":ALIVE=true;"
                 + Constants.VARIABLE_SET + "=" + variableSet.getUid());
-        samples = catalogManager.getSampleManager().get(studyId, query, null, sessionIdUser).getResult();
+        samples = catalogManager.getSampleManager().get(String.valueOf(studyId), query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
     }
 
@@ -1186,17 +1196,19 @@ public class CatalogSampleManagerTest extends GenericTest {
     @Test
     public void testDeleteSample() throws CatalogException, IOException {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
-        long sampleId = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first().getUid();
+        long sampleId = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null,
+                new HashMap<>(), null, new QueryOptions(), sessionIdUser).first().getUid();
 
-        List<QueryResult<Sample>> queryResult = catalogManager.getSampleManager()
-                .delete(Long.toString(studyId), Long.toString(sampleId), new QueryOptions(), sessionIdUser);
-        assertEquals(sampleId, queryResult.get(0).first().getUid());
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "SAMPLE_1");
+        WriteResult delete = catalogManager.getSampleManager().delete("1000G:phase1", query, null, sessionIdUser);
+        assertEquals(1, delete.getNumModified());
 
-        Query query = new Query()
+        query = new Query()
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
                 .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
 
-        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyId, query, new QueryOptions(), sessionIdUser);
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get("1000G:phase1", query, new QueryOptions(),
+                sessionIdUser);
 //        QueryResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
         assertEquals(1, sampleQueryResult.getNumResults());
         assertTrue(sampleQueryResult.first().getId().contains(".DELETED"));

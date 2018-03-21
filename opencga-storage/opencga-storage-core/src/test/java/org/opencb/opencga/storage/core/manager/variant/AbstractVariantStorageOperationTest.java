@@ -26,13 +26,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.core.config.Policies;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.core.config.Policies;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -148,12 +148,12 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         projectAlias = "p1";
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getUid();
-        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
-                "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)),
+        Study study = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null,
+                "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)),
                 null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()), null, sessionId)
-                .first()
-                .getUid();
-        studyStr = String.valueOf(studyId);
+                .first();
+        studyId = study.getUid();
+        studyStr = study.getFqn();
         outputId = catalogManager.getFileManager().createFolder(studyStr, Paths.get("data", "index").toString(), null,  true, null,
                 QueryOptions.empty(), sessionId).first().getUid();
         outputStr = String.valueOf(outputId);
@@ -211,8 +211,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected Cohort getDefaultCohort(long studyId) throws CatalogException {
-        return catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new
-                QueryOptions(), sessionId).first();
+        return catalogManager.getCohortManager().get(String.valueOf(studyId), new Query(CohortDBAdaptor.QueryParams.ID.key(),
+                DEFAULT_COHORT), new QueryOptions(), sessionId).first();
     }
 
 
@@ -231,7 +231,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         queryOptions.append(StorageOperation.CATALOG_PATH, path);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
-        long studyId = catalogManager.getFileManager().getStudyId(inputFile.getUid());
+        Study study = catalogManager.getFileManager().getStudy(inputFile, sessionId);
+        long studyId = study.getUid();
 
         //Default cohort should not be modified
         Cohort defaultCohort = getDefaultCohort(studyId);
@@ -248,7 +249,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), path)
                 .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants.(json|avro)");
 
-        File transformedFile = catalogManager.getFileManager().get(studyId, searchQuery, new QueryOptions(), sessionId).first();
+        File transformedFile = catalogManager.getFileManager().get(String.valueOf(studyId), searchQuery, new QueryOptions(), sessionId).first();
 
         List<File.RelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
                 .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
@@ -275,7 +276,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
-        Long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getUid());
+        Long studyId = catalogManager.getFileManager().getStudy(files.get(0), sessionId).getUid();
 
         List<String> fileIds = files.stream().map(File::getUid).map(Object::toString).collect(Collectors.toList());
         String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
@@ -311,7 +312,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
-        Long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getUid());
+        Long studyId = catalogManager.getFileManager().getStudy(files.get(0), sessionId).getUid();
 
         String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
         List<String> fileIds = files.stream().map(File::getUid).map(Object::toString).collect(Collectors.toList());
@@ -352,8 +353,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
     protected void checkEtlResults(long studyId, List<StoragePipelineResult> etlResults, String expectedStatus) throws CatalogException {
         for (StoragePipelineResult etlResult : etlResults) {
-            File input = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.URI.key(), etlResult.getInput()
-            ), null, sessionId).first();
+            File input = catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.URI.key(),
+                    etlResult.getInput()), null, sessionId).first();
             long indexedFileId;
             if (input.getRelatedFiles().isEmpty()) {
                 indexedFileId = input.getUid();

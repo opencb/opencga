@@ -173,7 +173,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                     query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                             Arrays.asList(File.Format.VCF, File.Format.GVCF));
-                    QueryResult<File> fileQueryResult = fileManager.get(studyIdByInputFileId, query, FILE_GET_QUERY_OPTIONS, sessionId);
+                    QueryResult<File> fileQueryResult = fileManager.get(String.valueOf(studyIdByInputFileId), query,
+                            FILE_GET_QUERY_OPTIONS, sessionId);
 //                    fileQueryResult.getResult().sort(Comparator.comparing(File::getName));
                     inputFiles.addAll(fileQueryResult.getResult());
                 } else {
@@ -327,28 +328,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             throw exception;
         }
         return storagePipelineResults;
-    }
-
-    private long getStudyId(List<Long> fileIds) throws CatalogException {
-        long studyIdByInputFileId = -1;
-        for (Long fileIdLong : fileIds) {
-            long studyId = fileManager.getStudyId(fileIdLong);
-            if (studyId == -1) {
-                // Skip the file. Something strange occurred.
-                logger.error("Could not obtain study of the file {}", fileIdLong);
-                throw new CatalogException("Could not obtain the study of the file " + fileIdLong + ". Is it a correct file id?.");
-//                continue;
-            }
-
-            // Check that the study of all the files is the same
-            if (studyIdByInputFileId == -1) {
-                // First iteration
-                studyIdByInputFileId = studyId;
-            } else if (studyId != studyIdByInputFileId) {
-                throw new CatalogException("Cannot index files coming from different studies.");
-            }
-        }
-        return studyIdByInputFileId;
     }
 
     @Override
@@ -514,7 +493,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
             if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-                QueryResult<Cohort> queryResult = catalogManager.getCohortManager().get(study.getUid(), query, new QueryOptions(),
+                QueryResult<Cohort> queryResult = catalogManager.getCohortManager().get(study.getFqn(), query, new QueryOptions(),
                         sessionId);
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
@@ -596,12 +575,13 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         } else {
             Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(),
                     file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
-            sampleList = catalogManager.getSampleManager().get(study.getUid(), query, new QueryOptions(), sessionId).getResult();
+            sampleList = catalogManager.getSampleManager().get(String.valueOf(study.getUid()), query, new QueryOptions(), sessionId)
+                    .getResult();
         }
 
         Cohort defaultCohort;
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-        QueryResult<Cohort> cohorts = catalogManager.getCohortManager().get(study.getUid(), query, new QueryOptions(), sessionId);
+        QueryResult<Cohort> cohorts = catalogManager.getCohortManager().get(study.getFqn(), query, new QueryOptions(), sessionId);
 
         if (cohorts.getResult().isEmpty()) {
             defaultCohort = createDefaultCohort(study, sessionId);
@@ -628,7 +608,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     private Cohort createDefaultCohortIfNeeded(Study study, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-        Cohort cohort = catalogManager.getCohortManager().get(study.getUid(), query, null, sessionId).first();
+        Cohort cohort = catalogManager.getCohortManager().get(study.getFqn(), query, null, sessionId).first();
         if (cohort == null) {
             return createDefaultCohort(study, sessionId);
         } else {
@@ -651,7 +631,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     private String updateDefaultCohortStatus(Study study, String status, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-        Cohort defaultCohort = catalogManager.getCohortManager().get(study.getUid(), query, new QueryOptions(), sessionId).first();
+        Cohort defaultCohort = catalogManager.getCohortManager().get(study.getFqn(), query, new QueryOptions(), sessionId).first();
         String prevStatus = defaultCohort.getStatus().getName();
 
         catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getUid()), status, null,

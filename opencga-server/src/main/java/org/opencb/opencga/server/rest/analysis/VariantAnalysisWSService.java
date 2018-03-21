@@ -509,7 +509,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 sampleNames = samplesInAnyVariants.keySet();
             }
             Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), String.join(",", sampleNames));
-            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyId, sampleQuery, queryOptions, sessionId);
+            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(String.valueOf(studyId), sampleQuery, queryOptions,
+                    sessionId);
             return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -82,8 +82,8 @@ public class JobFactoryTest {
         for (File fileAux : job.getOutput()) {
             File file = catalogManager.getFileManager().get(fileAux.getUid(), null, sessionId).first();
             if (file.getName().contains("out")) {
-                String contentFile = new BufferedReader(new InputStreamReader(catalogManager.getFileManager().download(fileAux.getUid(),
-                        -1, -1, null, sessionId))).readLine();
+                String contentFile = new BufferedReader(new InputStreamReader(catalogManager.getFileManager().download(Long.toString(studyId),
+                        fileAux.getPath(), -1, -1, null, sessionId))).readLine();
                 assertEquals(helloWorld, contentFile);
             }
         }

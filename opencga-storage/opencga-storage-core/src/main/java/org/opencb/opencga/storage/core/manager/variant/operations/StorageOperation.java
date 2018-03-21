@@ -99,7 +99,7 @@ public abstract class StorageOperation {
         Long catalogOutDirId;
         if (isCatalogPathDefined(options)) {
             String catalogOutDirIdStr = options.getString(CATALOG_PATH);
-            catalogOutDirId = catalogManager.getFileManager().getUid(catalogOutDirIdStr, studyStr, sessionId).getResourceId();
+            catalogOutDirId = catalogManager.getFileManager().getUid(catalogOutDirIdStr, studyStr, sessionId).getResource().getUid();
             if (catalogOutDirId <= 0) {
                 throw new CatalogException("Output directory " + catalogOutDirIdStr + " could not be found within catalog.");
             }

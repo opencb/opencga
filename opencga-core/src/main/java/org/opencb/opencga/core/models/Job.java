@@ -54,6 +54,7 @@ public class Job extends PrivateStudyUid {
         ERROR_DESCRIPTIONS = Collections.unmodifiableMap(map);
     }
 
+    private String id;
     private String name;
 
     /**
@@ -105,28 +106,31 @@ public class Job extends PrivateStudyUid {
 
     public Job(String name, String toolId, String execution, Type type, String description, Map<String, String> params,
                Map<String, Object> attributes) {
-        this(-1, name, "", toolId, type, TimeUtils.getTime(), description, -1, -1, execution, "", "", false, new JobStatus(), -1, null,
-                null, null, null, params, -1, attributes, null);
+        this(-1, name, name, "", toolId, type, TimeUtils.getTime(), description, -1, -1, execution, "", "", false, new JobStatus(), -1,
+                null, null, null, null, params, -1, attributes, null);
     }
 
     public Job(String name, String userId, String executable, Type type, List<File> input, List<File> output, File outDir,
                Map<String, String> params, int release) {
-        this(-1, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", executable, "", false, new JobStatus(JobStatus.PREPARED),
-                -1, outDir, input, output, null, params, release, null, null);
+        this(-1, name, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", executable, "", false,
+                new JobStatus(JobStatus.PREPARED), -1, outDir, input, output, null, params, release, null, null);
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, File outDir, List<File> input,
                int release) {
         // FIXME: Modify this to take into account both toolName and executable for RC2
-        this(-1, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, null,
-                null, commandLine, false, new JobStatus(JobStatus.PREPARED), 0, outDir, input, null, null, null, release, null, null);
+        this(-1, name, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, null, null,
+                commandLine, false, new JobStatus(JobStatus.PREPARED), 0, outDir, input, null, null, null, release, null, null);
+
+
     }
 
-    public Job(long uid, String name, String userId, String toolId, Type type, String creationDate, String description, long startTime,
-               long endTime, String execution, String executable, String commandLine, boolean visited, JobStatus status, long size,
-               File outDir, List<File> input, List<File> output, List<String> tags, Map<String, String> params, int release,
+    public Job(long uid, String id, String name, String userId, String toolId, Type type, String creationDate, String description,
+               long startTime, long endTime, String execution, String executable, String commandLine, boolean visited, JobStatus status,
+               long size, File outDir, List<File> input, List<File> output, List<String> tags, Map<String, String> params, int release,
                Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
         super(uid);
+        this.id = id;
         this.name = name;
         this.userId = userId;
         this.toolId = toolId;
@@ -219,6 +223,7 @@ public class Job extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Job{");
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", toolId='").append(toolId).append('\'');
@@ -255,6 +260,15 @@ public class Job extends PrivateStudyUid {
     @Override
     public Job setStudyUid(long studyUid) {
         super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public Job setId(String id) {
+        this.id = id;
         return this;
     }
 

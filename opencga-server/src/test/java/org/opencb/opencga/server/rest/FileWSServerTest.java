@@ -22,10 +22,7 @@ import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
@@ -170,8 +167,8 @@ public class FileWSServerTest {
 
     @Test
     public void updateFilePOST() throws Exception {
-        File file = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
-                new QueryOptions(), sessionId).first();
+        File file = OpenCGAWSServer.catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.TYPE
+                .key(), "FILE"), new QueryOptions(), sessionId).first();
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.DESCRIPTION.key(), "Change description");
         String json = webTarget.path("files").path(Long.toString(file.getUid())).path("update")

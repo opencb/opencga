@@ -70,8 +70,8 @@ public class AnalysisDemo {
 
         long inputFileId = file.getUid();
 
-        QueryResult<File> outdirResult = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(),
-                "data/jobs/"), null, sessionId);
+        QueryResult<File> outdirResult = catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams
+                .PATH.key(), "data/jobs/"), null, sessionId);
         long outDirId;
         if (outdirResult.getResult().isEmpty()) {
             outDirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data/jobs/").toString(), null,

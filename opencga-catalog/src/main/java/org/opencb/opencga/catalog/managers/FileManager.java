@@ -148,79 +148,30 @@ public class FileManager extends ResourceManager<File> {
                 : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, filePath);
     }
 
-    @Override
-    public Long getStudyId(long fileId) throws CatalogException {
-        return fileDBAdaptor.getStudyIdByFileId(fileId);
-    }
+    public Study getStudy(File file, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(file, "file");
+        ParamUtils.checkObj(sessionId, "session id");
 
-    @Override
-    public MyResourceId getUid(String fileStr, @Nullable String studyStr, String sessionId) throws CatalogException {
-        if (StringUtils.isEmpty(fileStr)) {
-            throw new CatalogException("Missing file parameter");
+        if (file.getStudyUid() <= 0) {
+            throw new CatalogException("Missing study uid field in file");
         }
 
-        String userId;
-        long studyId;
-        long fileId;
+        String user = catalogManager.getUserManager().getUserId(sessionId);
 
-        if (StringUtils.isNumeric(fileStr) && Long.parseLong(fileStr) > configuration.getCatalog().getOffset()) {
-            fileId = Long.parseLong(fileStr);
-            fileDBAdaptor.exists(fileId);
-            studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-            userId = userManager.getUserId(sessionId);
+        Query query = new Query(StudyDBAdaptor.QueryParams.UID.key(), file.getStudyUid());
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, QueryOptions.empty(), user);
+        if (studyQueryResult.getNumResults() == 1) {
+            return studyQueryResult.first();
         } else {
-            if (fileStr.contains(",")) {
-                throw new CatalogException("More than one file found");
-            }
-
-            userId = userManager.getUserId(sessionId);
-            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            fileId = smartResolutor(fileStr, studyId);
+            authorizationManager.checkCanViewStudy(file.getStudyUid(), user);
+            throw new CatalogException("Incorrect study uid");
         }
-
-        return new MyResourceId(userId, studyId, fileId);
-    }
-
-    @Override
-    public MyResourceIds getUids(List<String> fileList, @Nullable String studyStr, boolean silent, String sessionId)
-            throws CatalogException {
-        if (fileList == null || fileList.isEmpty()) {
-            throw new CatalogException("Missing file parameter");
-        }
-
-        String userId;
-        long studyId;
-        List<Long> fileIds = new ArrayList<>();
-
-        if (fileList.size() == 1 && StringUtils.isNumeric(fileList.get(0))
-                && Long.parseLong(fileList.get(0)) > configuration.getCatalog().getOffset()) {
-            fileIds.add(Long.parseLong(fileList.get(0)));
-            fileDBAdaptor.exists(fileIds.get(0));
-            studyId = fileDBAdaptor.getStudyIdByFileId(fileIds.get(0));
-            userId = userManager.getUserId(sessionId);
-        } else {
-            userId = userManager.getUserId(sessionId);
-            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-
-            for (String fileStrAux : fileList) {
-                try {
-                    fileIds.add(smartResolutor(fileStrAux, studyId));
-                } catch (CatalogException e) {
-                    if (silent) {
-                        fileIds.add(-1L);
-                    } else {
-                        throw e;
-                    }
-                }
-            }
-        }
-        return new MyResourceIds(userId, studyId, fileIds);
     }
 
     public void matchUpVariantFiles(List<File> transformedFiles, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         for (File transformedFile : transformedFiles) {
-            Long studyId = getStudyId(transformedFile.getUid());
+            Long studyId = transformedFile.getStudyUid();
             authorizationManager.checkFilePermission(studyId, transformedFile.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
             String variantPathName = getOriginalFile(transformedFile.getPath());
             if (variantPathName == null) {
@@ -342,11 +293,12 @@ public class FileManager extends ResourceManager<File> {
     }
 
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        MyResourceId resource = getUid(id, null, sessionId);
-        String userId = resource.getUser();
-        long fileId = resource.getResourceId();
+        MyResource<File> resource = getUid(id, null, sessionId);
 
-        authorizationManager.checkFilePermission(resource.getStudyId(), fileId, userId, FileAclEntry.FilePermissions.WRITE);
+        String userId = resource.getUser();
+        long fileId = resource.getResource().getUid();
+
+        authorizationManager.checkFilePermission(resource.getStudy().getUid(), fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         if (status != null && !File.FileStatus.isValid(status)) {
             throw new CatalogException("The status " + status + " is not valid file status.");
@@ -368,7 +320,7 @@ public class FileManager extends ResourceManager<File> {
     public QueryResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, Integer release, String sessionId)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Long studyId = getStudyId(file.getUid());
+        Long studyId = file.getStudyUid();
         authorizationManager.checkFilePermission(studyId, file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
         FileIndex index = file.getIndex();
@@ -394,8 +346,9 @@ public class FileManager extends ResourceManager<File> {
     }
 
     public QueryResult<File> getParents(long fileId, QueryOptions options, String sessionId) throws CatalogException {
-        return getParents(true, options, get(fileId, new QueryOptions("include", "projects.studies.files.path"), sessionId).first()
-                .getPath(), getStudyId(fileId));
+        QueryResult<File> fileQueryResult = get(fileId, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.STUDY_UID.key())), sessionId);
+        return getParents(true, options, fileQueryResult.first().getPath(), fileQueryResult.first().getStudyUid());
     }
 
     public QueryResult<File> getParent(long fileId, QueryOptions options, String sessionId) throws CatalogException {
@@ -698,15 +651,15 @@ public class FileManager extends ResourceManager<File> {
             }
         }
 
-        MyResourceId resource = getUid(fileIdStr, studyStr, sessionId);
+        MyResource<File> resource = getUid(fileIdStr, studyStr, sessionId);
 
-        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudyId());
+        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid());
 
         // Check if we can obtain the file from the dbAdaptor properly.
         QueryOptions qOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.NAME.key(),
                         FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(resource.getResourceId(), qOptions);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(resource.getResource().getUid(), qOptions);
         if (fileQueryResult == null || fileQueryResult.getNumResults() != 1) {
             throw new CatalogException("An error occurred with the database.");
         }
@@ -717,7 +670,8 @@ public class FileManager extends ResourceManager<File> {
         }
 
         // Call recursive method
-        FileTree fileTree = getTree(fileQueryResult.first(), query, queryOptions, maxDepth, resource.getStudyId(), resource.getUser());
+        FileTree fileTree = getTree(fileQueryResult.first(), query, queryOptions, maxDepth, resource.getStudy().getUid(),
+                resource.getUser());
 
         int dbTime = (int) (System.currentTimeMillis() - startTime);
         int numResults = countFilesInTree(fileTree);
@@ -728,33 +682,15 @@ public class FileManager extends ResourceManager<File> {
     public QueryResult<File> getFilesFromFolder(String folderStr, String studyStr, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(folderStr, "folder");
-        MyResourceId resource = getUid(folderStr, studyStr, sessionId);
+        MyResource<File> resource = getUid(folderStr, studyStr, sessionId);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        File folder = get(resource.getResourceId(), null, sessionId).first();
-        if (!folder.getType().equals(File.Type.DIRECTORY)) {
-            throw new CatalogDBException("File {id:" + resource.getResourceId() + ", path:'" + folder.getPath() + "'} is not a folder.");
+
+        if (!resource.getResource().getType().equals(File.Type.DIRECTORY)) {
+            throw new CatalogDBException("File {path:'" + resource.getResource().getPath() + "'} is not a folder.");
         }
-        Query query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());
-        return get(resource.getStudyId(), query, options, sessionId);
-    }
-
-    public QueryResult<File> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        String userId = userManager.getUserId(sessionId);
-
-        if (studyId <= 0) {
-            throw new CatalogDBException("Permission denied. Only the files of one study can be seen at a time.");
-        } else {
-            query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        }
-
-        fixQueryObject(studyId, query, sessionId);
-
-        QueryResult<File> queryResult = fileDBAdaptor.get(query, options, userId);
-
-        return queryResult;
+        Query query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), resource.getResource().getPath());
+        return get(studyStr, query, options, sessionId);
     }
 
     @Override
@@ -762,15 +698,10 @@ public class FileManager extends ResourceManager<File> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = userManager.getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
 
-        if (studyId <= 0) {
-            throw new CatalogDBException("Permission denied. Only the files of one study can be seen at a time.");
-        } else {
-            query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        }
-
-        fixQueryObject(studyId, query, sessionId);
+        fixQueryObject(study, query, sessionId);
+        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return fileDBAdaptor.iterator(query, options, userId);
     }
@@ -778,22 +709,23 @@ public class FileManager extends ResourceManager<File> {
     @Override
     public QueryResult<File> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        fixQueryObject(studyId, query, sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
 
+        fixQueryObject(study, query, sessionId);
+        query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         QueryResult<File> queryResult = fileDBAdaptor.get(query, options, userId);
 
         return queryResult;
     }
 
-    void fixQueryObject(long studyId, Query query, String sessionId) throws CatalogException {
+    void fixQueryObject(Study study, Query query, String sessionId) throws CatalogException {
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
-            MyResourceIds resourceIds = catalogManager.getSampleManager().getUids(
-                    query.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
-            query.put(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), resourceIds.getResourceIds());
+            MyResources<Sample> resource = catalogManager.getSampleManager().getUids(
+                    query.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key()), study.getFqn(), sessionId);
+            query.put(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), resource.getResourceList().stream().map(Sample::getUid)
+                    .collect(Collectors.toList()));
             query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
         }
     }
@@ -801,12 +733,12 @@ public class FileManager extends ResourceManager<File> {
     @Override
     public QueryResult<File> count(String studyStr, Query query, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
 
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        fixQueryObject(studyId, query, sessionId);
+        fixQueryObject(study, query, sessionId);
 
-        query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+        query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryResult<Long> queryResultAux = fileDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
@@ -820,7 +752,7 @@ public class FileManager extends ResourceManager<File> {
         WriteResult writeResult = new WriteResult("delete", -1, 0, 0, null, null, null);
 
         String userId;
-        long studyId;
+        Study study;
 
         StopWatch watch = StopWatch.createStarted();
 
@@ -834,13 +766,13 @@ public class FileManager extends ResourceManager<File> {
 
         try {
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
 
-            fixQueryObject(studyId, query, sessionId);
-            finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            fixQueryObject(study, query, sessionId);
+            finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(studyId, userId);
+            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
 
             fileIterator = fileDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
 
@@ -867,15 +799,14 @@ public class FileManager extends ResourceManager<File> {
 
             try {
                 if (checkPermissions) {
-                    authorizationManager.checkFilePermission(studyId, file.getUid(), userId, FileAclEntry.FilePermissions.DELETE);
+                    authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.DELETE);
                 }
 
                 // Check if the file can be deleted
-                List<File> fileList = checkCanDeleteFile(String.valueOf(studyId), file, physicalDelete, userId);
+                List<File> fileList = checkCanDeleteFile(studyStr, file, physicalDelete, userId);
 
                 // Remove job references
-                MyResourceIds resourceIds = new MyResourceIds(userId, studyId,
-                        fileList.stream().map(File::getUid).collect(Collectors.toList()));
+                MyResources<File> resourceIds = new MyResources<>(userId, study, fileList);
                 try {
                     removeJobReferences(resourceIds);
                 } catch (CatalogException e) {
@@ -886,7 +817,7 @@ public class FileManager extends ResourceManager<File> {
 
                 // Remove the index references in case it is a transformed file or folder
                 try {
-                    updateIndexStatusAfterDeletionOfTransformedFile(studyId, file);
+                    updateIndexStatusAfterDeletionOfTransformedFile(study.getUid(), file);
                 } catch (CatalogException e) {
                     logger.error("Could not remove relation references: {}", e.getMessage(), e);
                     throw new CatalogException("Could not remove relation references: " + e.getMessage(), e);
@@ -894,20 +825,20 @@ public class FileManager extends ResourceManager<File> {
 
                 if (file.isExternal()) {
                     // unlink
-                    WriteResult result = unlink(studyId, file);
+                    WriteResult result = unlink(study.getUid(), file);
                     writeResult.setNumModified(writeResult.getNumModified() + result.getNumModified());
                     writeResult.setNumMatches(writeResult.getNumMatches() + result.getNumMatches());
                 } else {
                     // local
                     if (physicalDelete) {
                         // physicalDelete
-                        WriteResult result = physicalDelete(studyId, file, params.getBoolean(FORCE_DELETE, false));
+                        WriteResult result = physicalDelete(study.getUid(), file, params.getBoolean(FORCE_DELETE, false));
                         writeResult.setNumModified(writeResult.getNumModified() + result.getNumModified());
                         writeResult.setNumMatches(writeResult.getNumMatches() + result.getNumMatches());
                         failedList.addAll(result.getFailed());
                     } else {
                         // sendToTrash
-                        WriteResult result = sendToTrash(studyId, file);
+                        WriteResult result = sendToTrash(study.getUid(), file);
                         writeResult.setNumModified(writeResult.getNumModified() + result.getNumModified());
                         writeResult.setNumMatches(writeResult.getNumMatches() + result.getNumMatches());
                     }
@@ -943,25 +874,26 @@ public class FileManager extends ResourceManager<File> {
     public QueryResult<File> unlink(@Nullable String studyStr, String fileIdStr, String sessionId) throws CatalogException, IOException {
         ParamUtils.checkParameter(fileIdStr, "File");
 
-        AbstractManager.MyResourceId resource = catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId);
+        MyResource<File> resource = catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId);
         String userId = resource.getUser();
-        long fileId = resource.getResourceId();
-        long studyId = resource.getStudyId();
+        long fileId = resource.getResource().getUid();
+        long studyUid = resource.getStudy().getUid();
 
         // Check 2. User has the proper permissions to delete the file.
-        authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.DELETE);
+        authorizationManager.checkFilePermission(studyUid, fileId, userId, FileAclEntry.FilePermissions.DELETE);
 
-        // Check if we can obtain the file from the dbAdaptor properly.
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_TRASHED_FILES);
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
-        if (fileQueryResult == null || fileQueryResult.getNumResults() != 1) {
-            throw new CatalogException("Cannot unlink file '" + fileIdStr + "'. The file was already deleted or unlinked.");
-        }
-
-        File file = fileQueryResult.first();
+//        // Check if we can obtain the file from the dbAdaptor properly.
+//        Query query = new Query()
+//                .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
+//                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+//                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_TRASHED_FILES);
+//        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
+//        if (fileQueryResult == null || fileQueryResult.getNumResults() != 1) {
+//            throw new CatalogException("Cannot unlink file '" + fileIdStr + "'. The file was already deleted or unlinked.");
+//        }
+//
+//        File file = fileQueryResult.first();
+        File file = resource.getResource();
 
         // Check 3.
         if (!file.isExternal()) {
@@ -969,13 +901,12 @@ public class FileManager extends ResourceManager<File> {
         }
 
         // Check if the file can be deleted
-        List<File> fileList = checkCanDeleteFile(String.valueOf(studyId), file, false, userId);
+        List<File> fileList = checkCanDeleteFile(studyStr, file, false, userId);
 
         // Remove job references
-        MyResourceIds resourceIds = new MyResourceIds(userId, studyId,
-                fileList.stream().map(File::getUid).collect(Collectors.toList()));
+        MyResources<File> fileResource = new MyResources<>(userId, resource.getStudy(), fileList);
         try {
-            removeJobReferences(resourceIds);
+            removeJobReferences(fileResource);
         } catch (CatalogException e) {
             logger.error("Could not remove job references: {}", e.getMessage(), e);
             throw new CatalogException("Could not remove job references: " + e.getMessage(), e);
@@ -983,15 +914,18 @@ public class FileManager extends ResourceManager<File> {
 
         // Remove the index references in case it is a transformed file or folder
         try {
-            updateIndexStatusAfterDeletionOfTransformedFile(studyId, file);
+            updateIndexStatusAfterDeletionOfTransformedFile(studyUid, file);
         } catch (CatalogException e) {
             logger.error("Could not remove relation references: {}", e.getMessage(), e);
             throw new CatalogException("Could not remove relation references: " + e.getMessage(), e);
         }
 
-        unlink(studyId, file);
+        unlink(studyUid, file);
 
-        query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         return fileDBAdaptor.get(query, new QueryOptions(), userId);
     }
 
@@ -1257,13 +1191,12 @@ public class FileManager extends ResourceManager<File> {
         ParamUtils.checkObj(parameters, "Parameters");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceId resource = getUid(entryStr, studyStr, sessionId);
+        MyResource<File> resource = getUid(entryStr, studyStr, sessionId);
 
         String userId = userManager.getUserId(sessionId);
-        File file = get(resource.getResourceId(), null, sessionId).first();
+        File file = resource.getResource();
 
-        authorizationManager.checkFilePermission(resource.getStudyId(), resource.getResourceId(), userId,
-                FileAclEntry.FilePermissions.WRITE);
+        authorizationManager.checkFilePermission(resource.getStudy().getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
         checkUpdateParams(parameters);
 
@@ -1271,12 +1204,10 @@ public class FileManager extends ResourceManager<File> {
         if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             List<String> sampleIdStr = parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key());
 
-            MyResourceIds resourceIds = catalogManager.getSampleManager().getUids(sampleIdStr, Long.toString(resource.getStudyId()),
-                    sessionId);
+            MyResources<Sample> sampleResource = catalogManager.getSampleManager().getUids(sampleIdStr, studyStr, sessionId);
 
             // Avoid sample duplicates
-            Set<Long> sampleIdsSet = new LinkedHashSet<>();
-            sampleIdsSet.addAll(resourceIds.getResourceIds());
+            Set<Long> sampleIdsSet = sampleResource.getResourceList().stream().map(Sample::getUid).collect(Collectors.toSet());
 
             List<Sample> sampleList = new ArrayList<>(sampleIdsSet.size());
             for (Long sampleId : sampleIdsSet) {
@@ -1290,10 +1221,10 @@ public class FileManager extends ResourceManager<File> {
         //Name must be changed with "rename".
         if (parameters.containsKey(FileDBAdaptor.QueryParams.NAME.key())) {
             logger.info("Rename file using update method!");
-            rename(resource.getResourceId(), parameters.getString("name"), sessionId);
+            rename(file.getUid(), parameters.getString("name"), sessionId);
         }
 
-        return unsafeUpdate(resource.getStudyId(), file, parameters, options, userId);
+        return unsafeUpdate(resource.getStudy().getUid(), file, parameters, options, userId);
     }
 
     QueryResult<File> unsafeUpdate(long studyId, File file, ObjectMap parameters, QueryOptions options, String userId)
@@ -1336,27 +1267,29 @@ public class FileManager extends ResourceManager<File> {
         return update(null, String.valueOf(fileId), parameters, options, sessionId);
     }
 
-    private void removeJobReferences(MyResourceIds resources) throws CatalogException {
+    private void removeJobReferences(MyResources<File> resource) throws CatalogException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.INPUT.key(), JobDBAdaptor.QueryParams.OUTPUT.key(),
                 JobDBAdaptor.QueryParams.OUT_DIR.key(), JobDBAdaptor.QueryParams.ATTRIBUTES.key()));
 
+        List<Long> resourceList = resource.getResourceList().stream().map(File::getUid).collect(Collectors.toList());
+
         // Find all the jobs containing references to any of the files to be deleted
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
-                .append(JobDBAdaptor.QueryParams.INPUT_UID.key(), resources.getResourceIds())
+                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                .append(JobDBAdaptor.QueryParams.INPUT_UID.key(), resourceList)
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryResult<Job> jobInputFiles = jobDBAdaptor.get(query, options);
 
         query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
-                .append(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), resources.getResourceIds())
+                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                .append(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), resourceList)
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryResult<Job> jobOutputFiles = jobDBAdaptor.get(query, options);
 
         query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
-                .append(JobDBAdaptor.QueryParams.OUT_DIR_UID.key(), resources.getResourceIds())
+                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                .append(JobDBAdaptor.QueryParams.OUT_DIR_UID.key(), resourceList)
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryResult<Job> jobOutDirFolders = jobDBAdaptor.get(query, options);
 
@@ -1383,7 +1316,7 @@ public class FileManager extends ResourceManager<File> {
 
         // We create a map with the files that are related to jobs that are going to be deleted
         Map<Long, File> relatedFileMap = new HashMap<>();
-        for (Long fileId : resources.getResourceIds()) {
+        for (Long fileId : resourceList) {
             if (fileIdsReferencedInJobs.contains(fileId)) {
                 relatedFileMap.put(fileId, null);
             }
@@ -1397,7 +1330,7 @@ public class FileManager extends ResourceManager<File> {
         // We obtain the current information of those files
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), relatedFileMap.keySet())
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resources.getStudyId())
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
 
@@ -1575,12 +1508,12 @@ public class FileManager extends ResourceManager<File> {
         }
 
         String userId = userManager.getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
 
-        fixQueryObject(studyId, query, sessionId);
+        fixQueryObject(study, query, sessionId);
 
         // Add study id to the query
-        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         // We do not need to check for permissions when we show the count of files
         QueryResult queryResult = fileDBAdaptor.groupBy(query, fields, options, userId);
@@ -1651,92 +1584,66 @@ public class FileManager extends ResourceManager<File> {
         return result;
     }
 
-    public DataInputStream grep(long fileId, String pattern, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
-        long studyId = getStudyId(fileId);
-        authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.VIEW);
-
-        URI fileUri = getUri(get(fileId, null, sessionId).first());
+    public DataInputStream grep(String studyStr, String fileStr, String pattern, QueryOptions options, String sessionId)
+            throws CatalogException {
+        MyResource<File> resource = getUid(fileStr, studyStr, sessionId);
+        authorizationManager.checkFilePermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),
+                FileAclEntry.FilePermissions.VIEW);
+        URI fileUri = getUri(resource.getResource());
         boolean ignoreCase = options.getBoolean("ignoreCase");
         boolean multi = options.getBoolean("multi");
         return catalogIOManagerFactory.get(fileUri).getGrepFileObject(fileUri, pattern, ignoreCase, multi);
     }
 
-    public DataInputStream download(long fileId, int start, int limit, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
-        long studyId = getStudyId(fileId);
-        authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.DOWNLOAD);
-
-        URI fileUri = getUri(get(fileId, null, sessionId).first());
-
+    public DataInputStream download(String studyStr, String fileStr, int start, int limit, QueryOptions options, String sessionId)
+            throws CatalogException {
+        MyResource<File> resource = getUid(fileStr, studyStr, sessionId);
+        authorizationManager.checkFilePermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),
+                FileAclEntry.FilePermissions.DOWNLOAD);
+        URI fileUri = getUri(resource.getResource());
         return catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);
     }
 
     public QueryResult<Job> index(List<String> fileList, String studyStr, String type, Map<String, String> params, String sessionId)
             throws CatalogException {
         params = ParamUtils.defaultObject(params, HashMap::new);
-        MyResourceIds resourceIds = getUids(fileList, studyStr, sessionId);
-        List<Long> fileFolderIdList = resourceIds.getResourceIds();
-        long studyId = resourceIds.getStudyId();
-        String userId = resourceIds.getUser();
-
-        // Check they all belong to the same study
-        for (Long fileId : fileFolderIdList) {
-            if (fileId == -1) {
-                throw new CatalogException("Could not find file or folder " + fileList);
-            }
-
-            long studyIdByFileId = fileDBAdaptor.getStudyIdByFileId(fileId);
-
-            if (studyId == -1) {
-                studyId = studyIdByFileId;
-            } else if (studyId != studyIdByFileId) {
-                throw new CatalogException("Cannot index files coming from different studies.");
-            }
-        }
+        MyResources<File> resource = getUids(fileList, studyStr, false, sessionId);
+        List<File> fileFolderIdList = resource.getResourceList();
+        long studyId = resource.getStudy().getUid();
+        String userId = resource.getUser();
 
         // Define the output directory where the indexes will be put
         String outDirPath = ParamUtils.defaultString(params.get("outdir"), "/");
-        if (outDirPath != null && !StringUtils.isNumeric(outDirPath) && outDirPath.contains("/") && !outDirPath.endsWith("/")) {
+        if (outDirPath != null && outDirPath.contains("/") && !outDirPath.endsWith("/")) {
             outDirPath = outDirPath + "/";
         }
 
         File outDir;
         try {
-            outDir = new File().setUid(getUid(outDirPath, Long.toString(studyId), sessionId).getResourceId());
+            outDir = smartResolutor(resource.getStudy().getUid(), outDirPath, resource.getUser());
         } catch (CatalogException e) {
             logger.warn("'{}' does not exist. Trying to create the output directory.", outDirPath);
-            QueryResult<File> folder = createFolder(Long.toString(studyId), outDirPath, new File.FileStatus(), true, "",
-                    new QueryOptions(), sessionId);
+            QueryResult<File> folder = createFolder(studyStr, outDirPath, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
             outDir = folder.first();
         }
 
-        if (outDir.getUid() > 0) {
-            authorizationManager.checkFilePermission(studyId, outDir.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-            if (fileDBAdaptor.getStudyIdByFileId(outDir.getUid()) != studyId) {
-                throw new CatalogException("The output directory does not correspond to the same study of the files");
-            }
-
-        } else {
-            ObjectMap parsedSampleStr = parseFeatureId(userId, outDirPath);
-            String path = (String) parsedSampleStr.get("featureName");
-            logger.info("Outdir {}", path);
-            if (path.contains("/")) {
-                if (!path.endsWith("/")) {
-                    path = path + "/";
-                }
-                // It is a path, so we will try to create the folder
-                createFolder(Long.toString(studyId), path, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
-                outDir = new File().setUid(getUid(path, Long.toString(studyId), sessionId).getResourceId());
-                logger.info("Outdir {} -> {}", outDir, path);
-            }
-        }
+        authorizationManager.checkFilePermission(studyId, outDir.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
         QueryResult<Job> jobQueryResult;
         List<File> fileIdList = new ArrayList<>();
         String indexDaemonType = null;
         String jobName = null;
         String description = null;
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                FileDBAdaptor.QueryParams.NAME.key(),
+                FileDBAdaptor.QueryParams.PATH.key(),
+                FileDBAdaptor.QueryParams.URI.key(),
+                FileDBAdaptor.QueryParams.TYPE.key(),
+                FileDBAdaptor.QueryParams.BIOFORMAT.key(),
+                FileDBAdaptor.QueryParams.FORMAT.key(),
+                FileDBAdaptor.QueryParams.INDEX.key())
+        );
 
         if (type.equals("VCF")) {
 
@@ -1754,27 +1661,12 @@ public class FileManager extends ResourceManager<File> {
                 jobName = "variant_index";
             }
 
-            for (Long fileId : fileFolderIdList) {
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        FileDBAdaptor.QueryParams.NAME.key(),
-                        FileDBAdaptor.QueryParams.PATH.key(),
-                        FileDBAdaptor.QueryParams.URI.key(),
-                        FileDBAdaptor.QueryParams.TYPE.key(),
-                        FileDBAdaptor.QueryParams.BIOFORMAT.key(),
-                        FileDBAdaptor.QueryParams.FORMAT.key(),
-                        FileDBAdaptor.QueryParams.INDEX.key())
-                );
-                QueryResult<File> result = fileDBAdaptor.get(fileId, queryOptions);
-
-                if (result.getNumResults() != 1) {
-                    throw new CatalogException("Could not find file or folder " + fileList);
-                }
-
-                File file = result.first();
+            for (File file : fileFolderIdList) {
                 if (File.Type.DIRECTORY.equals(file.getType())) {
                     // Retrieve all the VCF files that can be found within the directory
                     String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
-                    Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
+                    Query query = new Query()
+                            .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
                             .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
                             .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
                     QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions);
@@ -1799,7 +1691,7 @@ public class FileManager extends ResourceManager<File> {
                             for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
                                 if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
                                     Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), relatedFile.getFileId());
-                                    file = get(studyId, query, null, sessionId).first();
+                                    file = get(studyStr, query, null, sessionId).first();
                                     break;
                                 }
                             }
@@ -1828,30 +1720,17 @@ public class FileManager extends ResourceManager<File> {
             indexDaemonType = IndexDaemon.ALIGNMENT_TYPE;
             jobName = "AlignmentIndex";
 
-            for (Long fileId : fileFolderIdList) {
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        FileDBAdaptor.QueryParams.PATH.key(),
-                        FileDBAdaptor.QueryParams.URI.key(),
-                        FileDBAdaptor.QueryParams.TYPE.key(),
-                        FileDBAdaptor.QueryParams.FORMAT.key(),
-                        FileDBAdaptor.QueryParams.INDEX.key())
-                );
-                QueryResult<File> file = fileDBAdaptor.get(fileId, queryOptions);
-
-                if (file.getNumResults() != 1) {
-                    throw new CatalogException("Could not find file or folder " + fileList);
-                }
-
-                if (File.Type.DIRECTORY.equals(file.first().getType())) {
+            for (File file : fileFolderIdList) {
+                if (File.Type.DIRECTORY.equals(file.getType())) {
                     // Retrieve all the BAM files that can be found within the directory
-                    String path = file.first().getPath().endsWith("/") ? file.first().getPath() : file.first().getPath() + "/";
+                    String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
                     Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.SAM, File.Format.BAM))
                             .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
                             .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
                     QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions);
 
                     if (fileQueryResult.getNumResults() == 0) {
-                        throw new CatalogException("No SAM/BAM files could be found in directory " + file.first().getPath());
+                        throw new CatalogException("No SAM/BAM files could be found in directory " + file.getPath());
                     }
 
                     for (File fileTmp : fileQueryResult.getResult()) {
@@ -1862,14 +1741,14 @@ public class FileManager extends ResourceManager<File> {
                     }
 
                 } else {
-                    if (!File.Format.BAM.equals(file.first().getFormat()) && !File.Format.SAM.equals(file.first().getFormat())) {
-                        throw new CatalogException("The file " + file.first().getName() + " is not a SAM/BAM file.");
+                    if (!File.Format.BAM.equals(file.getFormat()) && !File.Format.SAM.equals(file.getFormat())) {
+                        throw new CatalogException("The file " + file.getName() + " is not a SAM/BAM file.");
                     }
 
-                    authorizationManager.checkFilePermission(studyId, file.first().getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                    authorizationManager.checkFilePermission(studyId, file.first().getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+                    authorizationManager.checkFilePermission(studyId, file.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
+                    authorizationManager.checkFilePermission(studyId, file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
-                    fileIdList.add(file.first());
+                    fileIdList.add(file);
                 }
             }
 
@@ -1897,7 +1776,7 @@ public class FileManager extends ResourceManager<File> {
 
     public void setFileIndex(long fileId, FileIndex index, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        long studyId = getStudyId(fileId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
@@ -1908,7 +1787,7 @@ public class FileManager extends ResourceManager<File> {
 
     public void setDiskUsage(long fileId, long size, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        long studyId = getStudyId(fileId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.SIZE.key(), size);
@@ -1919,7 +1798,7 @@ public class FileManager extends ResourceManager<File> {
 
     public void setModificationDate(long fileId, String date, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        long studyId = getStudyId(fileId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(), date);
@@ -1930,7 +1809,7 @@ public class FileManager extends ResourceManager<File> {
 
     public void setUri(long fileId, String uri, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        long studyId = getStudyId(fileId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.URI.key(), uri);
@@ -1943,20 +1822,21 @@ public class FileManager extends ResourceManager<File> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<FileAclEntry>> getAcls(String studyStr, List<String> fileList, String member, boolean silent, String sessionId)
             throws CatalogException {
-        MyResourceIds resource = getUids(fileList, studyStr, silent, sessionId);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
+        MyResources<File> resource = getUids(fileList, studyStr, silent, sessionId);
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceList().size());
 
-        List<Long> resourceIds = resource.getResourceIds();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Long fileId = resourceIds.get(i);
+        List<File> resourceList = resource.getResourceList();
+        for (int i = 0; i < resourceList.size(); i++) {
+            File file = resourceList.get(i);
             try {
                 QueryResult<FileAclEntry> allFileAcls;
                 if (StringUtils.isNotEmpty(member)) {
-                    allFileAcls = authorizationManager.getFileAcl(resource.getStudyId(), fileId, resource.getUser(), member);
+                    allFileAcls = authorizationManager.getFileAcl(resource.getStudy().getUid(), file.getUid(), resource.getUser(), member);
                 } else {
-                    allFileAcls = authorizationManager.getAllFileAcls(resource.getStudyId(), fileId, resource.getUser(), true);
+                    allFileAcls = authorizationManager.getAllFileAcls(resource.getStudy().getUid(), file.getUid(), resource.getUser(),
+                            true);
                 }
-                allFileAcls.setId(String.valueOf(fileId));
+                allFileAcls.setId(file.getPath());
                 fileAclList.add(allFileAcls);
             } catch (CatalogException e) {
                 if (silent) {
@@ -1994,24 +1874,23 @@ public class FileManager extends ResourceManager<File> {
 
         if (StringUtils.isNotEmpty(fileAclParams.getSample())) {
             // Obtain the sample ids
-            MyResourceIds ids = catalogManager.getSampleManager().getUids(Arrays.asList(StringUtils.split(fileAclParams.getSample(), ",")),
-                    studyStr, sessionId);
+            MyResources<Sample> resource = catalogManager.getSampleManager().getUids(
+                    Arrays.asList(StringUtils.split(fileAclParams.getSample(), ",")), studyStr, sessionId);
 
-            Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), ids.getResourceIds());
+            Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), resource.getResourceList().stream().map(Sample::getUid)
+                    .collect(Collectors.toList()));
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UID.key());
-            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(ids.getStudyId(), query, options, sessionId);
+            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyStr, query, options, sessionId);
 
             fileList = fileQueryResult.getResult().stream().map(File::getUid).map(String::valueOf).collect(Collectors.toList());
-
-            studyStr = Long.toString(ids.getStudyId());
         }
 
         // Obtain the resource ids
-        MyResourceIds resourceIds = getUids(fileList, studyStr, sessionId);
-        authorizationManager.checkCanAssignOrSeePermissions(resourceIds.getStudyId(), resourceIds.getUser());
+        MyResources<File> resource = getUids(fileList, studyStr, sessionId);
+        authorizationManager.checkCanAssignOrSeePermissions(resource.getStudy().getUid(), resource.getUser());
 
         // Increase the list with the files/folders within the list of ids that correspond with folders
-        resourceIds = getRecursiveFilesAndFolders(resourceIds);
+        resource = getRecursiveFilesAndFolders(resource);
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -2021,20 +1900,22 @@ public class FileManager extends ResourceManager<File> {
             members = Collections.emptyList();
         }
         authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
-        checkMembers(resourceIds.getStudyId(), members);
+        checkMembers(resource.getStudy().getUid(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         switch (fileAclParams.getAction()) {
             case SET:
-                return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        Entity.FILE);
+                return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(File::getUid)
+                                .collect(Collectors.toList()), members, permissions, Entity.FILE);
             case ADD:
-                return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        Entity.FILE);
+                return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(File::getUid)
+                                .collect(Collectors.toList()), members, permissions, Entity.FILE);
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, Entity.FILE);
+                return authorizationManager.removeAcls(resource.getResourceList().stream().map(File::getUid).collect(Collectors.toList()),
+                        members, permissions, Entity.FILE);
             case RESET:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, Entity.FILE);
+                return authorizationManager.removeAcls(resource.getResourceList().stream().map(File::getUid).collect(Collectors.toList()),
+                        members, null, Entity.FILE);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
@@ -2050,46 +1931,33 @@ public class FileManager extends ResourceManager<File> {
     /**
      * Fetch all the recursive files and folders within the list of file ids given.
      *
-     * @param resourceIds ResourceId object containing the list of file ids, studyId and userId.
+     * @param resource ResourceId object containing the list of file ids, studyId and userId.
      * @return a new ResourceId object
      */
-    private MyResourceIds getRecursiveFilesAndFolders(MyResourceIds resourceIds) throws CatalogException {
-        Set<Long> fileIdSet = new HashSet<>();
-        fileIdSet.addAll(resourceIds.getResourceIds());
-
-        // Get info of the files to see if they are files or folders
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resourceIds.getStudyId())
-                .append(FileDBAdaptor.QueryParams.UID.key(), resourceIds.getResourceIds());
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key()));
-
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options);
-        if (fileQueryResult.getNumResults() != resourceIds.getResourceIds().size()) {
-            logger.error("Some files were not found for query {}", query.safeToString());
-            throw new CatalogException("Internal error. Some files were not found.");
-        }
+    private MyResources<File> getRecursiveFilesAndFolders(MyResources<File> resource) throws CatalogException {
+        Set<File> fileSet = new HashSet<>();
+        fileSet.addAll(resource.getResourceList());
 
         List<String> pathList = new ArrayList<>();
-        for (File file : fileQueryResult.getResult()) {
+        for (File file : resource.getResourceList()) {
             if (file.getType().equals(File.Type.DIRECTORY)) {
                 pathList.add("~^" + file.getPath());
             }
         }
 
-        options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UID.key());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UID.key());
         if (CollectionUtils.isNotEmpty(pathList)) {
             // Search for all the files within the list of paths
-            query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resourceIds.getStudyId())
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                     .append(FileDBAdaptor.QueryParams.PATH.key(), pathList);
             QueryResult<File> fileQueryResult1 = fileDBAdaptor.get(query, options);
-            fileIdSet.addAll(fileQueryResult1.getResult().stream().map(File::getUid).collect(Collectors.toSet()));
+            fileSet.addAll(fileQueryResult1.getResult());
         }
 
-        List<Long> fileIdList = new ArrayList<>(fileIdSet.size());
-        fileIdList.addAll(fileIdSet);
-        return new MyResourceIds(resourceIds.getUser(), resourceIds.getStudyId(), fileIdList);
+        List<File> fileList = new ArrayList<>(fileSet.size());
+        fileList.addAll(fileSet);
+        return new MyResources<>(resource.getUser(), resource.getStudy(), fileList);
     }
 
     private List<String> getParentPaths(String filePath) {
@@ -2109,15 +1977,8 @@ public class FileManager extends ResourceManager<File> {
         return paths;
     }
 
-    private Long smartResolutor(String fileName, long studyId) throws CatalogException {
-        if (StringUtils.isNumeric(fileName) && Long.parseLong(fileName) > configuration.getCatalog().getOffset()) {
-            long fileId = Long.parseLong(fileName);
-            fileDBAdaptor.checkId(fileId);
-            return fileId;
-        }
-
-        // This line is only just in case the files are being passed from the webservice. Paths cannot contain "/" when passed via the URLs
-        // so they should be passed as : instead. This is just to support that behaviour.
+    @Override
+    File smartResolutor(long studyUid, String fileName, String user) throws CatalogException {
         fileName = fileName.replace(":", "/");
 
         if (fileName.startsWith("/")) {
@@ -2125,49 +1986,30 @@ public class FileManager extends ResourceManager<File> {
         }
 
         // We search as a path
-        Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), fileName);
-//                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.files.id");
-        QueryResult<File> pathQueryResult = fileDBAdaptor.get(query, qOptions);
+        QueryResult<File> pathQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
         if (pathQueryResult.getNumResults() > 1) {
             throw new CatalogException("Error: More than one file id found based on " + fileName);
+        } else if (pathQueryResult.getNumResults() == 1) {
+            return pathQueryResult.first();
         }
 
         if (!fileName.contains("/")) {
             // We search as a fileName as well
-            query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+            query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(FileDBAdaptor.QueryParams.NAME.key(), fileName);
-//                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
-            QueryResult<File> nameQueryResult = fileDBAdaptor.get(query, qOptions);
+            QueryResult<File> nameQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
             if (nameQueryResult.getNumResults() > 1) {
                 throw new CatalogException("Error: More than one file id found based on " + fileName);
-            }
-
-            if (pathQueryResult.getNumResults() == 1 && nameQueryResult.getNumResults() == 0) {
-                return pathQueryResult.first().getUid();
-            } else if (pathQueryResult.getNumResults() == 0 && nameQueryResult.getNumResults() == 1) {
-                return nameQueryResult.first().getUid();
-            } else if (pathQueryResult.getNumResults() == 1 && nameQueryResult.getNumResults() == 1) {
-                if (pathQueryResult.first().getUid() == nameQueryResult.first().getUid()) {
-                    // The file was in the root folder, so it could be found based on the path and the name
-                    return pathQueryResult.first().getUid();
-                } else {
-                    throw new CatalogException("Error: More than one file id found based on " + fileName);
-                }
-            } else {
-                // No results
-                throw new CatalogException("File " + fileName + " not found in study " + studyId);
+            } else if (nameQueryResult.getNumResults() == 1) {
+                return nameQueryResult.first();
             }
         }
 
-        if (pathQueryResult.getNumResults() == 1) {
-            return pathQueryResult.first().getUid();
-        } else if (pathQueryResult.getNumResults() == 0) {
-            throw new CatalogException("File " + fileName + " not found in study " + studyId);
-        } else {
-            throw new CatalogException("Multiple files found under " + fileName + " in study " + studyId);
-        }
+        throw new CatalogException("File " + fileName + " not found");
     }
 
     //FIXME: This should use org.opencb.opencga.storage.core.variant.io.VariantReaderUtils

@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -223,14 +224,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResourceId resourceId = individualManager.getUid(individualStr, studyStr, sessionId);
+            AbstractManager.MyResource resource = individualManager.getUid(individualStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                    .append(IndividualDBAdaptor.QueryParams.UID.key(), resourceId.getResourceId());
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(IndividualDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
 
-            String variableSetId = String.valueOf(catalogManager.getStudyManager()
-                    .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
+            String variableSetId = String.valueOf(catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId)
+                    .getResourceId());
 
             if (StringUtils.isEmpty(annotation)) {
                 annotation = Constants.VARIABLE_SET + "=" + variableSetId;
@@ -249,7 +250,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
-            QueryResult<Individual> search = individualManager.search(String.valueOf(resourceId.getStudyId()), query,
+            QueryResult<Individual> search = individualManager.search(studyStr, query,
                     new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap), sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
@@ -274,11 +275,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResourceIds resourceIds = individualManager.getUids(individualsStr, studyStr, sessionId);
+            AbstractManager.MyResources<Individual> resource = individualManager.getUids(individualsStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(IndividualDBAdaptor.QueryParams.UID.key(), resourceIds.getResourceIds());
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(IndividualDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Individual::getUid)
+                            .collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -286,8 +288,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Individual> search = individualManager.search(String.valueOf(resourceIds.getStudyId()), query, queryOptions,
-                    sessionId);
+            QueryResult<Individual> search = individualManager.search(studyStr, query, queryOptions,sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
                         search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),

@@ -128,7 +128,7 @@ public class FileMetadataReader {
      */
     public File setMetadataInformation(final File file, URI fileUri, QueryOptions options, String sessionId, boolean simulate)
             throws CatalogException {
-        long studyId = catalogManager.getFileManager().getStudyId(file.getUid());
+        Study study = catalogManager.getFileManager().getStudy(file, sessionId);
         if (fileUri == null) {
             fileUri = catalogManager.getFileManager().getUri(file);
         }
@@ -158,8 +158,6 @@ public class FileMetadataReader {
             file.setBioformat(bioformat);
         }
 
-        Study study = null;
-
 //        start = System.currentTimeMillis();
         boolean exists = catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri);
 //        logger.trace("Exists = " + (System.currentTimeMillis() - start) / 1000.0);
@@ -168,7 +166,6 @@ public class FileMetadataReader {
             switch (bioformat) {
                 case ALIGNMENT: {
 //                    start = System.currentTimeMillis();
-                    study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), STUDY_QUERY_OPTIONS, sessionId).first();
 //                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
 
                     AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
@@ -181,7 +178,6 @@ public class FileMetadataReader {
                 }
                 case VARIANT: {
 //                    start = System.currentTimeMillis();
-                    study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), STUDY_QUERY_OPTIONS, sessionId).first();
 //                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
 
                     VariantFileMetadata fileMetadata;
@@ -348,7 +344,8 @@ public class FileMetadataReader {
             //Find matching samples in catalog with the sampleName from the header.
             QueryOptions sampleQueryOptions = new QueryOptions("include", includeSampleNameId);
             Query sampleQuery = new Query("name", sortedSampleNames);
-            sampleList = catalogManager.getSampleManager().get(study.getUid(), sampleQuery, sampleQueryOptions, sessionId).getResult();
+            sampleList = catalogManager.getSampleManager().get(String.valueOf(study.getUid()), sampleQuery, sampleQueryOptions, sessionId)
+                    .getResult();
 
             //check if all file samples exists on Catalog
             if (sampleList.size() != sortedSampleNames.size()) {   //Size does not match. Find the missing samples.
@@ -370,7 +367,8 @@ public class FileMetadataReader {
                             } catch (CatalogException e) {
                                 Query query = new Query("name", sampleName);
                                 QueryOptions queryOptions = new QueryOptions("include", includeSampleNameId);
-                                if (catalogManager.getSampleManager().get(study.getUid(), query, queryOptions, sessionId).getResult()
+                                if (catalogManager.getSampleManager().get(String.valueOf(study.getUid()), query, queryOptions, sessionId)
+                                        .getResult()
                                         .isEmpty()) {
                                     throw e; //Throw exception if sample does not exist.
                                 } else {
@@ -395,7 +393,8 @@ public class FileMetadataReader {
         } else {
             //Get samples from file.sampleIds
             Query query = new Query("uid", file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
-            sampleList = catalogManager.getSampleManager().get(study.getUid(), query, new QueryOptions(), sessionId).getResult();
+            sampleList = catalogManager.getSampleManager().get(String.valueOf(study.getUid()), query, new QueryOptions(), sessionId)
+                    .getResult();
         }
 
         List<Long> sampleIdsList = sampleList.stream().map(Sample::getUid).collect(Collectors.toList());
@@ -472,7 +471,8 @@ public class FileMetadataReader {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), job.getInput())
                 .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyId, query, new QueryOptions(), sessionId);
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(String.valueOf(studyId), query, new QueryOptions(),
+                sessionId);
         if (fileQueryResult.getResult().isEmpty()) {
             return;
         }
@@ -481,7 +481,7 @@ public class FileMetadataReader {
             query = new Query()
                     .append(FileDBAdaptor.QueryParams.UID.key(), job.getOutput())
                     .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".file");
-            fileQueryResult = catalogManager.getFileManager().get(studyId, query, new QueryOptions(), sessionId);
+            fileQueryResult = catalogManager.getFileManager().get(String.valueOf(studyId), query, new QueryOptions(), sessionId);
             if (fileQueryResult.getResult().isEmpty()) {
                 return;
             }

@@ -53,6 +53,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
         ETHNICITY("ethnicity", TEXT, ""),
+        STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),

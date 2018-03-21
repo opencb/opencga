@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -254,7 +255,6 @@ public class FileUtils {
 
         updateFileAttributes(file, checksum, targetUri, new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
                 File.FileStatus.READY), sessionId);
-
     }
 
 
@@ -371,7 +371,7 @@ public class FileUtils {
         //Only list files if request to create found files
         if (createFoundFiles) {
             //List files in folder
-            long studyId = catalogManager.getFileManager().getStudyId(folder.getUid());
+            long studyId = folder.getStudyUid();
             Stream<URI> uris = ioManager.listFilesStream(externalUri);
             Path folderPath = Paths.get(folder.getPath());
             Map<URI, String> uriPathMap = uris
@@ -381,7 +381,8 @@ public class FileUtils {
 
             //Search if there is any existing file in the folder with the path to use.
             Query pathsQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), new LinkedList<>(uriPathMap.values()));
-            List<File> existingFiles = catalogManager.getFileManager().get(studyId, pathsQuery, new QueryOptions(), sessionId).getResult();
+            List<File> existingFiles = catalogManager.getFileManager().get(String.valueOf(studyId), pathsQuery, new QueryOptions(),
+                    sessionId).getResult();
             if (!relink) {
                 if (existingFiles.size() != 0) {
                     for (File f : existingFiles) {
@@ -436,11 +437,12 @@ public class FileUtils {
         if (!file.getStatus().getName().equals(File.FileStatus.TRASHED)) {
             throw new CatalogIOException("Only deleted files can be physically deleted");
         }
-        long studyId = catalogManager.getFileManager().getStudyId(file.getUid());
+        long studyId = file.getStudyUid();
         if (file.getType().equals(File.Type.DIRECTORY)) {
             Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "..*")
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.DELETED);
-            List<File> files = catalogManager.getFileManager().get(studyId, query, new QueryOptions(), sessionId).getResult();
+            List<File> files = catalogManager.getFileManager().get(String.valueOf(studyId), query, new QueryOptions(), sessionId)
+                    .getResult();
             for (File f : files) {
                 if (!f.getStatus().getName().equals(File.FileStatus.TRASHED)) {
                     throw new CatalogIOException("Only deleted files can be physically deleted");
@@ -605,6 +607,7 @@ public class FileUtils {
     private void updateFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters, String sessionId)
             throws CatalogException {
         parameters = getModifiedFileAttributes(file, checksum, fileUri, parameters);
+        Study study = catalogManager.getFileManager().getStudy(file, sessionId);
 
         //Update file
         try {
@@ -612,7 +615,7 @@ public class FileUtils {
                 if (parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()) != null) {
                     ObjectMap attributes = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
                             parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
-                    catalogManager.getFileManager().update(file.getUid(), attributes, new QueryOptions(), sessionId);
+                    catalogManager.getFileManager().update(study.getFqn(), file.getPath(), attributes, new QueryOptions(), sessionId);
                 }
                 if (parameters.get(FileDBAdaptor.QueryParams.STATUS_NAME.key()) != null) {
                     catalogManager.getFileManager()

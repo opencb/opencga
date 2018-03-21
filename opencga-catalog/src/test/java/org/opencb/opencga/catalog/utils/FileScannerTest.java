@@ -24,10 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
-import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.*;
 
@@ -116,8 +113,9 @@ public class FileScannerTest {
     }
 
     public File getFile(long id) throws CatalogException {
-        return catalogManager.getFileManager().get(study.getUid(), new Query(FileDBAdaptor.QueryParams.UID.key(), id).append(FileDBAdaptor
-                .QueryParams.STATUS_NAME.key(), Status.DELETED + "," + File.FileStatus.TRASHED + "," + Status.READY), null, sessionIdUser)
+        return catalogManager.getFileManager().get(String.valueOf(study.getUid()), new Query(FileDBAdaptor.QueryParams.UID.key(), id)
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED + "," + File.FileStatus.TRASHED + "," + Status.READY)
+                , null, sessionIdUser)
                 .first();
     }
 
@@ -213,7 +211,7 @@ public class FileScannerTest {
 
         URI studyUri = study.getUri();
         CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file2.txt").getPath());
-        File root = catalogManager.getFileManager().get(study.getUid(), new Query("name", "."), null, sessionIdUser).first();
+        File root = catalogManager.getFileManager().get(String.valueOf(study.getUid()), new Query("name", "."), null, sessionIdUser).first();
         files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());

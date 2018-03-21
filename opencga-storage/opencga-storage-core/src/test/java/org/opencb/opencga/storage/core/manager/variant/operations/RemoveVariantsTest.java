@@ -8,10 +8,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.FileIndex;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 
 import java.util.ArrayList;
@@ -102,12 +99,14 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
     private void removeFile(List<File> files, QueryOptions options, long outputId) throws Exception {
         List<String> fileIds = files.stream().map(File::getUid).map(String::valueOf).collect(Collectors.toList());
 
-        long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getUid());
+        Study study = catalogManager.getFileManager().getStudy(files.get(0), sessionId);
+        String studyId = study.getFqn();
 
         List<File> removedFiles = variantManager.removeFile(fileIds, String.valueOf(studyId), sessionId, new QueryOptions());
         assertEquals(files.size(), removedFiles.size());
 
-        Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
+        Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
+                StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         Set<Long> allSampleIds = all.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
 
         assertThat(all.getStatus().getName(), anyOf(is(Cohort.CohortStatus.INVALID), is(Cohort.CohortStatus.NONE)));
@@ -132,7 +131,8 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
         assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());
 
-        Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
+        Cohort all = catalogManager.getCohortManager().get(String.valueOf(studyId),
+                new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         assertTrue(all.getSamples().isEmpty());
     }
 

@@ -56,7 +56,7 @@ public class CatalogSampleAnnotationsLoader {
         }
 
         URI fileUri = catalogManager.getFileManager().getUri(pedFile);
-        long studyId = catalogManager.getFileManager().getStudyId(pedFile.getUid());
+        Study study = catalogManager.getFileManager().getStudy(pedFile, sessionId);
         long auxTime;
         long startTime = System.currentTimeMillis();
 
@@ -67,8 +67,8 @@ public class CatalogSampleAnnotationsLoader {
         //Take or infer the VariableSet
         VariableSet variableSet;
         if (variableSetId != null) {
-            variableSet = catalogManager.getStudyManager().getVariableSet(Long.toString(studyId), Long.toString(variableSetId), null,
-                    sessionId).first();
+            variableSet = catalogManager.getStudyManager().getVariableSet(study.getFqn(), Long.toString(variableSetId), null, sessionId)
+                    .first();
         } else {
             variableSet = getVariableSetFromPedFile(ped);
             CatalogAnnotationsValidator.checkVariableSet(variableSet);
@@ -94,9 +94,11 @@ public class CatalogSampleAnnotationsLoader {
         //Add VariableSet (if needed)
         if (variableSetId == null) {
             auxTime = System.currentTimeMillis();
-            variableSet = catalogManager.getStudyManager().createVariableSet(studyId, pedFile.getName(), true, false,
+            List<Variable> variableList = new ArrayList<>();
+            variableList.addAll(variableSet.getVariables());
+            variableSet = catalogManager.getStudyManager().createVariableSet(study.getFqn(), pedFile.getName(), true, false,
                     "Auto-generated  VariableSet from File = {id: " + pedFile.getUid() + ", name: \"" + pedFile.getName() + "\"}",
-                    null, variableSet.getVariables(), sessionId).getResult().get(0);
+                    null, variableList, sessionId).getResult().get(0);
             variableSetId = variableSet.getUid();
             logger.debug("Added VariableSet = {id: {}} in {}ms", variableSetId, System.currentTimeMillis() - auxTime);
         }
@@ -104,7 +106,7 @@ public class CatalogSampleAnnotationsLoader {
         //Add Samples
         Query samplesQuery = new Query("name", new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
-        for (Sample sample : catalogManager.getSampleManager().get(studyId, samplesQuery, null, sessionId).getResult()) {
+        for (Sample sample : catalogManager.getSampleManager().get(study.getFqn(), samplesQuery, null, sessionId).getResult()) {
             loadedSamples.put(sample.getId(), sample);
         }
 
@@ -115,7 +117,7 @@ public class CatalogSampleAnnotationsLoader {
                 sample = loadedSamples.get(individual.getId());
                 logger.info("Sample " + individual.getId() + " already loaded with id : " + sample.getUid());
             } else {
-                QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(Long.toString(studyId), individual.getId(),
+                QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(study.getFqn(), individual.getId(),
                         pedFile.getName(), "Sample loaded from the pedigree File = {id: " + pedFile.getUid() + ", name: \""
                                 + pedFile.getName() + "\" }", null, false, null, new HashMap<>(), Collections.emptyMap(), null, sessionId);
                 sample = sampleQueryResult.getResult().get(0);
@@ -129,14 +131,14 @@ public class CatalogSampleAnnotationsLoader {
         for (Map.Entry<String, Sample> entry : sampleMap.entrySet()) {
             Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
                     .getFields());
-            catalogManager.getSampleManager().createAnnotationSet(Long.toString(entry.getValue().getUid()), Long.toString(studyId),
+            catalogManager.getSampleManager().createAnnotationSet(Long.toString(entry.getValue().getUid()), study.getFqn(),
                     Long.toString(variableSetId), "pedigreeAnnotation", annotations, sessionId);
         }
         logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 
         //TODO: Create Cohort
 
-        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyId,
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(study.getFqn(),
                 new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" +  variableSetId), null, sessionId);
         return new QueryResult<>("loadPedigree", (int) (System.currentTimeMillis() - startTime),
                 sampleMap.size(), sampleMap.size(), null, null, sampleQueryResult.getResult());

@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
@@ -61,15 +62,19 @@ public class VariantStatsStorageOperation extends StorageOperation {
         super(catalogManager, StorageEngineFactory.get(storageConfiguration), LoggerFactory.getLogger(VariantStatsStorageOperation.class));
     }
 
-    public void calculateStats(long studyId, List<String> cohorts, String outdirStr,
-                               QueryOptions options, String sessionId)
+    public void calculateStats(String studyStr, List<String> cohorts, String outdirStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException, URISyntaxException, StorageEngineException {
         String fileIdStr = options.getString(Options.FILE_ID.key(), null);
         boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
         boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
-        final Long fileId = fileIdStr == null ? null : catalogManager.getFileManager().getUid(fileIdStr, Long.toString(studyId),
-                sessionId).getResourceId();
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        long studyUid = study.getUid();
+
+        final Long fileId = fileIdStr == null ? null : catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId)
+                .getResource().getUid();
 
 
         // Outdir must be empty
@@ -77,19 +82,19 @@ public class VariantStatsStorageOperation extends StorageOperation {
         final Path outdir = Paths.get(outdirUri);
         outdirMustBeEmpty(outdir, options);
 
-        Aggregation aggregation = getAggregation(studyId, options, sessionId);
+        Aggregation aggregation = getAggregation(studyUid, options, sessionId);
 
-        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
-        StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
+        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyUid, File.Bioformat.VARIANT, sessionId);
+        StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyUid, dataStore);
 
-        List<Long> cohortIds = checkCohorts(studyId, aggregation, cohorts, options, sessionId);
-        Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyId, cohortIds, updateStats, resume, sessionId);
+        List<Long> cohortIds = checkCohorts(study, aggregation, cohorts, options, sessionId);
+        Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyUid, cohortIds, updateStats, resume, sessionId);
 
 
         String region = options.getString(VariantQueryParam.REGION.key());
         String outputFileName = buildOutputFileName(cohortIds, options, cohortsMap, region);
 
-        Long catalogOutDirId = getCatalogOutdirId(studyId, options, sessionId);
+        Long catalogOutDirId = getCatalogOutdirId(studyUid, options, sessionId);
 
         QueryOptions calculateStatsOptions = new QueryOptions(options)
 //                .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
@@ -200,7 +205,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     /**
      * Must provide a list of cohorts or a aggregation_mapping_properties file.
-     * @param studyId   StudyId
+     * @param study   Study
      * @param aggregation Aggregation type for this study. {@link #getAggregation}
      * @param cohorts   List of cohorts
      * @param options   Options, where the aggregation mapping properties file will be
@@ -209,10 +214,10 @@ public class VariantStatsStorageOperation extends StorageOperation {
      * @throws CatalogException if an error on Catalog
      * @throws IOException if an IO error reading the aggregation map file (if any)
      */
-    protected List<Long> checkCohorts(long studyId, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
+    protected List<Long> checkCohorts(Study study, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         List<Long> cohortIds;
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyUid = study.getUid();
 
         // Check aggregation mapping properties
         String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
@@ -221,10 +226,10 @@ public class VariantStatsStorageOperation extends StorageOperation {
             if (!AggregationUtils.isAggregated(aggregation)) {
                 throw nonAggregatedWithMappingFile();
             }
-            cohortsByAggregationMapFile = createCohortsByAggregationMapFile(studyId, tagMap, sessionId);
+            cohortsByAggregationMapFile = createCohortsByAggregationMapFile(studyUid, tagMap, sessionId);
         } else if (AggregationUtils.isAggregated(aggregation)) {
             if (aggregation.equals(Aggregation.BASIC)) {
-                cohortsByAggregationMapFile = createCohortsIfNeeded(studyId, Collections.singleton(StudyEntry.DEFAULT_COHORT), sessionId);
+                cohortsByAggregationMapFile = createCohortsIfNeeded(studyUid, Collections.singleton(StudyEntry.DEFAULT_COHORT), sessionId);
             } else {
                 throw missingAggregationMappingFile(aggregation);
             }
@@ -240,7 +245,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         } else {
             cohortIds = new ArrayList<>(cohorts.size());
             for (String cohort : cohorts) {
-                long cohortId = catalogManager.getCohortManager().getUid(cohort, String.valueOf(studyId), sessionId).getResourceId();
+                long cohortId = catalogManager.getCohortManager().getUid(cohort, study.getFqn(), sessionId).getResource().getUid();
                 if (cohortId < 0) {
                     throw new CatalogException("Cohort '" + cohort + "' not found");
                 }
@@ -272,9 +277,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     private List<Long> createCohortsIfNeeded(long studyId, Set<String> cohortNames, String sessionId) throws CatalogException {
         List<Long> cohorts = new ArrayList<>();
-        Map<String, Long> catalogCohorts = catalogManager.getCohortManager().get(studyId, null, new QueryOptions(QueryOptions.INCLUDE,
-                "name,id"), sessionId).getResult()
-                .stream()
+        Map<String, Long> catalogCohorts = catalogManager.getCohortManager().get(String.valueOf(studyId), new Query(),
+                new QueryOptions(QueryOptions.INCLUDE, "name,id"), sessionId).getResult().stream()
                 .collect(Collectors.toMap(Cohort::getId, Cohort::getUid));
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.containsKey(cohortName)) {

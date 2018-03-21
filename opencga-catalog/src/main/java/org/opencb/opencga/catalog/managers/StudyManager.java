@@ -98,7 +98,7 @@ public class StudyManager extends AbstractManager {
         return studyUids;
     }
 
-    Study resolveId(String studyStr, String userId, QueryOptions options) throws CatalogException {
+    public Study resolveId(String studyStr, String userId, QueryOptions options) throws CatalogException {
         String owner = null;
         String project = null;
         String study = null;
@@ -882,94 +882,6 @@ public class StudyManager extends AbstractManager {
         return group;
     }
 
-    public Long getDiseasePanelId(String userId, String panelStr) throws CatalogException {
-        if (StringUtils.isNumeric(panelStr)) {
-            return Long.parseLong(panelStr);
-        }
-
-        // Resolve the studyIds and filter the panelName
-        ObjectMap parsedPanelStr = parseFeatureId(userId, panelStr);
-        List<Long> studyIds = getStudyIds(parsedPanelStr);
-        String panelName = parsedPanelStr.getString("featureName");
-
-        Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                .append(PanelDBAdaptor.QueryParams.NAME.key(), panelName);
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.panels.id");
-        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.get(query, qOptions);
-        if (queryResult.getNumResults() > 1) {
-            throw new CatalogException("Error: More than one panel id found based on " + panelName);
-        } else if (queryResult.getNumResults() == 0) {
-            return -1L;
-        } else {
-            return queryResult.first().getId();
-        }
-    }
-
-    public QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description,
-                                                        String genes, String regions, String variants,
-                                                        QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(name, "name");
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
-        ParamUtils.checkParameter(disease, "disease");
-        description = ParamUtils.defaultString(description, "");
-        List<String> geneList = Collections.emptyList();
-        List<String> regionList = Collections.emptyList();
-        List<String> variantList = Collections.emptyList();
-        if (genes != null) {
-            geneList = Arrays.asList(genes.split(","));
-        }
-        if (regions != null) {
-            regionList = Arrays.asList(regions.split(","));
-        }
-        if (variants != null) {
-            variantList = Arrays.asList(variants.split(","));
-        }
-
-        if (geneList.size() == 0 && regionList.size() == 0 && variantList.size() == 0) {
-            throw new CatalogException("Cannot create a new disease panel with no genes, regions and variants. At least, one of them should"
-                    + " be provided.");
-        }
-
-        DiseasePanel diseasePanel = new DiseasePanel(-1, name, disease, description, geneList, regionList, variantList,
-                new DiseasePanel.PanelStatus());
-
-        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.insert(diseasePanel, studyId, options);
-        auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
-
-        return queryResult;
-
-    }
-
-    public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Long panelId = getDiseasePanelId(userId, panelStr);
-        long studyId = panelDBAdaptor.getStudyId(panelId);
-        authorizationManager.checkDiseasePanelPermission(studyId, panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.VIEW);
-        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.get(panelId, options);
-        return queryResult;
-    }
-
-    public QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(parameters, "Parameters");
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Long diseasePanelId = getDiseasePanelId(userId, panelStr);
-        long studyId = panelDBAdaptor.getStudyId(diseasePanelId);
-        authorizationManager.checkDiseasePanelPermission(studyId, diseasePanelId, userId,
-                DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE);
-
-        for (String s : parameters.keySet()) {
-            if (!s.matches("name|disease")) {
-                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-            }
-        }
-
-        QueryResult<DiseasePanel> result = panelDBAdaptor.update(diseasePanelId, parameters, QueryOptions.empty());
-        auditManager.recordUpdate(AuditRecord.Resource.panel, diseasePanelId, userId, parameters, null, null);
-        return result;
-    }
-
     public QueryResult<VariableSetSummary> getVariableSetSummary(String studyStr, String variableSetStr, String sessionId)
             throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
@@ -1011,25 +923,13 @@ public class StudyManager extends AbstractManager {
     /*
      * Variables Methods
      */
-    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
-                                                      Map<String, Object> attributes, List<Variable> variables, String sessionId)
-            throws CatalogException {
-
-        ParamUtils.checkObj(variables, "Variables List");
-        Set<Variable> variablesSet = new HashSet<>(variables);
-        if (variables.size() != variablesSet.size()) {
-            throw new CatalogException("Error. Repeated variables");
-        }
-        return createVariableSet(studyId, name, unique, confidential, description, attributes, variablesSet, sessionId);
-    }
-
-    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
+    QueryResult<VariableSet> createVariableSet(Study study, String name, Boolean unique, Boolean confidential, String description,
                                                       Map<String, Object> attributes, Set<Variable> variables, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(variables, "Variables Set");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        authorizationManager.checkCanCreateUpdateDeleteVariableSets(studyId, userId);
+        authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
 
         unique = ParamUtils.defaultObject(unique, true);
         confidential = ParamUtils.defaultObject(confidential, false);
@@ -1048,15 +948,39 @@ public class StudyManager extends AbstractManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        VariableSet variableSet = new VariableSet(name, unique, confidential, description, variables, getCurrentRelease(studyId),
+        VariableSet variableSet = new VariableSet(name, unique, confidential, description, variables, getCurrentRelease(study, userId),
                 attributes);
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(studyId, variableSet);
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(study.getUid(), variableSet);
         auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getUid(), userId, queryResult.first(), null,
                 null);
 
         return queryResult;
+    }
+
+    public QueryResult<VariableSet> createVariableSet(String studyId, String name, Boolean unique, Boolean confidential, String description,
+                                                      Map<String, Object> attributes, List<Variable> variables, String sessionId)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = resolveId(studyId, userId, QueryOptions.empty());
+
+        ParamUtils.checkObj(variables, "Variables List");
+        Set<Variable> variablesSet = new HashSet<>(variables);
+        if (variables.size() != variablesSet.size()) {
+            throw new CatalogException("Error. Repeated variables");
+        }
+        return createVariableSet(study, name, unique, confidential, description, attributes, variablesSet, sessionId);
+    }
+
+    public QueryResult<VariableSet> createVariableSet(String studyId, String name, Boolean unique, Boolean confidential, String description,
+                                                      Map<String, Object> attributes, Set<Variable> variables, String sessionId)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = resolveId(studyId, userId, QueryOptions.empty());
+
+        ParamUtils.checkObj(variables, "Variables List");
+        return createVariableSet(study, name, unique, confidential, description, attributes, variables, sessionId);
     }
 
     public QueryResult<VariableSet> getVariableSet(String studyStr, String variableSet, QueryOptions options, String sessionId)

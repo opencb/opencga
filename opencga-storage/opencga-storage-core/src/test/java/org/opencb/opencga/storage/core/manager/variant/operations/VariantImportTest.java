@@ -54,7 +54,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         indexFile(getSmallFile(), new QueryOptions(VariantStorageEngine.Options.CALCULATE_STATS.key(), true), outputId);
 
-        catalogManager.getStudyManager().createVariableSet(studyId, "vs1", false, false, "", null, Arrays.asList(
+        catalogManager.getStudyManager().createVariableSet(studyStr, "vs1", false, false, "", null, Arrays.asList(
                 new Variable("name", "", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null),
                 new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
                 new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)), sessionId);
@@ -83,7 +83,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro").toString();
 
-        List<Sample> samples = catalogManager.getSampleManager().get(studyId, new Query(), new QueryOptions(), sessionId).getResult();
+        List<Sample> samples = catalogManager.getSampleManager().get(String.valueOf(studyId), new Query(), new QueryOptions(), sessionId).getResult();
         List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getId).collect(Collectors.toList());
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), someSamples);

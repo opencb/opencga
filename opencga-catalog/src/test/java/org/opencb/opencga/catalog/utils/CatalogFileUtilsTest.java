@@ -29,10 +29,7 @@ import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
-import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Account;
@@ -363,7 +360,8 @@ public class CatalogFileUtilsTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), folder.getUid())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyId, query, QueryOptions.empty(), userSessionId);
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(String.valueOf(studyId), query, QueryOptions.empty(),
+                userSessionId);
 
         assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
         for (File file : folderFiles) {
@@ -401,7 +399,7 @@ public class CatalogFileUtilsTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), folder.getUid())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyId, query, QueryOptions.empty(), userSessionId);
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(String.valueOf(studyId), query, QueryOptions.empty(), userSessionId);
 
         assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
         for (File file : folderFiles) {
@@ -476,7 +474,7 @@ public class CatalogFileUtilsTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyId, query, QueryOptions.empty(), userSessionId);
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(String.valueOf(studyId), query, QueryOptions.empty(), userSessionId);
 
         file = fileQueryResult.first();
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);

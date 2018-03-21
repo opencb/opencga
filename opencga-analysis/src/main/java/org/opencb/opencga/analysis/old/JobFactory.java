@@ -103,10 +103,11 @@ public class JobFactory {
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
-                jobQueryResult = catalogManager.getJobManager().create(studyId, jobName, toolName, description, executor, params,
-                        commandLine, temporalOutDirUri, outDir.getUid(), inputFiles, null, attributes, resourceManagerAttributes, new Job
-                                .JobStatus(Job.JobStatus.RUNNING), System.currentTimeMillis(), (long) 0, null, sessionId);
-                Job job = jobQueryResult.first();
+//                jobQueryResult = catalogManager.getJobManager().create(studyId, jobName, toolName, description, executor, params,
+//                        commandLine, temporalOutDirUri, outDir.getUid(), inputFiles, null, attributes, resourceManagerAttributes, new Job
+//                                .JobStatus(Job.JobStatus.RUNNING), System.currentTimeMillis(), (long) 0, null, sessionId);
+//                Job job = jobQueryResult.first();
+                Job job = null;
 
                 //Execute job in local
 //                LocalExecutorManager executorManager = new LocalExecutorManager(catalogManager, sessionId);
@@ -122,9 +123,10 @@ public class JobFactory {
 
             } else {
                 /** Create a PREPARED job in CatalogManager **/
-                jobQueryResult = catalogManager.getJobManager().create(studyId, jobName, toolName, description, executor, params,
-                        commandLine, temporalOutDirUri, outDir.getUid(), inputFiles, null, attributes, resourceManagerAttributes, new Job
-                                .JobStatus(Job.JobStatus.PREPARED), (long) 0, (long) 0, null, sessionId);
+//                jobQueryResult = catalogManager.getJobManager().create(studyId, jobName, toolName, description, executor, params,
+//                        commandLine, temporalOutDirUri, outDir.getUid(), inputFiles, null, attributes, resourceManagerAttributes, new Job
+//                                .JobStatus(Job.JobStatus.PREPARED), (long) 0, (long) 0, null, sessionId);
+                jobQueryResult = null;
             }
         }
         return jobQueryResult;

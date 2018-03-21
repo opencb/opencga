@@ -75,8 +75,8 @@ public class JobWSServerTest {
 
     @Test
     public void createReadyJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File
-                .Type.DIRECTORY), new QueryOptions(), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams
+                .TYPE.key(), File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -102,8 +102,8 @@ public class JobWSServerTest {
 
     @Test
     public void createErrorJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File
-                .Type.DIRECTORY), new QueryOptions(), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams
+                .TYPE.key(), File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -131,8 +131,8 @@ public class JobWSServerTest {
 
     @Test
     public void createBadJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File
-                .Type.DIRECTORY), new QueryOptions(), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams
+                .TYPE.key(), File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String toolName = "samtools";
         String description = "A job";
         String commandLine = "samtools --do-magic";

@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,7 +289,8 @@ public class ExecutionOutputRecorder {
             }
 //            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
 //            catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), sessionId);
-            catalogManager.getJobManager().setStatus(Long.toString(job.getUid()), jobStatus.getName(), jobStatus.getMessage(), sessionId);
+            Study study = catalogManager.getJobManager().getStudy(job, sessionId);
+            catalogManager.getJobManager().setStatus(study.getFqn(), job.getId(), jobStatus.getName(), jobStatus.getMessage(), sessionId);
         } else {
             logger.error("This code should never be executed.");
             throw new CatalogException("Job status = null");

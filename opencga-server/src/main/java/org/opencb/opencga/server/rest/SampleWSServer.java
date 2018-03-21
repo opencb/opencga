@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -141,7 +142,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (variableSetId != null) {
                 variableSet = Long.toString(variableSetId);
             }
-            AbstractManager.MyResourceId resourceId = catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId);
             Long varSetId;
             if (StringUtils.isNotBlank(variableSet)) {
                 varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
@@ -149,7 +149,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 varSetId = null;
             }
 
-            File pedigreeFile = catalogManager.getFileManager().get(resourceId.getResourceId(), null, sessionId).first();
+            File pedigreeFile = catalogManager.getFileManager().get(studyIdStr, fileIdStr, null, sessionId).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
             QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, varSetId, sessionId);
             return createOkResponse(sampleQueryResult);
@@ -383,14 +383,14 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResourceId resourceId = sampleManager.getUid(sampleStr, studyStr, sessionId);
+            AbstractManager.MyResource resource = sampleManager.getUid(sampleStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), resourceId.getResourceId());
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
 
-            String variableSetId = String.valueOf(catalogManager.getStudyManager()
-                    .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
+            String variableSetId = String.valueOf(catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId)
+                    .getResourceId());
 
             if (StringUtils.isEmpty(annotation)) {
                 annotation = Constants.VARIABLE_SET + "=" + variableSetId;
@@ -409,8 +409,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
-            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceId.getStudyId()), query,
-                    new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap), sessionId);
+            QueryResult<Sample> search = sampleManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
+                    sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
@@ -434,11 +434,12 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
                 @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResourceIds resourceIds = sampleManager.getUids(samplesStr, studyStr, sessionId);
+            AbstractManager.MyResources<Sample> resource = sampleManager.getUids(samplesStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), resourceIds.getResourceIds());
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Sample::getUid)
+                            .collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -446,7 +447,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Sample> search = sampleManager.search(String.valueOf(resourceIds.getStudyId()), query, queryOptions, sessionId);
+            QueryResult<Sample> search = sampleManager.search(studyStr, query, queryOptions, sessionId);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
                         search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),

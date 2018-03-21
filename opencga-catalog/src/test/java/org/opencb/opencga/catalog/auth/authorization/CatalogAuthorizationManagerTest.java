@@ -156,8 +156,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         QueryResult<File> queryResult = catalogManager.getFileManager().create(s1.getId(), File.Type.FILE, File.Format.PLAIN, 
                 File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, 
                 null, false, null, null, ownerSessionId);
-        new FileUtils(catalogManager).upload(new ByteArrayInputStream(("file " +
-                "content").getBytes()), queryResult.first(), ownerSessionId, false, false, true);
+        new FileUtils(catalogManager).upload(new ByteArrayInputStream(("file content").getBytes()), queryResult.first(), ownerSessionId,
+                false, false, true);
         data_d1_d2_d3_d4_txt = catalogManager.getFileManager().get(queryResult.first().getUid(), null, ownerSessionId).first().getUid();
         data = catalogManager.getFileManager().get(s1.getId(), new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), null, ownerSessionId).first().getUid();
 

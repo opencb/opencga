@@ -247,9 +247,7 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         VariantStatsStorageOperation statsOperation = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, study);
-        statsOperation.calculateStats(studyId, cohorts, outDir, new QueryOptions(config), sessionId);
+        statsOperation.calculateStats(study, cohorts, outDir, new QueryOptions(config), sessionId);
     }
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
@@ -268,8 +266,6 @@ public class VariantStorageManager extends StorageManager {
             throw new IllegalArgumentException("Fill gaps operation requires at least two samples!");
         }
         String sampleIds = String.join(",", samples);
-        catalogManager.getSampleManager().getUids(sampleIds, study, sessionId);
-
         variantStorageEngine.fillGaps(String.valueOf(studyId), samples, config);
     }
 
@@ -476,9 +472,8 @@ public class VariantStorageManager extends StorageManager {
             Map<Integer, List<Integer>> samplesToReturn = VariantQueryUtils.getIncludeSamples(query, queryOptions, scm);
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
-                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get((long) entry.getKey(),
-                            new Query(SampleDBAdaptor.QueryParams.UID.key(), entry.getValue()),
-                            new QueryOptions("exclude",
+                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(String.valueOf((long) entry.getKey()),
+                            new Query(SampleDBAdaptor.QueryParams.UID.key(), entry.getValue()), new QueryOptions("exclude",
                                     Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples.attributes")),
                             sessionId);
                     if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
@@ -502,8 +497,8 @@ public class VariantStorageManager extends StorageManager {
             } else {
                 List<Long> returnedSamples = new LinkedList<>();
                 for (Study study : studies) {
-                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getUid(), new Query(),
-                            new QueryOptions("exclude",
+                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(String.valueOf(study.getUid()),
+                            new Query(), new QueryOptions("exclude",
                                     Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples.attributes")),
                             sessionId);
                     samplesQueryResult.getResult().sort((o1, o2) -> Long.compare(o1.getUid(), o2.getUid()));
