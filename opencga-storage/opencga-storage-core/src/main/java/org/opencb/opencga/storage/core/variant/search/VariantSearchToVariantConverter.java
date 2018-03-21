@@ -494,7 +494,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             // Add cytoband names
             if (variantAnnotation.getCytoband() != null) {
                 for (Cytoband cytoband : variantAnnotation.getCytoband()) {
-                    xrefs.add(cytoband.getName());
+                    xrefs.add(cytoband.getChromosome() + cytoband.getName());
                 }
             }
 
