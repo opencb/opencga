@@ -474,14 +474,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, VariantSearchException {
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         // first, create the collection it it does not exist
         variantSearchManager.create(dbName);
         if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
             // then, load variants
-            queryOptions = new QueryOptions();
+            queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
