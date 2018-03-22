@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -335,6 +336,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         fillGapsOrMissing(study, studyConfiguration, studyConfiguration.getIndexedFiles(), Collections.emptyList(), false, overwrite,
                 options);
+    }
+
+    @Override
+    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, VariantSearchException {
+        queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
+        queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+        super.searchIndex(query, queryOptions);
     }
 
     @Override
