@@ -24,7 +24,6 @@ import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -40,6 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
@@ -53,7 +53,6 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantLocalConflictResolver.NOCALL;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 
@@ -80,6 +79,9 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("~", "LIKE");
         SQL_OPERATOR.put("!", "!=");
     }
+
+    // Internal usage only
+    private static final String ALT_GT = "ALT";
 
     public static class VariantPhoenixSQLQuery {
         private String sql;
@@ -199,6 +201,7 @@ public class VariantSqlQueryParser {
                     StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
                     Column studyColumn = VariantPhoenixHelper.getStudyColumn(studyId);
                     sb.append(",\"").append(studyColumn.column()).append('"');
+                    sb.append(",\"").append(VariantPhoenixHelper.getFillMissingColumn(studyId).column()).append('"');
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
                         for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);
@@ -704,7 +707,8 @@ public class VariantSqlQueryParser {
             QueryOperation op = checkOperator(value);
             List<String> samples = splitValue(value, op);
             for (String sample : samples) {
-                genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
+                genotypesMap.put(sample, Collections.singletonList(ALT_GT));
+//                genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
             }
         }
 
@@ -734,11 +738,18 @@ public class VariantSqlQueryParser {
                     }
                     String key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
                     final String filter;
-                    if (new Genotype(genotype).isAllelesRefs()) {
+                    if (ALT_GT.equals(genotype)) {
+                        // Either starts or ends by 1 : 0/1, 1/1, 0|1, 1|0, 1/2, ...
+//                        filter = "( \"" + key + "\"[1] LIKE '%1' OR \"" + key + "\"[1] LIKE '1%' )";
+
+                        // The genotype contains a 1: 0/1, 1/1, 0|1, 1|0, 1/2, ...
+                        filter = '"' + key + "\"[1] LIKE '%1%'";
+                        // FIXME: This may return unwanted values at big multi-allelic variants like : 5/10
+                    } else if (FillGapsTask.isHomRefDiploid(genotype)) {
                         if (negated) {
-                            filter = '"' + key + "\" IS NOT NULL";
+                            filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
                         } else {
-                            filter = '"' + key + "\" IS NULL";
+                            filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
                         }
                     } else {
                         if (negated) {

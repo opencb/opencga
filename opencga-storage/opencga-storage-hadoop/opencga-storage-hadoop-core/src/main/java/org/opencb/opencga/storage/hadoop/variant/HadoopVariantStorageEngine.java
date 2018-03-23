@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -327,13 +328,21 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void fillMissing(String study, ObjectMap options) throws StorageEngineException {
+    public void fillMissing(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
         logger.info("FillMissing: Study " + study);
 
         StudyConfigurationManager scm = getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = scm.getStudyConfiguration(study, null).first();
 
-        fillGapsOrMissing(study, studyConfiguration, studyConfiguration.getIndexedFiles(), Collections.emptyList(), false, options);
+        fillGapsOrMissing(study, studyConfiguration, studyConfiguration.getIndexedFiles(), Collections.emptyList(), false, overwrite,
+                options);
+    }
+
+    @Override
+    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, VariantSearchException {
+        queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
+        queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+        super.searchIndex(query, queryOptions);
     }
 
     @Override
@@ -366,11 +375,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         logger.info("FillGaps: Study " + study + ", samples " + samples);
-        fillGapsOrMissing(study, studyConfiguration, fileIds, sampleIds, true, options);
+        fillGapsOrMissing(study, studyConfiguration, fileIds, sampleIds, true, false, options);
     }
 
     private void fillGapsOrMissing(String study, StudyConfiguration studyConfiguration, Set<Integer> fileIds, List<Integer> sampleIds,
-                                   boolean fillGaps, ObjectMap inputOptions) throws StorageEngineException {
+                                   boolean fillGaps, boolean overwrite, ObjectMap inputOptions) throws StorageEngineException {
         ObjectMap options = new ObjectMap(getOptions());
         if (inputOptions != null) {
             options.putAll(inputOptions);
@@ -385,7 +394,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         scm.lockAndUpdate(study, sc -> {
             boolean resume = options.getBoolean(RESUME.key(), RESUME.defaultValue());
-            StudyConfigurationManager.addBatchOperation(
+            BatchFileOperation operation = StudyConfigurationManager.addBatchOperation(
                     sc,
                     jobOperationName,
                     fileIdsList,
@@ -393,10 +402,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     BatchFileOperation.Type.OTHER,
                     // Allow concurrent operations if fillGaps.
                     (v) -> fillGaps || v.getOperationName().equals(FILL_GAPS_OPERATION_NAME));
+
+            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
             return sc;
         });
 
-        Thread hook = scm.buildShutdownHook(FILL_GAPS_OPERATION_NAME, studyId, Collections.emptyList());
+        Thread hook = scm.buildShutdownHook(jobOperationName, studyId, fileIdsList);
         Exception exception = null;
         try {
             Runtime.getRuntime().addShutdownHook(hook);
@@ -406,6 +417,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             options.put(FillGapsFromArchiveMapper.SAMPLES, sampleIds);
             options.put(FillGapsFromArchiveMapper.FILL_GAPS, fillGaps);
+            options.put(FillGapsFromArchiveMapper.OVERWRITE, overwrite);
 
             Class execClass = FillGapsDriver.class;
             String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
@@ -416,7 +428,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");
-            logger.info("Fill gaps of samples {} into variants table '{}'",
+            logger.info(jobOperationName + " of samples {} into variants table '{}'",
                     fillGaps ? sampleIds.toString() : "\"ALL\"", getVariantTableName());
             logger.debug(executable + ' ' + args);
             logger.info("------------------------------------------------------");
@@ -425,12 +437,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             logger.info("Exit value: {}", exitValue);
             logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
             if (exitValue != 0) {
-                throw new StorageEngineException("Error filling gaps for samples " + sampleIds);
+                throw new StorageEngineException("Error " + jobOperationName + " for samples " + sampleIds);
             }
 
         } catch (RuntimeException e) {
             exception = e;
-            throw new StorageEngineException("Error filling gaps for samples " + sampleIds, e);
+            throw new StorageEngineException("Error " + jobOperationName + " for samples " + sampleIds, e);
         } catch (StorageEngineException e) {
             exception = e;
             throw e;
@@ -665,12 +677,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             hBaseManager = new HBaseManager(configuration);
         }
         return hBaseManager;
-    }
-
-    @Override
-    protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
-        // TODO: Query using SearchManager even if FILES filter is used
-        return super.doQuerySearchManager(query, options);
     }
 
     @Override

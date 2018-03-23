@@ -141,6 +141,12 @@
             <testResource>
                 <directory>src/test/resources</directory>
             </testResource>
+            <testResource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>solr/**</include>
+                </includes>
+            </testResource>
         </testResources>
         <plugins>
             <plugin>

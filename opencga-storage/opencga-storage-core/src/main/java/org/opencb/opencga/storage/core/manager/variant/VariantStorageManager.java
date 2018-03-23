@@ -269,7 +269,7 @@ public class VariantStorageManager extends StorageManager {
         variantStorageEngine.fillGaps(String.valueOf(studyId), samples, config);
     }
 
-    public void fillMissing(String study, ObjectMap config, String sessionId)
+    public void fillMissing(String study, boolean overwrite, ObjectMap config, String sessionId)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, study);
@@ -277,7 +277,7 @@ public class VariantStorageManager extends StorageManager {
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        variantStorageEngine.fillMissing(String.valueOf(studyId), config);
+        variantStorageEngine.fillMissing(String.valueOf(studyId), config, overwrite);
     }
 
     // ---------------------//

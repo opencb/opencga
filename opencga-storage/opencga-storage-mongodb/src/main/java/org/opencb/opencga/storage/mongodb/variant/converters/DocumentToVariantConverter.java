@@ -51,9 +51,9 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
     public static final String SV_INS_SEQ = "ins_seq";
     public static final String SV_TYPE = "type";
 
-    public static final String HGVS_FIELD = "hgvs";
-    public static final String HGVS_NAME_FIELD = "name";
-    public static final String HGVS_TYPE_FIELD = "type";
+    @Deprecated public static final String HGVS_FIELD = "hgvs";
+    @Deprecated public static final String HGVS_NAME_FIELD = "name";
+    @Deprecated public static final String HGVS_TYPE_FIELD = "type";
 
     public static final String STUDIES_FIELD = "studies";
     public static final String ANNOTATION_FIELD = "annotation";
@@ -114,8 +114,14 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.ANNOTATION, Arrays.asList(ANNOTATION_FIELD, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
         map.put(VariantField.ANNOTATION_ANCESTRAL_ALLELE, emptyList());
         map.put(VariantField.ANNOTATION_ID, emptyList());
+        map.put(VariantField.ANNOTATION_CHROMOSOME, emptyList());
+        map.put(VariantField.ANNOTATION_START, emptyList());
+        map.put(VariantField.ANNOTATION_END, emptyList());
+        map.put(VariantField.ANNOTATION_REFERENCE, emptyList());
+        map.put(VariantField.ANNOTATION_ALTERNATE, emptyList());
         map.put(VariantField.ANNOTATION_XREFS, singletonList(ANNOTATION_FIELD + '.' + XREFS_FIELD));
-        map.put(VariantField.ANNOTATION_HGVS, emptyList());
+        map.put(VariantField.ANNOTATION_HGVS, singletonList(ANNOTATION_FIELD + '.' + DocumentToVariantAnnotationConverter.HGVS_FIELD));
+        map.put(VariantField.ANNOTATION_CYTOBAND, singletonList(ANNOTATION_FIELD + '.' + CYTOBANDS_FIELD));
         map.put(VariantField.ANNOTATION_DISPLAY_CONSEQUENCE_TYPE, singletonList(ANNOTATION_FIELD + '.' + DISPLAY_CONSEQUENCE_TYPE_FIELD));
         map.put(VariantField.ANNOTATION_CONSEQUENCE_TYPES, singletonList(ANNOTATION_FIELD + '.' + CONSEQUENCE_TYPE_FIELD));
         map.put(VariantField.ANNOTATION_POPULATION_FREQUENCIES, singletonList(ANNOTATION_FIELD + '.' + POPULATION_FREQUENCIES_FIELD));
@@ -134,6 +140,8 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.ANNOTATION_FUNCTIONAL_SCORE, Arrays.asList(
                 ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_RAW_FIELD,
                 ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_SCALED_FIELD));
+        map.put(VariantField.ANNOTATION_REPEAT, singletonList(ANNOTATION_FIELD + '.' + REPEATS_FIELD));
+        map.put(VariantField.ANNOTATION_DRUGS, emptyList());
         map.put(VariantField.ANNOTATION_ADDITIONAL_ATTRIBUTES, Arrays.asList(CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
 
         FIELDS_MAP = unmodifiableMap(map);
@@ -282,7 +290,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
             VariantAnnotation annotation;
             if (mongoAnnotation != null) {
                 annotation = variantAnnotationConverter
-                        .convertToDataModelType(mongoAnnotation, customAnnotation);
+                        .convertToDataModelType(mongoAnnotation, customAnnotation, chromosome, reference, alternate);
             } else {
                 annotation = new VariantAnnotation();
             }

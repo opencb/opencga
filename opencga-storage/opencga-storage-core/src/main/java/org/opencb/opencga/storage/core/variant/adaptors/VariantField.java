@@ -48,10 +48,16 @@ public enum VariantField {
     STUDIES_STUDY_ID(STUDIES, "studies.studyId"),
 
     ANNOTATION("annotation"),
+    ANNOTATION_CHROMOSOME(ANNOTATION, "annotation.chromosome"),
+    ANNOTATION_START(ANNOTATION, "annotation.start"),
+    ANNOTATION_END(ANNOTATION, "annotation.end"),
+    ANNOTATION_REFERENCE(ANNOTATION, "annotation.reference"),
+    ANNOTATION_ALTERNATE(ANNOTATION, "annotation.alternate"),
     ANNOTATION_ANCESTRAL_ALLELE(ANNOTATION, "annotation.ancestralAllele"),
     ANNOTATION_ID(ANNOTATION, "annotation.id"),
     ANNOTATION_XREFS(ANNOTATION, "annotation.xrefs"),
     ANNOTATION_HGVS(ANNOTATION, "annotation.hgvs"),
+    ANNOTATION_CYTOBAND(ANNOTATION, "annotation.cytoband"),
     ANNOTATION_DISPLAY_CONSEQUENCE_TYPE(ANNOTATION, "annotation.displayConsequenceType"),
     ANNOTATION_CONSEQUENCE_TYPES(ANNOTATION, "annotation.consequenceTypes"),
     ANNOTATION_POPULATION_FREQUENCIES(ANNOTATION, "annotation.populationFrequencies"),
@@ -64,6 +70,8 @@ public enum VariantField {
     ANNOTATION_VARIANT_TRAIT_ASSOCIATION(ANNOTATION, "annotation.variantTraitAssociation"),
     ANNOTATION_TRAIT_ASSOCIATION(ANNOTATION, "annotation.traitAssociation"),
     ANNOTATION_FUNCTIONAL_SCORE(ANNOTATION, "annotation.functionalScore"),
+    ANNOTATION_REPEAT(ANNOTATION, "annotation.repeat"),
+    ANNOTATION_DRUGS(ANNOTATION, "annotation.drugs"),
     ANNOTATION_ADDITIONAL_ATTRIBUTES(ANNOTATION, "annotation.additionalAttributes");
 
     private static final List<VariantField> SUMMARY_EXCLUDED_FIELDS = Arrays.asList(

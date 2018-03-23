@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryParam;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -127,6 +129,16 @@ public class VariantQueryException extends IllegalArgumentException {
 
     public static VariantQueryException internalException(Exception e) {
         return new VariantQueryException("Internal exception: " + e.getMessage(), e);
+    }
+
+    public static VariantQueryException unsupportedVariantQueryFilter(QueryParam param, String storageEngineId) {
+        return unsupportedVariantQueryFilter(param, storageEngineId, null);
+    }
+
+    public static VariantQueryException unsupportedVariantQueryFilter(QueryParam param, String storageEngineId, String extra) {
+        return new VariantQueryException("Unsupported variant query filter '" + param.key()
+                + "' with storage engine '" + storageEngineId + "'."
+                + (StringUtils.isEmpty(extra) ? "" : (' ' + extra)));
     }
 }
 

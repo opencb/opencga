@@ -91,6 +91,17 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
         }
 
         @Override
+        public TreeMap<Variant, Set<Integer>> getVariantsToFill() throws IOException {
+            TreeMap<Variant, Set<Integer>> variantsToFill = new TreeMap<>(VARIANT_COMPARATOR);
+
+            List<Variant> variants = extractVariantsToFill();
+            for (Variant variant : variants) {
+                variantsToFill.put(variant, new HashSet<>(fileIds));
+            }
+            System.out.println("variantsToFill = " + variantsToFill);
+            return variantsToFill;
+        }
+
         protected List<Variant> extractVariantsToFill() throws IOException {
             // If there are files not in the main batch, make an specific get to that batch
             if (!otherFilesGroupByFilesBatch.isEmpty()) {
@@ -165,11 +176,6 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
             } else {
                 return new VcfSlicePair(nonRefVcfSlice, refVcfSlice);
             }
-        }
-
-        @Override
-        public Set<Integer> getAllFiles() {
-            return fileIds;
         }
 
     }

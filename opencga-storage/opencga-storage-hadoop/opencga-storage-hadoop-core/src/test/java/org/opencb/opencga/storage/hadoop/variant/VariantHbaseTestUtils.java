@@ -177,6 +177,8 @@ public class VariantHbaseTestUtils {
                         os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
                     } else if (key.startsWith(VariantPhoenixHelper.RELEASE_PREFIX)) {
                         os.println("\t" + key + " = " + PBoolean.INSTANCE.toObject(entry.getValue()));
+                    } else if (key.endsWith(VariantPhoenixHelper.FILL_MISSING_SUFIX)) {
+                        os.println("\t" + key + " = " + PInteger.INSTANCE.toObject(entry.getValue()));
                     } else if (entry.getValue().length == 4) {
                         Object o = null;
                         try {

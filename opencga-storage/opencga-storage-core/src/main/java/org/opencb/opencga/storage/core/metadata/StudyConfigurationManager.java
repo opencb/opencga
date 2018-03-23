@@ -221,9 +221,11 @@ public class StudyConfigurationManager implements AutoCloseable {
         studyConfiguration.setTimeStamp(timeStamp);
         Map<Integer, String> headers = studyConfiguration.getHeaders();
 
-        studyConfiguration.setHeaders(null);
-        logger.debug("Updating studyConfiguration : {}", studyConfiguration.toJson());
-        studyConfiguration.setHeaders(headers);
+        if (logger.isDebugEnabled()) {
+            studyConfiguration.setHeaders(null);
+            logger.debug("Updating studyConfiguration : {}", studyConfiguration.toJson());
+            studyConfiguration.setHeaders(headers);
+        }
 
         // Store a copy of the StudyConfiguration.
         StudyConfiguration copy = studyConfiguration.newInstance();
