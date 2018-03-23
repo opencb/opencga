@@ -809,20 +809,36 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected boolean doIntersectWithSearch(Query query, QueryOptions options) throws StorageEngineException {
         UseSearchIndex useSearchIndex = UseSearchIndex.from(options);
 
+        final boolean intersect;
+        boolean active = searchActiveAndAlive();
+
         if (!getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue()) || useSearchIndex.equals(UseSearchIndex.NO)) {
             // If intersect is not active, do not intersect.
-            return false;
-        } else if (getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue())
-                || useSearchIndex.equals(UseSearchIndex.YES)) {
-            return searchActiveAndAlive();
+            intersect = false;
+        } else if (getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue())) {
+            // If always intersect, intersect if available
+            intersect = active;
+        } else if (!active) {
+            intersect = false;
+        } else if (useSearchIndex.equals(UseSearchIndex.YES) || VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_TRAIT)) {
+            intersect = true;
+        } else {
+            // TODO: Improve this heuristic
+            // Count only real params
+            Collection<VariantQueryParam> coveredParams = coveredParams(query);
+            int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
+            intersect = coveredParams.size() >= intersectParamsThreshold;
         }
-        // UseSearchIndex == AUTO
 
-        // TODO: Improve this heuristic
-        // Count only real params
-        Collection<VariantQueryParam> coveredParams = coveredParams(query);
-        int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
-        return searchActiveAndAlive() && (coveredParams.size() >= intersectParamsThreshold);
+        if (!intersect) {
+            if (useSearchIndex.equals(UseSearchIndex.YES)) {
+                throw new VariantQueryException("Unable to use search index. SearchEngine is not available");
+            } else if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_TRAIT)) {
+                throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_TRAIT, getStorageEngineId(),
+                        "Search engine is required.");
+            }
+        }
+        return intersect;
     }
 
     public QueryResult distinct(Query query, String field) throws StorageEngineException {
