@@ -16,11 +16,9 @@
 
 package org.opencb.opencga.catalog.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -31,12 +29,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
@@ -210,28 +210,27 @@ public class FileMetadataReader {
 //            start = System.currentTimeMillis();
 
             if (modifyParams.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
-                catalogManager.getFileManager()
-                        .setDiskUsage(file.getUid(), modifyParams.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
+                catalogManager.getFileManager().setDiskUsage(study.getFqn(), file.getPath(),
+                        modifyParams.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
                 modifyParams.remove(FileDBAdaptor.QueryParams.SIZE.key());
             }
             if (modifyParams.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
-                catalogManager.getFileManager()
-                        .setModificationDate(file.getUid(), modifyParams.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
-                                sessionId);
+                catalogManager.getFileManager().setModificationDate(study.getFqn(), file.getPath(),
+                        modifyParams.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()), sessionId);
                 modifyParams.remove(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
             if (modifyParams.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
                 catalogManager.getFileManager()
-                        .setUri(file.getUid(), modifyParams.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
+                        .setUri(study.getFqn(), file.getPath(), modifyParams.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
                 modifyParams.remove(FileDBAdaptor.QueryParams.URI.key());
             }
 
             if (!modifyParams.isEmpty()) {
-                catalogManager.getFileManager().update(file.getUid(), modifyParams, new QueryOptions(), sessionId);
+                catalogManager.getFileManager().update(study.getFqn(), file.getPath(), modifyParams, new QueryOptions(), sessionId);
             }
 //            logger.trace("modifyFile = " + (System.currentTimeMillis() - start) / 1000.0);
 
-            return catalogManager.getFileManager().get(file.getUid(), options, sessionId).first();
+            return catalogManager.getFileManager().get(study.getFqn(), file.getPath(), options, sessionId).first();
         }
 
         return file;
@@ -457,47 +456,6 @@ public class FileMetadataReader {
         }
     }
 
-    /**
-     * Updates the file stats from a transformed variant file.
-     * Reads the stats generated on the transform step.
-     *
-     * @param job           Job that executed successfully the transform step
-     * @param sessionId     User sessionId
-     * @throws CatalogException if a Catalog error occurs
-     */
-    @Deprecated
-    public void updateVariantFileStats(Job job, String sessionId) throws CatalogException {
-        long studyId = catalogManager.getJobManager().getStudyId(job.getUid());
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.UID.key(), job.getInput())
-                .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(String.valueOf(studyId), query, new QueryOptions(),
-                sessionId);
-        if (fileQueryResult.getResult().isEmpty()) {
-            return;
-        }
-        File inputFile = fileQueryResult.first();
-        if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
-            query = new Query()
-                    .append(FileDBAdaptor.QueryParams.UID.key(), job.getOutput())
-                    .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".file");
-            fileQueryResult = catalogManager.getFileManager().get(String.valueOf(studyId), query, new QueryOptions(), sessionId);
-            if (fileQueryResult.getResult().isEmpty()) {
-                return;
-            }
-
-            File variantsFile = fileQueryResult.first();
-            URI fileUri = catalogManager.getFileManager().getUri(variantsFile);
-            try (InputStream is = org.opencb.commons.utils.FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
-                VariantFileMetadata variantSource = new ObjectMapper().readValue(is, VariantFileMetadata.class);
-                VariantSetStats stats = variantSource.getStats();
-                catalogManager.getFileManager().update(inputFile.getUid(), new ObjectMap("stats", new ObjectMap(VARIANT_FILE_STATS, stats)),
-                        new QueryOptions(), sessionId);
-            } catch (IOException e) {
-                throw new CatalogException("Error reading file \"" + fileUri + "\"", e);
-            }
-        }
-    }
 
 
     public static FileMetadataReader get(CatalogManager catalogManager) {

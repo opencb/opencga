@@ -119,7 +119,7 @@ public class CatalogStudyConfigurationFactoryTest {
         if (indexed) {
             FileIndex fileIndex = new FileIndex("user", "today", new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234,
                     Collections.emptyMap());
-            catalogManager.getFileManager().setFileIndex(file.getUid(), fileIndex, sessionId);
+            catalogManager.getFileManager().setFileIndex(Long.toString(studyId), file.getPath(), fileIndex, sessionId);
             indexedFiles.add((int) file.getUid());
             List<Long> samples = catalogManager.getCohortManager().getSamples(studyId + "", cohortId + "", null, sessionId).getResult().stream().map(Sample::getUid).collect(Collectors.toList());
             samples.addAll(file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));

@@ -136,7 +136,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        ParamUtils.checkAlias(individual.getName(), "name", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(individual.getId(), "id", configuration.getCatalog().getOffset());
+        individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
         individual.setFamily(ParamUtils.defaultObject(individual.getFamily(), ""));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
         individual.setSpecies(ParamUtils.defaultObject(individual.getSpecies(), Individual.Species::new));
@@ -153,7 +154,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setCreationDate(TimeUtils.getTime());
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = studyManager.resolveId(studyStr, userId);
         long studyUid = study.getUid();
 
         authorizationManager.checkStudyPermission(studyUid, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
@@ -257,7 +258,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = studyManager.resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
         fixQueryAnnotationSearch(study.getUid(), query);
@@ -297,8 +298,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        long studyId = studyManager.getId(userId, studyStr);
-        query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
 
         return individualDBAdaptor.iterator(query, options, userId);
     }
@@ -309,7 +310,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         Query finalQuery = new Query(query);
         try {
@@ -338,7 +339,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         Query finalQuery = new Query(query);
         try {
@@ -375,7 +376,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         DBIterator<Individual> iterator;
         try {
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
             // Fix query if it contains any annotation
             fixQuery(study, finalQuery, sessionId);
@@ -658,12 +659,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userManager.getUserId(sessionId);
-        long studyId = studyManager.getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(studyId, userId, query, true);
+        fixQueryAnnotationSearch(study.getUid(), userId, query, true);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -685,7 +686,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         ParamUtils.checkObj(fields, "fields");
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         Query finalQuery = new Query(query);
 

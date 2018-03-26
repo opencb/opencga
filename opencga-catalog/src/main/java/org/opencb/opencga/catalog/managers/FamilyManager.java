@@ -120,8 +120,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     public QueryResult<Family> create(String studyStr, Family family, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
 
         ParamUtils.checkObj(family, "family");
         ParamUtils.checkAlias(family.getName(), "name", configuration.getCatalog().getOffset());
@@ -131,23 +131,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
         family.setStatus(new Family.FamilyStatus());
         family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
-        family.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+        family.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
         family.setVersion(1);
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
-        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(studyId, family.getAnnotationSets());
+        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(study.getUid(), family.getAnnotationSets());
 
-        autoCompleteFamilyMembers(family, studyId, sessionId);
+        autoCompleteFamilyMembers(family, study.getUid(), sessionId);
         validateFamily(family);
         validateMultiples(family);
         validatePhenotypes(family);
-        createMissingMembers(family, studyId, sessionId);
+        createMissingMembers(family, study.getUid(), sessionId);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        QueryResult<Family> queryResult = familyDBAdaptor.insert(studyId, family, variableSetList, options);
+        QueryResult<Family> queryResult = familyDBAdaptor.insert(study.getUid(), family, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.family, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
-        addMemberInformation(queryResult, studyId, sessionId);
+        addMemberInformation(queryResult, study.getUid(), sessionId);
         return queryResult;
     }
 
@@ -157,21 +157,21 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        long studyId = studyManager.getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(studyId, query);
+        fixQueryAnnotationSearch(study.getUid(), query);
         fixQueryOptionAnnotation(options);
 
-        query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
 
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
-        addMemberInformation(familyQueryResult, studyId, sessionId);
+        addMemberInformation(familyQueryResult, study.getUid(), sessionId);
 
         if (familyQueryResult.getNumResults() == 0 && query.containsKey(FamilyDBAdaptor.QueryParams.UID.key())) {
             List<Long> idList = query.getAsLongList(FamilyDBAdaptor.QueryParams.UID.key());
             for (Long myId : idList) {
-                authorizationManager.checkFamilyPermission(studyId, myId, userId, FamilyAclEntry.FamilyPermissions.VIEW);
+                authorizationManager.checkFamilyPermission(study.getUid(), myId, userId, FamilyAclEntry.FamilyPermissions.VIEW);
             }
         }
 
@@ -183,7 +183,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = studyManager.resolveId(studyStr, userId);
 
         Query finalQuery = new Query(query);
 
@@ -248,7 +248,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = studyManager.resolveId(studyStr, userId);
 
         Query finalQuery = new Query(query);
 
@@ -279,7 +279,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         DBIterator<Family> iterator;
         try {
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = studyManager.resolveId(studyStr, userId, QueryOptions.empty());
+            study = studyManager.resolveId(studyStr, userId);
 
             // Fix query if it contains any annotation
             fixQueryAnnotationSearch(study.getUid(), finalQuery);
@@ -365,7 +365,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = studyManager.resolveId(studyStr, userId);
 
         Query finalQuery = new Query(query);
         fixQueryObject(study, finalQuery, sessionId);

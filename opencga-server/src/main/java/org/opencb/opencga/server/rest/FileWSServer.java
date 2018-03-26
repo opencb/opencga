@@ -220,19 +220,19 @@ public class FileWSServer extends OpenCGAWSServer {
         }
 
         java.nio.file.Path filePath = null;
-        final long studyId;
+        final Study study;
         try {
-            String userId1 = catalogManager.getUserManager().getUserId(sessionId);
-            studyId = catalogManager.getStudyManager().getId(userId1, studyStr);
             String userId = catalogManager.getUserManager().getUserId(sessionId);
-            catalogManager.getAuthorizationManager().checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPLOAD_FILES);
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
+                    StudyAclEntry.StudyPermissions.UPLOAD_FILES);
             // TODO: Improve upload method. Check upload permission not only at study level.
         } catch (Exception e) {
             return createErrorResponse(e);
         }
 
         try {
-            filePath = Paths.get(catalogManager.getFileManager().getUri(studyId, relativeFilePath));
+            filePath = Paths.get(catalogManager.getFileManager().getUri(study.getUid(), relativeFilePath));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -292,7 +292,8 @@ public class FileWSServer extends OpenCGAWSServer {
                     }
                     IOUtils.deleteDirectory(folderPath);
                     try {
-                        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), relativeFilePath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
+                        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(studyStr, File.Type.FILE,
+                                File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), relativeFilePath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
                         new FileUtils(catalogManager).upload(completedFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
                         QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getUid(), null, sessionId);
                         File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
@@ -363,8 +364,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 if (relativeFilePath.length() > 1 && !relativeFilePath.equals("./")) {
                     try {
                         // Create parents directory if necessary
-                        catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get(relativeFilePath).toString(),
-                                null, parents, null, QueryOptions.empty(), sessionId);
+                        catalogManager.getFileManager().createFolder(studyStr, Paths.get(relativeFilePath).toString(), null, parents,
+                                null, QueryOptions.empty(), sessionId);
                     } catch (CatalogException e) {
                         logger.debug("The folder {} already exists", relativeFilePath);
                     }
@@ -380,8 +381,12 @@ public class FileWSServer extends OpenCGAWSServer {
                 logger.debug("Fileformat {}", fileFormat);
 
                 // Register the file and move it to the proper directory
-                QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), destinationPath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
-                new FileUtils(catalogManager).upload(tempFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
+                QueryResult<File> queryResult1 = catalogManager.getFileManager().create(studyStr, File.Type.FILE,
+                        File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), destinationPath,
+                        null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null,
+                        sessionId);
+                new FileUtils(catalogManager).upload(tempFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true,
+                        Long.MAX_VALUE);
 
                 QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getUid(), null, sessionId);
                 File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
@@ -704,7 +709,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
         try {
             List<String> idList = getIdList(fileIdStr);
-            QueryResult queryResult = fileManager.index(idList, studyStr, "VCF", params, sessionId);
+            QueryResult queryResult = fileManager.index(studyStr, idList, "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -951,17 +956,13 @@ public class FileWSServer extends OpenCGAWSServer {
             if (uriList.size() == 1) {
                 // If it is just one uri to be linked, it will return an error response if there is some kind of error.
                 URI myUri = UriUtils.createUri(uriList.get(0));
-                String userId = catalogManager.getUserManager().getUserId(sessionId);
-                long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-                queryResultList.add(catalogManager.getFileManager().link(myUri, path, studyId, objectMap, sessionId));
+                queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, path, objectMap, sessionId));
             } else {
                 for (String uri : uriList) {
                     logger.info("uri: {}", uri);
                     try {
                         URI myUri = UriUtils.createUri(uri);
-                        String userId = catalogManager.getUserManager().getUserId(sessionId);
-                        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-                        queryResultList.add(catalogManager.getFileManager().link(myUri, path, studyId, objectMap, sessionId));
+                        queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, path, objectMap, sessionId));
                     } catch (URISyntaxException | CatalogException | IOException e) {
                         queryResultList.add(new QueryResult<>("Link file", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
                     }
@@ -1037,7 +1038,7 @@ public class FileWSServer extends OpenCGAWSServer {
             FileUtils catalogFileUtils = new FileUtils(catalogManager);
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
-                File file1 = catalogFileUtils.checkFile(file, false, sessionId);
+                File file1 = catalogFileUtils.checkFile(studyStr, file, false, sessionId);
                 file1 = fileMetadataReader.setMetadataInformation(file1, null, new QueryOptions(queryOptions), sessionId, false);
                 if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
                     files = Collections.emptyList();

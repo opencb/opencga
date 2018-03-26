@@ -163,8 +163,8 @@ public class JobManager extends ResourceManager<Job> {
     @Override
     public QueryResult<Job> create(String studyStr, Job job, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
         ParamUtils.checkObj(job, "Job");
         ParamUtils.checkParameter(job.getName(), "Name");
@@ -181,16 +181,16 @@ public class JobManager extends ResourceManager<Job> {
         job.setResourceManagerAttributes(ParamUtils.defaultObject(job.getResourceManagerAttributes(), HashMap::new));
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
         job.setUserId(userId);
-        job.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+        job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
 
         // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
         for (File inputFile : job.getInput()) {
-            authorizationManager.checkFilePermission(studyId, inputFile.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
+            authorizationManager.checkFilePermission(study.getUid(), inputFile.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
         }
         if (job.getOutDir() != null) {
-            authorizationManager.checkFilePermission(studyId, job.getOutDir().getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+            authorizationManager.checkFilePermission(study.getUid(), job.getOutDir().getUid(), userId, FileAclEntry.FilePermissions.WRITE);
             QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
                     "projects.studies.files.id",
                     "projects.studies.files.type",
@@ -202,7 +202,7 @@ public class JobManager extends ResourceManager<Job> {
             }
         }
 
-        QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, options);
+        QueryResult<Job> queryResult = jobDBAdaptor.insert(job, study.getUid(), options);
         auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
@@ -222,7 +222,7 @@ public class JobManager extends ResourceManager<Job> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
 
@@ -268,7 +268,7 @@ public class JobManager extends ResourceManager<Job> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
 
@@ -282,7 +282,7 @@ public class JobManager extends ResourceManager<Job> {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         fixQueryObject(study, query, sessionId);
 
@@ -309,7 +309,7 @@ public class JobManager extends ResourceManager<Job> {
         DBIterator<Job> iterator;
         try {
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
             fixQueryObject(study, query, sessionId);
             finalQuery.append(JobDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
@@ -438,8 +438,8 @@ public class JobManager extends ResourceManager<Job> {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userManager.getUserId(sessionId);
-        long studyId = studyManager.getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -464,29 +464,32 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         String userId = userManager.getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Add study id to the query
-        query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
 
         QueryResult queryResult = jobDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    public QueryResult<Job> queue(long studyId, String jobName, String description, String executable, Job.Type type,
-                                  Map<String, String> params, List<File> input, List<File> output, File outDir, String userId,
-                                  Map<String, Object> attributes)
+    public QueryResult<Job> queue(String studyStr, String jobName, String description, String executable, Job.Type type,
+                                  Map<String, String> params, List<File> input, List<File> output, File outDir,
+                                  Map<String, Object> attributes, String token)
             throws CatalogException {
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
 
-        Job job = new Job(jobName, userId, executable, type, input, output, outDir, params,
-                catalogManager.getStudyManager().getCurrentRelease(studyId))
+        authorizationManager.checkStudyPermission(study.getUid(), token, StudyAclEntry.StudyPermissions.WRITE_JOBS);
+
+        Job job = new Job(jobName, token, executable, type, input, output, outDir, params,
+                catalogManager.getStudyManager().getCurrentRelease(study, userId))
                 .setDescription(description)
                 .setAttributes(attributes);
 
-        QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, new QueryOptions());
-        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
+        QueryResult<Job> queryResult = jobDBAdaptor.insert(job, study.getUid(), new QueryOptions());
+        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), token, queryResult.first(), null, null);
 
         return queryResult;
     }

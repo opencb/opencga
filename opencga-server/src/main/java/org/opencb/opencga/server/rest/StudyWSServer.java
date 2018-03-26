@@ -123,10 +123,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyParams());
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult queryResult = catalogManager.getStudyManager().update(String.valueOf((Long) studyId), new ObjectMap
-                    (jsonObjectMapper.writeValueAsString(updateParams)), null, sessionId);
+            QueryResult queryResult = catalogManager.getStudyManager().update(studyStr,
+                    new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams)), null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -215,9 +213,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes) {
         try {
             isSingleId(studyStr);
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult queryResult = catalogManager.getFileManager().get(String.valueOf(studyId), query, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().get(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -248,9 +244,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult queryResult = catalogManager.getSampleManager().get(String.valueOf(studyId), query, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getSampleManager().get(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -360,9 +354,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             required = true) @PathParam("study") String studyStr) {
         try {
             isSingleId(studyStr);
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
+            Study study = catalogManager.getStudyManager().get(studyStr, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
             /* Resync files */

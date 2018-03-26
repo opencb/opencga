@@ -58,7 +58,7 @@ public class IndividualWSServerTest {
     private WebTarget webTarget;
     private static ObjectMapper jsonObjectMapper;
     private String sessionId;
-    private long studyId;
+    private String studyId = "user@1000G:phase1";
     private long in1;
     private long in2;
     private long in3;
@@ -93,16 +93,14 @@ public class IndividualWSServerTest {
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
-        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in1", "f1", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,
+        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in1"), null,
                 sessionId).first().getUid();
-        in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in2", "f1", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getUid();
-        in3 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in3", "f2", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getUid();
-        in4 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in4", "f2", (long) -1, (long) -1, null, "", "", "",
-                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getUid();
+        in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in2"), null, sessionId).first()
+                .getUid();
+        in3 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in3"), null, sessionId).first()
+                .getUid();
+        in4 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in4"), null, sessionId).first()
+                .getUid();
     }
 
     @After

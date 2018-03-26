@@ -922,15 +922,9 @@ public class UserManager extends AbstractManager {
         if (StringUtils.isEmpty(studyStr) || StringUtils.isEmpty(studyGroup)) {
             return retResult;
         }
-        long studyId = catalogManager.getStudyManager().getId("admin", studyStr);
-
-        if (studyId <= 0) {
-            retResult.setErrorMsg("Study " + studyStr + " not found.");
-            return retResult;
-        }
 
         try {
-            catalogManager.getStudyManager().createGroup(Long.toString(studyId), studyGroup, StringUtils.join(userSet, ","), token);
+            catalogManager.getStudyManager().createGroup(studyStr, studyGroup, StringUtils.join(userSet, ","), token);
         } catch (CatalogException e) {
             if (e.getMessage().contains("users already belong to")) {
                 // Cannot create a group with those users because they already belong to other group
@@ -939,7 +933,7 @@ public class UserManager extends AbstractManager {
             }
             try {
                 GroupParams groupParams = new GroupParams(StringUtils.join(userSet, ","), GroupParams.Action.ADD);
-                catalogManager.getStudyManager().updateGroup(Long.toString(studyId), studyGroup, groupParams, token);
+                catalogManager.getStudyManager().updateGroup(studyStr, studyGroup, groupParams, token);
             } catch (CatalogException e1) {
                 retResult.setErrorMsg(e1.getMessage());
                 return retResult;
@@ -947,7 +941,7 @@ public class UserManager extends AbstractManager {
         }
 
         try {
-            QueryResult<Group> group = catalogManager.getStudyManager().getGroup(Long.toString(studyId), studyGroup, token);
+            QueryResult<Group> group = catalogManager.getStudyManager().getGroup(studyStr, studyGroup, token);
             if (!group.first().getUserIds().isEmpty()) {
                 retResult.setWarningMsg(retResult.getWarningMsg() + "Users registered in group " + studyGroup + " in study " + studyStr
                         + ": " + String.join(", ", group.first().getUserIds()));

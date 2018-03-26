@@ -275,8 +275,7 @@ public class VariantFetcher implements AutoCloseable {
             for (String id : query.getAsStringList(key)) {
                 if (!id.startsWith("!")) {
                     String userId = catalogManager.getUserManager().getUserId(sessionId);
-                    long studyId = catalogManager.getStudyManager().getId(userId, id);
-                    return studyId > 0 ? studyId : null;
+                    return catalogManager.getStudyManager().resolveId(id, userId).getUid();
                 }
             }
         }

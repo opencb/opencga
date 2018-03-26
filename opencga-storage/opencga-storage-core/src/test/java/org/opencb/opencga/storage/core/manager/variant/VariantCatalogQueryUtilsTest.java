@@ -57,7 +57,7 @@ public class VariantCatalogQueryUtilsTest {
         when(catalogManager.getUserManager()).thenReturn(userManager);
         when(userManager.getUserId(eq("sessionId"))).thenReturn("u");
         doAnswer(invocation -> studyNameMap.get(invocation.getArgument(1).toString()))
-                .when(studyManager).getId(anyString(), anyString());
+                .when(studyManager).resolveId(anyString(), anyString());
 
         catalogUtils = new VariantCatalogQueryUtils(catalogManager);
     }

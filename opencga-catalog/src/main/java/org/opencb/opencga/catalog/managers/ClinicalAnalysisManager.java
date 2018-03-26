@@ -89,21 +89,21 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
 
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
 
         if (queryResult.getNumResults() == 0 && query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.UID.key())) {
             List<Long> analysisList = query.getAsLongList(ClinicalAnalysisDBAdaptor.QueryParams.UID.key());
             for (Long analysisId : analysisList) {
-                authorizationManager.checkClinicalAnalysisPermission(studyId, analysisId, userId,
+                authorizationManager.checkClinicalAnalysisPermission(study.getUid(), analysisId, userId,
                         ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW);
             }
         }
 
-        addMissingInformation(queryResult, studyId, sessionId);
+        addMissingInformation(queryResult, study.getUid(), sessionId);
 
         return queryResult;
     }
@@ -115,9 +115,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
 
         return clinicalDBAdaptor.iterator(query, options, userId);
     }
@@ -126,7 +126,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public QueryResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options,
                                                 String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_CLINICAL_ANALYSIS);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -359,7 +359,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public QueryResult<ClinicalAnalysis> search(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         fixQueryObject(query, study, sessionId);
 
@@ -405,7 +405,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public QueryResult<ClinicalAnalysis> count(String studyStr, Query query, String sessionId)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         fixQueryObject(query, study, sessionId);
 
@@ -436,7 +436,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         fixQueryObject(query, study, sessionId);
 

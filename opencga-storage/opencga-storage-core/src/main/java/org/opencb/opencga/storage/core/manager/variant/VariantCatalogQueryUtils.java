@@ -290,7 +290,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public class StudyTransformFilter extends TransformFilter {
         @Override
         protected Long toId(String defaultStudyStr, String value, String sessionId) throws CatalogException {
-            return catalogManager.getStudyManager().getId(catalogManager.getUserManager().getUserId(sessionId), value);
+            return catalogManager.getStudyManager().resolveId(defaultStudyStr, catalogManager.getUserManager().getUserId(sessionId))
+                    .getUid();
         }
 
         @Override

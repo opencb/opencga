@@ -41,7 +41,7 @@ public class VariableSetWSServerTest {
     private WebTarget webTarget;
     private static WSServerTestUtils serverTestUtils;
     private String sessionId;
-    private long studyId;
+    private String studyId = "user@1000G:phase1";
     private long variableSetId;
     private ObjectMapper objectMapper;
 
@@ -71,9 +71,7 @@ public class VariableSetWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
-        variableSetId = OpenCGAWSServer.catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId), null,null, sessionId)
+        variableSetId = OpenCGAWSServer.catalogManager.getStudyManager().searchVariableSets(studyId, null,null, sessionId)
                 .first().getUid();
 
     }

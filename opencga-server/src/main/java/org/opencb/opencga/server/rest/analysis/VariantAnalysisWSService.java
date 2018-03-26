@@ -182,7 +182,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
         try {
             List<String> idList = getIdList(fileIdStr);
-            QueryResult queryResult = catalogManager.getFileManager().index(idList, studyStr, "VCF", params, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
@@ -479,7 +479,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "chromosome", value = DEPRECATED + CHROMOSOME_DESCR, dataType = "string", paramType = "query")
     })
     public Response samples(
-            @ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String study,
+            @ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String studyStr,
             @ApiParam(value = "List of samples to check. By default, all samples") @QueryParam("samples") String samples,
             @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotypes") @DefaultValue("0/1,1/1") String genotypesStr,
             @ApiParam(value = "Samples must be present in ALL variants or in ANY variant.") @QueryParam("all") @DefaultValue("false") boolean all
@@ -495,12 +495,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 query.append(INCLUDE_SAMPLE.key(), Arrays.asList(samples.split(",")));
                 query.remove(SAMPLE.key());
             }
-            if (StringUtils.isNotEmpty(study)) {
-                query.append(STUDY.key(), study);
+            if (StringUtils.isNotEmpty(studyStr)) {
+                query.append(STUDY.key(), studyStr);
             }
 
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, study);
             Collection<String> sampleNames;
             if (all) {
                 sampleNames = variantSampleFilter.getSamplesInAllVariants(query, genotypes);
@@ -509,7 +507,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 sampleNames = samplesInAnyVariants.keySet();
             }
             Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), String.join(",", sampleNames));
-            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(String.valueOf(studyId), sampleQuery, queryOptions,
+            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyStr, sampleQuery, queryOptions,
                     sessionId);
             return createOkResponse(allSamples);
         } catch (Exception e) {

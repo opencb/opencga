@@ -45,9 +45,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
-        long projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getUid();
-        catalogManager.getStudyManager().create(String.valueOf(projectId), "phase1", "Phase 1", Study.Type.TRIO, null, "Done", null, null,
+        String projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
+        catalogManager.getStudyManager().create(projectId, "phase1", "Phase 1", Study.Type.TRIO, null, "Done", null, null,
                 null, null, null, null, null, null, sessionIdUser);
 
     }

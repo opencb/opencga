@@ -1589,8 +1589,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case UID:
                         addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case PROJECT_ID:
+                    case PROJECT_UID:
                         addOrQuery(PRIVATE_PROJECT_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case PROJECT_ID:
+                        addOrQuery(PRIVATE_PROJECT_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);

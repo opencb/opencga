@@ -61,9 +61,9 @@ public class FileScannerTest {
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         project = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(String.valueOf(project.getUid()), "phase1", "Phase 1", Study.Type.TRIO, null,
+        study = catalogManager.getStudyManager().create(project.getId(), "phase1", "Phase 1", Study.Type.TRIO, null,
                 "Done", null, null, null, null, null, null, null, null, sessionIdUser).first();
-        folder = catalogManager.getFileManager().createFolder(Long.toString(study.getUid()), Paths.get("data/test/folder/").toString(),
+        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/test/folder/").toString(),
                 null, true, null, QueryOptions.empty(), sessionIdUser).first();
 
         directory = catalogManagerExternalResource.getOpencgaHome().resolve("catalog_scan_test_folder").toAbsolutePath();

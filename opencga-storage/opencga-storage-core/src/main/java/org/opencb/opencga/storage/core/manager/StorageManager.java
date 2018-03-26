@@ -100,7 +100,7 @@ public abstract class StorageManager {
         if (fileIdStrs.isEmpty()) {
             fileIds = Collections.emptyList();
             String userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyIdStr, userId, QueryOptions.empty());
+            study = catalogManager.getStudyManager().resolveId(studyIdStr, userId);
         } else {
             AbstractManager.MyResources<File> resource = catalogManager.getFileManager().getUids(fileIdStrs, studyIdStr, sessionId);
             fileIds = resource.getResourceList();

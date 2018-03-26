@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.UriUtils;
 
@@ -354,10 +355,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             URI uri = UriUtils.createUri(input);
             logger.debug("uri: {}", uri.toString());
 
-            String userId1 = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId1, filesCommandOptions.linkCommandOptions.study);
-            linkQueryResultList.add(catalogManager.getFileManager().link(uri, filesCommandOptions.linkCommandOptions.path, studyId,
-                    objectMap, sessionId));
+            linkQueryResultList.add(catalogManager.getFileManager().link(filesCommandOptions.linkCommandOptions.study, uri,
+                    filesCommandOptions.linkCommandOptions.path, objectMap, sessionId));
         }
 
         return new QueryResponse<>(new QueryOptions(), linkQueryResultList);

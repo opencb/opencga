@@ -100,41 +100,48 @@ public class ProjectManager extends AbstractManager {
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
             QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
 
-            if (studyQueryResult.getNumResults() == 0) {
-                throw new CatalogException("Project " + projectStr + " not found or the user " + userId + " does not have permissions to "
-                        + "view it.");
-            }
+//            if (studyQueryResult.getNumResults() == 0) {
+//                throw new CatalogException("Project " + projectStr + " not found or the user " + userId + " does not have permissions to "
+//                        + "view it.");
+//            }
 
-            Set<String> projectFqnSet = new HashSet<>();
-            for (Study study : studyQueryResult.getResult()) {
-                projectFqnSet.add(StringUtils.split(study.getFqn(), ":")[0]);
-            }
-
-            if (projectFqnSet.size() == 1) {
-                // We know which project the user is looking for
-                for (String fqn : projectFqnSet) {
-                    String[] split = StringUtils.split(fqn, "@");
-                    auxOwner = split[0];
-                    auxProject = split[1];
+            if (studyQueryResult.getNumResults() > 0) {
+                Set<String> projectFqnSet = new HashSet<>();
+                for (Study study : studyQueryResult.getResult()) {
+                    projectFqnSet.add(StringUtils.split(study.getFqn(), ":")[0]);
                 }
-            } else {
-                // We will prioritise projects owned by the user
-                List<String> ownedProjects = new ArrayList<>();
-                for (String fqn : projectFqnSet) {
-                    if (fqn.startsWith(userId + "@")) {
-                        ownedProjects.add(fqn);
+
+                if (projectFqnSet.size() == 1) {
+                    // We know which project the user is looking for
+                    for (String fqn : projectFqnSet) {
+                        String[] split = StringUtils.split(fqn, "@");
+                        auxOwner = split[0];
+                        auxProject = split[1];
+                    }
+                } else {
+                    // We will prioritise projects owned by the user
+                    List<String> ownedProjects = new ArrayList<>();
+                    for (String fqn : projectFqnSet) {
+                        if (fqn.startsWith(userId + "@")) {
+                            ownedProjects.add(fqn);
+                        }
+                    }
+
+                    if (ownedProjects.size() == 0 || ownedProjects.size() > 1) {
+                        throw new CatalogException("More than one project found. Please, be more specific. The accepted pattern is "
+                                + "[ownerId@projectId]");
+
+                    } else {
+                        String[] split = StringUtils.split(ownedProjects.get(0), "@");
+                        auxOwner = split[0];
+                        auxProject = split[1];
                     }
                 }
-
-                if (ownedProjects.size() == 0 || ownedProjects.size() > 1) {
-                    throw new CatalogException("More than one project found. Please, be more specific. The accepted pattern is "
-                            + "[ownerId@projectId]");
-                } else {
-                    String[] split = StringUtils.split(ownedProjects.get(0), "@");
-                    auxOwner = split[0];
-                    auxProject = split[1];
-                }
             }
+        }
+
+        if (StringUtils.isEmpty(auxOwner)) {
+            auxOwner = userId;
         }
 
         // We just need to retrieve the project information now

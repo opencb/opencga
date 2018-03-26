@@ -53,9 +53,9 @@ public class ProjectManagerTest extends GenericTest {
     protected String sessionIdUser;
     protected String sessionIdUser2;
     protected String sessionIdUser3;
-    private long project1;
-    private long project2;
-    private long project3;
+    private String project1;
+    private String project2;
+    private String project3;
     private long studyId;
     private long studyId2;
     private long studyId3;
@@ -76,25 +76,23 @@ public class ProjectManagerTest extends GenericTest {
         sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
 
         project1 = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getUid();
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
         project2 = catalogManager.getProjectManager().create("Project Management Project", "pmp", "life art intelligent system",
-                "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(),
-                sessionIdUser2).first().getUid();
+                "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser2).first().getId();
         project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getUid();
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getId();
 
-        studyId = catalogManager.getStudyManager().create(String.valueOf(project1), "phase1", "Phase 1", Study.Type.TRIO, null, "Done",
+        studyId = catalogManager.getStudyManager().create(project1, "phase1", "Phase 1", Study.Type.TRIO, null, "Done",
                 null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
-        studyId2 = catalogManager.getStudyManager().create(String.valueOf(project1), "phase3", "Phase 3", Study.Type.CASE_CONTROL, null,
+        studyId2 = catalogManager.getStudyManager().create(project1, "phase3", "Phase 3", Study.Type.CASE_CONTROL, null,
                 "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
-        studyId3 = catalogManager.getStudyManager().create(String.valueOf(project2), "s1", "Study 1", Study.Type.CONTROL_SET, null, "",
+        studyId3 = catalogManager.getStudyManager().create(project2, "s1", "Study 1", Study.Type.CONTROL_SET, null, "",
                 null, null, null, null, null, null, null, null, sessionIdUser2).first().getUid();
     }
 
     @Test
     public void getOwnProjectNoStudies() throws CatalogException {
-        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(String.valueOf((Long) project3), null,
-                sessionIdUser3);
+        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
         assertEquals(1, projectQueryResult.getNumResults());
     }
 
@@ -108,7 +106,7 @@ public class ProjectManagerTest extends GenericTest {
         }
 
         // Create a new study in project2 with some dummy permissions for user
-        long s2 = catalogManager.getStudyManager().create(String.valueOf(project2), "s2", "Study 2", Study.Type.CONTROL_SET, null, "",
+        long s2 = catalogManager.getStudyManager().create(project2, "s2", "Study 2", Study.Type.CONTROL_SET, null, "",
                 null, null, null, null, null, null, null, null, sessionIdUser2).first().getUid();
         catalogManager.getStudyManager().updateGroup(String.valueOf(s2), "@members", new GroupParams("user", GroupParams.Action.ADD),
                 sessionIdUser2);
@@ -135,7 +133,7 @@ public class ProjectManagerTest extends GenericTest {
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(2, queryResult.getNumResults());
         for (Project project : queryResult.getResult()) {
-            if (project.getUid() == project2) {
+            if (project.getId().equals(project2)) {
                 assertEquals(2, project.getStudies().size());
             } else {
                 assertEquals(1, project.getStudies().size());

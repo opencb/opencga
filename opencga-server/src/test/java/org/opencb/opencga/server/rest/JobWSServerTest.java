@@ -41,7 +41,7 @@ public class JobWSServerTest {
 
     private static WSServerTestUtils serverTestUtils;
     private WebTarget webTarget;
-    private long studyId;
+    private String studyId = "user@1000G:phase1";
     private String sessionId;
 
     @Rule
@@ -64,7 +64,6 @@ public class JobWSServerTest {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
     }
 
     @After

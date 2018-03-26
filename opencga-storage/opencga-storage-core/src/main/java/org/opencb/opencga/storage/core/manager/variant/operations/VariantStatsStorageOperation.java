@@ -70,7 +70,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         long studyUid = study.getUid();
 
         final Long fileId = fileIdStr == null ? null : catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId)

@@ -343,7 +343,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         logger.info("{} files found", files.size());
         if (files.size() > 0) {
-            fileManager.matchUpVariantFiles(files, sessionId);
+            fileManager.matchUpVariantFiles(null, files, sessionId);
         }
 //
 //        if (!ioManager.exists(tmpOutdirPath.toUri())) {
@@ -485,7 +485,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             Map<String, Object> attributes = indexedFile.getAttributes();
             attributes.put("storagePipelineResult", storagePipelineResult);
             ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-            fileManager.update(indexedFile.getUid(), params, new QueryOptions(), sessionId);
+            fileManager.update(study.getFqn(), indexedFile.getPath(), params, new QueryOptions(), sessionId);
 
             // Update index status
             fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, release, sessionId);
@@ -530,7 +530,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 throw new CatalogException("Error reading file \"" + metaFile + "\"", e);
             }
             ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_FILE_STATS, stats));
-            fileManager.update(inputFile.getUid(), params, new QueryOptions(), sessionId);
+            fileManager.update(null, inputFile.getPath(), params, new QueryOptions(), sessionId);
         }
 //        long studyId = catalogManager.getStudyIdByJobId(job.getId());
 //        Query query = new Query()
@@ -816,7 +816,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         long vcfId = -1;
         // Matchup variant files, if missing
         if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
-            catalogManager.getFileManager().matchUpVariantFiles(Collections.singletonList(file), sessionId);
+            catalogManager.getFileManager().matchUpVariantFiles(null, Collections.singletonList(file), sessionId);
         }
         for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
             if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {

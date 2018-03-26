@@ -406,7 +406,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
             }
         }
         assertNotNull(transformFile);
-        catalogManager.getFileManager().matchUpVariantFiles(singletonList(transformFile), sessionId);
+        catalogManager.getFileManager().matchUpVariantFiles(null, singletonList(transformFile), sessionId);
 
         queryOptions = new QueryOptions().append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);

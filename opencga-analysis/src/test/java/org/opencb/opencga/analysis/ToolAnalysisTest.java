@@ -70,8 +70,7 @@ public class ToolAnalysisTest extends GenericTest {
         Path toolDir = Paths.get(getClass().getResource("/tools").toURI());
         Path tmp = Paths.get("/tmp");
 
-        Long studyId = catalogManager.getStudyManager().getId("user", STUDY);
-        catalogManager.getFileManager().link(testBam.toUri(), "bams/", studyId, new ObjectMap("parents", true), sessionIdUser);
+        catalogManager.getFileManager().link(STUDY, testBam.toUri(), "bams/", new ObjectMap("parents", true), sessionIdUser);
 
         Map<String, String> params = new HashMap<>();
         params.put("input", "test.bam");

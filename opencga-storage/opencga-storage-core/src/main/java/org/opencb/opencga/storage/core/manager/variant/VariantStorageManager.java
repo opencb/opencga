@@ -225,8 +225,8 @@ public class VariantStorageManager extends StorageManager {
         } else if (StringUtils.isEmpty(studies) && StringUtils.isEmpty(project)) {
             // If non study or project is given, read all the studies from the user
             String userId = catalogManager.getUserManager().getUserId(sessionId);
-            studyIds = catalogManager.getStudyManager().getIds(userId, Collections.emptyList()).stream()
-                    .map(Object::toString)
+            studyIds = catalogManager.getStudyManager().resolveIds(Collections.emptyList(), userId).stream()
+                    .map(Study::getFqn)
                     .collect(Collectors.toList());
         } else {
             // If project is present, no study information is needed
@@ -254,30 +254,32 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
-    public void fillGaps(String study, List<String> samples, ObjectMap config, String sessionId)
+    public void fillGaps(String studyStr, List<String> samples, ObjectMap config, String sessionId)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, study);
-        DataStore dataStore = getDataStore(studyId, sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        DataStore dataStore = getDataStore(study.getUid(), sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
         if (samples == null || samples.size() < 2) {
             throw new IllegalArgumentException("Fill gaps operation requires at least two samples!");
         }
-        String sampleIds = String.join(",", samples);
-        variantStorageEngine.fillGaps(String.valueOf(studyId), samples, config);
+        variantStorageEngine.fillGaps(String.valueOf(study.getUid()), samples, config);
     }
 
-    public void fillMissing(String study, boolean overwrite, ObjectMap config, String sessionId)
+    public void fillMissing(String studyStr, boolean overwrite, ObjectMap config, String sessionId)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, study);
-        DataStore dataStore = getDataStore(studyId, sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        DataStore dataStore = getDataStore(study.getUid(), sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        variantStorageEngine.fillMissing(String.valueOf(studyId), config, overwrite);
+        variantStorageEngine.fillMissing(String.valueOf(study.getUid()), config, overwrite);
     }
 
     // ---------------------//

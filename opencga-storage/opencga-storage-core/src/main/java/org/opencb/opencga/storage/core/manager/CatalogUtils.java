@@ -117,10 +117,16 @@ public class CatalogUtils {
                         .collect(Collectors.toList());
             } else {
                 String userId = catalogManager.getUserManager().getUserId(sessionId);
-                return catalogManager.getStudyManager().getIds(userId, Collections.emptyList());
+                return catalogManager.getStudyManager().resolveIds(Collections.emptyList(), userId)
+                        .stream()
+                        .map(Study::getUid)
+                        .collect(Collectors.toList());
             }
         } else {
-            return catalogManager.getStudyManager().getIds(catalogManager.getUserManager().getUserId(sessionId), studies);
+            return catalogManager.getStudyManager().resolveIds(studies, catalogManager.getUserManager().getUserId(sessionId))
+                    .stream()
+                    .map(Study::getUid)
+                    .collect(Collectors.toList());
         }
     }
 

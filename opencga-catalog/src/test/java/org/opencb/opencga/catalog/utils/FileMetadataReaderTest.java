@@ -75,9 +75,9 @@ public class FileMetadataReaderTest {
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         project = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(String.valueOf(project.getUid()), "phase1", "Phase 1", Study.Type.TRIO, null,
+        study = catalogManager.getStudyManager().create(project.getId(), "phase1", "Phase 1", Study.Type.TRIO, null,
                 "Done", null, null, null, null, null, null, null, null, sessionIdUser).first();
-        folder = catalogManager.getFileManager().createFolder(Long.toString(study.getUid()), Paths.get("data/vcf/").toString(), null, true,
+        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), null, true,
                 null, QueryOptions.empty(), sessionIdUser).first();
 
         Path vcfPath = catalogManagerExternalResource.getOpencgaHome().resolve(VCF_FILE_NAME);
@@ -236,9 +236,9 @@ public class FileMetadataReaderTest {
                 upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
 
         //Add a sampleId
-        long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getUid()), "Bad_Sample", "Air", "", null, false,
+        long sampleId = catalogManager.getSampleManager().create(study.getFqn(), "Bad_Sample", "Air", "", null, false,
                 null, new HashMap<>(), null, null, sessionIdUser).first().getUid();
-        catalogManager.getFileManager().update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+        catalogManager.getFileManager().update(study.getFqn(), file.getPath(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
                         Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
 
         file = catalogManager.getFileManager().get(file.getUid(), null, sessionIdUser).first();

@@ -115,12 +115,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(studyId, sample.getAnnotationSets());
+        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(study.getUid(), sample.getAnnotationSets());
 
         // 1. We check everything can be done
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
 
         // We will store the individual information if the individual already exists
         Individual individual = null;
@@ -132,7 +132,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         if (sample.getIndividual() != null && StringUtils.isNotEmpty(sample.getIndividual().getName())) {
             try {
-                QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+                QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(studyStr,
                         sample.getIndividual().getName(),
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                 IndividualDBAdaptor.QueryParams.UID.key(),
@@ -140,7 +140,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         sessionId);
 
                 // Check if the user can update the individual
-                authorizationManager.checkIndividualPermission(studyId, individualQueryResult.first().getUid(), userId,
+                authorizationManager.checkIndividualPermission(study.getUid(), individualQueryResult.first().getUid(), userId,
                         IndividualAclEntry.IndividualPermissions.UPDATE);
 
                 individual = individualQueryResult.first();
@@ -152,14 +152,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 }
 
                 // The individual does not exist so we check if the user will be able to create it
-                authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
+                authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
                 individualInfo = 2;
             }
         }
 
         // 2. We create the sample
-        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
-        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(studyId, sample, variableSetList, options);
+        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(study.getUid(), sample, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         // 3. We update or create an individual if any..
@@ -182,7 +182,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             } else { // = 2 - Create new individual
                 sample.getIndividual().setSamples(Arrays.asList(queryResult.first()));
                 try {
-                    catalogManager.getIndividualManager().create(String.valueOf(studyId), sample.getIndividual(), QueryOptions.empty(),
+                    catalogManager.getIndividualManager().create(studyStr, sample.getIndividual(), QueryOptions.empty(),
                             sessionId);
                 } catch (CatalogException e) {
                     logger.error("Internal error. The sample was created but the individual could not be created. {}", e.getMessage(), e);
@@ -216,7 +216,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = studyManager.resolveId(studyStr, userId);
 
         fixQueryObject(study, query, sessionId);
 
@@ -245,9 +245,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
         return sampleDBAdaptor.iterator(query, options, userId);
     }
 
@@ -257,7 +257,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
         fixQueryAnnotationSearch(study.getUid(), query);
@@ -287,7 +287,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
         fixQueryAnnotationSearch(study.getUid(), query);
@@ -330,7 +330,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
             fixQueryAnnotationSearch(study.getUid(), finalQuery);
             fixQueryObject(study, finalQuery, sessionId);
@@ -845,16 +845,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userManager.getUserId(sessionId);
-        Long studyId = studyManager.getId(userId, studyStr);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
-        fixQueryAnnotationSearch(studyId, userId, query, true);
+        fixQueryAnnotationSearch(study.getUid(), userId, query, true);
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-        query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -874,7 +874,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, QueryOptions.empty());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Fix query if it contains any annotation
         fixQueryAnnotationSearch(study.getUid(), userId, query, true);

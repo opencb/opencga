@@ -77,11 +77,11 @@ public class FileScanner {
         Query query = new Query();
         query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(
                 File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
-        QueryResult<File> files = catalogManager.getFileManager().get(String.valueOf(study.getUid()), query, new QueryOptions(), sessionId);
+        QueryResult<File> files = catalogManager.getFileManager().get(study.getFqn(), query, new QueryOptions(), sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
         for (File file : files.getResult()) {
-            File checkedFile = catalogFileUtils.checkFile(file, calculateChecksum, sessionId);
+            File checkedFile = catalogFileUtils.checkFile(study.getFqn(), file, calculateChecksum, sessionId);
             if (checkedFile != file) {
                 modifiedFiles.add(checkedFile);
             }
