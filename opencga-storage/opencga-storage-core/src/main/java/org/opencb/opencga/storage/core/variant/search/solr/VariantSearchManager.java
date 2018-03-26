@@ -400,10 +400,11 @@ public class VariantSearchManager {
         }
     }
 
-    public VariantIterator iterator(String collection, Query query, QueryOptions queryOptions) throws VariantSearchException, IOException {
+    public VariantSolrIterator iterator(String collection, Query query, QueryOptions queryOptions)
+            throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-            return new VariantIterator(solrClient, collection, solrQuery);
+            return new VariantSolrIterator(solrClient, collection, solrQuery);
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
@@ -420,11 +421,11 @@ public class VariantSearchManager {
      * @throws IOException            IOException
      * @throws VariantSearchException VariantSearchException
      */
-    public VariantSearchIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
+    public VariantSearchSolrIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-            return new VariantSearchIterator(solrClient, collection, solrQuery);
+            return new VariantSearchSolrIterator(solrClient, collection, solrQuery);
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }

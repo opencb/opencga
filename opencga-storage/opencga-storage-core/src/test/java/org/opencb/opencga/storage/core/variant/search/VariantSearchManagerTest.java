@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
@@ -177,7 +177,7 @@ public class VariantSearchManagerTest extends GenericTest {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.append(QueryOptions.LIMIT, 500);
 
-            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchSolrIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -199,7 +199,7 @@ public class VariantSearchManagerTest extends GenericTest {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.append(QueryOptions.LIMIT, 500);
 
-            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchSolrIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -327,7 +327,7 @@ public class VariantSearchManagerTest extends GenericTest {
             query.append("ids", "*");
             queryOptions.append(QueryOptions.LIMIT, 15);
 
-            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchSolrIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -351,7 +351,7 @@ public class VariantSearchManagerTest extends GenericTest {
             queryOptions.add(QueryOptions.SORT, "start");
             queryOptions.add(QueryOptions.ORDER, QueryOptions.DESCENDING);
 
-            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchSolrIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);

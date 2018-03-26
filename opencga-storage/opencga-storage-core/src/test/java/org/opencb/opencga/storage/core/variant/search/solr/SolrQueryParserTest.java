@@ -50,7 +50,7 @@ public class SolrQueryParserTest {
         config.setSearch(new SearchConfiguration(host, mode, user, password, active, timeout, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, config);
         try {
-            VariantIterator iterator = searchManager.iterator(collection, query, queryOptions);
+            VariantSolrIterator iterator = searchManager.iterator(collection, query, queryOptions);
             System.out.println("Num. found = " + iterator.getNumFound());
             while (iterator.hasNext()) {
                 Variant variant = iterator.next();

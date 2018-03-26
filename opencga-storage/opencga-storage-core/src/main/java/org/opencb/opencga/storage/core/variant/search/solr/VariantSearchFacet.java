@@ -26,6 +26,7 @@ import java.util.Map;
 /**
  * Created by wasim on 14/11/16.
  */
+@Deprecated
 public class VariantSearchFacet {
 
     private List<FacetField> facetFields;
