@@ -104,19 +104,22 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         String myClaims = StringUtils.split(cliSession.getToken(), ".")[1];
                         String decodedClaimsString = new String(Base64.getDecoder().decode(myClaims), StandardCharsets.UTF_8);
                         ObjectMap claimsMap = new ObjectMapper().readValue(decodedClaimsString, ObjectMap.class);
+
                         Date expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
 
                         Date currentDate = new Date();
 
-                        if (currentDate.before(expirationDate)) {
+                        if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
                             logger.debug("Session ok!!");
-//                            this.sessionId = cliSession.getSessionId();
+                            //                            this.sessionId = cliSession.getSessionId();
                             openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
                             openCGAClient.setUserId(cliSession.getUserId());
 
                             // Update token
-                            cliSession.setToken(openCGAClient.refresh());
-                            updateCliSessionFile();
+                            if (claimsMap.containsKey("exp")) {
+                                cliSession.setToken(openCGAClient.refresh());
+                                updateCliSessionFile();
+                            }
 
                             if (options.sessionId == null) {
                                 options.sessionId = cliSession.getToken();

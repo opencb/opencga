@@ -4,6 +4,7 @@ import com.google.common.collect.ListMultimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.bson.types.Binary;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -27,10 +28,11 @@ public class MongoDBVariantDirectLoader implements DataWriter<Pair<ListMultimap<
 
     public MongoDBVariantDirectLoader(VariantMongoDBAdaptor dbAdaptor, final StudyConfiguration studyConfiguration, int fileId,
                                       boolean resume) {
-        stageLoader = new MongoDBVariantStageLoader(dbAdaptor.getStageCollection(), studyConfiguration.getStudyId(), fileId, resume, true);
+        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
+        stageLoader = new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId, resume, true);
         variantsLoader = new MongoDBVariantMergeLoader(
                 dbAdaptor.getVariantsCollection(),
-                dbAdaptor.getStageCollection(),
+                stageCollection,
                 dbAdaptor.getStudiesCollection(),
                 studyConfiguration, Collections.singletonList(fileId), resume, false, null);
     }

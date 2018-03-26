@@ -547,7 +547,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantStorageEngine.fillMissing(cliOptions.study, options);
+        variantStorageEngine.fillMissing(cliOptions.study, options, cliOptions.overwrite);
     }
 
     private void export() throws URISyntaxException, StorageEngineException, IOException {
@@ -664,7 +664,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
                 variantStorageEngine.getConfiguration());
         boolean querying = true;
-
+        QueryOptions options = new QueryOptions();
+        options.putAll(searchOptions.commonOptions.params);
         // create the database, this method checks if it exists and the solrConfig name
         if (searchOptions.create) {
             variantSearchManager.create(dbName, searchOptions.solrConfig);
@@ -674,8 +675,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         // index
         if (searchOptions.index) {
             querying = false;
-            VariantStorageEngine variantStorageEngine = StorageEngineFactory.get(configuration).getVariantStorageEngine(null, dbName);
-            variantStorageEngine.searchIndex();
+            Query query = VariantQueryCommandUtils.parseQuery(searchOptions, new Query());
+            variantStorageEngine.searchIndex(query, options);
         }
 
         String mode = variantStorageEngine.getConfiguration().getSearch().getMode();

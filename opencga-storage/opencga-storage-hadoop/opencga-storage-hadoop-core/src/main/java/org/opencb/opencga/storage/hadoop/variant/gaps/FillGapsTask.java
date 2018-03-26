@@ -243,17 +243,21 @@ public class FillGapsTask {
     protected static boolean hasAnyReferenceGenotype(VcfSliceProtos.VcfSlice vcfSlice, VcfSliceProtos.VcfRecord vcfRecord) {
         for (VcfSliceProtos.VcfSample vcfSample : vcfRecord.getSamplesList()) {
             String gt = vcfSlice.getFields().getGts(vcfSample.getGtIndex());
-            if (gt.equals("0/0") || gt.equals("0|0")) {
+            if (isHomRefDiploid(gt)) {
                 return true;
             }
         }
         return false;
     }
 
+    public static boolean isHomRefDiploid(String gt) {
+        return gt.equals("0/0") || gt.equals("0|0");
+    }
+
     protected static boolean hasAllReferenceGenotype(VcfSliceProtos.VcfSlice vcfSlice, VcfSliceProtos.VcfRecord vcfRecord) {
         for (VcfSliceProtos.VcfSample vcfSample : vcfRecord.getSamplesList()) {
             String gt = vcfSlice.getFields().getGts(vcfSample.getGtIndex());
-            if (!gt.equals("0/0") && !gt.equals("0|0")) {
+            if (!isHomRefDiploid(gt)) {
                 return false;
             }
         }

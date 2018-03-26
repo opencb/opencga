@@ -140,7 +140,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "father", required = false) @QueryParam("father") String father,
             @ApiParam(value = "(DEPRECATED) User mother instead", required = false) @QueryParam("motherId") String motherId,
             @ApiParam(value = "mother", required = false) @QueryParam("mother") String mother,
-            @ApiParam(value = "family", required = false) @QueryParam("family") String family,
+            @ApiParam(value = "(DEPRECATED) family", required = false) @QueryParam("family") String family,
+            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
             @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
@@ -433,6 +434,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
+            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
             @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,

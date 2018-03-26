@@ -212,7 +212,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/samples")
-    @ApiOperation(value = "Get samples from cohort [WARNING]", position = 3, response = Sample[].class,
+    @ApiOperation(value = "Get samples from cohort [DEPRECATED]", position = 3, response = Sample[].class,
             notes = "The usage of this webservice is discouraged. /{cohorts}/info is expected to be used with &include=samples query"
                     + " parameter to approximately simulate this same behaviour.")
     @ApiImplicitParams({

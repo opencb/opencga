@@ -1368,7 +1368,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void testGetAllVariants_returned_samples() {
+    public void testGetAllVariants_include_samples() {
         checkSamplesData("NA19600");
         checkSamplesData("NA19660");
         checkSamplesData("NA19661");
@@ -1506,6 +1506,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
         Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
 
+        QueryResult<Variant> allVariants = query(new Query(INCLUDE_SAMPLE.key(), "NA19600"), new QueryOptions());
         //Get all variants with not 1|1 for na19600
         query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homAlt);
         queryResult = query(query, new QueryOptions());
@@ -1521,6 +1522,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", allOf(not(is(homRef)), not(is(het1)))))));
 
+        allVariants = query(new Query(INCLUDE_SAMPLE.key(), "NA19600,NA19685"), new QueryOptions());
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
         query = new Query(GENOTYPE.key(), na19600 + IS + homAlt + AND + na19685 + IS + NOT + homRef + OR + NOT + het2);
         queryResult = query(query, new QueryOptions());
@@ -1535,7 +1537,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Query query;
         Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
 
-        query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + het1);
+        query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + het1)
+                .append(INCLUDE_SAMPLE.key(), ALL);
         queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", is(het1)))));
     }
@@ -1565,7 +1568,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 withSampleData("NA19600", "GT", containsString("1")),
                 withSampleData("NA19685", "GT", containsString("1"))))));
 
-        query = new Query(SAMPLE.key(), "NA19600").append(GENOTYPE.key(), "NA19685" + IS + homRef).append(INCLUDE_SAMPLE.key(), "NA19600,NA19685");
+        query = new Query(SAMPLE.key(), "NA19600").append(GENOTYPE.key(), "NA19685" + IS + homRef);
         queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),

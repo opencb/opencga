@@ -295,6 +295,7 @@ public class FileManager extends ResourceManager<File> {
             // Do not add twice the same relation
             if (!relatedFiles.contains(producedFromRelation)) {
                 relatedFiles.add(producedFromRelation);
+                transformedFile.setRelatedFiles(relatedFiles);
                 ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
                 fileDBAdaptor.update(transformedFile.getId(), params, QueryOptions.empty());
             }
@@ -350,6 +351,11 @@ public class FileManager extends ResourceManager<File> {
 
     public QueryResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, String sessionId)
             throws CatalogException {
+        return updateFileIndexStatus(file, newStatus, message, null, sessionId);
+    }
+
+    public QueryResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, Integer release, String sessionId)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Long studyId = getStudyId(file.getId());
         authorizationManager.checkFilePermission(studyId, file.getId(), userId, FileAclEntry.FilePermissions.WRITE);
@@ -363,6 +369,11 @@ public class FileManager extends ResourceManager<File> {
             }
         } else {
             index = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(newStatus), -1, new ObjectMap());
+        }
+        if (release != null) {
+            if (newStatus.equals(FileIndex.IndexStatus.READY)) {
+                index.setRelease(release);
+            }
         }
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
         fileDBAdaptor.update(file.getId(), params, QueryOptions.empty());
@@ -1367,8 +1378,9 @@ public class FileManager extends ResourceManager<File> {
         return catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);
     }
 
-    public QueryResult index(List<String> fileList, String studyStr, String type, Map<String, String> params, String sessionId)
+    public QueryResult<Job> index(List<String> fileList, String studyStr, String type, Map<String, String> params, String sessionId)
             throws CatalogException {
+        params = ParamUtils.defaultObject(params, HashMap::new);
         MyResourceIds resourceIds = getIds(fileList, studyStr, sessionId);
         List<Long> fileFolderIdList = resourceIds.getResourceIds();
         long studyId = resourceIds.getStudyId();
@@ -1458,22 +1470,23 @@ public class FileManager extends ResourceManager<File> {
                         FileDBAdaptor.QueryParams.FORMAT.key(),
                         FileDBAdaptor.QueryParams.INDEX.key())
                 );
-                QueryResult<File> file = fileDBAdaptor.get(fileId, queryOptions);
+                QueryResult<File> result = fileDBAdaptor.get(fileId, queryOptions);
 
-                if (file.getNumResults() != 1) {
+                if (result.getNumResults() != 1) {
                     throw new CatalogException("Could not find file or folder " + fileList);
                 }
 
-                if (File.Type.DIRECTORY.equals(file.first().getType())) {
+                File file = result.first();
+                if (File.Type.DIRECTORY.equals(file.getType())) {
                     // Retrieve all the VCF files that can be found within the directory
-                    String path = file.first().getPath().endsWith("/") ? file.first().getPath() : file.first().getPath() + "/";
+                    String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
                     Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
                             .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
                             .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                     QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions);
 
                     if (fileQueryResult.getNumResults() == 0) {
-                        throw new CatalogException("No VCF files could be found in directory " + file.first().getPath());
+                        throw new CatalogException("No VCF files could be found in directory " + file.getPath());
                     }
 
                     for (File fileTmp : fileQueryResult.getResult()) {
@@ -1484,14 +1497,28 @@ public class FileManager extends ResourceManager<File> {
                     }
 
                 } else {
-                    if (!File.Format.VCF.equals(file.first().getFormat()) && !File.Format.GVCF.equals(file.first().getFormat())) {
-                        throw new CatalogException("The file " + file.first().getName() + " is not a VCF file.");
+                    if (isTransformedFile(file.getName())) {
+                        if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
+                            catalogManager.getFileManager().matchUpVariantFiles(Collections.singletonList(file), sessionId);
+                        }
+                        if (file.getRelatedFiles() != null) {
+                            for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
+                                if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
+                                    Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), relatedFile.getFileId());
+                                    file = get(studyId, query, null, sessionId).first();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (!File.Format.VCF.equals(file.getFormat()) && !File.Format.GVCF.equals(file.getFormat())) {
+                        throw new CatalogException("The file " + file.getName() + " is not a VCF file.");
                     }
 
-                    authorizationManager.checkFilePermission(studyId, file.first().getId(), userId, FileAclEntry.FilePermissions.VIEW);
-                    authorizationManager.checkFilePermission(studyId, file.first().getId(), userId, FileAclEntry.FilePermissions.WRITE);
+                    authorizationManager.checkFilePermission(studyId, file.getId(), userId, FileAclEntry.FilePermissions.VIEW);
+                    authorizationManager.checkFilePermission(studyId, file.getId(), userId, FileAclEntry.FilePermissions.WRITE);
 
-                    fileIdList.add(file.first());
+                    fileIdList.add(file);
                 }
             }
 
@@ -2334,6 +2361,7 @@ public class FileManager extends ResourceManager<File> {
 
     private QueryResult<File> privateLink(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
+        params = ParamUtils.defaultObject(params, ObjectMap::new);
         CatalogIOManager ioManager = catalogIOManagerFactory.get(uriOrigin);
         if (!ioManager.exists(uriOrigin)) {
             throw new CatalogIOException("File " + uriOrigin + " does not exist");

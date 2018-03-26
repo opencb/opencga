@@ -105,9 +105,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Family name") @QueryParam("name") String name,
             @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
+            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
                 @QueryParam("annotationsetName") String annotationsetName,
@@ -215,9 +214,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Family name") @QueryParam("name") String name,
             @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
+            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
                 @QueryParam("annotationsetName") String annotationsetName,

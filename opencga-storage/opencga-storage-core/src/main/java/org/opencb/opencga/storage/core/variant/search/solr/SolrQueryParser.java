@@ -44,10 +44,34 @@ public class SolrQueryParser {
 
     private final StudyConfigurationManager studyConfigurationManager;
 
+    private static Map<String, String> includeMap;
+
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
 
     protected static Logger logger = LoggerFactory.getLogger(SolrQueryParser.class);
+
+    static {
+        includeMap = new HashMap<>();
+
+        includeMap.put("id", "id,variantId");
+        includeMap.put("chromosome", "chromosome");
+        includeMap.put("start", "start");
+        includeMap.put("end", "end");
+        includeMap.put("type", "type");
+
+        includeMap.put("studies", "studies,stats__*");
+        includeMap.put("studies.stats", "studies,stats__*");
+
+        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq__*,xrefs,"
+                + "phastCons,phylop,gerp,caddRaw,caddScaled,traits");
+        includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc");
+        includeMap.put("annotation.populationFrequencies", "popFreq__*");
+        includeMap.put("annotation.xrefs", "xrefs");
+        includeMap.put("annotation.conservation", "phastCons,phylop,gerp");
+        includeMap.put("annotation.functionalScore", "caddRaw,caddScaled");
+        includeMap.put("annotation.traitAssociation", "traits");
+    }
 
     public SolrQueryParser(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
@@ -68,10 +92,15 @@ public class SolrQueryParser {
         //-------------------------------------
         // QueryOptions processing
         //-------------------------------------
+        String[] includes = null;
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            List<String> includes = queryOptions.getAsStringList(QueryOptions.INCLUDE);
-            solrQuery.setFields(includes.toArray(new String[includes.size()]));
+            includes = solrIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+        } else {
+            if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+                includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+            }
         }
+        solrQuery.setFields(includeFieldsWithMandatory(includes));
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
@@ -971,4 +1000,57 @@ public class SolrQueryParser {
                     + " is 'name:value1^value2[^value3]', value3 is optional");
         }
     }
-}
+
+    private String[] solrIncludeFields(List<String> includes) {
+        if (includes == null) {
+            return new String[0];
+        }
+
+        List<String> solrIncludeList = new ArrayList<>();
+        // The values of the includeMap can contain commas
+        for (String include : includes) {
+            if (includeMap.containsKey(include)) {
+                solrIncludeList.add(includeMap.get(include));
+            }
+        }
+        return StringUtils.join(solrIncludeList, ",").split(",");
+    }
+
+    private String[] getSolrIncludeFromExclude(List<String> excludes) {
+        Set<String> solrFieldsToInclude = new HashSet<>(20);
+        for (String value : includeMap.values()) {
+            solrFieldsToInclude.addAll(Arrays.asList(value.split(",")));
+        }
+
+        if (excludes != null) {
+            for (String exclude : excludes) {
+                List<String> solrFields = Arrays.asList(includeMap.get(exclude).split(","));
+                solrFieldsToInclude.removeAll(solrFields);
+            }
+        }
+
+        List<String> solrFieldsToIncludeList = new ArrayList<>(solrFieldsToInclude);
+        String[] solrFieldsToIncludeArr = new String[solrFieldsToIncludeList.size()];
+        for (int i = 0; i < solrFieldsToIncludeList.size(); i++) {
+            solrFieldsToIncludeArr[i] = solrFieldsToIncludeList.get(i);
+        }
+
+        return solrFieldsToIncludeArr;
+    }
+
+    private String[] includeFieldsWithMandatory(String[] includes) {
+        if (includes == null || includes.length == 0) {
+            return new String[0];
+        }
+
+        String[] mandatoryIncludeFields  = new String[]{"id", "chromosome", "start", "end", "type", "other", "release"};
+        String[] includeWithMandatory = new String[includes.length + mandatoryIncludeFields.length];
+        for (int i = 0; i < includes.length; i++) {
+            includeWithMandatory[i] = includes[i];
+        }
+        for (int i = 0; i < mandatoryIncludeFields.length; i++) {
+            includeWithMandatory[includes.length + i] = mandatoryIncludeFields[i];
+        }
+        return includeWithMandatory;
+    }
+ }

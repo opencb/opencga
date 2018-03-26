@@ -246,6 +246,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.attributes);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.nattributes);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.battributes);
+        query.putAll(studiesCommandOptions.searchCommandOptions.commonOptions.params);
+
         if (StringUtils.isNotEmpty(studiesCommandOptions.searchCommandOptions.type)) {
             try {
                 query.put(StudyDBAdaptor.QueryParams.TYPE.key(),

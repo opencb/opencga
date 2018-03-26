@@ -20,19 +20,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.StructuralVariantType;
-import org.opencb.biodata.models.variant.avro.StructuralVariation;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 
 import java.util.*;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.*;
 
@@ -56,9 +51,9 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
     public static final String SV_INS_SEQ = "ins_seq";
     public static final String SV_TYPE = "type";
 
-    public static final String HGVS_FIELD = "hgvs";
-    public static final String HGVS_NAME_FIELD = "name";
-    public static final String HGVS_TYPE_FIELD = "type";
+    @Deprecated public static final String HGVS_FIELD = "hgvs";
+    @Deprecated public static final String HGVS_NAME_FIELD = "name";
+    @Deprecated public static final String HGVS_TYPE_FIELD = "type";
 
     public static final String STUDIES_FIELD = "studies";
     public static final String ANNOTATION_FIELD = "annotation";
@@ -67,6 +62,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
 
     public static final String AT_FIELD = "_at";
     public static final String CHUNK_IDS_FIELD = "chunkIds";
+    public static final String RELEASE_FIELD = "_r";
 
 //    public static final String ID_FIELD = "id";
 //    public static final String FILES_FIELD = "files";
@@ -115,11 +111,17 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.STUDIES_STUDY_ID, singletonList(
                 STUDIES_FIELD + '.' + STUDYID_FIELD));
 
-        map.put(VariantField.ANNOTATION, Arrays.asList(ANNOTATION_FIELD, CUSTOM_ANNOTATION_FIELD));
+        map.put(VariantField.ANNOTATION, Arrays.asList(ANNOTATION_FIELD, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
         map.put(VariantField.ANNOTATION_ANCESTRAL_ALLELE, emptyList());
         map.put(VariantField.ANNOTATION_ID, emptyList());
+        map.put(VariantField.ANNOTATION_CHROMOSOME, emptyList());
+        map.put(VariantField.ANNOTATION_START, emptyList());
+        map.put(VariantField.ANNOTATION_END, emptyList());
+        map.put(VariantField.ANNOTATION_REFERENCE, emptyList());
+        map.put(VariantField.ANNOTATION_ALTERNATE, emptyList());
         map.put(VariantField.ANNOTATION_XREFS, singletonList(ANNOTATION_FIELD + '.' + XREFS_FIELD));
-        map.put(VariantField.ANNOTATION_HGVS, emptyList());
+        map.put(VariantField.ANNOTATION_HGVS, singletonList(ANNOTATION_FIELD + '.' + DocumentToVariantAnnotationConverter.HGVS_FIELD));
+        map.put(VariantField.ANNOTATION_CYTOBAND, singletonList(ANNOTATION_FIELD + '.' + CYTOBANDS_FIELD));
         map.put(VariantField.ANNOTATION_DISPLAY_CONSEQUENCE_TYPE, singletonList(ANNOTATION_FIELD + '.' + DISPLAY_CONSEQUENCE_TYPE_FIELD));
         map.put(VariantField.ANNOTATION_CONSEQUENCE_TYPES, singletonList(ANNOTATION_FIELD + '.' + CONSEQUENCE_TYPE_FIELD));
         map.put(VariantField.ANNOTATION_POPULATION_FREQUENCIES, singletonList(ANNOTATION_FIELD + '.' + POPULATION_FREQUENCIES_FIELD));
@@ -138,7 +140,9 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.ANNOTATION_FUNCTIONAL_SCORE, Arrays.asList(
                 ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_RAW_FIELD,
                 ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_SCALED_FIELD));
-        map.put(VariantField.ANNOTATION_ADDITIONAL_ATTRIBUTES, singletonList(CUSTOM_ANNOTATION_FIELD));
+        map.put(VariantField.ANNOTATION_REPEAT, singletonList(ANNOTATION_FIELD + '.' + REPEATS_FIELD));
+        map.put(VariantField.ANNOTATION_DRUGS, emptyList());
+        map.put(VariantField.ANNOTATION_ADDITIONAL_ATTRIBUTES, Arrays.asList(CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
 
         FIELDS_MAP = unmodifiableMap(map);
 
@@ -281,15 +285,31 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
             mongoAnnotation = (Document) object.get(ANNOTATION_FIELD);
         }
         Document customAnnotation = object.get(CUSTOM_ANNOTATION_FIELD, Document.class);
-        if (mongoAnnotation != null || customAnnotation != null) {
+        boolean hasRelease = object.containsKey(RELEASE_FIELD);
+        if (mongoAnnotation != null || customAnnotation != null || hasRelease) {
             VariantAnnotation annotation;
             if (mongoAnnotation != null) {
                 annotation = variantAnnotationConverter
-                        .convertToDataModelType(mongoAnnotation, customAnnotation);
+                        .convertToDataModelType(mongoAnnotation, customAnnotation, chromosome, reference, alternate);
             } else {
                 annotation = new VariantAnnotation();
+            }
+            if (customAnnotation != null) {
                 annotation.setAdditionalAttributes(variantAnnotationConverter.convertAdditionalAttributesToDataModelType(customAnnotation));
             }
+            if (hasRelease) {
+                if (annotation.getAdditionalAttributes() == null) {
+                    annotation.setAdditionalAttributes(new HashMap<>());
+                }
+                String release = this.<Number>getList(object, RELEASE_FIELD).stream()
+                        .map(Number::intValue)
+                        .min(Integer::compareTo)
+                        .orElse(-1)
+                        .toString();
+                AdditionalAttribute additionalAttribute = new AdditionalAttribute(Collections.singletonMap("release", release));
+                annotation.getAdditionalAttributes().put("opencga", additionalAttribute);
+            }
+
             annotation.setChromosome(variant.getChromosome());
             annotation.setAlternate(variant.getAlternate());
             annotation.setReference(variant.getReference());

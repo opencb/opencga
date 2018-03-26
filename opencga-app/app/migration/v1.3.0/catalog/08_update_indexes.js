@@ -22,6 +22,7 @@ db.job.dropIndex({"_acl": 1});
 db.sample.dropIndex({"_acl": 1});
 db.clinical.dropIndex({"_acl": 1});
 
+db.sample.dropIndex({"individual.id": 1});
 
 // Add new indexes
 db.file.createIndex({"id": 1}, {"background": true});
@@ -46,6 +47,7 @@ db.individual.createIndex({"id": 1, "version": 1}, {"unique": true, "background"
 db.individual.createIndex({"phenotypes.id": 1}, {"background": true});
 db.individual.createIndex({"mother.id": 1}, {"background": true});
 db.individual.createIndex({"father.id": 1}, {"background": true});
+db.individual.createIndex({"samples.id": 1}, {"background": true});
 
 db.family.createIndex({"name": 1, "_studyId": 1, "version": 1}, {"unique": true, "background": true});
 db.family.createIndex({"id": 1, "version": 1}, {"unique": true, "background": true});

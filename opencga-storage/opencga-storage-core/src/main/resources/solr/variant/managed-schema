@@ -69,6 +69,7 @@
     <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="xrefs" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
     <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
@@ -84,6 +85,7 @@
     <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
     <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
     <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
 </schema>
