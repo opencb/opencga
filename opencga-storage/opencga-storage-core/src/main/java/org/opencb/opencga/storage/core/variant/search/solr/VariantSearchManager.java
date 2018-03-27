@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.*;
@@ -61,7 +62,6 @@ public class VariantSearchManager {
 
     private SolrManager solrManager;
 
-//    private SolrClient solrClient;
     private SolrQueryParser solrQueryParser;
     private StorageConfiguration storageConfiguration;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
@@ -658,7 +658,7 @@ public class VariantSearchManager {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariantSearchManager{");
-//        sb.append("solrClient=").append(solrClient);
+        sb.append("solrManager=").append(solrManager);
         sb.append(", solrQueryParser=").append(solrQueryParser);
         sb.append(", storageConfiguration=").append(storageConfiguration);
         sb.append(", variantSearchToVariantConverter=").append(variantSearchToVariantConverter);
@@ -667,14 +667,23 @@ public class VariantSearchManager {
         return sb.toString();
     }
 
-//    public SolrClient getSolrClient() {
-//        return solrClient;
-//    }
-//
-//    public VariantSearchManager setSolrClient(SolrClient solrClient) {
-//        this.solrClient = solrClient;
-//        return this;
-//    }
+    public SolrManager getSolrManager() {
+        return solrManager;
+    }
+
+    public VariantSearchManager setSolrManager(SolrManager solrManager) {
+        this.solrManager = solrManager;
+        return this;
+    }
+
+    public SolrClient getSolrClient() {
+        return solrManager.getSolrClient();
+    }
+
+    public VariantSearchManager setSolrClient(SolrClient solrClient) {
+        this.solrManager.setSolrClient(solrClient);
+        return this;
+    }
 
     public SolrQueryParser getSolrQueryParser() {
         return solrQueryParser;
