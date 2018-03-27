@@ -140,10 +140,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 ? StudyAclEntry.StudyPermissions.VIEW_FAMILIES : studyPermissions);
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
 
         // Get the document query needed to check the permissions as well
@@ -371,7 +371,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
-                    .append(QueryParams.STUDY_ID.key(), studyId);
+                    .append(QueryParams.STUDY_UID.key(), studyId);
             QueryResult<Long> count = count(tmpQuery);
             if (count.getResult().get(0) > 0) {
                 throw new CatalogDBException("Cannot set name for family. A family with { name: '"
@@ -574,10 +574,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
         Query studyQuery = new Query()
-                .append(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(FamilyDBAdaptor.QueryParams.STUDY_ID.key()));
+                .append(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(FamilyDBAdaptor.QueryParams.STUDY_UID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(FamilyDBAdaptor.QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(FamilyDBAdaptor.QueryParams.STUDY_UID.key()) + " not found");
         }
         return queryResult.first();
     }
@@ -676,7 +676,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     @Override
     public void updateProjectRelease(long studyId, int release) throws CatalogDBException {
         Query query = new Query()
-                .append(QueryParams.STUDY_ID.key(), studyId)
+                .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
         Bson bson = parseQuery(query, false);
 
@@ -733,7 +733,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case UID:
                         addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STUDY_ID:
+                    case STUDY_UID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:

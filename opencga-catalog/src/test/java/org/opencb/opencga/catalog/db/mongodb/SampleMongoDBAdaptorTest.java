@@ -282,7 +282,7 @@ public class SampleMongoDBAdaptorTest {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
 
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(SampleDBAdaptor.QueryParams.ID.key(), "~^sample");
 
         query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), ">2005");
@@ -332,13 +332,13 @@ public class SampleMongoDBAdaptorTest {
 
         // Get the sample
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), individualQueryResult.first().getUid());
         QueryResult<Sample> individualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
         assertEquals("sample1", individualQuery.first().getId());
 
         query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), -10);
         QueryResult<Sample> inexistentIndividualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
         assertEquals(0, inexistentIndividualQuery.getNumResults());
@@ -428,7 +428,7 @@ public class SampleMongoDBAdaptorTest {
 
         assertEquals(numCohorts * numThreads - numCohorts, numFailures.intValue());
         List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(
-                new Query(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId), null).getResult();
+                new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId), null).getResult();
         assertEquals(numCohorts, cohorts.size());
         Set<String> names = cohorts.stream().map(Cohort::getId).collect(Collectors.toSet());
         for (int c = 0; c < numCohorts; c++) {

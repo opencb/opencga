@@ -353,7 +353,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -389,7 +389,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                           IndividualAclEntry.IndividualPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.UID.key(), individualId)
-                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -424,7 +424,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkJobPermission(long studyId, long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.UID.key(), jobId)
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -451,7 +451,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.UID.key(), cohortId)
-                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -515,7 +515,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
-                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:
@@ -552,7 +552,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), analysisId)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         StudyAclEntry.StudyPermissions studyPermission;
         switch (permission) {
             case VIEW:

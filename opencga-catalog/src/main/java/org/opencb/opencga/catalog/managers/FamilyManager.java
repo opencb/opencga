@@ -78,10 +78,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     @Override
     Family smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyUid)
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FamilyDBAdaptor.QueryParams.ID.key(), entry);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_ID.key(), FamilyDBAdaptor.QueryParams.ID.key(),
+                FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(), FamilyDBAdaptor.QueryParams.ID.key(),
                 FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
                 FamilyDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, user);
@@ -124,7 +124,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
 
         ParamUtils.checkObj(family, "family");
-        ParamUtils.checkAlias(family.getName(), "name", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(family.getName(), "name");
         family.setMembers(ParamUtils.defaultObject(family.getMembers(), Collections.emptyList()));
         family.setPhenotypes(ParamUtils.defaultObject(family.getPhenotypes(), Collections.emptyList()));
         family.setCreationDate(TimeUtils.getTime());
@@ -163,7 +163,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         fixQueryAnnotationSearch(study.getUid(), query);
         fixQueryOptionAnnotation(options);
 
-        query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
         addMemberInformation(familyQueryResult, study.getUid(), sessionId);
@@ -193,7 +193,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         fixQueryObject(study, finalQuery, sessionId);
 
-        finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult<Family> queryResult = familyDBAdaptor.get(finalQuery, options, userId);
         addMemberInformation(queryResult, study.getUid(), sessionId);
@@ -256,7 +256,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         fixQueryAnnotationSearch(study.getUid(), finalQuery);
         fixQueryObject(study, finalQuery, sessionId);
 
-        finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryResult<Long> queryResultAux = familyDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
@@ -284,7 +284,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             // Fix query if it contains any annotation
             fixQueryAnnotationSearch(study.getUid(), finalQuery);
             fixQueryObject(study, finalQuery, sessionId);
-            finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+            finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             iterator = familyDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
 
@@ -319,7 +319,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // Delete the family
                 Query updateQuery = new Query()
                         .append(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid())
-                        .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid())
+                        .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(Constants.ALL_VERSIONS, true);
                 ObjectMap updateParams = new ObjectMap()
                         .append(FamilyDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
@@ -375,7 +375,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         fixQueryOptionAnnotation(options);
 
         // Add study id to the query
-        finalQuery.put(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        finalQuery.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult queryResult = familyDBAdaptor.groupBy(finalQuery, fields, options, userId);
 
@@ -423,8 +423,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Family family = null;
 
         if (parameters.containsKey(FamilyDBAdaptor.QueryParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(FamilyDBAdaptor.QueryParams.ID.key()), "name",
-                    configuration.getCatalog().getOffset());
+            ParamUtils.checkAlias(parameters.getString(FamilyDBAdaptor.QueryParams.ID.key()), "name");
         }
         if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())
                 || parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {

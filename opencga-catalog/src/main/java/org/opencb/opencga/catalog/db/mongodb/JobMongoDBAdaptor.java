@@ -110,7 +110,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
 
         // Retrieve and return Jobs
-        Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
+        Query query = new Query(QueryParams.STUDY_UID.key(), studyId);
         return get(query, options);
     }
 
@@ -154,10 +154,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 ? StudyAclEntry.StudyPermissions.VIEW_JOBS : studyPermissions);
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
 
         // Get the document query needed to check the permissions as well
@@ -460,10 +460,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
         return queryResult.first();
     }
@@ -550,7 +550,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case UID:
                         addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STUDY_ID:
+                    case STUDY_UID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:

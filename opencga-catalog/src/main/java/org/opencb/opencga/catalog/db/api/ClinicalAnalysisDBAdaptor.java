@@ -62,7 +62,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         INTERPRETATIONS("interpretations", TEXT_ARRAY, ""),
         INTERPRETATIONS_ID("interpretations.id", TEXT_ARRAY, ""),
 
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
         ACL("acl", TEXT_ARRAY, ""),

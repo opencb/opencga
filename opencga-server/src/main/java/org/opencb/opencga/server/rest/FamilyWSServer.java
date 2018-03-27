@@ -275,7 +275,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             AbstractManager.MyResource<Family> resource = familyManager.getUid(familyStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                     .append(FamilyDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
 
             String variableSetId = String.valueOf(catalogManager.getStudyManager()
@@ -326,7 +326,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             AbstractManager.MyResources<Family> resource = familyManager.getUids(familiesStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                     .append(FamilyDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Family::getUid)
                             .collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);

@@ -213,9 +213,12 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
     }
 
-    public String createTmpOutdir(long studyId, String sufix, String sessionId) throws CatalogException {
-        String date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date());
-        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
+    public String createTmpOutdir(long studyId, String suffix, String sessionId) throws CatalogException, IOException {
+        String date = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
+        Path tmpOutDir = opencgaHome.resolve("jobs").resolve(date);
+        Files.createDirectory(tmpOutDir);
+        return tmpOutDir.toString();
+//        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
     }
 
 //    private class StorageLocalExecutorManager extends LocalExecutorManager {

@@ -527,7 +527,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         while (iterator.hasNext()) {
             AnnotationSet annotationSet = iterator.next();
             String annotationSetName = annotationSet.getName();
-            ParamUtils.checkAlias(annotationSetName, "annotationSetName", -1);
+            ParamUtils.checkAlias(annotationSetName, "annotationSetName");
 
             // Get the variable set
             if (!variableSetMap.containsKey(annotationSet.getVariableSetId())) {

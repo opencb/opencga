@@ -30,7 +30,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -83,7 +82,7 @@ public class SampleWSServerTest {
     @Test
     public void search() throws IOException {
         String json = webTarget.path("samples").path("search").queryParam("sid", sessionId)
-                .queryParam(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .queryParam(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .queryParam(SampleDBAdaptor.QueryParams.ID.key(), "s1")
                 .request().get(String.class);
 

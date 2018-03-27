@@ -152,7 +152,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         if (isValidParam(query, SAMPLE_ANNOTATION)) {
             String sampleAnnotation = query.getString(SAMPLE_ANNOTATION.key());
             Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
-            sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), defaultStudyId);
+            sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), defaultStudyId);
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID);
             List<Long> sampleIds = catalogManager.getSampleManager().get(String.valueOf(defaultStudyId), sampleQuery, options, sessionId)
                     .getResult()

@@ -35,7 +35,6 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
@@ -81,10 +80,10 @@ public class JobManager extends ResourceManager<Job> {
     @Override
     Job smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyUid)
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(JobDBAdaptor.QueryParams.ID.key(), entry);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_ID.key(), JobDBAdaptor.QueryParams.ID.key(),
+                JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.ID.key(),
                 JobDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, user);
         if (jobQueryResult.getNumResults() == 0) {
@@ -167,7 +166,7 @@ public class JobManager extends ResourceManager<Job> {
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
         ParamUtils.checkObj(job, "Job");
-        ParamUtils.checkParameter(job.getName(), "Name");
+        ParamUtils.checkParameter(job.getId(), "id");
         ParamUtils.checkParameter(job.getToolId(), "toolId");
 //        ParamUtils.checkParameter(job.getCommandLine(), "commandLine");
 //        ParamUtils.checkObj(job.getOutDir(), "outDir");
@@ -224,7 +223,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         fixQueryObject(study, query, sessionId);
 
@@ -270,7 +269,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         fixQueryObject(study, query, sessionId);
 
@@ -286,7 +285,7 @@ public class JobManager extends ResourceManager<Job> {
 
         fixQueryObject(study, query, sessionId);
 
-        query.append(JobDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryResult<Long> queryResultAux = jobDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
@@ -312,7 +311,7 @@ public class JobManager extends ResourceManager<Job> {
             study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
             fixQueryObject(study, query, sessionId);
-            finalQuery.append(JobDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+            finalQuery.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             iterator = jobDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
 
@@ -346,7 +345,7 @@ public class JobManager extends ResourceManager<Job> {
                 // Delete the job
                 Query updateQuery = new Query()
                         .append(JobDBAdaptor.QueryParams.UID.key(), job.getUid())
-                        .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+                        .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
                 ObjectMap updateParams = new ObjectMap()
                         .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
                         .append(JobDBAdaptor.QueryParams.NAME.key(), job.getName() + suffixName);
@@ -467,7 +466,7 @@ public class JobManager extends ResourceManager<Job> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // Add study id to the query
-        query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult queryResult = jobDBAdaptor.groupBy(query, fields, options, userId);
 
@@ -493,19 +492,6 @@ public class JobManager extends ResourceManager<Job> {
 
         return queryResult;
     }
-
-    public URI createJobOutDir(long studyId, String dirName, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(dirName, "dirName");
-
-        String userId = userManager.getUserId(sessionId);
-
-        URI uri = studyDBAdaptor.get(studyId, new QueryOptions("include", Collections.singletonList("projects.studies.uri")))
-                .first().getUri();
-
-        CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uri);
-        return catalogIOManager.createJobOutDir(userId, dirName);
-    }
-
 
     // **************************   ACLs  ******************************** //
     public List<QueryResult<JobAclEntry>> getAcls(String studyStr, List<String> jobList, String member, boolean silent, String sessionId)

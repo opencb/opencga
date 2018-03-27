@@ -160,24 +160,22 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult renameAlias(long projectId, String newProjectAlias) throws CatalogDBException {
-        long startTime = startQuery();
+    public void editId(long projectUid, String newId) throws CatalogDBException {
+        if (!exists(projectUid)) {
+            logger.error("Project {} not found", projectUid);
+            throw new CatalogDBException("Project not found.");
+        }
 
-        QueryResult<Project> projectResult = get(projectId, null); // if projectId doesn't exist, an exception is raised
-        Project project = projectResult.getResult().get(0);
-
-        //String oldAlias = project.getAlias();
-        project.setId(newProjectAlias);
-
-        Bson query = Filters.and(Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectId),
-                Filters.ne(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), newProjectAlias));
-        Bson update = Updates.set("projects.$" + QueryParams.ID.key(), newProjectAlias);
+        Bson query = Filters.and(
+                Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectUid),
+                Filters.ne(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), newId)
+        );
+        Bson update = Updates.set("projects.$." + QueryParams.ID.key(), newId);
 
         QueryResult<UpdateResult> result = userCollection.update(query, update, null);
-        if (result.getResult().get(0).getModifiedCount() == 0) {    //Check if the the study has been inserted
-            throw new CatalogDBException("Project {alias:\"" + newProjectAlias + "\"} already exists");
+        if (result.getResult().get(0).getModifiedCount() == 0) {    //Check if the the project id was modified
+            throw new CatalogDBException("Project {id:\"" + newId + "\"} already exists");
         }
-        return endQuery("rename project alias", startTime, result);
     }
 
     @Override
@@ -552,10 +550,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             throws CatalogDBException, CatalogAuthorizationException {
 
         // Fetch all the studies that the user can see
-        List<Long> projectIds = query.getAsLongList(QueryParams.UID.key());
+        List<Long> projectUids = query.getAsLongList(QueryParams.UID.key());
         Query studyQuery = new Query();
-        if (projectIds != null && projectIds.size() > 0) {
-            studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
+        if (projectUids != null && projectUids.size() > 0) {
+            studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectUids);
         }
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.UID.key(), query.getString(QueryParams.STUDY_UID.key()));
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ALIAS.key()));
@@ -590,9 +588,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
         } else {
             // We get all the projects the user can see
-            projectIds = queryResult.getResult().stream().map(document -> document.getLong("_projectId")).collect(Collectors.toList());
+            projectUids = queryResult.getResult().stream()
+                    .map(document -> ((Document) document.get("_project")).getLong("uid"))
+                    .collect(Collectors.toList());
         }
-        query.put(QueryParams.UID.key(), projectIds);
+        query.put(QueryParams.UID.key(), projectUids);
 
         return getMongoCursor(query, options);
     }

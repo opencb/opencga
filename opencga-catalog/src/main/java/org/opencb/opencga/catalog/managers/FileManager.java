@@ -770,7 +770,7 @@ public class FileManager extends ResourceManager<File> {
             study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
             fixQueryObject(study, query, sessionId);
-            finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+            finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -1272,19 +1272,19 @@ public class FileManager extends ResourceManager<File> {
 
         // Find all the jobs containing references to any of the files to be deleted
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                 .append(JobDBAdaptor.QueryParams.INPUT_UID.key(), resourceList)
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryResult<Job> jobInputFiles = jobDBAdaptor.get(query, options);
 
         query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                 .append(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), resourceList)
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryResult<Job> jobOutputFiles = jobDBAdaptor.get(query, options);
 
         query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                 .append(JobDBAdaptor.QueryParams.OUT_DIR_UID.key(), resourceList)
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
         QueryResult<Job> jobOutDirFolders = jobDBAdaptor.get(query, options);

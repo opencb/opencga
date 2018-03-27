@@ -141,7 +141,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                 .collect(Collectors.toMap(org.opencb.biodata.models.metadata.Sample::getId, i -> i));
         Query query = new Query(2)
                 .append(SampleDBAdaptor.QueryParams.ID.key(), new ArrayList<>(samplesMap.keySet()))
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
 
         List<Sample> catalogSamples = catalogManager.getSampleManager().get(String.valueOf((long) studyId), query, SAMPLE_QUERY_OPTIONS,
                 sessionId).getResult();

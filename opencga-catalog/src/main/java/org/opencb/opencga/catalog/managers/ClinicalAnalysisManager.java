@@ -60,10 +60,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     @Override
     ClinicalAnalysis smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyUid)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), entry);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(),
+                ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
                 ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key(), ClinicalAnalysisDBAdaptor.QueryParams.ID.key(),
                 ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalDBAdaptor.get(query, options, user);
@@ -91,7 +91,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
 
@@ -117,7 +117,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return clinicalDBAdaptor.iterator(query, options, userId);
     }
@@ -131,7 +131,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(clinicalAnalysis, "clinicalAnalysis");
-        ParamUtils.checkAlias(clinicalAnalysis.getId(), "name", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(clinicalAnalysis.getId(), "name");
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
 
         validateSubjects(clinicalAnalysis, study, sessionId);
@@ -254,7 +254,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams queryParam = ClinicalAnalysisDBAdaptor.QueryParams.getParam(param.getKey());
             switch (queryParam) {
                 case ID:
-                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
+                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name");
                     break;
                 case INTERPRETATIONS:
                     List<LinkedHashMap<String, Object>> interpretationList = (List<LinkedHashMap<String, Object>>) param.getValue();
@@ -363,7 +363,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         fixQueryObject(query, study, sessionId);
 
-        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
 //            authorizationManager.filterClinicalAnalysis(userId, studyId, queryResultAux.getResult());
 
@@ -409,7 +409,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         fixQueryObject(query, study, sessionId);
 
-        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryResult<Long> queryResultAux = clinicalDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
@@ -441,7 +441,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         fixQueryObject(query, study, sessionId);
 
         // Add study id to the query
-        query.put(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid());
+        query.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult queryResult = clinicalDBAdaptor.groupBy(query, fields, options, userId);
 

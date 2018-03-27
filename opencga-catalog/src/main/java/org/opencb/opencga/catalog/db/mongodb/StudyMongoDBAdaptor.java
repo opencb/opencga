@@ -1079,7 +1079,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             if (StringUtils.isEmpty(user)) {
                 study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().getAllInStudy(studyId, options).getResult());
             } else {
-                Query query = new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
                 study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().get(query, options, user).getResult());
             }
         }
@@ -1087,12 +1087,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             if (StringUtils.isEmpty(user)) {
                 study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllInStudy(studyId, options).getResult());
             } else {
-                Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
                 study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options, user).getResult());
             }
         }
         if (options.getBoolean("includeIndividuals")) {
-            Query query = new Query(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            Query query = new Query(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
             if (StringUtils.isEmpty(user)) {
                 study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, options).getResult());
             } else {

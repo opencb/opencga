@@ -386,7 +386,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             AbstractManager.MyResource resource = sampleManager.getUid(sampleStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                     .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
 
             String variableSetId = String.valueOf(catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId)
@@ -437,7 +437,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             AbstractManager.MyResources<Sample> resource = sampleManager.getUids(samplesStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                     .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Sample::getUid)
                             .collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);

@@ -4,11 +4,11 @@
 
 {"collection": "study", "fields": {"alias": 1}, "options": {"background": true}}
 {"collection": "study", "fields": {"uid": 1}, "options": {"background": true}}
-{"collection": "study", "fields": {"name": 1, "_projectId": 1}, "options": {"background": true}}
-{"collection": "study", "fields": {"id": 1, "_projectId": 1}, "options": {"unique": true, "background": true}}
+{"collection": "study", "fields": {"name": 1, "_project.uid": 1}, "options": {"background": true}}
+{"collection": "study", "fields": {"id": 1, "_project.uid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "study", "fields": {"status.name": 1}, "options": {"background": true}}
 {"collection": "study", "fields": {"_acl": 1}, "options": {"background": true}}
-{"collection": "study", "fields": {"_projectId": 1}, "options": {"background": true}}
+{"collection": "study", "fields": {"_project.uid": 1}, "options": {"background": true}}
 
 {"collection": "job", "fields": {"name": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"uid": 1}, "options": {"background": true}}

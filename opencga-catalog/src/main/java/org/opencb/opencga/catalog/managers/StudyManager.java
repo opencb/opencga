@@ -68,7 +68,7 @@ public class StudyManager extends AbstractManager {
 //[A-Za-z]([-_.]?[A-Za-z0-9]
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
-    private static final String STUDY_PATTERN = "[A-Za-z0-9\\-_.]+";
+    private static final String STUDY_PATTERN = "[A-Za-z0-9\\-_.]+|\\*";
     private static final Pattern USER_PROJECT_STUDY_PATTERN = Pattern.compile("^(" + USER_PATTERN + ")@(" + PROJECT_PATTERN + "):("
             + STUDY_PATTERN + ")$");
     private static final Pattern PROJECT_STUDY_PATTERN = Pattern.compile("^(" + PROJECT_PATTERN + "):(" + STUDY_PATTERN + ")$");
@@ -87,8 +87,19 @@ public class StudyManager extends AbstractManager {
     }
 
     public List<Study> resolveIds(List<String> studyList, String userId) throws CatalogException {
-        if (studyList == null || studyList.isEmpty()) {
-            return Collections.singletonList(resolveId(null, userId));
+        if (studyList == null || studyList.isEmpty() || (studyList.size() == 1 && studyList.get(0).endsWith("*"))) {
+            String studyStr = "*";
+            if (studyList != null && !studyList.isEmpty()) {
+                studyStr = studyList.get(0);
+            }
+
+            QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId);
+
+            if (studyQueryResult.getNumResults() == 0) {
+                throw new CatalogException("No studies found or the user " + userId + " does not have permissions to view any.");
+            }
+
+            return studyQueryResult.getResult();
         }
 
         List<Study> returnList = new ArrayList<>(studyList.size());
@@ -99,6 +110,20 @@ public class StudyManager extends AbstractManager {
     }
 
     public Study resolveId(String studyStr, String userId) throws CatalogException {
+        QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId);
+
+        if (studyQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Study " + studyStr + " not found or the user " + userId + " does not have permissions to "
+                    + "view it.");
+        } else if (studyQueryResult.getNumResults() > 1) {
+            throw new CatalogException("More than one study found. Please, be more specific. The accepted pattern is "
+                    + "[ownerId@projectId:studyId]");
+        }
+
+        return studyQueryResult.first();
+    }
+
+    private QueryResult<Study> smartResolutor(String studyStr, String userId) throws CatalogDBException, CatalogAuthorizationException {
         String owner = null;
         String project = null;
         String study = null;
@@ -123,6 +148,11 @@ public class StudyManager extends AbstractManager {
             }
         }
 
+        // Empty study if we are actually asking for all possible
+        if (!StringUtils.isEmpty(study) && study.equals("*")) {
+            study = null;
+        }
+
         Query query = new Query();
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), owner);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project);
@@ -134,17 +164,7 @@ public class StudyManager extends AbstractManager {
                 StudyDBAdaptor.QueryParams.CREATION_DATE.key(), StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
         ));
 
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options, userId);
-
-        if (studyQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Study " + studyStr + " not found or the user " + userId + " does not have permissions to "
-                    + "view it.");
-        } else if (studyQueryResult.getNumResults() > 1) {
-            throw new CatalogException("More than one study found. Please, be more specific. The accepted pattern is "
-                    + "[ownerId@projectId:studyId]");
-        }
-
-        return studyQueryResult.first();
+        return studyDBAdaptor.get(query, options, userId);
     }
 
     public QueryResult<Study> create(String projectStr, String id, String name, Study.Type type, String creationDate, String description,
@@ -154,7 +174,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(type, "type");
-        ParamUtils.checkAlias(id, "id", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(id, "id");
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
 
@@ -563,28 +583,28 @@ public class StudyManager extends AbstractManager {
         studySummary.setFiles(nFiles);
 
         Long nSamples = sampleDBAdaptor.count(
-                new Query(SampleDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid())
+                new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
                                 + File.FileStatus.DELETED))
                 .first();
         studySummary.setSamples(nSamples);
 
         Long nJobs = jobDBAdaptor.count(
-                new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid())
+                new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
                                 + File.FileStatus.DELETED))
                 .first();
         studySummary.setJobs(nJobs);
 
         Long nCohorts = cohortDBAdaptor.count(
-                new Query(CohortDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid())
+                new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
                                 + File.FileStatus.DELETED))
                 .first();
         studySummary.setCohorts(nCohorts);
 
         Long nIndividuals = individualDBAdaptor.count(
-                new Query(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), study.getUid())
+                new Query(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
                                 + File.FileStatus.DELETED))
                 .first();
@@ -1177,7 +1197,7 @@ public class StudyManager extends AbstractManager {
     }
 
     private QueryResult rename(long studyId, String newStudyAlias, String sessionId) throws CatalogException {
-        ParamUtils.checkAlias(newStudyAlias, "newStudyAlias", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(newStudyAlias, "newStudyAlias");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
 //        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
 

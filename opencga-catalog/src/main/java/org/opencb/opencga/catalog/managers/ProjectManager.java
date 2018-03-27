@@ -181,7 +181,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(scientificName, "organism.scientificName");
         ParamUtils.checkParameter(assembly, "organism.assembly");
-        ParamUtils.checkAlias(alias, "alias", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(alias, "alias");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         //Only the user can create a project
@@ -330,12 +330,12 @@ public class ProjectManager extends AbstractManager {
         authorizationManager.checkCanEditProject(projectId, userId);
 
         QueryResult<Project> queryResult = new QueryResult<>();
-        if (parameters.containsKey("alias")) {
-            rename(projectId, parameters.getString("alias"), sessionId);
+        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
+            editId(projectId, parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), sessionId);
 
             //Clone and remove alias from parameters. Do not modify the original parameter
             parameters = new ObjectMap(parameters);
-            parameters.remove("alias");
+            parameters.remove(ProjectDBAdaptor.QueryParams.ID.key());
         }
 
         // Update organism information only if any of the fields was not properly defined
@@ -393,17 +393,18 @@ public class ProjectManager extends AbstractManager {
         return queryResult;
     }
 
-    public QueryResult<Project> rename(long projectId, String newProjectAlias, String sessionId)
+    public QueryResult<Project> editId(long projectUid, String newProjectId, String sessionId)
             throws CatalogException {
-        ParamUtils.checkAlias(newProjectAlias, "newProjectAlias", configuration.getCatalog().getOffset());
+        ParamUtils.checkAlias(newProjectId, "new project id");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
-        authorizationManager.checkCanEditProject(projectId, userId);
+        authorizationManager.checkCanEditProject(projectUid, userId);
 
         userDBAdaptor.updateUserLastModified(userId);
-        projectDBAdaptor.renameAlias(projectId, newProjectAlias);
-        auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, new ObjectMap("alias", newProjectAlias), null, null);
-        return projectDBAdaptor.get(projectId, QueryOptions.empty());
+        projectDBAdaptor.editId(projectUid, newProjectId);
+        auditManager.recordUpdate(AuditRecord.Resource.project, projectUid, userId,
+                new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), newProjectId), null, null);
+        return projectDBAdaptor.get(projectUid, QueryOptions.empty());
     }
 
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
@@ -617,21 +618,21 @@ public class ProjectManager extends AbstractManager {
         List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getUid).collect(Collectors.toList());
 
         query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(SampleDBAdaptor.QueryParams.SNAPSHOT.key(), "<=" + release)
                 .append(Constants.ALL_VERSIONS, true);
         dbIterator = sampleDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("samples.json").toFile(), objectMapper, "samples");
 
         query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(IndividualDBAdaptor.QueryParams.SNAPSHOT.key(), "<=" + release)
                 .append(Constants.ALL_VERSIONS, true);
         dbIterator = individualDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("individuals.json").toFile(), objectMapper, "individuals");
 
         query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(FamilyDBAdaptor.QueryParams.SNAPSHOT.key(), "<=" + release)
                 .append(Constants.ALL_VERSIONS, true);
         dbIterator = familyDBAdaptor.nativeIterator(query, QueryOptions.empty());
@@ -644,19 +645,19 @@ public class ProjectManager extends AbstractManager {
         exportToFile(dbIterator, outputDir.resolve("files.json").toFile(), objectMapper, "files");
 
         query = new Query()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         dbIterator = clinicalDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("clinical_analysis.json").toFile(), objectMapper, "clinical analysis");
 
         query = new Query()
-                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(CohortDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         dbIterator = cohortDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("cohorts.json").toFile(), objectMapper, "cohorts");
 
         query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(JobDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         dbIterator = jobDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("jobs.json").toFile(), objectMapper, "jobs");

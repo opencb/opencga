@@ -45,6 +45,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -149,7 +150,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     }
 
-    String newTmpOutdir() throws CatalogException {
+    String newTmpOutdir() throws CatalogException, IOException {
         return opencga.createTmpOutdir(studyId, "index", sessionId);
     }
 

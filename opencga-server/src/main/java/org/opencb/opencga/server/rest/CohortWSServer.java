@@ -313,7 +313,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             AbstractManager.MyResource<Cohort> resource = cohortManager.getUid(cohortStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                     .append(CohortDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
 
             String variableSetId = String.valueOf(catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId());
@@ -363,7 +363,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             AbstractManager.MyResources<Cohort> resource = cohortManager.getUids(cohortsStr, studyStr, sessionId);
 
             Query query = new Query()
-                    .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudy().getUid())
+                    .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                     .append(CohortDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Cohort::getUid)
                             .collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);

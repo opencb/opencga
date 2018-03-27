@@ -192,7 +192,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         logger.info("Samples mapped: {} ... ", names.size());
 
 //        Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
-//                new Query(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
+//                new Query(VariantStorageEngine.Options.STUDY_UID.key(), studyConfiguration.getStudyId()),
 //                new QueryOptions());
 //        if (iterator.hasNext()) {
 //            VariantSource source = iterator.next();
@@ -327,7 +327,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 //        String fileHeader;
 //        if (headers.isEmpty()) {
 //            Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
-//                    new Query(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
+//                    new Query(VariantStorageEngine.Options.STUDY_UID.key(), studyConfiguration.getStudyId()),
 //                    new QueryOptions());
 //            if (iterator.hasNext()) {
 //                VariantSource source = iterator.next();

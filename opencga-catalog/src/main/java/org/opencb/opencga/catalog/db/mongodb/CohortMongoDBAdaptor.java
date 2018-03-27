@@ -116,7 +116,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public QueryResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException {
-        return get(new Query(QueryParams.STUDY_ID.key(), studyId), options);
+        return get(new Query(QueryParams.STUDY_UID.key(), studyId), options);
     }
 
     @Override
@@ -503,10 +503,10 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
         return queryResult.first();
     }
@@ -618,7 +618,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case UID:
                         addOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STUDY_ID:
+                    case STUDY_UID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:

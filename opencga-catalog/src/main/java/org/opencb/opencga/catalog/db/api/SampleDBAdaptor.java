@@ -60,7 +60,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         VERSION("version", INTEGER, ""), // Version of the sample
         CREATION_DATE("creationDate", DATE, ""),
 
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),

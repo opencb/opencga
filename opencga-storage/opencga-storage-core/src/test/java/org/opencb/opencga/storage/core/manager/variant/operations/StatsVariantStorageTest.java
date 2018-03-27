@@ -101,11 +101,11 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         return file1;
     }
 
-    public String createTmpOutdir(File file) throws CatalogException {
+    public String createTmpOutdir(File file) throws CatalogException, IOException {
         return createTmpOutdir("_FILE_" + file.getUid());
     }
 
-    public String createTmpOutdir(String sufix) throws CatalogException {
+    public String createTmpOutdir(String sufix) throws CatalogException, IOException {
         return opencga.createTmpOutdir(studyId, sufix, sessionId);
     }
 

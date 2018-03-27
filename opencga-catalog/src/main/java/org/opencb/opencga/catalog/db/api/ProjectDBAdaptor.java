@@ -135,7 +135,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 //        return delete(projectId, false);
 //    }
 
-    QueryResult<Project> renameAlias(long projectId, String newAliasName) throws CatalogDBException;
+    void editId(long projectUid, String newId) throws CatalogDBException;
 
 //    @Deprecated
 //    QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException;

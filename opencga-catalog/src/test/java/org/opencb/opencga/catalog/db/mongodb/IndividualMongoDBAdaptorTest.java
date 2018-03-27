@@ -109,20 +109,20 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         QueryResult<Individual> result;
         result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.ID.key(),
-                "~ind_[1-3]").append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
+                "~ind_[1-3]").append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId), new QueryOptions());
 
         assertEquals(3, result.getNumResults());
 
         result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.SEX.key(),
-                Individual.Sex.FEMALE).append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
+                Individual.Sex.FEMALE).append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId), new QueryOptions());
         assertEquals(3, result.getNumResults());
 
         result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.FAMILY.key(), "Family2")
-                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId), new QueryOptions());
         assertEquals(3, result.getNumResults());
 
         result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), ">0")
-                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId), new QueryOptions());
         assertEquals(1, result.getNumResults());
     }
 
