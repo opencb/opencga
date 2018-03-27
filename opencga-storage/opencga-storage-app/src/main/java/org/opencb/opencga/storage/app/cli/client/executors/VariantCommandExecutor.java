@@ -726,13 +726,16 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.SKIP, 0);
 
                     VariantIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    System.out.print("[");
                     while (iterator.hasNext()) {
                         Variant variant = iterator.next();
-                        System.out.println("Variant #" + count);
-                        System.out.println(variant.getId());
+                        System.out.print(variant.toJson());
+                        if (iterator.hasNext()) {
+                            System.out.print(",");
+                        }
                         count++;
                     }
-                    System.out.println("Num. variants: " + count);
+                    System.out.println("]");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
