@@ -382,9 +382,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             .setId(fields[1])
                             .setSource(fields[2])
                             .setChromosome(variant.getChromosome())
-                            .setStart(Integer.parseInt(fields[5])).setEnd(Integer.parseInt(fields[6]))
+                            .setStart(Integer.parseInt(fields[5]))
+                            .setEnd(Integer.parseInt(fields[6]))
                             .setCopyNumber(Float.parseFloat(fields[3]))
                             .setPercentageMatch(Float.parseFloat(fields[4]))
+                            .setPeriod(null)
+                            .setConsensusSize(null)
+                            .setScore(null)
+                            .setSequence(null)
                             .build();
                     variantAnnotation.getRepeat().add(repeat);
                     break;
