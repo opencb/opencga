@@ -130,7 +130,6 @@ public class ProjectManager extends AbstractManager {
                     if (ownedProjects.size() == 0 || ownedProjects.size() > 1) {
                         throw new CatalogException("More than one project found. Please, be more specific. The accepted pattern is "
                                 + "[ownerId@projectId]");
-
                     } else {
                         String[] split = StringUtils.split(ownedProjects.get(0), "@");
                         auxOwner = split[0];
@@ -140,15 +139,27 @@ public class ProjectManager extends AbstractManager {
             }
         }
 
-        if (StringUtils.isEmpty(auxOwner)) {
-            auxOwner = userId;
-        }
+//        if (StringUtils.isEmpty(auxOwner)) {
+//            auxOwner = userId;
+//        }
 
         // We just need to retrieve the project information now
         Query query = new Query()
-                .append(ProjectDBAdaptor.QueryParams.ID.key(), auxProject)
-                .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), auxOwner);
+                .append(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.USER_ID.key(), auxOwner);
         QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
+
+        if (StringUtils.isEmpty(auxOwner) && projectQueryResult.getNumResults() > 0) {
+            String ownProjectFqn = userId + "@" + auxProject;
+            for (Project project : projectQueryResult.getResult()) {
+                // We check if the user owns any of the projects
+                if (ownProjectFqn.equals(project.getFqn())) {
+                    // We return the user's project
+                    return project;
+                }
+            }
+            throw CatalogAuthorizationException.deny(userId, "view", "project", auxProject, null);
+        }
 
         if (projectQueryResult.getNumResults() == 0) {
             logger.error("Internal error. Project " + projectStr + " {" + auxOwner + "@" + auxProject + "} not found");

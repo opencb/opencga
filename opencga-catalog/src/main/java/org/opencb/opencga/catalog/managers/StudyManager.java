@@ -93,13 +93,7 @@ public class StudyManager extends AbstractManager {
                 studyStr = studyList.get(0);
             }
 
-            QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId);
-
-            if (studyQueryResult.getNumResults() == 0) {
-                throw new CatalogException("No studies found or the user " + userId + " does not have permissions to view any.");
-            }
-
-            return studyQueryResult.getResult();
+            return smartResolutor(studyStr, userId).getResult();
         }
 
         List<Study> returnList = new ArrayList<>(studyList.size());
@@ -112,10 +106,7 @@ public class StudyManager extends AbstractManager {
     public Study resolveId(String studyStr, String userId) throws CatalogException {
         QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId);
 
-        if (studyQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Study " + studyStr + " not found or the user " + userId + " does not have permissions to "
-                    + "view it.");
-        } else if (studyQueryResult.getNumResults() > 1) {
+        if (studyQueryResult.getNumResults() > 1) {
             throw new CatalogException("More than one study found. Please, be more specific. The accepted pattern is "
                     + "[ownerId@projectId:studyId]");
         }
@@ -123,7 +114,7 @@ public class StudyManager extends AbstractManager {
         return studyQueryResult.first();
     }
 
-    private QueryResult<Study> smartResolutor(String studyStr, String userId) throws CatalogDBException, CatalogAuthorizationException {
+    private QueryResult<Study> smartResolutor(String studyStr, String userId) throws CatalogException {
         String owner = null;
         String project = null;
         String study = null;
@@ -164,7 +155,18 @@ public class StudyManager extends AbstractManager {
                 StudyDBAdaptor.QueryParams.CREATION_DATE.key(), StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
         ));
 
-        return studyDBAdaptor.get(query, options, userId);
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options, userId);
+
+        if (studyQueryResult.getNumResults() == 0) {
+            studyQueryResult = studyDBAdaptor.get(query, options);
+            if (studyQueryResult.getNumResults() == 0) {
+                throw new CatalogException("No study found or the user " + userId + " does not have permissions to view any.");
+            } else {
+                throw CatalogAuthorizationException.deny(userId, "view", "study", studyQueryResult.first().getFqn(), null);
+            }
+        }
+
+        return studyQueryResult;
     }
 
     public QueryResult<Study> create(String projectStr, String id, String name, Study.Type type, String creationDate, String description,

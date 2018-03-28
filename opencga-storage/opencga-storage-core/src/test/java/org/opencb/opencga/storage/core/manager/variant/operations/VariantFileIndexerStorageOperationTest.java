@@ -195,8 +195,10 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
         File file = getFile(0);
-        File parent = catalogManager.getFileManager().getParent(file.getUid(), null, sessionId).first();
-        indexFiles(singletonList(parent), singletonList(file), queryOptions, outputId);
+        // TODO: Fix this
+        assertTrue(false);
+//        File parent = catalogManager.getFileManager().getParent(file.getUid(), null, sessionId).first();
+//        indexFiles(singletonList(parent), singletonList(file), queryOptions, outputId);
     }
 
     @Test

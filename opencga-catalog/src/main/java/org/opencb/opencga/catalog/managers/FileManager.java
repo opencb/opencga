@@ -346,32 +346,11 @@ public class FileManager extends ResourceManager<File> {
         return new QueryResult<>("Update file index", 0, 1, 1, "", "", Arrays.asList(index));
     }
 
+    @Deprecated
     public QueryResult<File> getParents(long fileId, QueryOptions options, String sessionId) throws CatalogException {
         QueryResult<File> fileQueryResult = get(fileId, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.STUDY_UID.key())), sessionId);
         return getParents(true, options, fileQueryResult.first().getPath(), fileQueryResult.first().getStudyUid());
-    }
-
-    public QueryResult<File> getParent(long fileId, QueryOptions options, String sessionId) throws CatalogException {
-        File file = get(fileId, null, sessionId).first();
-        Path parent = Paths.get(file.getPath()).getParent();
-        String parentPath;
-        if (parent == null) {
-            parentPath = "";
-        } else {
-            parentPath = parent.toString().endsWith("/") ? parent.toString() : parent.toString() + "/";
-        }
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        String user = userManager.getUserId(sessionId);
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), parentPath);
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, user);
-        if (fileQueryResult.getNumResults() == 0) {
-            throw CatalogAuthorizationException.deny(user, "view", "file", fileId, "");
-        }
-        fileQueryResult.setId(Long.toString(fileId));
-        return fileQueryResult;
     }
 
     public QueryResult<File> createFolder(String studyStr, String path, File.FileStatus status, boolean parents, String description,
@@ -1222,7 +1201,7 @@ public class FileManager extends ResourceManager<File> {
         //Name must be changed with "rename".
         if (parameters.containsKey(FileDBAdaptor.QueryParams.NAME.key())) {
             logger.info("Rename file using update method!");
-            rename(file.getUid(), parameters.getString("name"), sessionId);
+            rename(studyStr, file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.NAME.key()), sessionId);
         }
 
         return unsafeUpdate(resource.getStudy().getUid(), file, parameters, options, userId);
@@ -1519,21 +1498,19 @@ public class FileManager extends ResourceManager<File> {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    public QueryResult<File> rename(long fileId, String newName, String sessionId) throws CatalogException {
+    public QueryResult<File> rename(String studyStr, String fileStr, String newName, String sessionId) throws CatalogException {
         ParamUtils.checkFileName(newName, "name");
-        String userId = userManager.getUserId(sessionId);
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        long projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
-        String ownerId = projectDBAdaptor.getOwnerId(projectId);
+        MyResource<File> resource = getUid(fileStr, studyStr, sessionId);
+        String userId = resource.getUser();
+        Study study = resource.getStudy();
+        String ownerId = StringUtils.split(study.getFqn(), "@")[0];
 
-        authorizationManager.checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.WRITE);
-        QueryResult<File> fileResult = fileDBAdaptor.get(fileId, null);
-        File file = fileResult.first();
+        File file = resource.getResource();
+
+        authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
         if (file.getName().equals(newName)) {
-            fileResult.setId("rename");
-            fileResult.setWarningMsg("File name '" + newName + "' is the original name. Do nothing.");
-            return fileResult;
+            return new QueryResult<>("rename", -1, 0, 0, "The file was already named " + newName, "", Collections.emptyList());
         }
 
         if (isRootFolder(file)) {
@@ -1562,8 +1539,8 @@ public class FileManager extends ResourceManager<File> {
                     catalogIOManager = catalogIOManagerFactory.get(oldUri); // TODO? check if something in the subtree is not READY?
                     catalogIOManager.rename(oldUri, newUri);   // io.move() 1
                 }
-                result = fileDBAdaptor.rename(fileId, newPath, newUri.toString(), null);
-                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath)
+                result = fileDBAdaptor.rename(file.getUid(), newPath, newUri.toString(), null);
+                auditManager.recordUpdate(AuditRecord.Resource.file, file.getUid(), userId, new ObjectMap("path", newPath)
                         .append("name", newName), "rename", null);
                 break;
             case FILE:
@@ -1571,8 +1548,8 @@ public class FileManager extends ResourceManager<File> {
                     catalogIOManager = catalogIOManagerFactory.get(oldUri);
                     catalogIOManager.rename(oldUri, newUri);
                 }
-                result = fileDBAdaptor.rename(fileId, newPath, newUri.toString(), null);
-                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath)
+                result = fileDBAdaptor.rename(file.getUid(), newPath, newUri.toString(), null);
+                auditManager.recordUpdate(AuditRecord.Resource.file, file.getUid(), userId, new ObjectMap("path", newPath)
                         .append("name", newName), "rename", null);
                 break;
             default:

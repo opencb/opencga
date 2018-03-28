@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -258,23 +259,25 @@ public class FileMetadataReader {
         List<Sample> sampleList;
 
         Map<String, Object> attributes;
-        if (!fileModifyParams.containsKey("attributes")) {
+        if (!fileModifyParams.containsKey(FileDBAdaptor.QueryParams.ATTRIBUTES.key())) {
             attributes = new HashMap<>();
         } else {
-            attributes = fileModifyParams.getMap("attributes");
+            attributes = fileModifyParams.getMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key());
         }
 
-        List<String> includeSampleNameId = Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name");
+        List<String> includeSampleNameId = Arrays.asList(SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.ID.key());
         if (file.getSamples() == null || file.getSamples().isEmpty()) {
             //Read samples from file
             List<String> sortedSampleNames = null;
-            switch (fileModifyParams.containsKey("bioformat") ? (File.Bioformat) fileModifyParams.get("bioformat") : file.getBioformat()) {
+            switch (fileModifyParams.containsKey(FileDBAdaptor.QueryParams.BIOFORMAT.key())
+                    ? (File.Bioformat) fileModifyParams.get(FileDBAdaptor.QueryParams.BIOFORMAT.key())
+                    : file.getBioformat()) {
                 case VARIANT: {
                     Object variantSourceObj = null;
                     if (file.getAttributes().containsKey(VARIANT_FILE_METADATA)) {
                         variantSourceObj = file.getAttributes().get(VARIANT_FILE_METADATA);
                     } else if (attributes.containsKey(VARIANT_FILE_METADATA)) {
-                        variantSourceObj = fileModifyParams.getMap("attributes").get(VARIANT_FILE_METADATA);
+                        variantSourceObj = fileModifyParams.getMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key()).get(VARIANT_FILE_METADATA);
                     }
                     if (variantSourceObj != null) {
                         if (variantSourceObj instanceof VariantFileMetadata) {
@@ -341,33 +344,31 @@ public class FileMetadataReader {
             }
 
             //Find matching samples in catalog with the sampleName from the header.
-            QueryOptions sampleQueryOptions = new QueryOptions("include", includeSampleNameId);
-            Query sampleQuery = new Query("name", sortedSampleNames);
-            sampleList = catalogManager.getSampleManager().get(String.valueOf(study.getUid()), sampleQuery, sampleQueryOptions, sessionId)
-                    .getResult();
+            QueryOptions sampleQueryOptions = new QueryOptions(QueryOptions.INCLUDE, includeSampleNameId);
+            Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sortedSampleNames);
+            sampleList = catalogManager.getSampleManager().get(study.getFqn(), sampleQuery, sampleQueryOptions, sessionId).getResult();
 
-            //check if all file samples exists on Catalog
+            //check if all file samples exists in Catalog
             if (sampleList.size() != sortedSampleNames.size()) {   //Size does not match. Find the missing samples.
                 //Use a LinkedHashSet to keep the order
                 Set<String> set = new LinkedHashSet<>(sortedSampleNames);
                 for (Sample sample : sampleList) {
                     set.remove(sample.getId());
                 }
-                logger.warn("Some samples from file \"{}\" were not registered in Catalog. Registering new samples: {}",
-                        file.getName(), set);
+                logger.warn("Some samples from file \"{}\" were not registered in Catalog. Registering new samples: {}", file.getName(),
+                        set);
                 if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
                             sampleList.add(new Sample(sampleName, file.getName(), new Individual(), null, 1));
                         } else {
                             try {
-                                sampleList.add(catalogManager.getSampleManager().create(Long.toString(study.getUid()), sampleName, file
-                                        .getName(), null, null, false, null, new HashMap<>(), null, null, sessionId).first());
+                                sampleList.add(catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(sampleName)
+                                        .setSource(file.getName()), null, sessionId).first());
                             } catch (CatalogException e) {
-                                Query query = new Query("name", sampleName);
-                                QueryOptions queryOptions = new QueryOptions("include", includeSampleNameId);
-                                if (catalogManager.getSampleManager().get(String.valueOf(study.getUid()), query, queryOptions, sessionId)
-                                        .getResult()
+                                Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleName);
+                                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, includeSampleNameId);
+                                if (catalogManager.getSampleManager().get(study.getFqn(), query, queryOptions, sessionId).getResult()
                                         .isEmpty()) {
                                     throw e; //Throw exception if sample does not exist.
                                 } else {
@@ -391,12 +392,12 @@ public class FileMetadataReader {
 
         } else {
             //Get samples from file.sampleIds
-            Query query = new Query("uid", file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
-            sampleList = catalogManager.getSampleManager().get(String.valueOf(study.getUid()), query, new QueryOptions(), sessionId)
-                    .getResult();
+            Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), file.getSamples().stream().map(Sample::getId)
+                    .collect(Collectors.toList()));
+            sampleList = catalogManager.getSampleManager().get(study.getFqn(), query, new QueryOptions(), sessionId).getResult();
         }
 
-        List<Long> sampleIdsList = sampleList.stream().map(Sample::getUid).collect(Collectors.toList());
+        List<String> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
         fileModifyParams.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIdsList);
         if (!attributes.isEmpty()) {
             fileModifyParams.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);

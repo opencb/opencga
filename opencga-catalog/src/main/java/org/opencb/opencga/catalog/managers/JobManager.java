@@ -480,15 +480,15 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        authorizationManager.checkStudyPermission(study.getUid(), token, StudyAclEntry.StudyPermissions.WRITE_JOBS);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
-        Job job = new Job(jobName, token, executable, type, input, output, outDir, params,
+        Job job = new Job(jobName, userId, executable, type, input, output, outDir, params,
                 catalogManager.getStudyManager().getCurrentRelease(study, userId))
                 .setDescription(description)
                 .setAttributes(attributes);
 
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, study.getUid(), new QueryOptions());
-        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), token, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
     }
