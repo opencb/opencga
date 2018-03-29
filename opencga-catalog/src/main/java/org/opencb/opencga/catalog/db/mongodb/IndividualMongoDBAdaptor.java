@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -43,6 +44,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
@@ -931,7 +933,50 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
 
-        return individualCollection.nativeQuery().find(bson, qOptions).iterator();
+        if (excludeSamples(qOptions)) {
+            return individualCollection.nativeQuery().find(bson, qOptions).iterator();
+        } else {
+            List<Document> lookupMatchList = new ArrayList<>();
+            lookupMatchList.add(
+                    new Document("$expr",
+                        new Document("$and", Arrays.asList(
+                                new Document("$eq", Arrays.asList("$" + SampleDBAdaptor.QueryParams.UID.key(), "$$sampleUid")),
+                                new Document("$eq", Arrays.asList("$" + SampleDBAdaptor.QueryParams.VERSION.key(), "$$sampleVersion"))
+                        ))));
+            if (studyDocument != null && user != null) {
+                // Get the document query needed to check the sample permissions as well
+                queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                        StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+                if (!queryForAuthorisedEntries.isEmpty()) {
+                    lookupMatchList.add(queryForAuthorisedEntries);
+                }
+            }
+            Document lookupMatch = lookupMatchList.size() > 1
+                    ? new Document("$and", lookupMatchList)
+                    : lookupMatchList.get(0);
+
+            logger.debug("Individual get: lookup match : {}", lookupMatch.toBsonDocument(Document.class,
+                    MongoClient.getDefaultCodecRegistry()));
+
+            return individualCollection.nativeQuery().aggregate(Arrays.asList(
+                    Aggregates.match(bson),
+                    new Document("$lookup", new Document()
+                            .append("from", "sample")
+                            .append("let", new Document()
+                                .append("sampleUid", "$" + QueryParams.SAMPLE_UIDS.key())
+                                .append("sampleVersion", "$" + QueryParams.SAMPLE_VERSION.key())
+                            )
+                            .append("pipeline", Collections.singletonList(new Document("$match", lookupMatch)))
+                            .append("as", QueryParams.SAMPLES.key())
+                    )
+            ), qOptions).iterator();
+
+//            return individualCollection.nativeQuery().aggregate(Arrays.asList(
+//                    Aggregates.match(bson),
+//                    Aggregates.lookup("sample", QueryParams.SAMPLE_UIDS.key(), SampleDBAdaptor.QueryParams.UID.key(),
+//                            QueryParams.SAMPLES.key())
+//            ), qOptions).iterator();
+        }
     }
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
@@ -1199,6 +1244,33 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         count = dbAdaptorFactory.getCatalogSampleDBAdaptor()
                 .update(query, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), -1), QueryOptions.empty()).first();
         logger.debug("Individual id {} extracted from {} samples", individualId, count);
+    }
+
+    private boolean excludeSamples(QueryOptions options) {
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+            for (String include : includeList) {
+                if (include.startsWith(QueryParams.SAMPLES.key())) {
+                    // Samples should be included
+                    return false;
+                }
+            }
+            // Samples are not included
+            return true;
+        }
+        if (options.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            for (String exclude : excludeList) {
+                if (exclude.equals(QueryParams.SAMPLES.key())) {
+                    // Samples should be excluded
+                    return true;
+                }
+            }
+            // Samples are included
+            return false;
+        }
+        // Samples are included by default
+        return false;
     }
 
 }

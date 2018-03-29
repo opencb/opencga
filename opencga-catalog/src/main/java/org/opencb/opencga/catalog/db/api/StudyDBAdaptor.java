@@ -292,7 +292,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", TEXT, ""),
-        PROJECT_UID("projectUid", DOUBLE, ""),
+        PROJECT_UID("projectUid", INTEGER, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -370,7 +370,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     }
 
     enum VariableSetParams implements QueryParam {
-        UID("uid", DOUBLE, ""),
+        UID("uid", INTEGER, ""),
         ID("id", TEXT, ""),
         UNIQUE("unique", BOOLEAN, ""),
         CONFIDENTIAL("confidential", BOOLEAN, ""),

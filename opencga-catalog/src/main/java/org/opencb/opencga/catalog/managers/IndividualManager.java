@@ -215,8 +215,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(studyUid, individual, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
-        addSampleInformation(queryResult, studyUid, userId);
-
         return queryResult;
     }
 
@@ -268,8 +266,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, userId);
-        // Add sample information
-        addSampleInformation(individualQueryResult, study.getUid(), userId);
 
         if (individualQueryResult.getNumResults() == 0 && query.containsKey(IndividualDBAdaptor.QueryParams.UID.key())) {
             List<Long> idList = query.getAsLongList(IndividualDBAdaptor.QueryParams.UID.key());
@@ -323,8 +319,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         QueryResult<Individual> queryResult = individualDBAdaptor.get(finalQuery, options, userId);
 //        authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
 
-        // Add sample information
-        addSampleInformation(queryResult, study.getUid(), userId);
         return queryResult;
     }
 
@@ -408,7 +402,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
                 // Get the families the individual is a member of
                 Query tmpQuery = new Query()
-                        .append(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(), individual.getUid())
+                        .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), individual.getUid())
                         .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
                 QueryResult<Family> familyQueryResult = familyDBAdaptor.get(tmpQuery, new QueryOptions(QueryOptions.INCLUDE,
                         Arrays.asList(FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.ID.key(),
@@ -637,9 +631,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         QueryResult<Individual> queryResult = individualDBAdaptor.update(individual.getUid(), parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individual.getUid(), userId, parameters, null, null);
-
-        // Add sample information
-        addSampleInformation(queryResult, study.getUid(), userId);
 
         return queryResult;
     }
@@ -879,62 +870,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             query.append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), resource.getResourceList().stream().map(Sample::getUid)
                     .collect(Collectors.toList()));
         }
-    }
-
-    private void addSampleInformation(QueryResult<Individual> individualQueryResult, long studyId, String userId) {
-        if (individualQueryResult.getNumResults() == 0) {
-            return;
-        }
-
-        List<String> errorMessages = new ArrayList<>();
-        for (Individual individual : individualQueryResult.getResult()) {
-            if (individual.getSamples() == null || individual.getSamples().isEmpty()) {
-                continue;
-            }
-
-            List<Sample> sampleList = new ArrayList<>();
-            for (Sample sample : individual.getSamples()) {
-                Query query = new Query()
-                        .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                        .append(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid())
-                        .append(SampleDBAdaptor.QueryParams.VERSION.key(), sample.getVersion());
-                try {
-                    QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                            SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.VERSION.key()
-                    ));
-                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions, userId);
-                    if (sampleQueryResult.getNumResults() == 0) {
-                        throw new CatalogException("Could not get information from sample " + sample.getUid());
-                    } else {
-                        sampleList.add(sampleQueryResult.first());
-                    }
-                } catch (CatalogException e) {
-                    logger.warn("Could not retrieve sample information to complete individual {}, {}", individual.getName(), e.getMessage(),
-                            e);
-                    errorMessages.add("Could not retrieve sample information to complete individual " + individual.getName() + ", "
-                            + e.getMessage());
-                }
-            }
-            individual.setSamples(sampleList);
-        }
-
-        if (errorMessages.size() > 0) {
-            individualQueryResult.setWarningMsg(StringUtils.join(errorMessages, "\n"));
-        }
-    }
-
-    private long getIndividualId(boolean silent, String individualStr) throws CatalogException {
-        long individualId = Long.parseLong(individualStr);
-        try {
-            individualDBAdaptor.checkId(individualId);
-        } catch (CatalogException e) {
-            if (silent) {
-                return -1L;
-            } else {
-                throw e;
-            }
-        }
-        return individualId;
     }
 
 }

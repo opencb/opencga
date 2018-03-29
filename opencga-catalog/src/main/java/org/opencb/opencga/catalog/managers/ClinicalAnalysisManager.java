@@ -233,7 +233,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 // Check the proband is an actual member of the family
                 Query query = new Query()
                         .append(FamilyDBAdaptor.QueryParams.UID.key(), familyResource.getResource().getUid())
-                        .append(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(), subject.getUid());
+                        .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), subject.getUid());
                 QueryResult<Family> count = catalogManager.getFamilyManager().count(study.getFqn(), query, sessionId);
                 if (count.getNumTotalResults() == 0) {
                     throw new CatalogException("The member " + subject.getUid() + " does not belong to the family "

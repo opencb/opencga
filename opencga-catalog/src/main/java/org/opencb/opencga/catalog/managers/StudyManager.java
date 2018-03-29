@@ -179,9 +179,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkAlias(id, "id");
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, "studies");
-        Project project = catalogManager.getProjectManager().resolveId(projectStr, userId, queryOptions);
+        Project project = catalogManager.getProjectManager().resolveId(projectStr, userId);
 
         long projectId = project.getUid();
 
@@ -268,8 +266,7 @@ public class StudyManager extends AbstractManager {
     }
 
     int getCurrentRelease(Study study, String userId) throws CatalogException {
-        return catalogManager.getProjectManager().resolveId(StringUtils.split(study.getFqn(), ":")[0], userId,
-                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key())).getCurrentRelease();
+        return catalogManager.getProjectManager().resolveId(StringUtils.split(study.getFqn(), ":")[0], userId).getCurrentRelease();
     }
 
     public MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException {

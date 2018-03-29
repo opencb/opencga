@@ -46,6 +46,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         ORGANISM_TAXONOMY_CODE("organism.taxonomyCode", TEXT, ""),
         ORGANISM_ASSEMBLY("organism.assembly", TEXT, ""),
         CURRENT_RELEASE("currentRelease", INTEGER, ""),
+        FQN("fqn", TEXT, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),

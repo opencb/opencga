@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
 
@@ -63,14 +66,13 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "phase1", "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser);
-
+        catalogManager.getStudyManager().create(projectId, "phase1", "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
+                null, null, null, null, sessionIdUser);
     }
 
     @After
@@ -121,31 +123,46 @@ public class FamilyManagerTest extends GenericTest {
         assertTrue("Father id not associated to any children", fatherIdUpdated);
     }
 
+    @Test
+    public void includeMemberIdOnly() throws CatalogException {
+        createDummyFamily("family");
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS.key() + "."
+                + IndividualDBAdaptor.QueryParams.ID.key());
+        QueryResult<Family> family = familyManager.get(STUDY, "family", options, sessionIdUser);
+
+        for (Individual individual : family.first().getMembers()) {
+            assertTrue(StringUtils.isNotEmpty(individual.getId()));
+            assertTrue(StringUtils.isEmpty(individual.getName()));
+            assertTrue(StringUtils.isEmpty(individual.getCreationDate()));
+        }
+    }
+
     private QueryResult<Family> createDummyFamily(String familyName) throws CatalogException {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setName("child3")
+        Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
@@ -163,27 +180,27 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setName("child3")
+        Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
@@ -203,27 +220,27 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setName("child3")
+        Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
@@ -241,10 +258,10 @@ public class FamilyManagerTest extends GenericTest {
     @Test
     public void createFamilyDuo() throws CatalogException {
         Family family = new Family()
-                .setName("test")
+                .setId("test")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("E00", "blabla", "blabla")))
-                .setMembers(Arrays.asList(new Individual().setName("proband").setSex(Individual.Sex.MALE),
-                        new Individual().setFather(new Individual().setName("proband")).setName("child").setSex(Individual.Sex.FEMALE)));
+                .setMembers(Arrays.asList(new Individual().setId("proband").setSex(Individual.Sex.MALE),
+                        new Individual().setFather(new Individual().setId("proband")).setId("child").setSex(Individual.Sex.FEMALE)));
         QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
 
         assertEquals(2, familyQueryResult.first().getMembers().size());
@@ -255,20 +272,20 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
-                .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+        Individual relChild2 = new Individual().setId("child2")
+                .setPhenotypes(Collections.singletonList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
@@ -286,20 +303,20 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis3", "dis3", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
@@ -318,20 +335,20 @@ public class FamilyManagerTest extends GenericTest {
         OntologyTerm phenotype1 = new OntologyTerm("dis1", "Phenotype 1", "HPO");
         OntologyTerm phenotype2 = new OntologyTerm("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setName("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setName("child1")
+        Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setName("child2")
+        Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
@@ -403,14 +420,14 @@ public class FamilyManagerTest extends GenericTest {
     public void updateFamilyMissingMember() throws CatalogException, JsonProcessingException {
         QueryResult<Family> originalFamily = createDummyFamily("Martinez-Martinez");
 
-        Individual father = new Individual().setName("father");
-        Individual mother = new Individual().setName("mother2");
+        Individual father = new Individual().setId("father");
+        Individual mother = new Individual().setId("mother2");
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setName("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
 
-        Individual relChild1 = new Individual().setName("child3")
+        Individual relChild1 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)

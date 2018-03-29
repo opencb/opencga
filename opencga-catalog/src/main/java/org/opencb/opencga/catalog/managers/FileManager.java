@@ -35,7 +35,6 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -348,8 +347,16 @@ public class FileManager extends ResourceManager<File> {
 
     @Deprecated
     public QueryResult<File> getParents(long fileId, QueryOptions options, String sessionId) throws CatalogException {
-        QueryResult<File> fileQueryResult = get(fileId, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.STUDY_UID.key())), sessionId);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.STUDY_UID.key())));
+
+        if (fileQueryResult.getNumResults() == 0) {
+            return fileQueryResult;
+        }
+
+        String userId = userManager.getUserId(sessionId);
+        authorizationManager.checkFilePermission(fileQueryResult.first().getStudyUid(), fileId, userId, FileAclEntry.FilePermissions.VIEW);
+
         return getParents(true, options, fileQueryResult.first().getPath(), fileQueryResult.first().getStudyUid());
     }
 
@@ -581,6 +588,8 @@ public class FileManager extends ResourceManager<File> {
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        fixQueryObject(study, query, sessionId);
 
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, userId);
 
@@ -1913,8 +1922,11 @@ public class FileManager extends ResourceManager<File> {
      * @return a new ResourceId object
      */
     private MyResources<File> getRecursiveFilesAndFolders(MyResources<File> resource) throws CatalogException {
-        Set<File> fileSet = new HashSet<>();
-        fileSet.addAll(resource.getResourceList());
+        List<File> fileList = new LinkedList<>();
+        fileList.addAll(resource.getResourceList());
+
+        Set<Long> uidFileSet = new HashSet<>();
+        uidFileSet.addAll(resource.getResourceList().stream().map(File::getUid).collect(Collectors.toSet()));
 
         List<String> pathList = new ArrayList<>();
         for (File file : resource.getResourceList()) {
@@ -1930,11 +1942,14 @@ public class FileManager extends ResourceManager<File> {
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                     .append(FileDBAdaptor.QueryParams.PATH.key(), pathList);
             QueryResult<File> fileQueryResult1 = fileDBAdaptor.get(query, options);
-            fileSet.addAll(fileQueryResult1.getResult());
+            for (File file1 : fileQueryResult1.getResult()) {
+                if (!uidFileSet.contains(file1.getUid())) {
+                    uidFileSet.add(file1.getUid());
+                    fileList.add(file1);
+                }
+            }
         }
 
-        List<File> fileList = new ArrayList<>(fileSet.size());
-        fileList.addAll(fileSet);
         return new MyResources<>(resource.getUser(), resource.getStudy(), fileList);
     }
 

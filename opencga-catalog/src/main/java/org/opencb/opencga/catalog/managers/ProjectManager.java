@@ -67,12 +67,10 @@ public class ProjectManager extends AbstractManager {
      *
      * @param projectStr string that can contain the full qualified name (owner@projectId) or just the projectId.
      * @param userId user asking for the project information.
-     * @param options additional query options
      * @return a QueryResult containing the project.
      * @throws CatalogException if multiple projects are found.
      */
-    Project resolveId(String projectStr, String userId, QueryOptions options) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+    Project resolveId(String projectStr, String userId) throws CatalogException {
         if (StringUtils.isEmpty(userId)) {
             throw new CatalogException("Missing mandatory parameter userId");
         }
@@ -147,6 +145,14 @@ public class ProjectManager extends AbstractManager {
         Query query = new Query()
                 .append(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.USER_ID.key(), auxOwner);
+
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.ID.key(),
+                        ProjectDBAdaptor.QueryParams.FQN.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()
+                        ));
+//                .append(QueryOptions.EXCLUDE, "studies");
+
         QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
 
         if (StringUtils.isEmpty(auxOwner) && projectQueryResult.getNumResults() > 0) {
@@ -258,7 +264,8 @@ public class ProjectManager extends AbstractManager {
     @Deprecated
     public QueryResult<Project> get(String projectStr, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        return new QueryResult<>(projectStr, -1, 1, 1, "", "", Collections.singletonList(resolveId(projectStr, userId, options)));
+        Project project = resolveId(projectStr, userId);
+        return projectDBAdaptor.get(project.getUid(), options);
     }
 
     public List<QueryResult<Project>> get(List<String> projectList, QueryOptions options, boolean silent, String sessionId)
@@ -336,7 +343,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
-        Project project = resolveId(projectStr, userId, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.UID.key()));
+        Project project = resolveId(projectStr, userId);
         long projectId = project.getUid();
         authorizationManager.checkCanEditProject(projectId, userId);
 
@@ -421,8 +428,7 @@ public class ProjectManager extends AbstractManager {
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
 
-        Project project = resolveId(projectStr, userId, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key())));
+        Project project = resolveId(projectStr, userId);
         long projectId = project.getUid();
 
         authorizationManager.checkCanEditProject(projectId, userId);
@@ -600,7 +606,7 @@ public class ProjectManager extends AbstractManager {
                         ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()
                 ))
                 .append(QueryOptions.EXCLUDE, "studies");
-        Project project = resolveId(projectStr, userId, options);
+        Project project = resolveId(projectStr, userId);
 
         long projectId = project.getUid();
         int currentRelease = project.getCurrentRelease();

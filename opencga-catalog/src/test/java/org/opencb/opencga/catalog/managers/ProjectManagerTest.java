@@ -56,9 +56,9 @@ public class ProjectManagerTest extends GenericTest {
     private String project1;
     private String project2;
     private String project3;
-    private long studyId;
-    private long studyId2;
-    private long studyId3;
+    private String studyId;
+    private String studyId2;
+    private String studyId3;
 
     @Before
     public void setUp() throws IOException, CatalogException {
@@ -83,11 +83,11 @@ public class ProjectManagerTest extends GenericTest {
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getId();
 
         studyId = catalogManager.getStudyManager().create(project1, "phase1", "Phase 1", Study.Type.TRIO, null, "Done",
-                null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
+                null, null, null, null, null, null, null, null, sessionIdUser).first().getFqn();
         studyId2 = catalogManager.getStudyManager().create(project1, "phase3", "Phase 3", Study.Type.CASE_CONTROL, null,
-                "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
+                "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getFqn();
         studyId3 = catalogManager.getStudyManager().create(project2, "s1", "Study 1", Study.Type.CONTROL_SET, null, "",
-                null, null, null, null, null, null, null, null, sessionIdUser2).first().getUid();
+                null, null, null, null, null, null, null, null, sessionIdUser2).first().getFqn();
     }
 
     @Test
@@ -106,9 +106,9 @@ public class ProjectManagerTest extends GenericTest {
         }
 
         // Create a new study in project2 with some dummy permissions for user
-        long s2 = catalogManager.getStudyManager().create(project2, "s2", "Study 2", Study.Type.CONTROL_SET, null, "",
-                null, null, null, null, null, null, null, null, sessionIdUser2).first().getUid();
-        catalogManager.getStudyManager().updateGroup(String.valueOf(s2), "@members", new GroupParams("user", GroupParams.Action.ADD),
+        String s2 = catalogManager.getStudyManager().create(project2, "s2", "Study 2", Study.Type.CONTROL_SET, null, "",
+                null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
+        catalogManager.getStudyManager().updateGroup(s2, "@members", new GroupParams("user", GroupParams.Action.ADD),
                 sessionIdUser2);
 
         QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
@@ -117,16 +117,16 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals("s2", queryResult.first().getStudies().get(0).getId());
 
         // Add permissions to a group were user belongs
-        catalogManager.getStudyManager().createGroup(Long.toString(studyId3), "@member", "user", sessionIdUser2);
+        catalogManager.getStudyManager().createGroup(studyId3, "@member", "user", sessionIdUser2);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
         assertEquals(2, queryResult.first().getStudies().size());
-        assertEquals("user2@pmp", queryResult.first().getId());
+        assertEquals("user2@pmp", queryResult.first().getFqn());
 
         // Add permissions to user in a study of user3
-        long s3 = catalogManager.getStudyManager().create(String.valueOf(project3), "s3", "StudyProject3", Study.Type.CONTROL_SET, null,
-                "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getUid();
+        String s3 = catalogManager.getStudyManager().create(project3, "s3", "StudyProject3", Study.Type.CONTROL_SET, null,
+                "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getId();
         catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", new GroupParams("user", GroupParams.Action.ADD),
                 sessionIdUser3);
 
@@ -146,8 +146,6 @@ public class ProjectManagerTest extends GenericTest {
         Project pr = catalogManager.getProjectManager().create("Project about some genomes", "project2", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", null, sessionIdUser).first();
 
-        long myProject = pr.getUid();
-
         assertEquals("Homo sapiens", pr.getOrganism().getScientificName());
         assertEquals("", pr.getOrganism().getCommonName());
         assertEquals("GRCh38", pr.getOrganism().getAssembly());
@@ -155,8 +153,7 @@ public class ProjectManagerTest extends GenericTest {
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), 55);
-        QueryResult<Project> update = catalogManager.getProjectManager().update(String.valueOf((Long) myProject), objectMap, null,
-                sessionIdUser);
+        QueryResult<Project> update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
 
         assertEquals(1, update.getNumResults());
         assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
@@ -167,7 +164,7 @@ public class ProjectManagerTest extends GenericTest {
         objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), "common");
 
-        update = catalogManager.getProjectManager().update(String.valueOf((Long) myProject), objectMap, null, sessionIdUser);
+        update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
 
         assertEquals(1, update.getNumResults());
         assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
@@ -180,6 +177,6 @@ public class ProjectManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Cannot update organism");
-        catalogManager.getProjectManager().update(String.valueOf((Long) myProject), objectMap, null, sessionIdUser);
+        catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
     }
 }

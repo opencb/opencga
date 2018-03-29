@@ -177,7 +177,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
 //        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MOTHER_UID.key(), familyCommandOptions.updateCommandOptions.motherId);
 //        if (StringUtils.isNotEmpty(familyCommandOptions.updateCommandOptions.children)) {
 //            List<String> childIds = Arrays.asList(StringUtils.split(familyCommandOptions.updateCommandOptions.children, ","));
-//            params.put(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(), childIds);
+//            params.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), childIds);
 //        }
 //        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.DESCRIPTION.key(), familyCommandOptions.updateCommandOptions.description);
 //        params.putIfNotNull(FamilyDBAdaptor.QueryParams.MEMBERS_PARENTAL_CONSANGUINITY.key(),

@@ -495,7 +495,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
                 && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
             for (Project project : queryResult.getResult()) {
-                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getUid());
+                Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
                 try {
                     QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options, user);
                     project.setStudies(studyQueryResult.getResult());
@@ -626,7 +626,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 }
             }
             if (includeList.size() > 0) {
-                aggregates.add(Aggregates.project(Projections.include(includeList)));
+                options.put(QueryOptions.INCLUDE, includeList);
             }
         }
 

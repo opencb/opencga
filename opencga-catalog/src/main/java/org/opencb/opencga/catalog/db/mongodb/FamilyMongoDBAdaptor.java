@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
@@ -44,6 +45,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
@@ -568,18 +570,53 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         qOptions = removeAnnotationProjectionOptions(qOptions);
 
-        return familyCollection.nativeQuery().find(bson, qOptions).iterator();
-    }
+        if (excludeIndividuals(qOptions)) {
+            return familyCollection.nativeQuery().find(bson, qOptions).iterator();
+        } else {
+            List<Document> lookupMatchList = new ArrayList<>();
+            lookupMatchList.add(
+                    new Document("$expr",
+                            new Document("$and", Arrays.asList(
+                                    new Document("$eq", Arrays.asList("$" + IndividualDBAdaptor.QueryParams.UID.key(), "$$individualUid")),
+                                    new Document("$eq", Arrays.asList("$" + IndividualDBAdaptor.QueryParams.VERSION.key(),
+                                            "$$individualVersion"))
+                            ))));
+            if (studyDocument != null && user != null) {
+                // Get the document query needed to check the sample permissions as well
+                queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                        StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name());
+                if (!queryForAuthorisedEntries.isEmpty()) {
+                    lookupMatchList.add(queryForAuthorisedEntries);
+                }
+            }
+            Document lookupMatch = lookupMatchList.size() > 1
+                    ? new Document("$and", lookupMatchList)
+                    : lookupMatchList.get(0);
 
-    private Document getStudyDocument(Query query) throws CatalogDBException {
-        // Get the study document
-        Query studyQuery = new Query()
-                .append(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(FamilyDBAdaptor.QueryParams.STUDY_UID.key()));
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(FamilyDBAdaptor.QueryParams.STUDY_UID.key()) + " not found");
+            lookupMatch = new Document("$lookup", new Document()
+                    .append("from", "individual")
+                    .append("let", new Document()
+                            .append("individualUid", "$" + QueryParams.MEMBER_UID.key())
+                            .append("individualVersion", "$" + QueryParams.MEMBER_VERSION.key())
+                    )
+                    .append("pipeline", Collections.singletonList(new Document("$match", lookupMatch)))
+                    .append("as", QueryParams.MEMBERS.key())
+            );
+
+            logger.info("Family get: lookup match : {}", lookupMatch.toBsonDocument(Document.class,
+                    MongoClient.getDefaultCodecRegistry()));
+
+            return familyCollection.nativeQuery().aggregate(Arrays.asList(
+                    Aggregates.match(bson),
+                    lookupMatch
+            ), qOptions).iterator();
+
+//            return familyCollection.nativeQuery().aggregate(Arrays.asList(
+//                    Aggregates.match(bson),
+//                    Aggregates.lookup("individual", QueryParams.MEMBER_UID.key(), IndividualDBAdaptor.QueryParams.UID.key(),
+//                            QueryParams.MEMBERS.key())
+//            ), qOptions).iterator();
         }
-        return queryResult.first();
     }
 
     @Override
@@ -762,7 +799,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case MEMBERS_UID:
+                    case MEMBER_UID:
                     case ID:
                     case NAME:
                     case DESCRIPTION:
@@ -811,5 +848,43 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         } else {
             return new Document();
         }
+    }
+
+    private boolean excludeIndividuals(QueryOptions options) {
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+            for (String include : includeList) {
+                if (include.startsWith(QueryParams.MEMBERS.key())) {
+                    // Individuals should be included
+                    return false;
+                }
+            }
+            // Individuals are not included
+            return true;
+        }
+        if (options.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            for (String exclude : excludeList) {
+                if (exclude.equals(QueryParams.MEMBERS.key())) {
+                    // Individuals should be excluded
+                    return true;
+                }
+            }
+            // Individuals are included
+            return false;
+        }
+        // Individuals are included by default
+        return false;
+    }
+
+    private Document getStudyDocument(Query query) throws CatalogDBException {
+        // Get the study document
+        Query studyQuery = new Query()
+                .append(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(FamilyDBAdaptor.QueryParams.STUDY_UID.key()));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(FamilyDBAdaptor.QueryParams.STUDY_UID.key()) + " not found");
+        }
+        return queryResult.first();
     }
 }

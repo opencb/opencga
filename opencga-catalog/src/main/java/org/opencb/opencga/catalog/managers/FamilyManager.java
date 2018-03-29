@@ -124,7 +124,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
 
         ParamUtils.checkObj(family, "family");
-        ParamUtils.checkAlias(family.getName(), "name");
+        ParamUtils.checkAlias(family.getId(), "id");
+        family.setName(ParamUtils.defaultObject(family.getName(), family.getId()));
         family.setMembers(ParamUtils.defaultObject(family.getMembers(), Collections.emptyList()));
         family.setPhenotypes(ParamUtils.defaultObject(family.getPhenotypes(), Collections.emptyList()));
         family.setCreationDate(TimeUtils.getTime());
@@ -137,17 +138,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(study.getUid(), family.getAnnotationSets());
 
-        autoCompleteFamilyMembers(family, study.getUid(), sessionId);
+        autoCompleteFamilyMembers(family, study, sessionId);
         validateFamily(family);
         validateMultiples(family);
         validatePhenotypes(family);
-        createMissingMembers(family, study.getUid(), sessionId);
+        createMissingMembers(family, study, sessionId);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Family> queryResult = familyDBAdaptor.insert(study.getUid(), family, variableSetList, options);
-        auditManager.recordCreation(AuditRecord.Resource.family, queryResult.first().getUid(), userId, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.family, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
-        addMemberInformation(queryResult, study.getUid(), sessionId);
         return queryResult;
     }
 
@@ -166,7 +166,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
-        addMemberInformation(familyQueryResult, study.getUid(), sessionId);
 
         if (familyQueryResult.getNumResults() == 0 && query.containsKey(FamilyDBAdaptor.QueryParams.UID.key())) {
             List<Long> idList = query.getAsLongList(FamilyDBAdaptor.QueryParams.UID.key());
@@ -196,7 +195,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         QueryResult<Family> queryResult = familyDBAdaptor.get(finalQuery, options, userId);
-        addMemberInformation(queryResult, study.getUid(), sessionId);
+//        addMemberInformation(queryResult, study.getUid(), sessionId);
 
         return queryResult;
     }
@@ -209,16 +208,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // We change the MEMBERS parameters for MEMBERS_UID which is what the DBAdaptor understands
+        // We change the MEMBERS parameters for MEMBER_UID which is what the DBAdaptor understands
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBERS.key()))) {
             try {
                 MyResources<Individual> resource = catalogManager.getIndividualManager().getUids(
                         query.getAsStringList(FamilyDBAdaptor.QueryParams.MEMBERS.key()), study.getFqn(), sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(), resource.getResourceList().stream().map(Individual::getUid)
+                query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), resource.getResourceList().stream().map(Individual::getUid)
                         .collect(Collectors.toList()));
             } catch (CatalogException e) {
                 // Add -1 to query so no results are obtained
-                query.put(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(), -1);
+                query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), -1);
             }
 
             query.remove(FamilyDBAdaptor.QueryParams.MEMBERS.key());
@@ -235,10 +234,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
             if (individualResult.getNumResults() == 0) {
                 // Add -1 to query so no results are obtained
-                query.put(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(), -1);
+                query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), -1);
             } else {
                 // Look for the individuals containing those samples
-                query.put(FamilyDBAdaptor.QueryParams.MEMBERS_UID.key(),
+                query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(),
                         individualResult.getResult().stream().map(Individual::getUid).collect(Collectors.toList()));
             }
         }
@@ -406,7 +405,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(familyId, new QueryOptions());
-        addMemberInformation(familyQueryResult, resource.getStudy().getUid(), sessionId);
         if (familyQueryResult.getNumResults() == 0) {
             throw new CatalogException("Family " + familyId + " not found");
         }
@@ -447,7 +445,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 family.setMembers(familyQueryResult.first().getMembers());
             } else {
                 // We will need to complete the individual information provided
-                autoCompleteFamilyMembers(family, resource.getStudy().getUid(), sessionId);
+                autoCompleteFamilyMembers(family, resource.getStudy(), sessionId);
             }
             if (family.getPhenotypes() == null || family.getMembers().isEmpty()) {
                 family.setPhenotypes(familyQueryResult.first().getPhenotypes());
@@ -484,7 +482,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.family, familyId, resource.getUser(), parameters, null, null);
 
-        addMemberInformation(queryResult, resource.getStudy().getUid(), sessionId);
         return queryResult;
     }
 
@@ -572,35 +569,35 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * haven't been provided.
      *
      * @param family    family object.
-     * @param studyId   study id.
+     * @param study     study.
      * @param sessionId session id.
      * @throws CatalogException if there is any kind of error.
      */
-    private void autoCompleteFamilyMembers(Family family, long studyId, String sessionId) throws CatalogException {
+    private void autoCompleteFamilyMembers(Family family, Study study, String sessionId) throws CatalogException {
         if (family.getMembers() == null || family.getMembers().isEmpty()) {
             return;
         }
 
         Map<String, Individual> memberMap = new HashMap<>();
-        Set<String> individualNames = new HashSet<>();
+        Set<String> individualIds = new HashSet<>();
         for (Individual individual : family.getMembers()) {
-            memberMap.put(individual.getName(), individual);
-            individualNames.add(individual.getName());
+            memberMap.put(individual.getId(), individual);
+            individualIds.add(individual.getId());
 
-            if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getName())) {
-                individualNames.add(individual.getFather().getName());
+            if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
+                individualIds.add(individual.getFather().getId());
             }
-            if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getName())) {
-                individualNames.add(individual.getMother().getName());
+            if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getId())) {
+                individualIds.add(individual.getMother().getId());
             }
         }
 
-        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualNames);
-        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId), query,
+        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
+        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(study.getFqn(), query,
                 new QueryOptions(), sessionId);
         for (Individual individual : individualQueryResult.getResult()) {
             // We override the individuals from the map
-            memberMap.put(individual.getName(), individual);
+            memberMap.put(individual.getId(), individual);
         }
 
         family.setMembers(memberMap.entrySet().stream().map(Map.Entry::getValue).collect(Collectors.toList()));
@@ -617,7 +614,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         // 1. Fill in the objects initialised above
         for (Individual individual : family.getMembers()) {
-            membersMap.put(individual.getName(), individual);
+            membersMap.put(individual.getId(), individual);
             if (individual.getUid() > 0) {
                 membersMap.put(String.valueOf(individual.getUid()), individual);
             }
@@ -625,10 +622,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             String parentsKey = null;
             if (individual.getMother() != null) {
                 if (individual.getMother().getUid() > 0) {
-                    individual.getMother().setName(String.valueOf(individual.getMother().getUid()));
+                    individual.getMother().setId(String.valueOf(individual.getMother().getUid()));
                 }
-                if (!StringUtils.isEmpty(individual.getMother().getName())) {
-                    parentsKey = individual.getMother().getName() + "||F";
+                if (!StringUtils.isEmpty(individual.getMother().getId())) {
+                    parentsKey = individual.getMother().getId() + "||F";
                 }
             }
             if (individual.getFather() != null) {
@@ -636,13 +633,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     parentsKey += "---";
                 }
                 if (individual.getFather().getUid() > 0) {
-                    individual.getFather().setName(String.valueOf(individual.getFather().getUid()));
+                    individual.getFather().setId(String.valueOf(individual.getFather().getUid()));
                 }
-                if (!StringUtils.isEmpty(individual.getFather().getName())) {
+                if (!StringUtils.isEmpty(individual.getFather().getId())) {
                     if (parentsKey != null) {
-                        parentsKey += individual.getFather().getName() + "||M";
+                        parentsKey += individual.getFather().getId() + "||M";
                     } else {
-                        parentsKey = individual.getFather().getName() + "||M";
+                        parentsKey = individual.getFather().getId() + "||M";
                     }
                 }
             }
@@ -685,7 +682,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         if (noParentsSet.size() > 0) {
             throw new CatalogException("Some members that are not related to any other have been found: "
-                    + noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
+                    + noParentsSet.stream().map(Individual::getId).collect(Collectors.joining(", ")));
         }
     }
 
@@ -699,7 +696,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         for (Individual individual : family.getMembers()) {
             if (individual.getMultiples() != null && individual.getMultiples().getSiblings() != null
                     && !individual.getMultiples().getSiblings().isEmpty()) {
-                multiples.put(individual.getName(), individual.getMultiples().getSiblings());
+                multiples.put(individual.getId(), individual.getMultiples().getSiblings());
             }
         }
 
@@ -740,7 +737,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    private void createMissingMembers(Family family, long studyId, String sessionId) throws CatalogException {
+    private void createMissingMembers(Family family, Study study, String sessionId) throws CatalogException {
         if (family.getMembers() == null) {
             return;
         }
@@ -756,7 +753,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Map<String, Individual> individualMap = new HashMap<>();
         List<Individual> individualsToCreate = new ArrayList<>();
         for (Individual individual : family.getMembers()) {
-            individualMap.put(individual.getName(), individual);
+            individualMap.put(individual.getId(), individual);
             if (individual.getUid() <= 0) {
                 individualsToCreate.add(individual);
             }
@@ -764,87 +761,39 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         // We link father and mother to individual objects
         for (Map.Entry<String, Individual> entry : individualMap.entrySet()) {
-            if (entry.getValue().getFather() != null && StringUtils.isNotEmpty(entry.getValue().getFather().getName())) {
-                entry.getValue().setFather(individualMap.get(entry.getValue().getFather().getName()));
+            if (entry.getValue().getFather() != null && StringUtils.isNotEmpty(entry.getValue().getFather().getId())) {
+                entry.getValue().setFather(individualMap.get(entry.getValue().getFather().getId()));
             }
-            if (entry.getValue().getMother() != null && StringUtils.isNotEmpty(entry.getValue().getMother().getName())) {
-                entry.getValue().setMother(individualMap.get(entry.getValue().getMother().getName()));
+            if (entry.getValue().getMother() != null && StringUtils.isNotEmpty(entry.getValue().getMother().getId())) {
+                entry.getValue().setMother(individualMap.get(entry.getValue().getMother().getId()));
             }
         }
 
         // We start creating missing individuals
         for (Individual individual : individualsToCreate) {
-            createMissingIndividual(individual, individualMap, String.valueOf(studyId), sessionId);
+            createMissingIndividual(individual, individualMap, study, sessionId);
         }
     }
 
-    private void createMissingIndividual(Individual individual, Map<String, Individual> individualMap, String studyId, String sessionId)
+    private void createMissingIndividual(Individual individual, Map<String, Individual> individualMap, Study study, String sessionId)
             throws CatalogException {
         if (individual == null || individual.getUid() > 0) {
             return;
         }
-        if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getName())) {
-            createMissingIndividual(individual.getFather(), individualMap, studyId, sessionId);
-            individual.setFather(individualMap.get(individual.getFather().getName()));
+        if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
+            createMissingIndividual(individual.getFather(), individualMap, study, sessionId);
+            individual.setFather(individualMap.get(individual.getFather().getId()));
         }
-        if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getName())) {
-            createMissingIndividual(individual.getMother(), individualMap, studyId, sessionId);
-            individual.setMother(individualMap.get(individual.getMother().getName()));
+        if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getId())) {
+            createMissingIndividual(individual.getMother(), individualMap, study, sessionId);
+            individual.setMother(individualMap.get(individual.getMother().getId()));
         }
-        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().create(String.valueOf(studyId), individual,
+        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().create(study.getFqn(), individual,
                 QueryOptions.empty(), sessionId);
         if (individualQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Unexpected error when trying to create individual " + individual.getName());
+            throw new CatalogException("Unexpected error when trying to create individual " + individual.getId());
         }
-        individualMap.put(individual.getName(), individualQueryResult.first());
-    }
-
-//    /**
-//     * Auxiliar method to get either the id of an individual or the name to be used as a unique identifier of the individual.
-//     *
-//     * @param individual individual.
-//     * @return the id or name.
-//     */
-//    private String getIndividualIdOrName(Individual individual) {
-//        return individual.getId() > 0 ? String.valueOf(individual.getId()) : individual.getName();
-//    }
-
-    private void addMemberInformation(QueryResult<Family> queryResult, long studyId, String sessionId) {
-        if (queryResult.getNumResults() == 0) {
-            return;
-        }
-
-        List<String> errorMessages = new ArrayList<>();
-        for (Family family : queryResult.getResult()) {
-            if (family.getMembers() == null || family.getMembers().isEmpty()) {
-                continue;
-            }
-
-            List<Individual> memberList = new ArrayList<>();
-            for (Individual member : family.getMembers()) {
-                Query query = new Query()
-                        .append(IndividualDBAdaptor.QueryParams.UID.key(), member.getUid())
-                        .append(IndividualDBAdaptor.QueryParams.VERSION.key(), member.getVersion());
-                try {
-                    QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(String.valueOf(studyId),
-                            query, QueryOptions.empty(), sessionId);
-                    if (individualQueryResult.getNumResults() == 0) {
-                        throw new CatalogException("Could not get information from member " + member.getUid());
-                    } else {
-                        memberList.add(individualQueryResult.first());
-                    }
-                } catch (CatalogException e) {
-                    logger.warn("Could not retrieve member information to complete family {}, {}", family.getName(), e.getMessage(), e);
-                    errorMessages.add("Could not retrieve member information to complete family " + family.getName() + ", "
-                            + e.getMessage());
-                }
-            }
-            family.setMembers(memberList);
-        }
-
-        if (errorMessages.size() > 0) {
-            queryResult.setWarningMsg(StringUtils.join(errorMessages, "\n"));
-        }
+        individualMap.put(individual.getId(), individualQueryResult.first());
     }
 
 }
