@@ -132,6 +132,15 @@ public class Variable {
         return name.hashCode();
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public Variable setName(String name) {
+        this.name = name;
+        return this;
+    }
+
     public String getTitle() {
         return title;
     }
@@ -141,99 +150,102 @@ public class Variable {
         return this;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
+    public Variable setCategory(String category) {
         this.category = category;
+        return this;
     }
 
     public VariableType getType() {
         return type;
     }
 
-    public void setType(VariableType type) {
+    public Variable setType(VariableType type) {
         this.type = type;
+        return this;
     }
 
     public Object getDefaultValue() {
         return defaultValue;
     }
 
-    public void setDefaultValue(Object defaultValue) {
+    public Variable setDefaultValue(Object defaultValue) {
         this.defaultValue = defaultValue;
+        return this;
     }
 
     public boolean isRequired() {
         return required;
     }
 
-    public void setRequired(boolean required) {
+    public Variable setRequired(boolean required) {
         this.required = required;
+        return this;
     }
 
     public boolean isMultiValue() {
         return multiValue;
     }
 
-    public void setMultiValue(boolean multiValue) {
+    public Variable setMultiValue(boolean multiValue) {
         this.multiValue = multiValue;
+        return this;
     }
 
     public List<String> getAllowedValues() {
         return allowedValues;
     }
 
-    public void setAllowedValues(List<String> allowedValues) {
+    public Variable setAllowedValues(List<String> allowedValues) {
         this.allowedValues = allowedValues;
+        return this;
     }
 
     public long getRank() {
         return rank;
     }
 
-    public void setRank(long rank) {
+    public Variable setRank(long rank) {
         this.rank = rank;
+        return this;
     }
 
     public String getDependsOn() {
         return dependsOn;
     }
 
-    public void setDependsOn(String dependsOn) {
+    public Variable setDependsOn(String dependsOn) {
         this.dependsOn = dependsOn;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Variable setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public Set<Variable> getVariableSet() {
         return variableSet;
     }
 
-    public void setVariableSet(Set<Variable> variableSet) {
+    public Variable setVariableSet(Set<Variable> variableSet) {
         this.variableSet = variableSet;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public Variable setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
 }

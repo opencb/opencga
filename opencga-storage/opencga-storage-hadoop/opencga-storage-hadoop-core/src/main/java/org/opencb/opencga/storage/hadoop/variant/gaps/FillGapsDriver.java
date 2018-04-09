@@ -2,13 +2,16 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.filter.CompareFilter;
-import org.apache.hadoop.hbase.filter.RowFilter;
-import org.apache.hadoop.hbase.filter.SubstringComparator;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.tools.ant.types.Commandline;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -16,9 +19,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQuery;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQueryOptions;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQuery;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQueryOptions;
 
 /**
  * Created on 30/10/17.
@@ -28,8 +32,9 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask.buildQ
 public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
     public static final String FILL_GAPS_OPERATION_NAME = "fill_gaps";
+    public static final String FILL_MISSING_OPERATION_NAME = "fill_missing";
     public static final String FILL_GAPS_INPUT = "fill-gaps.input";
-    public static final String FILL_GAPS_INPUT_DEFAULT = "phoenix";
+    public static final String FILL_GAPS_INPUT_DEFAULT = "archive";
     private Collection<Integer> samples;
     private final Logger logger = LoggerFactory.getLogger(FillGapsDriver.class);
 
@@ -42,17 +47,53 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected void parseAndValidateParameters() {
-        samples = FillGapsMapper.getSamples(getConf());
+        samples = FillGapsFromArchiveMapper.getSamples(getConf());
     }
 
     @Override
-    protected Class<?> getMapperClass() {
-        return FillGapsMapper.class;
+    protected Class<? extends TableMapper> getMapperClass() {
+        return FillGapsFromArchiveMapper.class;
+    }
+
+    @Override
+    protected void preExecution(String variantTable) throws IOException, StorageEngineException {
+        if (!FillGapsFromArchiveMapper.isFillGaps(getConf())) {
+            try {
+                logger.info("Prepare archive table for " + FILL_MISSING_OPERATION_NAME);
+                String args = PrepareFillMissingDriver.buildCommandLineArgs(
+                        getArchiveTable(), variantTable, getStudyId(), Collections.emptyList(), new ObjectMap());
+                int exitValue = new PrepareFillMissingDriver().privateMain(Commandline.translateCommandline(args), getConf());
+                if (exitValue != 0) {
+                    throw new StorageEngineException("Error executing PrepareFillMissing");
+                }
+            } catch (Exception e) {
+                throw new StorageEngineException("Error executing PrepareFillMissing", e);
+            }
+        }
+
     }
 
     @Override
     protected Job setupJob(Job job, String archiveTableName, String variantTableName) throws IOException {
-        if (getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
+        String input = getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT);
+        if (input.equalsIgnoreCase("archive")) {
+            // scan
+            Scan scan;
+            if (FillGapsFromArchiveMapper.isFillGaps(getConf())) {
+                scan = FillGapsFromArchiveTask.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
+            } else {
+                scan = FillMissingFromArchiveTask.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
+            }
+
+            int caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
+            logger.info("Scan set Caching to " + caching);
+            scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
+            scan.setCacheBlocks(false);      // don't set to true for MR jobs
+            logger.info("Scan archive table " + archiveTableName + " with scan " + scan.toString(50));
+
+            // input
+            VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, variantTableName, scan, FillGapsFromArchiveMapper.class);
+        } else if (input.equalsIgnoreCase("phoenix")) {
             // Sql
             Query query = buildQuery(getStudyId(), samples, getFiles());
             QueryOptions options = buildQueryOptions();
@@ -67,7 +108,7 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
         } else {
             // scan
             Scan scan = new Scan();
-            scan.setFilter(new RowFilter(CompareFilter.CompareOp.NOT_EQUAL, new SubstringComparator(getHelper().getMetaRowKeyString())));
+
             // input
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, FillGapsMapper.class);
         }
@@ -77,14 +118,14 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
         // only mapper
         VariantMapReduceUtil.setNoneReduce(job);
 
-        FillGapsMapper.setSamples(job, samples);
+        FillGapsFromArchiveMapper.setSamples(job, samples);
 
         return job;
     }
 
     @Override
     protected String getJobOperationName() {
-        return FILL_GAPS_OPERATION_NAME;
+        return FillGapsFromArchiveMapper.isFillGaps(getConf()) ? FILL_GAPS_OPERATION_NAME : FILL_MISSING_OPERATION_NAME;
     }
 
     public static void main(String[] args) throws Exception {

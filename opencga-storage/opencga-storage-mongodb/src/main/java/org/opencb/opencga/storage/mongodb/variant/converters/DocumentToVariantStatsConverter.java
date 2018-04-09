@@ -63,6 +63,8 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
     public static final String STUDY_ID = "sid";
 //    public static final String FILE_ID = "fid";
 
+    public static final String ALT_FREQ_FIELD = "af";
+    public static final String REF_FREQ_FIELD = "rf";
     public static final String MAF_FIELD = "maf";
     public static final String MGF_FIELD = "mgf";
     public static final String MAFALLELE_FIELD = "mafAl";
@@ -121,8 +123,12 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
         }
         stats.setGenotypesFreq(genotypesFreq);
 
-        int[] alleleCounts = {0, 0};
-        if (stats.getGenotypesCount().isEmpty()) {
+        if (object.containsKey(ALT_FREQ_FIELD)) {
+            stats.setRefAlleleFreq(((Number) object.get(REF_FREQ_FIELD)).floatValue());
+            stats.setAltAlleleFreq(((Number) object.get(ALT_FREQ_FIELD)).floatValue());
+            stats.setRefAlleleCount(Math.round(stats.getRefAlleleFreq() * alleleNumber));
+            stats.setAltAlleleCount(Math.round(stats.getAltAlleleFreq() * alleleNumber));
+        } else if (stats.getGenotypesCount().isEmpty()) {
             if (stats.getRefAllele().equals(stats.getMafAllele())) {
                 stats.setRefAlleleFreq(stats.getMaf());
                 stats.setAltAlleleFreq(1 - stats.getMaf());
@@ -131,6 +137,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
                 stats.setRefAlleleFreq(1 - stats.getMaf());
             }
         } else {
+            int[] alleleCounts = {0, 0};
             for (Map.Entry<Genotype, Integer> entry : stats.getGenotypesCount().entrySet()) {
                 for (int i : entry.getKey().getAllelesIdx()) {
                     if (i == 0 || i == 1) {
@@ -164,6 +171,8 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
     public Document convertToStorageType(VariantStats vs) {
         // Basic fields
         Document mongoStats = new Document(MAF_FIELD, vs.getMaf());
+        mongoStats.append(ALT_FREQ_FIELD, vs.getAltAlleleFreq());
+        mongoStats.append(REF_FREQ_FIELD, vs.getRefAlleleFreq());
         mongoStats.append(MGF_FIELD, vs.getMgf());
         mongoStats.append(MAFALLELE_FIELD, vs.getMafAllele());
         mongoStats.append(MGFGENOTYPE_FIELD, vs.getMgfGenotype());

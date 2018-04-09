@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.exec.Command;
+import org.opencb.commons.exec.Command;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 
 import java.util.List;

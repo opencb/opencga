@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -198,6 +199,13 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         options.put(VariantAnnotationManager.SPECIES, scientificName);
         options.put(VariantAnnotationManager.ASSEMBLY, studyInfo.getOrganism().getAssembly());
 
+        QueryResult<Project> projectQueryResult = catalogManager
+                .getProjectManager()
+                .get(String.valueOf(studyInfo.getProjectId()),
+                        new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()), sessionId);
+        int release = projectQueryResult.first().getCurrentRelease();
+        options.put(VariantStorageEngine.Options.RELEASE.key(), release);
+
         variantStorageEngine.getOptions().putAll(options);
         boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())
                 && (step.equals(Type.LOAD) || step.equals(Type.INDEX));
@@ -263,7 +271,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
             for (File file : filesToIndex) {
                 QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus,
-                        fileStatusMessage, sessionId);
+                        fileStatusMessage, release, sessionId);
                 file.setIndex(fileIndexQueryResult.first());
             }
         }
@@ -299,7 +307,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 // Copy results to catalog
                 copyResults(outdir, catalogOutDirId, sessionId);
             }
-            updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, saveIntermediateFiles, options, sessionId);
+            updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, release, saveIntermediateFiles, options, sessionId);
             // Restore previous cohort status. Cohort status will be read from StudyConfiguration.
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
@@ -397,7 +405,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     }
 
     private void updateFileInfo(Study study, List<File> filesToIndex, List<StoragePipelineResult> storagePipelineResults, Path outdir,
-                                boolean saveIntermediateFiles, QueryOptions options, String sessionId)
+                                Integer release, boolean saveIntermediateFiles, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
 
         Map<String, StoragePipelineResult> map;
@@ -501,7 +509,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             fileManager.update(indexedFile.getId(), params, new QueryOptions(), sessionId);
 
             // Update index status
-            fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, sessionId);
+            fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, release, sessionId);
 
             boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
             if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {

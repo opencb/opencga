@@ -56,22 +56,33 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
     private final MongoDBCollection collection;
     private final String fieldName;
     private final boolean resumeStageLoad;
-    private final String studyFile;
     private final String studyIdStr;
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
+    private final List<String> studyFileValue;
 
     private final MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
 
     public static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_DEFAULT = new VariantToAvroBinaryConverter();
 
     public static final StageDocumentToVariantConverter STAGE_TO_VARIANT_CONVERTER = new StageDocumentToVariantConverter();
+    private boolean directLoad;
 
     public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, boolean resumeStageLoad) {
+        this(collection, studyId, fileId, resumeStageLoad, false);
+    }
+
+    public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, boolean resumeStageLoad, boolean directLoad) {
         this.collection = collection;
         fieldName = studyId + "." + fileId;
-        studyFile = studyId + "_" + fileId;
-        studyIdStr = String.valueOf(studyId);
+        this.directLoad = directLoad;
         this.resumeStageLoad = resumeStageLoad;
+        studyIdStr = String.valueOf(studyId);
+        if (directLoad) {
+            studyFileValue = Collections.singletonList(studyIdStr);
+        } else {
+            String studyFile = studyId + "_" + fileId;
+            studyFileValue = Arrays.asList(studyIdStr, studyFile);
+        }
     }
 
     @Override
@@ -148,19 +159,20 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
                 ids.add(mongoId);
                 List<Binary> binaryList = values.get(id);
                 queries.add(eq(StageDocumentToVariantConverter.ID_FIELD, mongoId));
-                if (binaryList.size() == 1) {
-                    updates.add(combine(resumeStageLoad ? addToSet(fieldName, binaryList.get(0)) : push(fieldName, binaryList.get(0)),
-                            addEachToSet(StageDocumentToVariantConverter.STUDY_FILE_FIELD, Arrays.asList(studyIdStr, studyFile)),
-                            setOnInsert(StageDocumentToVariantConverter.END_FIELD, id.get(StageDocumentToVariantConverter.END_FIELD)),
-                            setOnInsert(StageDocumentToVariantConverter.REF_FIELD, id.get(StageDocumentToVariantConverter.REF_FIELD)),
-                            setOnInsert(StageDocumentToVariantConverter.ALT_FIELD, id.get(StageDocumentToVariantConverter.ALT_FIELD))));
+                List<Bson> bsons = new ArrayList<>(6);
+                if (directLoad) {
+                    bsons.add(set(fieldName, null));
+                    bsons.add(set(studyIdStr + '.' + NEW_STUDY_FIELD, false));
+                } else if (binaryList.size() == 1) {
+                    bsons.add(resumeStageLoad ? addToSet(fieldName, binaryList.get(0)) : push(fieldName, binaryList.get(0)));
                 } else {
-                    updates.add(combine(resumeStageLoad ? addEachToSet(fieldName, binaryList) : pushEach(fieldName, binaryList),
-                            addEachToSet(StageDocumentToVariantConverter.STUDY_FILE_FIELD, Arrays.asList(studyIdStr, studyFile)),
-                            setOnInsert(StageDocumentToVariantConverter.END_FIELD, id.get(StageDocumentToVariantConverter.END_FIELD)),
-                            setOnInsert(StageDocumentToVariantConverter.REF_FIELD, id.get(StageDocumentToVariantConverter.REF_FIELD)),
-                            setOnInsert(StageDocumentToVariantConverter.ALT_FIELD, id.get(StageDocumentToVariantConverter.ALT_FIELD))));
+                    bsons.add(resumeStageLoad ? addEachToSet(fieldName, binaryList) : pushEach(fieldName, binaryList));
                 }
+                bsons.add(addEachToSet(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyFileValue));
+                bsons.add(setOnInsert(StageDocumentToVariantConverter.END_FIELD, id.get(StageDocumentToVariantConverter.END_FIELD)));
+                bsons.add(setOnInsert(StageDocumentToVariantConverter.REF_FIELD, id.get(StageDocumentToVariantConverter.REF_FIELD)));
+                bsons.add(setOnInsert(StageDocumentToVariantConverter.ALT_FIELD, id.get(StageDocumentToVariantConverter.ALT_FIELD)));
+                updates.add(combine(bsons));
             }
         }
 

@@ -23,10 +23,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.ConnectionConfiguration;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
-import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
-import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
@@ -42,9 +39,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArchiveTask;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,8 +74,11 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     @Override
     public int run(String[] args) throws Exception {
-        configFromArgs(args);
         Configuration conf = getConf();
+        HBaseConfiguration.addHbaseResources(conf);
+        getConf().setClassLoader(AbstractAnalysisTableDriver.class.getClassLoader());
+        configFromArgs(args);
+
         String archiveTable = getArchiveTable();
         String variantTable = getAnalysisTable();
         Integer studyId = getStudyId();
@@ -126,7 +126,10 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         }
 
         postExecution(succeed);
-        getStudyConfigurationManager().close();
+        if (scm != null) {
+            scm.close();
+            scm = null;
+        }
         return succeed ? 0 : 1;
     }
 
@@ -173,13 +176,6 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
 
-    protected final void initMapReduceJob(Job job, Class<? extends TableMapper> mapperClass, String inTable, String outTable, Scan scan)
-            throws IOException {
-        VariantMapReduceUtil.initTableMapperJob(job, inTable, scan, mapperClass);
-        VariantMapReduceUtil.setOutputHBaseTable(job, outTable);
-        VariantMapReduceUtil.setNoneReduce(job);
-    }
-
     protected final Scan createArchiveTableScan(List<Integer> files) {
         Scan scan = new Scan();
         int caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
@@ -195,10 +191,10 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         // specify return columns (file IDs)
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         for (Integer id : files) {
-            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true,
-                    Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true));
+            filter.addFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
+                    new BinaryComparator(Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(id)))));
         }
-        filter.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+        filter.addFilter(new ColumnPrefixFilter(FillMissingFromArchiveTask.VARIANT_COLUMN_B_PREFIX));
         scan.setFilter(filter);
         return scan;
     }
@@ -252,13 +248,17 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     protected List<Integer> getFiles() {
         if (fileIds == null) {
-            String[] fileArr = getConf().getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
-            fileIds = Arrays.stream(fileArr)
+            fileIds = getFiles(getConf());
+        }
+        return fileIds;
+    }
+
+    public static List<Integer> getFiles(Configuration conf) {
+        String[] fileArr = conf.getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
+        return Arrays.stream(fileArr)
                     .filter(s -> StringUtils.isNotEmpty(s) && !s.equals("."))
                     .map(Integer::parseInt)
                     .collect(Collectors.toList());
-        }
-        return fileIds;
     }
 
     protected int getStudyId() {
@@ -285,7 +285,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     protected StudyConfigurationManager getStudyConfigurationManager() throws IOException {
         if (scm == null) {
-            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(getAnalysisTable(), getConf(), null));
+            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(getHelper()));
         }
         return scm;
     }
@@ -307,7 +307,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         VariantTableHelper.setStudyId(conf, studyId);
         VariantTableHelper.setAnalysisTable(conf, analysisTable);
         VariantTableHelper.setArchiveTable(conf, archiveTable);
-        variantTablehelper = new VariantTableHelper(conf, archiveTable, analysisTable, null);
+        variantTablehelper = new VariantTableHelper(conf, archiveTable, analysisTable);
         return variantTablehelper;
     }
 
@@ -350,10 +350,9 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
     public int privateMain(String[] args, Configuration conf) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        if (conf == null) {
-            conf = HBaseConfiguration.create();
+        if (conf != null) {
+            setConf(conf);
         }
-        setConf(conf);
         return ToolRunner.run(this, args);
     }
 

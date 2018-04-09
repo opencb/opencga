@@ -36,6 +36,7 @@ import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -94,6 +95,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap o = new ObjectMap();
         o.putIfNotNull(VariantStorageEngine.Options.STUDY_ID.key(), variantCommandOptions.indexVariantCommandOptions.study);
         o.putIfNotNull("outDir", variantCommandOptions.indexVariantCommandOptions.outdir);
+        o.putIfNotNull(VariantFileIndexerStorageOperation.TRANSFORMED_FILES, variantCommandOptions.indexVariantCommandOptions.transformedPaths);
         o.putIfNotNull("transform", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.transform);
         o.putIfNotNull("load", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.load);
         o.putIfNotNull(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.excludeGenotype);
@@ -120,9 +122,11 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         queryCommandOptions.genericVariantQueryOptions.returnStudy = resolveStudy(queryCommandOptions.genericVariantQueryOptions.returnStudy);
 
         List<String> studies = new ArrayList<>();
-        for (Map.Entry<String, List<String>> entry : cliSession.getProjectsAndStudies().entrySet()) {
-            for (String s : entry.getValue()) {
-                studies.add(entry.getKey() + ':' + s);
+        if (cliSession != null && cliSession.getProjectsAndStudies() != null) {
+            for (Map.Entry<String, List<String>> entry : cliSession.getProjectsAndStudies().entrySet()) {
+                for (String s : entry.getValue()) {
+                    studies.add(entry.getKey() + ':' + s);
+                }
             }
         }
         Query query = VariantQueryCommandUtils.parseQuery(queryCommandOptions, studies, clientConfiguration);
@@ -131,6 +135,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         options.putIfNotEmpty("groupBy", queryCommandOptions.genericVariantQueryOptions.groupBy);
         options.put("histogram", queryCommandOptions.genericVariantQueryOptions.histogram);
         options.put("interval", queryCommandOptions.genericVariantQueryOptions.interval);
+        options.put("rank", queryCommandOptions.genericVariantQueryOptions.rank);
 
         List<String> annotations = queryCommandOptions.genericVariantQueryOptions.annotations == null
                 ? Collections.singletonList("gene")
@@ -142,7 +147,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         ObjectMap params = new ObjectMap(query);
-        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(params, new QueryOptions(QueryOptions.EXCLUDE, "files")).firstResult();
+        QueryOptions metadataQueryOptions = new QueryOptions(options);
+        metadataQueryOptions.addToListOption(QueryOptions.EXCLUDE, "files");
+        metadataQueryOptions.append("basic", true);
+        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(params, metadataQueryOptions).firstResult();
         VcfOutputWriter vcfOutputWriter = new VcfOutputWriter(metadata, annotations, System.out);
 
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
@@ -151,7 +159,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             if (queryCommandOptions.numericOptions.count) {
                 return openCGAClient.getVariantClient().count(params, options);
             } else if (StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.groupBy)
-                    || queryCommandOptions.genericVariantQueryOptions.histogram) {
+                    || queryCommandOptions.genericVariantQueryOptions.histogram
+                    || StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.rank)) {
                 return openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
                 options.put(QueryOptions.SKIP_COUNT, true);

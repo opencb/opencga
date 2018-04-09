@@ -35,20 +35,21 @@ import java.util.Map;
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
 public class StorageVariantCommandOptions {
 
-    public VariantIndexCommandOptions indexVariantsCommandOptions;
-    public VariantRemoveCommandOptions variantRemoveCommandOptions;
-    public VariantQueryCommandOptions variantQueryCommandOptions;
-    public ImportVariantsCommandOptions importVariantsCommandOptions;
-    public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
-    public VariantStatsCommandOptions statsVariantsCommandOptions;
-    public FillGapsCommandOptions fillGapsCommandOptions;
-    public VariantExportCommandOptions exportVariantsCommandOptions;
-    public VariantSearchCommandOptions searchVariantsCommandOptions;
+    public final VariantIndexCommandOptions indexVariantsCommandOptions;
+    public final VariantRemoveCommandOptions variantRemoveCommandOptions;
+    public final VariantQueryCommandOptions variantQueryCommandOptions;
+    public final ImportVariantsCommandOptions importVariantsCommandOptions;
+    public final VariantAnnotateCommandOptions annotateVariantsCommandOptions;
+    public final VariantStatsCommandOptions statsVariantsCommandOptions;
+    public final FillGapsCommandOptions fillGapsCommandOptions;
+    public final FillMissingCommandOptions fillMissingCommandOptions;
+    public final VariantExportCommandOptions exportVariantsCommandOptions;
+    public final VariantSearchCommandOptions searchVariantsCommandOptions;
 
-    public JCommander jCommander;
-    public GeneralCliOptions.CommonOptions commonCommandOptions;
-    public GeneralCliOptions.IndexCommandOptions indexCommandOptions;
-    public GeneralCliOptions.QueryCommandOptions queryCommandOptions;
+    public final JCommander jCommander;
+    public final GeneralCliOptions.CommonOptions commonCommandOptions;
+    public final GeneralCliOptions.IndexCommandOptions indexCommandOptions;
+    public final GeneralCliOptions.QueryCommandOptions queryCommandOptions;
 
     public StorageVariantCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
                                         GeneralCliOptions.QueryCommandOptions queryCommandOptions, JCommander jCommander) {
@@ -64,6 +65,7 @@ public class StorageVariantCommandOptions {
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
         this.fillGapsCommandOptions = new FillGapsCommandOptions();
+        this.fillMissingCommandOptions = new FillMissingCommandOptions();
         this.exportVariantsCommandOptions = new VariantExportCommandOptions();
         this.searchVariantsCommandOptions = new VariantSearchCommandOptions();
     }
@@ -272,6 +274,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR, arity = 1)
         public String filter;
+
+        @Parameter(names = {"--qual"}, description = VariantQueryParam.QUAL_DESCR, arity = 1)
+        public String qual;
 
         @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR, arity = 1)
         public String geneBiotype;
@@ -507,6 +512,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
         public List<String> samples;
 
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
+        public boolean resume;
+
 //        @Parameter(names = {"--exclude-hom-ref"}, description = "Do not fill gaps of samples with HOM-REF genotype (0/0)", arity = 0)
 //        public boolean excludeHomRef;
     }
@@ -525,6 +533,30 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
+    }
+
+    @Parameters(commandNames = {FillMissingCommandOptions.FILL_MISSING_COMMAND}, commandDescription = FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION)
+    public class FillMissingCommandOptions extends GenericFillMissingCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study", arity = 1)
+        public String study;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+    }
+
+    public static class GenericFillMissingCommandOptions {
+        public static final String FILL_MISSING_COMMAND = "fill-missing";
+        public static final String FILL_MISSING_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
+        public boolean resume;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite gaps for all files and variants. Repeat operation for already processed variants.")
+        public boolean overwrite;
     }
 
     /**

@@ -116,6 +116,7 @@ public class VariantQueryCommandUtils {
         addParam(query, FILE, queryVariantsOptions.file);
         addParam(query, INCLUDE_FILE, queryVariantsOptions.returnFile);
         addParam(query, FILTER, queryVariantsOptions.filter);
+        addParam(query, QUAL, queryVariantsOptions.qual);
         addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
         addParam(query, SAMPLE, queryVariantsOptions.samples);
         addParam(query, INCLUDE_SAMPLE, queryVariantsOptions.returnSample);

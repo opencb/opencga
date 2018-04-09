@@ -23,13 +23,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 
@@ -111,6 +111,9 @@ public class FileMetadataReaderTest {
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
+        assertNotNull(((Map) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds"));
+        assertEquals(4, ((List) ((Map) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds")).size());
+        assertNotNull(((Map) file.getAttributes().get(VARIANT_FILE_METADATA)).get("header"));
         assertEquals(4, file.getSamples().size());
         assertEquals(21499, file.getSize());
     }

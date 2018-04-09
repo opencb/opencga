@@ -24,6 +24,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -108,7 +109,11 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Document fileDocument = fileConverter.convertToStorageType(file);
         fileDocument.append(PRIVATE_STUDY_ID, studyId);
         fileDocument.append(PRIVATE_ID, newFileId);
-        fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
+        if (StringUtils.isNotEmpty(file.getCreationDate())) {
+            fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
+        } else {
+            fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
         fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         try {
@@ -439,6 +444,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
         queryResult = endQuery("Get", startTime, documentList);
 
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
+
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             QueryResult<Long> count = count(query);
@@ -466,6 +475,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
         queryResult = endQuery("Get", startTime, documentList);
 
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
+
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_FILES);
@@ -485,6 +498,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             }
         }
         queryResult = endQuery("Native get", startTime, documentList);
+
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {

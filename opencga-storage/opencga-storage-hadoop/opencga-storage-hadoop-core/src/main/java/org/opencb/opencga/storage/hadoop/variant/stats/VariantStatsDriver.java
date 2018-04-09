@@ -76,6 +76,7 @@ public class VariantStatsDriver extends AbstractAnalysisTableDriver {
             // Some of the filters in query are not supported by VariantHBaseQueryParser
             Scan scan = new VariantHBaseQueryParser(getHelper(), getStudyConfigurationManager()).parseQuery(query, queryOptions);
 
+            LOG.info(scan.toString());
             // input
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, getMapperClass());
         }

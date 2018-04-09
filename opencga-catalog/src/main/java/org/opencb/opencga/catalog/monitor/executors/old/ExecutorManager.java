@@ -21,7 +21,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
-import org.opencb.opencga.core.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,8 @@ public interface ExecutorManager {
     static void execute(CatalogManager catalogManager, Job job, String sessionId)
             throws ExecutionException, IOException, CatalogException {
         // read execution param
-        String defaultJobExecutor = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_JOB_EXECUTOR, "LOCAL").trim().toUpperCase();
+        // String defaultJobExecutor = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_JOB_EXECUTOR, "LOCAL").trim().toUpperC();
+        String defaultJobExecutor = "LOCAL";
         execute(catalogManager, job, sessionId, job.getResourceManagerAttributes().getOrDefault("executor", defaultJobExecutor).toString());
     }
 

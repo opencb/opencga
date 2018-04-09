@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryParam;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -117,12 +119,26 @@ public class VariantQueryException extends IllegalArgumentException {
         return new VariantQueryException("Sample " + sample + " not found in study " + study);
     }
 
-    public static VariantQueryException fileNotFound(Object sample, Object study) {
-        return new VariantQueryException("File " + sample + " not found in study " + study);
+    public static VariantQueryException fileNotFound(Object file, Object study) {
+        return new VariantQueryException("File " + file + " not found in study " + study);
     }
 
     public static VariantQueryException unknownVariantField(String projectionOp, String field) {
         return new VariantQueryException("Found unknown variant field '" + field + "' in " + projectionOp.toLowerCase());
+    }
+
+    public static VariantQueryException internalException(Exception e) {
+        return new VariantQueryException("Internal exception: " + e.getMessage(), e);
+    }
+
+    public static VariantQueryException unsupportedVariantQueryFilter(QueryParam param, String storageEngineId) {
+        return unsupportedVariantQueryFilter(param, storageEngineId, null);
+    }
+
+    public static VariantQueryException unsupportedVariantQueryFilter(QueryParam param, String storageEngineId, String extra) {
+        return new VariantQueryException("Unsupported variant query filter '" + param.key()
+                + "' with storage engine '" + storageEngineId + "'."
+                + (StringUtils.isEmpty(extra) ? "" : (' ' + extra)));
     }
 }
 

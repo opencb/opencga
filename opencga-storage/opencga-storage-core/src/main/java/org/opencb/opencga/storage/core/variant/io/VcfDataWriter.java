@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.io;
 
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
@@ -77,7 +78,8 @@ public abstract class VcfDataWriter<T> implements DataWriter<T> {
                 .flatMap(individual -> individual.getSamples().stream()).map(Sample::getId).collect(Collectors.toList());
 
         VCFHeader vcfHeader = new VariantStudyMetadataToVCFHeaderConverter().convert(metadata.getStudies().get(0), annotations);
-        variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary());
+        variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary(),
+                Options.ALLOW_MISSING_FIELDS_IN_HEADER);
         variantContextWriter.writeHeader(vcfHeader);
         converter = newConverter(study, samples, annotations);
 

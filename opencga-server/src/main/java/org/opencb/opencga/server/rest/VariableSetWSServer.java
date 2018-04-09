@@ -17,13 +17,14 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
-import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -63,6 +64,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value="JSON containing the variableSet information", required = true) VariableSetParameters params) {
         try {
+            ObjectUtils.defaultIfNull(params, new VariableSetParameters());
+
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
@@ -197,6 +200,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
             @ApiParam(value = "Variable to be added", required = true) Variable variable) {
         try {
+            ObjectUtils.defaultIfNull(variable, new Variable());
+
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().addFieldToVariableSet(studyStr, variablesetId,
                     variable, sessionId);
             return createOkResponse(queryResult);

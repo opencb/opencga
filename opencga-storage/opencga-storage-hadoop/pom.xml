@@ -20,7 +20,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <properties>
-        <opencga-storage-hadoop-deps.version>${opencga.version}-SNAPSHOT</opencga-storage-hadoop-deps.version>
+        <opencga-storage-hadoop-deps.version>${opencga.version}</opencga-storage-hadoop-deps.version>
         <module-opencga-storage-hadoop-deps>false</module-opencga-storage-hadoop-deps>
     </properties>
     <parent>

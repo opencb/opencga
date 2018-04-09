@@ -20,6 +20,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,21 +31,27 @@ public class AnnotationSet {
 
     private String name;
     private long variableSetId;
-    private Set<Annotation> annotations;
+    private Map<String, Object> annotations;
+    @Deprecated
     private String creationDate;
-
+    @Deprecated
     private int release;
+    @Deprecated
     private Map<String, Object> attributes;
 
 
     public AnnotationSet() {
     }
 
-    public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, Map<String, Object> attributes) {
+    public AnnotationSet(String name, long variableSetId, Map<String, Object> annotations) {
+        this(name, variableSetId, annotations, TimeUtils.getTime(), 1, Collections.emptyMap());
+    }
+
+    public AnnotationSet(String name, long variableSetId, Map<String, Object> annotations, Map<String, Object> attributes) {
         this(name, variableSetId, annotations, TimeUtils.getTime(), 1, attributes);
     }
 
-    public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, String creationDate, int release,
+    public AnnotationSet(String name, long variableSetId, Map<String, Object> annotations, String creationDate, int release,
                          Map<String, Object> attributes) {
         this.name = name;
         this.variableSetId = variableSetId;
@@ -107,11 +114,11 @@ public class AnnotationSet {
         return this;
     }
 
-    public Set<Annotation> getAnnotations() {
+    public Map<String, Object> getAnnotations() {
         return annotations;
     }
 
-    public AnnotationSet setAnnotations(Set<Annotation> annotations) {
+    public AnnotationSet setAnnotations(Map<String, Object> annotations) {
         this.annotations = annotations;
         return this;
     }

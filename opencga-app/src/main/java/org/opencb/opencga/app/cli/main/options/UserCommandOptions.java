@@ -171,7 +171,7 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"login"}, commandDescription = "Get identified and gain access to the system")
     public class LoginCommandOptions extends BaseUserCommand {
 
-        @Parameter(names = {"-p", "--password"}, description = "User password", arity = 1, required = true, password = true)
+        @Parameter(names = {"-p", "--password"}, description = "User password", arity = 0, required = true, password = true, hidden = true)
         public String password;
 
     }

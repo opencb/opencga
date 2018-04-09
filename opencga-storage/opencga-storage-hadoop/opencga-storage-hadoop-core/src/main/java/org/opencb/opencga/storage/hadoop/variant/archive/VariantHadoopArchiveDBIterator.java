@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -42,26 +43,33 @@ import java.util.NoSuchElementException;
 public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements AutoCloseable {
 
     private final Logger logger = LoggerFactory.getLogger(VariantHadoopArchiveDBIterator.class);
-    private final VcfRecordProtoToVariantConverter converter;
+    private final VcfRecordProtoToVariantConverter nonRefConverter;
+    private final VcfRecordProtoToVariantConverter refConverter;
     private long limit;
     private long count = 0;
-    private Iterator<VcfSliceProtos.VcfRecord> vcfRecordIterator = Collections.emptyIterator();
-    private VcfSliceProtos.VcfSlice vcfSlice;
+    private ListIterator<VcfSliceProtos.VcfRecord> refVcfRecordIterator = Collections.emptyListIterator();
+    private ListIterator<VcfSliceProtos.VcfRecord> nonRefVcfRecordIterator = Collections.emptyListIterator();
+    private VcfSliceProtos.VcfSlice refVcfSlice;
+    private VcfSliceProtos.VcfSlice nonRefVcfSlice;
     private final Iterator<Result> iterator;
     private final byte[] columnFamily;
-    private final byte[] fileIdBytes;
+    private final byte[] refColumnBytes;
+    private final byte[] nonRefColumnBytes;
     private ResultScanner resultScanner;
     private int startPosition = 0;
     private int endPosition = Integer.MAX_VALUE;
-    private VcfSliceProtos.VcfRecord nextVcfRecord = null;
+    private Variant nextVariant = null;
 
     public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, ArchiveTableHelper archiveHelper, QueryOptions options) {
         this.resultScanner = resultScanner;
         this.iterator = this.resultScanner.iterator();
         this.columnFamily = archiveHelper.getColumnFamily();
-        this.fileIdBytes = archiveHelper.getColumn();
+        this.refColumnBytes = archiveHelper.getRefColumnName();
+        this.nonRefColumnBytes = archiveHelper.getNonRefColumnName();
         VariantFileMetadata fileMetadata = archiveHelper.getFileMetadata();
-        converter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(fileMetadata.getSamplesPosition()),
+        nonRefConverter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(fileMetadata.getSamplesPosition()),
+                String.valueOf(archiveHelper.getStudyId()), fileMetadata.getId());
+        refConverter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(fileMetadata.getSamplesPosition()),
                 String.valueOf(archiveHelper.getStudyId()), fileMetadata.getId());
         setLimit(options.getLong(QueryOptions.LIMIT));
     }
@@ -69,11 +77,11 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
 
     @Override
     public boolean hasNext() {
-        if (nextVcfRecord != null) {
+        if (nextVariant != null) {
             return true;
         } else {
-            nextVcfRecord = nextVcfRecord();
-            return nextVcfRecord != null;
+            nextVariant = nextVariant();
+            return nextVariant != null;
         }
     }
 
@@ -83,59 +91,98 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
             throw new NoSuchElementException("Limit reached");
         }
 
-        final VcfSliceProtos.VcfRecord vcfRecord;
+        final Variant variant;
 
-        if (nextVcfRecord != null) {
-            vcfRecord = nextVcfRecord;
-            nextVcfRecord = null;
+        if (nextVariant != null) {
+            variant = nextVariant;
+            nextVariant = null;
         } else {
-            vcfRecord = nextVcfRecord();
+            variant = nextVariant();
         }
 
-        if (vcfRecord == null) {
+
+        if (variant == null) {
             throw new NoSuchElementException("Limit reached");
         }
 
-        Variant variant;
-        try {
-            count++;
-            variant = convert(() -> converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition()));
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace(System.err);
-            System.err.println("vcfSlice.getPosition() = " + vcfSlice.getPosition());
-            System.err.println("vcfRecord.getRelativeStart() = " + vcfRecord.getRelativeStart());
-            System.err.println("vcfRecord.getRelativeEnd() = " + vcfRecord.getRelativeEnd());
-            variant = new Variant(vcfSlice.getChromosome(), vcfRecord.getRelativeStart() + vcfSlice.getPosition(),
-                    vcfRecord.getReference(), vcfRecord.getAlternate());
-            logger.debug("variant: {}", variant.toString());
-        }
+        count++;
+
         return variant;
     }
 
-    private VcfSliceProtos.VcfRecord nextVcfRecord() {
+    private Variant nextVariant() {
         VcfSliceProtos.VcfRecord vcfRecord;
+        VcfSliceProtos.VcfSlice vcfSlice;
+        VcfRecordProtoToVariantConverter converter;
         int variantStart;
         do {
-            if (!vcfRecordIterator.hasNext()) {
+            if (!nonRefVcfRecordIterator.hasNext() && !refVcfRecordIterator.hasNext()) {
                 if (!iterator.hasNext()) {
                     return null;
                 }
                 Result result = fetch(iterator::next);
                 byte[] rid = result.getRow();
                 try {
-                    byte[] value = result.getValue(columnFamily, fileIdBytes);
-                    vcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(value));
-                    vcfRecordIterator = vcfSlice.getRecordsList().iterator();
-                    converter.setFields(vcfSlice.getFields());
+                    byte[] nonRefValue = result.getValue(columnFamily, nonRefColumnBytes);
+                    if (nonRefValue != null && nonRefValue.length > 0) {
+                        nonRefVcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(nonRefValue));
+                        nonRefVcfRecordIterator = nonRefVcfSlice.getRecordsList().listIterator();
+                        nonRefConverter.setFields(nonRefVcfSlice.getFields());
+                    }
+                    byte[] refValue = result.getValue(columnFamily, refColumnBytes);
+                    if (refValue != null && refValue.length > 0) {
+                        refVcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(refValue));
+                        refVcfRecordIterator = refVcfSlice.getRecordsList().listIterator();
+                        refConverter.setFields(refVcfSlice.getFields());
+                    }
                 } catch (InvalidProtocolBufferException e) {
                     throw new RuntimeException(e);
                 }
             }
-            vcfRecord = vcfRecordIterator.next();
-            variantStart = vcfSlice.getPosition() + vcfRecord.getRelativeStart();
+            if (nonRefVcfRecordIterator.hasNext() && refVcfRecordIterator.hasNext()) {
+                VcfSliceProtos.VcfRecord nonRefVcfRecord = nonRefVcfRecordIterator.next();
+                VcfSliceProtos.VcfRecord refVcfRecord = refVcfRecordIterator.next();
+                if (nonRefVcfRecord.getRelativeStart() > refVcfRecord.getRelativeStart()) {
+                    vcfRecord = refVcfRecord;
+                    vcfSlice = refVcfSlice;
+                    converter = refConverter;
+                    nonRefVcfRecordIterator.previous();
+                } else {
+                    vcfRecord = nonRefVcfRecord;
+                    vcfSlice = nonRefVcfSlice;
+                    converter = nonRefConverter;
+                    refVcfRecordIterator.previous();
+                }
+            } else if (nonRefVcfRecordIterator.hasNext()) {
+                vcfRecord = nonRefVcfRecordIterator.next();
+                vcfSlice = nonRefVcfSlice;
+                converter = nonRefConverter;
+            } else {
+                vcfRecord = refVcfRecordIterator.next();
+                vcfSlice = refVcfSlice;
+                converter = refConverter;
+            }
+            variantStart = nonRefVcfSlice.getPosition() + vcfRecord.getRelativeStart();
         } while (vcfRecord.getRelativeStart() < 0 || variantStart < this.startPosition || variantStart > this.endPosition);
         //Skip duplicated variant!
-        return vcfRecord;
+
+        Variant variant;
+        try {
+            VcfRecordProtoToVariantConverter finalConverter = converter;
+            VcfSliceProtos.VcfRecord finalVcfRecord = vcfRecord;
+            VcfSliceProtos.VcfSlice finalSlice = vcfSlice;
+            variant = convert(() -> finalConverter.convert(finalVcfRecord, finalSlice.getChromosome(), finalSlice.getPosition()));
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace(System.err);
+            System.err.println("vcfSlice.getPosition() = " + nonRefVcfSlice.getPosition());
+            System.err.println("vcfRecord.getRelativeStart() = " + vcfRecord.getRelativeStart());
+            System.err.println("vcfRecord.getRelativeEnd() = " + vcfRecord.getRelativeEnd());
+            variant = new Variant(nonRefVcfSlice.getChromosome(), vcfRecord.getRelativeStart() + nonRefVcfSlice.getPosition(),
+                    vcfRecord.getReference(), vcfRecord.getAlternate());
+            logger.debug("variant: {}", variant.toString());
+        }
+
+        return variant;
     }
 
     @Override

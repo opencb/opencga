@@ -94,14 +94,15 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
         configuration.setOpenRegister(true);
 
-        configuration.getAdmin().setPassword("demo");
+        configuration.getAdmin().setPassword(adminPassword);
         configuration.getAdmin().setSecretKey("demo");
         configuration.getAdmin().setAlgorithm("HS256");
 
         CatalogDemo.createDemoDatabase(configuration, catalogCommandOptions.demoCatalogCommandOptions.force);
         CatalogManager catalogManager = new CatalogManager(configuration);
         sessionId = catalogManager.getUserManager().login("user1", "user1_pass");
-        AnalysisDemo.insertPedigreeFile(catalogManager, 6L, Paths.get(this.appHome).resolve("examples/20130606_g1k.ped"), sessionId);
+        AnalysisDemo.insertPedigreeFile(catalogManager, configuration.getCatalog().getOffset() + 6L, Paths.get(this.appHome)
+                        .resolve("examples/20130606_g1k.ped"), sessionId);
     }
 
     private void export() throws CatalogException, IOException {

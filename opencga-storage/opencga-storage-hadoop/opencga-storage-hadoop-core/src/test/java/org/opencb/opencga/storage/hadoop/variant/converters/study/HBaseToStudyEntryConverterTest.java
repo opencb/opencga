@@ -14,8 +14,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,7 +60,7 @@ public class HBaseToStudyEntryConverterTest {
         fixedValues.add(Pair.of(1, listOf("0/0", "PASS")));
         fixedValues.add(Pair.of(3, listOf("0/1", "PASS")));
 
-        StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1, null);
+        StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1);
         StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "FT"))
                 .addSampleData("S1", listOf("0/0", "PASS"))
                 .addSampleData("S2", listOf("?/?", "."))
@@ -82,7 +80,7 @@ public class HBaseToStudyEntryConverterTest {
         fixedValues.add(Pair.of(1, listOf("0/0", "1,2", "10")));
         fixedValues.add(Pair.of(3, listOf("0/1", "3,4", "20")));
 
-        StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1, null);
+        StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1);
 
         StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "AD", "DP"))
                 .addSampleData("S1", listOf("0/0", "1,2", "10"))
@@ -125,7 +123,7 @@ public class HBaseToStudyEntryConverterTest {
 //    }
 
     @Test
-    public void testConvertFileEntryDataAndRows() throws Exception {
+    public void testConvertFileEntryData() throws Exception {
         sc.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
         sc.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
         scm.updateStudyConfiguration(sc, null);
@@ -139,71 +137,21 @@ public class HBaseToStudyEntryConverterTest {
 //                .build().toByteArray()));
         fixedValues.add(Pair.of(2, listOf("1/1", "8,9", "70")));
         fixedValues.add(Pair.of(3, listOf("0/1", "3,4", "20")));
+        fixedValues.add(Pair.of(5, listOf("0/1", ".", ".")));
+        fixedValues.add(Pair.of(6, listOf(".", ".", ".")));
 //        otherValues.add(Pair.of(3, OtherSampleData.newBuilder()
 //                .putSampleData("KEY_1", "VALUE_1")
 //                .putSampleData("KEY_3", "VALUE_3")
 //                .build().toByteArray()));
-//
-        VariantTableStudyRowProto.Builder rowBuilder = VariantTableStudyRowProto.newBuilder()
-                .setStart(1000)
-                .setReference("A")
-                .setAlternate("C")
-                .setHomRefCount(2)
-                .addHet(3)
-                .addHet(5)
-                .addHomVar(2)
-                .addNocall(6);
-        VariantTableStudyRow row = new VariantTableStudyRow(rowBuilder.build(), "1", 1);
-        StudyEntry s = converter.convert(fixedValues, otherValues, new Variant("1:1000:A:C"), 1, row);
+
+        StudyEntry s = converter.convert(fixedValues, otherValues, new Variant("1:1000:A:C"), 1);
         StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "AD", "DP"))
                 .addSampleData("S1", listOf("0/0", "1,2", "10"))
                 .addSampleData("S2", listOf("1/1", "8,9", "70"))
                 .addSampleData("S3", listOf("0/1", "3,4", "20"))
                 .addSampleData("S4", listOf("0/0", ".", "."))
                 .addSampleData("S5", listOf("0/1", ".", "."))
-                .addSampleData("S6", listOf(VariantTableStudyRow.NOCALL, ".", "."));
-        Assert.assertEquals(s.toString(), expected, s);
-    }
-
-    @Test
-    public void testConvertExtendedFormatFileEntryDataAndRowsExpectedFormat() throws Exception {
-        sc.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP,KEY_3");
-        sc.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
-        scm.updateStudyConfiguration(sc, null);
-        converter.setFormats(listOf("GT", "AD", "KEY_3"));
-
-        List<Pair<Integer, List<String>>> fixedValues = new ArrayList<>();
-        List<Pair<String, PhoenixArray>> otherValues = new ArrayList<>();
-        fixedValues.add(Pair.of(1, listOf("0/0", "1,2", "10")));
-//        otherValues.add(Pair.of(1, OtherSampleData.newBuilder()
-//                .putSampleData("KEY_1", "VALUE_1")
-//                .putSampleData("KEY_2", "VALUE_2")
-//                .build().toByteArray()));
-        fixedValues.add(Pair.of(2, listOf("1/1", "8,9", "70")));
-        fixedValues.add(Pair.of(3, listOf("0/1", "3,4", "20", "VALUE_3")));
-//        otherValues.add(Pair.of(3, OtherSampleData.newBuilder()
-//                .putSampleData("KEY_1", "VALUE_1")
-//                .putSampleData("KEY_3", "VALUE_3")
-//                .build().toByteArray()));
-
-        VariantTableStudyRowProto.Builder rowBuilder = VariantTableStudyRowProto.newBuilder()
-                .setStart(1000)
-                .setReference("A")
-                .setAlternate("C")
-                .setHomRefCount(2)
-                .addHet(3)
-                .addHet(5)
-                .addHomVar(2)
-                .addNocall(6);
-        VariantTableStudyRow row = new VariantTableStudyRow(rowBuilder.build(), "1", 1);
-        StudyEntry s = converter.convert(fixedValues, otherValues, new Variant("1:1000:A:C"), 1, row);
-        StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "AD", "KEY_3"))
-                .addSampleData("S1", listOf("0/0", "1,2", "."))
-                .addSampleData("S2", listOf("1/1", "8,9", "."))
-                .addSampleData("S3", listOf("0/1", "3,4", "VALUE_3"))
-                .addSampleData("S4", listOf("0/0", ".", "."))
-                .addSampleData("S5", listOf("0/1", ".", "."))
-                .addSampleData("S6", listOf(VariantTableStudyRow.NOCALL, ".", "."));
+                .addSampleData("S6", listOf(".", ".", "."));
         Assert.assertEquals(s.toString(), expected, s);
     }
 

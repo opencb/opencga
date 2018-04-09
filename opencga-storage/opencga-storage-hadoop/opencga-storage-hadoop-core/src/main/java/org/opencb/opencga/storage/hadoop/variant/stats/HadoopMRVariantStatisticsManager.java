@@ -45,7 +45,17 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         }
         StudyConfiguration sc = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(study, options).first();
 
+        if (sc.isAggregated()) {
+            throw new StorageEngineException("Unsupported calculate aggregated statistics with map-reduce. Please, use "
+                    + HadoopVariantStorageEngine.STATS_LOCAL + '=' + true);
+        }
         boolean updateStats = options.getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(), false);
+//        boolean overwriteStats = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+//
+//        DefaultVariantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(sc, cohorts.stream()
+//                    .collect(Collectors.toMap(c -> c, c -> Collections.emptySet())), null, updateStats, overwriteStats);
+//        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, options);
+
         VariantStatisticsManager.checkAndUpdateCalculatedCohorts(sc, cohorts, updateStats);
 
         List<Integer> cohortIds = StudyConfigurationManager.getCohortIdsFromStudy(cohorts, sc);
@@ -59,8 +69,8 @@ public class HadoopMRVariantStatisticsManager implements VariantStatisticsManage
         Class execClass = VariantStatsDriver.class;
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
         String args = VariantStatsDriver.buildCommandLineArgs(
-                HadoopVariantStorageEngine.getArchiveTableName(sc.getStudyId(), dbAdaptor.getConfiguration()),
-                dbAdaptor.getVariantTable(),
+                dbAdaptor.getTableNameGenerator().getArchiveTableName(sc.getStudyId()),
+                dbAdaptor.getTableNameGenerator().getVariantTableName(),
                 sc.getStudyId(), Collections.emptyList(), options);
 
         long startTime = System.currentTimeMillis();

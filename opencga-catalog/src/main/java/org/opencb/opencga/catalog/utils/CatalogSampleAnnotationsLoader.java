@@ -76,12 +76,8 @@ public class CatalogSampleAnnotationsLoader {
         //Check VariableSet for all samples
         for (Individual individual : ped.getIndividuals().values()) {
             Map<String, Object> annotation = getAnnotation(individual, sampleMap, variableSet, ped.getFields());
-            HashSet<Annotation> annotationSet = new HashSet<>(annotation.size());
-            for (Map.Entry<String, Object> annotationEntry : annotation.entrySet()) {
-                annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
-            }
             try {
-                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", 1,
+                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation, "", 1,
                         null), null);
             } catch (CatalogException e) {
                 String message = "Validation with the variableSet {id: " + variableSetId + "} over ped File = {id: " + pedFile.getId()
@@ -133,7 +129,7 @@ public class CatalogSampleAnnotationsLoader {
             Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
                     .getFields());
             catalogManager.getSampleManager().createAnnotationSet(Long.toString(entry.getValue().getId()), Long.toString(studyId),
-                    Long.toString(variableSetId), "pedigreeAnnotation", annotations, Collections.emptyMap(), sessionId);
+                    Long.toString(variableSetId), "pedigreeAnnotation", annotations, sessionId);
         }
         logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 

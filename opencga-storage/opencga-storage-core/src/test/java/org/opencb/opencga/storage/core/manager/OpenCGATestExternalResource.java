@@ -19,23 +19,25 @@ package org.opencb.opencga.storage.core.manager;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -123,7 +125,6 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public Path isolateOpenCGA() throws IOException {
-
 //        Path opencgaHome = Paths.get("/tmp/opencga-analysis-test");
         Path opencgaHome = catalogManagerExternalResource.getOpencgaHome();
         Path userHome = opencgaHome.resolve("user_home");
@@ -131,20 +132,13 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         System.setProperty("app.home", opencgaHome.toString());
         System.setProperty("user.home", userHome.toString());
-        Config.setOpenCGAHome(opencgaHome.toString());
 
         Files.createDirectories(conf);
         Files.createDirectories(userHome);
 
-        InputStream inputStream;
         catalogManagerExternalResource.getConfiguration().serialize(
                 new FileOutputStream(conf.resolve("configuration.yml").toFile()));
-
-//        inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
-//                AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
-//        Files.copy(inputStream, conf.resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
-
-        inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
+        InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
 
         storageConfiguration = StorageConfiguration.load(inputStream, "yml");
 //        if (storageHadoop) {

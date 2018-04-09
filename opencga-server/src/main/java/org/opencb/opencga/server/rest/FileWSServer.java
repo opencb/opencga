@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -29,8 +30,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileScanner;
+import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
 import org.opencb.opencga.core.models.Sample;
@@ -38,11 +44,6 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -104,6 +105,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                    @QueryParam("study") String studyStr,
                                    @ApiParam(name = "params", value = "File parameters", required = true) FileCreateParams params) {
         try {
+            ObjectUtils.defaultIfNull(params, new FileCreateParams());
             QueryResult<File> file;
             if (params.directory) {
                 // Create directory
@@ -583,7 +585,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
-            @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") Long size,
+            @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") String size,
             @ApiParam(value = "Comma separated list of sample ids", hidden = true) @QueryParam("sample") String sample,
             @ApiParam(value = "Comma separated list of sample ids") @QueryParam("samples") String samples,
             @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", hidden = true) @QueryParam("jobId") String jobIdOld,
@@ -904,6 +906,8 @@ public class FileWSServer extends OpenCGAWSServer {
                                @QueryParam("study") String studyStr,
                                @ApiParam(name = "params", value = "Parameters to modify", required = true) ObjectMap params) {
         try {
+            ObjectUtils.defaultIfNull(params, new ObjectMap());
+
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
 
             ObjectMap map = new ObjectMap(jsonObjectMapper.writeValueAsString(params));
@@ -1120,7 +1124,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
                             @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate")
                                     String creationDate,
-                            @ApiParam(value = "size", required = false) @DefaultValue("") @QueryParam("size") Long size,
+                            @ApiParam(value = "size", required = false) @DefaultValue("") @QueryParam("size") String size,
                             @ApiParam(value = "Comma separated sampleIds", hidden = true) @QueryParam("sampleIds") String sampleIds,
                             @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples) {
         try {
@@ -1223,6 +1227,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FileAcl params) {
         try {
+            ObjectUtils.defaultIfNull(params, new FileAcl());
+
             File.FileAclParams aclParams = new File.FileAclParams(
                     params.getPermissions(), params.getAction(), params.sample);
             List<String> idList = getIdList(params.file);

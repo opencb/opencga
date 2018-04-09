@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -43,11 +42,9 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RELEASE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.HOM_REF;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.STUDY_COLUMNS;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.buildColumnKey;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.buildFileColumnKey;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.buildSampleColumnKey;
@@ -123,8 +120,6 @@ public class VariantHBaseQueryParser {
             logger.debug("region = " + region);
             // TODO: Use MultiRowRangeFilter
             addRegionFilter(scan, region);
-        } else {
-            addDefaultRegionFilter(scan);
         }
 
 
@@ -167,19 +162,7 @@ public class VariantHBaseQueryParser {
 
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
             for (Integer studyId : selectElements.getStudies()) {
-                VariantStorageEngine.MergeMode mergeMode = VariantStorageEngine.MergeMode.from(
-                        selectElements.getStudyConfigurations().get(studyId).getAttributes());
-                List<String> studyColumns;
-                if (selectElements.getFields().contains(VariantField.STUDIES_SAMPLES_DATA)
-                        && mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
-                    studyColumns = STUDY_COLUMNS;
-                } else {
-                    // If samples are not required, do not fetch all the fields
-                    studyColumns = Collections.singletonList(HOM_REF);
-                }
-                for (String studyColumn : studyColumns) {
-                    scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(buildColumnKey(studyId, studyColumn)));
-                }
+                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
             }
 
             if (selectElements.getFields().contains(VariantField.STUDIES_STATS)) {
@@ -226,7 +209,7 @@ public class VariantHBaseQueryParser {
             List<Integer> nonNegatedStudies = new ArrayList<>();
             for (String studyStr : values) {
                 Integer studyId = studyConfigurationManager.getStudyId(studyStr, null);
-                byte[] column = Bytes.toBytes(buildColumnKey(studyId, HOM_REF));
+                byte[] column = VariantPhoenixHelper.getStudyColumn(studyId).bytes();
                 if (isNegated(studyStr)) {
                     subFilters.addFilter(missingColumnFilter(column));
                 } else {
@@ -302,6 +285,12 @@ public class VariantHBaseQueryParser {
 
         if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
             scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
+            if (defaultStudyConfiguration != null) {
+                int release = defaultStudyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
+                for (int i = 1; i <= release; i++) {
+                    scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildReleaseColumnKey(release));
+                }
+            }
         }
 
 //        if (!returnedFields.contains(VariantField.ANNOTATION) && !returnedFields.contains(VariantField.STUDIES)) {
@@ -385,29 +374,25 @@ public class VariantHBaseQueryParser {
         filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, valueFilters));
     }
 
-    public static void addArchiveRegionFilter(Scan scan, Region region, ArchiveTableHelper archiveHelper) {
-        if (region == null) {
-            addDefaultRegionFilter(scan);
-        } else {
-            ArchiveRowKeyFactory keyFactory = archiveHelper.getKeyFactory();
-            scan.setStartRow(keyFactory.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
+    public static void addArchiveRegionFilter(Scan scan, Region region, ArchiveTableHelper helper) {
+        addArchiveRegionFilter(scan, region, helper.getFileId(), helper.getKeyFactory());
+    }
+
+    public static void addArchiveRegionFilter(Scan scan, Region region, int fileId, ArchiveRowKeyFactory keyFactory) {
+        if (region != null) {
+            scan.setStartRow(keyFactory.generateBlockIdAsBytes(fileId, region.getChromosome(), region.getStart()));
             long endSlice = keyFactory.getSliceId((long) region.getEnd()) + 1;
             // +1 because the stop row is exclusive
-            scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(region.getChromosome(), endSlice)));
+            scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(
+                    fileId, region.getChromosome(), endSlice)));
         }
     }
 
     public static void addRegionFilter(Scan scan, Region region) {
-        if (region == null) {
-            addDefaultRegionFilter(scan);
-        } else {
+        if (region != null) {
             scan.setStartRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getStart()));
             scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getEnd()));
         }
-    }
-
-    public static Scan addDefaultRegionFilter(Scan scan) {
-        return scan.setStopRow(Bytes.toBytes(String.valueOf(GenomeHelper.METADATA_PREFIX)));
     }
 
 }

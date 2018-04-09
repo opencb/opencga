@@ -200,18 +200,18 @@ public class FileManagerTest extends GenericTest {
         s_8 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_8", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first().getId();
         s_9 = catalogManager.getSampleManager().create(Long.toString(studyId), "s_9", "", "", null, false, null, new HashMap<>(), null, new QueryOptions(), sessionIdUser).first().getId();
 
-        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_1), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_1").append("AGE", 6).append("ALIVE", true).append("PHEN", "CONTROL"), null, sessionIdUser);
+        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_1), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_1").append("AGE", 6).append("ALIVE", true).append("PHEN", "CONTROL"), sessionIdUser);
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_2), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_2").append("AGE", 10).append("ALIVE", false)
 
-                .append("PHEN", "CASE"), null, sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_3), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_3").append("AGE", 15).append("ALIVE", true).append("PHEN", "CONTROL"), null, sessionIdUser);
+                .append("PHEN", "CASE"), sessionIdUser);
+        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_3), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_3").append("AGE", 15).append("ALIVE", true).append("PHEN", "CONTROL"), sessionIdUser);
         catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_4), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_4").append("AGE", 22).append("ALIVE", false)
 
-                .append("PHEN", "CONTROL"), null, sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_5), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_5").append("AGE", 29).append("ALIVE", true).append("PHEN", "CASE"), null, sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_6), null, Long.toString(vs.getId()), "annot2", new ObjectMap("NAME", "s_6").append("AGE", 38).append("ALIVE", true).append("PHEN", "CONTROL"), null, sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_7), null, Long.toString(vs.getId()), "annot2", new ObjectMap("NAME", "s_7").append("AGE", 46).append("ALIVE", false).append("PHEN", "CASE"), null, sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_8), null, Long.toString(vs.getId()), "annot2", new ObjectMap("NAME", "s_8").append("AGE", 72).append("ALIVE", true).append("PHEN", "CONTROL"), null, sessionIdUser);
+                .append("PHEN", "CONTROL"), sessionIdUser);
+        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_5), null, Long.toString(vs.getId()), "annot1", new ObjectMap("NAME", "s_5").append("AGE", 29).append("ALIVE", true).append("PHEN", "CASE"), sessionIdUser);
+        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_6), null, Long.toString(vs.getId()), "annot2", new ObjectMap("NAME", "s_6").append("AGE", 38).append("ALIVE", true).append("PHEN", "CONTROL"), sessionIdUser);
+        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_7), null, Long.toString(vs.getId()), "annot2", new ObjectMap("NAME", "s_7").append("AGE", 46).append("ALIVE", false).append("PHEN", "CASE"), sessionIdUser);
+        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_8), null, Long.toString(vs.getId()), "annot2", new ObjectMap("NAME", "s_8").append("AGE", 72).append("ALIVE", true).append("PHEN", "CONTROL"), sessionIdUser);
 
 
         catalogManager.getFileManager().update(test01k.getId(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), sessionIdUser);
@@ -1050,6 +1050,16 @@ public class FileManagerTest extends GenericTest {
         result = catalogManager.getFileManager().get(studyId, query, null, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
+        QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2);
+        result = catalogManager.getFileManager().get(studyId, new Query(), options, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertEquals(7, result.getNumTotalResults());
+
+        options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.SKIP_COUNT, true);
+        result = catalogManager.getFileManager().get(studyId, new Query(), options, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertEquals(2, result.getNumTotalResults());
+
     }
 
     @Test
@@ -1585,5 +1595,37 @@ public class FileManagerTest extends GenericTest {
         fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, null, sessionIdUser);
         QueryResult<File> read = fileManager.get(fileResult.first().getId(), new QueryOptions(), sessionIdUser);
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, read.first().getIndex().getStatus().getName());
+    }
+
+    @Test
+    public void testIndex() throws Exception {
+        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+        File file = fileManager.link(uri, "", studyId, null, sessionIdUser).first();
+        Job job = fileManager.index(Collections.singletonList(file.getName()), String.valueOf(studyId), "VCF", null, sessionIdUser).first();
+        assertEquals(file.getId(), job.getInput().get(0).getId());
+    }
+
+    @Test
+    public void testIndexFromAvro() throws Exception {
+        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+        File file = fileManager.link(uri, "data", studyId, null, sessionIdUser).first();
+        fileManager.create(Long.toString(studyId), File.Type.FILE, File.Format.AVRO, null, "data/variant-test-file.vcf.gz.variants.avro.gz", "", "description", new File.FileStatus(File.FileStatus.READY), 0, -1, Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, "asdf", new QueryOptions(), sessionIdUser);
+        fileManager.link(getClass().getResource("/biofiles/variant-test-file.vcf.gz.file.json.gz").toURI(), "data", studyId, null, sessionIdUser).first();
+
+        Job job = fileManager.index(Collections.singletonList("variant-test-file.vcf.gz.variants.avro.gz"), String.valueOf(studyId), "VCF", null, sessionIdUser).first();
+        assertEquals(file.getId(), job.getInput().get(0).getId());
+    }
+
+    @Test
+    public void testIndexFromAvroIncomplete() throws Exception {
+        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+        File file = fileManager.link(uri, "data", studyId, null, sessionIdUser).first();
+        fileManager.create(Long.toString(studyId), File.Type.FILE, File.Format.AVRO, null, "data/variant-test-file.vcf.gz.variants.avro.gz", "", "description", new File.FileStatus(File.FileStatus.READY), 0, -1, Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, "asdf", new QueryOptions(), sessionIdUser);
+//        fileManager.link(getClass().getResource("/biofiles/variant-test-file.vcf.gz.file.json.gz").toURI(), "data", studyId, null, sessionIdUser).first();
+
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("The file variant-test-file.vcf.gz.variants.avro.gz is not a VCF file.");
+        fileManager.index(Collections.singletonList("variant-test-file.vcf.gz.variants.avro.gz"), String.valueOf(studyId), "VCF", null, sessionIdUser).first();
     }
 }

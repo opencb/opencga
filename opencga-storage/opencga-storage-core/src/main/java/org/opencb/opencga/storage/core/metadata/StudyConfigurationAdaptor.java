@@ -35,12 +35,12 @@ import java.util.concurrent.TimeoutException;
 public abstract class StudyConfigurationAdaptor implements AutoCloseable {
     private static Logger logger = LoggerFactory.getLogger(StudyConfigurationAdaptor.class);
 
-    protected long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+    protected long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
         logger.warn("Ignoring lock");
         return 0;
     }
 
-    protected void unLockStudy(int studyId, long lockId) {
+    protected void unLockStudy(int studyId, long lockId, String lockName) {
         logger.warn("Ignoring unLock");
     }
 
