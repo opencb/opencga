@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -718,9 +719,11 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     public void loadSVFilesTest() throws Exception {
         URI input = getResourceUri("variant-test-sv.vcf");
         StudyConfiguration studyConfiguration = new StudyConfiguration(1, "s1");
-        runDefaultETL(input, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 1));
+        runDefaultETL(input, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 1)
+                .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
         URI input2 = getResourceUri("variant-test-sv_2.vcf");
-        runDefaultETL(input2, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 2));
+        runDefaultETL(input2, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 2)
+                .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
             if (variant.getAlternate().equals("<DEL:ME:ALU>") || variant.getType().equals(VariantType.BREAKEND)) {
@@ -730,7 +733,9 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             }
         }
 
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, false, 24 + 6);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, false, 24 + 7);
+
+        variantStorageEngine.exportData(null, VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(QueryOptions.SORT, true));
     }
 
 }
