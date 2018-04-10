@@ -75,7 +75,12 @@ public class VariantMongoDBIterator extends VariantDBIterator {
     @Override
     public Variant next() {
         Document document = fetch(() -> dbCursor.next());
-        return convert(() -> documentToVariantConverter.convertToDataModelType(document));
+        try {
+            return convert(() -> documentToVariantConverter.convertToDataModelType(document));
+        } catch (Exception e) {
+            System.out.println(document.getString("_id"));
+            throw e;
+        }
     }
 
     @Override

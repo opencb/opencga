@@ -92,8 +92,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 //            VariantType.CNV,
 //            VariantType.DUPLICATION,
 //            VariantType.INVERSION,
-            VariantType.TRANSLOCATION,
-            VariantType.BREAKEND));
+            VariantType.TRANSLOCATION
+//            VariantType.BREAKEND
+    ));
 
     private final VariantMongoDBAdaptor dbAdaptor;
     private final ObjectMap loadStats = new ObjectMap();
