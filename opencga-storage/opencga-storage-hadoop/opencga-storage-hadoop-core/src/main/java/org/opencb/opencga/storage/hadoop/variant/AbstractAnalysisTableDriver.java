@@ -120,6 +120,9 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
         preExecution(variantTable);
 
+        logger.info("=================================================");
+        logger.info("Execute " + getJobOperationName() + " for table " + variantTable);
+        logger.info("=================================================");
         boolean succeed = executeJob(job);
         if (!succeed) {
             logger.error("error with job!");

@@ -66,19 +66,25 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
     @Override
     protected void preExecution(String variantTable) throws IOException, StorageEngineException {
         if (!FillGapsFromArchiveMapper.isFillGaps(getConf())) {
-            try {
-                logger.info("Prepare archive table for " + FILL_MISSING_OPERATION_NAME);
-                String args = PrepareFillMissingDriver.buildCommandLineArgs(
-                        getArchiveTable(), variantTable, getStudyId(), Collections.emptyList(), new ObjectMap());
-                int exitValue = new PrepareFillMissingDriver().privateMain(Commandline.translateCommandline(args), getConf());
-                if (exitValue != 0) {
-                    throw new StorageEngineException("Error executing PrepareFillMissing");
+            if (getConf().getBoolean("skipPrepareFillMissing", false)) {
+                logger.info("=================================================");
+                logger.info("SKIP prepare archive table for " + FILL_MISSING_OPERATION_NAME);
+                logger.info("=================================================");
+            } else {
+                try {
+                    logger.info("Prepare archive table for " + FILL_MISSING_OPERATION_NAME);
+                    String args = PrepareFillMissingDriver.buildCommandLineArgs(
+                            getArchiveTable(), variantTable, getStudyId(), Collections.emptyList(), new ObjectMap());
+                    int exitValue = new PrepareFillMissingDriver().privateMain(Commandline.translateCommandline(args), getConf());
+                    if (exitValue != 0) {
+                        throw new StorageEngineException("Error executing PrepareFillMissing");
+                    }
+                } catch (Exception e) {
+                    throw new StorageEngineException("Error executing PrepareFillMissing", e);
                 }
-            } catch (Exception e) {
-                throw new StorageEngineException("Error executing PrepareFillMissing", e);
             }
-        }
 
+        }
     }
 
     @Override
@@ -86,7 +92,7 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
         super.postExecution(succeed);
         if (succeed && !FillGapsFromArchiveMapper.isFillGaps(getConf())) {
             try {
-                logger.info("Prepare archive table for " + FILL_MISSING_OPERATION_NAME);
+                logger.info("Write results in variants table for " + FILL_MISSING_OPERATION_NAME);
                 String args = FillMissingHBaseWriterDriver.buildCommandLineArgs(
                         getArchiveTable(), getAnalysisTable(), getStudyId(), Collections.emptyList(), new ObjectMap());
 //                new FillMissingHBaseWriterDriver().privateMain(Commandline.translateCommandline(args), getConf());
