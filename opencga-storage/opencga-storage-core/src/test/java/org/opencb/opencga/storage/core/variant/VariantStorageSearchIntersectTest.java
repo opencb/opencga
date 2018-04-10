@@ -36,6 +36,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.UseSearchIndex;
 import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -82,6 +84,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 //            new Exception().printStackTrace();
 //            return invocation.callRealMethod();
 //        }).when(solrClient).query(anyString(), any());
+        variantStorageEngine.getConfiguration().getSearch().setActive(true);
         variantStorageEngine.getVariantSearchManager().setSolrClient(solrClient);
     }
 
@@ -295,6 +298,30 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         System.out.println("realCount = " + realCount);
         assertFalse(result.getApproximateCount());
         assertEquals(approxCount, realCount);
+    }
+
+    @Test
+    public void testUseSearchIndex() throws StorageEngineException {
+        assertFalse(variantStorageEngine.doIntersectWithSearch(new Query(), new QueryOptions()));
+        assertTrue(variantStorageEngine.doIntersectWithSearch(new Query(), new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.YES)));
+        assertTrue(variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions()));
+    }
+
+    @Test
+    public void testFailTraitWithoutSearch() throws StorageEngineException {
+        VariantQueryException exception = VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_TRAIT, variantStorageEngine.getStorageEngineId());
+        thrown.expect(exception.getClass());
+        thrown.expectMessage(exception.getMessage());
+        variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.NO));
+    }
+
+    @Test
+    public void testFailSearchNotAvailable() throws StorageEngineException {
+        VariantQueryException exception = new VariantQueryException("Unable to use search index. SearchEngine is not available");
+        thrown.expect(exception.getClass());
+        thrown.expectMessage(exception.getMessage());
+        variantStorageEngine.getConfiguration().getSearch().setActive(false);
+        variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.YES));
     }
 
 }

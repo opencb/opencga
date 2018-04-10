@@ -123,6 +123,9 @@ public class FamilyCommandOptions {
     public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
         public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
 
         @ParametersDelegate
@@ -131,14 +134,8 @@ public class FamilyCommandOptions {
         @Parameter(names = {"--name"}, description = "name", arity = 1)
         public String name;
 
-        @Parameter(names = {"--father"}, description = "Comma separated list of individual ids or names", arity = 1)
-        public String father;
-
-        @Parameter(names = {"--mother"}, description = "Comma separated list of individual ids or names", arity = 1)
-        public String mother;
-
-        @Parameter(names = {"--member"}, description = "Comma separated list of individual ids or names", arity = 1)
-        public String member;
+        @Parameter(names = {"--members"}, description = "Comma separated list of individual ids or names", arity = 1)
+        public String members;
 
         @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
         public Boolean parentalConsanguinity;

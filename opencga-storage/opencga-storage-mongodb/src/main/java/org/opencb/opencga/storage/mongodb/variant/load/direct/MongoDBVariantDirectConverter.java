@@ -42,11 +42,11 @@ public class MongoDBVariantDirectConverter implements Task<Variant, Pair<ListMul
     private final ProgressLogger progressLogger;
 
     public MongoDBVariantDirectConverter(VariantMongoDBAdaptor dbAdaptor, final StudyConfiguration studyConfiguration, int fileId,
-                                         boolean resume, ProgressLogger progressLogger) {
+                                         boolean resume, int release, ProgressLogger progressLogger) {
         this.progressLogger = progressLogger;
         stageConverter = new MongoDBVariantStageConverterTask(null, EMPTY_CONVERTER);
 
-        variantConverter = new MongoDBVariantMergerDirect(dbAdaptor, studyConfiguration, fileId, resume);
+        variantConverter = new MongoDBVariantMergerDirect(dbAdaptor, studyConfiguration, fileId, resume, release);
     }
 
     @Override
@@ -82,8 +82,9 @@ public class MongoDBVariantDirectConverter implements Task<Variant, Pair<ListMul
         private String fileIdStr;
 
         MongoDBVariantMergerDirect(VariantMongoDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,
-                                   int fileId, boolean resume) {
-            super(dbAdaptor, studyConfiguration, Collections.singletonList(fileId), studyConfiguration.getIndexedFiles(), resume, true);
+                                   int fileId, boolean resume, int release) {
+            super(dbAdaptor, studyConfiguration, Collections.singletonList(fileId), studyConfiguration.getIndexedFiles(), resume, true,
+                    release);
             studyIdStr = String.valueOf(studyConfiguration.getStudyId());
             fileIdStr = String.valueOf(fileId);
         }

@@ -441,6 +441,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 //        addMemberInfoToFamily(queryResult);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
+
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             QueryResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
@@ -459,6 +463,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             }
         }
         queryResult = endQuery("Native get", startTime, documentList);
+
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -490,6 +498,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 //        addMemberInfoToFamily(queryResult);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            return queryResult;
+        }
+
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
             queryResult.setNumTotalResults(count.first());
@@ -753,9 +765,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case FATHER_ID:
-                    case MOTHER_ID:
-                    case MEMBER_ID:
+                    case MEMBERS_ID:
                     case NAME:
                     case DESCRIPTION:
                     case RELEASE:

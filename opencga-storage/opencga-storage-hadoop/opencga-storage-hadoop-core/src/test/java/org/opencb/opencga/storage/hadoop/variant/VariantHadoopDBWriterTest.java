@@ -221,7 +221,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         VariantSliceReader reader = getVariantSliceReader(variants, sc.getStudyId(), fileId);
 
         // Writers
-        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, dbAdaptor.getVariantTable(), dbAdaptor.getHBaseManager());
+        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, archiveTableName, dbAdaptor.getHBaseManager());
         VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(), sc, dbAdaptor.getHBaseManager());
 
         // Task

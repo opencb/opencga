@@ -92,8 +92,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 //            VariantType.CNV,
 //            VariantType.DUPLICATION,
 //            VariantType.INVERSION,
-            VariantType.TRANSLOCATION,
-            VariantType.BREAKEND));
+            VariantType.TRANSLOCATION
+//            VariantType.BREAKEND
+    ));
 
     private final VariantMongoDBAdaptor dbAdaptor;
     private final ObjectMap loadStats = new ObjectMap();
@@ -290,7 +291,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         try {
             //Reader
             DataReader<Variant> variantReader;
-            VariantDeduplicationTask duplicatedVariantsDetector = new VariantDeduplicationTask();
+            VariantDeduplicationTask duplicatedVariantsDetector = new VariantDeduplicationTask(list -> {
+                if (list.size() > 1) {
+                    logger.warn("Found {} duplicated variants for file {} in variant {}.", list.size(), fileId, list.get(0));
+                    return Collections.emptyList();
+                } else {
+                    throw new IllegalStateException("Unexpected list of " + list.size() + " duplicated variants : " + list);
+                }
+            });
             variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata).then(duplicatedVariantsDetector);
 
             //Remapping ids task
@@ -298,8 +306,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
+            int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
             MongoDBVariantDirectConverter converter = new MongoDBVariantDirectConverter(dbAdaptor, getStudyConfiguration(), fileId,
-                    isResume(options), progressLogger);
+                    isResume(options), release, progressLogger);
             MongoDBVariantDirectLoader loader = new MongoDBVariantDirectLoader(dbAdaptor, getStudyConfiguration(), fileId,
                     isResume(options));
 
@@ -702,8 +711,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         boolean ignoreOverlapping = studyConfiguration.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
                 MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
+        int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds, indexedFiles, resume,
-                ignoreOverlapping);
+                ignoreOverlapping, release);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(
                 dbAdaptor.getVariantsCollection(), stageCollection, dbAdaptor.getStudiesCollection(),
                 studyConfiguration, fileIds, resume, cleanWhileLoading, progressLogger);

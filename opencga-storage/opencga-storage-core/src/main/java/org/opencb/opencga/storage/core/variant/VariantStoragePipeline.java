@@ -51,6 +51,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
@@ -71,7 +72,10 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS;
 
 /**
  * Created on 30/03/16.
@@ -567,19 +571,33 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, fileMetadata, options);
 
-        // Check Extra genotype fields
-        if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())
-                && StringUtils.isNotEmpty(options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
+        // Get Extra genotype fields
+        Stream<String> stream;
+        if (StringUtils.isNotEmpty(options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()))
+                && !options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()).equals(VariantQueryUtils.ALL)) {
+            // If ExtraGenotypeFields are provided by command line, check that those fields are going to be loaded.
 
-            List<String> extraFields = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
-            if (studyConfiguration.getIndexedFiles().isEmpty()) {
-                studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields);
+            if (options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()).equals(VariantQueryUtils.NONE)) {
+                stream = Stream.empty();
             } else {
-                if (!extraFields.equals(studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
-                    throw new StorageEngineException("Unable to change Stored Extra Fields if there are already indexed files.");
-                }
+                stream = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()).stream();
             }
+        } else {
+            // Otherwise, add all format fields
+            stream = fileMetadata.getHeader().getComplexLines()
+                    .stream()
+                    .filter(line -> line.getKey().equals("FORMAT"))
+                    .map(VariantFileHeaderComplexLine::getId);
+
         }
+        List<String> extraGenotypeFields = studyConfiguration.getAttributes().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
+        stream.forEach(format -> {
+            if (!extraGenotypeFields.contains(format) && !format.equals(VariantMerger.GT_KEY)) {
+                extraGenotypeFields.add(format);
+            }
+        });
+        studyConfiguration.getAttributes().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
+        getOptions().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
 
         List<String> extraFormatFields = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
 
@@ -642,6 +660,21 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
 
             studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
+        }
+
+        int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
+        // FIXME: CurrentRelease should be a global attribute, not a study attribute.
+        int currentRelease = studyConfiguration.getAttributes().getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
+        if (options.containsKey(Options.RELEASE.key())) {
+            if (release < currentRelease || release <= 0) {
+                //ERROR, asking to use a release lower than currentRelease
+                throw StorageEngineException.invalidReleaseException(release, currentRelease);
+            } else {
+                // Update currentRelease in StudyConfiguration
+                studyConfiguration.getAttributes().put(Options.RELEASE.key(), release);
+            }
+        } else {
+            options.put(Options.RELEASE.key(), currentRelease);
         }
     }
 

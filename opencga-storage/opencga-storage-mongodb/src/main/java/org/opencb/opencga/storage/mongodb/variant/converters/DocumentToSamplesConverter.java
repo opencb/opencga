@@ -53,11 +53,11 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     private final Map<Integer, StudyConfiguration> studyConfigurations;
     private final Map<Integer, BiMap<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null
     // . Use "getIndexedIdSamplesMap()"
-    private final Map<Integer, LinkedHashMap<String, Integer>> __returnedSamplesPosition;
+    private final Map<Integer, LinkedHashMap<String, Integer>> __samplesPosition;
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
-    private Map<Integer, LinkedHashSet<Integer>> returnedSamples;
+    private Map<Integer, LinkedHashSet<Integer>> includeSamples;
     private StudyConfigurationManager studyConfigurationManager;
-    private String returnedUnknownGenotype;
+    private String unknownGenotype;
 
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(DocumentToSamplesConverter.class.getName());
 
@@ -110,11 +110,11 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     DocumentToSamplesConverter() {
         studyConfigurations = new HashMap<>();
         __studySamplesId = new HashMap<>();
-        __returnedSamplesPosition = new HashMap<>();
+        __samplesPosition = new HashMap<>();
         studyDefaultGenotypeSet = new HashMap<>();
-        returnedSamples = Collections.emptyMap();
+        includeSamples = Collections.emptyMap();
         studyConfigurationManager = null;
-        returnedUnknownGenotype = null;
+        unknownGenotype = null;
     }
 
     /**
@@ -200,7 +200,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
         Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
 //        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
-        final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
+        final LinkedHashMap<String, Integer> samplesPositionToReturn = getSamplesPosition(studyConfiguration);
 
         boolean excludeGenotypes = !object.containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)
                 || studyConfiguration.getAttributes().getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
@@ -245,7 +245,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         Set<String> defaultGenotypes = studyDefaultGenotypeSet.get(studyId);
         String mostCommonGtString = defaultGenotypes.isEmpty() ? null : defaultGenotypes.iterator().next();
         if (UNKNOWN_GENOTYPE.equals(mostCommonGtString)) {
-            mostCommonGtString = returnedUnknownGenotype;
+            mostCommonGtString = unknownGenotype;
         }
         if (mostCommonGtString == null) {
             mostCommonGtString = UNKNOWN_GENOTYPE;
@@ -274,13 +274,13 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
                 final String genotype;
                 if (dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
-                    if (returnedUnknownGenotype == null) {
+                    if (unknownGenotype == null) {
                         continue;
                     }
-                    if (defaultGenotypes.contains(returnedUnknownGenotype)) {
+                    if (defaultGenotypes.contains(unknownGenotype)) {
                         continue;
                     } else {
-                        genotype = returnedUnknownGenotype;
+                        genotype = unknownGenotype;
                     }
                 } else {
                     genotype = genotypeToDataModelType(dbo.getKey());
@@ -621,16 +621,16 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         addStudyConfiguration(studyConfiguration);
     }
 
-    public void setReturnedSamples(Map<Integer, List<Integer>> returnedSamples) {
-        this.returnedSamples = returnedSamples == null ? null : new HashMap<>(returnedSamples.size());
-        if (returnedSamples != null) {
-            this.returnedSamples = new HashMap<>();
-            returnedSamples.forEach((studyId, sampleIds) -> this.returnedSamples.put(studyId, new LinkedHashSet<>(sampleIds)));
+    public void setIncludeSamples(Map<Integer, List<Integer>> includeSamples) {
+        this.includeSamples = includeSamples == null ? null : new HashMap<>(includeSamples.size());
+        if (includeSamples != null) {
+            this.includeSamples = new HashMap<>();
+            includeSamples.forEach((studyId, sampleIds) -> this.includeSamples.put(studyId, new LinkedHashSet<>(sampleIds)));
         } else {
-            this.returnedSamples = null;
+            this.includeSamples = null;
         }
         __studySamplesId.clear();
-        __returnedSamplesPosition.clear();
+        __samplesPosition.clear();
     }
 
     public void addStudyConfiguration(StudyConfiguration studyConfiguration) {
@@ -651,12 +651,12 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         this.studyDefaultGenotypeSet.put(studyConfiguration.getStudyId(), defGenotypeSet);
     }
 
-    public String getReturnedUnknownGenotype() {
-        return returnedUnknownGenotype;
+    public String getUnknownGenotype() {
+        return unknownGenotype;
     }
 
-    public void setReturnedUnknownGenotype(String returnedUnknownGenotype) {
-        this.returnedUnknownGenotype = returnedUnknownGenotype;
+    public void setUnknownGenotype(String unknownGenotype) {
+        this.unknownGenotype = unknownGenotype;
     }
 
     public void setFormat(List<String> format) {
@@ -676,13 +676,13 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         if (this.__studySamplesId.get(studyId) == null) {
             StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
             sampleIds = StudyConfiguration.getIndexedSamples(studyConfiguration);
-            if (returnedSamples != null && returnedSamples.containsKey(studyId)) {
-                BiMap<String, Integer> returnedSampleIds = HashBiMap.create();
+            if (includeSamples != null && includeSamples.containsKey(studyId)) {
+                BiMap<String, Integer> includeSampleIds = HashBiMap.create();
                 sampleIds.entrySet().stream()
                         //ReturnedSamples could be sampleNames or sampleIds as a string
-                        .filter(e -> returnedSamples.get(studyId).contains(e.getValue()))
-                        .forEach(stringIntegerEntry -> returnedSampleIds.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
-                sampleIds = returnedSampleIds;
+                        .filter(e -> includeSamples.get(studyId).contains(e.getValue()))
+                        .forEach(stringIntegerEntry -> includeSampleIds.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
+                sampleIds = includeSampleIds;
             }
             this.__studySamplesId.put(studyId, sampleIds);
         } else {
@@ -692,14 +692,14 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         return sampleIds;
     }
 
-    private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
-        if (!__returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
+    private LinkedHashMap<String, Integer> getSamplesPosition(StudyConfiguration studyConfiguration) {
+        if (!__samplesPosition.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition;
-            samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
-                    this.returnedSamples.get(studyConfiguration.getStudyId()));
-            __returnedSamplesPosition.put(studyConfiguration.getStudyId(), samplesPosition);
+            samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration,
+                    this.includeSamples.get(studyConfiguration.getStudyId()));
+            __samplesPosition.put(studyConfiguration.getStudyId(), samplesPosition);
         }
-        return __returnedSamplesPosition.get(studyConfiguration.getStudyId());
+        return __samplesPosition.get(studyConfiguration.getStudyId());
     }
 
     public static String genotypeToDataModelType(String genotype) {

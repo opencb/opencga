@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
+import org.opencb.biodata.models.variant.avro.Breakend;
 import org.opencb.biodata.models.variant.avro.StructuralVariantType;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.utils.CryptoUtils;
@@ -57,22 +58,11 @@ public class VariantStringIdConverter {
     protected static final int SV_SPLIT_LENGTH = CI_END_R + 1;
     protected static final char INS_SEQ_SEPARATOR = '_';
 
-    @Deprecated
-    public Variant convertToDataModelType(String object) {
-        String[] split = object.split(SEPARATOR, -1);
-        Variant variant = new Variant(split[CHR].trim(), Integer.parseInt(split[POS].trim()), split[REF], split[ALT]);
-        StructuralVariation sv = buildSv(split);
-        if (sv != null) {
-            variant.setSv(sv);
-        }
-        return variant;
-    }
-
     public Variant buildVariant(String variantId, int end, String reference, String alternate) {
         String[] split = variantId.split(SEPARATOR, -1);
         String chr = split[CHR].trim();
         int start = Integer.parseInt(split[POS].trim());
-        StructuralVariation sv = buildSv(split);
+        StructuralVariation sv = buildSv(split, reference, alternate);
         if (StringUtils.contains(alternate, INS_SEQ_SEPARATOR)) {
             String[] alternateSplit = StringUtils.splitPreserveAllTokens(alternate, INS_SEQ_SEPARATOR);
             alternate = alternateSplit[0];
@@ -92,16 +82,17 @@ public class VariantStringIdConverter {
         return variant;
     }
 
-    private StructuralVariation buildSv(String[] split) {
+    private StructuralVariation buildSv(String[] split, String reference, String alternate) {
         if (split.length == SV_SPLIT_LENGTH) {
             try {
-                return new StructuralVariation(
+                Breakend breakend = VariantBuilder.parseBreakend(reference, alternate);
+                return new  StructuralVariation(
                         getInt(split, CI_POS_L),
                         getInt(split, CI_POS_R),
                         getInt(split, CI_END_L),
                         getInt(split, CI_END_R),
-                        VariantBuilder.getCopyNumberFromAlternate(split[ALT]),
-                        null, null, null);
+                        VariantBuilder.getCopyNumberFromAlternate(alternate),
+                        null, null, null, breakend);
             } catch (RuntimeException e) {
                 for (String s : split) {
                     // If any of the splits is non printable, the variantId had 4 colons in the SHA1
@@ -213,7 +204,8 @@ public class VariantStringIdConverter {
                     || sv.getCiEndLeft() != null
                     || sv.getCiEndRight() != null
                     || sv.getLeftSvInsSeq() != null
-                    || sv.getRightSvInsSeq() != null;
+                    || sv.getRightSvInsSeq() != null
+                    || sv.getBreakend() != null;
         }
     }
 

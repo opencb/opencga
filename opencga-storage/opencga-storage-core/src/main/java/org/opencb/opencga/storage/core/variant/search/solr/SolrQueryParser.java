@@ -44,10 +44,34 @@ public class SolrQueryParser {
 
     private final StudyConfigurationManager studyConfigurationManager;
 
+    private static Map<String, String> includeMap;
+
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
 
     protected static Logger logger = LoggerFactory.getLogger(SolrQueryParser.class);
+
+    static {
+        includeMap = new HashMap<>();
+
+        includeMap.put("id", "id,variantId");
+        includeMap.put("chromosome", "chromosome");
+        includeMap.put("start", "start");
+        includeMap.put("end", "end");
+        includeMap.put("type", "type");
+
+        includeMap.put("studies", "studies,stats__*");
+        includeMap.put("studies.stats", "studies,stats__*");
+
+        includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq__*,xrefs,"
+                + "phastCons,phylop,gerp,caddRaw,caddScaled,traits");
+        includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc");
+        includeMap.put("annotation.populationFrequencies", "popFreq__*");
+        includeMap.put("annotation.xrefs", "xrefs");
+        includeMap.put("annotation.conservation", "phastCons,phylop,gerp");
+        includeMap.put("annotation.functionalScore", "caddRaw,caddScaled");
+        includeMap.put("annotation.traitAssociation", "traits");
+    }
 
     public SolrQueryParser(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
@@ -68,10 +92,15 @@ public class SolrQueryParser {
         //-------------------------------------
         // QueryOptions processing
         //-------------------------------------
+        String[] includes = null;
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            List<String> includes = queryOptions.getAsStringList(QueryOptions.INCLUDE);
-            solrQuery.setFields(includes.toArray(new String[includes.size()]));
+            includes = solrIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+        } else {
+            if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+                includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+            }
         }
+        solrQuery.setFields(includeFieldsWithMandatory(includes));
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
@@ -356,16 +385,29 @@ public class SolrQueryParser {
     }
 
     /**
-     *
      * Parse string values, e.g.: dbSNP, type, chromosome,... This function takes into account multiple values and
      * the separator between them can be:
      *     "," or ";" to apply a "OR" condition
      *
-     * @param name         Parameter name
-     * @param value        Parameter value
+     * @param name          Parameter name
+     * @param value         Parameter value
      * @return             A list of strings, each string represents a boolean condition
      */
-    private String parseCategoryTermValue(String name, String value) {
+    public String parseCategoryTermValue(String name, String value) {
+        return parseCategoryTermValue(name, value, false);
+    }
+
+    /**
+     * Parse string values, e.g.: dbSNP, type, chromosome,... This function takes into account multiple values and
+     * the separator between them can be:
+     *     "," or ";" to apply a "OR" condition
+     *
+     * @param name          Parameter name
+     * @param value         Parameter value
+     * @param partialSearch Flag to partial search
+     * @return             A list of strings, each string represents a boolean condition
+     */
+    public String parseCategoryTermValue(String name, String value, boolean partialSearch) {
         StringBuilder filter = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
             boolean or = value.contains(",");
@@ -374,16 +416,17 @@ public class SolrQueryParser {
                 throw new IllegalArgumentException("Command and semi-colon cannot be mixed: " + value);
             }
             String logicalComparator = or ? " OR " : " AND ";
+            String wildcard = partialSearch ? "*" : "";
 
             String[] values = value.split("[,;]");
             if (values.length == 1) {
-                filter.append(name).append(":\"").append(value).append("\"");
+                filter.append(name).append(":\"").append(wildcard).append(value).append(wildcard).append("\"");
             } else {
                 filter.append("(");
-                filter.append(name).append(":\"").append(values[0]).append("\"");
+                filter.append(name).append(":\"").append(wildcard).append(values[0]).append(wildcard).append("\"");
                 for (int i = 1; i < values.length; i++) {
                     filter.append(logicalComparator);
-                    filter.append(name).append(":\"").append(values[i]).append("\"");
+                    filter.append(name).append(":\"").append(wildcard).append(values[i]).append(wildcard).append("\"");
                 }
                 filter.append(")");
             }
@@ -400,7 +443,7 @@ public class SolrQueryParser {
      * @param value        Parameter value
      * @return             The string with the boolean conditions
      */
-    private String parseScoreValue(String value) {
+    public String parseScoreValue(String value) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
@@ -564,7 +607,7 @@ public class SolrQueryParser {
      * @param value     Parameter value, e.g.: 0.314, tolerated,...
      * @return          Solr query range
      */
-    private String getRange(String prefix, String name, String op, String value) {
+    public String getRange(String prefix, String name, String op, String value) {
         StringBuilder sb = new StringBuilder();
         switch (op) {
             case "=":
@@ -667,7 +710,7 @@ public class SolrQueryParser {
         return sb.toString();
     }
 
-    private SolrQuery.ORDER getSortOrder(QueryOptions queryOptions) {
+    public SolrQuery.ORDER getSortOrder(QueryOptions queryOptions) {
         return queryOptions.getString(QueryOptions.ORDER).equals(QueryOptions.ASCENDING)
                 ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
     }
@@ -892,7 +935,7 @@ public class SolrQueryParser {
      * @param range   String containing the facet range definition
      * @param solrQuery   Solr query
      */
-    private void parseSolrFacetRanges(String range, SolrQuery solrQuery) {
+    public void parseSolrFacetRanges(String range, SolrQuery solrQuery) {
         String[] split = range.split(":");
         if (split.length != 4) {
             logger.warn("Facet range '" + range + "' malformed. The expected range format is 'name:start:end:gap'");
@@ -923,7 +966,7 @@ public class SolrQueryParser {
      * @param intersection   String containing the facet intersection
      * @param solrQuery   Solr query
      */
-    private void parseSolrFacetIntersections(String intersection, SolrQuery solrQuery) {
+    public void parseSolrFacetIntersections(String intersection, SolrQuery solrQuery) {
         boolean error = true;
         String[] splitA = intersection.split(":");
         if (splitA.length == 2) {
@@ -957,4 +1000,57 @@ public class SolrQueryParser {
                     + " is 'name:value1^value2[^value3]', value3 is optional");
         }
     }
-}
+
+    private String[] solrIncludeFields(List<String> includes) {
+        if (includes == null) {
+            return new String[0];
+        }
+
+        List<String> solrIncludeList = new ArrayList<>();
+        // The values of the includeMap can contain commas
+        for (String include : includes) {
+            if (includeMap.containsKey(include)) {
+                solrIncludeList.add(includeMap.get(include));
+            }
+        }
+        return StringUtils.join(solrIncludeList, ",").split(",");
+    }
+
+    private String[] getSolrIncludeFromExclude(List<String> excludes) {
+        Set<String> solrFieldsToInclude = new HashSet<>(20);
+        for (String value : includeMap.values()) {
+            solrFieldsToInclude.addAll(Arrays.asList(value.split(",")));
+        }
+
+        if (excludes != null) {
+            for (String exclude : excludes) {
+                List<String> solrFields = Arrays.asList(includeMap.get(exclude).split(","));
+                solrFieldsToInclude.removeAll(solrFields);
+            }
+        }
+
+        List<String> solrFieldsToIncludeList = new ArrayList<>(solrFieldsToInclude);
+        String[] solrFieldsToIncludeArr = new String[solrFieldsToIncludeList.size()];
+        for (int i = 0; i < solrFieldsToIncludeList.size(); i++) {
+            solrFieldsToIncludeArr[i] = solrFieldsToIncludeList.get(i);
+        }
+
+        return solrFieldsToIncludeArr;
+    }
+
+    private String[] includeFieldsWithMandatory(String[] includes) {
+        if (includes == null || includes.length == 0) {
+            return new String[0];
+        }
+
+        String[] mandatoryIncludeFields  = new String[]{"id", "chromosome", "start", "end", "type", "other", "release"};
+        String[] includeWithMandatory = new String[includes.length + mandatoryIncludeFields.length];
+        for (int i = 0; i < includes.length; i++) {
+            includeWithMandatory[i] = includes[i];
+        }
+        for (int i = 0; i < mandatoryIncludeFields.length; i++) {
+            includeWithMandatory[includes.length + i] = mandatoryIncludeFields[i];
+        }
+        return includeWithMandatory;
+    }
+ }

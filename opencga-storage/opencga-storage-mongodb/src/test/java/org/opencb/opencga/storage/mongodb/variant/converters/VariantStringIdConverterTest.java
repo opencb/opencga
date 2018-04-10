@@ -80,4 +80,21 @@ public class VariantStringIdConverterTest {
         assertEquals(SV_SPLIT_LENGTH - 1, StringUtils.countMatches(converter.buildId(v), ':'));
         assertEquals(v, converter.buildVariant(converter.buildId(v), 999, "", alt));
     }
+
+    @Test
+    public void bnd() {
+        // INS
+        Variant v = new Variant("1:1000:A:A[3:123[");
+        String id = converter.buildId(v);
+        assertEquals(" 1:      1000:A:A[3_123[::::", id);
+        Variant v2 = converter.buildVariant(id, 999, "A", "A[3:123[");
+        System.out.println("v.toJson()  = " + v.toJson());
+        System.out.println("v2.toJson() = " + v2.toJson());
+        assertEquals(v, v2);
+
+        v.getSv().setCiStartLeft(999);
+        v.getSv().setCiStartRight(1010);
+        assertEquals(" 1:      1000:A:A[3_123[:999:1010::", converter.buildId(v));
+        assertEquals(v, converter.buildVariant(converter.buildId(v), 999, "A", "A[3:123["));
+    }
 }

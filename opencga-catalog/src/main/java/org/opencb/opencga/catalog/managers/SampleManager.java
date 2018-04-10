@@ -247,7 +247,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             Map<String, Long> myIds = new HashMap<>();
             for (String sampleStrAux : sampleList) {
-                if (StringUtils.isNumeric(sampleStrAux)) {
+                if (StringUtils.isNumeric(sampleStrAux) && Long.parseLong(sampleStrAux) > configuration.getCatalog().getOffset()) {
                     long sampleId = getSampleId(silent, sampleStrAux);
                     myIds.put(sampleStrAux, sampleId);
                 }

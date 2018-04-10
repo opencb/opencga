@@ -24,7 +24,6 @@ import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -32,6 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
@@ -52,9 +53,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantLocalConflictResolver.NOCALL;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.getEscapedFullTableName;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 
 /**
@@ -80,6 +79,9 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("~", "LIKE");
         SQL_OPERATOR.put("!", "!=");
     }
+
+    // Internal usage only
+    private static final String ALT_GT = "ALT";
 
     public static class VariantPhoenixSQLQuery {
         private String sql;
@@ -228,6 +230,20 @@ public class VariantSqlQueryParser {
             }
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
+
+                int release = 0;
+                if (phoenixSQLQuery.getSelect() != null
+                        && phoenixSQLQuery.getSelect().getStudyConfigurations() != null
+                        && !phoenixSQLQuery.getSelect().getStudyConfigurations().isEmpty()) {
+                    // TODO: Release should be a global attribute, not a study attribute.
+                    for (StudyConfiguration sc : phoenixSQLQuery.getSelect().getStudyConfigurations().values()) {
+                        release = Math.max(release, sc.getAttributes().getInt(VariantStorageEngine.Options.RELEASE.key()));
+                    }
+                }
+                for (int i = 1; i <= release; i++) {
+                    sb.append(',');
+                    VariantPhoenixHelper.buildReleaseColumnKey(i, sb);
+                }
             }
 
             return sb;
@@ -267,7 +283,7 @@ public class VariantSqlQueryParser {
     }
 
     protected StringBuilder appendFilters(StringBuilder sb, List<String> filters, String delimiter) {
-        delimiter = " " + delimiter + " ";
+        delimiter = ' ' + delimiter + ' ';
         if (!filters.isEmpty()) {
             sb.append(filters.stream().collect(Collectors.joining(delimiter, " ( ", " )")));
         }
@@ -395,6 +411,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#QUAL}
      * {@link VariantQueryParam#COHORT}
      * {@link VariantQueryParam#GENOTYPE}
+     * {@link VariantQueryParam#RELEASE}
      *
      * Annotation filters:
      * {@link VariantQueryParam#ANNOTATION_EXISTS}
@@ -690,7 +707,8 @@ public class VariantSqlQueryParser {
             QueryOperation op = checkOperator(value);
             List<String> samples = splitValue(value, op);
             for (String sample : samples) {
-                genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
+                genotypesMap.put(sample, Collections.singletonList(ALT_GT));
+//                genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
             }
         }
 
@@ -720,11 +738,18 @@ public class VariantSqlQueryParser {
                     }
                     String key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
                     final String filter;
-                    if (new Genotype(genotype).isAllelesRefs()) {
+                    if (ALT_GT.equals(genotype)) {
+                        // Either starts or ends by 1 : 0/1, 1/1, 0|1, 1|0, 1/2, ...
+//                        filter = "( \"" + key + "\"[1] LIKE '%1' OR \"" + key + "\"[1] LIKE '1%' )";
+
+                        // The genotype contains a 1: 0/1, 1/1, 0|1, 1|0, 1/2, ...
+                        filter = '"' + key + "\"[1] LIKE '%1%'";
+                        // FIXME: This may return unwanted values at big multi-allelic variants like : 5/10
+                    } else if (FillGapsTask.isHomRefDiploid(genotype)) {
                         if (negated) {
-                            filter = '"' + key + "\" IS NOT NULL";
+                            filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
                         } else {
-                            filter = '"' + key + "\" IS NULL";
+                            filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
                         }
                     } else {
                         if (negated) {
@@ -741,6 +766,20 @@ public class VariantSqlQueryParser {
                     filters.add(gtFilters.stream().collect(Collectors.joining(" AND ", " ( ", " ) ")));
                 }
             }
+        }
+
+        if (isValidParam(query, RELEASE)) {
+            int release = query.getInt(RELEASE.key(), -1);
+            if (release <= 0) {
+                throw VariantQueryException.malformedParam(RELEASE, query.getString(RELEASE.key()));
+            }
+
+            StringBuilder releaseFilters = new StringBuilder();
+            releaseFilters.append(buildFilter(getReleaseColumn(1), "=", true));
+            for (int i = 2; i <= release; i++) {
+                releaseFilters.append(" OR ").append(buildFilter(getReleaseColumn(i), "=", true));
+            }
+            filters.add(releaseFilters.toString());
         }
 
         return defaultStudyConfiguration;
@@ -1143,6 +1182,13 @@ public class VariantSqlQueryParser {
                         .append(parseNumericOperator(op))
                         .append(' ').append(parsedValue);
                 break;
+            case "BOOLEAN":
+                parsedValue = parseBoolean(value);
+                sb.append(negated)
+                        .append('"').append(column).append('"').append(arrayPosition).append(' ')
+                        .append(parseBooleanOperator(op))
+                        .append(' ').append(parsedValue);
+                break;
             default:
                 throw new VariantQueryException("Unsupported column type " + column.getPDataType().getSqlTypeName()
                         + " for column " + column);
@@ -1182,6 +1228,14 @@ public class VariantSqlQueryParser {
                     throw new VariantQueryException("Error parsing integer value '" + value + '\'', e);
                 }
             }
+        }
+    }
+
+    private boolean parseBoolean(Object value) {
+        if (value instanceof Boolean) {
+            return ((Boolean) value);
+        } else {
+            return Boolean.parseBoolean(value.toString());
         }
     }
 
@@ -1262,5 +1316,14 @@ public class VariantSqlQueryParser {
         }
         return parsedOp;
     }
+
+    public static String parseBooleanOperator(String op) {
+        String parsedOp = parseOperator(op);
+        if (!parsedOp.equals("=") && !parsedOp.equals("!=")) {
+            throw new VariantQueryException("Unable to use operator (" + op + ") with boolean fields");
+        }
+        return parsedOp;
+    }
+
 
 }

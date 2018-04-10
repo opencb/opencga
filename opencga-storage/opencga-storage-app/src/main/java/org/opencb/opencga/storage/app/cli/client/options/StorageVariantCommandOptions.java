@@ -23,6 +23,7 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.HashMap;
@@ -91,8 +92,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype;
 
-        @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
-        public String extraFields;
+        @Parameter(names = {"--include-extra-fields"}, description = "Index including other FORMAT fields." +
+                " Use \"" + VariantQueryUtils.ALL + "\", \"" + VariantQueryUtils.NONE + "\", or CSV with the fields to load.")
+        public String extraFields = VariantQueryUtils.ALL;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public Aggregation aggregated = Aggregation.NONE;

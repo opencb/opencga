@@ -175,6 +175,15 @@ public class VariantMongoDBQueryParser {
 //                query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
             }
 
+            if (isValidParam(query, RELEASE)) {
+                int release = query.getInt(RELEASE.key(), -1);
+                if (release <= 0) {
+                    throw VariantQueryException.malformedParam(RELEASE, query.getString(RELEASE.key()));
+                }
+
+                builder.and(DocumentToVariantConverter.RELEASE_FIELD).lessThanEquals(release);
+            }
+
             /* ANNOTATION PARAMS */
             parseAnnotationQueryParams(query, builder);
 
@@ -855,7 +864,7 @@ public class VariantMongoDBQueryParser {
             }
         }
 
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        Set<VariantField> returnedFields = VariantField.getIncludeFields(options);
         // Add all required fields
         returnedFields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
         // StudyID is mandatory if returning any STUDY element
@@ -872,7 +881,7 @@ public class VariantMongoDBQueryParser {
         //
         // > db.variants.find({}, {"studies.files":1, studies:{$elemMatch:{sid:1}}})
         // {  studies : [ { sid : 1, files : [ ... ] , gt : { ... } } ]  }
-        List<Integer> studiesIds = VariantQueryUtils.getReturnedStudies(query, options, studyConfigurationManager);
+        List<Integer> studiesIds = VariantQueryUtils.getIncludeStudies(query, options, studyConfigurationManager);
         // Use elemMatch only if there is one study to return.
         if (studiesIds.size() == 1) {
             projection.put(

@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -339,6 +340,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, VariantSearchException {
+        queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
+        queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+        super.searchIndex(query, queryOptions);
+    }
+
+    @Override
     public void fillGaps(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         if (samples == null || samples.size() < 2) {
             throw new IllegalArgumentException("Fill gaps operation requires at least two samples.");
@@ -410,7 +418,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             options.put(FILL_MISSING_INTERMEDIATE_FILE, outputPath);
         }
 
-        Thread hook = scm.buildShutdownHook(FILL_GAPS_OPERATION_NAME, studyId, Collections.emptyList());
+        Thread hook = scm.buildShutdownHook(jobOperationName, studyId, fileIdsList);
         Exception exception = null;
         try {
             Runtime.getRuntime().addShutdownHook(hook);
@@ -431,7 +439,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");
-            logger.info("Fill gaps of samples {} into variants table '{}'",
+            logger.info(jobOperationName + " of samples {} into variants table '{}'",
                     fillGaps ? sampleIds.toString() : "\"ALL\"", getVariantTableName());
             logger.debug(executable + ' ' + args);
             logger.info("------------------------------------------------------");
@@ -440,12 +448,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             logger.info("Exit value: {}", exitValue);
             logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
             if (exitValue != 0) {
-                throw new StorageEngineException("Error filling gaps for samples " + sampleIds);
+                throw new StorageEngineException("Error " + jobOperationName + " for samples " + sampleIds);
             }
 
         } catch (RuntimeException e) {
             exception = e;
-            throw new StorageEngineException("Error filling gaps for samples " + sampleIds, e);
+            throw new StorageEngineException("Error " + jobOperationName + " for samples " + sampleIds, e);
+        } catch (StorageEngineException e) {
+            exception = e;
+            throw e;
         } finally {
             boolean fail = exception != null;
             scm.lockAndUpdate(study, sc -> {
@@ -677,12 +688,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             hBaseManager = new HBaseManager(configuration);
         }
         return hBaseManager;
-    }
-
-    @Override
-    protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
-        // TODO: Query using SearchManager even if FILES filter is used
-        return super.doQuerySearchManager(query, options);
     }
 
     @Override

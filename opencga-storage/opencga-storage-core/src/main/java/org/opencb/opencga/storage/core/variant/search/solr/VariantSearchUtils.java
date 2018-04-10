@@ -104,7 +104,7 @@ public class VariantSearchUtils {
     }
 
     public static boolean isIncludeCovered(QueryOptions options) {
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        Set<VariantField> returnedFields = VariantField.getIncludeFields(options);
         for (VariantField unsupportedVariantField : UNSUPPORTED_VARIANT_FIELDS) {
             if (returnedFields.contains(unsupportedVariantField)) {
                 return false;
@@ -128,7 +128,7 @@ public class VariantSearchUtils {
                 engineQuery.put(STUDY.key(), query.get(STUDY.key()));
             } else if (!isValidParam(query, INCLUDE_STUDY)) {
                 // If returned studies is not defined, we need to define it with the values from STUDIES
-                List<Integer> studies = VariantQueryUtils.getReturnedStudies(query, options, scm);
+                List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, options, scm);
                 engineQuery.put(INCLUDE_STUDY.key(), studies);
             }
         }
