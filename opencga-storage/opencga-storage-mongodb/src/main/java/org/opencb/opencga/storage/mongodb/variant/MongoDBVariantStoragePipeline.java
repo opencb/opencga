@@ -290,7 +290,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         try {
             //Reader
             DataReader<Variant> variantReader;
-            VariantDeduplicationTask duplicatedVariantsDetector = new VariantDeduplicationTask();
+            VariantDeduplicationTask duplicatedVariantsDetector = new VariantDeduplicationTask(list -> {
+                if (list.size() > 1) {
+                    logger.warn("Found {} duplicated variants for file {} in variant {}.", list.size(), fileId, list.get(0));
+                    return Collections.emptyList();
+                } else {
+                    throw new IllegalStateException("Unexpected list of " + list.size() + " duplicated variants : " + list);
+                }
+            });
             variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata).then(duplicatedVariantsDetector);
 
             //Remapping ids task
