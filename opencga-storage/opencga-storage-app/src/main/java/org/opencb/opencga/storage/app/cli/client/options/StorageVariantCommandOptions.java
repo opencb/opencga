@@ -275,6 +275,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR, arity = 1)
         public String filter;
 
+        @Parameter(names = {"--qual"}, description = VariantQueryParam.QUAL_DESCR, arity = 1)
+        public String qual;
+
         @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR, arity = 1)
         public String geneBiotype;
 
@@ -509,6 +512,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
         public List<String> samples;
 
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
+        public boolean resume;
+
 //        @Parameter(names = {"--exclude-hom-ref"}, description = "Do not fill gaps of samples with HOM-REF genotype (0/0)", arity = 0)
 //        public boolean excludeHomRef;
     }
@@ -530,10 +536,7 @@ public class StorageVariantCommandOptions {
     }
 
     @Parameters(commandNames = {FillMissingCommandOptions.FILL_MISSING_COMMAND}, commandDescription = FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION)
-    public class FillMissingCommandOptions {
-
-        public static final String FILL_MISSING_COMMAND = "fill-missing";
-        public static final String FILL_MISSING_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
+    public class FillMissingCommandOptions extends GenericFillMissingCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
@@ -543,6 +546,17 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
+    }
+
+    public static class GenericFillMissingCommandOptions {
+        public static final String FILL_MISSING_COMMAND = "fill-missing";
+        public static final String FILL_MISSING_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
+        public boolean resume;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite gaps for all files and variants. Repeat operation for already processed variants.")
+        public boolean overwrite;
     }
 
     /**

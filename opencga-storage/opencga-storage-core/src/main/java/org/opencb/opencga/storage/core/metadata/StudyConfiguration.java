@@ -434,7 +434,7 @@ public class StudyConfiguration {
      * @return The samples IDs
      */
     public static LinkedHashMap<String, Integer> getSortedIndexedSamplesPosition(StudyConfiguration studyConfiguration) {
-        return getReturnedSamplesPosition(studyConfiguration, null, StudyConfiguration::getIndexedSamplesPosition);
+        return getSamplesPosition(studyConfiguration, null, StudyConfiguration::getIndexedSamplesPosition);
     }
 
     /**
@@ -442,44 +442,44 @@ public class StudyConfiguration {
      * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition}
      *
      * @param studyConfiguration    Study configuration
-     * @param returnedSamples       List of samples to be returned
+     * @param includeSamples        List of samples to be included in the result
      * @return The samples IDs
      */
-    public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
+    public static LinkedHashMap<String, Integer> getSamplesPosition(
             StudyConfiguration studyConfiguration,
-            LinkedHashSet<?> returnedSamples) {
-        return getReturnedSamplesPosition(studyConfiguration, returnedSamples, StudyConfiguration::getIndexedSamplesPosition);
+            LinkedHashSet<?> includeSamples) {
+        return getSamplesPosition(studyConfiguration, includeSamples, StudyConfiguration::getIndexedSamplesPosition);
     }
 
-    public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
+    public static LinkedHashMap<String, Integer> getSamplesPosition(
             StudyConfiguration studyConfiguration,
-            LinkedHashSet<?> returnedSamples,
+            LinkedHashSet<?> includeSamples,
             Function<StudyConfiguration, BiMap<String, Integer>> getIndexedSamplesPosition) {
         LinkedHashMap<String, Integer> samplesPosition;
         // If null, return ALL samples
-        if (returnedSamples == null) {
+        if (includeSamples == null) {
             BiMap<Integer, String> unorderedSamplesPosition = getIndexedSamplesPosition.apply(studyConfiguration).inverse();
             samplesPosition = new LinkedHashMap<>(unorderedSamplesPosition.size());
             for (int i = 0; i < unorderedSamplesPosition.size(); i++) {
                 samplesPosition.put(unorderedSamplesPosition.get(i), i);
             }
         } else {
-            samplesPosition = new LinkedHashMap<>(returnedSamples.size());
+            samplesPosition = new LinkedHashMap<>(includeSamples.size());
             int index = 0;
             BiMap<String, Integer> indexedSamplesId = getIndexedSamplesPosition.apply(studyConfiguration);
-            for (Object returnedSampleObj : returnedSamples) {
-                String returnedSample;
-                if (returnedSampleObj instanceof Number) {
-                    returnedSample = studyConfiguration.getSampleIds().inverse().get(((Number) returnedSampleObj).intValue());
-                } else if (returnedSampleObj instanceof String
-                        && !((String) returnedSampleObj).isEmpty() && StringUtils.isNumeric((String) returnedSampleObj)) {
-                    returnedSample = studyConfiguration.getSampleIds().inverse().get(Integer.parseInt(((String) returnedSampleObj)));
+            for (Object includeSampleObj : includeSamples) {
+                String includeSample;
+                if (includeSampleObj instanceof Number) {
+                    includeSample = studyConfiguration.getSampleIds().inverse().get(((Number) includeSampleObj).intValue());
+                } else if (includeSampleObj instanceof String
+                        && !((String) includeSampleObj).isEmpty() && StringUtils.isNumeric((String) includeSampleObj)) {
+                    includeSample = studyConfiguration.getSampleIds().inverse().get(Integer.parseInt(((String) includeSampleObj)));
                 } else {
-                    returnedSample = returnedSampleObj.toString();
+                    includeSample = includeSampleObj.toString();
                 }
-                if (!samplesPosition.containsKey(returnedSample)) {
-                    if (indexedSamplesId.containsKey(returnedSample)) {
-                        samplesPosition.put(returnedSample, index++);
+                if (!samplesPosition.containsKey(includeSample)) {
+                    if (indexedSamplesId.containsKey(includeSample)) {
+                        samplesPosition.put(includeSample, index++);
                     }
                 }
             }

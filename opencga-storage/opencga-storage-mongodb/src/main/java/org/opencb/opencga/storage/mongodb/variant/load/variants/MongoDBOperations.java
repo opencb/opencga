@@ -30,18 +30,18 @@ public class MongoDBOperations {
 //        private List<Document> inserts =  new LinkedList<>();
 
     // Document may exist, study does not exist
-    private NewStudy newStudy = new NewStudy();
+    private final NewStudy newStudy = new NewStudy();
 
     // Document and study exist
-    private ExistingStudy existingStudy = new ExistingStudy();
+    private final ExistingStudy existingStudy = new ExistingStudy();
 
-    private Set<String> genotypes = new HashSet<>();
+    private final Set<String> genotypes = new HashSet<>();
 
     // Stage documents to cleanup
 //    private List<Pair<Bson, Bson>> cleanFromStage = new ArrayList<>();
-    private List<String> documentsToCleanStudies = new ArrayList<>();
-    private List<String> documentsToCleanFiles = new ArrayList<>();
-    private StageSecondaryAlternates secondaryAlternates = new StageSecondaryAlternates();
+    private final List<String> documentsToCleanStudies = new ArrayList<>();
+    private final List<String> documentsToCleanFiles = new ArrayList<>();
+    private final StageSecondaryAlternates secondaryAlternates = new StageSecondaryAlternates();
 
     private int skipped = 0;
     private int nonInserted = 0;
@@ -53,43 +53,23 @@ public class MongoDBOperations {
     /** Missing variants. See A3) . No fill gaps needed*/
     private long missingVariantsNoFillGaps = 0;
 
-    protected MongoDBOperations() {
+    public MongoDBOperations() {
     }
 
     NewStudy getNewStudy() {
         return newStudy;
     }
 
-    MongoDBOperations setNewStudy(NewStudy newStudy) {
-        this.newStudy = newStudy;
-        return this;
-    }
-
     ExistingStudy getExistingStudy() {
         return existingStudy;
-    }
-
-    MongoDBOperations setExistingStudy(ExistingStudy existingStudy) {
-        this.existingStudy = existingStudy;
-        return this;
     }
 
     List<String> getDocumentsToCleanStudies() {
         return documentsToCleanStudies;
     }
 
-    MongoDBOperations setDocumentsToCleanStudies(List<String> documentsToCleanStudies) {
-        this.documentsToCleanStudies = documentsToCleanStudies;
-        return this;
-    }
-
     List<String> getDocumentsToCleanFiles() {
         return documentsToCleanFiles;
-    }
-
-    MongoDBOperations setDocumentsToCleanFiles(List<String> documentsToCleanFiles) {
-        this.documentsToCleanFiles = documentsToCleanFiles;
-        return this;
     }
 
     int getSkipped() {
@@ -141,126 +121,71 @@ public class MongoDBOperations {
         return genotypes;
     }
 
-    public MongoDBOperations setGenotypes(Set<String> genotypes) {
-        this.genotypes = genotypes;
-        return this;
-    }
-
     StageSecondaryAlternates getSecondaryAlternates() {
         return secondaryAlternates;
     }
 
     // Document may exist, study does not exist
     class NewStudy {
-        private List<String> ids = new LinkedList<>();
-        private List<Bson> queries = new LinkedList<>();
-        private List<Bson> updates = new LinkedList<>();
+        private final List<String> ids = new LinkedList<>();
+        private final List<Bson> queries = new LinkedList<>();
+        private final List<Bson> updates = new LinkedList<>();
         // Used if the document does not exist
         // This collection may be smaller than the previous collections
-        private List<Document> variants = new LinkedList<>();
+        private final List<Document> variants = new LinkedList<>();
 
         List<String> getIds() {
             return ids;
-        }
-
-        NewStudy setIds(List<String> ids) {
-            this.ids = ids;
-            return this;
         }
 
         List<Bson> getQueries() {
             return queries;
         }
 
-        NewStudy setQueries(List<Bson> queries) {
-            this.queries = queries;
-            return this;
-        }
-
         List<Bson> getUpdates() {
             return updates;
-        }
-
-        NewStudy setUpdates(List<Bson> updates) {
-            this.updates = updates;
-            return this;
         }
 
         List<Document> getVariants() {
             return variants;
         }
-
-        NewStudy setVariants(List<Document> variants) {
-            this.variants = variants;
-            return this;
-        }
     }
 
     // Document and study exist
     class ExistingStudy {
-        private List<String> ids = new LinkedList<>();
-        private List<Bson> queries = new LinkedList<>();
-        private List<Bson> updates = new LinkedList<>();
+        private final List<String> ids = new LinkedList<>();
+        private final List<Bson> queries = new LinkedList<>();
+        private final List<Bson> updates = new LinkedList<>();
 
         List<String> getIds() {
             return ids;
-        }
-
-        ExistingStudy setIds(List<String> ids) {
-            this.ids = ids;
-            return this;
         }
 
         List<Bson> getQueries() {
             return queries;
         }
 
-        ExistingStudy setQueries(List<Bson> queries) {
-            this.queries = queries;
-            return this;
-        }
-
         List<Bson> getUpdates() {
             return updates;
-        }
-
-        ExistingStudy setUpdates(List<Bson> updates) {
-            this.updates = updates;
-            return this;
         }
     }
 
     // Secondary alternates to be updated in the stage collection
     class StageSecondaryAlternates {
-        private List<String> ids = new LinkedList<>();
-        private List<Bson> queries = new LinkedList<>();
-        private List<Bson> updates = new LinkedList<>();
+        private final List<String> ids = new LinkedList<>();
+        private final List<Bson> queries = new LinkedList<>();
+        private final List<Bson> updates = new LinkedList<>();
 
         List<String> getIds() {
             return ids;
-        }
-
-        StageSecondaryAlternates setIds(List<String> ids) {
-            this.ids = ids;
-            return this;
         }
 
         List<Bson> getQueries() {
             return queries;
         }
 
-        StageSecondaryAlternates setQueries(List<Bson> queries) {
-            this.queries = queries;
-            return this;
-        }
-
         List<Bson> getUpdates() {
             return updates;
-        }
-
-        StageSecondaryAlternates setUpdates(List<Bson> updates) {
-            this.updates = updates;
-            return this;
         }
     }
 }

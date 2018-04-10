@@ -23,6 +23,7 @@ import com.mongodb.WriteConcern;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -93,7 +94,11 @@ public class MongoDBStudyConfigurationDBAdaptor extends StudyConfigurationAdapto
     }
 
     @Override
-    public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+        if (StringUtils.isNotEmpty(lockName)) {
+            throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
+        }
+
         try {
             // Ensure document exists
             collection.update(new Document("_id", studyId), set("id", studyId), new QueryOptions(MongoDBCollection.UPSERT, true));
@@ -111,7 +116,10 @@ public class MongoDBStudyConfigurationDBAdaptor extends StudyConfigurationAdapto
     }
 
     @Override
-    public void unLockStudy(int studyId, long lockId) {
+    public void unLockStudy(int studyId, long lockId, String lockName) {
+        if (StringUtils.isNotEmpty(lockName)) {
+            throw new UnsupportedOperationException("Unsupported unlockStudy given a lockName");
+        }
         mongoLock.unlock(studyId, lockId);
     }
 

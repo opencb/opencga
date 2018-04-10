@@ -29,7 +29,6 @@ import org.apache.hadoop.hbase.fs.HFileSystem;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.io.hfile.CacheConfig;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormatBase;
-import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.master.*;
 import org.apache.hadoop.hbase.master.procedure.MasterDDLOperationHelper;
 import org.apache.hadoop.hbase.master.procedure.ModifyTableProcedure;
@@ -79,27 +78,22 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
+import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -377,6 +371,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
         options.put(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 5);
         options.put(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 5);
+        options.put(HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER, 10);
+        options.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;
@@ -396,11 +392,25 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     @Override
     default void clearDB(String tableName) throws Exception {
+        if (Objects.equals(tableName, VariantStorageBaseTest.DB_NAME)) {
+            try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
+                for (TableName table : admin.listTableNames()) {
+                    if (table.getNameAsString().startsWith(tableName)) {
+                        deleteTable(table.getNameAsString());
+                    }
+                }
+            }
+        } else {
+            deleteTable(tableName);
+        }
+    }
+
+    default void deleteTable(String tableName) throws Exception {
         LoggerFactory.getLogger(HadoopVariantStorageTest.class).info("Drop table " + tableName);
         PhoenixHelper phoenixHelper = new PhoenixHelper(configuration.get());
         try (java.sql.Connection con = phoenixHelper.newJdbcConnection()) {
             if (phoenixHelper.tableExists(con, tableName)) {
-                phoenixHelper.dropTable(con, tableName, true, true);
+                phoenixHelper.dropTable(con, tableName, VariantPhoenixHelper.DEFAULT_TABLE_TYPE, true, true);
             }
         }
         utility.get().deleteTableIfAny(TableName.valueOf(tableName));
@@ -415,7 +425,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     default int getExpectedNumLoadedVariants(VariantFileMetadata fileMetadata) {
         int numRecords = 0;
-        for (VariantType variantType : VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET) {
+        for (VariantType variantType : HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET) {
             numRecords += fileMetadata.getStats().getVariantTypeCount(variantType);
         }
         return numRecords;
@@ -450,21 +460,6 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     System.out.println("Finish execution ArchiveDriver");
 
                     return r;
-                } else if (executable.endsWith(VariantTableDriver.class.getName())) {
-                    System.out.println("Executing VariantTableDriver : " + executable + " " + args);
-                    int r = new VariantTableDriver(){
-                        @Override
-                        protected Class<? extends TableMapper> getMapperClass() {
-                            return VariantMergerTableMapperFail.class;
-                        }
-                    }.privateMain(Commandline.translateCommandline(args), conf);
-                    System.out.println("Finish execution VariantTableDriver");
-                    return r;
-                } else if (executable.endsWith(VariantTableRemoveFileDriver.class.getName())) {
-                    System.out.println("Executing VariantTableDeletionDriver : " + executable + " " + args);
-                    int r = new VariantTableRemoveFileDriver().privateMain(Commandline.translateCommandline(args), conf);
-                    System.out.println("Finish execution VariantTableDeletionDriver");
-                    return r;
                 } else if (executable.endsWith(FillGapsDriver.class.getName())) {
                     System.out.println("Executing FillGapsDriver : " + executable + " " + args);
                     int r = new FillGapsDriver().privateMain(Commandline.translateCommandline(args), conf);
@@ -475,6 +470,11 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     int r = new VariantStatsDriver().privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution VariantStatsDriver");
                     return r;
+                } else if (executable.endsWith(DeleteHBaseColumnDriver.class.getName())) {
+                    System.out.println("Executing DeleteHBaseColumnDriver : " + executable + " " + args);
+                    int r = new DeleteHBaseColumnDriver().privateMain(Commandline.translateCommandline(args), conf);
+                    System.out.println("Finish execution DeleteHBaseColumnDriver");
+                    return r;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -484,33 +484,5 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
     }
 
-
-    class VariantMergerTableMapperFail extends VariantMergerTableMapper {
-
-        public static final String SLICE_TO_FAIL = "slice.to.fail";
-        private String sliceToFail = "";
-        private AtomicBoolean hadFail = new AtomicBoolean();
-
-        @Override
-        public void setup(Context context) throws IOException, InterruptedException {
-            super.setup(context);
-
-            hadFail.set(false);
-            sliceToFail = context.getConfiguration().get(SLICE_TO_FAIL, sliceToFail);
-
-        }
-
-        @Override
-        protected void map(VariantMapReduceContext ctx) throws IOException, InterruptedException {
-            if (Bytes.toString(ctx.getCurrRowKey()).equals(sliceToFail)) {
-                if (!hadFail.getAndSet(true)) {
-                    System.out.println("DO FAIL!!");
-                    ctx.getContext().getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);
-                    throw new RuntimeException();
-                }
-            }
-            super.map(ctx);
-        }
-    }
 
 }

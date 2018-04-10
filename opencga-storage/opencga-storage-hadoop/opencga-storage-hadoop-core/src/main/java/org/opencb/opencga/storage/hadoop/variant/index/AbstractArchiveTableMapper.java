@@ -16,36 +16,26 @@
 
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import com.google.common.collect.BiMap;
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Mutation;
-import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
+import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Abstract variant table map reduce.
@@ -58,20 +48,12 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
     protected ArchiveResultToVariantConverter resultConverter;
     private ArchiveRowKeyFactory rowKeyFactory;
-    private boolean specificPut;
-    protected boolean loadSampleColumns;
     private StudyEntryToHBaseConverter studyEntryToHBaseConverter;
-    private HBaseToVariantConverter<VariantTableStudyRow> rowToVariantConverter;
 
 
     protected ArchiveResultToVariantConverter getResultConverter() {
         return resultConverter;
     }
-
-    public HBaseToVariantConverter<VariantTableStudyRow> getRowToVariantConverter() {
-        return rowToVariantConverter;
-    }
-
 
     /**
      * Extracts file Ids from column names - ignoring _V columns.
@@ -79,158 +61,30 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
      * @return Set of file IDs
      */
     private Set<Integer> extractFileIds(Result value) {
-        return Arrays.stream(value.rawCells())
-                .filter(c -> Bytes.equals(CellUtil.cloneFamily(c), getHelper().getColumnFamily()))
-                .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
-                .map(c -> ArchiveTableHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c)))
-                .collect(Collectors.toSet());
-    }
-
-    protected List<Variant> parseCurrentVariantsRegion(VariantMapReduceContext ctx) {
-        String chromosome = ctx.getChromosome();
-        List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
-        List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(variantCells, chromosome);
-        HBaseToVariantConverter<VariantTableStudyRow> converter = getRowToVariantConverter();
-        List<Variant> variants = new ArrayList<>(tableStudyRows.size());
-        for (VariantTableStudyRow tableStudyRow : tableStudyRows) {
-            variants.add(converter.convert(tableStudyRow));
-        }
-        return variants;
-    }
-
-    protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(List<Cell> variantCells, String chr) {
-        return variantCells.stream().flatMap(c -> {
-            try {
-                byte[] protoData = CellUtil.cloneValue(c);
-                if (protoData != null && protoData.length > 0) {
-                    List<VariantTableStudyRow> tableStudyRows =
-                            parseVariantStudyRowsFromArchive(chr, VariantTableStudyRowsProto.parseFrom(protoData));
-                    return tableStudyRows.stream();
+        Set<Integer> set = new HashSet<>();
+        for (Cell c : value.rawCells()) {
+            if (Bytes.equals(CellUtil.cloneFamily(c), getHelper().getColumnFamily())) {
+                byte[] column = CellUtil.cloneQualifier(c);
+                if (ArchiveTableHelper.isNonRefColumn(column)) {
+                    set.add(ArchiveTableHelper.getFileIdFromNonRefColumnName(column));
+                } else if (ArchiveTableHelper.isRefColumn(column)) {
+                    set.add(ArchiveTableHelper.getFileIdFromRefColumnName(column));
                 }
-                return Stream.empty();
-            } catch (InvalidProtocolBufferException e) {
-                throw new IllegalStateException(e);
-            }
-        }).collect(Collectors.toList());
-    }
-
-    protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(String chr, VariantTableStudyRowsProto
-            variantTableStudyRowsProto) {
-        return variantTableStudyRowsProto.getRowsList().stream()
-                            .map(v -> new VariantTableStudyRow(v, chr, getStudyConfiguration().getStudyId()))
-                            .collect(Collectors.toList());
-    }
-
-    /**
-     * Load (if available) current data, merge information and store new object in DB.
-     * @param context Context
-     * @param analysisVar Analysis variants
-     * @param rows Variant Table rows
-     * @param newSampleIds Sample Ids currently processed
-     * @return pair of numbers with the nano time of creating the put and writing it
-     */
-    protected Pair<Long, Long> updateOutputTable(Context context, Collection<Variant> analysisVar,
-                                                 List<VariantTableStudyRow> rows, Set<Integer> newSampleIds) {
-        int studyId = getStudyConfiguration().getStudyId();
-        BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
-        List<Put> puts = new ArrayList<>(analysisVar.size());
-        long start = System.nanoTime();
-        for (Variant variant : analysisVar) {
-            VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
-            rows.add(row);
-            Put put = createPut(variant, newSampleIds, row);
-            if (put != null) {
-                if (loadSampleColumns) {
-                    if (specificPut) {
-                        studyEntryToHBaseConverter.convert(variant, put, newSampleIds);
-                    } else {
-                        studyEntryToHBaseConverter.convert(variant, put);
-                    }
-                }
-                puts.add(put);
             }
         }
-        long mid = System.nanoTime();
-        ImmutableBytesWritable keyout = new ImmutableBytesWritable(getHelper().getAnalysisTable());
-        for (Put put : puts) {
-            try {
-                context.write(keyout, put);
-            } catch (IOException | InterruptedException e) {
-                throw new IllegalStateException("Problems updating "
-                        + VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(put.getRow()), e);
-            }
-        }
-        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(puts.size());
-        long createPutNanoTime = mid - start;
-        long writePutNanoTime = System.nanoTime() - mid;
-        return Pair.of(createPutNanoTime, writePutNanoTime);
-    }
-
-    protected Put createPut(Variant variant, Set<Integer> newSampleIds, VariantTableStudyRow row) {
-        try {
-            Put put;
-            if (specificPut && null != newSampleIds) {
-                put = row.createSpecificPut(getHelper(), newSampleIds);
-            } else {
-                put = row.createPut(getHelper());
-            }
-            return put;
-        } catch (RuntimeException e) {
-            throw new IllegalStateException("Problems updating " + variant, e);
-        }
-    }
-
-    protected void updateOutputTable(Context context, Collection<VariantTableStudyRow> variants) {
-
-        for (VariantTableStudyRow variant : variants) {
-            Put put = variant.createPut(getHelper());
-            if (put != null) {
-                try {
-                    context.write(new ImmutableBytesWritable(getHelper().getAnalysisTable()), put);
-                } catch (IOException | InterruptedException e) {
-                    throw new IllegalStateException(e);
-                }
-                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
-            }
-        }
-    }
-
-    protected void updateArchiveTable(byte[] rowKey, Context context, List<VariantTableStudyRow> tableStudyRows) {
-        if (tableStudyRows.isEmpty()) {
-            logger.info("No new data - tableStudyRows emtpy");
-            return;
-        }
-        logger.info("Store variants: " + tableStudyRows.size());
-        Put put = new Put(rowKey);
-        for (VariantTableStudyRow row : tableStudyRows) {
-            byte[] value = VariantTableStudyRow.toProto(Collections.singletonList(row), getTimestamp()).toByteArray();
-            String column = GenomeHelper.getVariantColumn(row);
-            put.addColumn(getHelper().getColumnFamily(), Bytes.toBytes(column), value);
-        }
-        try {
-            context.write(new ImmutableBytesWritable(getHelper().getArchiveTable()), put);
-        } catch (IOException | InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
-        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW_PUT").increment(1);
-        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROWS_IN_PUT").increment(tableStudyRows.size());
+        return set;
     }
 
     @Override
     protected void setup(Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        this.specificPut = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, true);
-        this.loadSampleColumns = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS, true);
         studyEntryToHBaseConverter = new StudyEntryToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration());
-        rowToVariantConverter = HBaseToVariantConverter.fromRow(getHelper())
-                .setFailOnEmptyVariants(true)
-                .setSimpleGenotypes(false);
         // Load VCF meta data for columns
         int studyId = getStudyConfiguration().getStudyId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
 
-        rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getChunkSize(), getHelper().getSeparator());
+        rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getConf());
     }
 
     @Override
@@ -248,9 +102,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             return; // TODO search backwards?
         }
 
-        if (Bytes.equals(key.get(), getHelper().getMetaRowKey())) {
-            return; // ignore metadata column
-        }
         context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_BLOCK_READ").increment(1);
 
 

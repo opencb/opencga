@@ -22,7 +22,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,7 +30,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
@@ -40,6 +38,7 @@ import java.util.List;
 
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
 
 /**
@@ -69,21 +68,19 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         parameters.add(new Object[]{
                 new ObjectMap()
                         .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
-                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
                         .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
+//                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
                         .append(VariantStorageEngine.Options.GVCF.key(), false)
         });
-        parameters.add(new Object[]{
-                new ObjectMap()
-                        .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
-                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
-                        .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED)
-                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
-                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
-                        .append(VariantStorageEngine.Options.GVCF.key(), false)
-        });
+//        parameters.add(new Object[]{
+//                new ObjectMap()
+//                        .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
+//                        .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED)
+////                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
+//                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
+//                        .append(VariantStorageEngine.Options.GVCF.key(), false)
+//        });
         return parameters;
     }
 
@@ -98,6 +95,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
                 VariantDBAdaptorTest.fileIndexed = false;
                 clearDB(getVariantStorageEngine().getVariantTableName());
                 clearDB(getVariantStorageEngine().getArchiveTableName(STUDY_ID));
+                clearDB(getVariantStorageEngine().getDBAdaptor().getTableNameGenerator().getMetaTableName());
             }
             previousIndexParams = indexParams;
             System.out.println("Loading with MergeMode : " + mergeMode);
@@ -105,7 +103,11 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         } finally {
             try {
                 if (!fileIndexed) {
-                    VariantHbaseTestUtils.printVariants(studyConfiguration, getVariantStorageEngine().getDBAdaptor(), newOutputUri());
+                    VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+                    studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+                    studyConfiguration.getAttributes().put(MISSING_GENOTYPES_UPDATED, true);
+                    dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+                    VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, newOutputUri());
                 }
             } catch (Exception e) {
                 e.printStackTrace();

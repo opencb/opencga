@@ -59,9 +59,9 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
                 new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
                 new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)), sessionId);
 
-        catalogManager.getSampleManager().createAnnotationSet("NA19600", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19600").append("age", 30), null, sessionId);
-        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19660").append("age", 35).append("other", "unknown"), null, sessionId);
-        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as2", new ObjectMap("name", "NA19660").append("age", 35).append("other", "asdf"), null, sessionId);
+        catalogManager.getSampleManager().createAnnotationSet("NA19600", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19600").append("age", 30), sessionId);
+        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19660").append("age", 35).append("other", "unknown"), sessionId);
+        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as2", new ObjectMap("name", "NA19660").append("age", 35).append("other", "asdf"), sessionId);
 
     }
 

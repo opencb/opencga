@@ -59,14 +59,14 @@ public class HBaseLock {
     protected final HBaseManager hbaseManager;
     protected final String tableName;
     protected final byte[] columnFamily;
-    protected final byte[] studiesRow;
+    protected final byte[] defaultRow;
     protected static Logger logger = LoggerFactory.getLogger(HBaseLock.class);
 
     public HBaseLock(HBaseManager hbaseManager, String tableName, byte[] columnFamily, byte[] row) {
         this.hbaseManager = hbaseManager;
         this.tableName = tableName;
         this.columnFamily = columnFamily;
-        this.studiesRow = row;
+        this.defaultRow = row;
     }
 
     /**
@@ -84,6 +84,25 @@ public class HBaseLock {
      */
     public long lock(byte[] column, long lockDuration, long timeout)
             throws InterruptedException, TimeoutException, IOException {
+        return lock(defaultRow, column, lockDuration, timeout);
+    }
+
+    /**
+     * Apply for the lock.
+     *
+     * @param row           Row to find the lock cell
+     * @param column        Column to find the lock cell
+     * @param lockDuration  Duration un milliseconds of the token. After this time the token is expired.
+     * @param timeout       Max time in milliseconds to wait for the lock
+     *
+     * @return              Lock token
+     *
+     * @throws InterruptedException if any thread has interrupted the current thread.
+     * @throws TimeoutException if the operations takes more than the timeout value.
+     * @throws IOException      if there is an error writing or reading from HBase.
+     */
+    public long lock(byte[] row, byte[] column, long lockDuration, long timeout)
+            throws InterruptedException, TimeoutException, IOException {
         String token = RandomStringUtils.randomAlphanumeric(10);
 
         // Minimum lock duration of 100ms
@@ -94,12 +113,12 @@ public class HBaseLock {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
-        lockValue = readLockValue(column);
+        lockValue = readLockValue(row, column);
         do {
             // If the lock is taken, wait
             while (isLockTaken(lockValue)) {
                 Thread.sleep(100);
-                lockValue = readLockValue(column);
+                lockValue = readLockValue(row, column);
                 //Check if the lock is still valid
                 if (stopWatch.getTime() > timeout) {
                     throw new TimeoutException("Unable to get the lock");
@@ -111,9 +130,9 @@ public class HBaseLock {
             }
 
             // Append token to the lock cell
-            appendToken(token, lockDuration, column);
+            appendToken(token, lockDuration, row, column);
 
-            lockValue = readLockValue(column);
+            lockValue = readLockValue(row, column);
 
             // Get the first non expired lock
             for (String lock : lockValue) {
@@ -128,7 +147,7 @@ public class HBaseLock {
 
         logger.debug("Won the lock with token " + token + " (" + token.hashCode() + ") from lock: " + Arrays.toString(lockValue));
         // Overwrite the lock with the winner current lock. Remove previous expired locks
-        putCurrentLock(token, lockDuration, column);
+        putCurrentLock(token, lockDuration, row, column);
 
         return token.hashCode();
     }
@@ -142,8 +161,21 @@ public class HBaseLock {
      * @throws IllegalLockStatusException if the lockToken does not match with the current lockToken
      */
     public void unlock(byte[] column, long lockToken) throws IOException, IllegalLockStatusException {
+        unlock(defaultRow, column, lockToken);
+    }
+
+    /**
+     * Releases the lock.
+     *
+     * @param row       Row to find the lock cell
+     * @param column    Column to find the lock cell
+     * @param lockToken Lock token
+     * @throws IOException                if there is an error writing or reading from HBase.
+     * @throws IllegalLockStatusException if the lockToken does not match with the current lockToken
+     */
+    public void unlock(byte[] row, byte[] column, long lockToken) throws IOException, IllegalLockStatusException {
         String[] lockValue;
-        lockValue = readLockValue(column);
+        lockValue = readLockValue(row, column);
 
         String currentLock = "";
         for (String lock : lockValue) {
@@ -158,12 +190,12 @@ public class HBaseLock {
         }
 
         logger.debug("Unlock lock with token " + lockToken);
-        clearLock(column);
+        clearLock(row, column);
     }
 
-    private void appendToken(String token, long lockDuration, byte[] qualifier) throws IOException {
+    private void appendToken(String token, long lockDuration, byte[] row, byte[] qualifier) throws IOException {
         HBaseManager.act(getConnection(), tableName, table -> {
-            Append a = new Append(getRow());
+            Append a = new Append(row);
             byte[] columnFamily = getColumnFamily();
 
             a.add(columnFamily, qualifier,
@@ -176,9 +208,9 @@ public class HBaseLock {
         });
     }
 
-    private void putCurrentLock(String token, long lockDuration, byte[] qualifier) throws IOException {
+    private void putCurrentLock(String token, long lockDuration, byte[] row, byte[] qualifier) throws IOException {
         HBaseManager.act(getConnection(), tableName, table -> {
-            Put p = new Put(getRow());
+            Put p = new Put(row);
             byte[] columnFamily = getColumnFamily();
 
             p.addColumn(columnFamily, qualifier,
@@ -192,9 +224,9 @@ public class HBaseLock {
         });
     }
 
-    private void clearLock(byte[] qualifier) throws IOException {
+    private void clearLock(byte[] row, byte[] qualifier) throws IOException {
         HBaseManager.act(getConnection(), tableName, table -> {
-            Put p = new Put(getRow());
+            Put p = new Put(row);
             byte[] columnFamily = getColumnFamily();
 
             p.addColumn(columnFamily, qualifier, Bytes.toBytes(""));
@@ -225,12 +257,12 @@ public class HBaseLock {
         return expireDate < System.currentTimeMillis();
     }
 
-    private String[] readLockValue(byte[] qualifier) throws IOException {
+    private String[] readLockValue(byte[] row, byte[] qualifier) throws IOException {
         String lockValue;
         lockValue = HBaseManager.act(getConnection(), tableName, table -> {
             byte[] columnFamily = getColumnFamily();
 
-            Result result = table.get(new Get(getRow()).addColumn(columnFamily, qualifier));
+            Result result = table.get(new Get(row).addColumn(columnFamily, qualifier));
             if (result.isEmpty()) {
                 return null;
             } else {
@@ -243,10 +275,6 @@ public class HBaseLock {
         } else {
             return lockValue.split(LOCK_SEPARATOR);
         }
-    }
-
-    private byte[] getRow() {
-        return studiesRow;
     }
 
     private byte[] getColumnFamily() {

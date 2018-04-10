@@ -126,6 +126,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
         query.putIfNotEmpty("status", commandOptions.status);
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), commandOptions.attributes);
+        query.putAll(commandOptions.commonOptions.params);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, projectsCommandOptions.infoCommandOptions.dataModelOptions.include);

@@ -17,25 +17,30 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.VariableSet;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 19/01/16.
  */
-public class IndividualConverter extends GenericDocumentComplexConverter<Individual> {
+public class IndividualConverter extends AnnotableConverter<Individual> {
 
     public IndividualConverter() {
         super(Individual.class);
     }
 
     @Override
-    public Document convertToStorageType(Individual object) {
-        Document document = super.convertToStorageType(object);
+    public Document convertToStorageType(Individual object, List<VariableSet> variableSetList) {
+        Document document = super.convertToStorageType(object, variableSetList);
+        document.remove(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key());
+
         document.put("id", document.getInteger("id").longValue());
 
         Document father = (Document) document.get("father");

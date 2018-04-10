@@ -16,12 +16,19 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -29,12 +36,16 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
+import org.opencb.opencga.server.rest.json.mixin.FamilyMixin;
+import org.opencb.opencga.server.rest.json.mixin.IndividualMixin;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 03/05/17.
@@ -46,7 +57,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     private FamilyManager familyManager;
 
-    public FamilyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public FamilyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         familyManager = catalogManager.getFamilyManager();
     }
@@ -57,6 +69,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response infoFamily(
             @ApiParam(value = "Comma separated list of family IDs or names up to a maximum of 100", required = true) @PathParam("families") String familyStr,
@@ -82,27 +96,43 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
     })
     public Response search(
             @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or alias.")
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Family name") @QueryParam("name") String name,
             @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
+            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
-            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+                @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+                @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
+            List<String> annotationList = new ArrayList<>();
+            if (StringUtils.isNotEmpty(annotation)) {
+                annotationList.add(annotation);
+            }
+            if (StringUtils.isNotEmpty(variableSet)) {
+                annotationList.add(Constants.VARIABLE_SET + "=" + variableSet);
+            }
+            if (StringUtils.isNotEmpty(annotationsetName)) {
+                annotationList.add(Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+            }
+            if (!annotationList.isEmpty()) {
+                query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
+            }
+
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             QueryResult<Family> queryResult;
             if (count) {
@@ -122,8 +152,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response createFamilyPOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "JSON containing family information", required = true) CreateFamilyPOST family) {
+            @ApiParam(value = "JSON containing family information", required = true) FamilyPOST family) {
         try {
+            ObjectUtils.defaultIfNull(family, new FamilyPOST());
             QueryResult<Family> queryResult = familyManager.create(studyStr,
                     family.toFamily(studyStr, catalogManager.getStudyManager(), sessionId), queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -144,13 +175,21 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the individual references from the family to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
-            @ApiParam(value = "params", required = true) FamilyPOST parameters) {
+            @ApiParam(value = "Delete a specific annotation set. AnnotationSetName expected.")
+                @QueryParam(Constants.DELETE_ANNOTATION_SET) String deleteAnnotationSet,
+            @ApiParam(value = "Delete a specific annotation. Format: Comma separated list of annotationSetName:variable")
+                @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
+            @ApiParam(value = "params") FamilyPOST parameters) {
         try {
+            ObjectUtils.defaultIfNull(parameters, new FamilyPOST());
+
             queryOptions.put(Constants.REFRESH, refresh);
             queryOptions.remove("updateIndividualVersion");
             query.remove("updateIndividualVersion");
 
-            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            ObjectMap params = parameters.toFamilyObjectMap();
+            params.putIfNotEmpty(FamilyDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
+            params.putIfNotEmpty(FamilyDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
 
             QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, params, queryOptions,
                     sessionId);
@@ -175,14 +214,14 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Family name") @QueryParam("name") String name,
             @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
+            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
-            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+                @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+                @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot) {
         try {
@@ -195,22 +234,49 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{family}/annotationsets/search")
-    @ApiOperation(value = "Search annotation sets", position = 11)
+    @ApiOperation(value = "Search annotation sets [DEPRECATED]", position = 11, notes = "Use /families/search instead")
     public Response searchAnnotationSetGET(
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            if (StringUtils.isNotEmpty(variableSetId)) {
-                variableSet = variableSetId;
-            }
-            if (asMap) {
-                return createOkResponse(familyManager.searchAnnotationSetAsMap(familyStr, studyStr, variableSet, annotation, sessionId));
+            AbstractManager.MyResourceId resourceId = familyManager.getId(familyStr, studyStr, sessionId);
+
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
+                    .append(FamilyDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+
+            String variableSetId = String.valueOf(catalogManager.getStudyManager()
+                    .getVariableSetId(variableSet, String.valueOf(resourceId.getStudyId()), sessionId).getResourceId());
+
+            if (StringUtils.isEmpty(annotation)) {
+                annotation = Constants.VARIABLE_SET + "=" + variableSetId;
             } else {
-                return createOkResponse(familyManager.searchAnnotationSet(familyStr, studyStr, variableSet, annotation, sessionId));
+                String[] annotationsSplitted = StringUtils.split(annotation, ",");
+                List<String> annotationList = new ArrayList<>(annotationsSplitted.length);
+                for (String auxAnnotation : annotationsSplitted) {
+                    String[] split = StringUtils.split(auxAnnotation, ":");
+                    if (split.length == 1) {
+                        annotationList.add(variableSetId + ":" + auxAnnotation);
+                    } else {
+                        annotationList.add(auxAnnotation);
+                    }
+                }
+                annotation = StringUtils.join(annotationList, ";");
+            }
+            query.putIfNotEmpty(Constants.ANNOTATION, annotation);
+
+            QueryResult<Family> search = familyManager.search(String.valueOf(resourceId.getStudyId()), query, new QueryOptions(),
+                    sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
+                        search.first().getAnnotationSets()));
+            } else {
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -219,7 +285,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{families}/annotationsets")
-    @ApiOperation(value = "Return the annotation sets of the family", position = 12)
+    @ApiOperation(value = "Return the annotation sets of the family [DEPRECATED]", position = 12,
+            notes = "Use /families/search instead")
     public Response getAnnotationSet(
             @ApiParam(value = "Comma separated list of family IDs or names up to a maximum of 100", required = true) @PathParam("families") String familiesStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
@@ -227,11 +294,26 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<String> idList = getIdList(familiesStr);
-            if (asMap) {
-                return createOkResponse(familyManager.getAnnotationSetAsMap(idList, studyStr, annotationsetName, silent, sessionId));
+            AbstractManager.MyResourceIds resourceIds = familyManager.getIds(familiesStr, studyStr, sessionId);
+
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                    .append(FamilyDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds())
+                    .append(Constants.FLATTENED_ANNOTATIONS, asMap);
+            QueryOptions queryOptions = new QueryOptions();
+
+            if (StringUtils.isNotEmpty(annotationsetName)) {
+                query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
+                queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
+            }
+
+            QueryResult<Family> search = familyManager.search(String.valueOf(resourceIds.getStudyId()), query, queryOptions, sessionId);
+            if (search.getNumResults() == 1) {
+                return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
+                        search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
+                        search.getErrorMsg(), search.first().getAnnotationSets()));
             } else {
-                return createOkResponse(familyManager.getAnnotationSet(idList, studyStr, annotationsetName, silent, sessionId));
+                return createOkResponse(search);
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -241,7 +323,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{family}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the family", position = 13)
+    @ApiOperation(value = "Create an annotation set for the family [DEPRECATED]", position = 13,
+            notes = "Use /{family}/update instead")
     public Response annotateFamilyPOST(
             @ApiParam(value = "FamilyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -255,7 +338,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 variableSet = variableSetId;
             }
             QueryResult<AnnotationSet> queryResult = familyManager.createAnnotationSet(familyStr, studyStr, variableSet, params.name,
-                    params.annotations, Collections.emptyMap(), sessionId);
+                    params.annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -264,7 +347,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{family}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set", position = 14)
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [DEPRECATED]", position = 14,
+            notes = "Use /{family}/update instead")
     public Response deleteAnnotationGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
@@ -286,7 +370,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{family}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations", position = 15)
+    @ApiOperation(value = "Update the annotations [DEPRECATED]", position = 15,
+            notes = "Use /{family}/update instead")
     public Response updateAnnotationGET(
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
@@ -331,6 +416,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyWSServer.FamilyAcl params) {
         try {
+            ObjectUtils.defaultIfNull(params, new FamilyAcl());
             AclParams familyAclParams = new AclParams(params.getPermissions(), params.getAction());
             List<String> idList = getIdList(params.family);
             return createOkResponse(familyManager.updateAcl(studyStr, idList, memberId, familyAclParams, sessionId));
@@ -339,21 +425,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
-    protected static class MultiplesParameters {
-        private String type;
-        private List<String> siblings;
-
-        public Multiples toMultiples() {
-            return new Multiples(type, siblings);
-        }
-    }
-
     protected static class IndividualPOST {
         public String name;
 
         public String father;
         public String mother;
-        public MultiplesParameters multiples;
+        public Multiples multiples;
 
         public Individual.Sex sex;
         public String ethnicity;
@@ -363,25 +440,44 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public Individual.KaryotypicSex karyotypicSex;
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
-        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<AnnotationSet> annotationSets;
         public List<OntologyTerm> phenotypes;
         public Map<String, Object> attributes;
 
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            List<AnnotationSet> annotationSetList = new ArrayList<>();
-            if (annotationSets != null) {
-                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-                    if (annotationSet != null) {
-                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-                    }
-                }
-            }
+//            List<AnnotationSet> annotationSetList = new ArrayList<>();
+//            if (annotationSets != null) {
+//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+//                    if (annotationSet != null) {
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+//                    }
+//                }
+//            }
 
             return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
-                    mother != null ? new Individual().setName(mother) : null, multiples != null ? multiples.toMultiples() : null, sex,
+                    mother != null ? new Individual().setName(mother) : null, multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
+        }
+
+        public Individual toIndividualUpdate() {
+            Individual individual = new Individual()
+                    .setName(name)
+                    .setFather(father != null ? new Individual().setName(father) : null)
+                    .setMother(mother != null ? new Individual().setName(mother) : null)
+                    .setMultiples(multiples)
+                    .setSex(sex)
+                    .setKaryotypicSex(karyotypicSex)
+                    .setEthnicity(ethnicity)
+                    .setPopulation(population)
+                    .setLifeStatus(lifeStatus)
+                    .setAffectationStatus(affectationStatus)
+                    .setDateOfBirth(dateOfBirth)
+                    .setParentalConsanguinity(parentalConsanguinity != null ? parentalConsanguinity : false)
+                    .setPhenotypes(phenotypes);
+            individual.setAnnotationSets(annotationSets);
+            return individual;
         }
     }
 
@@ -393,29 +489,60 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public List<IndividualPOST> members;
 
         public Map<String, Object> attributes;
-    }
-
-    private static class CreateFamilyPOST extends FamilyPOST {
-
-        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<AnnotationSet> annotationSets;
 
         public Family toFamily(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            List<AnnotationSet> annotationSetList = new ArrayList<>();
-            if (annotationSets != null) {
-                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-                    if (annotationSet != null) {
-                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-                    }
+//            List<AnnotationSet> annotationSetList = new ArrayList<>();
+//            if (annotationSets != null) {
+//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+//                    if (annotationSet != null) {
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+//                    }
+//                }
+//            }
+
+            List<Individual> relatives = null;
+            if (members != null) {
+                relatives = new ArrayList<>(members.size());
+                for (IndividualPOST member : members) {
+                    relatives.add(member.toIndividual(studyStr, studyManager, sessionId));
                 }
             }
 
-            List<Individual> relatives = new ArrayList<>(members.size());
-            for (IndividualPOST member : members) {
-                relatives.add(member.toIndividual(studyStr, studyManager, sessionId));
+            return new Family(name, phenotypes, relatives, description, annotationSets, attributes);
+        }
+
+        public ObjectMap toFamilyObjectMap() throws CatalogException, JsonProcessingException {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.addMixIn(Individual.class, IndividualMixin.class);
+            mapper.addMixIn(Family.class, FamilyMixin.class);
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+            List<ObjectMap> relatives = null;
+            if (members != null) {
+                relatives = new ArrayList<>(members.size());
+                for (IndividualPOST member : members) {
+                    Individual individual = member.toIndividualUpdate();
+                    ObjectMap objectMap = new ObjectMap(mapper.writeValueAsString(individual));
+                    if (member.parentalConsanguinity == null) {
+                        objectMap.remove("parentalConsanguinity");
+                    }
+                    relatives.add(objectMap);
+                }
             }
 
-            return new Family(name, phenotypes, relatives, description, annotationSetList, attributes);
+            Family family = new Family()
+                    .setName(name)
+                    .setPhenotypes(phenotypes)
+                    .setMembers(null)
+                    .setDescription(description)
+                    .setAttributes(attributes);
+            family.setAnnotationSets(annotationSets);
+
+            ObjectMap params = new ObjectMap(mapper.writeValueAsString(family));
+            params.putIfNotNull("members", relatives);
+
+            return params;
         }
     }
-
 }

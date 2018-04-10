@@ -23,8 +23,12 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.VariableSet;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -38,15 +42,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         ID("id", INTEGER, ""),
         NAME("name", TEXT, ""),
         MEMBERS("members", TEXT_ARRAY, ""),
-        FATHER("father", TEXT, ""), // This is for the WS
-        MOTHER("mother", TEXT, ""), // This is for the WS
-        MEMBER("member", TEXT, ""), // This is for the WS
-        MEMBERS_FATHER("members.father", TEXT, ""),
-        MEMBERS_MOTHER("members.father", TEXT, ""),
-        MEMBERS_MEMBER("members.father", TEXT, ""),
-        FATHER_ID("members.father.id", INTEGER, ""),
-        MOTHER_ID("members.mother.id", INTEGER, ""),
-        MEMBER_ID("members.id", INTEGER, ""),
+        MEMBERS_ID("members.id", INTEGER, ""),
         MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),
         CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
@@ -69,9 +65,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
-        VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
-        ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
@@ -116,6 +110,39 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
     }
 
+    enum UpdateParams {
+        NAME(QueryParams.NAME.key()),
+        PHENOTYPES(QueryParams.PHENOTYPES.key()),
+        MEMBERS(QueryParams.MEMBERS.key()),
+        DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
+        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
+        DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),
+        DELETE_ANNOTATION_SET(Constants.DELETE_ANNOTATION_SET);
+
+        private static Map<String, UpdateParams> map;
+        static {
+            map = new LinkedMap();
+            for (UpdateParams params : UpdateParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+
+        UpdateParams(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public static UpdateParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
     default boolean exists(long familyId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), familyId)).first() > 0;
     }
@@ -132,7 +159,13 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     void nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
-    QueryResult<Family> insert(Family family, long studyId, QueryOptions options) throws CatalogDBException;
+    default QueryResult<Family> insert(long studyId, Family family, QueryOptions options) throws CatalogDBException {
+        family.setAnnotationSets(Collections.emptyList());
+        return insert(studyId, family, Collections.emptyList(), options);
+    }
+
+    QueryResult<Family> insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException;
 
     QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;
 

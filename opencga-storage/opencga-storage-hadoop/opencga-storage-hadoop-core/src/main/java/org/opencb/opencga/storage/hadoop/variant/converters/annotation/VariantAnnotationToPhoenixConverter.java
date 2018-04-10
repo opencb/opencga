@@ -199,6 +199,9 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                 variantAnnotation.getReference(), variantAnnotation.getAlternate());
         Put put = new Put(bytesRowKey);
 
+        for (PhoenixHelper.Column column : VariantPhoenixHelper.PRIMARY_KEY) {
+            map.remove(column);
+        }
         map.forEach((column, value) -> add(put, column, value));
 
         return put;
