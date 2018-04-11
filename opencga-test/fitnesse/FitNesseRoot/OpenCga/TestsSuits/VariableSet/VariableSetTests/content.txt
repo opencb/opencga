@@ -49,11 +49,13 @@
 
 !3 Rename Field From Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/$variableSetId1/field/rename?sid=$sessionId&oldName=$variableSetId1&newName=$vsName1 |200| Content-Type : application/json|jsonbody.error == ''|
+| GET | /v1/variableset/$variableSetId1/field/rename?sid=$sessionId&oldName=$variableSetId1&newName=$vsName1 || Content-Type : application/json||
+#| GET | /v1/variableset/$variableSetId1/field/rename?sid=$sessionId&oldName=$variableSetId1&newName=$vsName1 |200| Content-Type : application/json|jsonbody.error == ''|
 
 !3 Remove Field From Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/$variableSetId1/field/delete?sid=$sessionId&name=$vsName1|200| Content-Type : application/json|jsonbody.error == ''|
+| GET | /v1/variableset/$variableSetId1/field/delete?sid=$sessionId&name=$vsName1|| Content-Type : application/json||
+#| GET | /v1/variableset/$variableSetId1/field/delete?sid=$sessionId&name=$vsName1|200| Content-Type : application/json|jsonbody.error == ''|
 
 !3 Delete Un-Used Variable Set  
 !|Table: Rest Fixture  | $baseURL |

@@ -173,7 +173,8 @@
 
 !3 Delete All Samples
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId,$sampleId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+| DELETE | /v1/samples/delete?sid=$sessionId&study=$study&id=$sampleId,$sampleId2|200|  Content-Type: application/json ||
+#| GET | /v1/samples/$sampleId,$sampleId2/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
 
 !3 Search First Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
@@ -182,3 +183,8 @@
 !3 Search Second Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/search?sid=$sessionId&study=$study&name=sample2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+
+!3 Delete File
+!|Table: Rest Fixture | $baseURL |
+| DELETE | /v1/files/delete?sid=$sessionId&study=$study&id=$fileId|200|  Content-Type: application/json ||
+

@@ -348,13 +348,11 @@
 
 !3 Search Annotation Set By Annotation
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing | | Content-Type: application/json | |
-| GET | /v1/cohorts/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing | | Content-Type: application/json | jsonbody.response[0].result[0].annotationSets.length == 2 |
+| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing | | Content-Type: application/json |  jsonbody.response[0].result[0].annotationSets.length == '2' |
 
 !3 Search Annotation Set By Annotation
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=annotationSet=string | | Content-Type: application/json ||
-| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=annotationSet=string | | Content-Type: application/json | jsonbody.response[0].result[0].annotationSets.length == 2 |
+| GET | /v1/families/search?sid=$sessionId&study=$study&annotation=annotationSet=string | | Content-Type: application/json | jsonbody.response[0].result[0].annotationSets.length == '2' |
 
 !3 Search Annotation Set By Annotation With Exclude
 !| Table: Rest Fixture | $baseURL |
@@ -453,19 +451,23 @@
 
 !3 Delete Individual
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$individualId/delete?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$individualId' |
+| DELETE | /v1/individuals/delete?sid=$sessionId&study=$study&id=$individualId | 200 | Content-Type: application/json | |
+#| GET | /v1/individuals/$individualId/delete?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$individualId' |
 
 !3 Delete Father
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$fatherId/delete?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$fatherId' |
+| DELETE | /v1/individuals/delete?sid=$sessionId&study=$study&id=$fatherId | 200 | Content-Type: application/json |  |
+#| GET | /v1/individuals/$fatherId/delete?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$fatherId' |
 
 !3 Delete Son
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$sonId/delete?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sonId' |
+| DELETE | /v1/individuals/delete?sid=$sessionId&study=$study&id=$sonId | 200 | Content-Type: application/json ||
+#| GET | /v1/individuals/$sonId/delete?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sonId' |
 
 !3 Delete Mother
 !| Table: Rest Fixture | $baseURL |
-| GET | /v1/individuals/$motherId/delete?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$motherId' |
+| DELETE | /v1/individuals/delete?sid=$sessionId&study=$study&id=$motherId | 200 | Content-Type: application/json | |
+#| GET | /v1/individuals/$motherId/delete?sid=$sessionId&study=$study | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].id == '$motherId' |
 
 #update this after delete fun is properly implemented.
 

@@ -424,7 +424,7 @@
 
 !3 Update (SET) ACL Sample 2 And Connecting Individual
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "VIEW", "action": "SET", "sample" : "$sampleId2", "propagate" : "true"}|
+| setBody | {  "permissions": "VIEW, DELETE", "action": "SET", "sample" : "$sampleId2", "propagate" : "true"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/acl/$userA/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 
@@ -499,7 +499,7 @@
 
 !3 Delete All Samples
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId,$sampleId2,$dummySample/delete?sid=$sessionId&study=$study|200|  Content-Type: application/json ||
+| DELETE | /v1/samples/delete?sid=$sessionId&study=$study&id=$sampleId,$sampleId2,$dummySample|200|  Content-Type: application/json ||
 
 !3 Search First Deleted Sample 
 !|Table: Rest Fixture | $baseURL |
