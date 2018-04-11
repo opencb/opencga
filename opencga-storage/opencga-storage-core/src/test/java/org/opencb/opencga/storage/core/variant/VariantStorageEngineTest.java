@@ -43,6 +43,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
@@ -480,11 +481,25 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
     @Test
     public void indexWithOtherFields() throws Exception {
+        indexWithOtherFields("GL,DS");
+    }
+
+    @Test
+    public void indexWithOtherFieldsALL() throws Exception {
+        indexWithOtherFields(VariantQueryUtils.ALL);
+    }
+
+    @Test
+    public void indexWithOtherFieldsAllByDefaultDefault() throws Exception {
+        indexWithOtherFields(null);
+    }
+
+    public void indexWithOtherFields(String extraFields) throws Exception {
         //GT:DS:GL
 
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration,
-                new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DS"))
+                new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields)
                         .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
                         .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
@@ -502,25 +517,19 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         reader.open();
         reader.pre();
         for (Variant variant : reader.read(999)) {
-            if (variant.getAlternate().startsWith("<") || variant.getStart().equals(70146475) || variant.getStart().equals(107976940)) {
-                continue;
-            }
             StudyEntry studyEntry = variant.getStudies().get(0);
             studyEntry.setStudyId(STUDY_NAME);
             studyEntry.getFiles().get(0).setFileId("2");
             variant.setStudies(Collections.singletonList(studyEntry));
 
-            Variant loadedVariant = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), variant.toString()), new QueryOptions()).first();
+            Variant loadedVariant = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), variant.toString())
+                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT,GL,DS"), new QueryOptions()).first();
 
             loadedVariant.setAnnotation(null);                                          //Remove annotation
             StudyEntry loadedStudy = loadedVariant.getStudy(STUDY_NAME);
-            loadedStudy.setFormat(Arrays.asList(loadedStudy.getFormat().get(0), loadedStudy.getFormat().get(2), loadedStudy.getFormat().get(1)));
             loadedStudy.setStats(Collections.emptyMap());        //Remove calculated stats
             loadedStudy.getSamplesData().forEach(values -> {
                 values.set(0, values.get(0).replace("0/0", "0|0"));
-                String v1 = values.get(1);
-                values.set(1, values.get(2));
-                values.set(2, v1);
                 while (values.get(2).length() < 5) values.set(2, values.get(2) + "0");   //Set lost zeros
             });
             for (FileEntry fileEntry : loadedStudy.getFiles()) {
@@ -536,6 +545,21 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         reader.post();
         reader.close();
 
+    }
+
+    @Test
+    public void indexWithoutOtherFields() throws Exception {
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration,
+                new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantQueryUtils.NONE)
+                        .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
+                        .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                        .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+        );
+        for (Variant variant : variantStorageEngine.getDBAdaptor()) {
+            assertEquals("GT", variant.getStudy(STUDY_NAME).getFormatAsString());
+        }
     }
 
     /* ---------------------------------------------------- */
