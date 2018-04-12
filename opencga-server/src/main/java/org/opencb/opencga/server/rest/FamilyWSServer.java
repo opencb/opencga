@@ -346,6 +346,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
+    // TODO: Shouldn't we use same IndividualPost as in IndividualWSServer?
     protected static class IndividualPOST {
         public String name;
 
@@ -379,10 +380,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
             return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
                     mother != null ? new Individual().setName(mother) : null, multiples != null ? multiples.toMultiples() : null, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes)
+                    .setAttributes(attributes);
         }
     }
-
     private static class FamilyPOST {
         public String name;
         public String description;

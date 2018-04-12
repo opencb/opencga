@@ -540,9 +540,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 case POPULATION_DESCRIPTION:
                 case POPULATION_NAME:
                 case POPULATION_SUBPOPULATION:
+                case PARENTAL_CONSANGUINITY:
                 case PHENOTYPES:
                 case LIFE_STATUS:
                 case AFFECTATION_STATUS:
+                case ATTRIBUTES:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);

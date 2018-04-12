@@ -557,22 +557,17 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes)
+                    .setAttributes(attributes);
         }
     }
 
     protected static class IndividualCreatePOST extends IndividualPOST {
         public List<SampleWSServer.CreateSamplePOST> samples;
 
+        @Override
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            List<AnnotationSet> annotationSetList = new ArrayList<>();
-            if (annotationSets != null) {
-                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-                    if (annotationSet != null) {
-                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-                    }
-                }
-            }
+            Individual individual = super.toIndividual(studyStr, studyManager, sessionId);
 
             List<Sample> sampleList = null;
             if (samples != null) {
@@ -581,9 +576,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     sampleList.add(sample.toSample(studyStr, studyManager, sessionId));
                 }
             }
-            return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
-                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, phenotypes);
+            individual.setSamples(sampleList);
+            return individual;
         }
     }
 
