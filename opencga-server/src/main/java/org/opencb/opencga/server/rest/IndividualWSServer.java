@@ -359,22 +359,22 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{individuals}/delete")
-//    @ApiOperation(value = "Delete individual information [WARNING]", position = 7,
-//            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-//                    "planned to be fully implemented and tested in version 1.4.0")
-//    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names up to a maximum of 100", required = true)
-//                                     @PathParam("individuals") String individualIds,
-//                                     @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                                     @QueryParam("study") String studyStr) {
-//        try {
-//            List<QueryResult<Individual>> queryResult = individualManager.delete(studyStr, individualIds, queryOptions, sessionId);
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @GET
+    @Path("/{individuals}/delete")
+    @ApiOperation(value = "Delete individual information [WARNING]", position = 7,
+            notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
+                    "planned to be fully implemented and tested in version 1.4.0", hidden = true)
+    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names up to a maximum of 100", required = true)
+                                     @PathParam("individuals") String individualIds,
+                                     @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                     @QueryParam("study") String studyStr) {
+        try {
+            List<QueryResult<Individual>> queryResult = individualManager.delete(studyStr, individualIds, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/groupBy")

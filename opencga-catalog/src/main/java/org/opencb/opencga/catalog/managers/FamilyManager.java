@@ -850,9 +850,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
+        // FIXME Pedro: this is a quick fix to allow create families without the parents, this needs to be reviewed.
         if (noParentsSet.size() > 0) {
-            throw new CatalogException("Some members that are not related to any other have been found: "
-                    + noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
+//            throw new CatalogException("Some members that are not related to any other have been found: "
+//                    + noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
+            logger.warn("Some members that are not related to any other have been found: {}",
+                    noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
         }
     }
 
