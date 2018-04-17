@@ -95,4 +95,13 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     protected void setLimit(long limit) {
         this.limit = limit <= 0 ? Long.MAX_VALUE : limit;
     }
+
+    public void skip(int skip) {
+        if (skip > 0) {
+            while (hasNext() && skip > 0) {
+                skip--;
+                fetch(iterator::next);
+            }
+        }
+    }
 }

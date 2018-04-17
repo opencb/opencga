@@ -25,6 +25,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -75,24 +76,90 @@ public class VariantHBaseQueryParser {
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
+    public static boolean isSupportedQueryParam(Query query, QueryParam param) {
+        return isSupportedQuery(new Query(param.key(), query.get(param.key())));
+    }
+
+    /**
+     * Check if the given query can be fully executed directly with hbase.
+     * @param query Query to test
+     * @return      If the query can be fully executed with hbase
+     */
     public static boolean isSupportedQuery(Query query) {
         Set<VariantQueryParam> otherParams = validParams(query);
         otherParams.removeAll(SUPPORTED_QUERY_PARAMS);
-
-
-
+        Set<String> messages = new HashSet<>();
 //        if (otherParams.contains(ID)) {
 //            List<String> ids = query.getAsStringList(ID.key());
 //            for (String id : ids) {
 //                if (!VariantQueryUtils.isVariantId(id)) {
-//                    // If there is any ID that is not a variantId, the query is not fully supported
-//                    return false;
+//                    messages.add("If there is any ID that is not a variantId, the query is not fully supported");
 //                }
 //            }
 //            otherParams.remove(ID);
 //        }
+        if (otherParams.contains(REGION)) {
+            if (query.getAsStringList(REGION.key()).size() != 1) {
+                messages.add("Only one region is supported at a time");
+            }
+            otherParams.remove(REGION);
+        }
+        if (otherParams.contains(STUDY)) {
+            String value = query.getString(STUDY.key());
+            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
+                messages.add("Negated studies not supported");
+            }
+            otherParams.remove(STUDY);
+        }
+        if (otherParams.contains(STUDY)) {
+            String value = query.getString(STUDY.key());
+            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
+                messages.add("Negated studies not supported");
+            }
+            otherParams.remove(STUDY);
+        }
+        if (otherParams.contains(FILE)) {
+            String value = query.getString(FILE.key());
+            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
+                messages.add("Negated files not supported");
+            }
+            otherParams.remove(FILE);
+        }
+        if (otherParams.contains(SAMPLE)) {
+            String value = query.getString(SAMPLE.key());
+            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
+                messages.add("Negated samples not supported");
+            }
+            otherParams.remove(SAMPLE);
+        }
+        if (otherParams.contains(GENOTYPE)) {
+            HashMap<Object, List<String>> map = new HashMap<>();
+            parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
 
-        return otherParams.isEmpty();
+            for (List<String> gts : map.values()) {
+                if (gts.stream().anyMatch(VariantQueryUtils::isNegated)) {
+                    messages.add("Negated genotypes not supported");
+                }
+                if (gts.stream().anyMatch(gt -> gt.equals("0/0") || gt.equals("0|0"))) {
+                    messages.add("Reference genotype [0/0] not supported");
+                }
+            }
+            otherParams.remove(GENOTYPE);
+        }
+
+        if (messages.isEmpty() && otherParams.isEmpty()) {
+            return true;
+        } else {
+            if (!messages.isEmpty()) {
+                for (String message : messages) {
+                    logger.warn(message);
+                }
+            }
+            if (!otherParams.isEmpty()) {
+                logger.warn("Unsupported params " + otherParams);
+            }
+            return false;
+        }
     }
 
     public Scan parseQuery(Query query, QueryOptions options) {
@@ -104,11 +171,12 @@ public class VariantHBaseQueryParser {
     public Scan parseQuery(VariantQueryUtils.SelectVariantElements selectElements, Query query, QueryOptions options) {
 
         Scan scan = new Scan();
-        scan.addFamily(genomeHelper.getColumnFamily());
+        byte[] family = genomeHelper.getColumnFamily();
+        scan.addFamily(family);
         FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
 //        FilterList regionFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
 //        filters.addFilter(regionFilters);
-        List<byte[]> columnPrefixes = new LinkedList<>();
+//        List<byte[]> columnPrefixes = new LinkedList<>();
 
         List<Region> regions = getRegions(query);
 
@@ -153,7 +221,7 @@ public class VariantHBaseQueryParser {
 
                 filters.addFilter(missingColumnFilter(annotationColumn));
                 if (!selectElements.getFields().contains(VariantField.ANNOTATION)) {
-                    scan.addColumn(genomeHelper.getColumnFamily(), annotationColumn);
+                    scan.addColumn(family, annotationColumn);
                 }
             } else {
                 logger.warn("Filter " + ANNOTATION_EXISTS.key() + "=true not implemented in native mode");
@@ -162,75 +230,40 @@ public class VariantHBaseQueryParser {
 
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
             for (Integer studyId : selectElements.getStudies()) {
-                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+                scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
             }
 
             if (selectElements.getFields().contains(VariantField.STUDIES_STATS)) {
                 for (StudyConfiguration sc : selectElements.getStudyConfigurations().values()) {
                     for (Integer cohortId : sc.getCalculatedStats()) {
-                        scan.addColumn(genomeHelper.getColumnFamily(),
+                        scan.addColumn(family,
                                 VariantPhoenixHelper.getStatsColumn(sc.getStudyId(), cohortId).bytes());
                     }
                     for (Integer cohortId : sc.getInvalidStats()) {
-                        scan.addColumn(genomeHelper.getColumnFamily(),
+                        scan.addColumn(family,
                                 VariantPhoenixHelper.getStatsColumn(sc.getStudyId(), cohortId).bytes());
                     }
                 }
             }
 
             selectElements.getSamples().forEach((studyId, sampleIds) -> {
-                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+                scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
                 for (Integer sampleId : sampleIds) {
-                    scan.addColumn(genomeHelper.getColumnFamily(), buildSampleColumnKey(studyId, sampleId));
+                    scan.addColumn(family, buildSampleColumnKey(studyId, sampleId));
                 }
             });
 
             selectElements.getFiles().forEach((studyId, fileIds) -> {
-                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+                scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
                 for (Integer fileId : fileIds) {
-                    scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
+                    scan.addColumn(family, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
                 }
             });
         }
 
-        StudyConfiguration defaultStudyConfiguration;
-        if (isValidParam(query, STUDY)) {
-            String value = query.getString(STUDY.key());
-            VariantQueryUtils.QueryOperation operation = checkOperator(value);
-            List<String> values = splitValue(value, operation);
-
-            FilterList subFilters;
-            if (operation == QueryOperation.OR) {
-                subFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
-                filters.addFilter(subFilters);
-            } else {
-                subFilters = filters;
-            }
-            List<Integer> nonNegatedStudies = new ArrayList<>();
-            for (String studyStr : values) {
-                Integer studyId = studyConfigurationManager.getStudyId(studyStr, null);
-                byte[] column = VariantPhoenixHelper.getStudyColumn(studyId).bytes();
-                if (isNegated(studyStr)) {
-                    subFilters.addFilter(missingColumnFilter(column));
-                } else {
-                    nonNegatedStudies.add(studyId);
-                    subFilters.addFilter(existingColumnFilter(column));
-                }
-            }
-            if (nonNegatedStudies.size() == 1) {
-                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(nonNegatedStudies.get(0), null).first();
-            } else {
-                defaultStudyConfiguration = null;
-            }
-        } else {
-            List<Integer> studyIds = studyConfigurationManager.getStudyIds(options);
-            if (studyIds.size() == 1) {
-                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyIds.get(0), options).first();
-            } else {
-                defaultStudyConfiguration = null;
-            }
-        }
-
+        // If we already add a filter that requires a sample from a certain study, we can skip latter the filter for that study
+        Set<Integer> filteredStudies = new HashSet<>();
+        final StudyConfiguration defaultStudyConfiguration = getDefaultStudyConfiguration(query, options, studyConfigurationManager);
         if (isValidParam(query, FILE)) {
             String value = query.getString(FILE.key());
             VariantQueryUtils.QueryOperation operation = checkOperator(value);
@@ -243,13 +276,64 @@ public class VariantHBaseQueryParser {
                 subFilters = filters;
             }
             for (String file : values) {
-                Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, null);
+                Pair<Integer, Integer> fileIdPair = studyConfigurationManager.getFileIdPair(file, false, defaultStudyConfiguration);
                 byte[] column = buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue());
                 if (isNegated(file)) {
                     subFilters.addFilter(missingColumnFilter(column));
                 } else {
+                    filteredStudies.add(fileIdPair.getKey());
                     subFilters.addFilter(existingColumnFilter(column));
                 }
+                scan.addColumn(family, column);
+            }
+        }
+
+        if (isValidParam(query, GENOTYPE)) {
+            HashMap<Object, List<String>> genotypesMap = new HashMap<>();
+            QueryOperation operation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
+
+            FilterList subFilters;
+            if (operation == QueryOperation.OR) {
+                subFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
+                filters.addFilter(subFilters);
+            } else {
+                subFilters = filters;
+            }
+            for (Map.Entry<Object, List<String>> entry : genotypesMap.entrySet()) {
+                if (defaultStudyConfiguration == null) {
+                    List<String> studyNames = studyConfigurationManager.getStudyNames(null);
+                    throw VariantQueryException.missingStudyForSample(entry.getKey().toString(), studyNames);
+                }
+                int studyId = defaultStudyConfiguration.getStudyId();
+                int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
+                List<String> genotypes = entry.getValue();
+
+                if (genotypes.stream().allMatch(VariantQueryUtils::isNegated)) {
+                    throw VariantQueryException.unsupportedVariantQueryFilter(GENOTYPE, query.getString(GENOTYPE.key()),
+                            "Unable to negate genotypes.");
+                } else if (genotypes.stream().anyMatch(VariantQueryUtils::isNegated)) {
+                    throw VariantQueryException.malformedParam(GENOTYPE, query.getString(GENOTYPE.key()),
+                            "Can not mix negated and not negated genotypes");
+                } else {
+                    filteredStudies.add(studyId);
+                }
+
+                byte[] column = buildSampleColumnKey(studyId, sampleId);
+                List<Filter> gtSubFilters = genotypes.stream()
+                        .map(genotype -> {
+                            SingleColumnValueFilter filter = new SingleColumnValueFilter(family, column, CompareFilter.CompareOp.EQUAL,
+                                    new BinaryPrefixComparator(Bytes.toBytes(genotype)));
+                            filter.setFilterIfMissing(true);
+                            filter.setLatestVersionOnly(true);
+                            return filter;
+                        })
+                        .collect(Collectors.toList());
+                if (gtSubFilters.size() == 1) {
+                    subFilters.addFilter(gtSubFilters.get(0));
+                } else {
+                    subFilters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, gtSubFilters));
+                }
+                scan.addColumn(family, column);
             }
         }
 
@@ -257,6 +341,7 @@ public class VariantHBaseQueryParser {
             String value = query.getString(SAMPLE.key());
             VariantQueryUtils.QueryOperation operation = checkOperator(value);
             List<String> values = splitValue(value, operation);
+            operation = QueryOperation.AND; // SAMPLES filter is always an AND
             FilterList subFilters;
             if (operation == QueryOperation.OR) {
                 subFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
@@ -278,17 +363,61 @@ public class VariantHBaseQueryParser {
                 if (isNegated(sample)) {
                     subFilters.addFilter(missingColumnFilter(column));
                 } else {
-                    subFilters.addFilter(existingColumnFilter(column));
+                    // Check on only if the column exists. Also check if the GT starts contains a 1 ( 1/? or ?/1 )
+                    filteredStudies.add(defaultStudyConfiguration.getStudyId());
+
+                    // 1/?
+                    SingleColumnValueFilter filter1 = new SingleColumnValueFilter(family, column, CompareFilter.CompareOp.EQUAL,
+                            new BinaryPrefixComparator(Bytes.toBytes("1")));
+                    filter1.setFilterIfMissing(true);
+                    filter1.setLatestVersionOnly(true);
+
+                    // ?/1
+                    SingleColumnValueFilter filter2 = new SingleColumnValueFilter(family, column, CompareFilter.CompareOp.EQUAL,
+                            new RegexStringComparator("^[\\.0-9][/\\|]1")
+                    );
+                    filter2.setFilterIfMissing(true);
+                    filter2.setLatestVersionOnly(true);
+
+                    subFilters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, filter1, filter2));
+                }
+                scan.addColumn(family, column);
+            }
+        }
+
+        if (isValidParam(query, STUDY)) {
+            String value = query.getString(STUDY.key());
+            VariantQueryUtils.QueryOperation operation = checkOperator(value);
+            List<String> values = splitValue(value, operation);
+
+            FilterList subFilters;
+            if (operation == QueryOperation.OR) {
+                subFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
+                filters.addFilter(subFilters);
+            } else {
+                subFilters = filters;
+            }
+            for (String studyStr : values) {
+                Integer studyId = studyConfigurationManager.getStudyId(studyStr, null);
+                byte[] column = VariantPhoenixHelper.getStudyColumn(studyId).bytes();
+                if (isNegated(studyStr)) {
+                    subFilters.addFilter(missingColumnFilter(column));
+                    scan.addColumn(family, column);
+                } else {
+                    if (!filteredStudies.contains(studyId)) {
+                        subFilters.addFilter(existingColumnFilter(column));
+                        scan.addColumn(family, column);
+                    }
                 }
             }
         }
 
         if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
-            scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
+            scan.addColumn(family, FULL_ANNOTATION.bytes());
             if (defaultStudyConfiguration != null) {
                 int release = defaultStudyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
                 for (int i = 1; i <= release; i++) {
-                    scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildReleaseColumnKey(release));
+                    scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(release));
                 }
             }
         }
@@ -298,23 +427,26 @@ public class VariantHBaseQueryParser {
 ////            filters.addFilter(keyOnlyFilter);
 //            scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
 //        }
-        scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
-
-        if (!columnPrefixes.isEmpty()) {
-            MultipleColumnPrefixFilter columnPrefixFilter = new MultipleColumnPrefixFilter(
-                    columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
-            filters.addFilter(columnPrefixFilter);
+        if (selectElements.getFields().contains(VariantField.TYPE) || !scan.hasFamilies()) {
+            scan.addColumn(family, VariantPhoenixHelper.VariantColumn.TYPE.bytes());
         }
+
+//        if (!columnPrefixes.isEmpty()) {
+//            MultipleColumnPrefixFilter columnPrefixFilter = new MultipleColumnPrefixFilter(
+//                    columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
+//            filters.addFilter(columnPrefixFilter);
+//        }
 
         if (!filters.getFilters().isEmpty()) {
             scan.setFilter(filters);
         }
         scan.setMaxResultSize(options.getInt(QueryOptions.LIMIT));
+        scan.setReversed(options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING).equals(QueryOptions.DESCENDING));
 
         logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()));
         logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()));
-        logger.info("columns = " + scan.getFamilyMap().get(
-                genomeHelper.getColumnFamily()).stream().map(Bytes::toString).collect(Collectors.joining(",")));
+        logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
+                .stream().map(Bytes::toString).collect(Collectors.joining(",")));
         logger.info("MaxResultSize = " + scan.getMaxResultSize());
         logger.info("Filters = " + scan.getFilter());
         logger.info("Batch = " + scan.getBatch());

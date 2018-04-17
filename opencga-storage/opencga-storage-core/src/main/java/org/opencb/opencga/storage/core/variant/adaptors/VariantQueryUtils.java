@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
@@ -99,7 +100,7 @@ public class VariantQueryUtils {
      * @return If is valid or not
      */
     public static boolean isValidParam(Query query, QueryParam param) {
-        Object value = query.getOrDefault(param.key(), null);
+        Object value = query == null ? null : query.getOrDefault(param.key(), null);
         return (value != null)
                 && !(value instanceof String && ((String) value).isEmpty()
                 || value instanceof Collection && ((Collection) value).isEmpty());
@@ -118,7 +119,7 @@ public class VariantQueryUtils {
     }
 
     public static Set<VariantQueryParam> validParams(Query query) {
-        Set<VariantQueryParam> params = new HashSet<>(query.size());
+        Set<VariantQueryParam> params = new HashSet<>(query == null ? 0 : query.size());
 
         for (VariantQueryParam queryParam : values()) {
             if (isValidParam(query, queryParam)) {
@@ -951,6 +952,17 @@ public class VariantQueryUtils {
         } else {    // !containsOr && !containsAnd
             return null;
         }
+    }
+
+    /**
+     * Splits the string with the specified operation.
+     *
+     * @param value     Value to split
+     * @return List of values, without the delimiter
+     */
+    public static Pair<QueryOperation, List<String>> splitValue(String value) {
+        QueryOperation operation = checkOperator(value);
+        return Pair.of(operation, splitValue(value, operation));
     }
 
     /**
