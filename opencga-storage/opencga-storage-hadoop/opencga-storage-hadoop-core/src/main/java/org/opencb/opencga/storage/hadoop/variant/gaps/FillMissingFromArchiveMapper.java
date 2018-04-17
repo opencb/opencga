@@ -30,7 +30,8 @@ public class FillMissingFromArchiveMapper extends TableMapper<BytesWritable, Byt
         VariantTableHelper helper = new VariantTableHelper(context.getConfiguration());
 
         StudyConfiguration studyConfiguration = helper.readStudyConfiguration();
-        task = new FillMissingFromArchiveTask(studyConfiguration, helper);
+        boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
+        task = new FillMissingFromArchiveTask(studyConfiguration, helper, overwrite);
         task.setQuiet(true);
         task.pre();
     }

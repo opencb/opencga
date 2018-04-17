@@ -34,10 +34,12 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
     private final byte[] lastFileBytes;
     private final List<Integer> indexedFiles;
     private Map<Integer, Set<Integer>> filesToProcessMap = new HashMap<>();
+    private boolean overwrite;
 
-    public FillMissingFromArchiveTask(StudyConfiguration studyConfiguration, GenomeHelper helper) {
+    public FillMissingFromArchiveTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean overwrite) {
         super(studyConfiguration, helper, Collections.emptyList(), true);
         fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyConfiguration.getStudyId());
+        this.overwrite = overwrite;
         Integer lastFile = new ArrayList<>(studyConfiguration.getIndexedFiles()).get(studyConfiguration.getIndexedFiles().size() - 1);
         lastFileBytes = PInteger.INSTANCE.toBytes(lastFile);
         indexedFiles = new ArrayList<>(studyConfiguration.getIndexedFiles());
@@ -84,7 +86,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
             for (Cell cell : result.rawCells()) {
                 if (Bytes.startsWith(CellUtil.cloneQualifier(cell), VARIANT_COLUMN_B_PREFIX)) {
                     Variant variant = getVariantFromArchiveVariantColumn(region.getChromosome(), CellUtil.cloneQualifier(cell));
-                    if (cell.getValueLength() > 0) {
+                    if (cell.getValueLength() > 0 && !overwrite) {
                         byte[] bytes = CellUtil.cloneValue(cell);
                         Integer lastFile = (Integer) PInteger.INSTANCE.toObject(bytes);
                         Set<Integer> filesToProcess = filesToProcessMap.computeIfAbsent(lastFile,
