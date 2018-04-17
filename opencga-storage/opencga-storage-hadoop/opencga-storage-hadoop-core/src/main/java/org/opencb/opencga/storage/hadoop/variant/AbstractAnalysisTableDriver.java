@@ -113,12 +113,12 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             checkTablesExist(hBaseManager, archiveTable, variantTable);
         }
 
+        preExecution(variantTable);
+
         /* -------------------------------*/
         // JOB setup
-        Job job = newJob(variantTable);
+        Job job = newJob();
         setupJob(job, archiveTable, variantTable);
-
-        preExecution(variantTable);
 
         logger.info("=================================================");
         logger.info("Execute " + getJobOperationName() + " for table " + variantTable);
@@ -172,9 +172,13 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
                 logger.error("Error", e);
             }
         });
-        Runtime.getRuntime().addShutdownHook(hook);
-        boolean succeed = job.waitForCompletion(true);
-        Runtime.getRuntime().removeShutdownHook(hook);
+        boolean succeed;
+        try {
+            Runtime.getRuntime().addShutdownHook(hook);
+            succeed = job.waitForCompletion(true);
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
+        }
         return succeed;
     }
 
@@ -212,10 +216,8 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return scan;
     }
 
-    private Job newJob(String variantTable) throws IOException {
-        List<Integer> files = getFiles();
-        Job job = Job.getInstance(getConf(), "opencga: " + getJobOperationName() + (files.isEmpty() ? " " : " files " + files)
-                + " from VariantTable '" + variantTable + '\'');
+    private Job newJob() throws IOException {
+        Job job = Job.getInstance(getConf(), buildJobName());
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
         job.setJarByClass(getMapperClass());    // class that contains mapper
 
@@ -226,6 +228,26 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         logger.info("Set Scanner timeout to " + scannerTimeout + " ...");
         job.getConfiguration().setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
         return job;
+    }
+
+    protected String buildJobName() {
+        String variantTable = getAnalysisTable();
+        List<Integer> files = getFiles();
+        StringBuilder sb = new StringBuilder("opencga: ").append(getJobOperationName())
+                .append(" from VariantTable '").append(variantTable).append('\'');
+        if (!files.isEmpty()) {
+            sb.append(" for ").append(files.size()).append(" files: ");
+            if (files.size() > 50) {
+                sb.append('[');
+                sb.append(files.subList(0, 15).stream().map(Object::toString).collect(Collectors.joining(", ")));
+                sb.append(" ... ");
+                sb.append(files.subList(files.size() - 15, files.size()).stream().map(Object::toString).collect(Collectors.joining(", ")));
+                sb.append(']');
+            } else {
+                sb.append(files);
+            }
+        }
+        return sb.toString();
     }
 
     protected List<Integer> getFilesToUse() throws IOException {
