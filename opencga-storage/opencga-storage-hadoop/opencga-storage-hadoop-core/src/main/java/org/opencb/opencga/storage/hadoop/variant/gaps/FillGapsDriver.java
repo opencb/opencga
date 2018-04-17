@@ -1,10 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileAsBinaryOutputFormat;
@@ -26,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQuery;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromVariantTask.buildQueryOptions;
@@ -74,7 +78,7 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
                 try {
                     logger.info("Prepare archive table for " + FILL_MISSING_OPERATION_NAME);
                     String args = PrepareFillMissingDriver.buildCommandLineArgs(
-                            getArchiveTable(), variantTable, getStudyId(), Collections.emptyList(), new ObjectMap());
+                            getArchiveTable(), variantTable, getStudyId(), getFiles(), new ObjectMap());
                     int exitValue = new PrepareFillMissingDriver().privateMain(Commandline.translateCommandline(args), getConf());
                     if (exitValue != 0) {
                         throw new StorageEngineException("Error executing PrepareFillMissing");
@@ -112,26 +116,30 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
         String input = getConf().get(FILL_GAPS_INPUT, FILL_GAPS_INPUT_DEFAULT);
         if (input.equalsIgnoreCase("archive")) {
             // scan
-            Scan scan;
+            List<Scan> scans;
             boolean fillGaps = FillGapsFromArchiveMapper.isFillGaps(getConf());
+            String regionStr = getConf().get(VariantQueryParam.REGION.key());
             if (fillGaps) {
-                scan = FillGapsFromArchiveTask.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
+                scans = Collections.singletonList(FillGapsFromArchiveTask.buildScan(getFiles(), regionStr, getConf()));
             } else {
-                scan = FillMissingFromArchiveTask.buildScan(getFiles(), getConf().get(VariantQueryParam.REGION.key()), getConf());
+                scans = FillMissingFromArchiveTask.buildScan(getFiles(), regionStr, getConf());
             }
 
             int caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
             logger.info("Scan set Caching to " + caching);
-            scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
-            scan.setCacheBlocks(false);      // don't set to true for MR jobs
-            logger.info("Scan archive table " + archiveTableName + " with scan " + scan.toString(50));
+            for (int i = 0; i < scans.size(); i++) {
+                Scan scan = scans.get(i);
+                scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
+                scan.setCacheBlocks(false);      // don't set to true for MR jobs
+                logger.info("[" + i + "] Scan archive table " + archiveTableName + " with scan " + scan.toString(50));
+            }
 
             boolean directWrite = false;
             if (fillGaps || directWrite) {
-                VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, variantTableName, scan, FillGapsFromArchiveMapper.class);
+                VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, variantTableName, scans, FillGapsFromArchiveMapper.class);
             } else {
                 // input
-                VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, scan, FillMissingFromArchiveMapper.class);
+                VariantMapReduceUtil.initTableMapperJob(job, archiveTableName, scans, FillMissingFromArchiveMapper.class);
 
                 // output
                 job.setOutputFormatClass(SequenceFileAsBinaryOutputFormat.class);
@@ -140,8 +148,9 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
                 String outputPath = getConf().get(FILL_MISSING_INTERMEDIATE_FILE);
                 logger.info("Using intermediate file : " + outputPath);
                 FileOutputFormat.setOutputPath(job, new Path(outputPath));
-//                FileOutputFormat.setCompressOutput(job, true);
-//                FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+                FileOutputFormat.setCompressOutput(job, true);
+                FileOutputFormat.setOutputCompressorClass(job, DeflateCodec.class);
+                job.getConfiguration().set(FileOutputFormat.COMPRESS_TYPE, SequenceFile.CompressionType.BLOCK.name());
             }
         } else if (input.equalsIgnoreCase("phoenix")) {
             // Sql
@@ -177,7 +186,9 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected String getJobOperationName() {
-        return FillGapsFromArchiveMapper.isFillGaps(getConf()) ? FILL_GAPS_OPERATION_NAME : FILL_MISSING_OPERATION_NAME;
+        String regionStr = getConf().get(VariantQueryParam.REGION.key());
+        return (FillGapsFromArchiveMapper.isFillGaps(getConf()) ? FILL_GAPS_OPERATION_NAME : FILL_MISSING_OPERATION_NAME)
+                + (StringUtils.isNotEmpty(regionStr) ? "_" + regionStr : "");
     }
 
     public static void main(String[] args) throws Exception {

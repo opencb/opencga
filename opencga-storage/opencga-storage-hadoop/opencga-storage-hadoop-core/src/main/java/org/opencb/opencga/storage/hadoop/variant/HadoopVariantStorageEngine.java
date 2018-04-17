@@ -413,7 +413,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             if (directory.getScheme() != null && !directory.getScheme().equals("hdfs")) {
                 throw new StorageEngineException("Output must be in HDFS");
             }
-            String outputPath = directory.resolve(dbName + "_fill_missing_study_" + studyId + ".bin").toString();
+            String regionStr = options.getString(VariantQueryParam.REGION.key());
+            String outputPath = directory.resolve(dbName + "_fill_missing_study_" + studyId
+                    + (StringUtils.isNotEmpty(regionStr) ? '_' + regionStr.replace(':', '_').replace('-', '_') : "") + ".bin").toString();
             logger.info("Using intermediate file = " + outputPath);
             options.put(FILL_MISSING_INTERMEDIATE_FILE, outputPath);
         }

@@ -277,7 +277,11 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
         }
     }
 
-    protected static Scan buildScan(String regionStr, Configuration conf) {
+    protected static Scan buildScan(Configuration conf) {
+        return buildScan(null, -1, conf);
+    }
+
+    protected static Scan buildScan(String regionStr, int fileId, Configuration conf) {
         Scan scan = new Scan();
         Region region;
         if (StringUtils.isNotEmpty(regionStr)) {
@@ -288,7 +292,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
 
         scan.setCacheBlocks(false);
         ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
-        VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, 0, archiveRowKeyFactory);
+        VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, fileId, archiveRowKeyFactory);
         return scan;
     }
 

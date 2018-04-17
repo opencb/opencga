@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps.write;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -8,6 +9,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
@@ -93,7 +95,8 @@ public class FillMissingHBaseWriterDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected String getJobOperationName() {
-        return "write_fill_missing";
+        String regionStr = getConf().get(VariantQueryParam.REGION.key());
+        return "write_fill_missing" + (StringUtils.isNotEmpty(regionStr) ? "_" + regionStr : "");
     }
 
 
