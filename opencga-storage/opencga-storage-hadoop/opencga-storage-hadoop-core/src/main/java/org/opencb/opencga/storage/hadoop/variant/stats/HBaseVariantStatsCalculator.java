@@ -86,6 +86,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
 
         public Map<Genotype, Integer> apply(Variant variant, Result result) {
             Set<Integer> processedSamples = new HashSet<>();
+            Set<Integer> filesInThisVariant = new HashSet<>();
             int fillMissingColumnValue = -1;
             Map<Integer, String> sampleToGT = new HashMap<>();
             Map<String, List<Integer>> alternateFileMap = new HashMap<>();
@@ -112,6 +113,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
 //                    Integer studyId = getStudyId(split);
                     Integer fileId = Integer.valueOf(getFileId(split));
                     if (fileIds.contains(fileId)) {
+                        filesInThisVariant.add(fileId);
                         Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
                         List<String> fileData = toModifiableList(array, FILE_SEC_ALTS_IDX, FILE_SEC_ALTS_IDX + 1);
                         String secAlt = fileData.get(0);
@@ -141,7 +143,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                 if (defaultGenotype.equals("0/0")) {
                     // All missing samples are reference.
                     addGt(gtStrCount, "0/0", sampleIds.size() - processedSamples.size());
-                } else if (fillMissingColumnValue == -1) {
+                } else if (fillMissingColumnValue == -1 && filesInThisVariant.isEmpty()) {
                     // All missing samples are unknown.
                     addGt(gtStrCount, defaultGenotype, sampleIds.size() - processedSamples.size());
                 } else {
@@ -149,13 +151,13 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
 
                     // Same order as "sampleIds"
                     List<Boolean> missingUpdatedList = getMissingUpdatedSamples(sc, fillMissingColumnValue);
-
+                    List<Boolean> sampleWithVariant = getSampleWithVariant(sc, filesInThisVariant);
                     int i = 0;
                     int reference = 0;
                     int missing = 0;
                     for (Integer sampleId : sampleIds) {
                         if (!processedSamples.contains(sampleId)) {
-                            if (missingUpdatedList.get(i)) {
+                            if (missingUpdatedList.get(i) || sampleWithVariant.get(i)) {
                                 reference++;
                             } else {
                                 missing++;
