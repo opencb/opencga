@@ -91,7 +91,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // process annotation
         VariantAnnotation variantAnnotation = new VariantAnnotation();
 
+        // Set 'release' if it was not missing
+        if (variantSearchModel.getRelease() > 0) {
+            Map<String, String> attribute = new HashMap<>();
+            attribute.put("release", String.valueOf(variantSearchModel.getRelease()));
+            variantAnnotation.getAdditionalAttributes().put("opencga", new AdditionalAttribute(attribute));
+        }
+
         // Xrefs
+        List<String> hgvs = new ArrayList<>();
         List<Xref> xrefs = new ArrayList<>();
         if (variantSearchModel.getXrefs() != null) {
             for (String xref : variantSearchModel.getXrefs()) {
@@ -106,8 +114,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 if (xref.startsWith("ENST")) {
                     xrefs.add(new Xref(xref, "ensemblTranscript"));
                 }
+                if (xref.startsWith("hgvs:")) {
+                    // HGVS are stored with the prefix 'hgvs:'
+                    hgvs.add(xref.substring(5));
+                }
             }
         }
+        variantAnnotation.setHgvs(hgvs);
         variantAnnotation.setXrefs(xrefs);
 
         // consequence types
@@ -242,10 +255,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantAnnotation.setFunctionalScore(scores);
 
         // set HPO, ClinVar and Cosmic
-        Map<String, List<String>> clinVarMap = new HashMap<>();
-        List<Cosmic> cosmicList = new ArrayList<>();
-        List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
         if (variantSearchModel.getTraits() != null) {
+            Map<String, ClinVar> clinVarMap = new HashMap<>();
+            List<ClinVar> clinVarList = new ArrayList<>();
+            List<Cosmic> cosmicList = new ArrayList<>();
+            List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
+
             for (String trait : variantSearchModel.getTraits()) {
                 String[] fields = StringUtils.splitByWholeSeparatorPreserveAllTokens(trait, " -- ");
                 switch (fields[0]) {
@@ -260,9 +275,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     case "CV":
                         // Variant trait: CV -- accession -- trait
                         if (!clinVarMap.containsKey(fields[1])) {
-                            clinVarMap.put(fields[1], new ArrayList<>());
+                            String clinicalSignificance = "";
+                            if (fields[3].length() > 3) {
+                                clinicalSignificance = fields[3].substring(3);
+                            }
+                            ClinVar clinVar = new ClinVar(fields[1], clinicalSignificance, new ArrayList<>(), new ArrayList<>(), "");
+                            clinVarMap.put(fields[1], clinVar);
+                            clinVarList.add(clinVar);
                         }
-                        clinVarMap.get(fields[1]).add(fields[2]);
+                        clinVarMap.get(fields[1]).getTraits().add(fields[2]);
                         break;
                     case "CM":
                         // Variant trait: CM -- mutation id -- primary histology -- histology subtype
@@ -273,10 +294,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         cosmicList.add(cosmic);
                         break;
                     case "KW":
-                        //TODO: Parse Keyword
-                        break;
                     case "PD":
-                        //TODO: Parse Protein Feature
+                        // These are taken from consequence type non-indexed field
                         break;
                     default: {
                         logger.warn("Unknown trait type: " + fields[0] + ", it should be HPO, ClinVar or Cosmic");
@@ -284,17 +303,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                 }
             }
-        }
 
-        VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
-        List<ClinVar> clinVarList = new ArrayList<>(clinVarMap.size());
-        for (String key : clinVarMap.keySet()) {
-            ClinVar clinVar = new ClinVar();
-            clinVar.setAccession(key);
-            clinVar.setTraits(clinVarMap.get(key));
-            clinVarList.add(clinVar);
-        }
-        if (CollectionUtils.isNotEmpty(clinVarList) || CollectionUtils.isNotEmpty(cosmicList)) {
+            // TODO to be removed in next versions
+            VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
+            // This fills the old data model: variantTraitAssociation
             if (CollectionUtils.isNotEmpty(clinVarList)) {
                 variantTraitAssociation.setClinvar(clinVarList);
             }
@@ -302,9 +314,89 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 variantTraitAssociation.setCosmic(cosmicList);
             }
             variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
+
+            // This fills the new data model: traitAssociation
+            List<EvidenceEntry> evidenceEntries = new ArrayList<>();
+
+            // Clinvar -> traitAssociation
+            for (ClinVar clinvar: clinVarList) {
+                List<HeritableTrait> heritableTraits = new ArrayList<>();
+                for (String trait: clinvar.getTraits()) {
+                    heritableTraits.add(HeritableTrait.newBuilder().setTrait(trait).build());
+                }
+                EvidenceEntry evidenceEntry = EvidenceEntry.newBuilder()
+                        .setSource(EvidenceSource.newBuilder().setName("clinvar").build())
+                        .setId(clinvar.getAccession())
+                        .setHeritableTraits(heritableTraits)
+                        .setVariantClassification(VariantClassification.newBuilder()
+                                .setClinicalSignificance(ClinicalSignificance.valueOf(clinvar.getClinicalSignificance())).build())
+                        .build();
+
+                evidenceEntries.add(evidenceEntry);
+            }
+
+            // Cosmic -> traitAssociation
+            for (Cosmic cosmic: cosmicList) {
+                EvidenceEntry evidenceEntry = EvidenceEntry.newBuilder()
+                        .setSource(EvidenceSource.newBuilder().setName("cosmic").build())
+                        .setId(cosmic.getMutationId())
+                        .setSomaticInformation(SomaticInformation.newBuilder().setPrimaryHistology(cosmic.getPrimaryHistology())
+                                .setHistologySubtype(cosmic.getHistologySubtype()).build())
+                        .build();
+
+                evidenceEntries.add(evidenceEntry);
+            }
+
+            variantAnnotation.setTraitAssociation(evidenceEntries);
+
+            // Set the gene disease annotation
+            if (CollectionUtils.isNotEmpty(geneTraitAssociationList)) {
+                variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
+            }
         }
-        if (CollectionUtils.isNotEmpty(geneTraitAssociationList)) {
-            variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
+
+        // Set displayConsequenceType, hgvs, cytobands and repeats from 'other' field
+        variantAnnotation.setHgvs(new ArrayList<>());
+        variantAnnotation.setCytoband(new ArrayList<>());
+        variantAnnotation.setRepeat(new ArrayList<>());
+        for (String other : variantSearchModel.getOther()) {
+            String[] fields = other.split(" -- ");
+            switch (fields[0]) {
+                case "DCT":
+                    variantAnnotation.setDisplayConsequenceType(fields[1]);
+                    break;
+                case "HGVS":
+                    variantAnnotation.getHgvs().add(fields[1]);
+                    break;
+                case "CB":
+                    Cytoband cytoband = Cytoband.newBuilder()
+                            .setChromosome(variant.getChromosome())
+                            .setName(fields[1])
+                            .setStain(fields[2])
+                            .setStart(Integer.parseInt(fields[3])).setEnd(Integer.parseInt(fields[4]))
+                            .build();
+                    variantAnnotation.getCytoband().add(cytoband);
+                    break;
+                case "RP":
+                    Repeat repeat = Repeat.newBuilder()
+                            .setId(fields[1])
+                            .setSource(fields[2])
+                            .setChromosome(variant.getChromosome())
+                            .setStart(Integer.parseInt(fields[5]))
+                            .setEnd(Integer.parseInt(fields[6]))
+                            .setCopyNumber(Float.parseFloat(fields[3]))
+                            .setPercentageMatch(Float.parseFloat(fields[4]))
+                            .setPeriod(null)
+                            .setConsensusSize(null)
+                            .setScore(null)
+                            .setSequence(null)
+                            .build();
+                    variantAnnotation.getRepeat().add(repeat);
+                    break;
+                default:
+                    logger.warn("Unknown key in 'other' array in Solr: " + fields[0]);
+                    break;
+            }
         }
 
         // set variant annotation
@@ -387,8 +479,29 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantAnnotation variantAnnotation = variant.getAnnotation();
         if (variantAnnotation != null) {
 
-            // This object store all info and descriptions for full-text search
+            // This object will store all info and descriptions for full-text search
             Set<String> traits = new HashSet<>();
+
+            // Set release field
+            int release = -1;   // default value if missing is -1
+            if (variantAnnotation.getAdditionalAttributes() != null && variantAnnotation.getAdditionalAttributes().get("opencga") != null) {
+                String releaseStr = variantAnnotation.getAdditionalAttributes().get("opencga").getAttribute().get("release");
+                // example: release = "2,3,4"
+                if (StringUtils.isNotEmpty(releaseStr)) {
+                    releaseStr = releaseStr.split(",")[0];
+                    if (StringUtils.isNumeric(releaseStr)) {
+                        release = Integer.parseInt(releaseStr);
+                    }
+                }
+            }
+            variantSearchModel.setRelease(release);
+
+            // Add cytoband names
+            if (variantAnnotation.getCytoband() != null) {
+                for (Cytoband cytoband : variantAnnotation.getCytoband()) {
+                    xrefs.add(cytoband.getChromosome() + cytoband.getName());
+                }
+            }
 
             // Add all XRefs coming from the variant annotation
             if (variantAnnotation.getXrefs() != null && !variantAnnotation.getXrefs().isEmpty()) {
@@ -397,6 +510,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         xrefs.add(xref.getId());
                     }
                 });
+            }
+
+            // Add all HGVS coming from the variant annotation
+            if (variantAnnotation.getHgvs() != null && !variantAnnotation.getHgvs().isEmpty()) {
+                xrefs.addAll(variantAnnotation.getHgvs());
             }
 
             // Set Genes and Consequence Types
@@ -462,9 +580,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                 traits.add("KW -- " + proteinVariantAnnotation.getUniprotAccession() + " -- " + keyword);
                             }
                         }
+
+                        // Add protein domains
                         if (proteinVariantAnnotation.getFeatures() != null) {
                             for (ProteinFeature proteinFeature : proteinVariantAnnotation.getFeatures()) {
-                                traits.add("PD -- " + proteinFeature.getId() + " -- " + proteinFeature.getDescription());
+                                if (StringUtils.isNotEmpty(proteinFeature.getId())) {
+                                    // We store them in xrefs and traits, the number of these IDs is very small
+                                    xrefs.add(proteinFeature.getId());
+                                    traits.add("PD -- " + proteinFeature.getId() + " -- " + proteinFeature.getDescription());
+                                }
                             }
                         }
                     }
@@ -537,7 +661,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     variantAnnotation.getVariantTraitAssociation().getClinvar()
                             .forEach(cv -> {
                                 xrefs.add(cv.getAccession());
-                                cv.getTraits().forEach(cvt -> traits.add("CV" + " -- " + cv.getAccession() + " -- " + cvt));
+                                cv.getTraits().forEach(cvt -> traits.add("CV" + " -- " + cv.getAccession() + " -- " + cvt
+                                        + " -- cs:" + cv.getClinicalSignificance()));
                             });
                 }
                 if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
@@ -570,6 +695,30 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
             variantSearchModel.setTraits(new ArrayList<>(traits));
+
+            // Now we fill other field
+            List<String> other = new ArrayList<>();
+            if (StringUtils.isNotEmpty(variantAnnotation.getDisplayConsequenceType())) {
+                other.add("DCT -- " + variantAnnotation.getDisplayConsequenceType());
+            }
+            if (variantAnnotation.getHgvs() != null) {
+                for (String hgvs : variantAnnotation.getHgvs()) {
+                    other.add("HGVS -- " + hgvs);
+                }
+            }
+            if (variantAnnotation.getCytoband() != null) {
+                for (Cytoband cytoband : variantAnnotation.getCytoband()) {
+                    other.add("CB -- " + cytoband.getName() + " -- " + cytoband.getStain()
+                            + " -- " + cytoband.getStart() + " -- " + cytoband.getEnd());
+                }
+            }
+            if (variantAnnotation.getRepeat() != null) {
+                for (Repeat repeat : variantAnnotation.getRepeat()) {
+                    other.add("RP -- " + repeat.getId() + " -- " + repeat.getSource() + " -- " + repeat.getCopyNumber()
+                            + " -- " + repeat.getPercentageMatch() + " -- " + repeat.getStart() + " -- " + repeat.getEnd());
+                }
+            }
+            variantSearchModel.setOther(other);
         }
 
         variantSearchModel.setXrefs(new ArrayList<>(xrefs));

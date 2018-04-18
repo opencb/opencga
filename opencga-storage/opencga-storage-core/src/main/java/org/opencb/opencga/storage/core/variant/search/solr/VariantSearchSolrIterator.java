@@ -21,8 +21,8 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CursorMarkParams;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -30,7 +30,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 
-public class VariantSearchIterator implements Iterator<VariantSearchModel>, AutoCloseable {
+public class VariantSearchSolrIterator implements Iterator<VariantSearchModel>, AutoCloseable {
 
     private SolrClient solrClient;
     private String collection;
@@ -46,11 +46,11 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
     private static final int BATCH_SIZE = 100;
 
     @Deprecated
-    public VariantSearchIterator(Iterator<VariantSearchModel> solrIterator) {
+    public VariantSearchSolrIterator(Iterator<VariantSearchModel> solrIterator) {
         this.solrIterator = solrIterator;
     }
 
-    public VariantSearchIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws IOException, SolrServerException {
+    public VariantSearchSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws SolrServerException {
         this.solrClient = solrClient;
         this.collection = collection;
         this.solrQuery = solrQuery;

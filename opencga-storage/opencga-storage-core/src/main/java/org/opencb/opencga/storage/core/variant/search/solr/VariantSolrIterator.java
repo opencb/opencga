@@ -20,32 +20,32 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 
 import java.io.IOException;
 
 /**
  * Created by jtarraga on 01/03/17.
  */
-public class VariantIterator extends VariantDBIterator {
+public class VariantSolrIterator extends VariantDBIterator {
 
-    private VariantSearchIterator variantSearchIterator;
+    private VariantSearchSolrIterator variantSearchSolrIterator;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
 
-    public VariantIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws IOException, SolrServerException {
-        variantSearchIterator = new VariantSearchIterator(solrClient, collection, solrQuery);
+    public VariantSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws IOException, SolrServerException {
+        variantSearchSolrIterator = new VariantSearchSolrIterator(solrClient, collection, solrQuery);
         variantSearchToVariantConverter = new VariantSearchToVariantConverter();
     }
 
     @Override
     public boolean hasNext() {
-        return variantSearchIterator.hasNext();
+        return variantSearchSolrIterator.hasNext();
     }
 
     @Override
     public Variant next() {
-        return variantSearchToVariantConverter.convertToDataModelType(variantSearchIterator.next());
+        return variantSearchToVariantConverter.convertToDataModelType(variantSearchSolrIterator.next());
     }
 
     @Override
@@ -54,7 +54,7 @@ public class VariantIterator extends VariantDBIterator {
     }
 
     public long getNumFound() {
-        return variantSearchIterator.getNumFound();
+        return variantSearchSolrIterator.getNumFound();
     }
 
 }

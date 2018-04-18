@@ -57,7 +57,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
@@ -664,7 +664,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
                 variantStorageEngine.getConfiguration());
         boolean querying = true;
-
+        QueryOptions options = new QueryOptions();
+        options.putAll(searchOptions.commonOptions.params);
         // create the database, this method checks if it exists and the solrConfig name
         if (searchOptions.create) {
             variantSearchManager.create(dbName, searchOptions.solrConfig);
@@ -674,8 +675,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         // index
         if (searchOptions.index) {
             querying = false;
-            VariantStorageEngine variantStorageEngine = StorageEngineFactory.get(configuration).getVariantStorageEngine(null, dbName);
-            variantStorageEngine.searchIndex();
+            Query query = VariantQueryCommandUtils.parseQuery(searchOptions, new Query());
+            variantStorageEngine.searchIndex(query, options);
         }
 
         String mode = variantStorageEngine.getConfiguration().getSearch().getMode();
@@ -724,14 +725,17 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.LIMIT, Integer.MAX_VALUE);
                     queryOptions.put(QueryOptions.SKIP, 0);
 
-                    VariantIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    VariantSolrIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    System.out.print("[");
                     while (iterator.hasNext()) {
                         Variant variant = iterator.next();
-                        System.out.println("Variant #" + count);
-                        System.out.println(variant.getId());
+                        System.out.print(variant.toJson());
+                        if (iterator.hasNext()) {
+                            System.out.print(",");
+                        }
                         count++;
                     }
-                    System.out.println("Num. variants: " + count);
+                    System.out.println("]");
                 }
             } catch (Exception e) {
                 e.printStackTrace();

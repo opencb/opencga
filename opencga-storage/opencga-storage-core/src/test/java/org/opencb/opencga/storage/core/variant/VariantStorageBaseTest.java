@@ -141,8 +141,8 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             Files.createDirectories(resourcePath.getParent());
         }
         if (!resourcePath.toFile().exists()) {
-            Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption
-                    .REPLACE_EXISTING);
+            InputStream stream = VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(resourceName);
+            Files.copy(stream, resourcePath, StandardCopyOption.REPLACE_EXISTING);
         }
         return resourcePath.toUri();
     }

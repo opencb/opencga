@@ -28,11 +28,9 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -83,9 +81,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RELEASE;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
@@ -320,9 +316,6 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
     @Override
     protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
-        // Provided Extra fields
-        List<String> providedExtraFields = getOptions().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
-
         super.securePreLoad(studyConfiguration, fileMetadata);
 
         MergeMode mergeMode;
@@ -332,27 +325,6 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         } else {
             options.put(MERGE_MODE.key(), MergeMode.from(studyConfiguration.getAttributes()));
         }
-
-        Stream<String> stream;
-        // If ExtraGenotypeFields are provided by command line, check that those fields are going to be loaded.
-        if (!providedExtraFields.isEmpty()) {
-            stream = providedExtraFields.stream();
-        } else {
-            // Otherwise, add all format fields
-            stream = fileMetadata.getHeader().getComplexLines()
-                    .stream()
-                    .filter(line -> line.getKey().equals("FORMAT"))
-                    .map(VariantFileHeaderComplexLine::getId);
-        }
-        List<String> extraGenotypeFields = studyConfiguration.getAttributes().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
-        stream.forEach(format -> {
-            if (!extraGenotypeFields.contains(format) && !format.equals(VariantMerger.GT_KEY)) {
-                extraGenotypeFields.add(format);
-            }
-        });
-        studyConfiguration.getAttributes().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
-        getOptions().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
-
     }
 
     @Override

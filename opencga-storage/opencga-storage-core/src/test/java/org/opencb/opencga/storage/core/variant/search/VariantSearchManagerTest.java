@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
@@ -177,7 +177,7 @@ public class VariantSearchManagerTest extends GenericTest {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.append(QueryOptions.LIMIT, 500);
 
-            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchSolrIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -199,7 +199,7 @@ public class VariantSearchManagerTest extends GenericTest {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.append(QueryOptions.LIMIT, 500);
 
-            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchSolrIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -222,102 +222,6 @@ public class VariantSearchManagerTest extends GenericTest {
         Assert.assertEquals(variantSearchModel.getType().toString(), variant.getType().toString());
     }
 
-    /*
-    // Facet not supported yet !!
-    @Test
-    public void variantFacetFiledCountTest() {
-
-        try {
-            String facetFieldName = "chromosome";
-            Query query = new Query();
-            QueryOptions queryOptions = new QueryOptions();
-            query.append("ids", facetFieldName);
-            query.append("facet.field", facetFieldName);
-            Variant variant = variantList.get(0);
-            variant.setId(facetFieldName);
-            variantSearchManager.insert(variant);
-            VariantSearchFacet variantSearchFacet = variantSearchManager.getFacet(query, queryOptions);
-
-            Assert.assertEquals(variantSearchFacet.getFacetFields().get(0).getName(), facetFieldName);
-            Assert.assertEquals(1, variantSearchFacet.getFacetFields().get(0).getValueCount());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void variantFacetFiledsCountTest() {
-        try {
-            Query query = new Query();
-            QueryOptions queryOptions = new QueryOptions();
-            query.append("ids", "*");
-            query.append("facet.fields", "type,sift");
-            variantSearchManager.insert(variantList);
-
-            VariantSearchFacet variantSearchFacet = variantSearchManager.getFacet(query, queryOptions);
-
-            Assert.assertEquals(variantSearchFacet.getFacetFields().get(0).getName(), "type");
-            Assert.assertEquals(variantSearchFacet.getFacetFields().get(1).getName(), "sift");
-
-            Assert.assertEquals(TOTAL_VARIANTS, variantSearchFacet.getFacetFields().get(0).getValues().get(0).getCount());
-            Assert.assertEquals(TOTAL_VARIANTS, variantSearchFacet.getFacetFields().get(1).getValues().get(0).getCount());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    @Test
-    public void variantFacetQueryTest() {
-        try {
-            Query query = new Query();
-            QueryOptions queryOptions = new QueryOptions();
-            query.append("ids", "*");
-            query.append("facet.query", "type:SNV");
-            variantSearchManager.insert(variantList);
-
-            VariantSearchFacet variantSearchFacet = variantSearchManager.getFacet(query, queryOptions);
-
-            Assert.assertTrue(TOTAL_VARIANTS == variantSearchFacet.getFacetQueries().entrySet().iterator().next().getValue());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void variantFacetRangeTest() {
-        try {
-            Query query = new Query();
-            QueryOptions queryOptions = new QueryOptions();
-            query.append("ids", "*");
-
-            Map<String, Map<String, Double>> rangeFields = new HashMap<>();
-
-            Map<String, Double> sift = new HashMap<>();
-            sift.put("facet.range.start", 0.0);
-            sift.put("facet.range.end", 11.0);
-            sift.put("facet.range.gap", 2.0);
-            rangeFields.put("sift", sift);
-
-            query.append("facet.range", rangeFields);
-            variantSearchManager.insert(variantList);
-
-            VariantSearchFacet variantSearchFacet = variantSearchManager.getFacet(query, queryOptions);
-
-            List<RangeFacet.Count> rangeEntries = variantSearchFacet.getFacetRanges().get(0).getCounts();
-
-            Assert.assertNotNull(rangeEntries);
-            Assert.assertEquals(0, rangeEntries.get(0).getCount());
-            Assert.assertEquals(0, rangeEntries.get(1).getCount());
-            Assert.assertEquals(0, rangeEntries.get(2).getCount());
-            Assert.assertEquals(0, rangeEntries.get(3).getCount());
-            Assert.assertEquals(0, rangeEntries.get(4).getCount());
-            Assert.assertEquals(TOTAL_VARIANTS, rangeEntries.get(5).getCount());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-*/
 //    @Test
     public void variantSolrQueryLimitTest() {
         try {
@@ -327,7 +231,7 @@ public class VariantSearchManagerTest extends GenericTest {
             query.append("ids", "*");
             queryOptions.append(QueryOptions.LIMIT, 15);
 
-            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchSolrIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -351,7 +255,7 @@ public class VariantSearchManagerTest extends GenericTest {
             queryOptions.add(QueryOptions.SORT, "start");
             queryOptions.add(QueryOptions.ORDER, QueryOptions.DESCENDING);
 
-            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchSolrIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);

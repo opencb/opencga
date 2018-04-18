@@ -38,6 +38,7 @@ import java.util.List;
 
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
 
 /**
@@ -102,7 +103,11 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         } finally {
             try {
                 if (!fileIndexed) {
-                    VariantHbaseTestUtils.printVariants(studyConfiguration, getVariantStorageEngine().getDBAdaptor(), newOutputUri());
+                    VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+                    studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+                    studyConfiguration.getAttributes().put(MISSING_GENOTYPES_UPDATED, true);
+                    dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+                    VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, newOutputUri());
                 }
             } catch (Exception e) {
                 e.printStackTrace();

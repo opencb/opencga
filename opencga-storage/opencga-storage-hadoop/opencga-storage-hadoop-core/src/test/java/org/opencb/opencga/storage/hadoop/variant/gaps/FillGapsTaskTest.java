@@ -14,12 +14,15 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -31,6 +34,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.*;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.everyResult;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withSampleData;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withStudy;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.removeFile;
@@ -132,6 +141,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
         checkNewMultiAllelicVariants(dbAdaptor);
         checkNewMissingPositions(dbAdaptor);
+        checkQueryGenotypes(dbAdaptor);
     }
 
     @Test
@@ -187,6 +197,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
         variantStorageEngine.fillMissing(studyConfiguration.getStudyName(), options, false);
         printVariants(dbAdaptor, newOutputUri());
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
+        checkQueryGenotypes(dbAdaptor);
     }
 
     public void checkNewMultiAllelicVariants(VariantHadoopDBAdaptor dbAdaptor) {
@@ -295,6 +306,17 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
                     assertFalse((newVariant ? "new variant " : "") + variant + " _ " + sampleName + " should not have GT=0/0", data.get(0).equals("0/0"));
                 }
             }
+        }
+    }
+
+    private void checkQueryGenotypes(VariantHadoopDBAdaptor dbAdaptor) {
+        StudyConfiguration sc = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(STUDY_ID, null).first();
+        List<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions()).getResult();
+
+        for (String sample : StudyConfiguration.getIndexedSamples(sc).keySet()) {
+            VariantQueryResult<Variant> queryResult = dbAdaptor.get(new Query(VariantQueryParam.SAMPLE.key(), sample)
+                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL).append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL), new QueryOptions());
+            assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData(sample, "GT", anyOf(containsString("1"), containsString("2"), containsString("3"))))));
         }
     }
 
