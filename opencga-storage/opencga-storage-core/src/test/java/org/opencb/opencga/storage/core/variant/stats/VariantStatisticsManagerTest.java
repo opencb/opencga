@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.feature.Genotype;
@@ -24,6 +25,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -31,6 +33,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
 import java.io.IOException;
 import java.net.URI;
@@ -187,7 +190,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     }
 
     static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
-        for (Variant variant : dbAdaptor) {
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), null);
+             iterator.hasNext(); ) {
+            Variant variant = iterator.next();
             for (StudyEntry sourceEntry : variant.getStudies()) {
                 Map<String, VariantStats> cohortsStats = sourceEntry.getStats();
                 String calculatedCohorts = cohortsStats.keySet().toString();
@@ -215,11 +220,20 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
                     VariantStats stats = VariantStatsCalculator.calculate(variant, genotypeCount);
 
+                    stats.getGenotypesCount().entrySet().removeIf(e -> e.getValue() == 0);
+                    stats.getGenotypesFreq().entrySet().removeIf(e -> e.getValue() == 0);
+                    cohortStats.getGenotypesCount().entrySet().removeIf(e -> e.getValue() == 0);
+                    cohortStats.getGenotypesFreq().entrySet().removeIf(e -> e.getValue() == 0);
+
                     assertEquals(stats.getGenotypesCount(), cohortStats.getGenotypesCount());
                     assertEquals(stats.getGenotypesFreq(), cohortStats.getGenotypesFreq());
                     assertEquals(stats.getMaf(), cohortStats.getMaf());
-                    assertEquals(stats.getMafAllele(), cohortStats.getMafAllele());
-                    assertEquals(stats.getRefAlleleFreq(), cohortStats.getAltAlleleFreq());
+                    if (StringUtils.isNotEmpty(stats.getMafAllele()) || StringUtils.isNotEmpty(cohortStats.getMafAllele())) {
+                        assertEquals(stats.getMafAllele(), cohortStats.getMafAllele());
+                    }
+                    assertEquals(stats.getMgf(), cohortStats.getMgf());
+                    assertEquals(stats.getRefAlleleFreq(), cohortStats.getRefAlleleFreq());
+                    assertEquals(stats.getAltAlleleFreq(), cohortStats.getAltAlleleFreq());
                 }
             }
         }
