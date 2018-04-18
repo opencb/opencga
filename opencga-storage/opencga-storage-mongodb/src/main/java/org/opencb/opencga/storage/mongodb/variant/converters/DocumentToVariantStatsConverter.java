@@ -28,10 +28,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -113,11 +110,16 @@ public class DocumentToVariantStatsConverter {
 
         stats.setGenotypesCount(genotypesCount);
 
-        HashMap<Genotype, Float> genotypesFreq = new HashMap<>();
-        for (Map.Entry<Genotype, Integer> entry : genotypesCount.entrySet()) {
-            if (entry.getKey().getCode() != AllelesCode.ALLELES_MISSING) {
-                genotypesFreq.put(entry.getKey(), entry.getValue().floatValue() / gtNumber);
+        Map<Genotype, Float> genotypesFreq;
+        if (gtNumber > 0) {
+            genotypesFreq = new HashMap<>();
+            for (Map.Entry<Genotype, Integer> entry : genotypesCount.entrySet()) {
+                if (entry.getKey().getCode() != AllelesCode.ALLELES_MISSING) {
+                    genotypesFreq.put(entry.getKey(), entry.getValue().floatValue() / gtNumber);
+                }
             }
+        } else {
+            genotypesFreq = Collections.emptyMap();
         }
         stats.setGenotypesFreq(genotypesFreq);
 

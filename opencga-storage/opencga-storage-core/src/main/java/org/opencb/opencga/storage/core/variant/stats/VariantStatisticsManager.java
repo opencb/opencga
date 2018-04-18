@@ -125,6 +125,8 @@ public interface VariantStatisticsManager {
         }
 
 
+        readerQuery.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
+
         readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), UNKNOWN_GENOTYPE);
         return readerQuery;
     }

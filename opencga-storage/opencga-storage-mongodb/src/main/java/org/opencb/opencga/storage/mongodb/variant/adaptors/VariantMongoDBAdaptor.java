@@ -42,6 +42,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -527,6 +528,30 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         } else {
             logger.debug("Using mongodb persistent iterator");
             return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
+        }
+    }
+
+    public MongoCursor<Document> nativeIterator(Query query, QueryOptions options, boolean persistent) {
+        if (query == null) {
+            query = new Query();
+        }
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
+        Document mongoQuery = queryParser.parseQuery(query);
+        System.out.println("mongoQuery = " + mongoQuery);
+        Document projection = queryParser.createProjection(query, options);
+        System.out.println("projection = " + projection);
+        options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
+
+
+        if (persistent) {
+            logger.debug("Using mongodb persistent iterator");
+            return new MongoPersistentCursor(variantsCollection, mongoQuery, projection, options);
+        } else {
+            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
+            return dbCursor.iterator();
         }
     }
 
