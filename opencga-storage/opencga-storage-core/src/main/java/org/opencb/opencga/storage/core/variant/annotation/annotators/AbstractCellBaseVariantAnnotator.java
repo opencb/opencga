@@ -34,6 +34,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
+
 /**
  * Created by jacobo on 9/01/15.
  */
@@ -45,9 +48,6 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     // Imprecise variants supported by cellbase (REST only)
     public static final String ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS = "annotator.cellbase.imprecise_variants";
     public static final int CELLBASE_VARIANT_THRESHOLD = 5000;
-
-    public static final String ADDITIONAL_ATTRIBUTES_KEY = "opencga";
-    public static final String ADDITIONAL_ATTRIBUTES_VARIANT_ID = "id";
 
     protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
     protected final String species;
@@ -164,12 +164,12 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                         // Variant annotation class does not have information about Structural Variations.
                         // Store the original Variant.toString as an additional attribute.
                         AdditionalAttribute additionalAttribute =
-                                new AdditionalAttribute(Collections.singletonMap(ADDITIONAL_ATTRIBUTES_VARIANT_ID, variant.toString()));
+                                new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), variant.toString()));
                         if (variantAnnotation.getAdditionalAttributes() == null) {
                             variantAnnotation
-                                    .setAdditionalAttributes(Collections.singletonMap(ADDITIONAL_ATTRIBUTES_KEY, additionalAttribute));
+                                    .setAdditionalAttributes(Collections.singletonMap(GROUP_NAME.key(), additionalAttribute));
                         } else {
-                            variantAnnotation.getAdditionalAttributes().put(ADDITIONAL_ATTRIBUTES_KEY, additionalAttribute);
+                            variantAnnotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
                         }
                     }
                     variantAnnotationList.add(variantAnnotation);

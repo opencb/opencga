@@ -25,6 +25,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.File;
@@ -86,7 +87,8 @@ public class SolrExternalResource extends ExternalResource {
     public VariantSearchManager configure(VariantStorageEngine variantStorageEngine) throws StorageEngineException {
         variantStorageEngine.getConfiguration().getSearch().setMode("core");
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
-        variantSearchManager.setSolrClient(getSolrClient());
+        variantSearchManager.setSolrManager(new SolrManager(solrClient, "localhost", "core",
+                variantStorageEngine.getConfiguration().getSearch().getTimeout()));
         return variantSearchManager;
     }
 

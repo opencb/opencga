@@ -74,6 +74,39 @@ public enum VariantField {
     ANNOTATION_DRUGS(ANNOTATION, "annotation.drugs"),
     ANNOTATION_ADDITIONAL_ATTRIBUTES(ANNOTATION, "annotation.additionalAttributes");
 
+    /**
+     * Known additional attributes defined by OpenCGA.
+     *
+     * <code>
+     *   "annotation" {
+     *       "additionalAttributes" {
+     *           "opencga" : { <<<< GROUP_NAME
+     *               "attribute" : {
+     *                   "release" : "4"
+     *               }
+     *           }
+     *       }
+     *   }
+     * </code>
+     */
+    public enum AdditionalAttributes {
+        GROUP_NAME("opencga"),
+        RELEASE("release"),
+        INDEX_SYNCHRONIZATION("indexSync"),
+        INDEX_STUDIES("indexStudies"),
+        VARIANT_ID("id");
+
+        private final String key;
+
+        AdditionalAttributes(String key) {
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+    }
+
     private static final List<VariantField> SUMMARY_EXCLUDED_FIELDS = Arrays.asList(
             STUDIES_FILES,
             STUDIES_SAMPLES_DATA,

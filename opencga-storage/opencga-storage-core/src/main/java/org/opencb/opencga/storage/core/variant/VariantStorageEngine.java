@@ -56,9 +56,10 @@ import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.UseSearchIndex;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
@@ -472,7 +473,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         searchIndex(new Query(), new QueryOptions());
     }
 
-    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, VariantSearchException {
+    public void searchIndex(Query inputQuery, QueryOptions inputQueryOptions)
+            throws StorageEngineException, IOException, VariantSearchException {
+        Query query = inputQuery == null ? new Query() : new Query(inputQuery);
+        QueryOptions queryOptions = inputQueryOptions == null ? new QueryOptions() : new QueryOptions(inputQueryOptions);
+
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
@@ -480,15 +485,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         variantSearchManager.create(dbName);
         if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
             // then, load variants
-            queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
+            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
-            variantSearchManager.load(dbName, iterator, progressLogger);
+            variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
         } else {
             throw new StorageEngineException("Solr is not alive!");
         }
         dbAdaptor.close();
+    }
+
+    protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
+        return VariantSearchLoadListener.empty();
     }
 
     /**

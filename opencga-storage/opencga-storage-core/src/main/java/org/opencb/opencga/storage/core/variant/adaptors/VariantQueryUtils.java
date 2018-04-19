@@ -61,8 +61,11 @@ public class VariantQueryUtils {
     public static final String ALL = "all";
     public static final String GT = "GT";
 
+    // Some private query params
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam VARIANTS_TO_INDEX = QueryParam.create("variantsToIndex",
+            "Select variants that need to be updated in the SearchEngine", Type.BOOLEAN);
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 

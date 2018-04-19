@@ -83,6 +83,19 @@ public class VariantSearchManager {
         }
     }
 
+    public enum SyncStatus {
+        SYNCHRONIZED("Y"), NOT_SYNCHRONIZED("N"), UNKNOWN("?");
+        private final String c;
+
+        SyncStatus(String c) {
+            this.c = c;
+        }
+
+        public String key() {
+            return c;
+        }
+    }
+
 
     @Deprecated
     public VariantSearchManager(String host, String collection) {
@@ -163,16 +176,19 @@ public class VariantSearchManager {
         }
     }
 
+
     /**
      * Load a Solr core/collection from a variant DB iterator.
      *
      * @param collection        Collection name
      * @param variantDBIterator Iterator to retrieve the variants to load
      * @param progressLogger    Progress logger
+     * @param loadListener      Load listener
      * @throws IOException            IOException
      * @throws VariantSearchException VariantSearchException
      */
-    public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
+    public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger,
+                     VariantSearchLoadListener loadListener)
             throws IOException, VariantSearchException {
         if (variantDBIterator == null) {
             throw new VariantSearchException("VariantDBIterator parameter is null");
@@ -186,14 +202,18 @@ public class VariantSearchManager {
             variantList.add(variant);
             count++;
             if (count % insertBatchSize == 0) {
+                loadListener.preLoad(variantList);
                 insert(collection, variantList);
+                loadListener.postLoad(variantList);
                 variantList.clear();
             }
         }
 
         // Insert the remaining variants
         if (CollectionUtils.isNotEmpty(variantList)) {
+            loadListener.preLoad(variantList);
             insert(collection, variantList);
+            loadListener.postLoad(variantList);
         }
 
         logger.debug("Variant Search loading done: {} variants indexed", count);

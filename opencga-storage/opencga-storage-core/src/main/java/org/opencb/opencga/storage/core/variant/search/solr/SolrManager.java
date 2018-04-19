@@ -42,6 +42,16 @@ public class SolrManager {
         logger = LoggerFactory.getLogger(SolrManager.class);
     }
 
+    public SolrManager(SolrClient solrClient, String host, String mode, int timeout) {
+        this.host = host;
+        this.mode = mode;
+        this.timeout = timeout;
+
+        this.solrClient = solrClient;
+
+        logger = LoggerFactory.getLogger(SolrManager.class);
+    }
+
     public boolean isAlive(String collection) {
         try {
             SolrPing solrPing = new SolrPing();
@@ -102,7 +112,7 @@ public class SolrManager {
      */
     public void createCore(String coreName, String configSet) throws VariantSearchException {
         try {
-            logger.debug("Creating core={}, core={}, configSet={}", host, coreName, configSet);
+            logger.debug("Creating core: host={}, core={}, configSet={}", host, coreName, configSet);
             CoreAdminRequest.Create request = new CoreAdminRequest.Create();
             request.setCoreName(coreName);
             request.setConfigSet(configSet);
@@ -123,7 +133,7 @@ public class SolrManager {
      * @throws VariantSearchException Exception
      */
     public void createCollection(String collectionName, String configSet) throws VariantSearchException {
-        logger.debug("Creating collection: {}, collection={}, config={}, numShards={}, numReplicas={}",
+        logger.debug("Creating collection: host={}, collection={}, config={}, numShards={}, numReplicas={}",
                 host, collectionName, configSet, 1, 1);
         try {
             CollectionAdminRequest request = CollectionAdminRequest.createCollection(collectionName, configSet, 1, 1);

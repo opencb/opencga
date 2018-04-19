@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.RELEASE;
+
 /**
  * Created by imedina on 14/11/16.
  */
@@ -94,8 +97,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // Set 'release' if it was not missing
         if (variantSearchModel.getRelease() > 0) {
             Map<String, String> attribute = new HashMap<>();
-            attribute.put("release", String.valueOf(variantSearchModel.getRelease()));
-            variantAnnotation.getAdditionalAttributes().put("opencga", new AdditionalAttribute(attribute));
+            attribute.put(RELEASE.key(), String.valueOf(variantSearchModel.getRelease()));
+            variantAnnotation.setAdditionalAttributes(new HashMap<>());
+            variantAnnotation.getAdditionalAttributes().put(GROUP_NAME.key(), new AdditionalAttribute(attribute));
         }
 
         // Xrefs
@@ -484,8 +488,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // Set release field
             int release = -1;   // default value if missing is -1
-            if (variantAnnotation.getAdditionalAttributes() != null && variantAnnotation.getAdditionalAttributes().get("opencga") != null) {
-                String releaseStr = variantAnnotation.getAdditionalAttributes().get("opencga").getAttribute().get("release");
+            if (variantAnnotation.getAdditionalAttributes() != null
+                    && variantAnnotation.getAdditionalAttributes().get(GROUP_NAME.key()) != null) {
+                String releaseStr = variantAnnotation.getAdditionalAttributes().get(GROUP_NAME.key()).getAttribute().get(RELEASE.key());
                 // example: release = "2,3,4"
                 if (StringUtils.isNotEmpty(releaseStr)) {
                     releaseStr = releaseStr.split(",")[0];
