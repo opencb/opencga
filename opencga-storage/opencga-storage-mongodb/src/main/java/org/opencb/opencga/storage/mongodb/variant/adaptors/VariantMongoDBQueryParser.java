@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RELEASE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.LOADED_GENOTYPES;
@@ -453,6 +455,13 @@ public class VariantMongoDBQueryParser {
                                     throw new IllegalArgumentException("Unsupported operator '" + op + "'");
                             }
                         });
+            }
+
+            if (isValidParam(query, VARIANTS_TO_INDEX)) {
+                if (query.getBoolean(VARIANTS_TO_INDEX.key())) {
+                    builder.and(DocumentToVariantConverter.INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_SYNCHRONIZED_FIELD)
+                            .notEquals(VariantSearchManager.SyncStatus.SYNCHRONIZED.key());
+                }
             }
         }
     }

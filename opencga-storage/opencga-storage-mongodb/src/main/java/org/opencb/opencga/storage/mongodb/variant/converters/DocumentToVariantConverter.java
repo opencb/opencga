@@ -23,11 +23,14 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.*;
 
@@ -72,6 +75,9 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
     public static final String AT_FIELD = "_at";
     public static final String CHUNK_IDS_FIELD = "chunkIds";
     public static final String RELEASE_FIELD = "_r";
+    public static final String INDEX_FIELD = "_index";
+    public static final String INDEX_SYNCHRONIZED_FIELD = "sync";
+    public static final String INDEX_STUDIES_FIELD = "st";
 
 //    public static final String ID_FIELD = "id";
 //    public static final String FILES_FIELD = "files";
@@ -120,7 +126,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.STUDIES_STUDY_ID, singletonList(
                 STUDIES_FIELD + '.' + STUDYID_FIELD));
 
-        map.put(VariantField.ANNOTATION, Arrays.asList(ANNOTATION_FIELD, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
+        map.put(VariantField.ANNOTATION, Arrays.asList(ANNOTATION_FIELD, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD, INDEX_FIELD));
         map.put(VariantField.ANNOTATION_ANCESTRAL_ALLELE, emptyList());
         map.put(VariantField.ANNOTATION_ID, emptyList());
         map.put(VariantField.ANNOTATION_CHROMOSOME, emptyList());
@@ -151,7 +157,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
                 ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_SCALED_FIELD));
         map.put(VariantField.ANNOTATION_REPEAT, singletonList(ANNOTATION_FIELD + '.' + REPEATS_FIELD));
         map.put(VariantField.ANNOTATION_DRUGS, emptyList());
-        map.put(VariantField.ANNOTATION_ADDITIONAL_ATTRIBUTES, Arrays.asList(CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
+        map.put(VariantField.ANNOTATION_ADDITIONAL_ATTRIBUTES, Arrays.asList(CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD, INDEX_FIELD));
 
         FIELDS_MAP = unmodifiableMap(map);
 
@@ -312,6 +318,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         }
         Document customAnnotation = object.get(CUSTOM_ANNOTATION_FIELD, Document.class);
         boolean hasRelease = object.containsKey(RELEASE_FIELD);
+        boolean hasIndex = object.containsKey(INDEX_FIELD);
         if (mongoAnnotation != null || customAnnotation != null || hasRelease) {
             VariantAnnotation annotation;
             if (mongoAnnotation != null) {
@@ -323,17 +330,50 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
             if (customAnnotation != null) {
                 annotation.setAdditionalAttributes(variantAnnotationConverter.convertAdditionalAttributesToDataModelType(customAnnotation));
             }
-            if (hasRelease) {
+            AdditionalAttribute additionalAttribute = null;
+            if (hasRelease || hasIndex) {
                 if (annotation.getAdditionalAttributes() == null) {
                     annotation.setAdditionalAttributes(new HashMap<>());
                 }
+                if (annotation.getAdditionalAttributes().containsKey(GROUP_NAME.key())) {
+                    additionalAttribute = annotation.getAdditionalAttributes().get(GROUP_NAME.key());
+                } else {
+                    additionalAttribute = new AdditionalAttribute(new HashMap<>());
+                    annotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
+                }
+            }
+            if (hasRelease) {
                 String release = this.<Number>getList(object, RELEASE_FIELD).stream()
                         .map(Number::intValue)
                         .min(Integer::compareTo)
                         .orElse(-1)
                         .toString();
-                AdditionalAttribute additionalAttribute = new AdditionalAttribute(Collections.singletonMap("release", release));
-                annotation.getAdditionalAttributes().put("opencga", additionalAttribute);
+                additionalAttribute.getAttribute().put(RELEASE.key(), release);
+            }
+            if (hasIndex) {
+                Document index = object.get(INDEX_FIELD, Document.class);
+                List<String> indexSynchronization = getList(index, INDEX_SYNCHRONIZED_FIELD);
+                if (indexSynchronization != null && !indexSynchronization.isEmpty()) {
+                    if (indexSynchronization.size() > 1) {
+                        if (indexSynchronization.contains(VariantSearchManager.SyncStatus.UNKNOWN.key())) {
+                            additionalAttribute.getAttribute().put(INDEX_SYNCHRONIZATION.key(),
+                                    VariantSearchManager.SyncStatus.UNKNOWN.key());
+                        } else {
+                            throw new IllegalStateException("Unexpected status: " + INDEX_SYNCHRONIZATION.key() + " : "
+                                    + indexSynchronization);
+                        }
+                    } else {
+                        additionalAttribute.getAttribute().put(INDEX_SYNCHRONIZATION.key(), indexSynchronization.get(0));
+                    }
+                }
+
+                List<Number> indexedStudies = getList(index, INDEX_STUDIES_FIELD);
+                if (indexedStudies != null && !indexedStudies.isEmpty()) {
+                    additionalAttribute.getAttribute().put(INDEX_STUDIES.key(), indexedStudies
+                            .stream()
+                            .map(Object::toString)
+                            .collect(Collectors.joining(",")));
+                }
             }
 
             annotation.setChromosome(variant.getChromosome());

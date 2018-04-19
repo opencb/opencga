@@ -69,12 +69,14 @@ import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_KEY;
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_VARIANT_ID;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.SET_INDEX_NOT_SYNCHRONIZED;
+import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.SET_INDEX_SYNCHRONIZED;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -832,9 +834,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     pullUpdatesBulkList.add(pull);
                 }
 
-                Document push = new Document("$push",
-                        new Document(DocumentToVariantConverter.STATS_FIELD,
-                                new Document("$each", cohorts)));
+                Bson push = combine(pushEach(DocumentToVariantConverter.STATS_FIELD, cohorts), SET_INDEX_NOT_SYNCHRONIZED);
                 pushQueriesBulkList.add(find);
                 pushUpdatesBulkList.add(push);
             }
@@ -889,11 +889,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
             String id;
             if (variantAnnotation.getAdditionalAttributes() != null
-                    && variantAnnotation.getAdditionalAttributes().containsKey(ADDITIONAL_ATTRIBUTES_KEY)) {
+                    && variantAnnotation.getAdditionalAttributes().containsKey(GROUP_NAME.key())) {
                 String variantString = variantAnnotation.getAdditionalAttributes()
-                        .get(ADDITIONAL_ATTRIBUTES_KEY)
+                        .get(GROUP_NAME.key())
                         .getAttribute()
-                        .get(ADDITIONAL_ATTRIBUTES_VARIANT_ID);
+                        .get(VARIANT_ID.key());
                 id = variantConverter.buildStorageId(new Variant(variantString));
             } else {
                 id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
@@ -902,8 +902,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Document find = new Document("_id", id);
             DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter();
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
-            Document update = new Document("$set", new Document(DocumentToVariantConverter.ANNOTATION_FIELD + ".0",
-                    convertedVariantAnnotation));
+            Bson update = combine(
+                    set(DocumentToVariantConverter.ANNOTATION_FIELD + ".0", convertedVariantAnnotation),
+                    SET_INDEX_NOT_SYNCHRONIZED);
             queries.add(find);
             updates.add(update);
         }
@@ -1006,6 +1007,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * - sift.description : SPARSE
      * - ProteinVariantAnnotation.keywords : SPARSE
      * - TranscriptAnnotationFlags : SPARSE
+     * SearchIndex
+     * - _index.sync
      *
      * @param options            Unused Options.
      * @param variantsCollection MongoDBCollection
@@ -1145,6 +1148,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                 + '.' + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, 1),
                 onBackgroundSparse);
 
+        // _index.sync
+        variantsCollection.createIndex(new Document()
+                        .append(DocumentToVariantConverter.INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_SYNCHRONIZED_FIELD, 1),
+                onBackgroundSparse);
+
         logger.debug("sent order to create indices");
     }
 
@@ -1163,4 +1171,32 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
+    public void updateIndexSync(List<Variant> variants) {
+        if (!variants.isEmpty()) {
+            VariantStringIdConverter idConverter = new VariantStringIdConverter();
+            List<String> ids = variants.stream().map(idConverter::buildId).collect(Collectors.toList());
+            variantsCollection.update(in("_id", ids), combine(SET_INDEX_SYNCHRONIZED), new QueryOptions(MULTI, true));
+        }
+    }
+
+    public void updateIndexSyncAndStudies(List<Variant> variants, Map<String, Integer> studiesMap) {
+        if (!variants.isEmpty()) {
+            VariantStringIdConverter idConverter = new VariantStringIdConverter();
+            Map<Set<Integer>, List<Variant>> map = variants.stream()
+                    .collect(Collectors.groupingBy(
+                            variant -> variant.getStudies()
+                                    .stream()
+                                    .map(StudyEntry::getStudyId).map(studiesMap::get)
+                                    .collect(Collectors.toSet())));
+
+            for (Map.Entry<Set<Integer>, List<Variant>> entry : map.entrySet()) {
+                List<String> ids = entry.getValue().stream().map(idConverter::buildId).collect(Collectors.toList());
+                variantsCollection.update(in("_id", ids), combine(
+                        SET_INDEX_SYNCHRONIZED,
+                        set(DocumentToVariantConverter.INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_STUDIES_FIELD,
+                                entry.getKey())
+                ), new QueryOptions(MULTI, true));
+            }
+        }
+    }
 }

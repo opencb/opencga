@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -44,6 +45,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -190,6 +192,23 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             @Override
             protected VariantAnnotationDBWriter newVariantAnnotationDBWriter(VariantDBAdaptor dbAdaptor, QueryOptions options) {
                 return new VariantMongoDBAnnotationDBWriter(options, mongoDbAdaptor);
+            }
+        };
+    }
+
+    @Override
+    protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
+        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
+
+        return new VariantSearchLoadListener(getStudyConfigurationManager().getStudies(null)) {
+            @Override
+            protected void processAlreadySynchronizedVariants(List<Variant> alreadySynchronizedVariants) {
+                dbAdaptor.updateIndexSync(alreadySynchronizedVariants);
+            }
+
+            @Override
+            public void postLoad(List<Variant> variants) throws IOException {
+                dbAdaptor.updateIndexSyncAndStudies(variants, studiesMap);
             }
         };
     }

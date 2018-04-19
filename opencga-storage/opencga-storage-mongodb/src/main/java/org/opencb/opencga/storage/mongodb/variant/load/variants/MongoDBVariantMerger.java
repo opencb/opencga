@@ -36,6 +36,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
@@ -43,6 +44,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVari
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1022,7 +1024,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                                 .append(VariantQueryParam.ID.key(), variant.toString())
                                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".")
                                 .append(VariantQueryParam.INCLUDE_STUDY.key(), studyId),
-                        new QueryOptions(QueryOptions.TIMEOUT, 30_000));
+                        new QueryOptions(QueryOptions.TIMEOUT, 30_000)
+                                .append(QueryOptions.EXCLUDE, Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS)));
             } catch (MongoExecutionTimeoutException e) {
                 fails++;
                 if (fails < maxNumFails) {
@@ -1090,6 +1093,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                             }
                         }
                     }
+                    updates.add(MongoDBVariantSearchIndexUtils.SET_INDEX_UNKNOWN);
+
                     mongoDBOps.getNewStudy().getVariants().add(variantDocument);
                     id = variantDocument.getString("_id");
                 } else {
