@@ -460,7 +460,9 @@ public class VariantMongoDBQueryParser {
             if (isValidParam(query, VARIANTS_TO_INDEX)) {
                 if (query.getBoolean(VARIANTS_TO_INDEX.key())) {
                     builder.and(DocumentToVariantConverter.INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_SYNCHRONIZED_FIELD)
-                            .notEquals(VariantSearchManager.SyncStatus.SYNCHRONIZED.key());
+                            .in(Arrays.asList(null,
+                                    VariantSearchManager.SyncStatus.NOT_SYNCHRONIZED.key(),
+                                    VariantSearchManager.SyncStatus.UNKNOWN.key()));
                 }
             }
         }

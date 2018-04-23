@@ -11,6 +11,8 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
@@ -46,10 +48,12 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         int studyId = 1;
         int release = 1;
         List<URI> inputFiles = new ArrayList<>();
+        List<String> fileNames = new ArrayList<>();
         StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, "S_" + studyId);
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             URI inputFile = getResourceUri("platinum/" + fileName);
+            fileNames.add(fileName);
             inputFiles.add(inputFile);
             studyConfiguration.getFileIds().put(fileName, fileId);
             studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
@@ -59,24 +63,48 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 storageEngine.getOptions().putAll(options);
                 storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
                 storageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);
-                variantStorageEngine.searchIndex();
 
+                Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
+                long count = dbAdaptor.count(query).first();
+
+                VariantSearchLoadResult loadResult = searchIndex();
+                System.out.println("searchIndex() = " + loadResult);
+                assertEquals(count, loadResult.getNumLoadedVariants());
+
+                //////////////////////
+                storageEngine.getOptions().putAll(options);
                 storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
                 storageEngine.index(inputFiles.subList(2, 4), outputUri, true, true, true);
 
-                variantStorageEngine.searchIndex();
+                count = dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
+                        "!" + fileNames.get(0) + ";!" + fileNames.get(1) + ";" + fileNames.get(2) + ";" + fileNames.get(3))).first();
+                count += dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
+                        "!" + fileNames.get(0) + ";!" + fileNames.get(1) + ";!" + fileNames.get(2) + ";" + fileNames.get(3))).first();
+                count += dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
+                        "!" + fileNames.get(0) + ";!" + fileNames.get(1) + ";" + fileNames.get(2) + ";!" + fileNames.get(3))).first();
 
+                loadResult = searchIndex();
+                System.out.println("searchIndex() = " + loadResult);
+                assertEquals(count, loadResult.getNumLoadedVariants());
+
+
+                //////////////////////
                 QueryOptions statsOptions = new QueryOptions(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID)
                         .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "stats");
                 storageEngine.calculateStats(studyConfiguration.getStudyName(), Collections.singletonList("ALL"), statsOptions);
 
-                variantStorageEngine.searchIndex();
+                query = new Query(VariantQueryParam.STUDY.key(), studyId);
+                count = dbAdaptor.count(query).first();
+                loadResult = searchIndex();
+                assertEquals(count, loadResult.getNumLoadedVariants());
+                System.out.println("searchIndex() = " + loadResult);
 
                 studyId++;
                 studyConfiguration = new StudyConfiguration(studyId, "S_" + studyId);
                 inputFiles.clear();
+                fileNames.clear();
                 if (studyId > maxStudies) {
                     break;
                 }
@@ -103,7 +131,11 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             Set<String> studiesFromSearch = variantFromSearch.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toSet());
 
             assertEquals(variantFromDB.toString(), variantFromSearch.toString());
-            assertEquals(studiesFromDB, studiesFromSearch);
+            assertEquals(variantFromDB.toString(), studiesFromDB, studiesFromSearch);
         }
+    }
+
+    public VariantSearchLoadResult searchIndex() throws Exception {
+        return variantStorageEngine.searchIndex();
     }
 }

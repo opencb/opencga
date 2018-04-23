@@ -176,7 +176,6 @@ public class VariantSearchManager {
         }
     }
 
-
     /**
      * Load a Solr core/collection from a variant DB iterator.
      *
@@ -184,17 +183,19 @@ public class VariantSearchManager {
      * @param variantDBIterator Iterator to retrieve the variants to load
      * @param progressLogger    Progress logger
      * @param loadListener      Load listener
+     * @return VariantSearchLoadResult
      * @throws IOException            IOException
      * @throws VariantSearchException VariantSearchException
      */
-    public void load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger,
-                     VariantSearchLoadListener loadListener)
+    public VariantSearchLoadResult load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger,
+                                        VariantSearchLoadListener loadListener)
             throws IOException, VariantSearchException {
         if (variantDBIterator == null) {
             throw new VariantSearchException("VariantDBIterator parameter is null");
         }
 
         int count = 0;
+        int numLoadedVariants = 0;
         List<Variant> variantList = new ArrayList<>(insertBatchSize);
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
@@ -203,6 +204,7 @@ public class VariantSearchManager {
             count++;
             if (count % insertBatchSize == 0) {
                 loadListener.preLoad(variantList);
+                numLoadedVariants += variantList.size();
                 insert(collection, variantList);
                 loadListener.postLoad(variantList);
                 variantList.clear();
@@ -212,11 +214,14 @@ public class VariantSearchManager {
         // Insert the remaining variants
         if (CollectionUtils.isNotEmpty(variantList)) {
             loadListener.preLoad(variantList);
+            numLoadedVariants += variantList.size();
             insert(collection, variantList);
             loadListener.postLoad(variantList);
         }
+        loadListener.close();
 
         logger.debug("Variant Search loading done: {} variants indexed", count);
+        return new VariantSearchLoadResult(count, numLoadedVariants);
     }
 
     /**

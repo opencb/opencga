@@ -32,8 +32,10 @@ public abstract class VariantSearchLoadListener {
         Iterator<Variant> iterator = variants.iterator();
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
-            AdditionalAttribute additionalAttribute = variant.getAnnotation().getAdditionalAttributes().get(GROUP_NAME.key());
-            if (additionalAttribute != null) {
+            if (variant.getAnnotation() != null
+                    && variant.getAnnotation().getAdditionalAttributes() != null
+                    && variant.getAnnotation().getAdditionalAttributes().get(GROUP_NAME.key()) != null) {
+                AdditionalAttribute additionalAttribute = variant.getAnnotation().getAdditionalAttributes().get(GROUP_NAME.key());
                 String sync = additionalAttribute.getAttribute().get(AdditionalAttributes.INDEX_SYNCHRONIZATION.key());
                 if (VariantSearchManager.SyncStatus.SYNCHRONIZED.key().equals(sync)) {
                     // Discard variant!
@@ -81,4 +83,6 @@ public abstract class VariantSearchLoadListener {
             }
         };
     }
+
+    public void close() {}
 }
