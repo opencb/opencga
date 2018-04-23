@@ -48,7 +48,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKey
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -193,7 +192,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                     Integer studyId = getStudyId(split);
                     Integer sampleId = getSampleId(split);
-                    Array value = resultSet.getArray(i);
+                    PhoenixArray value = (PhoenixArray) resultSet.getArray(i);
                     if (value != null) {
                         List<String> sampleData = toModifiableList(value);
                         studies.add(studyId);
@@ -263,7 +262,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                 Integer studyId = getStudyId(split);
                 Integer sampleId = getSampleId(split);
-                Array array = (Array) PVarcharArray.INSTANCE.toObject(bytes);
+                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
                 List<String> sampleData = toModifiableList(array);
                 studies.add(studyId);
                 sampleDataMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(sampleId, sampleData));
@@ -719,30 +718,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 split[4],
                 VariantType.valueOf(split[5])
         );
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> List<T> toList(Array value) {
-        try {
-            return Arrays.asList((T[]) value.getArray());
-        } catch (SQLException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> List<T> toModifiableList(Array value) {
-        try {
-            T[] array = (T[]) value.getArray();
-            ArrayList<T> list = new ArrayList<>(array.length);
-            for (T t : array) {
-                list.add(t);
-            }
-            return list;
-//            return Arrays.asList((T[]) value.getArray());
-        } catch (SQLException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     private Integer getStudyId(String[] split) {

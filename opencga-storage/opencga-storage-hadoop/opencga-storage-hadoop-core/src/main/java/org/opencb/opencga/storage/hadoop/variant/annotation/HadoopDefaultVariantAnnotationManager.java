@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
-import org.apache.hadoop.hbase.client.Put;
 import org.apache.phoenix.schema.PTableType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.ProgressLogger;
@@ -30,7 +29,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
-import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
@@ -58,7 +56,10 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 || params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
             VariantAnnotationToHBaseConverter task =
                     new VariantAnnotationToHBaseConverter(hadoopDBAdaptor.getGenomeHelper(), progressLogger);
-            HBaseDataWriter<Put> writer = new HBaseDataWriter<>(hadoopDBAdaptor.getHBaseManager(), hadoopDBAdaptor.getVariantTable());
+            VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(
+                    hadoopDBAdaptor.getHBaseManager(),
+                    hadoopDBAdaptor.getVariantTable(),
+                    hadoopDBAdaptor.getGenomeHelper().getColumnFamily());
             return new ParallelTaskRunner<>(reader, task, writer, config);
         } else {
             return new ParallelTaskRunner<>(reader,

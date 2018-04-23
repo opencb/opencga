@@ -47,6 +47,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
@@ -60,6 +62,7 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -339,10 +342,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException, VariantSearchException {
+    public VariantSearchLoadResult searchIndex(Query query, QueryOptions queryOptions)
+            throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
         queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
-        super.searchIndex(query, queryOptions);
+        return super.searchIndex(query, queryOptions);
+    }
+
+    @Override
+    protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
+        return new HadoopVariantSearchLoadListener(getDBAdaptor());
     }
 
     @Override
@@ -886,4 +895,5 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             return source;
         }
     }
+
 }

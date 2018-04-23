@@ -57,6 +57,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -491,18 +492,29 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         phoenixHelper.updateStatsColumns(getJdbcConnection(), variantTable, studyConfiguration);
     }
 
+    /**
+     * @deprecated This method should not be used for batch load.
+     */
     @Override
+    @Deprecated
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
         return updateStats(variantStatsWrappers,
                 getStudyConfigurationManager().getStudyConfiguration(studyName, queryOptions).first(), queryOptions);
     }
 
+    /**
+     * @deprecated This method should not be used for batch load.
+     */
     @Override
+    @Deprecated
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
                                    QueryOptions options) {
 
         VariantStatsToHBaseConverter converter = new VariantStatsToHBaseConverter(genomeHelper, studyConfiguration);
         List<Put> puts = converter.apply(variantStatsWrappers);
+        for (Put put : puts) {
+            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, genomeHelper.getColumnFamily());
+        }
 
         long start = System.currentTimeMillis();
         try (Table table = getConnection().getTable(TableName.valueOf(variantTable))) {

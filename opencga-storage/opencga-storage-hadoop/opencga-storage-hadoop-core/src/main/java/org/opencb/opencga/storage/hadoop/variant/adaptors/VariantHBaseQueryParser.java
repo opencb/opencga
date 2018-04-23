@@ -22,6 +22,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PBoolean;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -160,6 +161,19 @@ public class VariantHBaseQueryParser {
             }
         }
 
+        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
+            scan.addColumn(genomeHelper.getColumnFamily(), INDEX_NOT_SYNC.bytes());
+            scan.addColumn(genomeHelper.getColumnFamily(), INDEX_UNKNOWN.bytes());
+            scan.addColumn(genomeHelper.getColumnFamily(), INDEX_STUDIES.bytes());
+            SingleColumnValueFilter f1 = new SingleColumnValueFilter(genomeHelper.getColumnFamily(), INDEX_NOT_SYNC.bytes(),
+                    CompareFilter.CompareOp.EQUAL, PBoolean.TRUE_BYTES);
+            SingleColumnValueFilter f2 = new SingleColumnValueFilter(genomeHelper.getColumnFamily(), INDEX_UNKNOWN.bytes(),
+                    CompareFilter.CompareOp.EQUAL, PBoolean.TRUE_BYTES);
+            f1.setFilterIfMissing(true);
+            f2.setFilterIfMissing(true);
+            filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, f1, f2));
+        }
+
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
             for (Integer studyId : selectElements.getStudies()) {
                 scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
@@ -285,11 +299,12 @@ public class VariantHBaseQueryParser {
 
         if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
             scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
-            if (defaultStudyConfiguration != null) {
-                int release = defaultStudyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
-                for (int i = 1; i <= release; i++) {
-                    scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildReleaseColumnKey(release));
-                }
+            int release = selectElements.getStudyConfigurations().values().stream().map(sc -> sc.getAttributes()
+                    .getInt(RELEASE.key(), RELEASE.defaultValue()))
+                    .max(Integer::compareTo)
+                    .orElse(10);
+            for (int i = 1; i <= release; i++) {
+                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildReleaseColumnKey(i));
             }
         }
 

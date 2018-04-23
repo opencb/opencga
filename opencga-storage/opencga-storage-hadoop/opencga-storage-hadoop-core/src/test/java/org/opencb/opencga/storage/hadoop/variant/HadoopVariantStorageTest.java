@@ -311,6 +311,12 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
             con.close();
         }
+
+        public void flush(String name) throws Exception {
+            TableName table = TableName.valueOf(name);
+            utility.get().flush(table);
+            utility.get().compact(table, true);
+        }
     }
 
     @Override

@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,10 +37,12 @@ import java.util.List;
 public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put> {
 
     private final StudyEntryToHBaseConverter converter;
+    private final GenomeHelper helper;
 
     public VariantHadoopDBWriter(GenomeHelper helper, String tableName, StudyConfiguration sc, HBaseManager hBaseManager) {
         super(hBaseManager, tableName);
-        converter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), sc, true);
+        this.helper = helper;
+        converter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), sc, true);
     }
 
     @Override
@@ -48,6 +51,7 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
         for (Variant variant : list) {
             if (HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET.contains(variant.getType())) {
                 Put put = converter.convert(variant);
+                HadoopVariantSearchIndexUtils.addUnknownSyncStatus(put, helper.getColumnFamily());
                 puts.add(put);
             } //Discard ref_block and symbolic variants.
         }

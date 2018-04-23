@@ -21,7 +21,11 @@ import org.apache.phoenix.schema.types.*;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 
 import java.sql.Array;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created on 07/07/16.
@@ -109,5 +113,27 @@ public abstract class AbstractPhoenixConverter {
             }
         }
         return true;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> List<T> toList(PhoenixArray value) {
+        try {
+            if (value.isPrimitiveType()) {
+                return toModifiableList(value);
+            } else {
+                return Arrays.asList((T[]) value.getArray());
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> List<T> toModifiableList(PhoenixArray value) {
+        List<T> list = new ArrayList<>(value.getDimensions());
+        for (int i = 0; i < value.getDimensions(); i++) {
+            list.add((T) value.getElement(i));
+        }
+        return list;
     }
 }
