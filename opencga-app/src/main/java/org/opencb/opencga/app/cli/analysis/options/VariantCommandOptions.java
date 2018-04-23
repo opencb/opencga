@@ -141,6 +141,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--cohort"}, description = VariantQueryParam.COHORT_DESCR, arity = 1)
         public String cohort;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
+        public boolean overwrite;
     }
 
     @Deprecated

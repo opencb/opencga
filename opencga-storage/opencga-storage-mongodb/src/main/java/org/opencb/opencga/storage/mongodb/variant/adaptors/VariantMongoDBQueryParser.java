@@ -56,6 +56,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.LOADED_GENOTYPES;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.INDEX_FIELD;
 
 /**
  * Created on 31/03/17.
@@ -459,7 +460,7 @@ public class VariantMongoDBQueryParser {
 
             if (isValidParam(query, VARIANTS_TO_INDEX)) {
                 if (query.getBoolean(VARIANTS_TO_INDEX.key())) {
-                    builder.and(DocumentToVariantConverter.INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_SYNCHRONIZED_FIELD)
+                    builder.and(INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_SYNCHRONIZED_FIELD)
                             .in(Arrays.asList(null,
                                     VariantSearchManager.SyncStatus.NOT_SYNCHRONIZED.key(),
                                     VariantSearchManager.SyncStatus.UNKNOWN.key()));
@@ -883,6 +884,7 @@ public class VariantMongoDBQueryParser {
             returnedFields.add(VariantField.STUDIES_STUDY_ID);
         }
 
+
         // Top level $elemMatch MUST be at the very beginning in the projection document, so all the fields apply correctly.
         //
         // This two queries return different values:
@@ -946,6 +948,10 @@ public class VariantMongoDBQueryParser {
                     logger.warn("Unknown include field: {}", s);
                 }
             }
+        }
+
+        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
+            projection.putIfAbsent(INDEX_FIELD, 1);
         }
 
         logger.debug("QueryOptions: = {}", options.toJson());

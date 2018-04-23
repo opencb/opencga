@@ -734,6 +734,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--index"}, description = "Index a file into core/collection Solr.", arity = 0)
         public boolean index;
 
+        @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
+        public boolean overwrite;
+
         @Parameter(names = {"-i", "--input"}, description = "Path to the file to index. Valid formats: AVRO and JSON.", arity = 1)
         public String inputFilename;
 

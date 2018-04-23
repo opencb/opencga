@@ -267,6 +267,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         boolean doExtract, doTransform, doLoad;
 
 
+        // FIXME
         if (!indexVariantsCommandOptions.indexSearch) {
             if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
                 doExtract = true;
@@ -676,7 +677,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (searchOptions.index) {
             querying = false;
             Query query = VariantQueryCommandUtils.parseQuery(searchOptions, new Query());
-            variantStorageEngine.searchIndex(query, options);
+            variantStorageEngine.searchIndex(query, options, searchOptions.overwrite);
         }
 
         String mode = variantStorageEngine.getConfiguration().getSearch().getMode();

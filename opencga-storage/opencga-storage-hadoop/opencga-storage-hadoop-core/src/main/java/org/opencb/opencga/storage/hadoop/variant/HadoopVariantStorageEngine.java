@@ -342,11 +342,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantSearchLoadResult searchIndex(Query query, QueryOptions queryOptions)
+    public VariantSearchLoadResult searchIndex(Query query, QueryOptions queryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
         queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
-        return super.searchIndex(query, queryOptions);
+        return super.searchIndex(query, queryOptions, overwrite);
     }
 
     @Override

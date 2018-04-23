@@ -471,10 +471,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public VariantSearchLoadResult searchIndex() throws StorageEngineException, IOException, VariantSearchException {
-        return searchIndex(new Query(), new QueryOptions());
+        return searchIndex(new Query(), new QueryOptions(), false);
     }
 
-    public VariantSearchLoadResult searchIndex(Query inputQuery, QueryOptions inputQueryOptions)
+    public VariantSearchLoadResult searchIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         Query query = inputQuery == null ? new Query() : new Query(inputQuery);
         QueryOptions queryOptions = inputQueryOptions == null ? new QueryOptions() : new QueryOptions(inputQueryOptions);
@@ -487,7 +487,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
             // then, load variants
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
-            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
+            if (!overwrite) {
+                query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
+            }
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
             return variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());

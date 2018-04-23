@@ -1,12 +1,15 @@
 package org.opencb.opencga.storage.core.variant.search;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -16,6 +19,7 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResu
 import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,6 +31,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Ignore
 public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
     @Rule
@@ -68,8 +73,9 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 long count = dbAdaptor.count(query).first();
 
                 VariantSearchLoadResult loadResult = searchIndex();
-                System.out.println("searchIndex() = " + loadResult);
+                System.out.println("Load result after load 1,2 files: = " + loadResult);
                 assertEquals(count, loadResult.getNumLoadedVariants());
+                checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
                 storageEngine.getOptions().putAll(options);
@@ -84,8 +90,9 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                         "!" + fileNames.get(0) + ";!" + fileNames.get(1) + ";" + fileNames.get(2) + ";!" + fileNames.get(3))).first();
 
                 loadResult = searchIndex();
-                System.out.println("searchIndex() = " + loadResult);
+                System.out.println("Load result after load 3,4 files: = " + loadResult);
                 assertEquals(count, loadResult.getNumLoadedVariants());
+                checkVariantSearchIndex(dbAdaptor);
 
 
                 //////////////////////
@@ -98,9 +105,18 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 query = new Query(VariantQueryParam.STUDY.key(), studyId);
                 count = dbAdaptor.count(query).first();
                 loadResult = searchIndex();
+                System.out.println("Load result after stats calculate: = " + loadResult);
                 assertEquals(count, loadResult.getNumLoadedVariants());
-                System.out.println("searchIndex() = " + loadResult);
+                checkVariantSearchIndex(dbAdaptor);
 
+                //////////////////////
+                count = dbAdaptor.count(null).first();
+                loadResult = searchIndex(true);
+                System.out.println("Load result overwrite: = " + loadResult);
+                assertEquals(count, loadResult.getNumLoadedVariants());
+                checkVariantSearchIndex(dbAdaptor);
+
+                /////////// NEW STUDY ///////////
                 studyId++;
                 studyConfiguration = new StudyConfiguration(studyId, "S_" + studyId);
                 inputFiles.clear();
@@ -111,6 +127,10 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             }
         }
 
+        checkVariantSearchIndex(dbAdaptor);
+    }
+
+    public void checkVariantSearchIndex(VariantDBAdaptor dbAdaptor) throws IOException, VariantSearchException, StorageEngineException {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1000);
         Query query = new Query();
 
@@ -135,7 +155,11 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         }
     }
 
-    public VariantSearchLoadResult searchIndex() throws Exception {
-        return variantStorageEngine.searchIndex();
+    public final VariantSearchLoadResult searchIndex() throws Exception {
+        return searchIndex(false);
+    }
+
+    public VariantSearchLoadResult searchIndex(boolean overwrite) throws Exception {
+        return variantStorageEngine.searchIndex(new Query(), new QueryOptions(), overwrite);
     }
 }

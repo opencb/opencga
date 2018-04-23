@@ -293,7 +293,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         query.putIfNotEmpty(VariantQueryParam.SAMPLE.key(), cliOptions.sample);
         query.putIfNotEmpty(VariantQueryParam.FILE.key(), cliOptions.file);
         query.putIfNotEmpty(VariantQueryParam.COHORT.key(), cliOptions.cohort);
-        variantManager.searchIndex(query, queryOptions, sessionId);
+        variantManager.searchIndex(query, queryOptions, cliOptions.overwrite, sessionId);
     }
 
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
