@@ -42,7 +42,6 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -57,8 +56,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.*;
@@ -219,7 +218,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //                    indexVariantsCommandOptions.studyId, indexVariantsCommandOptions.study, indexVariantsCommandOptions.studyType,
 // indexVariantsCommandOptions.aggregated);
 
-        /** Add CLi options to the variant options **/
+        /* Add CLi options to the variant options */
         ObjectMap params = storageConfiguration.getVariant().getOptions();
         params.put(VariantStorageEngine.Options.MERGE_MODE.key(), indexVariantsCommandOptions.merge);
         params.put(VariantStorageEngine.Options.STUDY_NAME.key(), indexVariantsCommandOptions.studyName);
@@ -244,6 +243,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
         params.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
         params.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), indexVariantsCommandOptions.loadSplitData);
+        params.put(VariantStorageEngine.Options.INDEX_SEARCH.key(), indexVariantsCommandOptions.indexSearch);
 
         if (indexVariantsCommandOptions.aggregationMappingFile != null) {
             // TODO move this options to new configuration.yml
@@ -263,30 +263,19 @@ public class VariantCommandExecutor extends CommandExecutor {
         logger.debug("Configuration options: {}", params.toJson());
 
 
-        /** Execute ETL steps **/
+        /* Execute ETL steps */
         boolean doExtract, doTransform, doLoad;
 
-
-        // FIXME
-        if (!indexVariantsCommandOptions.indexSearch) {
-            if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
-                doExtract = true;
-                doTransform = true;
-                doLoad = true;
-            } else {
-                doExtract = indexVariantsCommandOptions.transform;
-                doTransform = indexVariantsCommandOptions.transform;
-                doLoad = indexVariantsCommandOptions.load;
-            }
-
-            variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
+        if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
+            doExtract = true;
+            doTransform = true;
+            doLoad = true;
         } else {
-            try {
-                variantStorageEngine.searchIndex();
-            } catch (VariantSearchException e) {
-                e.printStackTrace();
-            }
+            doExtract = indexVariantsCommandOptions.transform;
+            doTransform = indexVariantsCommandOptions.transform;
+            doLoad = indexVariantsCommandOptions.load;
         }
+        variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
     }
 
     private void remove() throws Exception {

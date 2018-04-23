@@ -144,6 +144,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         OVERWRITE_STATS("overwriteStats", false),          //Overwrite stats already present
         UPDATE_STATS("updateStats", false),                //Calculate missing stats
         ANNOTATE("annotate", false),
+        INDEX_SEARCH("indexSearch", false),
 
         RESUME("resume", false),
 
@@ -296,6 +297,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (doLoad) {
             annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
             calculateStatsForLoadedFiles(outdirUri, inputFiles, results, getOptions());
+            searchIndexLoadedFiles(inputFiles, getOptions());
         }
         return results;
     }
@@ -495,6 +497,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             return variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
         } else {
             throw new StorageEngineException("Solr is not alive!");
+        }
+    }
+
+    protected void searchIndexLoadedFiles(List<URI> inputFiles, ObjectMap options) throws StorageEngineException {
+        try {
+            if (options.getBoolean(INDEX_SEARCH.key())) {
+                searchIndex(new Query(), new QueryOptions(), false);
+            }
+        } catch (IOException | VariantSearchException e) {
+            throw new StorageEngineException("Error indexing in search", e);
         }
     }
 

@@ -431,6 +431,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 if (doMerge) {
                     annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
                     calculateStatsForLoadedFiles(outdirUri, inputFiles, results, getOptions());
+                    searchIndexLoadedFiles(inputFiles, getOptions());
                 }
             }
 

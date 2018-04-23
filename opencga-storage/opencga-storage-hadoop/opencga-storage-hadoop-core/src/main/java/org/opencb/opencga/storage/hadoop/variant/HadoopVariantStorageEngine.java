@@ -290,6 +290,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             if (doLoad) {
                 annotateLoadedFiles(outdirUri, inputFiles, concurrResult, getOptions());
                 calculateStatsForLoadedFiles(outdirUri, inputFiles, concurrResult, getOptions());
+                searchIndexLoadedFiles(inputFiles, getOptions());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
