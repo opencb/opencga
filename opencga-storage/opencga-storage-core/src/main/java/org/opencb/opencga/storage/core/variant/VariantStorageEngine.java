@@ -24,6 +24,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
@@ -56,9 +57,9 @@ import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.UseSearchIndex;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
@@ -311,8 +312,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws IOException                  If there is any IO problem
      */
     public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, StorageEngineException, IOException {
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, getStorageEngineId(), params);
-        VariantAnnotationManager annotationManager = newVariantAnnotationManager(annotator);
+        VariantAnnotationManager annotationManager = newVariantAnnotationManager(params);
         annotationManager.annotate(query, params);
     }
 
@@ -357,6 +357,32 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 throw new StoragePipelineException("Error annotating.", e, results);
             }
         }
+    }
+
+    public void createAnnotationSnapshot(String name, ObjectMap params) throws StorageEngineException, VariantAnnotatorException {
+        newVariantAnnotationManager(params).createAnnotationSnapshot(name, params);
+    }
+
+    public void deleteAnnotationSnapshot(String name, ObjectMap params) throws StorageEngineException, VariantAnnotatorException {
+        newVariantAnnotationManager(params).deleteAnnotationSnapshot(name, params);
+    }
+
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query) throws StorageEngineException, VariantAnnotatorException {
+        return getDBAdaptor().getAnnotation(name, query);
+    }
+
+    /**
+     * Provide a new VariantAnnotationManager for creating and loading annotations.
+     *
+     * @param params        Other params
+     * @return              A new instance of VariantAnnotationManager
+     * @throws StorageEngineException  if there is an error creating the VariantAnnotationManager
+     * @throws VariantAnnotatorException  if there is an error creating the VariantAnnotator
+     */
+    protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
+            throws StorageEngineException, VariantAnnotatorException {
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, getStorageEngineId(), params);
+        return newVariantAnnotationManager(annotator);
     }
 
     /**

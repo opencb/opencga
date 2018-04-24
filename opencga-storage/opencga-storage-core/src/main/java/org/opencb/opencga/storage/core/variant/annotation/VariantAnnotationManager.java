@@ -43,4 +43,8 @@ public interface VariantAnnotationManager {
 
     void annotate(Query query, ObjectMap options) throws VariantAnnotatorException, IOException, StorageEngineException;
 
+    void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException;
+
+    void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException;
+
 }

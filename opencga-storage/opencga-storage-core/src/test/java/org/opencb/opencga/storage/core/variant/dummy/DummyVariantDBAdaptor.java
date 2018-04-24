@@ -95,6 +95,11 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query) {
+        throw new UnsupportedOperationException("Unimplemented");
+    }
+
+    @Override
     public QueryResult<Long> count(Query query) {
         return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList((long) TEMPLATES.size()));
     }

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created on 29/01/16 .
@@ -138,6 +139,14 @@ public class VariantQueryException extends IllegalArgumentException {
     public static VariantQueryException unsupportedVariantQueryFilter(QueryParam param, String storageEngineId, String extra) {
         return new VariantQueryException("Unsupported variant query filter '" + param.key()
                 + "' with storage engine '" + storageEngineId + "'."
+                + (StringUtils.isEmpty(extra) ? "" : (' ' + extra)));
+    }
+
+    public static VariantQueryException unsupportedVariantQueryFilters(Collection<? extends QueryParam> params, String extra) {
+        return new VariantQueryException("Unsupported variant query filters '" + params
+                .stream()
+                .map(QueryParam::key)
+                .collect(Collectors.toList()) + '.'
                 + (StringUtils.isEmpty(extra) ? "" : (' ' + extra)));
     }
 }

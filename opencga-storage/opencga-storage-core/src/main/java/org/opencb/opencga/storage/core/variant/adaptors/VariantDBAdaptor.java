@@ -102,6 +102,8 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      */
     VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize);
 
+    QueryResult<VariantAnnotation> getAnnotation(String name, Query query);
+
     /**
      * Performs a distinct operation of the given field over the returned results.
      *

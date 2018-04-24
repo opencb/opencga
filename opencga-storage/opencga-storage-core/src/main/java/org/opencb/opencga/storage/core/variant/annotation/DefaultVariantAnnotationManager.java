@@ -65,6 +65,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 
+import static org.opencb.biodata.models.core.Region.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 
 /**
@@ -73,6 +74,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
  *
  * Created by jacobo on 9/01/15.
  *
+ * TODO: Make this class abstract
  * @author Javier Lopez &lt;fjlopez@ebi.ac.uk&gt;
  */
 public class DefaultVariantAnnotationManager implements VariantAnnotationManager {
@@ -393,9 +395,15 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         }
     }
 
-    private String normalizeChromosome(String chromosome) {
-        return chromosome.replace("chrom", "").replace("chr", "");
+    //TODO: Make this method abstract
+    @Override
+    public void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException {
+        throw new UnsupportedOperationException();
     }
 
-
+    //TODO: Make this method abstract
+    @Override
+    public void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException {
+        throw new UnsupportedOperationException();
+    }
 }

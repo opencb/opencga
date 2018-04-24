@@ -50,6 +50,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
@@ -153,6 +154,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     public MongoDBCollection getStudiesCollection() {
         return db.getCollection(configuration.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue()));
+    }
+
+    public MongoDBCollection getAnnotationCollection(String name) {
+        return db.getCollection(getAnnotationCollectionName(name));
+    }
+
+    public String getAnnotationCollectionName(String name) {
+        return configuration.getString(COLLECTION_ANNOTATION.key(), COLLECTION_ANNOTATION.defaultValue()) + "_" + name;
+    }
+
+    public void dropAnnotationCollection(String name) {
+        String annotationCollectionName = getAnnotationCollectionName(name);
+        db.dropCollection(annotationCollectionName);
     }
 
     protected MongoDataStore getDB() {
@@ -462,6 +476,34 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         watch.stop();
         return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null,
                 MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+    }
+
+    @Override
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query) {
+        query = query == null ? new Query() : query;
+        validateAnnotationQuery(query);
+        Document mongoQuery = queryParser.parseQuery(query);
+
+        MongoDBCollection annotationCollection;
+        if (name.equals("LATEST")) {
+            annotationCollection = getVariantsCollection();
+        } else {
+            // TODO: Check annotation exists
+            annotationCollection = getAnnotationCollection(name);
+        }
+        SelectVariantElements selectVariantElements = VariantQueryUtils.parseSelectElements(
+                query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), studyConfigurationManager);
+
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
+        QueryResult<Variant> result = annotationCollection.find(mongoQuery, converter, null);
+
+        List<VariantAnnotation> annotations = result.getResult()
+                .stream()
+                .map(Variant::getAnnotation)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        return new QueryResult<>("getAnnotation", result.getDbTime(), annotations.size(), result.getNumTotalResults(),
+                result.getWarningMsg(), result.getErrorMsg(), annotations);
     }
 
     @Override

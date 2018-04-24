@@ -42,7 +42,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantQueryUtils {
+public final class VariantQueryUtils {
 
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
     private static final Pattern GENOTYPE_FILTER_PATTERN = Pattern.compile("(?<sample>[^,;]+):(?<gts>([^:;,]+,?)+)(?<op>[;,.])");
@@ -81,7 +81,7 @@ public class VariantQueryUtils {
         }
     }
 
-    public VariantQueryUtils() {
+    private VariantQueryUtils() {
     }
 
     /**
@@ -126,6 +126,32 @@ public class VariantQueryUtils {
             }
         }
         return params;
+    }
+
+    public static void validateAnnotationQuery(Query query) {
+        if (query == null) {
+            return;
+        }
+        List<VariantQueryParam> acceptedParams = Arrays.asList(VariantQueryParam.ID, VariantQueryParam.REGION);
+        Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
+        queryParams.removeAll(acceptedParams);
+        if (!queryParams.isEmpty()) {
+            throw VariantQueryException.unsupportedVariantQueryFilters(queryParams,
+                    "Accepted params when quering annotation are : " + acceptedParams.stream()
+                            .map(QueryParam::key)
+                            .collect(Collectors.toList()));
+        }
+        List<String> invalidValues = new LinkedList<>();
+        for (String s : query.getAsStringList(VariantQueryParam.ID.key())) {
+            if (!VariantQueryUtils.isVariantId(s)) {
+                invalidValues.add(s);
+                break;
+            }
+        }
+        if (!invalidValues.isEmpty()) {
+            throw VariantQueryException.malformedParam(VariantQueryParam.ID, invalidValues.toString(),
+                    "Only variants supported: chrom:start:ref:alt");
+        }
     }
 
     /**

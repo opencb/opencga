@@ -25,6 +25,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -274,6 +275,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options,
                                                  int windowsSize) {
+        throw new UnsupportedOperationException("Unimplemented");
+    }
+
+    @Override
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query) {
         throw new UnsupportedOperationException("Unimplemented");
     }
 

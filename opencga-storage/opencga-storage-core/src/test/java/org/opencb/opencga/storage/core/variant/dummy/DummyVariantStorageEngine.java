@@ -23,8 +23,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 
 import java.io.IOException;
@@ -67,11 +65,6 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                     throws StorageEngineException, IOException {
             }
         };
-    }
-
-    @Override
-    public VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return super.newVariantAnnotationManager(annotator);
     }
 
     @Override
