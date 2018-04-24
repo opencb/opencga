@@ -130,6 +130,49 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         checkVariantSearchIndex(dbAdaptor);
     }
 
+    @Test
+    public void testRemoveFiles() throws Exception {
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+
+        VariantStorageEngine storageEngine = getVariantStorageEngine();
+        QueryOptions options = new QueryOptions();
+
+        int studyId = 1;
+        List<URI> inputFiles = new ArrayList<>();
+        List<String> fileNames = new ArrayList<>();
+        StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, "S_" + studyId);
+        for (int fileId = 12877; fileId <= 12877 + 4; fileId++) {
+            String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
+            URI inputFile = getResourceUri("platinum/" + fileName);
+            fileNames.add(fileName);
+            inputFiles.add(inputFile);
+            studyConfiguration.getFileIds().put(fileName, fileId);
+            studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
+        }
+
+        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyId);
+        storageEngine.getOptions().putAll(options);
+        storageEngine.index(inputFiles, outputUri, true, true, true);
+
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
+        long count = dbAdaptor.count(query).first();
+
+        VariantSearchLoadResult loadResult = searchIndex();
+        System.out.println("Load result after load 1-4 files: = " + loadResult);
+        assertEquals(count, loadResult.getNumLoadedVariants());
+
+        //////////////////////
+        storageEngine.removeFiles(studyConfiguration.getStudyName(), Collections.singletonList(fileNames.get(0)));
+
+        loadResult = searchIndex();
+//                assertEquals(count, loadResult.getNumLoadedVariants());
+        System.out.println("Load result after remove: = " + loadResult);
+
+
+        checkVariantSearchIndex(dbAdaptor);
+    }
+
     public void checkVariantSearchIndex(VariantDBAdaptor dbAdaptor) throws IOException, VariantSearchException, StorageEngineException {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1000);
         Query query = new Query();

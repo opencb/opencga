@@ -97,6 +97,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         requiredFieldsSet.add(VariantField.REFERENCE);
         requiredFieldsSet.add(VariantField.ALTERNATE);
         requiredFieldsSet.add(VariantField.TYPE);
+        requiredFieldsSet.add(VariantField.SV);
         REQUIRED_FIELDS_SET = Collections.unmodifiableSet(requiredFieldsSet);
 
         Map<VariantField, List<String>> map = new EnumMap<>(VariantField.class);

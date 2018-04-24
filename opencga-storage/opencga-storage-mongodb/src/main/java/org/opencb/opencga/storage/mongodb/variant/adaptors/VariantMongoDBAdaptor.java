@@ -21,6 +21,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.UpdateResult;
 import htsjdk.variant.vcf.VCFConstants;
@@ -42,6 +43,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -56,6 +58,8 @@ import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.trash.DocumentToTrashVariantConverter;
+import org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,8 +71,7 @@ import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
-import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
-import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
+import static org.opencb.commons.datastore.mongodb.MongoDBCollection.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -157,6 +160,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return db.getCollection(configuration.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue()));
     }
 
+    private MongoDBCollection getTrashCollection() {
+        return db.getCollection(configuration.getString(COLLECTION_TRASH.key(), COLLECTION_TRASH.defaultValue()));
+    }
+
     protected MongoDataStore getDB() {
         return db;
     }
@@ -189,7 +196,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult removeFiles(String study, List<String> files, QueryOptions options) {
         Integer studyId = studyConfigurationManager.getStudyId(study, null, false);
         StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-        List<Integer> fileIds = studyConfigurationManager.getFileIdsFromStudy(files, sc);
+        List<Integer> fileIds = StudyConfigurationManager.getFileIdsFromStudy(files, sc);
 
         ArrayList<Integer> otherIndexedFiles = new ArrayList<>(sc.getIndexedFiles());
         otherIndexedFiles.removeAll(fileIds);
@@ -357,7 +364,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // { $pull : { files : {  sid : <studyId> } } }
         Bson update = combine(
                 pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
-                pull(DocumentToVariantConverter.STATS_FIELD, eq(DocumentToVariantStatsConverter.STUDY_ID, studyId))
+                pull(DocumentToVariantConverter.STATS_FIELD, eq(DocumentToVariantStatsConverter.STUDY_ID, studyId)),
+                MongoDBVariantSearchIndexUtils.SET_INDEX_NOT_SYNCHRONIZED
         );
         logger.debug("removeStudy: query = {}", query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         logger.debug("removeStudy: update = {}", update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -369,9 +377,84 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return result;
     }
 
+    /**
+     * Remove empty variants from the variants collection, and move to the trash collection.
+     *
+     * @return number of removed variants.
+     */
     private long removeEmptyVariants() {
+        long ts = System.currentTimeMillis();
+
         Bson purgeQuery = exists(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, false);
-        return variantsCollection.remove(purgeQuery, new QueryOptions(MULTI, true)).first().getDeletedCount();
+
+        MongoPersistentCursor iterator = new MongoPersistentCursor(variantsCollection, purgeQuery, queryParser.createProjection(
+                new Query(),
+                new QueryOptions(QueryOptions.INCLUDE, DocumentToVariantConverter.REQUIRED_FIELDS_SET)), new QueryOptions());
+
+        MongoDBCollection trashCollection = getTrashCollection();
+        trashCollection.createIndex(new Document(DocumentToTrashVariantConverter.TIMESTAMP_FIELD, 1), new ObjectMap());
+
+        long deletedDocuments = 0;
+        int deleteBatchSize = 1000;
+        List<String> documentsToDelete = new ArrayList<>(deleteBatchSize);
+        List<Document> documentsToInsert = new ArrayList<>(deleteBatchSize);
+
+        while (iterator.hasNext()) {
+            Document next = iterator.next();
+            documentsToDelete.add(next.getString("_id"));
+            next.append(DocumentToTrashVariantConverter.TIMESTAMP_FIELD, ts);
+            documentsToInsert.add(next);
+            if (documentsToDelete.size() == deleteBatchSize || !iterator.hasNext()) {
+                if (documentsToDelete.isEmpty()) {
+                    // Really unlikely, but may happen if the total number of variants to remove was multiple of "deleteBatchSize"
+                    break;
+                }
+
+                // First, update the deletedVariants Collection
+                List<Bson> queries = documentsToDelete.stream().map(id -> Filters.eq("_id", id)).collect(Collectors.toList());
+                trashCollection.update(queries, documentsToInsert, new QueryOptions(UPSERT, true).append(REPLACE, true));
+
+                // Then, remove the documents from the variants collection
+                long deletedCount = variantsCollection.remove(and(purgeQuery, in("_id", documentsToDelete)), new QueryOptions(MULTI, true))
+                        .first().getDeletedCount();
+
+                // Check if there were some errors
+                if (deletedCount != documentsToDelete.size()) {
+                    throw new IllegalStateException("Some variants were not deleted!");
+                }
+                deletedDocuments += deletedCount;
+
+                documentsToDelete.clear();
+                documentsToInsert.clear();
+            }
+        }
+
+        return deletedDocuments;
+    }
+
+    public VariantDBIterator trashedVariants(long timeStamp) {
+        MongoDBCollection collection = getTrashCollection();
+        return VariantMongoDBIterator.persistentIterator(
+                collection,
+                lte(DocumentToTrashVariantConverter.TIMESTAMP_FIELD, timeStamp),
+                new Document(),
+                new QueryOptions(),
+                new DocumentToTrashVariantConverter());
+    }
+
+    public long cleanTrash(long timeStamp) {
+        MongoDBCollection collection = getTrashCollection();
+        // Try to get one variant beyond the ts. If exists, remove by query. Otherwise, remove the whole collection.
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP_COUNT, true);
+        int results = collection.find(gt(DocumentToTrashVariantConverter.TIMESTAMP_FIELD, timeStamp), queryOptions).getNumResults();
+
+        if (results > 0) {
+            return collection.remove(lte(DocumentToTrashVariantConverter.TIMESTAMP_FIELD, timeStamp), null).first().getDeletedCount();
+        } else {
+            long numElements = collection.count().first();
+            db.dropCollection(configuration.getString(COLLECTION_TRASH.key(), COLLECTION_TRASH.defaultValue()));
+            return numElements;
+        }
     }
 
     private long removeEmptyVariantsFromStage(int studyId) {

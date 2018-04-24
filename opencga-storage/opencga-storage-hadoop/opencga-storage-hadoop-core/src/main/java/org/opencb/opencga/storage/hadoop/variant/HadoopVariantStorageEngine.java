@@ -23,6 +23,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -562,6 +564,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             String variantsTable = getVariantTableName();
             String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
             String jar = getJarWithDependencies(options);
+            options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_MAPPER_CLASS, MyDeleteHBaseColumnMapper.class.getName());
 
             Class execClass = DeleteHBaseColumnDriver.class;
             String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
@@ -897,4 +900,25 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
+    /**
+     * Created on 23/04/18.
+     *
+     * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+     */
+    public static class MyDeleteHBaseColumnMapper extends DeleteHBaseColumnDriver.DeleteHBaseColumnMapper {
+
+        private byte[] columnFamily;
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            columnFamily = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+        }
+
+        @Override
+        protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
+            super.map(key, result, context);
+    //        context.write(key, HadoopVariantSearchIndexUtils.addUnknownSyncStatus(new Put(result.getRow()), columnFamily));
+        }
+    }
 }

@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.KeyOnlyFilter;
@@ -35,6 +36,7 @@ public class DeleteHBaseColumnDriver extends Configured implements Tool {
     public static final String COLUMNS_TO_DELETE = "columns_to_delete";
     public static final String COLUMNS_TO_COUNT = "columns_to_count";
     private static final Logger LOGGER = LoggerFactory.getLogger(DeleteHBaseColumnDriver.class);
+    public static final String DELETE_HBASE_COLUMN_MAPPER_CLASS = "delete.hbase.column.mapper.class";
     private String table;
     private List<String> columns;
 
@@ -91,7 +93,9 @@ public class DeleteHBaseColumnDriver extends Configured implements Tool {
         }
 
         // set other scan attrs
-        VariantMapReduceUtil.initTableMapperJob(job, table, table, scan, DeleteHBaseColumnMapper.class);
+        Class<? extends DeleteHBaseColumnMapper> mapperClass = job.getConfiguration()
+                .getClass(DELETE_HBASE_COLUMN_MAPPER_CLASS, DeleteHBaseColumnMapper.class, DeleteHBaseColumnMapper.class);
+        VariantMapReduceUtil.initTableMapperJob(job, table, table, scan, mapperClass);
     }
 
     private void configFromArgs(String[] args) {
@@ -169,7 +173,7 @@ public class DeleteHBaseColumnDriver extends Configured implements Tool {
         return ToolRunner.run(this, args);
     }
 
-    public static class DeleteHBaseColumnMapper extends TableMapper<ImmutableBytesWritable, Delete> {
+    public static class DeleteHBaseColumnMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
 
         private Set<String> columnsToCount;
 
@@ -180,14 +184,20 @@ public class DeleteHBaseColumnDriver extends Configured implements Tool {
 
         @Override
         protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
+            Delete delete = new Delete(result.getRow());
             for (Cell cell : result.rawCells()) {
                 byte[] family = CellUtil.cloneFamily(cell);
                 byte[] qualifier = CellUtil.cloneQualifier(cell);
-                context.write(key, new Delete(result.getRow()).addColumn(family, qualifier));
-                String c = Bytes.toString(family) + ":" + Bytes.toString(qualifier);
-                if (columnsToCount.contains(c)) {
-                    context.getCounter("DeleteColumn", c).increment(1);
+                delete.addColumn(family, qualifier);
+                if (!columnsToCount.isEmpty()) {
+                    String c = Bytes.toString(family) + ":" + Bytes.toString(qualifier);
+                    if (columnsToCount.contains(c)) {
+                        context.getCounter("DeleteColumn", c).increment(1);
+                    }
                 }
+            }
+            if (!delete.isEmpty()) {
+                context.write(key, delete);
             }
         }
     }
