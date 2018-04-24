@@ -16,6 +16,20 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -36,19 +50,18 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Annotation;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Cohort;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
  * Created by pfurio on 06/07/16.
@@ -796,8 +809,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         switch (aclParams.getAction()) {
             case SET:
+                // Todo: Remove this in 1.4
+                List<String> allCohortPermissions = EnumSet.allOf(CohortAclEntry.CohortPermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        allCohortPermissions, collectionName);
             case ADD:
                 return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
                         collectionName);

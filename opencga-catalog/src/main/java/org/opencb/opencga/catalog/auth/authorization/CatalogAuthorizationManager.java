@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -783,7 +784,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        aclDBAdaptor.setToMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
+        // Todo: Remove this in 1.4
+        List<String> allStudyPermissions = EnumSet.allOf(StudyAclEntry.StudyPermissions.class)
+                .stream()
+                .map(String::valueOf)
+                .collect(Collectors.toList());
+
+        aclDBAdaptor.setToMembers(studyIds, members, permissions, allStudyPermissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
         return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
     }
 
@@ -818,7 +825,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members,
-                                                                     List<String> permissions, String entity) throws CatalogException {
+                                                                     List<String> permissions, List<String> allPermissions, String entity)
+            throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to set acls");
             return Collections.emptyList();
@@ -834,7 +842,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.setToMembers(ids, members, permissions, entity);
+        aclDBAdaptor.setToMembers(ids, members, permissions, allPermissions, entity);
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
         List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
