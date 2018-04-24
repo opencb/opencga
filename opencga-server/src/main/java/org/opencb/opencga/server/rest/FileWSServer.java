@@ -898,8 +898,16 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{file}/update")
-    @ApiOperation(value = "Update some file attributes", position = 16, response = File.class)
-    public Response updatePOST(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
+    @ApiOperation(value = "Update some file attributes", position = 16, response = File.class,
+            notes = "The entire file is returned after the modification. Using include/exclude query parameters is encouraged to avoid"
+                    + " slowdowns when sending unnecessary information where possible")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
+    })
+    public Response updatePOST(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /")
+                                   @PathParam(value = "file") String fileIdStr,
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr,
                                @ApiParam(name = "params", value = "Parameters to modify", required = true) ObjectMap params) {
@@ -921,7 +929,6 @@ public class FileWSServer extends OpenCGAWSServer {
             }
 
             QueryResult<File> queryResult = fileManager.update(resource.getResourceId(), map, queryOptions, sessionId);
-            populateOldDeprecatedSampleIdsField(queryResult);
             queryResult.setId("Update file");
             return createOkResponse(queryResult);
         } catch (Exception e) {
