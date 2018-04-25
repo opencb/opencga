@@ -584,7 +584,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             aggregationStages.add(Aggregates.match(bson));
 
             // 1st, we unwind the array of members to be able to perform the lookup as it doesn't work over arrays
-            aggregationStages.add(new Document("$unwind", "$" + QueryParams.MEMBERS.key()));
+            aggregationStages.add(new Document("$unwind", new Document()
+                    .append("path", "$" + QueryParams.MEMBERS.key())
+                    .append("preserveNullAndEmptyArrays", true)
+            ));
 
             List<Document> lookupMatchList = new ArrayList<>();
             lookupMatchList.add(
@@ -595,7 +598,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                                             "$$individualVersion"))
                             ))));
             if (studyDocument != null && user != null) {
-                // Get the document query needed to check the sample permissions as well
+                // Get the document query needed to check the individual permissions as well
                 queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                         StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name());
                 if (!queryForAuthorisedEntries.isEmpty()) {
@@ -643,7 +646,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             // 8. Lastly, we replace the root document extracting everything from _id
             aggregationStages.add(new Document("$replaceRoot", new Document("newRoot", "$_id")));
 
-            logger.info("Family get: lookup match : {}",
+            logger.debug("Family get: lookup match : {}",
                     aggregationStages.stream()
                             .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
                             .collect(Collectors.joining("; "))

@@ -51,5 +51,4 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         }
     }
 
-
 }
