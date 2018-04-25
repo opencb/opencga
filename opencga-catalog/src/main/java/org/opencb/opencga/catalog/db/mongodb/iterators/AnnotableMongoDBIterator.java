@@ -10,8 +10,8 @@ import java.util.function.Function;
 
 public class AnnotableMongoDBIterator<E> extends MongoDBIterator<E> {
 
-    private QueryOptions options;
-    private AnnotableConverter<? extends Annotable> converter;
+    protected QueryOptions options;
+    protected AnnotableConverter<? extends Annotable> converter;
 
     public AnnotableMongoDBIterator(MongoCursor mongoCursor, QueryOptions options) {
         this(mongoCursor, null, null, options);

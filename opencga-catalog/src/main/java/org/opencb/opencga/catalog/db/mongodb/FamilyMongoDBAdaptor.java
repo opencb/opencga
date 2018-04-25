@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.AnnotableMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.FamilyMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -507,13 +507,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     @Override
     public DBIterator<Family> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new AnnotableMongoDBIterator<>(mongoCursor, familyConverter, options);
+        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, null, null, options);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new AnnotableMongoDBIterator<>(mongoCursor, options);
+        return new FamilyMongoDBIterator(mongoCursor, null, null, null, options);
     }
 
     @Override
@@ -524,7 +524,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
 
-        return new AnnotableMongoDBIterator<>(mongoCursor, familyConverter, iteratorFilter, options);
+        Function<Document, Document> individualIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
+                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
+
+        return new FamilyMongoDBIterator<>(mongoCursor, familyConverter, iteratorFilter, individualIteratorFilter, options);
     }
 
     @Override
@@ -535,8 +539,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+        Function<Document, Document> individualIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
+                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
-        return new AnnotableMongoDBIterator<>(mongoCursor, iteratorFilter, options);
+        return new FamilyMongoDBIterator(mongoCursor, null, iteratorFilter, individualIteratorFilter, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -560,8 +567,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         filterOutDeleted(query);
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
-        logger.debug("Family get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
         QueryOptions qOptions;
         if (options != null) {
             qOptions = new QueryOptions(options);
@@ -571,8 +576,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         qOptions = removeAnnotationProjectionOptions(qOptions);
 
         if (excludeIndividuals(qOptions)) {
+            logger.debug("Family get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
             return familyCollection.nativeQuery().find(bson, qOptions).iterator();
         } else {
+            List<Bson> aggregationStages = new ArrayList<>();
+
+            aggregationStages.add(Aggregates.match(bson));
+
+            // 1st, we unwind the array of members to be able to perform the lookup as it doesn't work over arrays
+            aggregationStages.add(new Document("$unwind", "$" + QueryParams.MEMBERS.key()));
+
             List<Document> lookupMatchList = new ArrayList<>();
             lookupMatchList.add(
                     new Document("$expr",
@@ -602,20 +615,41 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     .append("pipeline", Collections.singletonList(new Document("$match", lookupMatch)))
                     .append("as", QueryParams.MEMBERS.key())
             );
+            aggregationStages.add(lookupMatch);
 
-            logger.info("Family get: lookup match : {}", lookupMatch.toBsonDocument(Document.class,
-                    MongoClient.getDefaultCodecRegistry()));
+            // 3rd, we unwind the members array again to be able to move the root to a new dummy field
+            aggregationStages.add(new Document("$unwind", new Document()
+                    .append("path", "$" + QueryParams.MEMBERS.key())
+                    .append("preserveNullAndEmptyArrays", true)
+            ));
 
-            return familyCollection.nativeQuery().aggregate(Arrays.asList(
-                    Aggregates.match(bson),
-                    lookupMatch
-            ), qOptions).iterator();
+            // 4. We copy the whole document to a new dummy field (dummy)
+            aggregationStages.add(new Document("$addFields", new Document("dummy", "$$ROOT")));
 
-//            return familyCollection.nativeQuery().aggregate(Arrays.asList(
-//                    Aggregates.match(bson),
-//                    Aggregates.lookup("individual", QueryParams.MEMBER_UID.key(), IndividualDBAdaptor.QueryParams.UID.key(),
-//                            QueryParams.MEMBERS.key())
-//            ), qOptions).iterator();
+            // 5. We take out the members field to be able to perform the group
+            aggregationStages.add(new Document("$project", new Document("dummy." + QueryParams.MEMBERS.key(), 0)));
+
+            // 6. We group by the whole document
+            aggregationStages.add(new Document("$group",
+                    new Document()
+                            .append("_id", "$dummy")
+                            .append(QueryParams.MEMBERS.key(), new Document("$push", "$" + QueryParams.MEMBERS.key()))
+            ));
+
+            // 7. We add the new grouped members field to the dummy field
+            aggregationStages.add(new Document("$addFields", new Document("_id." + QueryParams.MEMBERS.key(),
+                    "$" + QueryParams.MEMBERS.key())));
+
+            // 8. Lastly, we replace the root document extracting everything from _id
+            aggregationStages.add(new Document("$replaceRoot", new Document("newRoot", "$_id")));
+
+            logger.info("Family get: lookup match : {}",
+                    aggregationStages.stream()
+                            .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
+                            .collect(Collectors.joining("; "))
+            );
+
+            return familyCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();
         }
     }
 

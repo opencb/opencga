@@ -31,8 +31,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -40,6 +42,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Created by pfurio on 11/05/17.
@@ -122,6 +125,59 @@ public class FamilyManagerTest extends GenericTest {
         assertTrue("Mother id not associated to any children", motherIdUpdated);
         assertTrue("Father id not associated to any children", fatherIdUpdated);
     }
+
+    @Test
+    public void getFamilyWithOnlyAllowedMembers() throws CatalogException, IOException {
+        createDummyFamily("Martinez-Martinez");
+
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.GUEST, null, null);
+        String token = catalogManager.getUserManager().login("user2", PASSWORD);
+
+        try {
+            familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+            fail("Expected authorization exception. user2 should not be able to see the study");
+        } catch (CatalogAuthorizationException ignored) {
+        }
+
+        familyManager.updateAcl(STUDY, Collections.singletonList("Martinez-Martinez"), "user2", new AclParams("VIEW", AclParams.Action.SET),
+                sessionIdUser);
+        QueryResult<Family> familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(0, familyQueryResult.first().getMembers().size());
+
+        catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child2"), "user2",
+                new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
+        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(1, familyQueryResult.first().getMembers().size());
+        assertEquals("child2", familyQueryResult.first().getMembers().get(0).getId());
+
+        catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child3"), "user2",
+                new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
+        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(2, familyQueryResult.first().getMembers().size());
+        assertEquals("child2", familyQueryResult.first().getMembers().get(0).getId());
+        assertEquals("child3", familyQueryResult.first().getMembers().get(1).getId());
+
+        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez",
+                new QueryOptions(QueryOptions.EXCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS.key()), token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(null, familyQueryResult.first().getMembers());
+
+        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez",
+                new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS.key() + "."
+                        + IndividualDBAdaptor.QueryParams.NAME.key()),
+                token);
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(null, familyQueryResult.first().getId());
+        assertEquals(2, familyQueryResult.first().getMembers().size());
+        assertEquals(null, familyQueryResult.first().getMembers().get(0).getId());
+        assertEquals(null, familyQueryResult.first().getMembers().get(1).getId());
+        assertEquals("child2", familyQueryResult.first().getMembers().get(0).getName());
+        assertEquals("child3", familyQueryResult.first().getMembers().get(1).getName());
+    }
+
 
     @Test
     public void includeMemberIdOnly() throws CatalogException {
