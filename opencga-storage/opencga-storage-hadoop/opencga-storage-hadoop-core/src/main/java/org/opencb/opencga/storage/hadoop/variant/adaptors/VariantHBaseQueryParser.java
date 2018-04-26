@@ -225,7 +225,6 @@ public class VariantHBaseQueryParser {
 
         Scan scan = new Scan();
         byte[] family = genomeHelper.getColumnFamily();
-        scan.addFamily(family);
         FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
 //        FilterList regionFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
 //        filters.addFilter(regionFilters);
@@ -480,11 +479,11 @@ public class VariantHBaseQueryParser {
                 scan.addColumn(family, Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(name)));
             } else {
                 scan.addColumn(family, FULL_ANNOTATION.bytes());
-            }
-            if (defaultStudyConfiguration != null) {
-                int release = defaultStudyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
-                for (int i = 1; i <= release; i++) {
-                    scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(release));
+                if (defaultStudyConfiguration != null) {
+                    int release = defaultStudyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
+                    for (int i = 1; i <= release; i++) {
+                        scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(release));
+                    }
                 }
             }
         }

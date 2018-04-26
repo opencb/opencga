@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
+import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -39,7 +40,6 @@ import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAn
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -91,15 +91,8 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
     @Override
     public void createAnnotationSnapshot(String name, ObjectMap inputOptions) throws StorageEngineException {
-        QueryOptions options = new QueryOptions(baseOptions);
-        if (inputOptions != null) {
-            options.putAll(inputOptions);
-        }
-        String hadoopRoute = options.getString(HadoopVariantStorageEngine.HADOOP_BIN, "hadoop");
-        String jar = HadoopVariantStorageEngine.getJarWithDependencies(options);
+        QueryOptions options = getOptions(inputOptions);
 
-        Class execClass = CopyHBaseColumnDriver.class;
-        String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
         String columnFamily = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
         String targetColumn = VariantPhoenixHelper.getAnnotationSnapshotColumn(name);
         Map<String, String> columnsToCopyMap = Collections.singletonMap(
@@ -109,25 +102,28 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
                 columnsToCopyMap, options);
 
-        long startTime = System.currentTimeMillis();
-        logger.info("------------------------------------------------------");
-        logger.info("Copy current annotation into " + targetColumn);
-        logger.debug(executable + ' ' + Arrays.toString(args));
-        logger.info("------------------------------------------------------");
-        int exitValue = mrExecutor.run(executable, args);
-        logger.info("------------------------------------------------------");
-        logger.info("Exit value: {}", exitValue);
-        logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-        if (exitValue != 0) {
-            throw new StorageEngineException("Error creating snapshot of current annotation. "
-                    + "Exception while copying column " + VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.column()
-                    + " into " + targetColumn);
-        }
-
+        mrExecutor.run(CopyHBaseColumnDriver.class, args, options, "Create new annotation snapshot with name '" + name + '\'');
     }
 
     @Override
-    public void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException {
-        super.deleteAnnotationSnapshot(name, options);
+    public void deleteAnnotationSnapshot(String name, ObjectMap inputOptions) throws StorageEngineException {
+        QueryOptions options = getOptions(inputOptions);
+
+        String columnFamily = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
+        String targetColumn = VariantPhoenixHelper.getAnnotationSnapshotColumn(name);
+
+        String[] args = DeleteHBaseColumnDriver.buildArgs(
+                dbAdaptor.getTableNameGenerator().getVariantTableName(),
+                Collections.singletonList(columnFamily + ':' + targetColumn), options);
+
+        mrExecutor.run(DeleteHBaseColumnDriver.class, args, options, "Delete annotation snapshot '" + name + '\'');
+    }
+
+    public QueryOptions getOptions(ObjectMap inputOptions) {
+        QueryOptions options = new QueryOptions(baseOptions);
+        if (inputOptions != null) {
+            options.putAll(inputOptions);
+        }
+        return options;
     }
 }
