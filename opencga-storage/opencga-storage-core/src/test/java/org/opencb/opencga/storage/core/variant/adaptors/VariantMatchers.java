@@ -318,6 +318,10 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<? super StudyEntry> withSamples(String ...samples) {
+        return withSamples(Arrays.asList(samples));
+    }
+
     public static Matcher<? super StudyEntry> withSamples(Set<String> samples) {
         return new FeatureMatcher<StudyEntry, Set<String>>(is(equalTo(samples)), "with samples " + samples, "Samples") {
             @Override

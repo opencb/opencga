@@ -140,11 +140,11 @@ public class VariantDBReader implements VariantReader {
     }
 
     public long getTimeConverting(TimeUnit timeUnit) {
-        return timeUnit.convert(timeConverting, TimeUnit.NANOSECONDS);
+        return timeUnit.convert(timeConverting, TimeUnit.MILLISECONDS);
     }
 
     public long getTimeFetching(TimeUnit timeUnit) {
-        return timeUnit.convert(timeFetching, TimeUnit.NANOSECONDS);
+        return timeUnit.convert(timeFetching, TimeUnit.MILLISECONDS);
     }
 
 }

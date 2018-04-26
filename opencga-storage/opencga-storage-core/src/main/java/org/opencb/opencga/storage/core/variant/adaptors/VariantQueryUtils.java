@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
@@ -99,7 +101,7 @@ public final class VariantQueryUtils {
      * @return If is valid or not
      */
     public static boolean isValidParam(Query query, QueryParam param) {
-        Object value = query.getOrDefault(param.key(), null);
+        Object value = query == null ? null : query.getOrDefault(param.key(), null);
         return (value != null)
                 && !(value instanceof String && ((String) value).isEmpty()
                 || value instanceof Collection && ((Collection) value).isEmpty());
@@ -118,7 +120,7 @@ public final class VariantQueryUtils {
     }
 
     public static Set<VariantQueryParam> validParams(Query query) {
-        Set<VariantQueryParam> params = new HashSet<>(query.size());
+        Set<VariantQueryParam> params = new HashSet<>(query == null ? 0 : query.size());
 
         for (VariantQueryParam queryParam : values()) {
             if (isValidParam(query, queryParam)) {
@@ -983,6 +985,17 @@ public final class VariantQueryUtils {
      * Splits the string with the specified operation.
      *
      * @param value     Value to split
+     * @return List of values, without the delimiter
+     */
+    public static Pair<QueryOperation, List<String>> splitValue(String value) {
+        QueryOperation operation = checkOperator(value);
+        return Pair.of(operation, splitValue(value, operation));
+    }
+
+    /**
+     * Splits the string with the specified operation.
+     *
+     * @param value     Value to split
      * @param operation Operation that defines the split delimiter
      * @return List of values, without the delimiter
      */
@@ -1097,4 +1110,27 @@ public final class VariantQueryUtils {
             query.put(ANNOT_GO_GENES.key(), genesByGo);
         }
     }
+
+    public static List<Region> mergeRegions(List<Region> regions) {
+        if (regions != null && regions.size() > 1) {
+            regions = new ArrayList<>(regions);
+            regions.sort(Comparator.comparing(Region::getChromosome).thenComparing(Region::getStart));
+
+            Iterator<Region> iterator = regions.iterator();
+            Region prevRegion = iterator.next();
+            while (iterator.hasNext()) {
+                Region region = iterator.next();
+                if (prevRegion.overlaps(region.getChromosome(), region.getStart(), region.getEnd())) {
+                    // Merge regions
+                    prevRegion.setStart(Math.min(prevRegion.getStart(), region.getStart()));
+                    prevRegion.setEnd(Math.max(prevRegion.getEnd(), region.getEnd()));
+                    iterator.remove();
+                } else {
+                    prevRegion = region;
+                }
+            }
+        }
+        return regions;
+    }
+
 }
