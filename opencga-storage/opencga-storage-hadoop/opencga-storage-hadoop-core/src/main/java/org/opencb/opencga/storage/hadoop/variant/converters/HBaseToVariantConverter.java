@@ -69,6 +69,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     protected static boolean failOnWrongVariants = false; //FIXME
     protected boolean failOnEmptyVariants = false;
+    protected VariantQueryUtils.SelectVariantElements selectVariantElements;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(variantTableHelper)));
@@ -146,6 +147,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     }
 
     public HBaseToVariantConverter<T> setSelectVariantElements(VariantQueryUtils.SelectVariantElements selectVariantElements) {
+        this.selectVariantElements = selectVariantElements;
         studyEntryConverter.setSelectVariantElements(selectVariantElements);
         annotationConverter.setIncludeFields(selectVariantElements.getFields());
         return this;
@@ -282,7 +284,12 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             Variant variant = extractVariantFromVariantRowKey(result.getRow());
             try {
                 VariantAnnotation annotation = annotationConverter.convert(result);
-                Map<Integer, StudyEntry> studies = studyEntryConverter.convert(result);
+                Map<Integer, StudyEntry> studies;
+                if (selectVariantElements.getStudies().isEmpty()) {
+                    studies = Collections.emptyMap();
+                } else {
+                    studies = studyEntryConverter.convert(result);
+                }
                 return convert(variant, studies, annotation);
             } catch (RuntimeException e) {
                 throw new IllegalStateException("Fail to parse variant: " + variant, e);

@@ -388,8 +388,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                     unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
                 }
                 List<String> formats = getIncludeFormats(query);
-                return new VariantHBaseScanIterator(resScan, genomeHelper, studyConfigurationManager.get(), options,
-                        unknownGenotype, formats, selectElements);
+                VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
+                        resScan, genomeHelper, studyConfigurationManager.get(), options, unknownGenotype, formats, selectElements);
+
+                // Client side skip!
+                int skip = options.getInt(QueryOptions.SKIP, -1);
+                if (skip > 0) {
+                    logger.info("Client side skip! skip = {}", skip);
+                    iterator.skip(skip);
+                }
+                return iterator;
             } catch (IOException e) {
                 throw VariantQueryException.internalException(e);
             }
