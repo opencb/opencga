@@ -53,6 +53,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.IOException;
@@ -243,6 +244,28 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
+    public void createAnnotationSnapshot(String project, String annotationName, ObjectMap params, String sessionId)
+            throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException, InstantiationException,
+            ClassNotFoundException {
+
+        DataStore dataStore = getDataStoreByProjectId(project, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        variantStorageEngine.createAnnotationSnapshot(annotationName, params);
+    }
+
+    public void deleteAnnotationSnapshot(String project, String annotationName, ObjectMap params, String sessionId)
+            throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException,
+            InstantiationException, ClassNotFoundException {
+
+        DataStore dataStore = getDataStoreByProjectId(project, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        variantStorageEngine.deleteAnnotationSnapshot(annotationName, params);
+    }
+
     public void stats(String study, List<String> cohorts, String outDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         VariantStatsStorageOperation statsOperation = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
@@ -422,6 +445,10 @@ public class VariantStorageManager extends StorageManager {
 
     private DataStore getDataStore(long studyId, String sessionId) throws CatalogException {
         return StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+    }
+
+    private DataStore getDataStoreByProjectId(String project, String sessionId) throws CatalogException {
+        return StorageOperation.getDataStoreByProjectId(catalogManager, project, File.Bioformat.VARIANT, sessionId);
     }
 
     protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws CatalogException, StorageEngineException {

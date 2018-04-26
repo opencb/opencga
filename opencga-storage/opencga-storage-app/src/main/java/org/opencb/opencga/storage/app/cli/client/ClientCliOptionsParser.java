@@ -25,6 +25,8 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 
 import java.util.Map;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
@@ -60,6 +62,8 @@ public class ClientCliOptionsParser extends GeneralCliOptions {
         variantSubCommands.addCommand("query", variantCommandOptions.variantQueryCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantsCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantsCommandOptions);
+        variantSubCommands.addCommand(COPY_ANNOTATION_COMMAND, variantCommandOptions.createAnnotationSnapshotCommandOptions);
+        variantSubCommands.addCommand(DELETE_ANNOTATION_COMMAND, variantCommandOptions.deleteAnnotationSnapshotCommandOptions);
 //        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
         variantSubCommands.addCommand(FILL_GAPS_COMMAND, variantCommandOptions.fillGapsCommandOptions);

@@ -217,23 +217,23 @@ public abstract class StorageOperation {
             dataStore = study.getDataStores().get(bioformat);
         } else {
             long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
-            dataStore = getDataStoreByProjectId(catalogManager, projectId, bioformat, sessionId);
+            dataStore = getDataStoreByProjectId(catalogManager, String.valueOf(projectId), bioformat, sessionId);
         }
         return dataStore;
     }
 
-    protected static DataStore getDataStoreByProjectId(CatalogManager catalogManager, long projectId, File.Bioformat bioformat,
-                                                       String sessionId)
+    public static DataStore getDataStoreByProjectId(CatalogManager catalogManager, String projectStr, File.Bioformat bioformat,
+                                                    String sessionId)
             throws CatalogException {
         DataStore dataStore;
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(ProjectDBAdaptor.QueryParams.ALIAS.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
-        Project project = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), queryOptions, sessionId).first();
+        Project project = catalogManager.getProjectManager().get(projectStr, queryOptions, sessionId).first();
         if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
             dataStore = project.getDataStores().get(bioformat);
         } else { //get default datastore
             //Must use the UserByStudyId instead of the file owner.
-            String userId = catalogManager.getProjectManager().getOwner(projectId);
+            String userId = catalogManager.getProjectManager().getOwner(project.getId());
             // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
             userId = userId.replace('.', '_');
 

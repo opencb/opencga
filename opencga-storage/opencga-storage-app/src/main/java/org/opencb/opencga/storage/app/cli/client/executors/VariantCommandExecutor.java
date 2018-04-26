@@ -70,6 +70,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
@@ -150,6 +152,16 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.annotateVariantsCommandOptions.commonOptions,
                         variantCommandOptions.annotateVariantsCommandOptions.dbName);
                 annotation();
+                break;
+            case COPY_ANNOTATION_COMMAND:
+                configure(variantCommandOptions.createAnnotationSnapshotCommandOptions.commonOptions,
+                        variantCommandOptions.createAnnotationSnapshotCommandOptions.dbName);
+                copyAnnotation();
+                break;
+            case DELETE_ANNOTATION_COMMAND:
+                configure(variantCommandOptions.deleteAnnotationSnapshotCommandOptions.commonOptions,
+                        variantCommandOptions.deleteAnnotationSnapshotCommandOptions.dbName);
+                deleteAnnotation();
                 break;
             case "stats":
                 configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions,
@@ -430,6 +442,24 @@ public class VariantCommandExecutor extends CommandExecutor {
 
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
         }
+    }
+
+    private void copyAnnotation() throws VariantAnnotatorException, StorageEngineException {
+        StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.createAnnotationSnapshotCommandOptions;
+
+        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantStorageEngine.createAnnotationSnapshot(cliOptions.name, options);
+    }
+
+    private void deleteAnnotation() throws VariantAnnotatorException, StorageEngineException {
+        StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.deleteAnnotationSnapshotCommandOptions;
+
+        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantStorageEngine.deleteAnnotationSnapshot(cliOptions.name, options);
     }
 
     private void stats() throws IOException, URISyntaxException, StorageEngineException, IllegalAccessException, InstantiationException,

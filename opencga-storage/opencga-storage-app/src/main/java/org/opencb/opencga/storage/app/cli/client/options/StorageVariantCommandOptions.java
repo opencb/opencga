@@ -41,6 +41,8 @@ public class StorageVariantCommandOptions {
     public final VariantQueryCommandOptions variantQueryCommandOptions;
     public final ImportVariantsCommandOptions importVariantsCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantsCommandOptions;
+    public final CreateAnnotationSnapshotCommandOptions createAnnotationSnapshotCommandOptions;
+    public final DeleteAnnotationSnapshotCommandOptions deleteAnnotationSnapshotCommandOptions;
     public final VariantStatsCommandOptions statsVariantsCommandOptions;
     public final FillGapsCommandOptions fillGapsCommandOptions;
     public final FillMissingCommandOptions fillMissingCommandOptions;
@@ -64,6 +66,8 @@ public class StorageVariantCommandOptions {
         this.variantQueryCommandOptions = new VariantQueryCommandOptions();
         this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
+        this.createAnnotationSnapshotCommandOptions = new CreateAnnotationSnapshotCommandOptions();
+        this.deleteAnnotationSnapshotCommandOptions = new DeleteAnnotationSnapshotCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
         this.fillGapsCommandOptions = new FillGapsCommandOptions();
         this.fillMissingCommandOptions = new FillMissingCommandOptions();
@@ -504,6 +508,43 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
         public String outdir;
+    }
+
+    public static class GenericCreateAnnotationSnapshotCommandOptions {
+        @Parameter(names = {"--name"}, description = "Annotation snapshot name", required = true, arity = 1)
+        public String name;
+    }
+
+    @Parameters(commandNames = {CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND}, commandDescription = CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND_DESCRIPTION)
+    public class CreateAnnotationSnapshotCommandOptions extends GenericCreateAnnotationSnapshotCommandOptions {
+        public static final String COPY_ANNOTATION_COMMAND = "copy-annotation";
+        public static final String COPY_ANNOTATION_COMMAND_DESCRIPTION = "Creates a snapshot of the current variant annotation at the database.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+
+    }
+
+    public static class GenericDeleteAnnotationSnapshotCommandOptions {
+
+        @Parameter(names = {"--name"}, description = "Annotation snapshot name", required = true, arity = 1)
+        public String name;
+    }
+
+    @Parameters(commandNames = {DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND}, commandDescription = DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND_DESCRIPTION)
+    public class DeleteAnnotationSnapshotCommandOptions extends GenericDeleteAnnotationSnapshotCommandOptions {
+        public static final String DELETE_ANNOTATION_COMMAND = "delete-annotation";
+        public static final String DELETE_ANNOTATION_COMMAND_DESCRIPTION = "Deletes a variant annotation snapshot.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+
     }
 
     /**
