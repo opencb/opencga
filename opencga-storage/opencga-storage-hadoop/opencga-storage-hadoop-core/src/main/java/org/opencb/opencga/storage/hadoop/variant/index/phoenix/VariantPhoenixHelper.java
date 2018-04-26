@@ -596,4 +596,7 @@ public class VariantPhoenixHelper {
         return PhoenixHelper.getEscapedFullTableName(DEFAULT_TABLE_TYPE, fullTableName, conf);
     }
 
+    public static String getAnnotationSnapshotColumn(String name) {
+        return "A_" + name;
+    }
 }

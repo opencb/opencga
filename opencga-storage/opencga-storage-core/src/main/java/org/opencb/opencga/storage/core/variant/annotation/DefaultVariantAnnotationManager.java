@@ -91,9 +91,8 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
-        if (dbAdaptor == null || variantAnnotator == null) {
-            throw new NullPointerException();
-        }
+        Objects.requireNonNull(variantAnnotator);
+        Objects.requireNonNull(dbAdaptor);
         this.dbAdaptor = dbAdaptor;
         this.variantAnnotator = variantAnnotator;
     }

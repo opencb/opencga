@@ -6,7 +6,6 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -26,12 +25,12 @@ import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotati
  */
 public abstract class VariantAnnotationSnapshotTest extends VariantStorageBaseTest {
 
-
     @Test
     public void testMultiAnnotations() throws Exception {
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration(), new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
+        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration(),
+                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
                 .append(VARIANT_ANNOTATOR_CLASSNAME, TestAnnotator.class.getName())
@@ -55,8 +54,7 @@ public abstract class VariantAnnotationSnapshotTest extends VariantStorageBaseTe
         assertEquals(0, variantStorageEngine.getAnnotation("v1", null).getResult().size());
     }
 
-    public void checkAnnotationSnapshot(VariantStorageEngine variantStorageEngine, String name, String expectedId)
-            throws StorageEngineException, VariantAnnotatorException {
+    public void checkAnnotationSnapshot(VariantStorageEngine variantStorageEngine, String name, String expectedId) throws Exception {
         int count = 0;
         for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(name, null).getResult()) {
             assertEquals(expectedId, annotation.getId());

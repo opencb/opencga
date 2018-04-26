@@ -284,7 +284,12 @@ public class VariantHBaseQueryParser {
         }
 
         if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
-            scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
+            if (isValidParam(query, VariantHadoopDBAdaptor.ANNOT_NAME)) {
+                String name = query.getString(VariantHadoopDBAdaptor.ANNOT_NAME.key());
+                scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(name)));
+            } else {
+                scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
+            }
             if (defaultStudyConfiguration != null) {
                 int release = defaultStudyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
                 for (int i = 1; i <= release; i++) {
