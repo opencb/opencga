@@ -23,6 +23,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -33,6 +34,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -65,7 +67,7 @@ public class VariantHBaseQueryParser {
 //            STUDIES, // Not fully supported
 //            FILES,   // Not supported at all
 //            SAMPLES, // May be supported
-//            REGION,  // Only one region supported
+            REGION,
             INCLUDE_FILE,
             INCLUDE_STUDY,
             INCLUDE_SAMPLE,
@@ -89,21 +91,21 @@ public class VariantHBaseQueryParser {
         Set<VariantQueryParam> otherParams = validParams(query);
         otherParams.removeAll(SUPPORTED_QUERY_PARAMS);
         Set<String> messages = new HashSet<>();
-//        if (otherParams.contains(ID)) {
-//            List<String> ids = query.getAsStringList(ID.key());
-//            for (String id : ids) {
-//                if (!VariantQueryUtils.isVariantId(id)) {
-//                    messages.add("If there is any ID that is not a variantId, the query is not fully supported");
-//                }
-//            }
-//            otherParams.remove(ID);
-//        }
-        if (otherParams.contains(REGION)) {
-            if (query.getAsStringList(REGION.key()).size() != 1) {
-                messages.add("Only one region is supported at a time");
+        if (otherParams.contains(ID)) {
+            List<String> ids = query.getAsStringList(ID.key());
+            for (String id : ids) {
+                if (!VariantQueryUtils.isVariantId(id)) {
+                    messages.add("If there is any ID that is not a variantId, the query is not fully supported");
+                }
             }
-            otherParams.remove(REGION);
+            otherParams.remove(ID);
         }
+//        if (otherParams.contains(REGION)) {
+//            if (query.getAsStringList(REGION.key()).size() != 1) {
+//                messages.add("Only one region is supported at a time");
+//            }
+//            otherParams.remove(REGION);
+//        }
         if (otherParams.contains(STUDY)) {
             String value = query.getString(STUDY.key());
             if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
@@ -162,6 +164,57 @@ public class VariantHBaseQueryParser {
         }
     }
 
+    public List<Scan> parseQueryMultiRegion(Query query, QueryOptions options) {
+        return parseQueryMultiRegion(VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager), query, options);
+    }
+
+    public List<Scan> parseQueryMultiRegion(SelectVariantElements selectElements, Query query, QueryOptions options) {
+        VariantQueryXref xrefs = VariantQueryUtils.parseXrefs(query);
+        if (!xrefs.getOtherXrefs().isEmpty()) {
+            throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_XREF,
+                    HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "Only variant ids are supported with HBase native query");
+        } else if (!xrefs.getIds().isEmpty()) {
+            throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ID,
+                    HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "Only variant ids are supported with HBase native query");
+        }
+
+        List<Region> regions = getRegions(query);
+        List<Variant> variants = xrefs.getVariants();
+
+        regions = mergeRegions(regions);
+        if (!regions.isEmpty()) {
+            for (Iterator<Variant> iterator = variants.iterator(); iterator.hasNext();) {
+                Variant variant = iterator.next();
+                if (regions.stream().anyMatch(r -> r.overlaps(variant.getChromosome(), variant.getStart(), variant.getEnd()))) {
+                    iterator.remove();
+                }
+            }
+        }
+
+        List<Scan> scans;
+        if (regions.isEmpty() && variants.isEmpty()) {
+            scans = Collections.singletonList(parseQuery(selectElements, query, options));
+        } else {
+            scans = new ArrayList<>(regions.size() + variants.size());
+            Query subQuery = new Query(query);
+            subQuery.remove(REGION.key());
+            subQuery.remove(ANNOT_XREF.key());
+            subQuery.remove(ID.key());
+
+            for (Region region : regions) {
+                subQuery.put(REGION.key(), region);
+                scans.add(parseQuery(selectElements, subQuery, options));
+            }
+            subQuery.remove(REGION.key());
+            for (Variant variant : variants) {
+                subQuery.put(ID.key(), variant);
+                scans.add(parseQuery(selectElements, subQuery, options));
+            }
+        }
+
+        return scans;
+    }
+
     public Scan parseQuery(Query query, QueryOptions options) {
         VariantQueryUtils.SelectVariantElements selectElements =
                 VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager);
@@ -186,8 +239,16 @@ public class VariantHBaseQueryParser {
             }
             Region region = regions.get(0);
             logger.debug("region = " + region);
-            // TODO: Use MultiRowRangeFilter
             addRegionFilter(scan, region);
+        } else if (isValidParam(query, ID)) {
+            List<String> ids = query.getAsStringList(ID.key());
+            if (ids.size() != 1) {
+                throw VariantQueryException.malformedParam(ID, ids.toString(), "Unsupported multiple variant ids filter");
+            }
+            Variant variant = VariantQueryUtils.toVariant(ids.get(0));
+            byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
+            scan.setStartRow(rowKey);
+            scan.setStopRow(rowKey);
         }
 
 
@@ -231,6 +292,7 @@ public class VariantHBaseQueryParser {
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
             for (Integer studyId : selectElements.getStudies()) {
                 scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+                scan.addColumn(family, VariantPhoenixHelper.getFillMissingColumn(studyId).bytes());
             }
 
             if (selectElements.getFields().contains(VariantField.STUDIES_STATS)) {
@@ -523,7 +585,11 @@ public class VariantHBaseQueryParser {
     public static void addRegionFilter(Scan scan, Region region) {
         if (region != null) {
             scan.setStartRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getStart()));
-            scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getEnd()));
+            int end = region.getEnd();
+            if (end != Integer.MAX_VALUE) {
+                end++;
+            }
+            scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), end + 1));
         }
     }
 

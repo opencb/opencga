@@ -27,7 +27,6 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -859,28 +858,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             }
 
         }
-
-        List<Region> regions;
         if (isValidParam(query, REGION)) {
-            regions = Region.parseRegions(query.getString(REGION.key()));
-            query.remove(REGION.key());
-        } else {
-            regions = Collections.singletonList(null);
+            scanQuery.put(REGION.key(), query.get(REGION.key()));
         }
-        // Native queries does not allow multiple regions.
-        // If multiple regions are provided, split the query in different scans.
-        // FIXME: What if some of the regions are overlapping?
-        Iterator<Iterator<String>> iterators = regions.stream().map(region -> {
-            scanQuery.putIfNotNull(REGION.key(), region);
-            Iterator<Variant> it = dbAdaptor.iterator(scanQuery, scanOptions);
-            return Iterators.transform(it, Variant::toString);
-        }).iterator();
+
+        Iterator<String> variants = Iterators.transform(dbAdaptor.iterator(scanQuery, scanOptions), Variant::toString);
 
         int batchSize = options.getInt("multiIteratorBatchSize", 100);
         if (iterator) {
-            return dbAdaptor.iterator(Iterators.concat(iterators), query, options, batchSize);
+            return dbAdaptor.iterator(variants, query, options, batchSize);
         } else {
-            VariantQueryResult<Variant> result = dbAdaptor.get(Iterators.concat(iterators), query, options);
+            VariantQueryResult<Variant> result = dbAdaptor.get(variants, query, options);
             result.setSource(getStorageEngineId() + " + " + getStorageEngineId());
             return result;
         }
