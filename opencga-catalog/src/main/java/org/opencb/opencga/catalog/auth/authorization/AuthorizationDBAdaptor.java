@@ -63,7 +63,8 @@ public interface AuthorizationDBAdaptor {
      */
     void removeFromStudy(long studyId, String member, String entity) throws CatalogException;
 
-    void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity) throws CatalogDBException;
+    void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, List<String> allPermissions, String entity)
+            throws CatalogDBException;
 
     void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity) throws CatalogDBException;
 

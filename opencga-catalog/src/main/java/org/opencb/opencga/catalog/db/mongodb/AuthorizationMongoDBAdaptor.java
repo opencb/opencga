@@ -401,34 +401,40 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
-            throws CatalogDBException {
+    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, List<String> allPermissions,
+                             String entity) throws CatalogDBException {
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
+        /* 1. We are going to try to remove all the permissions to those members in first instance */
+
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
-        List<String> permissions = new ArrayList<>(permissionList);
+        List<String> permissions = new ArrayList<>(allPermissions);
         permissions.add("NONE");
+        permissions = createPermissionArray(members, permissions);
 
-        for (long resourceId : resourceIds) {
-            // Get current permissions for resource and override with new ones set for members (already existing or not)
-            Map<String, List<String>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
-            for (String member : members) {
-                currentPermissions.put(member, new ArrayList<>(permissions));
-            }
+        Document queryDocument = new Document()
+                .append("$isolated", 1)
+                .append(PRIVATE_ID, new Document("$in", resourceIds));
+        Document update = new Document("$pullAll", new Document(QueryParams.ACL.key(), permissions));
+        logger.debug("Pull all acls: Query {}, PullAll {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        collection.update(queryDocument, update, new QueryOptions("multi", true));
 
-            List<String> permissionArray = createPermissionArray(currentPermissions);
-            Document queryDocument = new Document()
-                    .append("$isolated", 1)
-                    .append(PRIVATE_ID, resourceId);
-            Document update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+        /* 2. We now add the expected permissions to those members */
 
-            logger.debug("Set Acls (set): Query {}, Push {}",
-                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
+        permissions = new ArrayList<>(permissionList);
+        permissions.add("NONE");
+        permissions = createPermissionArray(members, permissions);
 
-            collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
-        }
+        update = new Document("$addToSet", new Document(QueryParams.ACL.key(), new Document("$each", permissions)));
+        logger.debug("Add Acls (addToSet): Query {}, Push {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        collection.update(queryDocument, update, new QueryOptions("multi", true));
     }
 
     @Override

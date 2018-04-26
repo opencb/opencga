@@ -30,12 +30,12 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -109,7 +109,12 @@ public class AuthorizationMongoDBAdaptorTest {
             assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
         }
 
-        aclDBAdaptor.setToMembers(Arrays.asList(s1.getId()), Arrays.asList("user1"), Arrays.asList("DELETE"),
+        // Todo: Remove this in 1.4
+        List<String> allSamplePermissions = EnumSet.allOf(SampleAclEntry.SamplePermissions.class)
+                .stream()
+                .map(String::valueOf)
+                .collect(Collectors.toList());
+        aclDBAdaptor.setToMembers(Arrays.asList(s1.getId()), Arrays.asList("user1"), Arrays.asList("DELETE"), allSamplePermissions,
                 MongoDBAdaptorFactory.SAMPLE_COLLECTION);
         sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList("user1", "user2"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
         assertEquals(2, sampleAcl.getNumResults());
@@ -215,8 +220,15 @@ public class AuthorizationMongoDBAdaptorTest {
 
         SampleAclEntry newAcl = new SampleAclEntry(user2.getId(), Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()));
         assertTrue(!acl_s1_user2.getPermissions().equals(newAcl.getPermissions()));
+        // Todo: Remove this in 1.4
+        List<String> allSamplePermissions = EnumSet.allOf(SampleAclEntry.SamplePermissions.class)
+                .stream()
+                .map(String::valueOf)
+                .collect(Collectors.toList());
+
         aclDBAdaptor.setToMembers(Arrays.asList(s1.getId()), Arrays.asList(user2.getId()),
-                Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+                Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()), allSamplePermissions,
+                MongoDBAdaptorFactory.SAMPLE_COLLECTION);
 //        sampleDBAdaptor.setSampleAcl(s1.getId(), newAcl, true);
 
         assertEquals(newAcl.getPermissions(), aclDBAdaptor.get(s1.getId(), Arrays.asList(user2.getId()),

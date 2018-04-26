@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -1596,4 +1597,54 @@ public class FileManagerTest extends GenericTest {
         QueryResult<File> read = fileManager.get(fileResult.first().getId(), new QueryOptions(), sessionIdUser);
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, read.first().getIndex().getStatus().getName());
     }
+
+//    @Test
+//    public void testMassiveUpdateFileAcl() throws CatalogException {
+//        List<String> fileIdList = new ArrayList<>();
+//
+//        // Create 2000 files
+//        for (int i = 0; i < 10000; i++) {
+//            fileIdList.add(String.valueOf(catalogManager.getFileManager().createFile("user@1000G:phase1", "file_" + i + ".txt", "", false,
+//                    "File " + i, sessionIdUser).first().getId()));
+//        }
+//
+//        StopWatch watch = StopWatch.createStarted();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//
+//        watch.reset();
+//        watch.start();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//
+//        watch.reset();
+//        watch.start();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//
+//        watch.reset();
+//        watch.start();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//
+//        watch.reset();
+//        watch.start();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//    }
 }

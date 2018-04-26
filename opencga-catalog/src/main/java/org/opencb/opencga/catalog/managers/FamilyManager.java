@@ -720,8 +720,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         switch (familyAclParams.getAction()) {
             case SET:
+                // Todo: Remove this in 1.4
+                List<String> allFamilyPermissions = EnumSet.allOf(FamilyAclEntry.FamilyPermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
+                        allFamilyPermissions, collectionName);
             case ADD:
                 return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
                         collectionName);

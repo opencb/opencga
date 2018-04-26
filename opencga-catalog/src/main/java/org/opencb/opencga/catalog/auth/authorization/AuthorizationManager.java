@@ -343,7 +343,7 @@ public interface AuthorizationManager {
 //    <E extends AbstractAclEntry> QueryResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                              String entity) throws CatalogException;
+                                                              List<String> allPermissions, String entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
                                                               String entity) throws CatalogException;
