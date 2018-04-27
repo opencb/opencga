@@ -33,10 +33,10 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
 public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTest {
 
     protected static boolean loaded = false;
-    private VariantDBAdaptor dbAdaptor;
-    private Query query;
-    private QueryOptions options = new QueryOptions();
-    private VariantQueryResult<Variant> queryResult;
+    protected VariantDBAdaptor dbAdaptor;
+    protected Query query;
+    protected QueryOptions options = new QueryOptions();
+    protected VariantQueryResult<Variant> queryResult;
 
     @Before
     public void before() throws Exception {
@@ -152,17 +152,29 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
-    public void testGetByFileName() throws Exception {
+    public void testGetBySampleName() throws Exception {
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), "S_1")
-                .append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877");
         queryResult = dbAdaptor.get(query, options);
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
-        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877"))));
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", containsString("1"))))));
+    }
 
+    @Test
+    public void testGetByFileName() throws Exception {
+        query = new Query()
+//                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        queryResult = dbAdaptor.get(query, options);
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "all")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877"))));
     }
 
     @Test
