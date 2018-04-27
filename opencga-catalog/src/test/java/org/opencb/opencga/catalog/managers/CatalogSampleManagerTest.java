@@ -1086,7 +1086,43 @@ public class CatalogSampleManagerTest extends GenericTest {
                 .update(studyFqn, sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualId),
                         new QueryOptions("lazy", false), sessionIdUser).first();
 
-        assertEquals(individualId, sample.getIndividual().getId());
+        assertEquals(individualId, ((Individual) sample.getAttributes().get("individual")).getId());
+    }
+
+    @Test
+    public void testGetSampleAndIndividualWithPermissionsChecked() throws CatalogException {
+        String sampleId1 = catalogManager.getSampleManager()
+                .create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(), sessionIdUser).first().getId();
+        String individualId = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1"),
+                new QueryOptions(), sessionIdUser).first().getId();
+
+        Sample sample = catalogManager.getSampleManager()
+                .update(studyFqn, sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualId),
+                        new QueryOptions("lazy", false), sessionIdUser).first();
+
+        assertEquals(individualId, ((Individual) sample.getAttributes().get("individual")).getId());
+        assertEquals(sampleId1, sample.getId());
+
+        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
+                new Sample.SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null),
+                sessionIdUser);
+
+        sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
+        assertTrue(((Map) sample.getAttributes().get("individual")).isEmpty());
+        assertEquals(sampleId1, sample.getId());
+
+        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
+                new Sample.SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null, true),
+                sessionIdUser);
+        sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
+        assertEquals(individualId, ((Individual) sample.getAttributes().get("individual")).getId());
+        assertEquals(sampleId1, sample.getId());
+
+        sample = catalogManager.getSampleManager().get(studyFqn, new Query("individual", "Individual1"), new QueryOptions("lazy", false),
+                sessionIdUser2).first();
+        assertEquals(individualId, ((Individual) sample.getAttributes().get("individual")).getId());
+        assertEquals(sampleId1, sample.getId());
+
     }
 
     @Test
