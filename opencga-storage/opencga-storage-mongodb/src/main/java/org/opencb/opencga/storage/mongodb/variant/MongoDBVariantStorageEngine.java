@@ -22,6 +22,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,12 +34,14 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -46,6 +49,8 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -196,6 +201,45 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
         };
     }
+
+    @Override
+    public VariantSearchLoadResult searchIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+            throws StorageEngineException, IOException, VariantSearchException {
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+
+        int deletedVariants;
+        VariantSearchLoadResult searchIndex;
+        long timeStamp = System.currentTimeMillis();
+
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
+            // First remove trashed variants.
+            ProgressLogger progressLogger = new ProgressLogger("Variants removed from Solr");
+            try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(timeStamp)) {
+                deletedVariants = variantSearchManager.delete(dbName, removedVariants, progressLogger);
+                getDBAdaptor().cleanTrash(timeStamp);
+            } catch (StorageEngineException | IOException | VariantSearchException | RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new StorageEngineException("Exception closing VariantDBIterator", e);
+            }
+
+            // Then, load new variants.
+            searchIndex = super.searchIndex(inputQuery, inputQueryOptions, overwrite);
+        } else {
+            //The current dbName from the SearchEngine is not alive or does not exist. There is nothing to remove
+            deletedVariants = 0;
+            logger.debug("Skip removed variants!");
+
+            // Try to index the rest of variants. This method will fail if the search engine is not alive
+            searchIndex = super.searchIndex(inputQuery, inputQueryOptions, overwrite);
+
+            // If the variants were loaded correctly, the trash can be clean up.
+            getDBAdaptor().cleanTrash(timeStamp);
+        }
+
+        return new VariantSearchLoadResult(searchIndex.getNumProcessedVariants(), searchIndex.getNumLoadedVariants(), deletedVariants);
+    }
+
 
     @Override
     protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {

@@ -10,7 +10,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 public class VariantSearchLoadResult {
 
     /**
-     * Number of processed variants. This number may be lower than the number of loaded variants, in case that some variants are discarded.
+     * Number of processed variants. This number may be larger than the number of loaded variants, in case that some variants are discarded.
      */
     private final long numProcessedVariants;
 
@@ -19,9 +19,16 @@ public class VariantSearchLoadResult {
      */
     private final long numLoadedVariants;
 
-    VariantSearchLoadResult(long numProcessedVariants, long numLoadedVariants) {
+    /**
+     * Number of deleted variants. In case of having deleted variants from the variants backend that may need to be removed
+     * from the Search Engine.
+     */
+    private final long numDeletedVariants;
+
+    public VariantSearchLoadResult(long numProcessedVariants, long numLoadedVariants, long numDeletedVariants) {
         this.numProcessedVariants = numProcessedVariants;
         this.numLoadedVariants = numLoadedVariants;
+        this.numDeletedVariants = numDeletedVariants;
     }
 
     public long getNumProcessedVariants() {
@@ -32,11 +39,16 @@ public class VariantSearchLoadResult {
         return numLoadedVariants;
     }
 
+    public long getNumDeletedVariants() {
+        return numDeletedVariants;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .append("numProcessedVariants", numProcessedVariants)
                 .append("numLoadedVariants", numLoadedVariants)
+                .append("numDeletedVariants", numDeletedVariants)
                 .toString();
     }
 }

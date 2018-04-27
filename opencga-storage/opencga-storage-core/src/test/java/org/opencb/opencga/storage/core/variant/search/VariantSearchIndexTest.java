@@ -131,7 +131,16 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void testRemoveFiles() throws Exception {
+    public void testSearchIndexRemoveSearchIndex() throws Exception {
+        testRemoveFiles(true);
+    }
+
+    @Test
+    public void testSearchIndexAfterRemove() throws Exception {
+        testRemoveFiles(false);
+    }
+
+    public void testRemoveFiles(boolean searchIndexBeforeRemove) throws Exception {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
         VariantStorageEngine storageEngine = getVariantStorageEngine();
@@ -155,17 +164,18 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         storageEngine.getOptions().putAll(options);
         storageEngine.index(inputFiles, outputUri, true, true, true);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
-        long count = dbAdaptor.count(query).first();
+        if (searchIndexBeforeRemove) {
+            Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
+            long count = dbAdaptor.count(query).first();
 
-        VariantSearchLoadResult loadResult = searchIndex();
-        System.out.println("Load result after load 1-4 files: = " + loadResult);
-        assertEquals(count, loadResult.getNumLoadedVariants());
-
+            VariantSearchLoadResult loadResult = searchIndex();
+            System.out.println("Load result after load 1-4 files: = " + loadResult);
+            assertEquals(count, loadResult.getNumLoadedVariants());
+        }
         //////////////////////
         storageEngine.removeFiles(studyConfiguration.getStudyName(), Collections.singletonList(fileNames.get(0)));
 
-        loadResult = searchIndex();
+        VariantSearchLoadResult loadResult = searchIndex();
 //                assertEquals(count, loadResult.getNumLoadedVariants());
         System.out.println("Load result after remove: = " + loadResult);
 

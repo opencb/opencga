@@ -486,17 +486,22 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         // first, create the collection it it does not exist
         variantSearchManager.create(dbName);
-        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
-            // then, load variants
-            queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
-            if (!overwrite) {
-                query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
-            }
-            VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+        if (!configuration.getSearch().getActive() || !variantSearchManager.isAlive(dbName)) {
+            throw new StorageEngineException("Solr is not alive!");
+        }
+
+        // then, load variants
+        queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
+        if (!overwrite) {
+            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
+        }
+        try (VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions)) {
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
             return variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
-        } else {
-            throw new StorageEngineException("Solr is not alive!");
+        } catch (StorageEngineException | IOException | VariantSearchException | RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new StorageEngineException("Exception closing VariantDBIterator", e);
         }
     }
 
