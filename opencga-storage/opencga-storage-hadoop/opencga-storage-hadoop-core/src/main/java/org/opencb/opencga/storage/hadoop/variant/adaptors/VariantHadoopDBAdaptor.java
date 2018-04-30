@@ -25,6 +25,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -497,9 +498,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     @Override
     @Deprecated
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
+                                   QueryOptions queryOptions) {
         return updateStats(variantStatsWrappers,
-                getStudyConfigurationManager().getStudyConfiguration(studyName, queryOptions).first(), queryOptions);
+                getStudyConfigurationManager().getStudyConfiguration(studyName, queryOptions).first(), timestamp, queryOptions);
     }
 
     /**
@@ -508,7 +510,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     @Deprecated
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
-                                   QueryOptions options) {
+                                   long timestamp, QueryOptions options) {
 
         VariantStatsToHBaseConverter converter = new VariantStatsToHBaseConverter(genomeHelper, studyConfiguration);
         List<Put> puts = converter.apply(variantStatsWrappers);
@@ -536,8 +538,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     @Deprecated
-    public QueryResult updateAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
-                                         QueryOptions queryOptions) {
+    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations,
+                                         long timestamp, QueryOptions queryOptions) {
 
         long start = System.currentTimeMillis();
 
@@ -559,7 +561,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options) {
+    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
+                                               QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 

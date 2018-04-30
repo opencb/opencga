@@ -40,11 +40,13 @@ public class VariantStatsDBWriter implements DataWriter<VariantStatsWrapper> {
     private ProgressLogger progressLogger;
     private final AtomicLong numWrites = new AtomicLong();
     private final AtomicLong numStats = new AtomicLong();
+    private final long timestamp;
 
     public VariantStatsDBWriter(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, QueryOptions options) {
         this.dbAdaptor = dbAdaptor;
         this.options = options;
         this.studyConfiguration = studyConfiguration;
+        timestamp = System.currentTimeMillis();
     }
 
     @Override
@@ -56,7 +58,7 @@ public class VariantStatsDBWriter implements DataWriter<VariantStatsWrapper> {
 
     @Override
     public boolean write(List<VariantStatsWrapper> batch) {
-        QueryResult writeResult = dbAdaptor.updateStats(batch, studyConfiguration, options);
+        QueryResult writeResult = dbAdaptor.updateStats(batch, studyConfiguration, timestamp, options);
 
         numStats.addAndGet(batch.size());
         numWrites.addAndGet(writeResult.getNumResults());

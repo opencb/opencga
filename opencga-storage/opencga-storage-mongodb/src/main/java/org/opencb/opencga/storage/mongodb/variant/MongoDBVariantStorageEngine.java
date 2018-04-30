@@ -21,7 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -48,7 +47,6 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
@@ -115,7 +113,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         MERGE_RESUME("merge.resume", false),
         MERGE_IGNORE_OVERLAPPING_VARIANTS("merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
         MERGE_PARALLEL_WRITE("merge.parallel.write", false),
-        MERGE_BATCH_SIZE("merge.batch.size", 10);          //Number of files to merge directly from first to second collection
+        MERGE_BATCH_SIZE("merge.batch.size", 10),          //Number of files to merge directly from first to second collection
+
+        SEARCH_INDEX_LAST_TIMESTAMP("search.index.last.timestamp", 0);
 
         private final String key;
         private final Object value;
@@ -237,31 +237,22 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             getDBAdaptor().cleanTrash(timeStamp);
         }
 
+        for (String studyName : getStudyConfigurationManager().getStudyNames(null)) {
+            long value = System.currentTimeMillis();
+            getStudyConfigurationManager().lockAndUpdate(studyName, sc -> {
+                sc.getAttributes().put(MongoDBVariantOptions.SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
+                return sc;
+            });
+        }
+
         return new VariantSearchLoadResult(searchIndex.getNumProcessedVariants(), searchIndex.getNumLoadedVariants(), deletedVariants);
-    }
-
-
-    @Override
-    protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
-        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
-
-        return new VariantSearchLoadListener(getStudyConfigurationManager().getStudies(null)) {
-            @Override
-            protected void processAlreadySynchronizedVariants(List<Variant> alreadySynchronizedVariants) {
-                dbAdaptor.updateIndexSync(alreadySynchronizedVariants);
-            }
-
-            @Override
-            public void postLoad(List<Variant> variants) throws IOException {
-                dbAdaptor.updateIndexSyncAndStudies(variants, studiesMap);
-            }
-        };
     }
 
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
 
-        List<Integer> fileIds = preRemoveFiles(study, files);
+        BatchFileOperation batchFileOperation = preRemoveFiles(study, files);
+        List<Integer> fileIds = batchFileOperation.getFileIds();
 
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
 
@@ -271,7 +262,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            getDBAdaptor().removeFiles(study, files, new QueryOptions(options));
+            getDBAdaptor().removeFiles(study, files, batchFileOperation.getTimestamp(), new QueryOptions(options));
             postRemoveFiles(study, fileIds, false);
         } catch (Exception e) {
             postRemoveFiles(study, fileIds, true);
@@ -284,10 +275,15 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
         StudyConfigurationManager scm = getStudyConfigurationManager();
+        AtomicReference<BatchFileOperation> batchFileOperation = new AtomicReference<>();
         int studyId = scm.lockAndUpdate(studyName, studyConfiguration -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, Collections.emptyList(), resume,
-                    BatchFileOperation.Type.REMOVE);
+            batchFileOperation.set(StudyConfigurationManager.addBatchOperation(
+                    studyConfiguration,
+                    REMOVE_OPERATION_NAME,
+                    Collections.emptyList(),
+                    resume,
+                    BatchFileOperation.Type.REMOVE));
             return studyConfiguration;
         }).getStudyId();
 
@@ -295,7 +291,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-            getDBAdaptor().removeStudy(studyName, new QueryOptions(options));
+            getDBAdaptor().removeStudy(studyName, batchFileOperation.get().getTimestamp(), new QueryOptions(options));
 
             scm.lockAndUpdate(studyName, studyConfiguration -> {
                 for (Integer fileId : studyConfiguration.getIndexedFiles()) {

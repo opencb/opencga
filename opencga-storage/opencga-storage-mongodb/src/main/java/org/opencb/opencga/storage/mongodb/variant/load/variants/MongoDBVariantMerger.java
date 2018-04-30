@@ -231,6 +231,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final List<Integer> fileIds;
     /** Indexed files in the region that we are merging. */
     private final Set<Integer> indexedFiles;
+    private final long ts;
     /**
      * Check overlapping variants.
      * Only needed when loading more than one file at the same time, or there were other loaded files in the same region
@@ -279,6 +280,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         variantMerger.configure(studyConfiguration.getVariantHeader());
         variantMerger.setExpectedFormats(format);
         this.resume = resume;
+        ts = System.currentTimeMillis();
     }
 
     @Override
@@ -1093,7 +1095,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                             }
                         }
                     }
-                    updates.add(MongoDBVariantSearchIndexUtils.SET_INDEX_UNKNOWN);
+                    updates.add(MongoDBVariantSearchIndexUtils.getSetIndexUnknown(ts));
+
 
                     mongoDBOps.getNewStudy().getVariants().add(variantDocument);
                     id = variantDocument.getString("_id");

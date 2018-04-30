@@ -59,7 +59,6 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.trash.DocumentToTrashVariantConverter;
-import org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,8 +77,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
-import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.SET_INDEX_NOT_SYNCHRONIZED;
-import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.SET_INDEX_SYNCHRONIZED;
+import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.getSetIndexNotSynchronized;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -190,10 +188,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      *
      * @param study     The study where the file belong
      * @param files     The file name to be deleted, it must belong to the study
+     * @param timestamp Timestamp of the operation
      * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with the file deleted
      */
-    public QueryResult removeFiles(String study, List<String> files, QueryOptions options) {
+    public QueryResult removeFiles(String study, List<String> files, long timestamp, QueryOptions options) {
         Integer studyId = studyConfigurationManager.getStudyId(study, null, false);
         StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
         List<Integer> fileIds = StudyConfigurationManager.getFileIdsFromStudy(files, sc);
@@ -204,7 +203,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // First, remove the study entry that only contains the files to remove
         if (otherIndexedFiles.isEmpty()) {
             // If we are deleting all the files in the study, delete the whole study
-            return removeStudy(study, new QueryOptions("purge", true));
+            return removeStudy(study, timestamp, new QueryOptions("purge", true));
         }
 
         // Remove all the study entries that does not contain any of the other indexed files.
@@ -218,7 +217,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         );
         removeFilesFromStageCollection(studiesToRemoveQuery, studyId, fileIds);
 
-        return removeFilesFromVariantsCollection(studiesToRemoveQuery, sc, fileIds);
+        return removeFilesFromVariantsCollection(studiesToRemoveQuery, sc, fileIds, timestamp);
     }
 
     private void removeFilesFromStageCollection(Bson studiesToRemoveQuery, Integer studyId, List<Integer> fileIds) {
@@ -266,7 +265,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryResult<UpdateResult> removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyConfiguration sc,
-                                                                        List<Integer> fileIds) {
+                                                                        List<Integer> fileIds, long timestamp) {
         Set<Integer> sampleIds = fileIds.stream()
                 .map(sc.getSamplesInFiles()::get)
                 .flatMap(Collection::stream)
@@ -275,7 +274,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Update and remove variants from variants collection
         int studyId = sc.getStudyId();
         logger.info("Remove files from variants collection - step 1/3"); // Remove study if only contains removed files
-        long updatedVariantsDocuments = removeStudyFromVariants(studyId, studiesToRemoveQuery).first().getModifiedCount();
+        long updatedVariantsDocuments = removeStudyFromVariants(studyId, studiesToRemoveQuery, timestamp).first().getModifiedCount();
 
         // Remove also negated fileIds
         List<Integer> negatedFileIds = fileIds.stream().map(i -> -i).collect(Collectors.toList());
@@ -325,10 +324,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * Remove the given study from the database.
      *
      * @param studyName The study name to delete
+     * @param timestamp Timestamp of the operation
      * @param options   Query modifiers, accepted values are: purge
      * @return A QueryResult with the study deleted
      */
-    public QueryResult removeStudy(String studyName, QueryOptions options) {
+    public QueryResult removeStudy(String studyName, long timestamp, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
         }
@@ -339,7 +339,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         boolean purge = options.getBoolean("purge", true);
 
         logger.info("Remove study from variants collection - step 1/" + (purge ? '2' : '1'));
-        QueryResult<UpdateResult> result = removeStudyFromVariants(studyId, query);
+        QueryResult<UpdateResult> result = removeStudyFromVariants(studyId, query, timestamp);
 
         if (purge) {
             logger.info("Remove study from variants collection - step 2/2");
@@ -360,12 +360,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return result;
     }
 
-    private QueryResult<UpdateResult> removeStudyFromVariants(int studyId, Bson query) {
+    private QueryResult<UpdateResult> removeStudyFromVariants(int studyId, Bson query, long timestamp) {
         // { $pull : { files : {  sid : <studyId> } } }
         Bson update = combine(
                 pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
                 pull(DocumentToVariantConverter.STATS_FIELD, eq(DocumentToVariantStatsConverter.STUDY_ID, studyId)),
-                MongoDBVariantSearchIndexUtils.SET_INDEX_NOT_SYNCHRONIZED
+                getSetIndexNotSynchronized(timestamp)
         );
         logger.debug("removeStudy: query = {}", query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         logger.debug("removeStudy: update = {}", update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -850,13 +850,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions options) {
-        return updateStats(variantStatsWrappers, studyConfigurationManager.getStudyConfiguration(studyName, options).first(), options);
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions options) {
+        StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
+        return updateStats(variantStatsWrappers, sc, timestamp, options);
     }
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
-                                   QueryOptions options) {
+                                   long timestamp, QueryOptions options) {
 //        MongoCollection<Document> coll = db.getDb().getCollection(collectionName);
 //        BulkWriteOperation pullBuilder = coll.initializeUnorderedBulkOperation();
 //        BulkWriteOperation pushBuilder = coll.initializeUnorderedBulkOperation();
@@ -917,7 +918,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     pullUpdatesBulkList.add(pull);
                 }
 
-                Bson push = combine(pushEach(DocumentToVariantConverter.STATS_FIELD, cohorts), SET_INDEX_NOT_SYNCHRONIZED);
+                Bson push = combine(pushEach(DocumentToVariantConverter.STATS_FIELD, cohorts), getSetIndexNotSynchronized(timestamp));
                 pushQueriesBulkList.add(find);
                 pushUpdatesBulkList.add(push);
             }
@@ -963,7 +964,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
         List<Bson> queries = new LinkedList<>();
         List<Bson> updates = new LinkedList<>();
 
@@ -987,7 +988,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
             Bson update = combine(
                     set(DocumentToVariantConverter.ANNOTATION_FIELD + ".0", convertedVariantAnnotation),
-                    SET_INDEX_NOT_SYNCHRONIZED);
+                    getSetIndexNotSynchronized(timestamp));
             queries.add(find);
             updates.add(update);
         }
@@ -997,11 +998,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options) {
+    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
+                                               QueryOptions options) {
         Document queryDocument = queryParser.parseQuery(query);
         Document updateDocument = DocumentToVariantAnnotationConverter.convertToStorageType(attribute);
         return variantsCollection.update(queryDocument,
-                set(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD + '.' + name, updateDocument),
+                combine(set(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD + '.' + name, updateDocument),
+                        getSetIndexNotSynchronized(timeStamp)),
                 new QueryOptions(MULTI, true));
     }
 
@@ -1233,7 +1236,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // _index.sync
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_SYNCHRONIZED_FIELD, 1),
+                        .append(DocumentToVariantConverter.INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_TIMESTAMP_FIELD, 1),
                 onBackgroundSparse);
 
         logger.debug("sent order to create indices");
@@ -1254,32 +1257,4 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
-    public void updateIndexSync(List<Variant> variants) {
-        if (!variants.isEmpty()) {
-            VariantStringIdConverter idConverter = new VariantStringIdConverter();
-            List<String> ids = variants.stream().map(idConverter::buildId).collect(Collectors.toList());
-            variantsCollection.update(in("_id", ids), combine(SET_INDEX_SYNCHRONIZED), new QueryOptions(MULTI, true));
-        }
-    }
-
-    public void updateIndexSyncAndStudies(List<Variant> variants, Map<String, Integer> studiesMap) {
-        if (!variants.isEmpty()) {
-            VariantStringIdConverter idConverter = new VariantStringIdConverter();
-            Map<Set<Integer>, List<Variant>> map = variants.stream()
-                    .collect(Collectors.groupingBy(
-                            variant -> variant.getStudies()
-                                    .stream()
-                                    .map(StudyEntry::getStudyId).map(studiesMap::get)
-                                    .collect(Collectors.toSet())));
-
-            for (Map.Entry<Set<Integer>, List<Variant>> entry : map.entrySet()) {
-                List<String> ids = entry.getValue().stream().map(idConverter::buildId).collect(Collectors.toList());
-                variantsCollection.update(in("_id", ids), combine(
-                        SET_INDEX_SYNCHRONIZED,
-                        set(DocumentToVariantConverter.INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_STUDIES_FIELD,
-                                entry.getKey())
-                ), new QueryOptions(MULTI, true));
-            }
-        }
-    }
 }

@@ -95,8 +95,8 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
 
         List<File> files = annotate(new Query(), new QueryOptions(VariantAnnotationManager.CREATE, true));
         verify(dbAdaptor, atLeastOnce()).iterator(any(Query.class), any());
-        verify(dbAdaptor, never()).updateAnnotations(any(), any());
-        verify(dbAdaptor, never()).updateCustomAnnotations(any(), any(), any(), any());
+        verify(dbAdaptor, never()).updateAnnotations(any(), anyLong(), any());
+        verify(dbAdaptor, never()).updateCustomAnnotations(any(), any(), any(), anyLong(), any());
 
         Assert.assertEquals(1, files.size());
 
@@ -106,8 +106,8 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
 
         dbAdaptor = mockVariantDBAdaptor();
         annotate(new Query(), config);
-        verify(dbAdaptor, atLeastOnce()).updateAnnotations(any(), any());
-        verify(dbAdaptor, never()).updateCustomAnnotations(any(), any(), any(), any());
+        verify(dbAdaptor, atLeastOnce()).updateAnnotations(any(), anyLong(), any());
+        verify(dbAdaptor, never()).updateCustomAnnotations(any(), any(), any(), anyLong(), any());
         verify(dbAdaptor, never()).iterator(any(Query.class), any());
 
         checkAnnotation(v -> true);
@@ -146,7 +146,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId), options, sessionId);
 
-        verify(dbAdaptor, atLeastOnce()).updateCustomAnnotations(any(), matches("myAnnot"), any(), any());
+        verify(dbAdaptor, atLeastOnce()).updateCustomAnnotations(any(), matches("myAnnot"), any(), anyLong(), any());
 
         file = opencga.createFile(studyId, "custom_annotation/myannot.bed", sessionId);
         options = new QueryOptions()
@@ -155,7 +155,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId), options, sessionId);
 
-        verify(dbAdaptor, atLeastOnce()).updateCustomAnnotations(any(), matches("myAnnot2"), any(), any());
+        verify(dbAdaptor, atLeastOnce()).updateCustomAnnotations(any(), matches("myAnnot2"), any(), anyLong(), any());
     }
 
     public Set<String> checkAnnotation(Function<Variant, Boolean> contains) throws Exception {

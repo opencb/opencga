@@ -70,11 +70,11 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 storageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);
 
                 Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
-                long count = dbAdaptor.count(query).first();
+                long expected = dbAdaptor.count(query).first();
 
                 VariantSearchLoadResult loadResult = searchIndex();
                 System.out.println("Load result after load 1,2 files: = " + loadResult);
-                assertEquals(count, loadResult.getNumLoadedVariants());
+                checkLoadResult(expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
@@ -82,16 +82,16 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
                 storageEngine.index(inputFiles.subList(2, 4), outputUri, true, true, true);
 
-                count = dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
+                expected = dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
                         "!" + fileNames.get(0) + ";!" + fileNames.get(1) + ";" + fileNames.get(2) + ";" + fileNames.get(3))).first();
-                count += dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
+                expected += dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
                         "!" + fileNames.get(0) + ";!" + fileNames.get(1) + ";!" + fileNames.get(2) + ";" + fileNames.get(3))).first();
-                count += dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
+                expected += dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
                         "!" + fileNames.get(0) + ";!" + fileNames.get(1) + ";" + fileNames.get(2) + ";!" + fileNames.get(3))).first();
 
                 loadResult = searchIndex();
                 System.out.println("Load result after load 3,4 files: = " + loadResult);
-                assertEquals(count, loadResult.getNumLoadedVariants());
+                checkLoadResult(expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
 
@@ -103,17 +103,17 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 storageEngine.calculateStats(studyConfiguration.getStudyName(), Collections.singletonList("ALL"), statsOptions);
 
                 query = new Query(VariantQueryParam.STUDY.key(), studyId);
-                count = dbAdaptor.count(query).first();
+                expected = dbAdaptor.count(query).first();
                 loadResult = searchIndex();
                 System.out.println("Load result after stats calculate: = " + loadResult);
-                assertEquals(count, loadResult.getNumLoadedVariants());
+                checkLoadResult(expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
-                count = dbAdaptor.count(null).first();
+                expected = dbAdaptor.count(null).first();
                 loadResult = searchIndex(true);
                 System.out.println("Load result overwrite: = " + loadResult);
-                assertEquals(count, loadResult.getNumLoadedVariants());
+                checkLoadResult(expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
                 /////////// NEW STUDY ///////////
@@ -128,6 +128,13 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         }
 
         checkVariantSearchIndex(dbAdaptor);
+    }
+
+    public void checkLoadResult(long expected, VariantSearchLoadResult loadResult) {
+        assertEquals(expected, loadResult.getNumLoadedVariants());
+        if (expected != loadResult.getNumProcessedVariants()) {
+            System.err.println("More object than needed were fetched from the DB");
+        }
     }
 
     @Test
@@ -164,19 +171,26 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         storageEngine.getOptions().putAll(options);
         storageEngine.index(inputFiles, outputUri, true, true, true);
 
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
+        long expected;
         if (searchIndexBeforeRemove) {
-            Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
-            long count = dbAdaptor.count(query).first();
-
+            expected = dbAdaptor.count(query).first();
             VariantSearchLoadResult loadResult = searchIndex();
             System.out.println("Load result after load 1-4 files: = " + loadResult);
-            assertEquals(count, loadResult.getNumLoadedVariants());
+            checkLoadResult(expected, loadResult);
+
+            //////////////////////
+            storageEngine.removeFiles(studyConfiguration.getStudyName(), Collections.singletonList(fileNames.get(0)));
+            expected = 0;
+
+        } else {
+            //////////////////////
+            storageEngine.removeFiles(studyConfiguration.getStudyName(), Collections.singletonList(fileNames.get(0)));
+            expected = dbAdaptor.count(query).first();
         }
-        //////////////////////
-        storageEngine.removeFiles(studyConfiguration.getStudyName(), Collections.singletonList(fileNames.get(0)));
 
         VariantSearchLoadResult loadResult = searchIndex();
-//                assertEquals(count, loadResult.getNumLoadedVariants());
+        checkLoadResult(expected, loadResult);
         System.out.println("Load result after remove: = " + loadResult);
 
 

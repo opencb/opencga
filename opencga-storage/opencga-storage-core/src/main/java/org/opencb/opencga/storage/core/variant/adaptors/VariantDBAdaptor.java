@@ -160,16 +160,12 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
         return VariantQueryUtils.getIncludeSamples(query, options, getStudyConfigurationManager());
     }
 
-    @Deprecated
-    default QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        return updateStats(variantStatsWrappers, studyName, queryOptions);
-    }
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
 
-    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, long timestamp,
+                            QueryOptions options);
 
-    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions options);
-
-    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions);
 
     /**
      * Update custom annotation for all the variants with in a given region.
@@ -177,10 +173,11 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param query       Region to update
      * @param name        Custom annotation name.
      * @param attribute   Custom annotation for the region
+     * @param timeStamp   Timestamp of the operation
      * @param options     Other options
      * @return            Result of the insertion
      */
-    QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options);
+    QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options);
 
     VariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor();
 

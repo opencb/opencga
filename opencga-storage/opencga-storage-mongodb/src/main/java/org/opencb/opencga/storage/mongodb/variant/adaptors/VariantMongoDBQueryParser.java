@@ -39,7 +39,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,10 +51,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RELEASE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.LOADED_GENOTYPES;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.INDEX_FIELD;
 
 /**
@@ -459,12 +456,15 @@ public class VariantMongoDBQueryParser {
             }
 
             if (isValidParam(query, VARIANTS_TO_INDEX)) {
-                if (query.getBoolean(VARIANTS_TO_INDEX.key())) {
-                    builder.and(INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_SYNCHRONIZED_FIELD)
-                            .in(Arrays.asList(null,
-                                    VariantSearchManager.SyncStatus.NOT_SYNCHRONIZED.key(),
-                                    VariantSearchManager.SyncStatus.UNKNOWN.key()));
+                long ts = 0;
+                for (String studyName : studyConfigurationManager.getStudyNames(null)) {
+                    StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyName, null).first();
+                    ts = Math.max(ts, sc.getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key()));
                 }
+                if (ts > 0) {
+                    builder.and(INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_TIMESTAMP_FIELD)
+                            .greaterThan(ts);
+                } // Otherwise, get all variants
             }
         }
     }
