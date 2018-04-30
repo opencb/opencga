@@ -189,19 +189,25 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testAvoidDuplicatedSamples() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
+        Sample sample1 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId,
+                new Sample().setId("sample1"), QueryOptions.empty()).first();
+        Sample sample2 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId,
+                new Sample().setId("sample2"), QueryOptions.empty()).first();
+
         Individual individual = new Individual()
                 .setName("in2")
-                .setSamples(Arrays.asList(new Sample().setUid(5), new Sample().setUid(5), new Sample().setUid(7), new Sample().setUid(-1)));
+                .setSamples(Arrays.asList(sample1, sample1, sample2, new Sample().setUid(-1)));
         Individual individualStored = catalogIndividualDBAdaptor.insert(studyId, individual, null).first();
         assertEquals(2, individualStored.getSamples().size());
-        assertTrue(individualStored.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(5L,
-                7L)));
+        assertTrue(individualStored.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(
+                sample1.getUid(), sample2.getUid())));
 
         // Update samples
         ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
         Individual update = catalogIndividualDBAdaptor.update(individualStored.getUid(), params, QueryOptions.empty()).first();
         assertEquals(2, update.getSamples().size());
-        assertTrue(update.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(5L, 7L)));
+        assertTrue(update.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(sample1.getUid(),
+                sample2.getUid())));
     }
 
     @Test
@@ -312,12 +318,14 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testDeleteIndividualInUseAsSample() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", 0, 0, "", Individual.Sex.UNKNOWN, "", null, 1, Collections.emptyList(), null)
-                        .setSamples(Arrays.asList(new Sample().setUid(5))), null).first().getUid();
+        long sampleUid = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample").setUid(5L).setVersion(1),
+                QueryOptions.empty()).first().getUid();
+        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", 0, 0, "", Individual.Sex.UNKNOWN, "",
+                null, 1, Collections.emptyList(), null)
+                        .setSamples(Arrays.asList(new Sample().setUid(sampleUid).setVersion(1))), null).first().getUid();
 
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.delete(individualId, new QueryOptions());
-
     }
 
     @Test

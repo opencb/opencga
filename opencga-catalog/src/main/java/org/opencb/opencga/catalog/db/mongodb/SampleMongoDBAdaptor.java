@@ -589,8 +589,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         QueryResult<Sample> queryResult = endQuery("Get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()
-                && !query.containsKey(QueryParams.INDIVIDUAL_UID.key())) {
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults() && !isQueryingIndividualFields(query)) {
             QueryResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
         }
@@ -861,7 +860,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             if (entry.getKey().startsWith("individual.")) {
                 retQuery.append(entry.getKey().replace("individual.", ""), entry.getValue());
             } else if (entry.getKey().startsWith("individual")) {
-                retQuery.append(entry.getKey().replace(IndividualDBAdaptor.QueryParams.ID.key(), ""), entry.getValue());
+                retQuery.append(entry.getKey().replace("individual", IndividualDBAdaptor.QueryParams.ID.key()), entry.getValue());
             }
         }
         return retQuery;

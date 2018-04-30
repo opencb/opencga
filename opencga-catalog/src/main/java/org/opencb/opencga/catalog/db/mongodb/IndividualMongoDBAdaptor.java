@@ -597,12 +597,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 + File.FileStatus.DELETED);
         if (count(query).first() == 0) {
             query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
             Individual individual = get(query, options).first();
             throw new CatalogDBException("The individual {" + id + "} was already " + individual.getStatus().getName());
         }
 
-        // If we don't find the force parameter, we check first if the file could be deleted.
+        // If we don't find the force parameter, we check first if the individual could be deleted.
         if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
             checkCanDelete(id);
         }

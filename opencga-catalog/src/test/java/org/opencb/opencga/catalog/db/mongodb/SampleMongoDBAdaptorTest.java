@@ -325,21 +325,21 @@ public class SampleMongoDBAdaptorTest {
         String individualName = "individualName";
         String individualFamily = "Smith";
         Individual individual = new Individual()
-                .setName(individualName)
+                .setId(individualName)
                 .setFamily(individualFamily)
-                .setSamples(Arrays.asList(new Sample().setUid(sampleId)));
-        QueryResult<Individual> individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(studyId, individual, queryOptions);
+                .setSamples(Arrays.asList(new Sample().setUid(sampleId).setVersion(1)));
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(studyId, individual, queryOptions);
 
         // Get the sample
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), individualQueryResult.first().getUid());
+                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "individualName");
         QueryResult<Sample> individualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
         assertEquals("sample1", individualQuery.first().getId());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), -10);
+                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "non-existing");
         QueryResult<Sample> inexistentIndividualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
         assertEquals(0, inexistentIndividualQuery.getNumResults());
     }
