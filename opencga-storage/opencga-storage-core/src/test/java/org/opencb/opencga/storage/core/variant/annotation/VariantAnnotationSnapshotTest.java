@@ -5,9 +5,12 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
@@ -43,20 +46,43 @@ public abstract class VariantAnnotationSnapshotTest extends VariantStorageBaseTe
         variantStorageEngine.createAnnotationSnapshot("v2", new ObjectMap());
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v3"));
 
-        assertEquals(0, variantStorageEngine.getAnnotation("v0", null).getResult().size());
+        assertEquals(0, variantStorageEngine.getAnnotation("v0", null, null).getResult().size());
         checkAnnotationSnapshot(variantStorageEngine, "v1", "v1");
         checkAnnotationSnapshot(variantStorageEngine, "v2", "v2");
         checkAnnotationSnapshot(variantStorageEngine, "LATEST", "v3");
 
         variantStorageEngine.deleteAnnotationSnapshot("v1", new ObjectMap());
 
+        testQueries(variantStorageEngine);
+
+    }
+
+    public void testQueries(VariantStorageEngine variantStorageEngine) throws StorageEngineException {
+        long count = variantStorageEngine.count(new Query()).first();
+        long partialCount = 0;
+        int batchSize = (int) Math.ceil(count / 10.0);
+        for (int i = 0; i < 10; i++) {
+            partialCount += variantStorageEngine.getAnnotation("v2", null, new QueryOptions(QueryOptions.LIMIT, batchSize)
+                    .append(QueryOptions.SKIP, batchSize * i)).getResult().size();
+        }
+        assertEquals(count, partialCount);
+
+        for (int chr = 1; chr < 22; chr += 2) {
+            Query query = new Query(VariantQueryParam.REGION.key(), chr + "," + (chr + 1));
+            count = variantStorageEngine.count(query).first();
+            partialCount = variantStorageEngine.getAnnotation("v2", query, new QueryOptions()).getResult().size();
+            assertEquals(count, partialCount);
+        }
+
+
+        // Get annotations from a deleted snapshot
         // FIXME: Should throw an exception?
-        assertEquals(0, variantStorageEngine.getAnnotation("v1", null).getResult().size());
+        assertEquals(0, variantStorageEngine.getAnnotation("v1", null, null).getResult().size());
     }
 
     public void checkAnnotationSnapshot(VariantStorageEngine variantStorageEngine, String name, String expectedId) throws Exception {
         int count = 0;
-        for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(name, null).getResult()) {
+        for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(name, null, null).getResult()) {
             assertEquals(expectedId, annotation.getId());
             count++;
         }

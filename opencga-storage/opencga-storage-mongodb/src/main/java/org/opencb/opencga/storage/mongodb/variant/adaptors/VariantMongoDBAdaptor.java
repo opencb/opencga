@@ -479,7 +479,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query) {
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
         query = query == null ? new Query() : query;
         validateAnnotationQuery(query);
         Document mongoQuery = queryParser.parseQuery(query);
@@ -495,7 +495,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), studyConfigurationManager);
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
-        QueryResult<Variant> result = annotationCollection.find(mongoQuery, converter, null);
+        QueryResult<Variant> result = annotationCollection.find(mongoQuery, converter, options);
 
         List<VariantAnnotation> annotations = result.getResult()
                 .stream()

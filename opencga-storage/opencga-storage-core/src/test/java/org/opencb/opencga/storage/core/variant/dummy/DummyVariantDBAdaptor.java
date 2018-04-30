@@ -95,7 +95,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query) {
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
         throw new UnsupportedOperationException("Unimplemented");
     }
 

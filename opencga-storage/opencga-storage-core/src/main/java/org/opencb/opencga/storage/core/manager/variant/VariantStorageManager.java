@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
@@ -264,6 +265,11 @@ public class VariantStorageManager extends StorageManager {
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
         variantStorageEngine.deleteAnnotationSnapshot(annotationName, params);
+    }
+
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options, String sessionId)
+            throws StorageEngineException, CatalogException, IOException {
+        return secure(query, options, sessionId, (engine) -> engine.getAnnotation(name, query, options));
     }
 
     public void stats(String study, List<String> cohorts, String outDir, ObjectMap config, String sessionId)

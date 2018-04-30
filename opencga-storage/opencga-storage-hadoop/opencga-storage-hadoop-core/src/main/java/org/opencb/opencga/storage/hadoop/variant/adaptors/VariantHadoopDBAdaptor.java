@@ -281,9 +281,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query) {
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
         StopWatch stopWatch = StopWatch.createStarted();
-        Iterator<VariantAnnotation> variantAnnotationIterator = annotationIterator(name, query);
+        Iterator<VariantAnnotation> variantAnnotationIterator = annotationIterator(name, query, options);
 
         List<VariantAnnotation> annotations = new ArrayList<>();
         variantAnnotationIterator.forEachRemaining(annotations::add);
@@ -292,22 +292,37 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 "", "", annotations);
     }
 
-    public Iterator<VariantAnnotation> annotationIterator(String name, Query query) {
+    public Iterator<VariantAnnotation> annotationIterator(String name, Query query, QueryOptions options) {
         query = query == null ? new Query() : new Query(query);
+        options = options == null ? new QueryOptions() : new QueryOptions(options);
         validateAnnotationQuery(query);
         if (name.equals("LATEST")) {
             name = "FULL";
         }
         query.put(ANNOT_NAME.key(), name);
-
-        Scan scan = hbaseQueryParser.parseQuery(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION));
+        List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(query, options.append(QueryOptions.INCLUDE, VariantField.ANNOTATION));
 
         try {
             Table table = getConnection().getTable(TableName.valueOf(variantTable));
-            ResultScanner resScan = table.getScanner(scan);
+            Iterator<Iterator<Result>> iterators = scans.stream().map(scan -> {
+                try {
+                    return table.getScanner(scan).iterator();
+                } catch (IOException e) {
+                    throw VariantQueryException.internalException(e);
+                }
+            }).iterator();
             HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper);
             converter.setAnnotationColumn(Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(name)));
-            return Iterators.transform(resScan.iterator(), converter::convert);
+            Iterator<Result> iterator = Iterators.concat(iterators);
+            int skip = options.getInt(QueryOptions.SKIP);
+            if (skip > 0) {
+                Iterators.advance(iterator, skip);
+            }
+            int limit = options.getInt(QueryOptions.LIMIT);
+            if (limit > 0) {
+                iterator = Iterators.limit(iterator, limit);
+            }
+            return Iterators.transform(iterator, converter::convert);
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }

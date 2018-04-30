@@ -502,11 +502,18 @@ public class VariantHBaseQueryParser {
 //                    columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
 //            filters.addFilter(columnPrefixFilter);
 //        }
-
+        int limit = options.getInt(QueryOptions.LIMIT);
+        int skip = options.getInt(QueryOptions.SKIP);
+        if (limit > 0) {
+            if (skip > 0) {
+                limit += skip;
+            }
+            filters.addFilter(new PageFilter(limit));
+        }
         if (!filters.getFilters().isEmpty()) {
             scan.setFilter(filters);
         }
-        scan.setMaxResultSize(options.getInt(QueryOptions.LIMIT));
+//        scan.setMaxResultSize(limit);
         scan.setReversed(options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING).equals(QueryOptions.DESCENDING));
 
         logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()));
@@ -593,7 +600,7 @@ public class VariantHBaseQueryParser {
             if (end != Integer.MAX_VALUE) {
                 end++;
             }
-            scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), end + 1));
+            scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), end));
         }
     }
 

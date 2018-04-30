@@ -367,8 +367,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         newVariantAnnotationManager(params).deleteAnnotationSnapshot(name, params);
     }
 
-    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query) throws StorageEngineException, VariantAnnotatorException {
-        return getDBAdaptor().getAnnotation(name, query);
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) throws StorageEngineException {
+        return getDBAdaptor().getAnnotation(name, query, options);
     }
 
     /**
