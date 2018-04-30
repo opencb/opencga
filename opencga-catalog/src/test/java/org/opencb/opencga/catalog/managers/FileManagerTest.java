@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.File;
@@ -1191,6 +1192,49 @@ public class FileManagerTest extends GenericTest {
             assertTrue(f.getUid() != 0);
         });
 
+    }
+
+    @Test
+    public void testGetFileWithSamples() throws CatalogException {
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyFqn, "data/test/", QueryOptions.empty(),
+                sessionIdUser);
+        assertEquals(1, fileQueryResult.getNumResults());
+        assertEquals(0, fileQueryResult.first().getSamples().size());
+
+        // Create two samples
+        Sample sample1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), QueryOptions.empty(),
+                sessionIdUser).first();
+        Sample sample2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), QueryOptions.empty(),
+                sessionIdUser).first();
+
+        // Associate the two samples to the file
+        catalogManager.getFileManager().update(studyFqn, "data/test/", new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                Arrays.asList(sample1.getId(), sample2.getId())), QueryOptions.empty(), sessionIdUser);
+
+        // Fetch the file
+        fileQueryResult = catalogManager.getFileManager().get(studyFqn, "data/test/", QueryOptions.empty(),
+                sessionIdUser);
+        assertEquals(1, fileQueryResult.getNumResults());
+        assertEquals(2, fileQueryResult.first().getSamples().size());
+
+        // Update the version of one of the samples
+        catalogManager.getSampleManager().update(studyFqn, sample1.getId(), new ObjectMap(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+
+        // Fetch the file again to see if we get the latest version as expected
+        fileQueryResult = catalogManager.getFileManager().get(studyFqn, "data/test/", QueryOptions.empty(),
+                sessionIdUser);
+        assertEquals(1, fileQueryResult.getNumResults());
+        assertEquals(2, fileQueryResult.first().getSamples().size());
+        for (Sample sample : fileQueryResult.first().getSamples()) {
+            if (sample.getId().equals(sample1.getId())) {
+                assertEquals(2, sample.getVersion());
+            } else if (sample.getId().equals(sample2.getId())) {
+                assertEquals(1, sample.getVersion());
+            } else {
+                fail("The sample found is not sample1 or sample2");
+            }
+        }
     }
 
     // Try to delete files/folders whose status is STAGED, MISSING...
