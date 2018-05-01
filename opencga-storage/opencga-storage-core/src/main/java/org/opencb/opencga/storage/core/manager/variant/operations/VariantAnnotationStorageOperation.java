@@ -152,10 +152,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 annotationOptions.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
                 annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRch37");
             } else {
-                String scientificName = organism.getScientificName();
-                scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
-                annotationOptions.put(VariantAnnotationManager.SPECIES, scientificName);
-                annotationOptions.put(VariantAnnotationManager.ASSEMBLY, organism.getAssembly());
+                configureOrganism(organism, annotationOptions);
             }
 
 //            StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
@@ -180,6 +177,13 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
         }
 
         return newFiles;
+    }
+
+    public static void configureOrganism(Project.Organism organism, ObjectMap options) {
+        String scientificName = organism.getScientificName();
+        scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
+        options.put(VariantAnnotationManager.SPECIES, scientificName);
+        options.put(VariantAnnotationManager.ASSEMBLY, organism.getAssembly());
     }
 
     private String buildOutputFileName(String alias, Query query) {

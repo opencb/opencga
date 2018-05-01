@@ -48,6 +48,7 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
                         CHROMOSOME_FIELD,
                         START_FIELD,
                         REFERENCE_FIELD,
+                        ALTERNATE_FIELD,
                         END_FIELD,
                         TYPE_FIELD,
                         SV_FIELD,

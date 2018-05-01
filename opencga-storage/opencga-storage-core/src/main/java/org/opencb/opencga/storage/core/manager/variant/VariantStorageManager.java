@@ -31,15 +31,13 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.DataStore;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -253,6 +251,12 @@ public class VariantStorageManager extends StorageManager {
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
+        Project.Organism organism = catalogManager.getProjectManager()
+                .get(project, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId)
+                .first()
+                .getOrganism();
+        VariantAnnotationStorageOperation.configureOrganism(organism, params);
+
         variantStorageEngine.createAnnotationSnapshot(annotationName, params);
     }
 
@@ -263,6 +267,12 @@ public class VariantStorageManager extends StorageManager {
         DataStore dataStore = getDataStoreByProjectId(project, sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        Project.Organism organism = catalogManager.getProjectManager()
+                .get(project, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId)
+                .first()
+                .getOrganism();
+        VariantAnnotationStorageOperation.configureOrganism(organism, params);
 
         variantStorageEngine.deleteAnnotationSnapshot(annotationName, params);
     }

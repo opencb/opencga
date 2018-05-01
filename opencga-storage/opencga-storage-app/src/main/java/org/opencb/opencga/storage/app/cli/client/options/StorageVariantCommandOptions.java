@@ -43,6 +43,7 @@ public class StorageVariantCommandOptions {
     public final VariantAnnotateCommandOptions annotateVariantsCommandOptions;
     public final CreateAnnotationSnapshotCommandOptions createAnnotationSnapshotCommandOptions;
     public final DeleteAnnotationSnapshotCommandOptions deleteAnnotationSnapshotCommandOptions;
+    public final QueryAnnotationCommandOptions queryAnnotationCommandOptions;
     public final VariantStatsCommandOptions statsVariantsCommandOptions;
     public final FillGapsCommandOptions fillGapsCommandOptions;
     public final FillMissingCommandOptions fillMissingCommandOptions;
@@ -68,6 +69,7 @@ public class StorageVariantCommandOptions {
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
         this.createAnnotationSnapshotCommandOptions = new CreateAnnotationSnapshotCommandOptions();
         this.deleteAnnotationSnapshotCommandOptions = new DeleteAnnotationSnapshotCommandOptions();
+        this.queryAnnotationCommandOptions = new QueryAnnotationCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
         this.fillGapsCommandOptions = new FillGapsCommandOptions();
         this.fillMissingCommandOptions = new FillMissingCommandOptions();
@@ -545,6 +547,37 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
 
+    }
+
+    public static class GenericQueryAnnotationCommandOptions {
+
+        @Parameter(names = {"--name"}, description = "Annotation snapshot name", required = true, arity = 1)
+        public String name = "LATEST";
+
+        @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR, variableArity = true)
+        public List<String> id;
+
+        @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
+        public String region;
+
+    }
+
+    @Parameters(commandNames = {QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND}, commandDescription = QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND_DESCRIPTION)
+    public class QueryAnnotationCommandOptions extends GenericQueryAnnotationCommandOptions {
+        public static final String QUERY_ANNOTATION_COMMAND = "annotation";
+        public static final String QUERY_ANNOTATION_COMMAND_DESCRIPTION = "";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+
+        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", required = false, arity = 1)
+        public int skip;
+
+        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
+        public int limit;
     }
 
     /**

@@ -19,13 +19,18 @@ package org.opencb.opencga.storage.app.cli.client.executors;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SequenceWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -57,6 +62,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -74,6 +80,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
@@ -162,6 +169,11 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.deleteAnnotationSnapshotCommandOptions.commonOptions,
                         variantCommandOptions.deleteAnnotationSnapshotCommandOptions.dbName);
                 deleteAnnotation();
+                break;
+            case QUERY_ANNOTATION_COMMAND:
+                configure(variantCommandOptions.queryAnnotationCommandOptions.commonOptions,
+                        variantCommandOptions.queryAnnotationCommandOptions.dbName);
+                queryAnnotation();
                 break;
             case "stats":
                 configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions,
@@ -460,6 +472,35 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.putAll(cliOptions.commonOptions.params);
 
         variantStorageEngine.deleteAnnotationSnapshot(cliOptions.name, options);
+    }
+
+    private void queryAnnotation() throws VariantAnnotatorException, StorageEngineException, IOException {
+        StorageVariantCommandOptions.QueryAnnotationCommandOptions cliOptions  = variantCommandOptions.queryAnnotationCommandOptions;
+
+        QueryOptions options = new QueryOptions();
+        options.put(QueryOptions.LIMIT, cliOptions.limit);
+        options.put(QueryOptions.SKIP, cliOptions.skip);
+        options.putAll(cliOptions.commonOptions.params);
+
+        Query query = new Query();
+        query.put(VariantQueryParam.REGION.key(), cliOptions.region);
+        query.put(VariantQueryParam.ID.key(), cliOptions.id);
+
+        QueryResult<VariantAnnotation> queryResult = variantStorageEngine.getAnnotation(cliOptions.name, query, options);
+
+        // WRITE
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.configure(SerializationFeature.CLOSE_CLOSEABLE, false);
+        ObjectWriter writer = objectMapper.writer();
+//        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
+        SequenceWriter sequenceWriter = writer.writeValues(System.out);
+        for (VariantAnnotation annotation : queryResult.getResult()) {
+            sequenceWriter.write(annotation);
+            sequenceWriter.flush();
+//            writer.writeValue(System.out, annotation);
+            System.out.println();
+        }
     }
 
     private void stats() throws IOException, URISyntaxException, StorageEngineException, IllegalAccessException, InstantiationException,

@@ -134,24 +134,27 @@ public final class VariantQueryUtils {
         if (query == null) {
             return;
         }
-        List<VariantQueryParam> acceptedParams = Arrays.asList(VariantQueryParam.ID, VariantQueryParam.REGION);
+        List<VariantQueryParam> acceptedParams = Arrays.asList(ID, REGION);
+        List<VariantQueryParam> ignoredParams = Arrays.asList(INCLUDE_STUDY, INCLUDE_SAMPLE, INCLUDE_FILE);
         Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
         queryParams.removeAll(acceptedParams);
+        queryParams.removeAll(ignoredParams);
         if (!queryParams.isEmpty()) {
+//            System.out.println("query.toJson() = " + query.toJson());
             throw VariantQueryException.unsupportedVariantQueryFilters(queryParams,
-                    "Accepted params when quering annotation are : " + acceptedParams.stream()
+                    "Accepted params when querying annotation are : " + acceptedParams.stream()
                             .map(QueryParam::key)
                             .collect(Collectors.toList()));
         }
         List<String> invalidValues = new LinkedList<>();
-        for (String s : query.getAsStringList(VariantQueryParam.ID.key())) {
+        for (String s : query.getAsStringList(ID.key())) {
             if (!VariantQueryUtils.isVariantId(s)) {
                 invalidValues.add(s);
                 break;
             }
         }
         if (!invalidValues.isEmpty()) {
-            throw VariantQueryException.malformedParam(VariantQueryParam.ID, invalidValues.toString(),
+            throw VariantQueryException.malformedParam(ID, invalidValues.toString(),
                     "Only variants supported: chrom:start:ref:alt");
         }
     }
