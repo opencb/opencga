@@ -25,7 +25,6 @@ import java.util.Set;
 public class VariableSet extends PrivateFields {
 
     private String id;
-    @Deprecated
     private String name;
     private boolean unique;
     private boolean confidential;
@@ -33,6 +32,7 @@ public class VariableSet extends PrivateFields {
     private Set<Variable> variables;
 
     private int release;
+    @Deprecated
     private Map<String, Object> attributes;
 
     public VariableSet() {
