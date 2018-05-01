@@ -69,6 +69,7 @@ public class File extends PrivateStudyUid {
     /**
      * This field values -1 when file has been uploaded.
      */
+    @Deprecated
     private Job job;
     private List<RelatedFile> relatedFiles;
 

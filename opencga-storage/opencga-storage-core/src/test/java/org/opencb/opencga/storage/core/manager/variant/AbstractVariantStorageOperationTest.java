@@ -202,7 +202,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
     protected File create(long studyId, URI uri, String path) throws IOException, CatalogException {
         File file;
-        file = fileMetadataReader.create(studyId, uri, path, "", true, null, sessionId).first();
+        file = fileMetadataReader.create(String.valueOf(studyId), uri, path, "", true, null, sessionId).first();
 //        File.Format format = FormatDetector.detect(uri);
 //        File.Bioformat bioformat = BioformatDetector.detect(uri);
 //        file = catalogManager.createFile(studyId, format, bioformat, "data/vcfs/", "", true, -1, sessionId).first();

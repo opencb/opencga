@@ -93,7 +93,7 @@ public class FileMetadataReaderTest {
     @Test
     public void testCreate() throws CatalogException {
         QueryResult<File> fileQueryResult = FileMetadataReader.get(catalogManager).
-                create(study.getUid(), vcfFileUri, folder.getPath() + VCF_FILE_NAME, "", false, null, sessionIdUser);
+                create(study.getFqn(), vcfFileUri, folder.getPath() + VCF_FILE_NAME, "", false, null, sessionIdUser);
 
         File file = fileQueryResult.first();
 
@@ -105,7 +105,7 @@ public class FileMetadataReaderTest {
         assertEquals(21499, file.getSize());
 
         new FileUtils(catalogManager).upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
-        file = catalogManager.getFileManager().get(file.getUid(), null, sessionIdUser).first();
+        file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
 
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
@@ -125,7 +125,7 @@ public class FileMetadataReaderTest {
 
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionIdUser, false, false, true);
 
-        File file = catalogManager.getFileManager().get(queryResult.first().getUid(), null, sessionIdUser).first();
+        File file = catalogManager.getFileManager().get(study.getFqn(), queryResult.first().getPath(), null, sessionIdUser).first();
 
         assertEquals(bytes.length, file.getSize());
 
@@ -187,12 +187,8 @@ public class FileMetadataReaderTest {
                 new Query(SampleDBAdaptor.QueryParams.ID.key(),
                         file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(),
                 sessionIdUser).getResult();
-        Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getUid, Function.identity()));
-        assertEquals(expectedSampleNames.get(0), sampleMap.get(file.getSamples().get(0).getUid()).getId());
-        assertEquals(expectedSampleNames.get(1), sampleMap.get(file.getSamples().get(1).getUid()).getId());
-        assertEquals(expectedSampleNames.get(2), sampleMap.get(file.getSamples().get(2).getUid()).getId());
-        assertEquals(expectedSampleNames.get(3), sampleMap.get(file.getSamples().get(3).getUid()).getId());
 
+        assertTrue(expectedSampleNames.containsAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())));
     }
 
 
@@ -221,8 +217,10 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException {
-        catalogManager.getSampleManager().create(study.getFqn(), expectedSampleNames.get(2), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(study.getFqn(), expectedSampleNames.get(0), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(),
+                sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(),
+                sessionIdUser);
 
         testGetMetadataFromVcf();
     }
@@ -262,7 +260,8 @@ public class FileMetadataReaderTest {
             throws CatalogException {
 
         File file = catalogManager.getFileManager().create(study.getFqn(), File.Type.FILE, File.Format.PLAIN, File
-                .Bioformat.NONE, folder.getPath() + BAM_FILE_NAME, null, "", null, 0, -1, null, (long) -1, null, null, false, null, null, sessionIdUser).first();
+                .Bioformat.NONE, folder.getPath() + BAM_FILE_NAME, null, "", null, 0, -1, null, (long) -1, null, null, false, null, null,
+                sessionIdUser).first();
 
         assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
         assertEquals(File.Format.PLAIN, file.getFormat());
@@ -271,10 +270,9 @@ public class FileMetadataReaderTest {
         assertEquals(0, file.getSamples().size());
         assertEquals(0, file.getSize());
 
-        new FileUtils(catalogManager).
-                upload(bamFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
+        new FileUtils(catalogManager).upload(bamFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
 
-        file = catalogManager.getFileManager().get(file.getUid(), null, sessionIdUser).first();
+        file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
 
         assertTrue(file.getSize() > 0);
 
@@ -286,7 +284,8 @@ public class FileMetadataReaderTest {
         assertEquals(File.Bioformat.ALIGNMENT, file.getBioformat());
         assertNotNull(file.getAttributes().get("alignmentHeader"));
         assertEquals(1, file.getSamples().size());
-        assertEquals("HG00096", catalogManager.getSampleManager().get(file.getSamples().get(0).getUid(), null, sessionIdUser).first().getId());
+        assertEquals("HG00096", catalogManager.getSampleManager().get(study.getFqn(), file.getSamples().get(0).getId(), null,
+                sessionIdUser).first().getId());
     }
 
 

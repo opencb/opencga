@@ -83,7 +83,7 @@ public class FileMetadataReader {
      * @return The created file with status {@link File.FileStatus#STAGE}
      * @throws CatalogException  if a Catalog error occurs
      */
-    public QueryResult<File> create(long studyId, URI fileUri, String path, String description, boolean parents,
+    public QueryResult<File> create(String studyId, URI fileUri, String path, String description, boolean parents,
                                     QueryOptions options, String sessionId) throws CatalogException {
 
         File.Type type = fileUri.getPath().endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
@@ -94,7 +94,7 @@ public class FileMetadataReader {
             path += Paths.get(fileUri.getPath()).getFileName().toString();
         }
 
-        QueryResult<File> fileResult = catalogManager.getFileManager().create(Long.toString(studyId), type, format, bioformat, path,
+        QueryResult<File> fileResult = catalogManager.getFileManager().create(studyId, type, format, bioformat, path,
                 null, description, new File.FileStatus(File.FileStatus.STAGE), (long) 0, (long) -1, null, (long) -1, null, null, parents,
                 null, options, sessionId);
 

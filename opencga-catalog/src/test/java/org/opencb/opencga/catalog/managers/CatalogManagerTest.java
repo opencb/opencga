@@ -889,18 +889,6 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testCreateFailJob() throws CatalogException {
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        String projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
-        String studyId = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null,
-                sessionIdUser).first().getId();
-
-        thrown.expect(CatalogException.class);
-        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob").setToolId("samtool").setDescription("description")
-                        .setExecution("echo \"Hello World!\"").setStatus(new Job.JobStatus(Job.JobStatus.ERROR)), null, sessionIdUser);
-    }
-
-    @Test
     public void testGetAllJobs() throws CatalogException {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
         String studyId = catalogManager.getStudyManager().get(query, null, sessionIdUser).first().getId();

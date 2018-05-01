@@ -114,7 +114,7 @@ public class CatalogStudyConfigurationFactoryTest {
     public static File create(String resourceName, boolean indexed) throws IOException, CatalogException {
         File file;
         URI uri = getResourceUri(resourceName);
-        file = fileMetadataReader.create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
+        file = fileMetadataReader.create(String.valueOf(studyId), uri, "data/vcfs/", "", true, null, sessionId).first();
         catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         if (indexed) {
             FileIndex fileIndex = new FileIndex("user", "today", new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234,

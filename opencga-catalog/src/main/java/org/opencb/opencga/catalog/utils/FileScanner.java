@@ -99,14 +99,12 @@ public class FileScanner {
      * @throws CatalogException     if a Catalog error occurs
      * @throws IOException          if an I/O error occurs
      */
-    public List<File> reSync(Study study, boolean calculateChecksum, String sessionId)
-            throws CatalogException, IOException {
-        long studyId = study.getUid();
+    public List<File> reSync(Study study, boolean calculateChecksum, String sessionId) throws CatalogException, IOException {
 //        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
         Query query = new Query();
         query.put(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists
         query.put(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY);
-        List<File> files = catalogManager.getFileManager().get(String.valueOf(studyId), query, null, sessionId).getResult();
+        List<File> files = catalogManager.getFileManager().get(study.getFqn(), query, null, sessionId).getResult();
 
         List<File> scan = new LinkedList<>();
         for (File file : files) {
@@ -313,7 +311,7 @@ public class FileScanner {
             }
 
             if (returnFile) { //Return only new and found files.
-                files.add(catalogManager.getFileManager().get(file.getUid(), null, sessionId).first());
+                files.add(catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionId).first());
             }
             logger.info("Added file {}", filePath);
             logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart) / 1000.0,

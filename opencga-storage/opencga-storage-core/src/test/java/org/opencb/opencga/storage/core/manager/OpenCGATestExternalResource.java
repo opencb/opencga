@@ -179,7 +179,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         File file;
         URI uri = getResourceUri(resourceName);
         CatalogManager catalogManager = getCatalogManager();
-        file = new FileMetadataReader(catalogManager).create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
+        file = new FileMetadataReader(catalogManager).create(String.valueOf(studyId), uri, "data/vcfs/", "", true, null, sessionId).first();
         new FileUtils(catalogManager).upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         return catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
     }
