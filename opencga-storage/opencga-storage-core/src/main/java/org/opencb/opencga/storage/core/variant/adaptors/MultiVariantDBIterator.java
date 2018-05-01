@@ -99,9 +99,9 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         if (numResults >= maxResults) {
             terminateIterator();
             return false;
-        } else if (!variantDBIterator.hasNext()) {
+        } else if (!fetch(variantDBIterator::hasNext)) {
             nextVariantIterator();
-            return variantDBIterator.hasNext();
+            return fetch(variantDBIterator::hasNext);
         } else {
             return true;
         }
@@ -111,9 +111,9 @@ public class MultiVariantDBIterator extends VariantDBIterator {
      * Get the next non-empty valid {@link #variantDBIterator}. If none, use {@link #emptyIterator()}
      */
     private void nextVariantIterator() {
-        while (!variantDBIterator.hasNext() && queryIterator.hasNext()) {
+        while (!fetch(variantDBIterator::hasNext) && fetch(queryIterator::hasNext)) {
             terminateIterator();
-            Query query = queryIterator.next();
+            Query query = fetch(queryIterator::next);
             QueryOptions options;
             if (maxResults != Integer.MAX_VALUE) {
                 // We are expecting no more than maxResults - numResults
@@ -122,9 +122,9 @@ public class MultiVariantDBIterator extends VariantDBIterator {
             } else {
                 options = this.options;
             }
-            variantDBIterator = iteratorFactory.apply(query, options);
+            variantDBIterator = fetch(() -> iteratorFactory.apply(query, options));
         }
-        if (!variantDBIterator.hasNext()) {
+        if (!fetch(variantDBIterator::hasNext)) {
             terminateIterator();
         }
     }
@@ -145,7 +145,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     @Override
     public Variant next() {
         if (hasNext()) {
-            Variant next = variantDBIterator.next();
+            Variant next = fetch(variantDBIterator::next);
             numResults++;
             return next;
         } else {

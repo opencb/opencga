@@ -223,7 +223,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @Test
     public void testNativeQuery() {
         int count = 0;
-        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), new QueryOptions("native", true)); iterator.hasNext();) {
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), new QueryOptions(VariantHadoopDBAdaptor.NATIVE, true)); iterator.hasNext();) {
             Variant variant = iterator.next();
 //            System.out.println(variant.toJson());
             count++;

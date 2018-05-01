@@ -381,17 +381,32 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } else if (hbaseIterator) {
             logger.debug("Creating " + VariantHBaseScanIterator.class.getSimpleName() + " iterator");
             SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager.get());
-            Scan scan = hbaseQueryParser.parseQuery(selectElements, query, options);
+            List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
             try {
                 Table table = getConnection().getTable(TableName.valueOf(variantTable));
-                ResultScanner resScan = table.getScanner(scan);
                 String unknownGenotype = null;
                 if (isValidParam(query, UNKNOWN_GENOTYPE)) {
                     unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
                 }
                 List<String> formats = getIncludeFormats(query);
-                return new VariantHBaseScanIterator(resScan, genomeHelper, studyConfigurationManager.get(), options,
-                        unknownGenotype, formats, selectElements);
+                Iterator<ResultScanner> resScans = scans.stream().map(scan -> {
+                    try {
+                        return table.getScanner(scan);
+                    } catch (IOException e) {
+                        throw VariantQueryException.internalException(e);
+                    }
+                }).iterator();
+
+                VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
+                        resScans, genomeHelper, studyConfigurationManager.get(), options, unknownGenotype, formats, selectElements);
+
+                // Client side skip!
+                int skip = options.getInt(QueryOptions.SKIP, -1);
+                if (skip > 0) {
+                    logger.info("Client side skip! skip = {}", skip);
+                    iterator.skip(skip);
+                }
+                return iterator;
             } catch (IOException e) {
                 throw VariantQueryException.internalException(e);
             }

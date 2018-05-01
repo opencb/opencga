@@ -733,7 +733,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 throw new VariantQueryException("Error querying Solr", e);
             }
         } else {
-            VariantDBAdaptor dbAdaptor = getDBAdaptor();
             if (doIntersectWithSearch(query, options)) {
                 // Intersect Solr+Engine
 
@@ -784,6 +783,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
 
+                VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 logger.debug("Intersect query " + engineQuery.toJson() + " options " + options.toJson());
                 if (iterator) {
                     return dbAdaptor.iterator(variantsIterator, engineQuery, options);
@@ -799,13 +799,27 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     return queryResult;
                 }
             } else {
-                if (iterator) {
-                    return dbAdaptor.iterator(query, options);
-                } else {
-                    setDefaultTimeout(options);
-                    return dbAdaptor.get(query, options).setSource(getStorageEngineId());
-                }
+                return getOrIteratorNotSearchIndex(query, options, iterator);
             }
+        }
+    }
+
+    /**
+     * The query won't use the search index, either because is not available, not necessary, or forbidden.
+     *
+     * @param query     Query
+     * @param options   QueryOptions
+     * @param iterator  Shall the resulting object be an iterator instead of a QueryResult
+     * @return          QueryResult or Iterator with the variants that matches the query
+     * @throws StorageEngineException StorageEngineException
+     */
+    protected Object getOrIteratorNotSearchIndex(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+        if (iterator) {
+            return dbAdaptor.iterator(query, options);
+        } else {
+            setDefaultTimeout(options);
+            return dbAdaptor.get(query, options).setSource(getStorageEngineId());
         }
     }
 
