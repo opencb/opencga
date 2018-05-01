@@ -570,6 +570,9 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public GeneralCliOptions.DataModelOptions dataModelOptions = new GeneralCliOptions.DataModelOptions();
+
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
 

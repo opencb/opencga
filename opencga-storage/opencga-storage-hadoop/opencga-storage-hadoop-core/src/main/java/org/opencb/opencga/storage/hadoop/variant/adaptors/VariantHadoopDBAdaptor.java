@@ -294,13 +294,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     public Iterator<VariantAnnotation> annotationIterator(String name, Query query, QueryOptions options) {
         query = query == null ? new Query() : new Query(query);
-        options = options == null ? new QueryOptions() : new QueryOptions(options);
+        options = validateAnnotationQueryOptions(options);
         validateAnnotationQuery(query);
         if (name.equals("LATEST")) {
             name = "FULL";
         }
         query.put(ANNOT_NAME.key(), name);
-        List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(query, options.append(QueryOptions.INCLUDE, VariantField.ANNOTATION));
+        SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, getStudyConfigurationManager());
+        List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
 
         try {
             Table table = getConnection().getTable(TableName.valueOf(variantTable));
@@ -311,7 +312,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                     throw VariantQueryException.internalException(e);
                 }
             }).iterator();
-            HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper);
+            HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper)
+                    .setIncludeFields(selectElements.getFields());
             converter.setAnnotationColumn(Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(name)));
             Iterator<Result> iterator = Iterators.concat(iterators);
             int skip = options.getInt(QueryOptions.SKIP);

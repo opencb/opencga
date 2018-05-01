@@ -480,6 +480,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         QueryOptions options = new QueryOptions();
         options.put(QueryOptions.LIMIT, cliOptions.limit);
         options.put(QueryOptions.SKIP, cliOptions.skip);
+        options.put(QueryOptions.INCLUDE, cliOptions.dataModelOptions.include);
+        options.put(QueryOptions.EXCLUDE, cliOptions.dataModelOptions.exclude);
         options.putAll(cliOptions.commonOptions.params);
 
         Query query = new Query();

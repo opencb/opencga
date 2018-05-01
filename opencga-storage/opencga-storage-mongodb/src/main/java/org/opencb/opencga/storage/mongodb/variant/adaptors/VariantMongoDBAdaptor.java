@@ -482,7 +482,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
         query = query == null ? new Query() : query;
         validateAnnotationQuery(query);
+        options = validateAnnotationQueryOptions(options);
         Document mongoQuery = queryParser.parseQuery(query);
+        Document projection = queryParser.createProjection(query, options);
 
         MongoDBCollection annotationCollection;
         if (name.equals("LATEST")) {
@@ -495,7 +497,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), studyConfigurationManager);
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
-        QueryResult<Variant> result = annotationCollection.find(mongoQuery, converter, options);
+        QueryResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter, options);
 
         List<VariantAnnotation> annotations = result.getResult()
                 .stream()

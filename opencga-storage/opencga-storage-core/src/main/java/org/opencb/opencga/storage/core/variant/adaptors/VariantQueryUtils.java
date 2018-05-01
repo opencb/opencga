@@ -159,6 +159,49 @@ public final class VariantQueryUtils {
         }
     }
 
+    public static QueryOptions validateAnnotationQueryOptions(QueryOptions queryOptions) {
+        if (queryOptions == null) {
+            return new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION);
+        } else {
+            queryOptions = new QueryOptions(queryOptions);
+        }
+
+        boolean anyPresent = transformVariantAnnotationField(QueryOptions.INCLUDE, queryOptions);
+        anyPresent |= transformVariantAnnotationField(QueryOptions.EXCLUDE, queryOptions);
+
+        if (!anyPresent) {
+            queryOptions.add(QueryOptions.INCLUDE, VariantField.ANNOTATION);
+        }
+
+        return queryOptions;
+    }
+
+    private static boolean transformVariantAnnotationField(String key, QueryOptions queryOptions) {
+        StringBuilder sb = new StringBuilder();
+        final String annotation = VariantField.ANNOTATION.fieldName();
+        for (String field : queryOptions.getAsStringList(key)) {
+            String newField;
+            if (!field.startsWith(annotation + '.')) {
+                newField = annotation + '.' + field;
+            } else {
+                newField = field;
+            }
+
+            if (VariantField.get(newField) == null) {
+                throw VariantQueryException.unknownVariantAnnotationField(key, field);
+            }
+
+            sb.append(newField);
+            sb.append(',');
+        }
+        if (sb.length() > 0) {
+            queryOptions.put(key, sb.toString());
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     /**
      * Determines if the filter is negated.
      *

@@ -279,7 +279,8 @@ public class VariantStorageManager extends StorageManager {
 
     public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
-        return secure(query, options, sessionId, (engine) -> engine.getAnnotation(name, query, options));
+        QueryOptions finalOptions = VariantQueryUtils.validateAnnotationQueryOptions(options);
+        return secure(query, finalOptions, sessionId, (engine) -> engine.getAnnotation(name, query, finalOptions));
     }
 
     public void stats(String study, List<String> cohorts, String outDir, ObjectMap config, String sessionId)

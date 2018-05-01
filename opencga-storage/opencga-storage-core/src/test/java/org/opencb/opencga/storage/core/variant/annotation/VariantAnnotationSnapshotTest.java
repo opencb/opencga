@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -10,14 +11,17 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.ANNOTATOR;
 import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME;
 
@@ -74,6 +78,14 @@ public abstract class VariantAnnotationSnapshotTest extends VariantStorageBaseTe
             assertEquals(count, partialCount);
         }
 
+        String consequenceTypes = VariantField.ANNOTATION_CONSEQUENCE_TYPES.fieldName().replace(VariantField.ANNOTATION.fieldName() + ".", "");
+        for (VariantAnnotation annotation : variantStorageEngine.getAnnotation("v2", null, new QueryOptions(QueryOptions.INCLUDE, consequenceTypes)).getResult()) {
+            assertEquals(1, annotation.getConsequenceTypes().size());
+        }
+        for (VariantAnnotation annotation : variantStorageEngine.getAnnotation("v2", null, new QueryOptions(QueryOptions.EXCLUDE, consequenceTypes)).getResult()) {
+            assertTrue(annotation.getConsequenceTypes() == null || annotation.getConsequenceTypes().isEmpty());
+        }
+
 
         // Get annotations from a deleted snapshot
         // FIXME: Should throw an exception?
@@ -109,6 +121,12 @@ public abstract class VariantAnnotationSnapshotTest extends VariantStorageBaseTe
                 a.setReference(v.getReference());
                 a.setAlternate(v.getAlternate());
                 a.setId(key);
+                ConsequenceType ct = new ConsequenceType();
+                ct.setGeneName("a gene");
+                ct.setSequenceOntologyTerms(Collections.emptyList());
+                ct.setExonOverlap(Collections.emptyList());
+                ct.setTranscriptAnnotationFlags(Collections.emptyList());
+                a.setConsequenceTypes(Collections.singletonList(ct));
                 return a;
             }).collect(Collectors.toList());
         }
