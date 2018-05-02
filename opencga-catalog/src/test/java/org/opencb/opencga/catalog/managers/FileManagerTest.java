@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
@@ -1099,6 +1098,16 @@ public class FileManagerTest extends GenericTest {
         query.append(attributes + ".numValue", Arrays.asList(8, 9, 10));   //Searching as String. numValue = "10"
         result = catalogManager.getFileManager().get(studyFqn, query, null, sessionIdUser);
         assertEquals(1, result.getNumResults());
+
+        QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2);
+        result = catalogManager.getFileManager().get(studyFqn, new Query(), options, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertEquals(7, result.getNumTotalResults());
+
+        options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.SKIP_COUNT, true);
+        result = catalogManager.getFileManager().get(studyFqn, new Query(), options, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertEquals(2, result.getNumTotalResults());
 
     }
 

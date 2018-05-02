@@ -57,7 +57,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
@@ -725,14 +725,17 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.LIMIT, Integer.MAX_VALUE);
                     queryOptions.put(QueryOptions.SKIP, 0);
 
-                    VariantIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    VariantSolrIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    System.out.print("[");
                     while (iterator.hasNext()) {
                         Variant variant = iterator.next();
-                        System.out.println("Variant #" + count);
-                        System.out.println(variant.getId());
+                        System.out.print(variant.toJson());
+                        if (iterator.hasNext()) {
+                            System.out.print(",");
+                        }
                         count++;
                     }
-                    System.out.println("Num. variants: " + count);
+                    System.out.println("]");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
