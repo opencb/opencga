@@ -42,11 +42,11 @@ public class AnalysisDemo {
     public AnalysisDemo() {
     }
 
-    public static void insertPedigreeFile(CatalogManager catalogManager, long studyId, Path inputFile, String sessionId)
+    public static void insertPedigreeFile(CatalogManager catalogManager, Path inputFile, String sessionId)
             throws CatalogException, StorageEngineException {
         String path = "data/peds";
         URI sourceUri = inputFile.toUri();
-        File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PED, File.Bioformat
+        File file = catalogManager.getFileManager().create("user1@default:study1", File.Type.FILE, File.Format.PED, File.Bioformat
                 .PEDIGREE, Paths.get(path, inputFile.getFileName().toString()).toString(), null, "Description", null, 0, -1, null, (long)
                 -1, null, null, true, null, null, sessionId).first();
         new FileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
@@ -56,53 +56,53 @@ public class AnalysisDemo {
         CatalogSampleAnnotationsLoader catalogSampleAnnotationsLoader = new CatalogSampleAnnotationsLoader(catalogManager);
         catalogSampleAnnotationsLoader.loadSampleAnnotations(file, null, sessionId);
     }
-
-    public static void insertVariantFile(CatalogManager catalogManager, long studyId, Path inputFile, String sessionId)
-            throws CatalogException, StorageEngineException, AnalysisExecutionException, JsonProcessingException {
-        String path = "data/vcfs";
-        URI sourceUri = inputFile.toUri();
-        File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.VCF, File.Bioformat
-                .VARIANT, Paths.get(path, inputFile.getFileName().toString()).toString(), null, "Description", null, 0, -1, null, (long)
-                -1, null, null, true, null, null, sessionId).first();
-        new FileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
-        FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(), sessionId, false);
-
-
-        long inputFileId = file.getUid();
-
-        QueryResult<File> outdirResult = catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams
-                .PATH.key(), "data/jobs/"), null, sessionId);
-        long outDirId;
-        if (outdirResult.getResult().isEmpty()) {
-            outDirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data/jobs/").toString(), null,
-                    true, null, QueryOptions.empty(), sessionId).first().getUid();
-        } else {
-            outDirId = outdirResult.first().getUid();
-        }
-
-        boolean doTransform = false;
-        boolean doLoad = false;
-        boolean annotate = false;
-        boolean calculateStats = false;
-        boolean queue = false;
-        String logLevel = "info";
-
-//        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 //
-//        List<String> extraParams = cliOptions.commonOptions.params.entrySet()
-//                .stream()
-//                .map(entry -> "-D" + entry.getKey() + "=" + entry.getValue())
-//                .collect(Collectors.toList());
-
-//        QueryOptions options = new QueryOptions()
-//                .append(ExecutorManager.EXECUTE, !queue)
-//                .append(AnalysisFileIndexer.TRANSFORM, doTransform)
-//                .append(AnalysisFileIndexer.LOAD, doLoad)
-//                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats)
-//                .append(VariantStorageEngine.Options.ANNOTATE.key(), annotate)
-//                .append(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-
-//        QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
-    }
+//    public static void insertVariantFile(CatalogManager catalogManager, long studyId, Path inputFile, String sessionId)
+//            throws CatalogException, StorageEngineException, AnalysisExecutionException, JsonProcessingException {
+//        String path = "data/vcfs";
+//        URI sourceUri = inputFile.toUri();
+//        File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.VCF, File.Bioformat
+//                .VARIANT, Paths.get(path, inputFile.getFileName().toString()).toString(), null, "Description", null, 0, -1, null, (long)
+//                -1, null, null, true, null, null, sessionId).first();
+//        new FileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
+//        FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(), sessionId, false);
+//
+//
+//        long inputFileId = file.getUid();
+//
+//        QueryResult<File> outdirResult = catalogManager.getFileManager().get(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams
+//                .PATH.key(), "data/jobs/"), null, sessionId);
+//        long outDirId;
+//        if (outdirResult.getResult().isEmpty()) {
+//            outDirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data/jobs/").toString(), null,
+//                    true, null, QueryOptions.empty(), sessionId).first().getUid();
+//        } else {
+//            outDirId = outdirResult.first().getUid();
+//        }
+//
+//        boolean doTransform = false;
+//        boolean doLoad = false;
+//        boolean annotate = false;
+//        boolean calculateStats = false;
+//        boolean queue = false;
+//        String logLevel = "info";
+//
+////        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
+////
+////        List<String> extraParams = cliOptions.commonOptions.params.entrySet()
+////                .stream()
+////                .map(entry -> "-D" + entry.getKey() + "=" + entry.getValue())
+////                .collect(Collectors.toList());
+//
+////        QueryOptions options = new QueryOptions()
+////                .append(ExecutorManager.EXECUTE, !queue)
+////                .append(AnalysisFileIndexer.TRANSFORM, doTransform)
+////                .append(AnalysisFileIndexer.LOAD, doLoad)
+////                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats)
+////                .append(VariantStorageEngine.Options.ANNOTATE.key(), annotate)
+////                .append(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+//
+////        QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
+//    }
 
 }

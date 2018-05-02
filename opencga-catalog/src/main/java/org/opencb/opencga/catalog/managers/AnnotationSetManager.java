@@ -88,7 +88,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
      * @throws CatalogException when the session id is not valid, the user does not have permissions or any of the annotation
      *                          parameters are not valid.
      */
-    @Deprecated
     public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           String annotationSetName, Map<String, Object> annotations, String sessionId)
             throws CatalogException {

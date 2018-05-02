@@ -77,24 +77,24 @@ public final class CatalogDemo {
         }
 
         // Create one project per user
-        Map<String, Long> projects = new HashMap<>(5);
+        Map<String, String> projects = new HashMap<>(5);
         for (Map.Entry<String, String> userSession : userSessions.entrySet()) {
             projects.put(userSession.getKey(), catalogManager.getProjectManager().create("DefaultProject", "default",
                     "Description", "Organization", "Homo sapiens", null, null, "GrCh38",
-                    new QueryOptions(), userSession.getValue()).first().getUid());
+                    new QueryOptions(), userSession.getValue()).first().getFqn());
         }
 
         // Create two studies per user
-        Map<String, List<Long>> studies = new HashMap<>(5);
+        Map<String, List<String>> studies = new HashMap<>(5);
         for (Map.Entry<String, String> userSession : userSessions.entrySet()) {
-            long projectId = projects.get(userSession.getKey());
-            List<Long> studiesTmp = new ArrayList<>(2);
+            String projectId = projects.get(userSession.getKey());
+            List<String> studiesTmp = new ArrayList<>(2);
             for (int i = 1; i <= 2; i++) {
                 String name = "Name of study" + i;
                 String alias = "study" + i;
-                studiesTmp.add(catalogManager.getStudyManager().create(String.valueOf(projectId), alias, name, Study.Type.FAMILY, null,
+                studiesTmp.add(catalogManager.getStudyManager().create(projectId, alias, name, Study.Type.FAMILY, null,
                         "Description of " + alias, null, null, null, null, null, null, null, null,
-                        userSession.getValue()).first().getUid());
+                        userSession.getValue()).first().getFqn());
             }
             studies.put(userSession.getKey(), studiesTmp);
         }
@@ -102,20 +102,20 @@ public final class CatalogDemo {
         /*
         SHARE STUDY1 OF USER1
          */
-        long studyId = studies.get("user1").get(0);
+        String studyId = studies.get("user1").get(0);
         String sessionId = userSessions.get("user5");
 
         // user5 will be in the @admins group
-        catalogManager.getStudyManager().updateGroup(Long.toString(studyId), "@admins", new GroupParams("user5", GroupParams.Action.ADD),
+        catalogManager.getStudyManager().updateGroup(studyId, "@admins", new GroupParams("user5", GroupParams.Action.ADD),
                 userSessions.get("user1"));
         // user5 will add the rest of users. user2, user3 and user4 go to group "members"
-        catalogManager.getStudyManager().createGroup(Long.toString(studyId), "analyst", "user2,user3,user4", sessionId);
+        catalogManager.getStudyManager().createGroup(studyId, "analyst", "user2,user3,user4", sessionId);
         //        // @members will have the role "analyst"
         Study.StudyAclParams aclParams1 = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@analyst", aclParams1, sessionId).get(0);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "@analyst", aclParams1, sessionId).get(0);
         //        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "locked");
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "*", aclParams, sessionId).get(0);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "*", aclParams, sessionId).get(0);
     }
 
 }
