@@ -620,6 +620,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public StorageVariantCommandOptions.GenericFillMissingCommandOptions fillMissingCommandOptions = new StorageVariantCommandOptions.GenericFillMissingCommandOptions();
+
     }
 
     @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")

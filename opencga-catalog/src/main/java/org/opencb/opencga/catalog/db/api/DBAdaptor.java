@@ -46,8 +46,6 @@ public interface DBAdaptor<T> extends Iterable<T> {
     @Deprecated
     String FORCE = "force";
 
-    String INTERNAL_DELIMITER = "__";
-
     default QueryResult<Long> count() throws CatalogDBException {
         return count(new Query());
     }

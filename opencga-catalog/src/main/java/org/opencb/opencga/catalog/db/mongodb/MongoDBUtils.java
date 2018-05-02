@@ -74,7 +74,8 @@ class MongoDBUtils {
     public static final Set<String> OTHER_OPTIONS = Arrays.asList("of", "sid", "sessionId", "metadata", "includeProjects",
             "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
-    public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
+    @Deprecated
     public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^=^<>~!$]+)([=^<>~!$]+.*)$");
     static final String TO_REPLACE_DOTS = "&#46;";
     private static ObjectMapper jsonObjectMapper;
@@ -674,6 +675,14 @@ class MongoDBUtils {
         return addCompQueryFilter(option.type(), queryKey, optionsList, andQuery);
     }
 
+    public static String getOperator(String queryValue) {
+        Matcher matcher = OPERATION_PATTERN.matcher(queryValue);
+        if (matcher.find()) {
+            return matcher.group(2);
+        }
+        return null;
+    }
+
     public static List<Document> addCompQueryFilter(QueryParam.Type type, String queryKey, List<String> optionsList,
                                                      List<Document> andQuery) throws CatalogDBException {
 
@@ -689,12 +698,6 @@ class MongoDBUtils {
                 filter = option;
             } else {
                 operator = matcher.group(2);
-//                if (queryKey.isEmpty()) {
-//                    key = matcher.group(1);
-//                } else {
-//                    String separatorDot = matcher.group(1).isEmpty() ? "" : ".";
-//                    key = queryKey + separatorDot + matcher.group(1);
-//                }
                 key = queryKey;
                 filter = matcher.group(3);
             }
@@ -708,7 +711,7 @@ class MongoDBUtils {
                         int intValue = Integer.parseInt(filter);
                         or.add(addNumberOperationQueryFilter(key, operator, intValue));
                     } catch (NumberFormatException e) {
-                        throw new CatalogDBException(e);
+                        throw new CatalogDBException("Expected an integer value - " + e.getMessage(), e);
                     }
                     break;
                 case DECIMAL:
@@ -718,7 +721,7 @@ class MongoDBUtils {
                         double doubleValue = Double.parseDouble(filter);
                         or.add(addNumberOperationQueryFilter(key, operator, doubleValue));
                     } catch (NumberFormatException e) {
-                        throw new CatalogDBException(e);
+                        throw new CatalogDBException("Expected a double value - " + e.getMessage(), e);
                     }
                     break;
                 case TEXT:

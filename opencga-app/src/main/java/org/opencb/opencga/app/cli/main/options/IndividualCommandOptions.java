@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.core.models.Individual;
@@ -150,6 +151,9 @@ public class IndividualCommandOptions {
     public class SearchCommandOptions extends StudyOption {
 
         @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
         @ParametersDelegate
@@ -194,12 +198,6 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
-
-        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", required = false, arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
-        public String annotationSetName;
 
         @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", required = false, arity = 1)
         public String annotation;

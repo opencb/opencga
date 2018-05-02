@@ -17,9 +17,10 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.VariableSet;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,15 +29,17 @@ import java.util.List;
 /**
  * Created by pfurio on 3/22/16.
  */
-public class CohortConverter extends GenericDocumentComplexConverter<Cohort> {
+public class CohortConverter extends AnnotableConverter<Cohort> {
 
     public CohortConverter() {
         super(Cohort.class);
     }
 
     @Override
-    public Document convertToStorageType(Cohort object) {
-        Document document = super.convertToStorageType(object);
+    public Document convertToStorageType(Cohort object, List<VariableSet> variableSetList) {
+        Document document = super.convertToStorageType(object, variableSetList);
+        document.remove(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key());
+
         document.put("id", document.getInteger("id").longValue());
         document.put("samples", convertSamplesToDocument(object.getSamples()));
         return document;

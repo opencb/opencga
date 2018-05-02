@@ -148,6 +148,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.CREATION_DATE.key(), jobsCommandOptions.searchCommandOptions.date);
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.INPUT.key(), jobsCommandOptions.searchCommandOptions.inputFiles);
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.OUTPUT.key(), jobsCommandOptions.searchCommandOptions.outputFiles);
+        query.putAll(jobsCommandOptions.searchCommandOptions.commonOptions.params);
 
         if (jobsCommandOptions.searchCommandOptions.numericOptions.count) {
             return openCGAClient.getJobClient().count(query);

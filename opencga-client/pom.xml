@@ -49,12 +49,12 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>${google.protobuf}</version>
+            <version>${protobuf}</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-all</artifactId>
-            <version>${google.grpc}</version>
+            <version>${grpc}</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>

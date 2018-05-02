@@ -37,12 +37,12 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -51,20 +51,16 @@ public class VariantTableHelper extends GenomeHelper {
 
     public static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT = "opencga.storage.hadoop.vcf.transform.table.output";
     public static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT = "opencga.storage.hadoop.vcf.transform.table.input";
-    private final AtomicReference<byte[]> analysisTable = new AtomicReference<>();
-    private final AtomicReference<byte[]> archiveTable = new AtomicReference<>();
+    private final byte[] analysisTable;
+    private final byte[] archiveTable;
+    private final byte[] metaTable;
 
     public VariantTableHelper(Configuration conf) {
-        this(conf, null);
-    }
-
-    public VariantTableHelper(Configuration conf, Connection con) {
         this(conf, conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, StringUtils.EMPTY),
-                conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, StringUtils.EMPTY), con);
+                conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, StringUtils.EMPTY));
     }
 
-
-    public VariantTableHelper(Configuration conf, String archiveTable, String analysisTable, Connection con) {
+    public VariantTableHelper(Configuration conf, String archiveTable, String analysisTable) {
         super(conf);
         if (StringUtils.isEmpty(analysisTable)) {
             throw new IllegalArgumentException("Property for Analysis Table name missing or empty!!!");
@@ -72,8 +68,11 @@ public class VariantTableHelper extends GenomeHelper {
         if (StringUtils.isEmpty(archiveTable)) {
             throw new IllegalArgumentException("Property for Archive Table name missing or empty!!!");
         }
-        setAnalysisTable(analysisTable);
-        setArchiveTable(archiveTable);
+        this.analysisTable = Bytes.toBytes(analysisTable);
+        this.archiveTable = Bytes.toBytes(archiveTable);
+        String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(analysisTable);
+        HBaseVariantTableNameGenerator generator = new HBaseVariantTableNameGenerator(dbName, conf);
+        this.metaTable = Bytes.toBytes(generator.getMetaTableName());
     }
 
     public boolean createVariantTableIfNeeded(Connection con) throws IOException {
@@ -126,7 +125,7 @@ public class VariantTableHelper extends GenomeHelper {
 
     public StudyConfiguration readStudyConfiguration() throws IOException {
         try (StudyConfigurationManager scm = new StudyConfigurationManager(
-                new HBaseStudyConfigurationDBAdaptor(getAnalysisTableAsString(), getConf(), null, null))) {
+                new HBaseStudyConfigurationDBAdaptor(this))) {
             QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
             if (query.getResult().size() != 1) {
                 throw new IllegalStateException("Only one study configuration expected for study");
@@ -136,7 +135,7 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public byte[] getArchiveTable() {
-        return archiveTable.get();
+        return archiveTable;
     }
 
     public String getArchiveTableAsString() {
@@ -144,19 +143,18 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public byte[] getAnalysisTable() {
-        return analysisTable.get();
+        return analysisTable;
+    }
+    public byte[] getMetaTable() {
+        return metaTable;
+    }
+
+    public String getMetaTableAsString() {
+        return Bytes.toString(metaTable);
     }
 
     public String getAnalysisTableAsString() {
         return Bytes.toString(getAnalysisTable());
-    }
-
-    private void setAnalysisTable(String tableName) {
-        this.analysisTable.set(Bytes.toBytes(tableName));
-    }
-
-    private void setArchiveTable(String tableName) {
-        this.archiveTable.set(Bytes.toBytes(tableName));
     }
 
     public static void setAnalysisTable(Configuration conf, String analysisTable) {
@@ -166,5 +164,4 @@ public class VariantTableHelper extends GenomeHelper {
     public static void setArchiveTable(Configuration conf, String archiveTable) {
         conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, archiveTable);
     }
-
 }

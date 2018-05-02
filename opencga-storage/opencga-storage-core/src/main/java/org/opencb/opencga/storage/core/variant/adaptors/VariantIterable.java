@@ -42,7 +42,11 @@ public interface VariantIterable extends Iterable<Variant> {
     }
 
     default VariantDBIterator iterator(Iterator<?> variants, Query query, QueryOptions options) {
-        return new MultiVariantDBIterator(variants, 100, query, options, this::iterator);
+        return iterator(variants, query, options, 100);
+    }
+
+    default VariantDBIterator iterator(Iterator<?> variants, Query query, QueryOptions options, int batchSize) {
+        return new MultiVariantDBIterator(variants, batchSize, query, options, this::iterator);
     }
 
     VariantDBIterator iterator(Query query, QueryOptions options);

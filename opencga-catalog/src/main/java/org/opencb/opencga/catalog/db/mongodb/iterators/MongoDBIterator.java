@@ -28,9 +28,9 @@ import java.util.function.Function;
  */
 public class MongoDBIterator<E> implements DBIterator<E> {
 
-    private MongoCursor mongoCursor;
-    private GenericDocumentComplexConverter<E> converter;
-    private Function<Document, Document> filter;
+    protected MongoCursor mongoCursor;
+    protected GenericDocumentComplexConverter<E> converter;
+    protected Function<Document, Document> filter;
 
     public MongoDBIterator(MongoCursor mongoCursor) { //Package protected
         this(mongoCursor, null, null);

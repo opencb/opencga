@@ -246,6 +246,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.attributes);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.nattributes);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.battributes);
+        query.putAll(studiesCommandOptions.searchCommandOptions.commonOptions.params);
+
         if (StringUtils.isNotEmpty(studiesCommandOptions.searchCommandOptions.type)) {
             try {
                 query.put(StudyDBAdaptor.QueryParams.TYPE.key(),
@@ -345,14 +347,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.samplesCommandOptions.name);
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), studiesCommandOptions.samplesCommandOptions.source);
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), studiesCommandOptions.samplesCommandOptions.individual);
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
-                studiesCommandOptions.samplesCommandOptions.annotationSetName);
-        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                studiesCommandOptions.samplesCommandOptions.variableSetId);
+
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), studiesCommandOptions.samplesCommandOptions.annotation);
-        /*if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.description)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.samplesCommandOptions.description);
-        }*/
 
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.exclude);

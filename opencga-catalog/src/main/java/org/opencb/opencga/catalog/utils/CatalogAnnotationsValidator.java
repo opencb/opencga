@@ -20,14 +20,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Annotation;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -145,89 +143,117 @@ public class CatalogAnnotationsValidator {
         }
 
         //Get annotationSetName set and variableId map
-        Set<String> annotatedVariables = new HashSet<>();
+        Set<String> annotatedVariables = annotationSet.getAnnotations().entrySet()
+                .stream()
+                .map(annotation -> annotation.getKey())
+                .collect(Collectors.toSet());
         Map<String, Variable> variableMap = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
             variableMap.put(variable.getName(), variable);
         }
 
-        //Check Duplicated
-        for (Annotation annotation : annotationSet.getAnnotations()) {
-            if (annotatedVariables.contains(annotation.getName())) {
-                throw new CatalogException("Duplicated annotation " + annotation);
-            }
-            annotatedVariables.add(annotation.getName());
-        }
-
-        //Remove null values
-        for (Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator(); iterator.hasNext();) {
-            Annotation annotation = iterator.next();
-            if (annotation.getValue() == null) {
-                iterator.remove();
-            }
-        }
+//        //Remove null values
+//        for (Iterator<Map.Entry<String, Object>> iterator = annotationSet.getAnnotations().entrySet().iterator(); iterator.hasNext();) {
+//            Map.Entry<String, Object> annotation = iterator.next();
+//            if (annotation.getValue() == null) {
+//                iterator.remove();
+//            }
+//        }
 
         //Check for missing values
-        List<Annotation> defaultAnnotations = new LinkedList<>();
+        Map<String, Object> defaultAnnotations = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
             if (!annotatedVariables.contains(variable.getName())) {
-                Annotation defaultAnnotation = getDefaultAnnotation(variable);
-                if (defaultAnnotation == null) {
+                if (!addDefaultAnnotation(variable, defaultAnnotations)) {
                     if (variable.isRequired()) {
                         throw new CatalogException("Missing required variable " + variable.getName());
                     }
-                } else {
-                    defaultAnnotations.add(defaultAnnotation);
-                    annotatedVariables.add(defaultAnnotation.getName());
                 }
+                annotatedVariables.add(variable.getName());
             }
         }
-        annotationSet.getAnnotations().addAll(defaultAnnotations);
+        annotationSet.getAnnotations().putAll(defaultAnnotations);
 
         //Check annotations
-        for (Annotation annotation : annotationSet.getAnnotations()) {
-            checkAnnotation(variableMap, annotation);
-        }
+        checkAnnotations(variableMap, annotationSet.getAnnotations());
 
     }
 
-    public static void checkAnnotation(Map<String, Variable> variableMap, Annotation annotation) throws CatalogException {
-        String id = annotation.getName();
-        if (!variableMap.containsKey(id)) {
-            throw new CatalogException("Annotation id '" + annotation + "' is not an accepted id");
-        } else {
-            Variable variable = variableMap.get(id);
-            annotation.setValue(getValue(variable.getType(), annotation.getValue()));
-            checkAllowedValue(variable, annotation.getValue(), "Annotation");
+    public static void checkAnnotations(Map<String, Variable> variableMap, Map<String, Object> annotations)
+            throws CatalogException {
+        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
+            String id = entry.getKey();
+            if (!variableMap.containsKey(id)) {
+                throw new CatalogException("Annotation id '" + id + "' is not an accepted id");
+            } else {
+                Variable variable = variableMap.get(id);
+                annotations.put(id, getValue(variable.getType(), entry.getValue()));
+                checkAllowedValue(variable, entry.getValue(), "Annotation");
+            }
         }
-
     }
 
-    public static Annotation getDefaultAnnotation(Variable variable) throws CatalogException {
+//    public static void checkAnnotation(Map<String, Variable> variableMap, Annotation annotation) throws CatalogException {
+//        String id = annotation.getName();
+//        if (!variableMap.containsKey(id)) {
+//            throw new CatalogException("Annotation id '" + annotation + "' is not an accepted id");
+//        } else {
+//            Variable variable = variableMap.get(id);
+//            annotation.setValue(getValue(variable.getType(), annotation.getValue()));
+//            checkAllowedValue(variable, annotation.getValue(), "Annotation");
+//        }
+//
+//    }
+
+    /**
+     * Adds the default annotation of a variable if present and returns true if it has been added to the annotation object, false otherwise.
+     *
+     * @param variable Variable from where the default annotation will be taken.
+     * @param annotation Annotation map.
+     * @return True if a default annotation value could be found, False otherwise.
+     * @throws CatalogException if there is any other kind of error.
+     */
+    public static boolean addDefaultAnnotation(Variable variable, Map<String, Object> annotation) throws CatalogException {
         Object defaultValue = variable.getDefaultValue();
         switch (variable.getType()) {
-            case BOOLEAN: {
+            case BOOLEAN:
                 Boolean booleanValue = getBooleanValue(defaultValue);
-                return booleanValue == null ? null : new Annotation(variable.getName(), booleanValue);
-            }
-            case DOUBLE: {
+                if (booleanValue != null) {
+                    annotation.put(variable.getName(), booleanValue);
+                    return true;
+                }
+            case DOUBLE:
                 Double numericValue = getNumericValue(defaultValue);
-                return numericValue == null ? null : new Annotation(variable.getName(), numericValue);
-            }
-            case INTEGER: {
-                Integer numericValue = getIntegerValue(defaultValue);
-                return numericValue == null ? null : new Annotation(variable.getName(), numericValue);
-            }
+                if (numericValue != null) {
+                    annotation.put(variable.getName(), numericValue);
+                    return true;
+                }
+                break;
+            case INTEGER:
+                Integer integerValue = getIntegerValue(defaultValue);
+                if (integerValue != null) {
+                    annotation.put(variable.getName(), integerValue);
+                    return true;
+                }
+                break;
             case CATEGORICAL:
-            case TEXT: {
+            case TEXT:
                 String stringValue = getStringValue(defaultValue);
-                return stringValue == null ? null : new Annotation(variable.getName(), stringValue);
-            }
+                if (stringValue != null) {
+                    annotation.put(variable.getName(), stringValue);
+                    return true;
+                }
+                break;
             case OBJECT:
-                return variable.getDefaultValue() == null ? null : new Annotation(variable.getName(), variable.getDefaultValue());
+                if (variable.getDefaultValue() != null) {
+                    annotation.put(variable.getName(), variable.getDefaultValue());
+                    return true;
+                }
+                break;
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
+        return false;
     }
 
     private static void checkAllowedValue(Variable variable, Object value, String message) throws CatalogException {
@@ -316,17 +342,9 @@ public class CatalogAnnotationsValidator {
                 //Check variableSet
                 for (Object object : listValues) {
                     if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
-                        Map<String, Variable> variableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getName,
-                                Function.<Variable>identity()));
                         Map objectMap = (Map) object;
-
-                        Set<Annotation> annotationSet = new HashSet<>();
-                        for (Map.Entry entry : (Set<Map.Entry>) objectMap.entrySet()) {
-//                            checkAnnotation(variableMap, new Annotation(entry.getKey().toString(), entry.getValue()));
-                            annotationSet.add(new Annotation(entry.getKey().toString(), entry.getValue()));
-                        }
                         checkAnnotationSet(new VariableSet(0, variable.getName(), false, false, variable.getDescription(),
-                                variable.getVariableSet(), 1, null), new AnnotationSet("", 0, annotationSet, null, 1, null), null);
+                                variable.getVariableSet(), 1, null), new AnnotationSet("", 0, objectMap, null, 1, null), null);
                     }
                 }
                 break;
@@ -486,19 +504,17 @@ public class CatalogAnnotationsValidator {
     }
 
     public static void mergeNewAnnotations(AnnotationSet annotationSet, Map<String, Object> newAnnotations) {
-        Map<String, Annotation> annotations = annotationSet.getAnnotations().stream()
-                .collect(Collectors.toMap(Annotation::getName, Function.identity()));
-
-        for (Map.Entry<String, Object> entry : newAnnotations.entrySet()) {
-            if (entry.getValue() != null) {
-                //Remove old value (if present)
-                annotationSet.getAnnotations().remove(annotations.get(entry.getKey()));
-                //Add the new annotation value
-                annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
-            } else {
-                //Remove the old value (if present)
-                annotationSet.getAnnotations().remove(annotations.get(entry.getKey()));
-            }
-        }
+        annotationSet.getAnnotations().putAll(newAnnotations);
+//        Map<String, Object> annotations = annotationSet.getAnnotations();
+//
+//        for (Map.Entry<String, Object> entry : newAnnotations.entrySet()) {
+//            if (entry.getValue() != null) {
+//                // Replace the annotation
+//                annotations.put(entry.getKey(), entry.getValue());
+//            } else {
+//                //Remove the old value (if present)
+//                annotations.remove(entry.getKey());
+//            }
+//        }
     }
 }

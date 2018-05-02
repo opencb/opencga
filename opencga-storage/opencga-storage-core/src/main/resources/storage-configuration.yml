@@ -97,7 +97,7 @@ storageEngines:
       collection.files: "files"
       include.stats: false
       annotator: cellbase_rest
-      annotator.cellbase.exclude: "expression,hgvs,repeats,cytoband"
+      annotator.cellbase.exclude: "expression"
       annotator.cellbase.use_cache: true
       annotator.cellbase.imprecise_variants: false # Imprecise variants supported by cellbase (REST only)
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
@@ -140,7 +140,7 @@ storageEngines:
       database.name: "opencga"
       dbadaptor.phoenix.fetch_size : -1
       annotator: cellbase_rest
-      annotator.cellbase.exclude: "expression,hgvs,repeats,cytoband"
+      annotator.cellbase.exclude: "expression"
       annotator.cellbase.use_cache: true
       annotator.cellbase.imprecise_variants: false # Imprecise variants supported by cellbase (REST only)
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
@@ -149,7 +149,7 @@ storageEngines:
       hadoop.bin: "hadoop"
 #      hadoop.env: # See opencga-env.sh
 #      - "HADOOP_USER_CLASSPATH_FIRST=true"
-#      - "HADOOP_CLASSPATH=$HADOOP_CLASSPATH:${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-${google.protobuf}.jar"
+#      - "HADOOP_CLASSPATH=$HADOOP_CLASSPATH:${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-${protobuf}.jar"
 #      - ....
       opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000

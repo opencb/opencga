@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.monitor.daemons;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -18,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 public class AuthorizationDaemon extends MonitorParentDaemon {
+
+    private final String INTERNAL_DELIMITER = "__";
 
     private StudyDBAdaptor studyDBAdaptor;
     private AuthorizationManager authorizationManager;
@@ -67,7 +68,7 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
             Study.Entry entry = myMap.getKey();
             for (PermissionRule permissionRule : myMap.getValue()) {
                 try {
-                    String[] split = permissionRule.getId().split(DBAdaptor.INTERNAL_DELIMITER, 2);
+                    String[] split = permissionRule.getId().split(INTERNAL_DELIMITER, 2);
                     if (split.length == 1) {
                         // Apply rules
                         logger.info("Attempting to apply permission rule {} in {}", permissionRule.getId(), entry);
@@ -77,19 +78,19 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
                         PermissionRule.DeleteAction deleteAction = PermissionRule.DeleteAction.valueOf(split[1].split("_")[1]);
                         switch (deleteAction) {
                             case NONE:
-                                logger.info("Removing permission rule {}", permissionRule.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0],
+                                logger.info("Removing permission rule {}", permissionRule.getId().split(INTERNAL_DELIMITER)[0],
                                         entry);
                                 authorizationManager.removePermissionRule(study.getId(), permissionRule.getId(), entry);
                                 break;
                             case REVERT:
                                 logger.info("Removing permission rule {} and reverting applied permissions for {}",
-                                        permissionRule.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0], entry);
+                                        permissionRule.getId().split(INTERNAL_DELIMITER)[0], entry);
                                 authorizationManager.removePermissionRuleAndRestorePermissions(study, permissionRule.getId(), entry);
                                 break;
                             case REMOVE:
                             default:
                                 logger.info("Removing permission rule {} and removing applied permissions for {}",
-                                        permissionRule.getId().split(DBAdaptor.INTERNAL_DELIMITER)[0], entry);
+                                        permissionRule.getId().split(INTERNAL_DELIMITER)[0], entry);
                                 authorizationManager.removePermissionRuleAndRemovePermissions(study, permissionRule.getId(), entry);
                                 break;
                         }

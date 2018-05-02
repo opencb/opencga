@@ -63,7 +63,7 @@ public class VcfSliceCombiner extends Reducer<ImmutableBytesWritable, VcfSliceWr
         }
 
         String keyStr = Bytes.toString(key.get());
-        int position = keyFactory.extractPositionFromBlockId(keyStr).intValue();
+        int position = (int) keyFactory.extractPositionFromBlockId(keyStr);
         VcfSlice slice = converterToSlice.convert(variants, position);
         cxt.getCounter("OPENCGA.HBASE", "VCF_SLICE_SIZE").increment(slice.getRecordsCount());
 

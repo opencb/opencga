@@ -16,12 +16,18 @@
 
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
+import org.apache.tools.ant.types.Commandline;
+
 /**
  * Created on 18/01/16 .
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface MRExecutor {
+
+    default int run(String executable, String[] args) {
+        return run(executable, Commandline.toString(args));
+    }
 
     int run(String executable, String args);
 

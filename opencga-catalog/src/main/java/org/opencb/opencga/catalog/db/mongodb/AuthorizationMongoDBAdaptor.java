@@ -58,7 +58,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private Map<Entity, List<String>> fullPermissionsMap = new HashMap<>();
 
     private static final String ANONYMOUS = "*";
-    private static final String INTERNAL_DELIMITER = "__";
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));

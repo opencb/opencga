@@ -475,7 +475,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     }
 
     public MongoDBVariantWriteResult stageVariants(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId) {
-        MongoDBCollection stage = dbAdaptor.getStageCollection();
+        MongoDBCollection stage = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
         MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, false);
         MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(null);
 
@@ -492,13 +492,13 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
     public MongoDBVariantWriteResult mergeVariants(StudyConfiguration studyConfiguration, List<Integer> fileIds,
                                                    MongoDBVariantWriteResult stageWriteResult, List<String> chromosomes) {
-        MongoDBCollection stage = dbAdaptor.getStageCollection();
+        MongoDBCollection stage = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
         MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                studyConfiguration.getIndexedFiles(), false, ignoreOverlappingVariants);
+                studyConfiguration.getIndexedFiles(), false, ignoreOverlappingVariants, 1);
         boolean resume = false;
-        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(),
+        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(studyConfiguration.getStudyId()),
                 dbAdaptor.getStudiesCollection(), studyConfiguration, fileIds, resume, cleanWhileLoading, null);
 
         reader.open();

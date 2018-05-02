@@ -359,6 +359,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         ObjectMap options = new ObjectMap();
 //        options.put("skipReferenceVariants", cliOptions.genericFillGapsOptions.excludeHomRef);
+        options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericFillGapsOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
         variantManager.fillGaps(cliOptions.study, cliOptions.genericFillGapsOptions.samples, options, sessionId);
@@ -371,9 +372,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         ObjectMap options = new ObjectMap();
+        options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.fillMissingCommandOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.fillMissing(cliOptions.study, options, sessionId);
+        variantManager.fillMissing(cliOptions.study, cliOptions.fillMissingCommandOptions.overwrite, options, sessionId);
     }
 
     private void samples() throws Exception {
