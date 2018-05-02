@@ -29,7 +29,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
@@ -46,7 +46,7 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoDBStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor {
+public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAdaptor {
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
     private final MongoLock mongoLock;
@@ -62,12 +62,12 @@ public class MongoDBStudyConfigurationDBAdaptor extends StudyConfigurationAdapto
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         return getStudyConfiguration(null, studyName, timeStamp, options);
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         return getStudyConfiguration(studyId, null, timeStamp, options);
     }
 

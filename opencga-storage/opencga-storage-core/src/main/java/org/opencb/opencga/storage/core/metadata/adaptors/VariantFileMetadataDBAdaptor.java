@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.variant.adaptors;
+package org.opencb.opencga.storage.core.metadata.adaptors;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.VariantFileMetadata;

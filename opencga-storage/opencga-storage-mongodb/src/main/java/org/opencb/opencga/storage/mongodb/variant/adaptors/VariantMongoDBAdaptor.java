@@ -54,6 +54,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
@@ -89,7 +90,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final String collectionName;
     private final MongoDBCollection variantsCollection;
-    private final VariantFileMetadataMongoDBAdaptor variantFileMetadataMongoDBAdaptor;
+    private final MongoDBVariantFileMetadataDBAdaptor mongoDBVariantFileMetadataDBAdaptor;
     private final StorageConfiguration storageConfiguration;
     private final MongoCredentials credentials;
     private final VariantMongoDBQueryParser queryParser;
@@ -121,7 +122,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.credentials = credentials;
         this.mongoManager = mongoManager;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        variantFileMetadataMongoDBAdaptor = new VariantFileMetadataMongoDBAdaptor(db, filesCollectionName);
+        mongoDBVariantFileMetadataDBAdaptor = new MongoDBVariantFileMetadataDBAdaptor(db, filesCollectionName);
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
@@ -1198,8 +1199,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantFileMetadataMongoDBAdaptor getVariantFileMetadataDBAdaptor() {
-        return variantFileMetadataMongoDBAdaptor;
+    public MongoDBVariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
+        return mongoDBVariantFileMetadataDBAdaptor;
     }
 
     @Override

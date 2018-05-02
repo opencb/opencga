@@ -10,7 +10,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -33,7 +33,7 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseProjectMetadataDBAdaptor extends ProjectMetadataAdaptor {
+public class HBaseProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
 
     private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
 
@@ -66,7 +66,7 @@ public class HBaseProjectMetadataDBAdaptor extends ProjectMetadataAdaptor {
     }
 
     @Override
-    protected long lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException, StorageEngineException {
+    public long lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException, StorageEngineException {
         try {
             return lock.lock(getProjectRowKey(), getLockColumn(), lockDuration, timeout);
         } catch (IOException e) {
@@ -75,7 +75,7 @@ public class HBaseProjectMetadataDBAdaptor extends ProjectMetadataAdaptor {
     }
 
     @Override
-    protected void unLockProject(long lockId) throws StorageEngineException {
+    public void unLockProject(long lockId) throws StorageEngineException {
         try {
             lock.unlock(getProjectRowKey(), getLockColumn(), lockId);
         } catch (IOException e) {
@@ -84,7 +84,7 @@ public class HBaseProjectMetadataDBAdaptor extends ProjectMetadataAdaptor {
     }
 
     @Override
-    protected QueryResult<ProjectMetadata> getProjectMetadata() {
+    public QueryResult<ProjectMetadata> getProjectMetadata() {
         try {
             ensureTableExists();
             ProjectMetadata projectMetadata = hBaseManager.act(tableName, (table -> {
@@ -114,7 +114,7 @@ public class HBaseProjectMetadataDBAdaptor extends ProjectMetadataAdaptor {
     }
 
     @Override
-    protected QueryResult updateProjectMetadata(ProjectMetadata projectMetadata) {
+    public QueryResult updateProjectMetadata(ProjectMetadata projectMetadata) {
         try {
             ensureTableExists();
             hBaseManager.act(tableName, (table -> {

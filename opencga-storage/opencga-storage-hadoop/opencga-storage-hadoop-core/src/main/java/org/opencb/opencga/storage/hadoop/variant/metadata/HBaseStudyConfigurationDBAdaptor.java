@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
@@ -58,7 +58,7 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor {
+public class HBaseStudyConfigurationDBAdaptor implements StudyConfigurationAdaptor {
 
     private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
 
@@ -91,7 +91,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         logger.debug("Get StudyConfiguration " + studyName + " from DB " + tableName);
         BiMap<String, Integer> studies = getStudies(options);
         Integer studyId = studies.get(studyName);
@@ -136,7 +136,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         StopWatch watch = new StopWatch().start();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
@@ -185,7 +185,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     }
 
     @Override
-    protected QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = "";
         logger.info("Update StudyConfiguration {}", studyConfiguration.getStudyName());

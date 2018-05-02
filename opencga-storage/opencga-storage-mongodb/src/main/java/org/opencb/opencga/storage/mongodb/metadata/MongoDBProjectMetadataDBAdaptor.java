@@ -11,7 +11,7 @@ import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 
 import java.net.UnknownHostException;
@@ -26,7 +26,7 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBProjectMetadataDBAdaptor extends ProjectMetadataAdaptor {
+public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
 
     public static final String ID = "META";
     private final MongoLock mongoLock;
@@ -41,23 +41,23 @@ public class MongoDBProjectMetadataDBAdaptor extends ProjectMetadataAdaptor {
     }
 
     @Override
-    protected long lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+    public long lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException {
         return mongoLock.lock(ID, lockDuration, timeout);
     }
 
     @Override
-    protected void unLockProject(long lockId) {
+    public void unLockProject(long lockId) {
         mongoLock.unlock(ID, lockId);
     }
 
     @Override
-    protected QueryResult<ProjectMetadata> getProjectMetadata() {
+    public QueryResult<ProjectMetadata> getProjectMetadata() {
         return collection.find(new Document("_id", ID), new Document(), new GenericDocumentComplexConverter<>(ProjectMetadata.class),
                 new QueryOptions());
     }
 
     @Override
-    protected QueryResult updateProjectMetadata(ProjectMetadata projectMetadata) {
+    public QueryResult updateProjectMetadata(ProjectMetadata projectMetadata) {
         Document mongo = new GenericDocumentComplexConverter<>(ProjectMetadata.class).convertToStorageType(projectMetadata);
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
