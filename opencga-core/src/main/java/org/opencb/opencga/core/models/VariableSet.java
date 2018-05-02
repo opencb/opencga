@@ -32,7 +32,6 @@ public class VariableSet extends PrivateFields {
     private Set<Variable> variables;
 
     private int release;
-    @Deprecated
     private Map<String, Object> attributes;
 
     public VariableSet() {

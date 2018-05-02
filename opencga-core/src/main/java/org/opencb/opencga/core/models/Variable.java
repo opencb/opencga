@@ -49,7 +49,6 @@ public class Variable {
      * Variables for validate internal fields. Only valid if type is OBJECT.
      **/
     private Set<Variable> variableSet;
-    @Deprecated
     private Map<String, Object> attributes;
 
     public Variable() {
