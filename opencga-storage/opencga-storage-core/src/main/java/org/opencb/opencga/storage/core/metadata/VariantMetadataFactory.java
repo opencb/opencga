@@ -41,20 +41,23 @@ public class VariantMetadataFactory {
         Map<Integer, List<Integer>> returnedSamples = selectElements.getSamples();
         Map<Integer, List<Integer>> returnedFiles = selectElements.getFiles();
 
+        ProjectMetadata projectMetadata = scm.getProjectMetadata().first();
+
         List<StudyConfiguration> studyConfigurations = new ArrayList<>(selectElements.getStudies().size());
 
         for (Integer studyId : selectElements.getStudies()) {
             studyConfigurations.add(scm.getStudyConfiguration(studyId, QueryOptions.empty()).first());
         }
 
-        return makeVariantMetadata(studyConfigurations, returnedSamples, returnedFiles, queryOptions);
+        return makeVariantMetadata(studyConfigurations, projectMetadata, returnedSamples, returnedFiles, queryOptions);
     }
 
     protected VariantMetadata makeVariantMetadata(List<StudyConfiguration> studyConfigurations,
-                                                  Map<Integer, List<Integer>> returnedSamples,
+                                                  ProjectMetadata projectMetadata, Map<Integer, List<Integer>> returnedSamples,
                                                   Map<Integer, List<Integer>> returnedFiles, QueryOptions queryOptions)
             throws StorageEngineException {
-        VariantMetadata metadata = new VariantMetadataConverter().toVariantMetadata(studyConfigurations, returnedSamples, returnedFiles);
+        VariantMetadata metadata = new VariantMetadataConverter()
+                .toVariantMetadata(studyConfigurations, projectMetadata, returnedSamples, returnedFiles);
 
         Map<String, StudyConfiguration> studyConfigurationMap = studyConfigurations.stream()
                 .collect(Collectors.toMap(StudyConfiguration::getStudyName, Function.identity()));

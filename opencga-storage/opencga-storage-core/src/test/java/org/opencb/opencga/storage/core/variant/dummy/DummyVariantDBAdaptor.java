@@ -246,7 +246,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
-        return new StudyConfigurationManager(new DummyStudyConfigurationAdaptor());
+        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor());
     }
 
     @Override

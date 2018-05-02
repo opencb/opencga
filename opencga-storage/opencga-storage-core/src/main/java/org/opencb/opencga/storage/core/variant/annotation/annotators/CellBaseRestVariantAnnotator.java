@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
 import java.io.IOException;
@@ -43,8 +44,9 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     private final CellBaseClient cellBaseClient;
     private final Function<Variant, String> variantSerializer;
 
-    public CellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options) throws VariantAnnotatorException {
-        super(storageConfiguration, options);
+    public CellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options)
+            throws VariantAnnotatorException {
+        super(storageConfiguration, projectMetadata, options);
 
         List<String> hosts = storageConfiguration.getCellbase().getHosts();
         if (hosts.isEmpty()) {

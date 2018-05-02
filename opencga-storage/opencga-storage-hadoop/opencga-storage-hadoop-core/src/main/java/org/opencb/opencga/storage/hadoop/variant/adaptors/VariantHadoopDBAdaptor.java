@@ -55,6 +55,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseProjectMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -114,6 +115,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
         this.studyConfigurationManager.set(
                 new StudyConfigurationManager(
+                        new HBaseProjectMetadataDBAdaptor(tableNameGenerator.getMetaTableName(), conf, hBaseManager),
                         new HBaseStudyConfigurationDBAdaptor(tableNameGenerator.getMetaTableName(), conf, hBaseManager)));
         this.variantFileMetadataDBAdaptor = new HBaseVariantFileMetadataDBAdaptor(genomeHelper, hBaseManager, tableNameGenerator);
 

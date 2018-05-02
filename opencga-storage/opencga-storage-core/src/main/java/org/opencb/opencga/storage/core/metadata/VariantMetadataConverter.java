@@ -6,7 +6,6 @@ import org.opencb.biodata.models.variant.metadata.*;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.util.*;
 
@@ -22,27 +21,17 @@ public class VariantMetadataConverter {
     public VariantMetadataConverter() {
     }
 
-    public VariantMetadata toVariantMetadata(Collection<StudyConfiguration> studyConfigurations) {
-        return toVariantMetadata(studyConfigurations, null, null);
-    }
-
     public VariantMetadata toVariantMetadata(Collection<StudyConfiguration> studyConfigurations,
-                                             Map<Integer, List<Integer>> returnedSamples,
+                                             ProjectMetadata projectMetadata, Map<Integer, List<Integer>> returnedSamples,
                                              Map<Integer, List<Integer>> returnedFiles) {
         List<VariantStudyMetadata> studies = new ArrayList<>();
-        String specie = "hsapiens";
-        String assembly = null;
+        String specie = projectMetadata.getSpecies();
+        String assembly = projectMetadata.getAssembly();
         for (StudyConfiguration studyConfiguration : studyConfigurations) {
             VariantStudyMetadata studyMetadata = toVariantStudyMetadata(studyConfiguration,
                     returnedSamples == null ? null : returnedSamples.get(studyConfiguration.getStudyId()),
                     returnedFiles == null ? null : returnedFiles.get(studyConfiguration.getStudyId()));
             studies.add(studyMetadata);
-            if (studyConfiguration.getAttributes().containsKey(VariantAnnotationManager.SPECIES)) {
-                specie = studyConfiguration.getAttributes().getString(VariantAnnotationManager.SPECIES);
-            }
-            if (studyConfiguration.getAttributes().containsKey(VariantAnnotationManager.ASSEMBLY)) {
-                assembly = studyConfiguration.getAttributes().getString(VariantAnnotationManager.ASSEMBLY);
-            }
         }
 
         Species species = Species.newBuilder()

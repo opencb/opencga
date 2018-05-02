@@ -23,12 +23,12 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -38,7 +38,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
@@ -87,12 +86,14 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             final String alias;
             final DataStore dataStore;
             final Project.Organism organism;
+            final int currentRelease;
 
             if (studyInfos == null || studyInfos.isEmpty()) {
                 Project project = catalogManager.getProjectManager().get(projectStr, null, sessionId).first();
                 studyStr = null;
                 alias = project.getAlias();
                 organism = project.getOrganism();
+                currentRelease = project.getCurrentRelease();
                 dataStore = getDataStoreByProjectId(catalogManager, String.valueOf(project.getId()), File.Bioformat.VARIANT, sessionId);
                 studyIds = Collections.emptyList();
             } else {
@@ -107,6 +108,8 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 dataStore = info.getDataStores().get(File.Bioformat.VARIANT);
                 organism = info.getOrganism();
                 studyIds = studyInfos.stream().map(StudyInfo::getStudyId).collect(Collectors.toList());
+                Project project = catalogManager.getProjectManager().get(info.getProjectAlias(), null, sessionId).first();
+                currentRelease = project.getCurrentRelease();
                 for (int i = 1; i < studyInfos.size(); i++) {
                     info = studyInfos.get(i);
                     if (!dataStore.equals(info.getDataStores().get(File.Bioformat.VARIANT))) {
@@ -148,15 +151,12 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                     annotationOptions.put(VariantAnnotationManager.LOAD_FILE, loadFile.getUri().toString());
                 }
             }
-            if (organism == null) {
-                annotationOptions.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
-                annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRch37");
-            } else {
-                configureOrganism(organism, annotationOptions);
-            }
 
 //            StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+
+            updateProjectMetadata(variantStorageEngine.getStudyConfigurationManager(), organism, currentRelease);
+
             variantStorageEngine.annotate(annotationQuery, annotationOptions);
 
             if (catalogOutDirId != null) {
@@ -177,13 +177,6 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
         }
 
         return newFiles;
-    }
-
-    public static void configureOrganism(Project.Organism organism, ObjectMap options) {
-        String scientificName = organism.getScientificName();
-        scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
-        options.put(VariantAnnotationManager.SPECIES, scientificName);
-        options.put(VariantAnnotationManager.ASSEMBLY, organism.getAssembly());
     }
 
     private String buildOutputFileName(String alias, Query query) {

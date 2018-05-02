@@ -46,7 +46,7 @@ public class VepVariantAnnotator extends VariantAnnotator {
     protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
 
     public VepVariantAnnotator() throws VariantAnnotatorException {
-        super(null, null);
+        super(null, null, null);
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(factory);
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);

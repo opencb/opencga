@@ -25,6 +25,7 @@ import org.opencb.cellbase.core.variant.annotation.VariantAnnotationCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
 import java.util.Collections;
@@ -40,8 +41,9 @@ public class CellBaseDirectVariantAnnotator extends AbstractCellBaseVariantAnnot
 
     private VariantAnnotationCalculator variantAnnotationCalculator = null;
 
-    public CellBaseDirectVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options) throws VariantAnnotatorException {
-        super(storageConfiguration, options);
+    public CellBaseDirectVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options)
+            throws VariantAnnotatorException {
+        super(storageConfiguration, projectMetadata, options);
 
         CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration();
         cellBaseConfiguration.setVersion(cellbaseVersion);

@@ -48,13 +48,15 @@ public class StudyConfigurationManager implements AutoCloseable {
     public static final String READ_ONLY = "ro";
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
-    protected StudyConfigurationAdaptor adaptor;
+    protected final ProjectMetadataAdaptor projectDBAdaptor;
+    protected final StudyConfigurationAdaptor studyDBAdaptor;
 
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
-    public StudyConfigurationManager(StudyConfigurationAdaptor adaptor) {
-        this.adaptor = adaptor;
+    public StudyConfigurationManager(ProjectMetadataAdaptor projectDBAdaptor, StudyConfigurationAdaptor studyDBAdaptor) {
+        this.projectDBAdaptor = projectDBAdaptor;
+        this.studyDBAdaptor = studyDBAdaptor;
     }
 
     public long lockStudy(int studyId) throws StorageEngineException {
@@ -69,32 +71,32 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
-        return adaptor.lockStudy(studyId, lockDuration, timeout, null);
+        return studyDBAdaptor.lockStudy(studyId, lockDuration, timeout, null);
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
-        return adaptor.lockStudy(studyId, lockDuration, timeout, lockName);
+        return studyDBAdaptor.lockStudy(studyId, lockDuration, timeout, lockName);
     }
 
     public void unLockStudy(int studyId, long lockId) {
-        adaptor.unLockStudy(studyId, lockId, null);
+        studyDBAdaptor.unLockStudy(studyId, lockId, null);
     }
 
     public void unLockStudy(int studyId, long lockId, String lockName) {
-        adaptor.unLockStudy(studyId, lockId, lockName);
+        studyDBAdaptor.unLockStudy(studyId, lockId, lockName);
     }
 
-    public interface UpdateStudyConfiguration<E extends Exception> {
-        StudyConfiguration update(StudyConfiguration studyConfiguration) throws E;
+    public interface UpdateFunction<T, E extends Exception> {
+        T update(T t) throws E;
     }
 
-    public <E extends Exception> StudyConfiguration lockAndUpdate(String studyName, UpdateStudyConfiguration<E> updater)
+    public <E extends Exception> StudyConfiguration lockAndUpdate(String studyName, UpdateFunction<StudyConfiguration, E> updater)
             throws StorageEngineException, E {
         Integer studyId = getStudyId(studyName, null);
         return lockAndUpdate(studyId, updater);
     }
 
-    public <E extends Exception> StudyConfiguration lockAndUpdate(int studyId, UpdateStudyConfiguration<E> updater)
+    public <E extends Exception> StudyConfiguration lockAndUpdate(int studyId, UpdateFunction<StudyConfiguration, E> updater)
             throws StorageEngineException, E {
         long lock = lockStudy(studyId);
         try {
@@ -124,7 +126,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = adaptor.getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
+            result = studyDBAdaptor.getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
@@ -133,7 +135,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = adaptor.getStudyConfiguration(studyName, null, options);
+            result = studyDBAdaptor.getStudyConfiguration(studyName, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -163,7 +165,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = adaptor.getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
+            result = studyDBAdaptor.getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
                 if (!readOnly) {
@@ -172,7 +174,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = adaptor.getStudyConfiguration(studyId, null, options);
+            result = studyDBAdaptor.getStudyConfiguration(studyId, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -204,15 +206,15 @@ public class StudyConfigurationManager implements AutoCloseable {
     }
 
     public List<String> getStudyNames(QueryOptions options) {
-        return adaptor.getStudyNames(options);
+        return studyDBAdaptor.getStudyNames(options);
     }
 
     public List<Integer> getStudyIds(QueryOptions options) {
-        return adaptor.getStudyIds(options);
+        return studyDBAdaptor.getStudyIds(options);
     }
 
     public Map<String, Integer> getStudies(QueryOptions options) {
-        return adaptor.getStudies(options);
+        return studyDBAdaptor.getStudies(options);
     }
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
@@ -231,9 +233,8 @@ public class StudyConfigurationManager implements AutoCloseable {
         StudyConfiguration copy = studyConfiguration.newInstance();
         stringStudyConfigurationMap.put(copy.getStudyName(), copy);
         intStudyConfigurationMap.put(copy.getStudyId(), copy);
-        return adaptor.updateStudyConfiguration(copy, options);
+        return studyDBAdaptor.updateStudyConfiguration(copy, options);
     }
-
 
     /**
      * Get studyIds from a list of studies.
@@ -353,6 +354,32 @@ public class StudyConfigurationManager implements AutoCloseable {
             }
         }
         return studyConfiguration;
+    }
+
+    public <E extends Exception> ProjectMetadata lockAndUpdateProject(UpdateFunction<ProjectMetadata, E> function)
+            throws StorageEngineException, E {
+        Objects.requireNonNull(function);
+        long lock;
+        try {
+            lock = projectDBAdaptor.lockProject(1000, 10000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Unable to lock the Project", e);
+        } catch (TimeoutException e) {
+            throw new StorageEngineException("Unable to lock the Project", e);
+        }
+        try {
+            ProjectMetadata projectMetadata = getProjectMetadata().first();
+            projectMetadata = function.update(projectMetadata);
+            projectDBAdaptor.updateProjectMetadata(projectMetadata);
+            return projectMetadata;
+        } finally {
+            projectDBAdaptor.unLockProject(lock);
+        }
+    }
+
+    public QueryResult<ProjectMetadata> getProjectMetadata() {
+        return projectDBAdaptor.getProjectMetadata();
     }
 
     /**
@@ -1005,6 +1032,6 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        adaptor.close();
+        studyDBAdaptor.close();
     }
 }

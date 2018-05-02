@@ -24,6 +24,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
@@ -43,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.metadata.MongoDBProjectMetadataDBAdaptor;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
@@ -83,6 +85,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         COLLECTION_VARIANTS("collection.variants", "variants"),
         COLLECTION_FILES("collection.files", "files"),
         COLLECTION_STUDIES("collection.studies",  "studies"),
+        COLLECTION_PROJECT("collection.project",  "project"),
         COLLECTION_STAGE("collection.stage",  "stage"),
         COLLECTION_ANNOTATION("collection.annotation",  "annot"),
         BULK_SIZE("bulkSize",  100),
@@ -476,10 +479,17 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         } else if (!options.getString(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
             return super.getStudyConfigurationManager();
         } else {
-            String collectionName = options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
+            String projectsCollectionName = options.getString(COLLECTION_PROJECT.key(), COLLECTION_PROJECT.defaultValue());
+            String studiesCollectionName = options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
             try {
-                studyConfigurationManager = new StudyConfigurationManager(new MongoDBStudyConfigurationDBAdaptor(getMongoDataStoreManager(),
-                        getMongoCredentials(), collectionName));
+                MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
+                MongoDataStore db = mongoDataStoreManager.get(
+                        getMongoCredentials().getMongoDbName(),
+                        getMongoCredentials().getMongoDBConfiguration());
+                studyConfigurationManager = new StudyConfigurationManager(
+                        new MongoDBProjectMetadataDBAdaptor(db, projectsCollectionName),
+                        new MongoDBStudyConfigurationDBAdaptor(db, studiesCollectionName)
+                );
                 return studyConfigurationManager;
 //                return getDBAdaptor(dbName).getStudyConfigurationManager();
             } catch (UnknownHostException e) {

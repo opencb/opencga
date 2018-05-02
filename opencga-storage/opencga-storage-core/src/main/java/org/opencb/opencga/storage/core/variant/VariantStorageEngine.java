@@ -49,7 +49,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
@@ -75,6 +74,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils.*;
 
@@ -381,8 +381,34 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
             throws StorageEngineException, VariantAnnotatorException {
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, getStorageEngineId(), params);
+        ProjectMetadata projectMetadata = readOrCreateProjectMetadata(params);
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
+                configuration, getStorageEngineId(), projectMetadata, params);
         return newVariantAnnotationManager(annotator);
+    }
+
+    private ProjectMetadata readOrCreateProjectMetadata(ObjectMap params) throws StorageEngineException {
+        ProjectMetadata projectMetadata = getStudyConfigurationManager().getProjectMetadata().first();
+        ObjectMap options = getMergedOptions(params);
+        if (projectMetadata == null
+                || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(VariantAnnotationManager.SPECIES)
+                || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(VariantAnnotationManager.ASSEMBLY)) {
+            projectMetadata = getStudyConfigurationManager().lockAndUpdateProject(pm -> {
+                if (pm == null) {
+                    pm = new ProjectMetadata();
+                }
+
+                if (StringUtils.isEmpty(pm.getSpecies())) {
+                    pm.setSpecies(toCellBaseSpeciesName(options.getString(VariantAnnotationManager.SPECIES)));
+                }
+                if (StringUtils.isEmpty(pm.getAssembly())) {
+                    pm.setAssembly(options.getString(VariantAnnotationManager.ASSEMBLY));
+                }
+
+                return pm;
+            });
+        }
+        return projectMetadata;
     }
 
     /**
@@ -639,21 +665,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {
-            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
-            List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
-            String species = getOptions().getString(VariantAnnotationManager.SPECIES);
-            String assembly = getOptions().getString(VariantAnnotationManager.ASSEMBLY);
-            if (!studyNames.isEmpty()) {
-                StudyConfiguration sc = studyConfigurationManager
-                        .getStudyConfiguration(studyNames.get(0), QueryOptions.empty()).first();
-                species = sc.getAttributes().getString(VariantAnnotationManager.SPECIES, species);
-                assembly= sc.getAttributes().getString(VariantAnnotationManager.ASSEMBLY, assembly);
-            }
+            final ProjectMetadata metadata = readOrCreateProjectMetadata(null);
+
+            String species = metadata.getSpecies();
+            String assembly = metadata.getAssembly();
+
             ClientConfiguration clientConfiguration = configuration.getCellbase().toClientConfiguration();
             if (StringUtils.isEmpty(species)) {
                 species = clientConfiguration.getDefaultSpecies();
             }
-            species = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species);
+            species = toCellBaseSpeciesName(species);
             cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, clientConfiguration));
         }
         return cellBaseUtils;
@@ -661,6 +682,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public ObjectMap getOptions() {
         return configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+    }
+
+    private ObjectMap getMergedOptions(ObjectMap params) {
+        ObjectMap options = new ObjectMap(getOptions());
+        if (params != null) {
+            params.forEach(options::putIfNotNull);
+        }
+        return options;
     }
 
     public VariantReaderUtils getVariantReaderUtils() {
@@ -674,7 +703,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException If object is null
      */
     public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        return new StudyConfigurationManager(new FileStudyConfigurationAdaptor());
+        return new StudyConfigurationManager(null, new FileStudyConfigurationAdaptor());
     }
 
     public VariantSearchManager getVariantSearchManager() throws StorageEngineException {

@@ -379,8 +379,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.VariantAnnotateCommandOptions annotateVariantsCommandOptions
                 = variantCommandOptions.annotateVariantsCommandOptions;
 
-        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-
         /*
          * Create Annotator
          */
@@ -397,12 +395,18 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (annotateVariantsCommandOptions.assembly != null) {
             options.put(VariantAnnotationManager.ASSEMBLY, annotateVariantsCommandOptions.assembly);
         }
-        options.putAll(annotateVariantsCommandOptions.commonOptions.params);
 
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, storageEngine, options);
-//            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
-// annotateVariantsCommandOptions.species, annotateVariantsCommandOptions.assembly);
-        DefaultVariantAnnotationManager variantAnnotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
+        String fileName = annotateVariantsCommandOptions.fileName == null
+                ? annotateVariantsCommandOptions.dbName
+                : annotateVariantsCommandOptions.fileName;
+        options.put(DefaultVariantAnnotationManager.FILE_NAME, fileName);
+
+        URI outputUri = UriUtils.createUri(annotateVariantsCommandOptions.outdir == null ? "." : annotateVariantsCommandOptions.outdir);
+        Path outDir = Paths.get(outputUri.resolve(".").getPath());
+
+        options.put(DefaultVariantAnnotationManager.OUT_DIR, outDir.toString());
+
+        options.putAll(annotateVariantsCommandOptions.commonOptions.params);
 
         /*
          * Annotation options
@@ -421,8 +425,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (!annotateVariantsCommandOptions.overwriteAnnotations) {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
-        URI outputUri = UriUtils.createUri(annotateVariantsCommandOptions.outdir == null ? "." : annotateVariantsCommandOptions.outdir);
-        Path outDir = Paths.get(outputUri.resolve(".").getPath());
 
         /*
          * Create and load annotations
@@ -433,27 +435,34 @@ public class VariantCommandExecutor extends CommandExecutor {
             doLoad = true;
         }
 
-        URI annotationFile = null;
-        if (doCreate) {
-            long start = System.currentTimeMillis();
-            logger.info("Starting annotation creation ");
-            annotationFile = variantAnnotationManager.createAnnotation(outDir, annotateVariantsCommandOptions.fileName == null
-                    ? annotateVariantsCommandOptions.dbName
-                    : annotateVariantsCommandOptions.fileName, query, new QueryOptions(options));
-            logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
+        if (doCreate && !doLoad) {
+            options.put(DefaultVariantAnnotationManager.CREATE, true);
         }
-
         if (doLoad) {
-            long start = System.currentTimeMillis();
-            logger.info("Starting annotation load");
-            if (annotationFile == null) {
-//                annotationFile = new URI(null, c.load, null);
-                annotationFile = Paths.get(annotateVariantsCommandOptions.load).toUri();
-            }
-            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions(options));
-
-            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+            options.put(DefaultVariantAnnotationManager.LOAD_FILE, annotateVariantsCommandOptions.load);
         }
+
+//        URI annotationFile = null;
+//        if (doCreate) {
+//            long start = System.currentTimeMillis();
+//            logger.info("Starting annotation creation ");
+//            annotationFile = variantAnnotationManager.createAnnotation(outDir, fileName, query, new QueryOptions(options));
+//            logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
+//        }
+//
+//        if (doLoad) {
+//            long start = System.currentTimeMillis();
+//            logger.info("Starting annotation load");
+//            if (annotationFile == null) {
+////                annotationFile = new URI(null, c.load, null);
+//                annotationFile = Paths.get(annotateVariantsCommandOptions.load).toUri();
+//            }
+//            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions(options));
+//
+//            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+//        }
+
+        variantStorageEngine.annotate(query, options);
     }
 
     private void copyAnnotation() throws VariantAnnotatorException, StorageEngineException {

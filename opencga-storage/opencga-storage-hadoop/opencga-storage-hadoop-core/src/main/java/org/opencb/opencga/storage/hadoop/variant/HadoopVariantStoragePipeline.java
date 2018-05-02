@@ -45,7 +45,6 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -397,6 +396,8 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         String variantsTableName = dbAdaptor.getTableNameGenerator().getVariantTableName();
         Connection jdbcConnection = dbAdaptor.getJdbcConnection();
 
+        final String species = getStudyConfigurationManager().getProjectMetadata().first().getSpecies();
+
         Long lock = null;
         try {
             long lockDuration = TimeUnit.MINUTES.toMillis(5);
@@ -418,7 +419,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             }
 
             try {
-                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                if (species.equals("hsapiens")) {
                     List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
                     phoenixHelper.addMissingColumns(jdbcConnection, variantsTableName, columns, true);
                 }
@@ -470,7 +471,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             try {
                 lock = getStudyConfigurationManager().lockStudy(studyConfiguration.getStudyId(), TimeUnit.MINUTES.toMillis(60),
                         TimeUnit.SECONDS.toMillis(5), PHOENIX_INDEX_LOCK_COLUMN);
-                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                if (species.equals("hsapiens")) {
                     List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(variantsTableName);
                     phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, VariantPhoenixHelper.DEFAULT_TABLE_TYPE,
                             variantsTableName, popFreqIndices, false);

@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,11 +56,13 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     protected final QueryOptions queryOptions;
     protected final boolean impreciseVariants;
 
-    public AbstractCellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap params) throws VariantAnnotatorException {
-        super(storageConfiguration, params);
-
-        species = toCellBaseSpeciesName(params.getString(VariantAnnotationManager.SPECIES));
-        assembly = params.getString(VariantAnnotationManager.ASSEMBLY);
+    public AbstractCellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap params)
+            throws VariantAnnotatorException {
+        super(storageConfiguration, projectMetadata, params);
+//        species = toCellBaseSpeciesName(params.getString(VariantAnnotationManager.SPECIES));
+//        assembly = params.getString(VariantAnnotationManager.ASSEMBLY);
+        species = projectMetadata.getSpecies();
+        assembly = projectMetadata.getAssembly();
         cellbaseVersion = storageConfiguration.getCellbase().getVersion();
 
         queryOptions = new QueryOptions();

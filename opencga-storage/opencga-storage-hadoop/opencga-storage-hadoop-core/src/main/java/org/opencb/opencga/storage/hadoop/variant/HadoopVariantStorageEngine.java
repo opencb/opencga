@@ -63,6 +63,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseProjectMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -774,10 +775,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        ObjectMap options = getOptions();
         HBaseCredentials dbCredentials = getDbCredentials();
         Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(), dbCredentials);
         return new StudyConfigurationManager(
+                new HBaseProjectMetadataDBAdaptor(
+                        getTableNameGenerator().getMetaTableName(), configuration, getHBaseManager(configuration)),
                 new HBaseStudyConfigurationDBAdaptor(
                         getTableNameGenerator().getMetaTableName(), configuration, getHBaseManager(configuration)));
     }

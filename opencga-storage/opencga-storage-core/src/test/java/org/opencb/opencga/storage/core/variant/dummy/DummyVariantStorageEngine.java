@@ -91,6 +91,6 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        return new StudyConfigurationManager(new DummyStudyConfigurationAdaptor());
+        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor());
     }
 }

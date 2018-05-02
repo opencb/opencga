@@ -30,9 +30,11 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -274,4 +276,31 @@ public abstract class StorageOperation {
 
         return prefix + userId + '_' + alias;
     }
+
+    public static void updateProjectMetadata(CatalogManager catalog, StudyConfigurationManager scm, String project, String sessionId)
+            throws CatalogException, StorageEngineException {
+        final Project p = catalog.getProjectManager().get(project,
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key())),
+                sessionId)
+                .first();
+
+        StorageOperation.updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease());
+    }
+
+    public static void updateProjectMetadata(StudyConfigurationManager scm, Project.Organism organism, int release)
+            throws CatalogException, StorageEngineException {
+        String scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(organism.getScientificName());
+
+        scm.lockAndUpdateProject(projectMetadata -> {
+            if (projectMetadata == null) {
+                projectMetadata = new ProjectMetadata();
+            }
+            projectMetadata.setSpecies(scientificName);
+            projectMetadata.setAssembly(organism.getAssembly());
+            projectMetadata.setRelease(release);
+            return projectMetadata;
+        });
+    }
+
 }

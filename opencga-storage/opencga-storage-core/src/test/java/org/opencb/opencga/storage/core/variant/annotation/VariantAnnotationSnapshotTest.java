@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -106,8 +107,8 @@ public abstract class VariantAnnotationSnapshotTest extends VariantStorageBaseTe
         public static final String ANNOT_KEY = "ANNOT_KEY";
         private String key;
 
-        public TestAnnotator(StorageConfiguration configuration, ObjectMap options) throws VariantAnnotatorException {
-            super(configuration, options);
+        public TestAnnotator(StorageConfiguration configuration, ProjectMetadata projectMetadata, ObjectMap options) throws VariantAnnotatorException {
+            super(configuration, projectMetadata, options);
             key = options.getString(ANNOT_KEY);
         }
 

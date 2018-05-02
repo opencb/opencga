@@ -261,7 +261,7 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
 
     private void ensureTableExists() throws IOException {
         if (tableExists == null || !tableExists) {
-            if (createMetaTableIfNeeded(hBaseManager, tableName, genomeHelper)) {
+            if (createMetaTableIfNeeded(hBaseManager, tableName, genomeHelper.getColumnFamily())) {
                 logger.info("Create table '{}' in hbase!", tableName);
             }
             tableExists = true;
