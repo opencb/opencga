@@ -35,7 +35,7 @@ public class AnnotationConverter {
 
 
     public List<Document>   annotationToDB(VariableSet variableSet, AnnotationSet annotationSet) {
-        return annotationToDB(variableSet, annotationSet.getName(), annotationSet.getAnnotations());
+        return annotationToDB(variableSet, annotationSet.getId(), annotationSet.getAnnotations());
     }
 
     public List<Document> annotationToDB(VariableSet variableSet, String annotationSetName, Map<String, Object> annotations) {
@@ -59,7 +59,7 @@ public class AnnotationConverter {
             } else {
                 arrayElems = Collections.emptyList();
             }
-            queue.add(new VariableLevel(variable, Collections.singletonList(variable.getName()), arrayElems));
+            queue.add(new VariableLevel(variable, Collections.singletonList(variable.getId()), arrayElems));
         }
 
         List<Document> documentList = new ArrayList<>();
@@ -87,7 +87,7 @@ public class AnnotationConverter {
                         }
 
                         List<String> keys = new ArrayList<>(variableLevel.getKeys());
-                        keys.add(tmpVariable.getName());
+                        keys.add(tmpVariable.getId());
 
                         if (arrayLevel.size() > 2) {
                             VariableLevel auxVariableLevel = new VariableLevel(tmpVariable, keys, variableLevel.getArrayLevel());
@@ -108,7 +108,7 @@ public class AnnotationConverter {
         return documentList;
     }
 
-    public List<AnnotationSet> fromDBToAnnotation(List<Document> annotationList, QueryOptions options) {
+    public List<AnnotationSet> fromDBToAnnotation(List<Document> annotationList, Document variableSetUidIdMap, QueryOptions options) {
         if (annotationList == null) {
             return null;
         } else if (annotationList.isEmpty()) {
@@ -132,8 +132,9 @@ public class AnnotationConverter {
                     // Flattened annotations
                     String annSetName =
                             (String) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SET_NAME.key());
-                    long variableSetId = (Long) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
-                    String compoundKey = annSetName + INTERNAL_DELIMITER + variableSetId;
+                    long variableSetUid = (Long) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
+                    String compoundKey = annSetName + INTERNAL_DELIMITER + variableSetUid;
+                    String variableSetId = variableSetUidIdMap.getString(String.valueOf(variableSetUid));
 
                     if (!annotationSetMap.containsKey(compoundKey)) {
                         annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>(),
@@ -157,8 +158,9 @@ public class AnnotationConverter {
                     // We create a new annotation set if the map doesn't still contain the key
                     String annSetName = (String) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SET_NAME
                             .key());
-                    long variableSetId = (Long) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
-                    String compoundKey = annSetName + INTERNAL_DELIMITER + variableSetId;
+                    long variableSetUid = (Long) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
+                    String compoundKey = annSetName + INTERNAL_DELIMITER + variableSetUid;
+                    String variableSetId = variableSetUidIdMap.getString(String.valueOf(variableSetUid));
 
                     if (!annotationSetMap.containsKey(compoundKey)) {
                         annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>(),

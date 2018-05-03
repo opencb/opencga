@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
@@ -41,6 +42,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -130,7 +132,6 @@ public class SampleWSServer extends OpenCGAWSServer {
                                 @QueryParam("study") String studyStr,
                                 @ApiParam(value = "DEPRECATED: use file instead", hidden = true) @QueryParam("fileId") String fileIdStr,
                                 @ApiParam(value = "file", required = true) @QueryParam("file") String fileStr,
-                                @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") Long variableSetId,
                                 @ApiParam(value = "variableSet", required = false) @QueryParam("variableSet") String variableSet) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
@@ -139,19 +140,10 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(fileStr)) {
                 fileIdStr = fileStr;
             }
-            if (variableSetId != null) {
-                variableSet = Long.toString(variableSetId);
-            }
-            Long varSetId;
-            if (StringUtils.isNotBlank(variableSet)) {
-                varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
-            } else {
-                varSetId = null;
-            }
 
             File pedigreeFile = catalogManager.getFileManager().get(studyIdStr, fileIdStr, null, sessionId).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
-            QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, varSetId, sessionId);
+            QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSet, sessionId);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -476,8 +468,18 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(variableSetId)) {
                 variableSet = variableSetId;
             }
-            QueryResult<AnnotationSet> queryResult = sampleManager.createAnnotationSet(sampleStr, studyStr, variableSet, params.name,
-                    params.annotations, sessionId);
+            sampleManager.update(studyStr, sampleStr, new ObjectMap()
+                            .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                    .append(AnnotationSetManager.ID, params.name)
+                                    .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet)
+                                    .append(AnnotationSetManager.ANNOTATIONS, params.annotations))
+                            ),
+                    QueryOptions.empty(), sessionId);
+            QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, new QueryOptions(QueryOptions.INCLUDE,
+                    Constants.ANNOTATION_SET_NAME + "." + params.name), sessionId);
+            List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
+            QueryResult<AnnotationSet> queryResult = new QueryResult<>(sampleStr, sampleQueryResult.getDbTime(), annotationSets.size(),
+                    annotationSets.size(), "", "", annotationSets);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);

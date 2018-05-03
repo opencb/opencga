@@ -944,14 +944,14 @@ public class StudyManager extends AbstractManager {
         attributes = ParamUtils.defaultObject(attributes, new HashMap<String, Object>());
 
         for (Variable variable : variables) {
-            ParamUtils.checkParameter(variable.getName(), "variable ID");
+            ParamUtils.checkParameter(variable.getId(), "variable ID");
             ParamUtils.checkObj(variable.getType(), "variable Type");
             variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
             variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));
             variable.setCategory(ParamUtils.defaultString(variable.getCategory(), ""));
             variable.setDependsOn(ParamUtils.defaultString(variable.getDependsOn(), ""));
             variable.setDescription(ParamUtils.defaultString(variable.getDescription(), ""));
-            variable.setTitle(ParamUtils.defaultString(variable.getTitle(), variable.getName()));
+            variable.setName(ParamUtils.defaultString(variable.getName(), variable.getId()));
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 

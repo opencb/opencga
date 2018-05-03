@@ -22,6 +22,8 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
@@ -32,6 +34,7 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdap
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -59,10 +62,29 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
                 new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
                 new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)), sessionId);
 
-        catalogManager.getSampleManager().createAnnotationSet("NA19600", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19600").append("age", 30), sessionId);
-        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19660").append("age", 35).append("other", "unknown"), sessionId);
-        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as2", new ObjectMap("name", "NA19660").append("age", 35).append("other", "asdf"), sessionId);
-
+        catalogManager.getSampleManager().update(String.valueOf(studyId), "NA19600", new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "as1")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19600").append("age", 30)))
+                        ),
+                QueryOptions.empty(), sessionId);
+        catalogManager.getSampleManager().update(String.valueOf(studyId), "NA19660", new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "as1")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19660").append("age", 35)
+                                        .append("other", "unknown")))
+                        ),
+                QueryOptions.empty(), sessionId);
+        catalogManager.getSampleManager().update(String.valueOf(studyId), "NA19660", new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "as2")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19660").append("age", 35)
+                                        .append("other", "asdf")))
+                        ),
+                QueryOptions.empty(), sessionId);
     }
 
     @Test

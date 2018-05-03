@@ -406,7 +406,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
             for (VariableSet variableSet : queryResult.getResult()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\n", variableSet.getId(), variableSet.getUid(), variableSet.getDescription(),
-                        variableSet.getVariables().stream().map(variable -> variable.getName()).collect(Collectors.joining(", "))));
+                        variableSet.getVariables().stream().map(variable -> variable.getId()).collect(Collectors.joining(", "))));
             }
         }
 

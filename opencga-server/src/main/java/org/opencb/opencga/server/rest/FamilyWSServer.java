@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -44,6 +45,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -366,8 +368,18 @@ public class FamilyWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(variableSetId)) {
                 variableSet = variableSetId;
             }
-            QueryResult<AnnotationSet> queryResult = familyManager.createAnnotationSet(familyStr, studyStr, variableSet, params.name,
-                    params.annotations, sessionId);
+            familyManager.update(studyStr, familyStr, new ObjectMap()
+                            .append(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                    .append(AnnotationSetManager.ID, params.name)
+                                    .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet)
+                                    .append(AnnotationSetManager.ANNOTATIONS, params.annotations))
+                            ),
+                    QueryOptions.empty(), sessionId);
+            QueryResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, new QueryOptions(QueryOptions.INCLUDE,
+                    Constants.ANNOTATION_SET_NAME + "." + params.name), sessionId);
+            List<AnnotationSet> annotationSets = familyQueryResult.first().getAnnotationSets();
+            QueryResult<AnnotationSet> queryResult = new QueryResult<>(familyStr, familyQueryResult.getDbTime(), annotationSets.size(),
+                    annotationSets.size(), "", "", annotationSets);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);

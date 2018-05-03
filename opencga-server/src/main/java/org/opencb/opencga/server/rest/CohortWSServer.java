@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CohortManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
@@ -77,7 +78,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyStr, variableSetId, null, sessionId).first();
                 Variable variable = null;
                 for (Variable v : variableSet.getVariables()) {
-                    if (v.getName().equals(variableName)) {
+                    if (v.getId().equals(variableName)) {
                         variable = v;
                         break;
                     }
@@ -412,8 +413,18 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(variableSetId)) {
                 variableSet = variableSetId;
             }
-            QueryResult<AnnotationSet> queryResult = cohortManager.createAnnotationSet(cohortStr, studyStr, variableSet,
-                    params.name, params.annotations, sessionId);
+            cohortManager.update(studyStr, cohortStr, new ObjectMap()
+                            .append(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                    .append(AnnotationSetManager.ID, params.name)
+                                    .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet)
+                                    .append(AnnotationSetManager.ANNOTATIONS, params.annotations))
+                            ),
+                    QueryOptions.empty(), sessionId);
+            QueryResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortStr, new QueryOptions(QueryOptions.INCLUDE,
+                    Constants.ANNOTATION_SET_NAME + "." + params.name), sessionId);
+            List<AnnotationSet> annotationSets = cohortQueryResult.first().getAnnotationSets();
+            QueryResult<AnnotationSet> queryResult = new QueryResult<>(cohortStr, cohortQueryResult.getDbTime(), annotationSets.size(),
+                    annotationSets.size(), "", "", annotationSets);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);

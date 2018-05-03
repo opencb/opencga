@@ -30,32 +30,36 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             next = filter.apply(next);
         }
 
+        Document attributes = (Document) next.get(SampleDBAdaptor.QueryParams.ATTRIBUTES.key());
+        if (attributes != null) {
+            Object individual = attributes.get("individual");
+
+            // individual might be a list of individuals sometimes. In those case, we will only take the latest individual (higher
+            // version)
+            if (individual instanceof List) {
+                Document myIndividual = null;
+                int version = 0;
+                for (Document ind : (List<Document>) individual) {
+                    if (ind != null && !ind.isEmpty() && ind.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()) > version) {
+                        myIndividual = ind;
+                        version = ind.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key());
+                    }
+                }
+                if (myIndividual != null) {
+                    attributes.put("individual", myIndividual);
+                } else {
+                    attributes.remove("individual");
+                }
+            }
+        }
+
         if (individualFilter != null) {
             // Filter the individual list
-            Document attributes = (Document) next.get(SampleDBAdaptor.QueryParams.ATTRIBUTES.key());
             if (attributes != null) {
                 Object individual = attributes.get("individual");
 
-                // individual might be a list of individuals sometimes. In those case, we will only take the latest individual (higher
-                // version)
-                if (individual instanceof List) {
-                    Document myIndividual = null;
-                    int version = 0;
-                    for (Document ind : (List<Document>) individual) {
-                        if (ind != null && !ind.isEmpty() && ind.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()) > version) {
-                            myIndividual = ind;
-                            version = ind.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key());
-                        }
-                    }
-                    if (myIndividual != null) {
-                        attributes.put("individual", individualFilter.apply(myIndividual));
-                    } else {
-                        attributes.put("individual", new Document());
-                    }
-                } else {
-                    if (individual != null && !((Document) individual).isEmpty()) {
-                        attributes.put("individual", individualFilter.apply((Document) individual));
-                    }
+                if (individual != null && !((Document) individual).isEmpty()) {
+                    attributes.put("individual", individualFilter.apply((Document) individual));
                 }
             }
         }

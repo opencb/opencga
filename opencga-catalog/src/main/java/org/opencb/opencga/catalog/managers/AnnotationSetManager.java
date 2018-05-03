@@ -48,11 +48,16 @@ import java.util.regex.Pattern;
 public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends ResourceManager<R> {
 
     public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^:=^<>~!$]+:)?([^=^<>~!:$]+)([=^<>~!$]+.+)$");
+    public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
 
     public static final String ANNOTATION_SETS = "annotationSets";
-    public static final String ANNOTATIONS = "annotationSets.annotations";
-    public static final String ANNOTATION_SET_NAME = "annotationSets.name";
-    public static final String VARIABLE_SET = "annotationSets.variableSetId";
+    public static final String ANNOTATIONS = "annotations";
+    public static final String ID = "id";
+    public static final String VARIABLE_SET_ID = "variableSetId";
+
+    public static final String ANNOTATION_SETS_ANNOTATIONS = "annotationSets.annotations";
+    public static final String ANNOTATION_SETS_ID = "annotationSets.id";
+    public static final String ANNOTATION_SETS_VARIABLE_SET_ID = "annotationSets.variableSetId";
 
     // Variables used to store additional information in the ObjectMap parameters variable containing the actual action to be performed
     // over the different AnnotationSets
@@ -74,53 +79,53 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         return null;
     }
 
-    /**
-     * General method to create an annotation set that will have to be implemented. The managers implementing it will have to check the
-     * validity of the sessionId and permissions and call the general createAnnotationSet implemented above.
-     *
-     * @param id                id of the entity being annotated.
-     * @param studyStr          study string.
-     * @param variableSetId     variable set id or name under which the annotation will be made.
-     * @param annotationSetName annotation set name that will be used for the annotation.
-     * @param annotations       map of annotations to create the annotation set.
-     * @param sessionId         session id of the user asking for the operation.
-     * @return a queryResult object with the annotation set created.
-     * @throws CatalogException when the session id is not valid, the user does not have permissions or any of the annotation
-     *                          parameters are not valid.
-     */
-    public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
-                                                          String annotationSetName, Map<String, Object> annotations, String sessionId)
-            throws CatalogException {
-        MyResource resource = getUid(id, studyStr, sessionId);
-        MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId, studyStr, sessionId);
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetResource.getResourceId(), annotations,
-                Collections.emptyMap());
-        ObjectMap parameters;
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
-
-        try {
-            parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet));
-            parameters = new ObjectMap(ANNOTATION_SETS, Arrays.asList(parameters));
-        } catch (JsonProcessingException e) {
-            logger.error("Error parsing AnnotationSet {} to ObjectMap: {}", annotationSet, e.getMessage(), e);
-            throw new CatalogException("Error parsing AnnotationSet to ObjectMap");
-        }
-
-        QueryResult<R> update = update(studyStr, id, parameters, QueryOptions.empty(), sessionId);
-        if (update.getNumResults() == 0) {
-            return new QueryResult<>("Create annotation set", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
-                    Collections.emptyList());
-        } else {
-            Query query = new Query("uid", resource.getResource().getUid());
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
-
-            QueryResult<Annotable> queryResult = (QueryResult<Annotable>) get(studyStr, query, options, sessionId);
-            return new QueryResult<>("Create annotation set", update.getDbTime(), queryResult.first().getAnnotationSets().size(),
-                    queryResult.first().getAnnotationSets().size(), queryResult.getWarningMsg(), queryResult.getErrorMsg(),
-                    queryResult.first().getAnnotationSets());
-        }
-
-    }
+//    /**
+//     * General method to create an annotation set that will have to be implemented. The managers implementing it will have to check the
+//     * validity of the sessionId and permissions and call the general createAnnotationSet implemented above.
+//     *
+//     * @param id                id of the entity being annotated.
+//     * @param studyStr          study string.
+//     * @param variableSetId     variable set id or name under which the annotation will be made.
+//     * @param annotationSetName annotation set name that will be used for the annotation.
+//     * @param annotations       map of annotations to create the annotation set.
+//     * @param sessionId         session id of the user asking for the operation.
+//     * @return a queryResult object with the annotation set created.
+//     * @throws CatalogException when the session id is not valid, the user does not have permissions or any of the annotation
+//     *                          parameters are not valid.
+//     */
+//    @Deprecated
+//    public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
+//                                                          String annotationSetName, Map<String, Object> annotations, String sessionId)
+//            throws CatalogException {
+//        MyResource resource = getUid(id, studyStr, sessionId);
+////        MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId, studyStr, sessionId);
+//        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, annotations, Collections.emptyMap());
+//        ObjectMap parameters;
+//        ObjectMapper jsonObjectMapper = new ObjectMapper();
+//
+//        try {
+//            parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet));
+//            parameters = new ObjectMap(ANNOTATION_SETS, Arrays.asList(parameters));
+//        } catch (JsonProcessingException e) {
+//            logger.error("Error parsing AnnotationSet {} to ObjectMap: {}", annotationSet, e.getMessage(), e);
+//            throw new CatalogException("Error parsing AnnotationSet to ObjectMap");
+//        }
+//
+//        QueryResult<R> update = update(studyStr, id, parameters, QueryOptions.empty(), sessionId);
+//        if (update.getNumResults() == 0) {
+//            return new QueryResult<>("Create annotation set", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
+//                    Collections.emptyList());
+//        } else {
+//            Query query = new Query("uid", resource.getResource().getUid());
+//            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+//
+//            QueryResult<Annotable> queryResult = (QueryResult<Annotable>) get(studyStr, query, options, sessionId);
+//            return new QueryResult<>("Create annotation set", update.getDbTime(), queryResult.first().getAnnotationSets().size(),
+//                    queryResult.first().getAnnotationSets().size(), queryResult.getWarningMsg(), queryResult.getErrorMsg(),
+//                    queryResult.first().getAnnotationSets());
+//        }
+//
+//    }
 
     /**
      * Update the values of the annotation set.
@@ -137,7 +142,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
     public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
                                                           Map<String, Object> newAnnotations, String sessionId) throws CatalogException {
         MyResource resource = getUid(id, studyStr, sessionId);
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, -1, newAnnotations, Collections.emptyMap());
+        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, null, newAnnotations, Collections.emptyMap());
         ObjectMap parameters;
         ObjectMapper jsonObjectMapper = new ObjectMapper();
 
@@ -252,12 +257,12 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
         List<String> returnedProjection = new ArrayList<>(projectionList.size());
         for (String projection : projectionList) {
-            if (projection.startsWith(ANNOTATIONS + ".")) {
-                returnedProjection.add(projection.replace(ANNOTATIONS + ".", Constants.ANNOTATION + "."));
-            } else if (projection.startsWith(VARIABLE_SET + ".")) {
-                returnedProjection.add(projection.replace(VARIABLE_SET + ".", Constants.VARIABLE_SET + "."));
-            } else if (projection.startsWith(ANNOTATION_SET_NAME + ".")) {
-                returnedProjection.add(projection.replace(ANNOTATION_SET_NAME + ".", Constants.ANNOTATION_SET_NAME + "."));
+            if (projection.startsWith(ANNOTATION_SETS_ANNOTATIONS + ".")) {
+                returnedProjection.add(projection.replace(ANNOTATION_SETS_ANNOTATIONS + ".", Constants.ANNOTATION + "."));
+            } else if (projection.startsWith(ANNOTATION_SETS_VARIABLE_SET_ID + ".")) {
+                returnedProjection.add(projection.replace(ANNOTATION_SETS_VARIABLE_SET_ID + ".", Constants.VARIABLE_SET + "."));
+            } else if (projection.startsWith(ANNOTATION_SETS_ID + ".")) {
+                returnedProjection.add(projection.replace(ANNOTATION_SETS_ID + ".", Constants.ANNOTATION_SET_NAME + "."));
             } else {
                 returnedProjection.add(projection);
             }
@@ -320,6 +325,9 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
                 if (annotation.startsWith(Constants.VARIABLE_SET)) {
                     String variableSet = matcher.group(3);
+                    // Obtain the operator to take it out and get only the actual value
+                    String operator = getOperator(variableSet);
+                    variableSet = variableSet.replace(operator, "");
 
                     if (checkConfidentialPermission && !confidentialPermissionChecked && variableSetMap.get(variableSet).isConfidential()) {
                         // We only check the confidential permission if needed once
@@ -327,7 +335,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                 StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                         confidentialPermissionChecked = true;
                     }
-                    annotationList.add(annotation);
+                    annotationList.add(Constants.VARIABLE_SET + operator + variableSetMap.get(variableSet).getUid());
                     continue;
                 }
 
@@ -339,8 +347,8 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                     // Obtain the variable set for the annotations
                     variableSet = searchVariableSetForVariable(variableTypeMap, key);
                 } else {
-                    // Remove the : at the end of the variableSet
-                    variableSet = variableSet.replace(":", "");
+                    // Remove the : at the end of the variableSet and convert the id into the uid
+                    variableSet = String.valueOf(variableSetMap.get(variableSet.replace(":", "")).getUid());
 
                     // Check if the variable set and the variable exist
                     if (!variableTypeMap.containsKey(variableSet)) {
@@ -373,6 +381,14 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         if (!queriedVariableTypeMap.isEmpty()) {
             query.put(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, queriedVariableTypeMap);
         }
+    }
+
+    private String getOperator(String queryValue) {
+        Matcher matcher = OPERATION_PATTERN.matcher(queryValue);
+        if (matcher.find()) {
+            return matcher.group(2);
+        }
+        return null;
     }
 
     private String searchVariableSetForVariable(Map<String, Map<String, QueryParam.Type>> variableTypeMap, String variableKey)
@@ -408,7 +424,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         List<VariableSet> variableSets = studyQueryResult.first().getVariableSets();
         if (variableSets != null) {
             for (VariableSet variableSet : variableSets) {
-                variableSetMap.put(String.valueOf(variableSet.getUid()), variableSet);
+                variableSetMap.put(variableSet.getId(), variableSet);
             }
         }
 
@@ -453,7 +469,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 // We add the new nested variables to the queue
                 for (Variable nestedVariable : variable.getVariableSet()) {
                     List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
-                    keys.add(variable.getName());
+                    keys.add(variable.getId());
                     queue.add(new VariableDepthMap(nestedVariable, keys));
                 }
             } else {
@@ -489,7 +505,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         throw new CatalogDBException("Unexpected variable type detected: " + variable.getType());
                 }
                 List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
-                keys.add(variable.getName());
+                keys.add(variable.getId());
                 variableTypeMap.put(StringUtils.join(keys, "."), type);
             }
         }
@@ -515,9 +531,9 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             throw new CatalogException("Impossible annotating variables from a study without VariableSets defined");
         }
 
-        Map<Long, VariableSet> variableSetMap = new HashMap<>();
+        Map<String, VariableSet> variableSetMap = new HashMap<>();
         for (VariableSet variableSet : variableSetList) {
-            variableSetMap.put(variableSet.getUid(), variableSet);
+            variableSetMap.put(variableSet.getId(), variableSet);
         }
 
         List<AnnotationSet> consideredAnnotationSetsList = new ArrayList<>(annotationSetList.size());
@@ -525,7 +541,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         Iterator<AnnotationSet> iterator = annotationSetList.iterator();
         while (iterator.hasNext()) {
             AnnotationSet annotationSet = iterator.next();
-            String annotationSetName = annotationSet.getName();
+            String annotationSetName = annotationSet.getId();
             ParamUtils.checkAlias(annotationSetName, "annotationSetName");
 
             // Get the variable set
@@ -544,7 +560,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         return variableSetList;
     }
 
-    protected List<VariableSet> checkUpdateAnnotationsAndExtractVariableSets(MyResource<? extends Annotable> resource,
+    public List<VariableSet> checkUpdateAnnotationsAndExtractVariableSets(MyResource<? extends Annotable> resource,
                                                                              ObjectMap parameters, AnnotationSetDBAdaptor dbAdaptor)
             throws CatalogException {
         List<VariableSet> variableSetList = null;
@@ -574,9 +590,9 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         throw new CatalogException("Cannot annotate anything until at least a VariableSet has been defined in the study");
                     }
                     // Create a map variableSetId - VariableSet
-                    Map<Long, VariableSet> variableSetMap = new HashMap<>();
+                    Map<String, VariableSet> variableSetMap = new HashMap<>();
                     for (VariableSet variableSet : variableSetList) {
-                        variableSetMap.put(variableSet.getUid(), variableSet);
+                        variableSetMap.put(variableSet.getId(), variableSet);
                     }
 
                     // Get all the annotation sets from the entry
@@ -586,7 +602,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                     List<AnnotationSet> annotationSetList = new ArrayList<>();
                     if (annotationSetQueryResult != null && annotationSetQueryResult.getNumResults() > 0) {
                         for (AnnotationSet annotationSet : annotationSetQueryResult.getResult()) {
-                            annotationSetMap.put(annotationSet.getName(), annotationSet);
+                            annotationSetMap.put(annotationSet.getId(), annotationSet);
                         }
                         annotationSetList.addAll(annotationSetQueryResult.getResult());
                     }
@@ -606,12 +622,12 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
                         // Validate that the annotation changes will still keep the annotation sets persistent (if already existed)
 
-                        if (annotationSetMap.containsKey(annotationSet.getName())) {
+                        if (annotationSetMap.containsKey(annotationSet.getId())) {
                             // The annotationSet already exists so user wants to perform an update of the annotations
 
-                            AnnotationSet annotationSetDB = annotationSetMap.get(annotationSet.getName());
-                            if (annotationSet.getVariableSetId() > 0
-                                    && annotationSet.getVariableSetId() != annotationSetDB.getVariableSetId()) {
+                            AnnotationSet annotationSetDB = annotationSetMap.get(annotationSet.getId());
+                            if (StringUtils.isNotEmpty(annotationSet.getVariableSetId())
+                                    && !annotationSet.getVariableSetId().equals(annotationSetDB.getVariableSetId())) {
                                 throw new CatalogException("The VariableSetId and the AnnotationSetName of the annotation to be updated "
                                         + "do not match any of the AnnotationSets stored in the DB");
                             }
@@ -619,7 +635,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                             VariableSet variableSet = variableSetMap.get(annotationSetDB.getVariableSetId());
                             if (variableSet == null) {
                                 logger.error("Critical error. The AnnotationSet {} from the sample {} from the DB points to "
-                                                + "the non-existing VariableSet {}!!", annotationSet.getName(),
+                                                + "the non-existing VariableSet {}!!", annotationSet.getId(),
                                         resource.getResource().getId(), annotationSet.getVariableSetId());
                                 throw new CatalogException("Internal error: Something unexpected happened. Please, report the error to "
                                         + "the OpenCGA admins");
@@ -645,7 +661,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                             // Add the new annotationSet to the list of annotations to be updated
                             finalAnnotationList.add(annotationSetDB);
 
-                            annotationSetAction.put(annotationSetDB.getName(), Action.UPDATE);
+                            annotationSetAction.put(annotationSetDB.getId(), Action.UPDATE);
 
                         } else if (variableSetMap.containsKey(annotationSet.getVariableSetId())) {
                             // Create new annotationSet
@@ -668,7 +684,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                             // Add the new annotationSet to the list of annotations to be updated
                             finalAnnotationList.add(annotationSet);
 
-                            annotationSetAction.put(annotationSet.getName(), Action.CREATE);
+                            annotationSetAction.put(annotationSet.getId(), Action.CREATE);
                         } else {
                             throw new CatalogException("Neither the annotationSetName nor the variableSetId matches an existing "
                                     + "AnnotationSet to perform an update or a VariableSet to create a new annotation.");
@@ -707,9 +723,9 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             }
 
             // Create a map variableSetId - VariableSet
-            Map<Long, VariableSet> variableSetMap = new HashMap<>();
+            Map<String, VariableSet> variableSetMap = new HashMap<>();
             for (VariableSet variableSet : variableSetList) {
-                variableSetMap.put(variableSet.getUid(), variableSet);
+                variableSetMap.put(variableSet.getId(), variableSet);
             }
 
             // Get all the annotation sets from the entry
@@ -718,7 +734,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             Map<String, AnnotationSet> annotationSetMap = new HashMap<>();
             if (annotationSetQueryResult != null && annotationSetQueryResult.getNumResults() > 0) {
                 for (AnnotationSet annotationSet : annotationSetQueryResult.getResult()) {
-                    annotationSetMap.put(annotationSet.getName(), annotationSet);
+                    annotationSetMap.put(annotationSet.getId(), annotationSet);
                 }
             }
 

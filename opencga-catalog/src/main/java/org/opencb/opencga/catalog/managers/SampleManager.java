@@ -234,7 +234,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 authorizationManager.checkSamplePermission(study.getUid(), sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
             }
         }
-        addIndividualInformation(sampleQueryResult, study, options, sessionId);
 
         return sampleQueryResult;
     }
@@ -267,7 +266,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
-        addIndividualInformation(queryResult, study, options, sessionId);
         return queryResult;
     }
 
@@ -785,49 +783,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         QueryResult<Sample> queryResult = sampleDBAdaptor.update(resource.getResource().getUid(), parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.sample, resource.getResource().getUid(), resource.getUser(), parameters, null, null);
-
-        addIndividualInformation(queryResult, resource.getStudy(), options, sessionId);
         return queryResult;
-    }
-
-    private void addIndividualInformation(QueryResult<Sample> queryResult, Study study, QueryOptions options, String sessionId) {
-        if (options == null || options.getBoolean("lazy", true)) {
-            return;
-        }
-
-        List<String> sampleIds = queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        if (sampleIds.size() == 0) {
-            return;
-        }
-
-        Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleIds);
-        try {
-            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(study.getFqn(), query,
-                    QueryOptions.empty(), sessionId);
-            // We create a map of sampleId - corresponding Individual
-            Map<String, Individual> sampleIndividualMap = new HashMap<>();
-            for (Individual individual : individualQueryResult.getResult()) {
-                for (Sample sample : individual.getSamples()) {
-                    sampleIndividualMap.put(sample.getId(), individual);
-                }
-            }
-
-            // And now we set the corresponding individuals where possible
-            for (Sample sample : queryResult.getResult()) {
-                if (sampleIndividualMap.containsKey(sample.getId())) {
-                    sample.setIndividual(sampleIndividualMap.get(sample.getId()));
-                    if (sample.getAttributes() == null) {
-                        sample.setAttributes(new HashMap<>());
-                    }
-                    sample.getAttributes().put("individual", sample.getIndividual());
-                }
-            }
-        } catch (CatalogException e) {
-            logger.error("Could not fetch individual information to complete sample result: {}", e.getMessage(), e);
-            queryResult.setWarningMsg("Could not fetch individual information to complete sample result: " + e.getMessage());
-        }
-
     }
 
     @Deprecated

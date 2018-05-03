@@ -151,7 +151,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
             List<AnnotationSet> annotationSets = catalogSample.getAnnotationSets();
             sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));
             for (AnnotationSet annotationSet : annotationSets) {
-                String prefix = annotationSets.size() > 1 ? annotationSet.getName() + '.' : "";
+                String prefix = annotationSets.size() > 1 ? annotationSet.getId() + '.' : "";
                 Map<String, Object> annotations = annotationSet.getAnnotations();
                 for (Map.Entry<String, Object> annotationEntry : annotations.entrySet()) {
                     Object value = annotationEntry.getValue();

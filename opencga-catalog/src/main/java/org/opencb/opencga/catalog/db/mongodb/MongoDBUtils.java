@@ -568,7 +568,7 @@ class MongoDBUtils {
                     }
                     if (variable.getVariableSet() != null) {
                         Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
+                                .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
                         if (subVariableMap.containsKey(r)) {
                             variable = subVariableMap.get(r);
                             variableType = variable.getType();
@@ -636,7 +636,7 @@ class MongoDBUtils {
                         }
                         if (variable.getVariableSet() != null) {
                             Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                    .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
+                                    .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
                             if (subVariableMap.containsKey(r)) {
                                 variable = subVariableMap.get(r);
                                 variableType = variable.getType();

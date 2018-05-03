@@ -34,10 +34,7 @@ import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -72,6 +69,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String INTERNAL_DELIMITER = "__";
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
+    protected Map<Long, String> variableUidIdMap;
 
     public MongoDBAdaptor(Logger logger) {
         super(logger);

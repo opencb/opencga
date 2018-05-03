@@ -615,7 +615,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         long startTime = startQuery();
 
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
-        checkVariableNotInVariableSet(variableSet.first(), variable.getName());
+        checkVariableNotInVariableSet(variableSet.first(), variable.getId());
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
         Bson update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
@@ -695,7 +695,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
         Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
-                Filters.eq("name", name));
+                Filters.eq("id", name));
         QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
         if (queryResult.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Remove field from Variable Set. Could not remove the field " + name
@@ -713,7 +713,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     private Variable getVariable(VariableSet variableSet, String variableId) throws CatalogDBException {
         for (Variable variable : variableSet.getVariables()) {
-            if (variable.getName().equals(variableId)) {
+            if (variable.getId().equals(variableId)) {
                 return variable;
             }
         }

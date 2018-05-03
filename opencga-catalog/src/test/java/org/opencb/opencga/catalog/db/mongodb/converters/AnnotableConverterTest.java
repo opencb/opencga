@@ -16,7 +16,7 @@ public class AnnotableConverterTest {
 
     @Test
     public void annotationToDB1() throws Exception {
-        Variable v = new Variable().setName("a").setType(Variable.VariableType.BOOLEAN);
+        Variable v = new Variable().setId("a").setType(Variable.VariableType.BOOLEAN);
         Set<Variable> setOfVariables = new HashSet<>();
         setOfVariables.add(v);
         VariableSet variableSet = new VariableSet().setVariables(setOfVariables).setUid(1);
@@ -42,11 +42,11 @@ public class AnnotableConverterTest {
     public void annotationToDB2() throws Exception {
         // Variable set:   a: [{ b: [{c: xx} ] }]
         Set<Variable> bcSet = new HashSet<>();
-        bcSet.add(new Variable().setName("c").setType(Variable.VariableType.BOOLEAN));
+        bcSet.add(new Variable().setId("c").setType(Variable.VariableType.BOOLEAN));
         Set<Variable> bSet = new HashSet<>();
-        bSet.add(new Variable().setName("b").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bcSet));
+        bSet.add(new Variable().setId("b").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bcSet));
         Set<Variable> rootSet = new HashSet<>();
-        rootSet.add(new Variable().setName("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bSet));
+        rootSet.add(new Variable().setId("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bSet));
 
         VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1);
 
@@ -87,11 +87,11 @@ public class AnnotableConverterTest {
     public void annotationToDB3() throws Exception {
         // Variable set:   a: [{ b: {c: [xx] } }]
         Set<Variable> bcSet = new HashSet<>();
-        bcSet.add(new Variable().setName("c").setMultiValue(true).setType(Variable.VariableType.BOOLEAN));
+        bcSet.add(new Variable().setId("c").setMultiValue(true).setType(Variable.VariableType.BOOLEAN));
         Set<Variable> bSet = new HashSet<>();
-        bSet.add(new Variable().setName("b").setType(Variable.VariableType.OBJECT).setVariableSet(bcSet));
+        bSet.add(new Variable().setId("b").setType(Variable.VariableType.OBJECT).setVariableSet(bcSet));
         Set<Variable> rootSet = new HashSet<>();
-        rootSet.add(new Variable().setName("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bSet));
+        rootSet.add(new Variable().setId("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bSet));
 
         VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1);
 
@@ -128,30 +128,30 @@ public class AnnotableConverterTest {
         // Variable set:   a: { ab1: {ab1c1: [boolean], ab1c2: string }, ab2: [{ ab2c1: { ab2c1d1: [numbers], ab2c1d2: string  } }],
         //                      ab3: [{ ab3c1: [{ ab3c1d1: [string], ab3c1d2: number }] }] }
         Set<Variable> ab1Set = new HashSet<>();
-        ab1Set.add(new Variable().setName("ab1c1").setMultiValue(true).setType(Variable.VariableType.BOOLEAN));
-        ab1Set.add(new Variable().setName("ab1c2").setType(Variable.VariableType.TEXT));
+        ab1Set.add(new Variable().setId("ab1c1").setMultiValue(true).setType(Variable.VariableType.BOOLEAN));
+        ab1Set.add(new Variable().setId("ab1c2").setType(Variable.VariableType.TEXT));
 
         Set<Variable> ab2c1Set = new HashSet<>();
-        ab2c1Set.add(new Variable().setName("ab2c1d1").setMultiValue(true).setType(Variable.VariableType.INTEGER));
-        ab2c1Set.add(new Variable().setName("ab2c1d2").setType(Variable.VariableType.TEXT));
+        ab2c1Set.add(new Variable().setId("ab2c1d1").setMultiValue(true).setType(Variable.VariableType.INTEGER));
+        ab2c1Set.add(new Variable().setId("ab2c1d2").setType(Variable.VariableType.TEXT));
         Set<Variable> ab2Set = new HashSet<>();
-        ab2Set.add(new Variable().setName("ab2c1").setType(Variable.VariableType.OBJECT).setVariableSet(ab2c1Set));
+        ab2Set.add(new Variable().setId("ab2c1").setType(Variable.VariableType.OBJECT).setVariableSet(ab2c1Set));
 
         Set<Variable> ab3c1Set = new HashSet<>();
-        ab3c1Set.add(new Variable().setName("ab3c1d1").setMultiValue(true).setType(Variable.VariableType.TEXT));
-        ab3c1Set.add(new Variable().setName("ab3c1d2").setType(Variable.VariableType.DOUBLE));
+        ab3c1Set.add(new Variable().setId("ab3c1d1").setMultiValue(true).setType(Variable.VariableType.TEXT));
+        ab3c1Set.add(new Variable().setId("ab3c1d2").setType(Variable.VariableType.DOUBLE));
         Set<Variable> ab3Set = new HashSet<>();
-        ab3Set.add(new Variable().setName("ab3c1").setType(Variable.VariableType.OBJECT).setMultiValue(true).setVariableSet(ab3c1Set));
+        ab3Set.add(new Variable().setId("ab3c1").setType(Variable.VariableType.OBJECT).setMultiValue(true).setVariableSet(ab3c1Set));
 
         Set<Variable> aSet = new HashSet<>();
-        aSet.add(new Variable().setName("ab1").setType(Variable.VariableType.OBJECT).setVariableSet(ab1Set));
-        aSet.add(new Variable().setName("ab2").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(ab2Set));
-        aSet.add(new Variable().setName("ab3").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(ab3Set));
+        aSet.add(new Variable().setId("ab1").setType(Variable.VariableType.OBJECT).setVariableSet(ab1Set));
+        aSet.add(new Variable().setId("ab2").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(ab2Set));
+        aSet.add(new Variable().setId("ab3").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(ab3Set));
 
         Set<Variable> rootSet = new HashSet<>();
-        rootSet.add(new Variable().setName("a").setType(Variable.VariableType.OBJECT).setVariableSet(aSet));
+        rootSet.add(new Variable().setId("a").setType(Variable.VariableType.OBJECT).setVariableSet(aSet));
 
-        VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1);
+        VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1).setId("vsId");
 
         // We create a dummy full annotation for the variable set we just created
         Map<String, Object> myMap = new HashMap<>();
@@ -197,10 +197,11 @@ public class AnnotableConverterTest {
         List<Document> documentList = annotableConverter.annotationToDB(vs, "annotName", myMap);
 
         // We convert it back
-        List<AnnotationSet> annotationSets = annotableConverter.fromDBToAnnotation(documentList, new QueryOptions());
+        List<AnnotationSet> annotationSets = annotableConverter.fromDBToAnnotation(documentList, new Document()
+                .append(String.valueOf(vs.getUid()), vs.getId()), new QueryOptions());
         assertEquals(1, annotationSets.size());
-        assertEquals("annotName", annotationSets.get(0).getName());
-        assertEquals(vs.getUid(), annotationSets.get(0).getVariableSetId());
+        assertEquals("annotName", annotationSets.get(0).getId());
+        assertEquals(vs.getId(), annotationSets.get(0).getVariableSetId());
 
         // And back again to the mongo properties
         List<Document> documentList2 = annotableConverter.annotationToDB(vs, "annotName", annotationSets.get(0).getAnnotations());

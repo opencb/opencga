@@ -237,7 +237,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     new Document("$set", familyParameters), new QueryOptions("multi", true));
 
             applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
+            return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
         }
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
@@ -245,7 +245,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             if (!familyParameters.isEmpty()) {
                 QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
                         new Document("$set", familyParameters), new QueryOptions("multi", true));
-                return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
+                return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
             }
         } else {
             return updateAndCreateNewVersion(query, familyParameters, annotationUpdateMap, queryOptions);

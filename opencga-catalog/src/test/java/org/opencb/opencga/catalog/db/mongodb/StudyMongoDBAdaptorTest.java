@@ -88,7 +88,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetQueryResult.first().getUid(), "NAME", user3.getId());
         assertTrue(queryResult.first().getVariables()
                 .stream()
-                .filter(v -> "NAME".equals(v.getName()))
+                .filter(v -> "NAME".equals(v.getId()))
                 .collect(Collectors.toList()).isEmpty());
     }
 
@@ -138,7 +138,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         QueryResult<VariableSet> queryResult = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
 
         // Check that the new variable has been inserted in the variableSet
-        assertTrue(queryResult.first().getVariables().stream().filter(variable1 -> variable.getName().equals(variable1.getName())).findAny()
+        assertTrue(queryResult.first().getVariables().stream().filter(variable1 -> variable.getId().equals(variable1.getId())).findAny()
                 .isPresent());
 
         // We try to insert the same one again.

@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
@@ -248,26 +249,70 @@ public class FileManagerTest extends GenericTest {
         s_9 = catalogManager.getSampleManager().create(studyFqn, "s_9", "", "", null, false, null, new HashMap<>(), null, new
                 QueryOptions(), sessionIdUser).first().getId();
 
-        catalogManager.getSampleManager().createAnnotationSet(s_1, studyFqn, Long.toString(vs.getUid()), "annot1",
-                new ObjectMap("NAME", "s_1").append("AGE", 6).append("ALIVE", true).append("PHEN", "CONTROL"), sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(s_2, studyFqn, Long.toString(vs.getUid()), "annot1",
-                new ObjectMap("NAME", "s_2").append("AGE", 10).append("ALIVE", false)
-
-                .append("PHEN", "CASE"), sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(s_3, studyFqn, Long.toString(vs.getUid()), "annot1",
-                new ObjectMap("NAME", "s_3").append("AGE", 15).append("ALIVE", true).append("PHEN", "CONTROL"), sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(s_4, studyFqn, Long.toString(vs.getUid()), "annot1",
-                new ObjectMap("NAME", "s_4").append("AGE", 22).append("ALIVE", false)
-
-                .append("PHEN", "CONTROL"), sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(s_5, studyFqn, Long.toString(vs.getUid()), "annot1",
-                new ObjectMap("NAME", "s_5").append("AGE", 29).append("ALIVE", true).append("PHEN", "CASE"), sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(s_6, studyFqn, Long.toString(vs.getUid()), "annot2",
-                new ObjectMap("NAME", "s_6").append("AGE", 38).append("ALIVE", true).append("PHEN", "CONTROL"), sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(s_7, studyFqn, Long.toString(vs.getUid()), "annot2",
-                new ObjectMap("NAME", "s_7").append("AGE", 46).append("ALIVE", false).append("PHEN", "CASE"), sessionIdUser);
-        catalogManager.getSampleManager().createAnnotationSet(s_8, studyFqn, Long.toString(vs.getUid()), "annot2",
-                new ObjectMap("NAME", "s_8").append("AGE", 72).append("ALIVE", true).append("PHEN", "CONTROL"), sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, s_1, new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "annot1")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, vs.getId())
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "s_1").append("AGE", 6)
+                                        .append("ALIVE", true).append("PHEN", "CONTROL")))
+                        ),
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, s_2, new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "annot1")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, vs.getId())
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "s_2").append("AGE", 10)
+                                        .append("ALIVE", false).append("PHEN", "CASE")))
+                        ),
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, s_3, new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "annot1")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, vs.getId())
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "s_3").append("AGE", 15)
+                                        .append("ALIVE", true).append("PHEN", "CONTROL")))
+                        ),
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, s_4, new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "annot1")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, vs.getId())
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "s_4").append("AGE", 22)
+                                        .append("ALIVE", false).append("PHEN", "CONTROL")))
+                        ),
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, s_5, new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "annot1")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, vs.getId())
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "s_5").append("AGE", 29)
+                                        .append("ALIVE", true).append("PHEN", "CASE")))
+                        ),
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, s_6, new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "annot2")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, vs.getId())
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "s_6").append("AGE", 38)
+                                        .append("ALIVE", true).append("PHEN", "CONTROL")))
+                        ),
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, s_7, new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "annot2")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, vs.getId())
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "s_7").append("AGE", 46)
+                                        .append("ALIVE", false).append("PHEN", "CASE")))
+                        ),
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().update(studyFqn, s_8, new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
+                                .append(AnnotationSetManager.ID, "annot2")
+                                .append(AnnotationSetManager.VARIABLE_SET_ID, vs.getId())
+                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "s_8").append("AGE", 72)
+                                        .append("ALIVE", true).append("PHEN", "CONTROL")))
+                        ),
+                QueryOptions.empty(), sessionIdUser);
 
         catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
                 Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), sessionIdUser);

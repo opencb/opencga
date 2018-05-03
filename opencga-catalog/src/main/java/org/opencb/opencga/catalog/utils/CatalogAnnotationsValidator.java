@@ -36,10 +36,10 @@ public class CatalogAnnotationsValidator {
     public static void checkVariableSet(VariableSet variableSet) throws CatalogException {
         Set<String> variableIdSet = new HashSet<>();
         for (Variable variable : variableSet.getVariables()) {
-            if (variableIdSet.contains(variable.getName())) {
+            if (variableIdSet.contains(variable.getId())) {
                 throw new CatalogException("Duplicated variable Id");
             }
-            variableIdSet.add(variable.getName());
+            variableIdSet.add(variable.getId());
         }
         for (Variable variable : variableSet.getVariables()) {
             checkVariable(variable);
@@ -129,14 +129,14 @@ public class CatalogAnnotationsValidator {
      */
     public static void checkAnnotationSet(VariableSet variableSet, AnnotationSet annotationSet,
                                           @Nullable List<AnnotationSet> annotationSets) throws CatalogException {
-        if (variableSet.getUid() != annotationSet.getVariableSetId()) {
+        if (!variableSet.getId().equals(annotationSet.getVariableSetId())) {
             throw new CatalogException("VariableSet does not match with the AnnotationSet");
         }
 
         //Check unique variableSet.
         if (variableSet.isUnique() && annotationSets != null) {
             for (AnnotationSet set : annotationSets) {
-                if (set.getVariableSetId() == annotationSet.getVariableSetId()) {
+                if (set.getVariableSetId().equals(annotationSet.getVariableSetId())) {
                     throw new CatalogException("Repeated annotation for a unique VariableSet");
                 }
             }
@@ -149,7 +149,7 @@ public class CatalogAnnotationsValidator {
                 .collect(Collectors.toSet());
         Map<String, Variable> variableMap = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
-            variableMap.put(variable.getName(), variable);
+            variableMap.put(variable.getId(), variable);
         }
 
 //        //Remove null values
@@ -163,13 +163,13 @@ public class CatalogAnnotationsValidator {
         //Check for missing values
         Map<String, Object> defaultAnnotations = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
-            if (!annotatedVariables.contains(variable.getName())) {
+            if (!annotatedVariables.contains(variable.getId())) {
                 if (!addDefaultAnnotation(variable, defaultAnnotations)) {
                     if (variable.isRequired()) {
-                        throw new CatalogException("Missing required variable " + variable.getName());
+                        throw new CatalogException("Missing required variable " + variable.getId());
                     }
                 }
-                annotatedVariables.add(variable.getName());
+                annotatedVariables.add(variable.getId());
             }
         }
         annotationSet.getAnnotations().putAll(defaultAnnotations);
@@ -219,20 +219,20 @@ public class CatalogAnnotationsValidator {
             case BOOLEAN:
                 Boolean booleanValue = getBooleanValue(defaultValue);
                 if (booleanValue != null) {
-                    annotation.put(variable.getName(), booleanValue);
+                    annotation.put(variable.getId(), booleanValue);
                     return true;
                 }
             case DOUBLE:
                 Double numericValue = getNumericValue(defaultValue);
                 if (numericValue != null) {
-                    annotation.put(variable.getName(), numericValue);
+                    annotation.put(variable.getId(), numericValue);
                     return true;
                 }
                 break;
             case INTEGER:
                 Integer integerValue = getIntegerValue(defaultValue);
                 if (integerValue != null) {
-                    annotation.put(variable.getName(), integerValue);
+                    annotation.put(variable.getId(), integerValue);
                     return true;
                 }
                 break;
@@ -240,13 +240,13 @@ public class CatalogAnnotationsValidator {
             case TEXT:
                 String stringValue = getStringValue(defaultValue);
                 if (stringValue != null) {
-                    annotation.put(variable.getName(), stringValue);
+                    annotation.put(variable.getId(), stringValue);
                     return true;
                 }
                 break;
             case OBJECT:
                 if (variable.getDefaultValue() != null) {
-                    annotation.put(variable.getName(), variable.getDefaultValue());
+                    annotation.put(variable.getId(), variable.getDefaultValue());
                     return true;
                 }
                 break;
@@ -343,8 +343,9 @@ public class CatalogAnnotationsValidator {
                 for (Object object : listValues) {
                     if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
                         Map objectMap = (Map) object;
-                        checkAnnotationSet(new VariableSet(variable.getName(), false, false, variable.getDescription(),
-                                variable.getVariableSet(), 1, null), new AnnotationSet("", 0, objectMap, null, 1, null), null);
+                        checkAnnotationSet(new VariableSet(variable.getId(), false, false, variable.getDescription(),
+                                variable.getVariableSet(), 1, null), new AnnotationSet("", variable.getId(), objectMap, null, 1, null),
+                                null);
                     }
                 }
                 break;

@@ -132,7 +132,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             input.close();
 
             // Migrate annotationSets
-            new AnnotationSetMigration(catalogManager.getConfiguration()).migrate();
+            new AnnotationSetMigration(catalogManager).migrate();
         }
     }
 
