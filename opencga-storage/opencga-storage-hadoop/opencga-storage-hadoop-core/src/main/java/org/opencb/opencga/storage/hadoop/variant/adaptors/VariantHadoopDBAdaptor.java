@@ -37,7 +37,10 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -55,9 +58,8 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseProjectMetadataDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,11 +115,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.genomeHelper = new GenomeHelper(this.configuration);
         this.variantTable = credentials.getTable();
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
-        this.studyConfigurationManager.set(
-                new StudyConfigurationManager(
-                        new HBaseProjectMetadataDBAdaptor(tableNameGenerator.getMetaTableName(), conf, hBaseManager),
-                        new HBaseStudyConfigurationDBAdaptor(tableNameGenerator.getMetaTableName(), conf, hBaseManager)));
-        this.variantFileMetadataDBAdaptor = new HBaseVariantFileMetadataDBAdaptor(genomeHelper, hBaseManager, tableNameGenerator);
+        HBaseVariantStorageMetadataDBAdaptorFactory factory = new HBaseVariantStorageMetadataDBAdaptorFactory(
+                hBaseManager, tableNameGenerator.getMetaTableName(), conf);
+        this.studyConfigurationManager.set(new StudyConfigurationManager(factory));
+        this.variantFileMetadataDBAdaptor = factory.buildVariantFileMetadataDBAdaptor();
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
@@ -187,7 +188,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public ArchiveTableHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException, IOException {
-        VariantFileMetadata fileMetadata = getVariantFileMetadata(studyId, fileId, null);
+        VariantFileMetadata fileMetadata = getStudyConfigurationManager().getVariantFileMetadata(studyId, fileId, null).first();
         if (fileMetadata == null) {
             throw new StorageEngineException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
@@ -195,12 +196,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     }
 
-    public VariantFileMetadata getVariantFileMetadata(int studyId, int fileId, QueryOptions options) throws IOException {
-        HBaseVariantFileMetadataDBAdaptor manager = getVariantFileMetadataDBAdaptor();
-        return manager.getVariantFileMetadata(studyId, fileId, options);
-    }
-
-    @Override
+    @Deprecated
     public HBaseVariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
         return variantFileMetadataDBAdaptor;
     }

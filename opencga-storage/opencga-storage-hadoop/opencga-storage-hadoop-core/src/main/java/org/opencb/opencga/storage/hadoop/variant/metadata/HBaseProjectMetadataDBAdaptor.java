@@ -1,29 +1,22 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
@@ -33,35 +26,18 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
+public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements ProjectMetadataAdaptor {
 
     private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
 
-    private final Configuration configuration;
-    private final HBaseManager hBaseManager;
-    private final ObjectMapper objectMapper;
-    private final String tableName;
     private final HBaseLock lock;
-    private Boolean tableExists = null; // unknown
-    private byte[] family;
-
 
     public HBaseProjectMetadataDBAdaptor(VariantTableHelper helper) {
-        this(helper.getMetaTableAsString(), helper.getConf(), null);
+        this(null, helper.getMetaTableAsString(), helper.getConf());
     }
 
-    public HBaseProjectMetadataDBAdaptor(String metaTableName, Configuration configuration, HBaseManager hBaseManager) {
-        this.configuration = Objects.requireNonNull(configuration);
-        this.tableName = Objects.requireNonNull(metaTableName);
-        HBaseVariantTableNameGenerator.checkValidMetaTableName(metaTableName);
-        family = new GenomeHelper(configuration).getColumnFamily();
-        this.objectMapper = new ObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        if (hBaseManager == null) {
-            this.hBaseManager = new HBaseManager(configuration);
-        } else {
-            // Create a new instance of HBaseManager to close only if needed
-            this.hBaseManager = new HBaseManager(hBaseManager);
-        }
+    public HBaseProjectMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
+        super(hBaseManager, metaTableName, configuration);
         lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
     }
 
@@ -92,12 +68,10 @@ public class HBaseProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
                 if (result != null) {
                     byte[] value = result.getValue(family, getValueColumn());
                     if (value != null && value.length > 0) {
-                        ProjectMetadata projectMetadata1 = objectMapper.readValue(value, ProjectMetadata.class);
-                        System.out.println("PROJECT METADATA -> " + Bytes.toString(value));
-                        return projectMetadata1;
+                        return objectMapper.readValue(value, ProjectMetadata.class);
                     }
                 }
-                System.out.println("NO PROJECT METADATA");
+                logger.info("ProjectMetadata not found in table " + tableName);
                 return null;
             }));
 
@@ -118,7 +92,6 @@ public class HBaseProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
         try {
             ensureTableExists();
             hBaseManager.act(tableName, (table -> {
-                System.out.println("UPDATE PROJECT METADATA");
                 Put put = new Put(getProjectRowKey());
                 put.addColumn(family, getValueColumn(), objectMapper.writeValueAsBytes(projectMetadata));
                 put.addColumn(family, getTypeColumn(), Type.PROJECT.bytes());
@@ -126,18 +99,10 @@ public class HBaseProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
                 table.put(put);
             }));
 
-            return new QueryResult<>("");
+            return getProjectMetadata();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private void ensureTableExists() throws IOException {
-        if (tableExists == null || !tableExists) {
-            if (createMetaTableIfNeeded(hBaseManager, tableName, family)) {
-                logger.info("Create table '{}' in hbase!", tableName);
-            }
-            tableExists = true;
-        }
-    }
 }

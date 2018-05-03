@@ -36,8 +36,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseProjectMetadataDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.LoggerFactory;
 
@@ -125,9 +124,7 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public StudyConfiguration readStudyConfiguration() throws IOException {
-        try (StudyConfigurationManager scm = new StudyConfigurationManager(
-                new HBaseProjectMetadataDBAdaptor(this),
-                new HBaseStudyConfigurationDBAdaptor(this))) {
+        try (StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(this))) {
             QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
             if (query.getResult().size() != 1) {
                 throw new IllegalStateException("Only one study configuration expected for study");

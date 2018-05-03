@@ -23,11 +23,13 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -51,15 +53,24 @@ public class StudyConfigurationManager implements AutoCloseable {
     public static final String READ_ONLY = "ro";
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
-    protected final ProjectMetadataAdaptor projectDBAdaptor;
-    protected final StudyConfigurationAdaptor studyDBAdaptor;
+    private final ProjectMetadataAdaptor projectDBAdaptor;
+    private final StudyConfigurationAdaptor studyDBAdaptor;
+    private VariantFileMetadataDBAdaptor fileDBAdaptor;
 
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
-    public StudyConfigurationManager(ProjectMetadataAdaptor projectDBAdaptor, StudyConfigurationAdaptor studyDBAdaptor) {
+    public StudyConfigurationManager(ProjectMetadataAdaptor projectDBAdaptor, StudyConfigurationAdaptor studyDBAdaptor,
+                                     VariantFileMetadataDBAdaptor fileDBAdaptor) {
         this.projectDBAdaptor = projectDBAdaptor;
         this.studyDBAdaptor = studyDBAdaptor;
+        this.fileDBAdaptor = fileDBAdaptor;
+    }
+
+    public StudyConfigurationManager(VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory) {
+        this.projectDBAdaptor = dbAdaptorFactory.buildProjectMetadataDBAdaptor();
+        this.studyDBAdaptor = dbAdaptorFactory.buildStudyConfigurationDBAdaptor();
+        this.fileDBAdaptor = dbAdaptorFactory.buildVariantFileMetadataDBAdaptor();
     }
 
     public long lockStudy(int studyId) throws StorageEngineException {
@@ -383,6 +394,41 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     public QueryResult<ProjectMetadata> getProjectMetadata() {
         return projectDBAdaptor.getProjectMetadata();
+    }
+
+    public QueryResult<Long> countVariantFileMetadata(Query query) {
+        return fileDBAdaptor.count(query);
+    }
+
+    public QueryResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
+            throws StorageEngineException {
+        return fileDBAdaptor.get(studyId, fileId, options);
+    }
+
+    public Iterator<VariantFileMetadata> variantFileMetadataIterator(Query query, QueryOptions options)
+            throws StorageEngineException {
+        try {
+            return fileDBAdaptor.iterator(query, options);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error reading VariantFileMetadata", e);
+        }
+    }
+
+    public void updateVariantFileMetadata(int studyId, VariantFileMetadata metadata) throws StorageEngineException {
+        fileDBAdaptor.updateVariantFileMetadata(studyId, metadata);
+    }
+
+    public void updateVariantFileMetadata(String study, VariantFileMetadata metadata) throws StorageEngineException {
+        Integer studyId = getStudyId(study, null);
+        fileDBAdaptor.updateVariantFileMetadata(studyId, metadata);
+    }
+
+    public void deleteVariantFileMetadata(int studyId, int fileId) throws StorageEngineException {
+        try {
+            fileDBAdaptor.delete(studyId, fileId);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error deleting VariantFileMetadata for file " + fileId, e);
+        }
     }
 
     /**

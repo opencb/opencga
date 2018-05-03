@@ -34,8 +34,8 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -44,8 +44,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
-import org.opencb.opencga.storage.mongodb.metadata.MongoDBProjectMetadataDBAdaptor;
-import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
 import org.slf4j.Logger;
@@ -231,7 +230,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
             scm.lockAndUpdate(studyName, studyConfiguration -> {
                 for (Integer fileId : studyConfiguration.getIndexedFiles()) {
-                    getDBAdaptor().getVariantFileMetadataDBAdaptor().delete(studyId, fileId);
+                    getDBAdaptor().getStudyConfigurationManager().deleteVariantFileMetadata(studyId, fileId);
                 }
                 StudyConfigurationManager
                         .setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, Collections.emptyList());
@@ -445,7 +444,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
         try {
             StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
-            variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection, filesCollection,
+            variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection,
                     studyConfigurationManager, configuration);
 
         } catch (UnknownHostException e) {
@@ -479,22 +478,12 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         } else if (!options.getString(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
             return super.getStudyConfigurationManager();
         } else {
-            String projectsCollectionName = options.getString(COLLECTION_PROJECT.key(), COLLECTION_PROJECT.defaultValue());
-            String studiesCollectionName = options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
-            try {
-                MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
-                MongoDataStore db = mongoDataStoreManager.get(
-                        getMongoCredentials().getMongoDbName(),
-                        getMongoCredentials().getMongoDBConfiguration());
-                studyConfigurationManager = new StudyConfigurationManager(
-                        new MongoDBProjectMetadataDBAdaptor(db, projectsCollectionName),
-                        new MongoDBStudyConfigurationDBAdaptor(db, studiesCollectionName)
-                );
-                return studyConfigurationManager;
-//                return getDBAdaptor(dbName).getStudyConfigurationManager();
-            } catch (UnknownHostException e) {
-                throw new StorageEngineException("Unable to build MongoStorageConfigurationManager", e);
-            }
+            MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
+            MongoDataStore db = mongoDataStoreManager.get(
+                    getMongoCredentials().getMongoDbName(),
+                    getMongoCredentials().getMongoDBConfiguration());
+            studyConfigurationManager = new StudyConfigurationManager(new MongoDBVariantStorageMetadataDBAdaptorFactory(db, options));
+            return studyConfigurationManager;
         }
     }
 

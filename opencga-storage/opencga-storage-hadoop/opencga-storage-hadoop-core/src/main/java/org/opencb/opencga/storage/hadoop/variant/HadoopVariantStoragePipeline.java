@@ -43,6 +43,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -57,7 +58,6 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
@@ -365,14 +365,14 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
-        HBaseVariantFileMetadataDBAdaptor manager = dbAdaptor.getVariantFileMetadataDBAdaptor();
+        StudyConfigurationManager scm = getStudyConfigurationManager();
 
         try {
             int studyId = getStudyId();
             VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
 
-            manager.updateVariantFileMetadata(studyId, fileMetadata);
-            manager.updateLoadedFilesSummary(studyId, Collections.singletonList(getFileId()));
+            scm.updateVariantFileMetadata(studyId, fileMetadata);
+            dbAdaptor.getVariantFileMetadataDBAdaptor().updateLoadedFilesSummary(studyId, Collections.singletonList(getFileId()));
         } catch (IOException e) {
             throw new StorageEngineException("Error storing VariantFileMetadata for file " + getFileId(), e);
         }

@@ -9,6 +9,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 
@@ -38,7 +39,7 @@ public class VariantMongoDBQueryParserTest {
     @Before
     public void setUp() throws Exception {
         DummyStudyConfigurationAdaptor.clear();
-        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor());
+        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
         parser = new VariantMongoDBQueryParser(scm);
         scm.updateStudyConfiguration(newStudyConfiguration(1, Arrays.asList(1, 2, 3), false), null);
         scm.updateStudyConfiguration(newStudyConfiguration(2, Arrays.asList(1, 2, 3), true), null);

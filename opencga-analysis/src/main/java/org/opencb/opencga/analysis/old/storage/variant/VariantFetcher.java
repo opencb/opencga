@@ -377,8 +377,5 @@ public class VariantFetcher implements AutoCloseable {
         return query;
     }
 
-    public VariantFileMetadataDBAdaptor getSourceDBAdaptor(int studyId, String sessionId) throws CatalogException, StorageEngineException {
-        return getVariantDBAdaptor(studyId, sessionId).getVariantFileMetadataDBAdaptor();
-    }
 
 }

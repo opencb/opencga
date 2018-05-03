@@ -212,7 +212,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(sc.getStudyId()), fileMetadata);
+        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(String.valueOf(sc.getStudyId()), fileMetadata);
 
         ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getStudyId(), fileMetadata);
 
@@ -247,7 +247,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(study.getStudyId()), fileMetadata);
+        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(String.valueOf(study.getStudyId()), fileMetadata);
 
         // Create dummy reader
         VariantSliceReader reader = getVariantSliceReader(variants, study.getStudyId(), fileId);

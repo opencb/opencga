@@ -36,8 +36,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseProjectMetadataDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,9 +75,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
         String storageEngine = "hadoop"; //
         ObjectMap options = new ObjectMap(); // empty
         ProjectMetadata projectMetadata;
-        try (StudyConfigurationManager scm = new StudyConfigurationManager(
-                new HBaseProjectMetadataDBAdaptor(getHelper()),
-                new HBaseStudyConfigurationDBAdaptor(getHelper()))) {
+        try (StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()))) {
             projectMetadata = scm.getProjectMetadata().first();
         }
         try {

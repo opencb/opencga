@@ -8,7 +8,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,11 +24,9 @@ import java.util.stream.Collectors;
 public class VariantMetadataFactory {
 
     protected final StudyConfigurationManager scm;
-    private final VariantFileMetadataDBAdaptor fileMetadataDBAdaptor;
 
-    public VariantMetadataFactory(StudyConfigurationManager studyConfigurationManager, VariantFileMetadataDBAdaptor fileDBAdaptor) {
+    public VariantMetadataFactory(StudyConfigurationManager studyConfigurationManager) {
         scm = studyConfigurationManager;
-        this.fileMetadataDBAdaptor = fileDBAdaptor;
     }
 
     public VariantMetadata makeVariantMetadata() throws StorageEngineException {
@@ -75,14 +72,10 @@ public class VariantMetadataFactory {
             Query query = new Query()
                     .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId())
                     .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
-            try {
-                fileMetadataDBAdaptor.iterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
-                    studyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
-                    studyMetadata.getFiles().add(fileMetadata.getImpl());
-                });
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            scm.variantFileMetadataIterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
+                studyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
+                studyMetadata.getFiles().add(fileMetadata.getImpl());
+            });
         }
 
         return metadata;

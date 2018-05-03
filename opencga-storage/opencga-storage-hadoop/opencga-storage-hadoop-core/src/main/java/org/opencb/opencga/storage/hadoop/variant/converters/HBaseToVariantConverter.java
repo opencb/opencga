@@ -39,8 +39,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariant
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseProjectMetadataDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,9 +72,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     protected VariantQueryUtils.SelectVariantElements selectVariantElements;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
-        this(variantTableHelper, new StudyConfigurationManager(
-                new HBaseProjectMetadataDBAdaptor(variantTableHelper),
-                new HBaseStudyConfigurationDBAdaptor(variantTableHelper)));
+        this(variantTableHelper, new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(variantTableHelper)));
     }
 
     public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {

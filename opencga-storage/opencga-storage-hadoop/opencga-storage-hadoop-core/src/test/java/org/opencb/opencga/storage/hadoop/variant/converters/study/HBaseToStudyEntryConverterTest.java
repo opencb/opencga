@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ public class HBaseToStudyEntryConverterTest {
 
     @Before
     public void setUp() throws Exception {
-        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor());
+        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
         sc = new StudyConfiguration(1, "S1");
         sc.getIndexedFiles().add(1);
         sc.getIndexedFiles().add(2);

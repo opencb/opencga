@@ -64,7 +64,7 @@ public class MongoDBVariantFileMetadataDBAdaptor implements VariantFileMetadataD
         variantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
     }
 
-    public MongoDBVariantFileMetadataDBAdaptor(MongoDataStore db, String collectionName) throws UnknownHostException {
+    public MongoDBVariantFileMetadataDBAdaptor(MongoDataStore db, String collectionName) {
         mongoManager = null;
         this.db = db;
         this.collectionName = collectionName;

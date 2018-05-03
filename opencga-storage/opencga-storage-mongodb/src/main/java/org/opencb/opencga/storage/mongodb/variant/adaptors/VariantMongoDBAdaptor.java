@@ -54,7 +54,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
-import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
@@ -90,7 +89,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final String collectionName;
     private final MongoDBCollection variantsCollection;
-    private final MongoDBVariantFileMetadataDBAdaptor mongoDBVariantFileMetadataDBAdaptor;
     private final StorageConfiguration storageConfiguration;
     private final MongoCredentials credentials;
     private final VariantMongoDBQueryParser queryParser;
@@ -106,23 +104,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     // Number of opened dbAdaptors
     public static final AtomicInteger NUMBER_INSTANCES = new AtomicInteger(0);
 
-    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName,
                                  StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration)
             throws UnknownHostException {
-        this(new MongoDataStoreManager(credentials.getDataStoreServerAddresses()), credentials, variantsCollectionName, filesCollectionName,
+        this(new MongoDataStoreManager(credentials.getDataStoreServerAddresses()), credentials, variantsCollectionName,
                 studyConfigurationManager, storageConfiguration);
         this.closeConnection = true;
     }
 
     public VariantMongoDBAdaptor(MongoDataStoreManager mongoManager, MongoCredentials credentials, String variantsCollectionName,
-                                 String filesCollectionName, StudyConfigurationManager studyConfigurationManager,
+                                 StudyConfigurationManager studyConfigurationManager,
                                  StorageConfiguration storageConfiguration) throws UnknownHostException {
         // MongoDB configuration
         this.closeConnection = false;
         this.credentials = credentials;
         this.mongoManager = mongoManager;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        mongoDBVariantFileMetadataDBAdaptor = new MongoDBVariantFileMetadataDBAdaptor(db, filesCollectionName);
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
@@ -1196,11 +1193,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
         return studyConfigurationManager;
-    }
-
-    @Override
-    public MongoDBVariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
-        return mongoDBVariantFileMetadataDBAdaptor;
     }
 
     @Override

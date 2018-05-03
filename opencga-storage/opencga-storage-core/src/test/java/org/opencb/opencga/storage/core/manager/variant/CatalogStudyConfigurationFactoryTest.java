@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,7 +139,7 @@ public class CatalogStudyConfigurationFactoryTest {
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
         doReturn(new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList()))
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
-        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor);
+        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
         StudyConfiguration studyConfiguration = studyConfigurationFactory.getStudyConfiguration(studyId, null, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
@@ -167,7 +168,7 @@ public class CatalogStudyConfigurationFactoryTest {
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
 
 
-        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor);
+        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
@@ -211,7 +212,7 @@ public class CatalogStudyConfigurationFactoryTest {
         doReturn(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfigurationToReturn)))
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
 
-        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor);
+        StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
         StudyConfiguration sc = studyConfigurationFactory.getStudyConfiguration(studyId, null, scm, new QueryOptions(), sessionId);
 
         List<Long> samples = catalogManager.getCohortManager().getSamples(String.valueOf(studyId), String.valueOf(cohortId), null, sessionId)

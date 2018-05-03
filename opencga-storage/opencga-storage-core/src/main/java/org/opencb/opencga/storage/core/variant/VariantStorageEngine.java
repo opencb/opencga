@@ -243,8 +243,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void exportData(URI outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        exportData(outputFile, outputFormat, new VariantMetadataFactory(getStudyConfigurationManager(),
-                getDBAdaptor().getVariantFileMetadataDBAdaptor()), query, queryOptions);
+        exportData(outputFile, outputFormat, new VariantMetadataFactory(getStudyConfigurationManager()
+        ), query, queryOptions);
     }
 
     /**
@@ -388,7 +388,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return newVariantAnnotationManager(annotator);
     }
 
-    private ProjectMetadata readOrCreateProjectMetadata(ObjectMap params) throws StorageEngineException {
+    protected ProjectMetadata readOrCreateProjectMetadata(ObjectMap params) throws StorageEngineException {
         ProjectMetadata projectMetadata = getStudyConfigurationManager().getProjectMetadata().first();
         ObjectMap options = getMergedOptions(params);
         if (projectMetadata == null
@@ -615,11 +615,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
             } else {
                 for (Integer fileId : fileIds) {
-                    try {
-                        getDBAdaptor().getVariantFileMetadataDBAdaptor().delete(studyConfiguration.getStudyId(), fileId);
-                    } catch (IOException e) {
-                        throw new StorageEngineException("Unable to remove VariantFileMetadata from file " + fileId, e);
-                    }
+                    getDBAdaptor().getStudyConfigurationManager().deleteVariantFileMetadata(studyConfiguration.getStudyId(), fileId);
                 }
 
                 StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, fileIds);
@@ -704,7 +700,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException If object is null
      */
     public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        return new StudyConfigurationManager(null, new FileStudyConfigurationAdaptor());
+        return new StudyConfigurationManager(null, new FileStudyConfigurationAdaptor(), null);
     }
 
     public VariantSearchManager getVariantSearchManager() throws StorageEngineException {

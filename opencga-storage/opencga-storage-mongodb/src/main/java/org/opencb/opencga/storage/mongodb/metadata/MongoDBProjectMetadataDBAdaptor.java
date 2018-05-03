@@ -14,7 +14,6 @@ import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -32,8 +31,7 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
     private final MongoLock mongoLock;
     private final MongoDBCollection collection;
 
-    public MongoDBProjectMetadataDBAdaptor(MongoDataStore db, String collectionName)
-            throws UnknownHostException {
+    public MongoDBProjectMetadataDBAdaptor(MongoDataStore db, String collectionName) {
         this.collection = db.getCollection(collectionName)
                 .withReadPreference(ReadPreference.primary())
                 .withWriteConcern(WriteConcern.ACKNOWLEDGED);

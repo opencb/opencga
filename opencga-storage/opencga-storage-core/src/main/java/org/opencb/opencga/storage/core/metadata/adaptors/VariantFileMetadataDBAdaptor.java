@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.metadata.adaptors;
 
+import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
@@ -76,16 +77,18 @@ public interface VariantFileMetadataDBAdaptor extends AutoCloseable {
 
     void updateVariantFileMetadata(String studyId, VariantFileMetadata metadata) throws StorageEngineException;
 
-    default QueryResult<VariantFileMetadata> get(String fileId, QueryOptions options) throws StorageEngineException {
+    default QueryResult<VariantFileMetadata> get(int studyId, int fileId, QueryOptions options) throws StorageEngineException {
         StopWatch stopWatch = StopWatch.createStarted();
         Iterator<VariantFileMetadata> iterator;
         try {
-            iterator = iterator(new Query(VariantFileMetadataQueryParam.FILE_ID.key(), fileId), options);
+            Query query = new Query(VariantFileMetadataQueryParam.FILE_ID.key(), fileId)
+                    .append(VariantFileMetadataQueryParam.STUDY_ID.key(), studyId);
+            iterator = iterator(query, options);
         } catch (IOException e) {
             throw new StorageEngineException("Error reading from VariantFileMetadataDBAdaptor", e);
         }
-        if (iterator.hasNext()) {
-            VariantFileMetadata metadata = iterator.next();
+        VariantFileMetadata metadata = Iterators.getOnlyElement(iterator, null);
+        if (metadata != null) {
             return new QueryResult<>("", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), 1, 1, null, null,
                     Collections.singletonList(metadata));
         } else {

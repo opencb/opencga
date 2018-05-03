@@ -31,9 +31,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 
 import java.io.DataOutputStream;
@@ -79,11 +77,11 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
         final Configuration conf = job.getConfiguration();
         boolean withGenotype = conf.getBoolean(VariantTableExportDriver.CONFIG_VARIANT_TABLE_EXPORT_GENOTYPE, false);
 
-        try (VariantFileMetadataDBAdaptor source = new HBaseVariantFileMetadataDBAdaptor(conf)) {
+        try {
             VariantTableHelper helper = new VariantTableHelper(conf);
             StudyConfiguration sc = helper.readStudyConfiguration();
             QueryOptions options = new QueryOptions();
-            VariantVcfDataWriter exporter = new VariantVcfDataWriter(sc, source, fileOut, new Query(), options);
+            VariantVcfDataWriter exporter = new VariantVcfDataWriter(sc, fileOut, new Query(), options);
             exporter.setExportGenotype(withGenotype);
             exporter.setConverterErrorListener((v, e) ->
                     job.getCounter(VariantVcfDataWriter.class.getName(), "failed").increment(1));

@@ -21,17 +21,14 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -210,43 +207,8 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
-        return new VariantFileMetadataDBAdaptor() {
-            @Override
-            public QueryResult<Long> count(Query query) {
-                return new QueryResult<>();
-            }
-
-            @Override
-            public void updateVariantFileMetadata(String studyId, VariantFileMetadata variantSource) throws StorageEngineException {
-
-            }
-
-            @Override
-            public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) throws IOException {
-                return Collections.emptyIterator();
-            }
-
-            @Override
-            public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
-                return new QueryResult();
-            }
-
-            @Override
-            public void delete(int study, int file) {
-
-            }
-
-            @Override
-            public void close() throws IOException {
-
-            }
-        };
-    }
-
-    @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
-        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor());
+        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
     }
 
     @Override

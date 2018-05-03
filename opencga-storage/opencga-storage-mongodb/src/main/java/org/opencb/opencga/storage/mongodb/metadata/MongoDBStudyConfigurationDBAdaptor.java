@@ -33,7 +33,6 @@ import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdapt
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -52,9 +51,7 @@ public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAda
     private final MongoLock mongoLock;
     private final MongoDBCollection collection;
 
-    public MongoDBStudyConfigurationDBAdaptor(MongoDataStore db, String collectionName)
-            throws UnknownHostException {
-        // Mongo configuration
+    public MongoDBStudyConfigurationDBAdaptor(MongoDataStore db, String collectionName) {
         collection = db.getCollection(collectionName)
                 .withReadPreference(ReadPreference.primary())
                 .withWriteConcern(WriteConcern.ACKNOWLEDGED);
