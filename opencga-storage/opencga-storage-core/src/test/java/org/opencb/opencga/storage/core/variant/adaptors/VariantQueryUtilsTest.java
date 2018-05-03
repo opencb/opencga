@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.test.GenericTest;
@@ -229,4 +230,12 @@ public class VariantQueryUtilsTest extends GenericTest {
         assertEquals(expectedList, getIncludeFormats(query));
     }
 
+    @Test
+    public void mergeRegionsTest() throws Exception {
+        assertEquals(Arrays.asList(new Region("1", 100, 400)), mergeRegions(Arrays.asList(new Region("1", 100, 200), new Region("1", 200, 400))));
+        assertEquals(Arrays.asList(new Region("1", 100, 200), new Region("1", 201, 400)), mergeRegions(Arrays.asList(new Region("1", 100, 200), new Region("1", 201, 400))));
+        assertEquals(Arrays.asList(new Region("1", 100, 200), new Region("2", 200, 400)), mergeRegions(Arrays.asList(new Region("1", 100, 200), new Region("2", 200, 400))));
+        assertEquals(Arrays.asList(new Region("1", 100, 400), new Region("2", 100, 200)), mergeRegions(Arrays.asList(new Region("1", 100, 200), new Region("2", 100, 200), new Region("1", 200, 400))));
+
+    }
 }

@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -21,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * Created on 27/10/17.
@@ -31,6 +33,13 @@ public class VariantMapReduceUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VariantMapReduceUtil.class);
 
+
+    public static void initTableMapperJob(Job job, String inTable, String outTable, Scan scan, Class<? extends TableMapper> mapperClass)
+            throws IOException {
+        initTableMapperJob(job, inTable, scan, mapperClass);
+        setOutputHBaseTable(job, outTable);
+        setNoneReduce(job);
+    }
 
     public static void initTableMapperJob(Job job, String inTable, Scan scan, Class<? extends TableMapper> mapperClass)
             throws IOException {
@@ -117,5 +126,30 @@ public class VariantMapReduceUtil {
         configuration.setBoolean(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, studyNameAsStudyId);
         configuration.setBoolean(HBaseToVariantConverter.SIMPLE_GENOTYPES, simpleGenotypes);
         configuration.set(VariantQueryParam.UNKNOWN_GENOTYPE.key(), unknownGenotype);
+    }
+
+    public static void configureVCores(Configuration conf) {
+        // Set parallel pool size
+        String fjpKey = "java.util.concurrent.ForkJoinPool.common.parallelism";
+        boolean hasForkJoinPool = false;
+        Integer vCores = conf.getInt("mapreduce.map.cpu.vcores", 1);
+        Collection<String> opts = conf.getStringCollection("opencga.variant.table.mapreduce.map.java.opts");
+        String optString = StringUtils.EMPTY;
+        if (!opts.isEmpty()) {
+            for (String opt : opts) {
+                if (opt.contains(fjpKey)) {
+                    hasForkJoinPool = true;
+                }
+                optString += opt + " ";
+            }
+        }
+        if (!hasForkJoinPool && vCores > 1) {
+            optString += " -D" + fjpKey + "=" + vCores;
+            LOGGER.warn("Force ForkJoinPool to {}", vCores);
+        }
+        if (StringUtils.isNotBlank(optString)) {
+            LOGGER.info("Set mapreduce java opts: {}", optString);
+            conf.set("mapreduce.map.java.opts", optString);
+        }
     }
 }

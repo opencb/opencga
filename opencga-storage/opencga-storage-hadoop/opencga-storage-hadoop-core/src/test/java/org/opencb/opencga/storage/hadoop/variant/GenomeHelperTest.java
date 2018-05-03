@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
 import java.sql.SQLException;
@@ -55,14 +56,21 @@ public class GenomeHelperTest {
         GenomeHelper.setChunkSize(conf, CHUNK_SIZE);
         genomeHelper = new GenomeHelper(conf);
 
-        keyFactory = new ArchiveRowKeyFactory(CHUNK_SIZE, '_');
+        keyFactory = new ArchiveRowKeyFactory(CHUNK_SIZE, '_', 100);
     }
 
     @Test
     public void testBlockRowKey() throws Exception {
-        Assert.assertEquals("2", keyFactory.extractChromosomeFromBlockId("2_222"));
-        Assert.assertEquals(222, keyFactory.extractSliceFromBlockId("2_222").longValue());
-        Assert.assertEquals(222 * CHUNK_SIZE, keyFactory.extractPositionFromBlockId("2_222").longValue());
+        Assert.assertEquals("2", keyFactory.extractChromosomeFromBlockId("0001_2_00000222"));
+        // Parse complex contigs
+        Assert.assertEquals("NC_007605", keyFactory.extractChromosomeFromBlockId("0001_NC_007605_00000222"));
+        Assert.assertEquals(1, keyFactory.extractFileBatchFromBlockId("0001_NC_007605_00000222"));
+        Assert.assertEquals(222, keyFactory.extractSliceFromBlockId("0001_2_222"));
+        Assert.assertEquals(222 * CHUNK_SIZE, keyFactory.extractPositionFromBlockId("0001_2_222"));
+        Assert.assertEquals(0, keyFactory.getFileBatch(1));
+        Assert.assertEquals(0, keyFactory.getFileBatch(99));
+        Assert.assertEquals(1, keyFactory.getFileBatch(100));
+        Assert.assertEquals(1, keyFactory.getFileBatch(101));
     }
 
     @Test
@@ -85,15 +93,24 @@ public class GenomeHelperTest {
 
     @Test
     public void testGenerateSplitArchive() throws Exception {
-        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, keyFactory::generateBlockIdAsBytes));
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, (chr, pos) -> keyFactory.generateBlockIdAsBytes(1, chr, pos)), 30);
+    }
+
+    @Test
+    public void testGenerateSplitArchiveMultipleBatches() throws Exception {
+        Configuration conf = new Configuration();
+        conf.setInt(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 10);
+        conf.setInt(HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER, 4500);
+        conf.setInt(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 1000);
+        assertOrder(ArchiveTableHelper.generateArchiveTableBootPreSplitHuman(conf), 50);
     }
 
     @Test
     public void testGenerateSplitVariants() throws Exception {
-        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, (chrom, position) -> VariantPhoenixKeyFactory.generateVariantRowKey(chrom, position)));
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, VariantPhoenixKeyFactory::generateVariantRowKey), 30);
     }
 
-    void assertOrder(List<byte[]> bytes) {
+    void assertOrder(List<byte[]> bytes, int expectedSize) {
         String prev = "0";
         for (byte[] bytesKey : bytes) {
             String key = new String(bytesKey);
@@ -106,8 +123,8 @@ public class GenomeHelperTest {
             assertTrue(prev.compareTo(key) < 0);
             prev = key;
         }
+        assertEquals(expectedSize, bytes.size());
     }
-
 
     public byte[] generateVariantRowKeyPhoenix(String chrom, int position, String ref, String alt) {
         PTableImpl table;

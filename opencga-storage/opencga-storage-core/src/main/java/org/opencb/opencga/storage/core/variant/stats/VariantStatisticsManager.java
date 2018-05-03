@@ -21,16 +21,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
@@ -92,7 +90,6 @@ public interface VariantStatisticsManager {
 
     static Query buildInputQuery(StudyConfiguration studyConfiguration, Collection<?> cohorts, boolean overwrite, boolean updateStats,
                                  ObjectMap options) {
-        // TODO: Add RETURNED_FILES and RETURNED_SAMPLES
         Query readerQuery = new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId())
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), studyConfiguration.getStudyId());
         if (options.containsKey(VariantStorageEngine.Options.FILE_ID.key())) {
@@ -108,6 +105,26 @@ public interface VariantStatisticsManager {
                     cohorts.stream().map((cohort) -> NOT + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
                             .joining(AND)));
         }
+
+
+        Set<Integer> sampleIds = new HashSet<>();
+        for (Object cohort : cohorts) {
+            Integer cohortId = StudyConfigurationManager.getCohortIdFromStudy(cohort, studyConfiguration);
+            sampleIds.addAll(studyConfiguration.getCohorts().get(cohortId));
+        }
+
+        if (!sampleIds.isEmpty()) {
+            readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
+            Set<Integer> fileIds = new HashSet<>();
+            for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+                if (studyConfiguration.getIndexedFiles().contains(entry.getKey()) && !Collections.disjoint(entry.getValue(), sampleIds)) {
+                    fileIds.add(entry.getKey());
+                }
+            }
+            readerQuery.put(VariantQueryParam.INCLUDE_FILE.key(), fileIds);
+        }
+
+
         readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), UNKNOWN_GENOTYPE);
         return readerQuery;
     }

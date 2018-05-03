@@ -71,6 +71,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         INDEX_STATUS_MESSAGE("index.status.message", TEXT, ""),
         INDEX_JOB_ID("index.jobId", TEXT, ""),
         INDEX_TRANSFORMED_FILE("index.transformedFile", TEXT_ARRAY, ""),
+        INDEX_RELEASE("index.release", INTEGER, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

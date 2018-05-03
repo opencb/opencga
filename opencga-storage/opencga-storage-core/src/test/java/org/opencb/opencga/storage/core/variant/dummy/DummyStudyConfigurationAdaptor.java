@@ -96,7 +96,7 @@ public class DummyStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
     }
 
     @Override
-    public synchronized long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+    public synchronized long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
         if (!LOCK_STUDIES.containsKey(studyId)) {
             LOCK_STUDIES.put(studyId, new ReentrantLock());
         }
@@ -106,7 +106,7 @@ public class DummyStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
     }
 
     @Override
-    public void unLockStudy(int studyId, long lockId) {
+    public void unLockStudy(int studyId, long lockId, String lockName) {
         LOCK_STUDIES.get(studyId).unlock();
     }
 

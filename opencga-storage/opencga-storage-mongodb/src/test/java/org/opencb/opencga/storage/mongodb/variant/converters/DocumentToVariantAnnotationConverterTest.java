@@ -174,6 +174,7 @@ public class DocumentToVariantAnnotationConverterTest {
                                 .append(CT_AA_ALTERNATE_FIELD, "ARG")
                                 .append(CT_PROTEIN_UNIPROT_ACCESSION, "P02649")
                                 .append(CT_PROTEIN_UNIPROT_VARIANT_ID, "VAR_000652")
+                                .append(CT_PROTEIN_FEATURE_DESCRIPTION_FIELD, "In HLPP3; form E3**, form E4, form E4/3 and some forms E5-type; only form E3** is disease-linked; dbSNP:rs429358.")
                                 .append(CT_PROTEIN_SIFT_FIELD, new Document()
                                         .append(SCORE_SCORE_FIELD, 1.0)/*.append(SCORE_DESCRIPTION_FIELD, "tolerated")*/)
                                 .append(CT_PROTEIN_POLYPHEN_FIELD, new Document()

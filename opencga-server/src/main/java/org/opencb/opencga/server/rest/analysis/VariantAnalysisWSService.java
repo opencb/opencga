@@ -124,7 +124,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load,
                           @ApiParam("Currently two levels of merge are supported: \"basic\" mode merge genotypes of the same variants while \"advanced\" merge multiallelic and overlapping variants.") @DefaultValue("ADVANCED") @QueryParam("merge") VariantStorageEngine.MergeMode merge,
-                          @ApiParam("Comma separated list of fields to be include in the index") @QueryParam("includeExtraFields") String includeExtraFields,
+                          @ApiParam("Index including other FORMAT fields. Use \"" + VariantQueryUtils.ALL + "\", \"" + VariantQueryUtils.NONE + "\", or CSV with the fields to load.") @QueryParam("includeExtraFields") String includeExtraFields,
                           @ApiParam("Type of aggregated VCF file: none, basic, EVS or ExAC") @DefaultValue("none") @QueryParam("aggregated") String aggregated,
                           @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
@@ -214,6 +214,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
@@ -298,7 +299,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     })
     public Response getVariants(@ApiParam(value = "Group variants by: [ct, gene, ensemblGene]") @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Calculate histogram. Requires one region.") @DefaultValue("false") @QueryParam("histogram") boolean histogram,
-                                @ApiParam(value = "Histogram interval size") @DefaultValue("2000") @QueryParam("interval") int interval
+                                @ApiParam(value = "Histogram interval size") @DefaultValue("2000") @QueryParam("interval") int interval,
+                                @ApiParam(value = "Ranks different entities with the most number of variants. Rank by: [ct, gene, ensemblGene]") @QueryParam("rank") String rank
                                 // @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge
                                 ) {
 
@@ -308,10 +310,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             // Get all query options
 
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            System.out.println("queryOptions = " + queryOptions.toJson());
-
             Query query = getVariantQuery(queryOptions);
-            System.out.println("query = " + query.toJson());
 
             if (count) {
                 queryResult = variantManager.count(query, sessionId);
@@ -319,6 +318,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 queryResult = variantManager.getFrequency(query, interval, sessionId);
             } else if (StringUtils.isNotEmpty(groupBy)) {
                 queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
+            } else if (StringUtils.isNotEmpty(rank)) {
+                queryResult = variantManager.rank(query, rank,  limit, true, sessionId);
             } else {
                 queryResult = variantManager.get(query, queryOptions, sessionId);
 //                System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));

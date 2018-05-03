@@ -117,7 +117,7 @@ public class AbstractDocumentConverter {
         }
     }
 
-    protected final float getDefault(Document object, String key, float defaultValue) {
+    protected final Float getDefault(Document object, String key, Float defaultValue) {
         Object o = object.get(key);
         if (o != null) {
             if (o instanceof Number) {
@@ -134,7 +134,7 @@ public class AbstractDocumentConverter {
         }
     }
 
-    protected final double getDefault(Document object, String key, double defaultValue) {
+    protected final Double getDefault(Document object, String key, Double defaultValue) {
         Object o = object.get(key);
         if (o != null) {
             if (o instanceof Number) {

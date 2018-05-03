@@ -19,9 +19,7 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
@@ -29,21 +27,17 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -52,36 +46,47 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class ArchiveTableHelper extends GenomeHelper {
 
+    public static final String NON_REF_COLUMN_SUFIX = "_N";
+    public static final byte[] NON_REF_COLUMN_SUFIX_BYTES = Bytes.toBytes(NON_REF_COLUMN_SUFIX);
+    public static final String REF_COLUMN_SUFIX = "_R";
+    public static final byte[] REF_COLUMN_SUFIX_BYTES = Bytes.toBytes(REF_COLUMN_SUFIX);
+
     private final Logger logger = LoggerFactory.getLogger(ArchiveTableHelper.class);
     private final AtomicReference<VariantFileMetadata> meta = new AtomicReference<>();
     private final ArchiveRowKeyFactory keyFactory;
-    private final byte[] column;
+    private final byte[] nonRefColumn;
+    private final byte[] refColumn;
 
-    private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
+    private final int fileId;
 
     public ArchiveTableHelper(Configuration conf) throws IOException {
         super(conf);
-        int fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
-        try (HadoopVariantFileMetadataDBAdaptor metadataManager = new HadoopVariantFileMetadataDBAdaptor(conf)) {
+        fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
+        try (HBaseVariantFileMetadataDBAdaptor metadataManager = new HBaseVariantFileMetadataDBAdaptor(conf)) {
             VariantFileMetadata meta = metadataManager.getVariantFileMetadata(getStudyId(), fileId, null);
             this.meta.set(meta);
-            column = Bytes.toBytes(getColumnName(meta));
+            nonRefColumn = Bytes.toBytes(getNonRefColumnName(meta));
+            refColumn = Bytes.toBytes(getRefColumnName(meta));
         }
-        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
+        keyFactory = new ArchiveRowKeyFactory(conf);
     }
 
     public ArchiveTableHelper(GenomeHelper helper, int studyId, VariantFileMetadata meta) {
         super(helper, studyId);
         this.meta.set(meta);
-        column = Bytes.toBytes(getColumnName(meta));
-        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
+        fileId = Integer.valueOf(meta.getId());
+        nonRefColumn = Bytes.toBytes(getNonRefColumnName(meta));
+        refColumn = Bytes.toBytes(getRefColumnName(meta));
+        keyFactory = new ArchiveRowKeyFactory(helper.getConf());
     }
 
     public ArchiveTableHelper(Configuration conf, int studyId, VariantFileMetadata meta) {
         super(conf, studyId);
         this.meta.set(meta);
-        column = Bytes.toBytes(getColumnName(meta));
-        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
+        fileId = Integer.valueOf(meta.getId());
+        nonRefColumn = Bytes.toBytes(getNonRefColumnName(meta));
+        refColumn = Bytes.toBytes(getRefColumnName(meta));
+        keyFactory = new ArchiveRowKeyFactory(conf);
     }
 
     public ArchiveRowKeyFactory getKeyFactory() {
@@ -94,8 +99,12 @@ public class ArchiveTableHelper extends GenomeHelper {
      * @param fileId Numerical file identifier
      * @return Column name or Qualifier
      */
-    public static String getColumnName(int fileId) {
-        return Integer.toString(fileId);
+    public static String getNonRefColumnName(int fileId) {
+        return Integer.toString(fileId) + NON_REF_COLUMN_SUFIX;
+    }
+
+    public int getFileId() {
+        return fileId;
     }
 
     /**
@@ -104,18 +113,63 @@ public class ArchiveTableHelper extends GenomeHelper {
      * @param columnName Column name
      * @return Related fileId
      */
-    public static int getFileIdFromColumnName(byte[] columnName) {
-        return Integer.parseInt(Bytes.toString(columnName));
+    public static int getFileIdFromNonRefColumnName(byte[] columnName) {
+        return Integer.parseInt(Bytes.toString(columnName, 0, columnName.length - NON_REF_COLUMN_SUFIX.length()));
     }
 
     /**
-     * Get the archive column name for a file given a VariantSource.
+     * Get the archive column name for a file given a FileId.
+     *
+     * @param columnName Column name
+     * @return Related fileId
+     */
+    public static int getFileIdFromRefColumnName(byte[] columnName) {
+        return Integer.parseInt(Bytes.toString(columnName, 0, columnName.length - REF_COLUMN_SUFIX.length()));
+    }
+
+    public static boolean isNonRefColumn(byte[] columnName) {
+        return columnName.length > 0 && Character.isDigit(columnName[0]) && endsWith(columnName, NON_REF_COLUMN_SUFIX_BYTES);
+    }
+
+    public static boolean isRefColumn(byte[] columnName) {
+        return columnName.length > 0 && Character.isDigit(columnName[0]) && endsWith(columnName, REF_COLUMN_SUFIX_BYTES);
+    }
+
+    private static boolean endsWith(byte[] columnName, byte[] sufixBytes) {
+        return columnName.length > sufixBytes.length && Bytes.equals(
+                columnName, columnName.length - sufixBytes.length, sufixBytes.length,
+                sufixBytes, 0, sufixBytes.length
+        );
+    }
+
+
+    /**
+     * Get the archive column name for a file given a VariantFileMetadata.
      *
      * @param fileMetadata VariantFileMetadata
      * @return Column name or Qualifier
      */
-    public static String getColumnName(VariantFileMetadata fileMetadata) {
-        return fileMetadata.getId();
+    public static String getNonRefColumnName(VariantFileMetadata fileMetadata) {
+        return getNonRefColumnName(Integer.parseInt(fileMetadata.getId()));
+    }
+
+    /**
+     * Get the archive column name for a file given a VariantFileMetadata.
+     *
+     * @param fileMetadata VariantFileMetadata
+     * @return Column name or Qualifier
+     */
+    public static String getRefColumnName(VariantFileMetadata fileMetadata) {
+        return getRefColumnName(Integer.parseInt(fileMetadata.getId()));
+    }
+    /**
+     * Get the archive column name for a file given a FileId.
+     *
+     * @param fileId Numerical file identifier
+     * @return Column name or Qualifier
+     */
+    public static String getRefColumnName(int fileId) {
+        return fileId + REF_COLUMN_SUFIX;
     }
 
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
@@ -127,10 +181,27 @@ public class ArchiveTableHelper extends GenomeHelper {
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
         Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(
                 genomeHelper.getConf().get(HadoopVariantStorageEngine.ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
-        int nSplits = genomeHelper.getConf().getInt(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 100);
-        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(genomeHelper.getChunkSize(), genomeHelper.getSeparator());
-        List<byte[]> preSplits = generateBootPreSplitsHuman(nSplits, rowKeyFactory::generateBlockIdAsBytes);
+        final List<byte[]> preSplits = generateArchiveTableBootPreSplitHuman(genomeHelper.getConf());
         return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
+    }
+
+    public static List<byte[]> generateArchiveTableBootPreSplitHuman(Configuration conf) {
+        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(conf);
+
+        int nSplits = conf.getInt(
+                HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE,
+                HadoopVariantStorageEngine.DEFAULT_ARCHIVE_TABLE_PRESPLIT_SIZE);
+        int expectedNumBatches = rowKeyFactory.getFileBatch(conf.getInt(
+                HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER,
+                HadoopVariantStorageEngine.DEFAULT_EXPECTED_FILES_NUMBER));
+
+        final List<byte[]> preSplits = new ArrayList<>(nSplits * expectedNumBatches);
+        for (int batch = 0; batch <= expectedNumBatches; batch++) {
+            int finalBatch = batch;
+            preSplits.addAll(generateBootPreSplitsHuman(nSplits, (chr, start) ->
+                    Bytes.toBytes(rowKeyFactory.generateBlockIdFromSliceAndBatch(finalBatch, chr, start))));
+        }
+        return preSplits;
     }
 
     public VariantFileMetadata getFileMetadata() {
@@ -141,77 +212,24 @@ public class ArchiveTableHelper extends GenomeHelper {
         return meta.get().toVariantStudyMetadata(String.valueOf(getStudyId()));
     }
 
-    public byte[] getColumn() {
-        return column;
+    public byte[] getNonRefColumnName() {
+        return nonRefColumn;
+    }
+
+    public byte[] getRefColumnName() {
+        return refColumn;
     }
 
     @Deprecated
-    public VcfSlice join(byte[] key, Iterable<VcfSlice> input) throws InvalidProtocolBufferException {
-        Builder sliceBuilder = VcfSlice.newBuilder();
-        boolean isFirst = true;
-        List<VcfRecord> vcfRecordLst = new ArrayList<VcfRecord>();
-        for (VcfSlice slice : input) {
-
-            byte[] skey = getKeyFactory().generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
-            // Consistency check
-            if (!Bytes.equals(skey, key)) { // Address doesn't match up -> should never happen
-                throw new IllegalStateException(String.format("Row keys don't match up!!! %s != %s", Bytes.toString(key),
-                        Bytes.toString(skey)));
-            }
-
-            if (isFirst) { // init new slice
-                sliceBuilder.setChromosome(slice.getChromosome()).setPosition(slice.getPosition());
-                isFirst = false;
-            }
-            vcfRecordLst.addAll(slice.getRecordsList());
-        }
-
-        // Sort records
-        try {
-            Collections.sort(vcfRecordLst, getVcfComparator());
-        } catch (IllegalArgumentException e) {
-            logger.error("Issue with comparator: ");
-            for (VcfRecord r : vcfRecordLst) {
-                logger.error(r.toString());
-            }
-            throw e;
-        }
-
-        // Add all
-        sliceBuilder.addAllRecords(vcfRecordLst);
-        return sliceBuilder.build();
-    }
-
-    private VcfSlice extractSlice(Put put) throws InvalidProtocolBufferException {
-        List<Cell> cList = put.get(getColumnFamily(), getColumn());
-        if (cList.isEmpty()) {
-            throw new IllegalStateException(String.format("No data available for row % in column %s in familiy %s!!!",
-                    Bytes.toString(put.getRow()), Bytes.toString(getColumn()), Bytes.toString(getColumnFamily())));
-        }
-        if (cList.size() > 1) {
-            throw new IllegalStateException(String.format("One entry instead of %s expected for row %s column %s in familiy %s!!!",
-                    cList.size(), Bytes.toString(put.getRow()), Bytes.toString(getColumn()), Bytes.toString(getColumnFamily())));
-        }
-        Cell cell = cList.get(0);
-
-        byte[] arr = Arrays.copyOfRange(cell.getValueArray(), cell.getValueOffset(), cell.getValueOffset() + cell.getValueLength());
-        VcfSlice slice = VcfSlice.parseFrom(arr);
-        return slice;
-    }
-
-    private VcfRecordComparator getVcfComparator() {
-        return vcfComparator;
-    }
-
-    public byte[] wrap(VcfRecord record) {
-        return record.toByteArray();
-    }
-
     public Put wrap(VcfSlice slice) {
+        return wrap(slice, false);
+    }
+
+    public Put wrap(VcfSlice slice, boolean isRef) {
 //        byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), (long) slice.getPosition() + slice.getRecords(0).getRelativeStart
 // () * 100);
-        byte[] rowId = keyFactory.generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
-        return wrapAsPut(getColumn(), rowId, slice);
+        byte[] rowId = keyFactory.generateBlockIdAsBytes(getFileId(), slice.getChromosome(), slice.getPosition());
+        return wrapAsPut(isRef ? getRefColumnName() : getNonRefColumnName(), rowId, slice);
     }
 
 }

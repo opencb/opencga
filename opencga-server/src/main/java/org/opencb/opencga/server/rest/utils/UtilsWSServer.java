@@ -21,8 +21,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
@@ -55,16 +54,16 @@ public class UtilsWSServer extends OpenCGAWSServer {
                               @DefaultValue("F") @FormDataParam("directed") String directed,
                               @DefaultValue("F") @FormDataParam("weighted") String weighted,
                               @DefaultValue("infomap") @FormDataParam("method") String method) throws IOException {
-        String home = Config.getGcsaHome();
-        Properties analysisProperties = Config.getAnalysisProperties();
-        Properties accountProperties = Config.getAccountProperties();
+//        String home = Config.getGcsaHome();
+//        Properties analysisProperties = Config.getAnalysisProperties();
+//        Properties accountProperties = Config.getAccountProperties();
 
         String scriptName = "communities-structure-detection";
-        java.nio.file.Path scriptPath = Paths.get(home, analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), scriptName, scriptName + ".r");
+        java.nio.file.Path scriptPath = Paths.get(configuration.getToolDir(), scriptName, scriptName + ".r");
 
         // creating a random tmp folder
         String rndStr = StringUtils.randomString(20);
-        java.nio.file.Path randomFolder = Paths.get(accountProperties.getProperty("OPENCGA.TMP.PATH"), rndStr);
+        java.nio.file.Path randomFolder = Paths.get(configuration.getTempJobsDir(), rndStr);
         Files.createDirectory(randomFolder);
 
         java.nio.file.Path inFilePath = randomFolder.resolve("file.sif");
@@ -114,16 +113,16 @@ public class UtilsWSServer extends OpenCGAWSServer {
     public Response topology(@FormDataParam("sif") String sifData,
                              @DefaultValue("F") @FormDataParam("directed") String directed,
                              @DefaultValue("F") @FormDataParam("weighted") String weighted) throws IOException {
-        String home = Config.getGcsaHome();
-        Properties analysisProperties = Config.getAnalysisProperties();
-        Properties accountProperties = Config.getAccountProperties();
+//        String home = Config.getGcsaHome();
+//        Properties analysisProperties = Config.getAnalysisProperties();
+//        Properties accountProperties = Config.getAccountProperties();
 
         String scriptName = "topological-study";
-        java.nio.file.Path scriptPath = Paths.get(home, analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), scriptName, scriptName + ".r");
+        java.nio.file.Path scriptPath = Paths.get(configuration.getToolDir(), scriptName, scriptName + ".r");
 
         // creating a random tmp folder
         String rndStr = StringUtils.randomString(20);
-        java.nio.file.Path randomFolder = Paths.get(accountProperties.getProperty("OPENCGA.TMP.PATH"), rndStr);
+        java.nio.file.Path randomFolder = Paths.get(configuration.getTempJobsDir(), rndStr);
         Files.createDirectory(randomFolder);
 
         java.nio.file.Path inFilePath = randomFolder.resolve("file.sif");

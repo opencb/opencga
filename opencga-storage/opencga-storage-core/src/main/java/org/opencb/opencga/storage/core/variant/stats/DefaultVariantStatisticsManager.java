@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.json.JsonDataReader;
@@ -213,11 +214,16 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                 .append(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
         VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, readerOptions);
-        List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
+        List<Task<Variant, String>> tasks = new ArrayList<>(numTasks);
+        boolean skipCount = options.getBoolean(QueryOptions.SKIP_COUNT, false);
         ProgressLogger progressLogger = new ProgressLogger("Calculated stats:",
                 () -> {
-                    numStatsToLoad = variantDBAdaptor.count(readerQuery).first();
-                    return numStatsToLoad;
+                    if (skipCount) {
+                        return 0L;
+                    } else {
+                        numStatsToLoad = variantDBAdaptor.count(readerQuery).first();
+                        return numStatsToLoad;
+                    }
                 }, 200).setBatchSize(5000);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger));

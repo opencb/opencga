@@ -87,6 +87,11 @@ public class StorageEngineException extends Exception {
         return new StorageEngineException("Unable to perform action over file \"" + fileName + "\" (" + fileId + "). " + message);
     }
 
+    public static StorageEngineException invalidReleaseException(int release, int currentRelease) {
+        return new StorageEngineException("Unable to load files with release '" + release + "' "
+                + "when the current release is '" + currentRelease + "'.");
+    }
+
     public static StorageEngineException alreadyLoadedSamples(StudyConfiguration studyConfiguration, int fileId) {
         LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
 

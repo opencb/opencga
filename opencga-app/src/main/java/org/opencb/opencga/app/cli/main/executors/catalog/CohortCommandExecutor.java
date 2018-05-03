@@ -125,6 +125,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotNull(CohortDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
         query.putIfNotNull(CohortDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
         query.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
+        query.putAll(commandOptions.commonOptions.params);
 
         if (commandOptions.numericOptions.count) {
             return openCGAClient.getCohortClient().count(query);

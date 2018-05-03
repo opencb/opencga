@@ -1,12 +1,7 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Mutation;
-import org.opencb.commons.io.DataWriter;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.List;
 
 /**
@@ -14,64 +9,15 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseDataWriter<T extends Mutation> implements DataWriter<T> {
-
-    private final HBaseManager hBaseManager;
-    private final String tableName;
-    private BufferedMutator mutator;
+public class HBaseDataWriter<T extends Mutation> extends AbstractHBaseDataWriter<T, T> {
 
     public HBaseDataWriter(HBaseManager hBaseManager, String tableName) {
-        this.hBaseManager = new HBaseManager(hBaseManager);
-        this.tableName = tableName;
+        super(hBaseManager, tableName);
     }
 
     @Override
-    public boolean open() {
-        try {
-            mutator = hBaseManager.getConnection().getBufferedMutator(TableName.valueOf(tableName));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return true;
+    protected List<T> convert(List<T> batch) {
+        return batch;
     }
 
-    @Override
-    public boolean write(List<T> list) {
-        try {
-            mutator.mutate(list);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return true;
-    }
-
-    @Override
-    public boolean write(T elem) {
-        try {
-            mutator.mutate(elem);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return true;
-    }
-
-    @Override
-    public boolean post() {
-        try {
-            mutator.flush();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return true;
-    }
-
-    @Override
-    public boolean close() {
-        try {
-            mutator.close();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return true;
-    }
 }
