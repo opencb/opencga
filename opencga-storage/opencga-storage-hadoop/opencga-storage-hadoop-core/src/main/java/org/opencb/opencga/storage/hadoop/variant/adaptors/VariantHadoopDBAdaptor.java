@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -41,6 +42,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -294,10 +296,17 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         query = query == null ? new Query() : new Query(query);
         options = validateAnnotationQueryOptions(options);
         validateAnnotationQuery(query);
-        if (name.equals("LATEST")) {
-            name = "FULL";
+
+        byte[] annotationColumn;
+        if (name.equals(VariantAnnotationManager.LATEST)) {
+            annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
+        } else {
+            ProjectMetadata.VariantAnnotationMetadata saved = getStudyConfigurationManager().getProjectMetadata().first().
+                    getAnnotation().getSaved(name);
+
+            annotationColumn = Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(saved.getId()));
+            query.put(ANNOT_NAME.key(), saved.getId());
         }
-        query.put(ANNOT_NAME.key(), name);
         SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, options, getStudyConfigurationManager());
         List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
 
@@ -312,7 +321,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }).iterator();
             HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper)
                     .setIncludeFields(selectElements.getFields());
-            converter.setAnnotationColumn(Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(name)));
+            converter.setAnnotationColumn(annotationColumn);
             Iterator<Result> iterator = Iterators.concat(iterators);
             int skip = options.getInt(QueryOptions.SKIP);
             if (skip > 0) {

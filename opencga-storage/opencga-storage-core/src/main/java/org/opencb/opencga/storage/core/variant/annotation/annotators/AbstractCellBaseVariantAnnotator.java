@@ -181,7 +181,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         return variantAnnotationList;
     }
 
-    public static RuntimeException unexpectedVariantOrderException(Object expected, Object actual) {
+    static RuntimeException unexpectedVariantOrderException(Object expected, Object actual) {
         return new IllegalArgumentException("Variants not in the expected order! "
                 + "Expected '" + expected + "', " + "but got '" + actual + "'.");
     }

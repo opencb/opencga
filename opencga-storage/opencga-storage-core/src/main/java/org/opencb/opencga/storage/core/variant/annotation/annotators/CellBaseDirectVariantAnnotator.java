@@ -16,18 +16,24 @@
 
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.api.DBAdaptorFactory;
+import org.opencb.cellbase.core.common.GitRepositoryState;
 import org.opencb.cellbase.core.config.*;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -40,6 +46,7 @@ import java.util.concurrent.ExecutionException;
 public class CellBaseDirectVariantAnnotator extends AbstractCellBaseVariantAnnotator {
 
     private VariantAnnotationCalculator variantAnnotationCalculator = null;
+    private final DBAdaptorFactory dbAdaptorFactory;
 
     public CellBaseDirectVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options)
             throws VariantAnnotatorException {
@@ -75,8 +82,7 @@ public class CellBaseDirectVariantAnnotator extends AbstractCellBaseVariantAnnot
         speciesProperties.setVertebrates(Collections.singletonList(cellbaseSpecies));
         cellBaseConfiguration.setSpecies(speciesProperties);
 
-        DBAdaptorFactory dbAdaptorFactory
-                = new org.opencb.cellbase.lib.impl.MongoDBAdaptorFactory(cellBaseConfiguration);
+        dbAdaptorFactory = new org.opencb.cellbase.lib.impl.MongoDBAdaptorFactory(cellBaseConfiguration);
         variantAnnotationCalculator =
                 new VariantAnnotationCalculator(species, assembly, dbAdaptorFactory);
 
@@ -101,4 +107,27 @@ public class CellBaseDirectVariantAnnotator extends AbstractCellBaseVariantAnnot
         return queryResultList;
 
     }
+
+    @Override
+    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() {
+        return new ProjectMetadata.VariantAnnotatorProgram(
+                "CellBase (OpenCB)",
+                GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId()
+        );
+    }
+
+    @Override
+    public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
+        QueryResult queryResult = dbAdaptorFactory.getMetaDBAdaptor(species, assembly).nativeGet(new Query(), new QueryOptions());
+
+        List<ObjectMap> objectMaps = new ArrayList<>(queryResult.getResult().size());
+        ObjectMapper objectMapper = new ObjectMapper();
+        for (Object o : queryResult.getResult()) {
+            ObjectMap objectMap = objectMapper.readValue(objectMapper.writeValueAsString(o), ObjectMap.class);
+            objectMaps.add(objectMap);
+        }
+
+        return objectMaps;
+    }
+
 }

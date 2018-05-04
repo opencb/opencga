@@ -596,7 +596,10 @@ public class VariantPhoenixHelper {
         return PhoenixHelper.getEscapedFullTableName(DEFAULT_TABLE_TYPE, fullTableName, conf);
     }
 
-    public static String getAnnotationSnapshotColumn(String name) {
-        return "A_" + name;
+    public static String getAnnotationSnapshotColumn(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Wrong annotation snapshot column id. Must be greater than 0. Found: " + id);
+        }
+        return "A_" + id;
     }
 }

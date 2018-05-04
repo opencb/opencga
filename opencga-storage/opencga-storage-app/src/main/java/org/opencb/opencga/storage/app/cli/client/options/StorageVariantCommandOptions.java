@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.HashMap;
@@ -552,7 +553,7 @@ public class StorageVariantCommandOptions {
     public static class GenericQueryAnnotationCommandOptions {
 
         @Parameter(names = {"--name"}, description = "Annotation snapshot name", required = true, arity = 1)
-        public String name = "LATEST";
+        public String name = VariantAnnotationManager.LATEST;
 
         @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR, variableArity = true)
         public List<String> id;

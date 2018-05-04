@@ -77,7 +77,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
  * TODO: Make this class abstract
  * @author Javier Lopez &lt;fjlopez@ebi.ac.uk&gt;
  */
-public class DefaultVariantAnnotationManager implements VariantAnnotationManager {
+public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
     public static final String FILE_NAME = "fileName";
     public static final String OUT_DIR = "outDir";
@@ -110,6 +110,11 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
         URI annotationFile;
         if (doCreate) {
+            dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+                checkCurrentAnnotation(variantAnnotator, projectMetadata);
+                return projectMetadata;
+            });
+
             long start = System.currentTimeMillis();
             logger.info("Starting annotation creation");
             logger.info("Query : {} ", query.toJson());
@@ -396,13 +401,13 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
     //TODO: Make this method abstract
     @Override
-    public void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException {
+    public void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
         throw new UnsupportedOperationException();
     }
 
     //TODO: Make this method abstract
     @Override
-    public void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException {
+    public void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
         throw new UnsupportedOperationException();
     }
 }

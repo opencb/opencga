@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -37,9 +38,12 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
     }
 
     @Override
-    public void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException {
-        // TODO: Check valid name
-        // TODO: Check name doesn't exist already
+    public void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+
+        dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
+            registerNewAnnotationSnapshot(name, variantAnnotator, project);
+            return project;
+        });
 
         String annotationCollectionName = mongoDbAdaptor.getAnnotationCollectionName(name);
         mongoDbAdaptor.getVariantsCollection().aggregate(Arrays.asList(
@@ -59,7 +63,13 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
     }
 
     @Override
-    public void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException {
+    public void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
         mongoDbAdaptor.dropAnnotationCollection(name);
+
+        dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
+            removeAnnotationSnapshot(name, project);
+            return project;
+        });
+
     }
 }

@@ -480,7 +480,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
 
     })
-    public Response getAnnotation(@ApiParam(value = "") @DefaultValue("LATEST") @PathParam("name") String name) {
+    public Response getAnnotation(@ApiParam(value = "") @DefaultValue(VariantAnnotationManager.LATEST) @PathParam("name") String name) {
         logger.info("limit {} , skip {}", count, limit, skip);
         try {
             // Get all query options

@@ -475,8 +475,8 @@ public class VariantHBaseQueryParser {
 
         if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
             if (isValidParam(query, VariantHadoopDBAdaptor.ANNOT_NAME)) {
-                String name = query.getString(VariantHadoopDBAdaptor.ANNOT_NAME.key());
-                scan.addColumn(family, Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(name)));
+                int id = query.getInt(VariantHadoopDBAdaptor.ANNOT_NAME.key());
+                scan.addColumn(family, Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(id)));
             } else {
                 scan.addColumn(family, FULL_ANNOTATION.bytes());
                 if (defaultStudyConfiguration != null) {

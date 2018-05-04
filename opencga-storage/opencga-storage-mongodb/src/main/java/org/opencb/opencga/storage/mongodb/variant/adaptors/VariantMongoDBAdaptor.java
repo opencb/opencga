@@ -45,13 +45,12 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
@@ -159,7 +158,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     public String getAnnotationCollectionName(String name) {
-        return configuration.getString(COLLECTION_ANNOTATION.key(), COLLECTION_ANNOTATION.defaultValue()) + "_" + name;
+        ProjectMetadata.VariantAnnotationMetadata saved = getStudyConfigurationManager().getProjectMetadata()
+                .first().getAnnotation().getSaved(name);
+
+        return configuration.getString(COLLECTION_ANNOTATION.key(), COLLECTION_ANNOTATION.defaultValue()) + "_" + saved.getId();
     }
 
     public void dropAnnotationCollection(String name) {
@@ -485,10 +487,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Document projection = queryParser.createProjection(query, options);
 
         MongoDBCollection annotationCollection;
-        if (name.equals("LATEST")) {
+        if (name.equals(VariantAnnotationManager.LATEST)) {
             annotationCollection = getVariantsCollection();
         } else {
-            // TODO: Check annotation exists
             annotationCollection = getAnnotationCollection(name);
         }
         SelectVariantElements selectVariantElements = VariantQueryUtils.parseSelectElements(

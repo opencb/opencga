@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,7 +55,7 @@ public abstract class VariantAnnotationSnapshotTest extends VariantStorageBaseTe
         assertEquals(0, variantStorageEngine.getAnnotation("v0", null, null).getResult().size());
         checkAnnotationSnapshot(variantStorageEngine, "v1", "v1");
         checkAnnotationSnapshot(variantStorageEngine, "v2", "v2");
-        checkAnnotationSnapshot(variantStorageEngine, "LATEST", "v3");
+        checkAnnotationSnapshot(variantStorageEngine, VariantAnnotationManager.LATEST, "v3");
 
         variantStorageEngine.deleteAnnotationSnapshot("v1", new ObjectMap());
 
@@ -89,7 +90,7 @@ public abstract class VariantAnnotationSnapshotTest extends VariantStorageBaseTe
 
 
         // Get annotations from a deleted snapshot
-        // FIXME: Should throw an exception?
+        thrown.expectMessage("Variant Annotation snapshot \"v1\" not found!");
         assertEquals(0, variantStorageEngine.getAnnotation("v1", null, null).getResult().size());
     }
 
@@ -130,6 +131,16 @@ public abstract class VariantAnnotationSnapshotTest extends VariantStorageBaseTe
                 a.setConsequenceTypes(Collections.singletonList(ct));
                 return a;
             }).collect(Collectors.toList());
+        }
+
+        @Override
+        public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
+            return new ProjectMetadata.VariantAnnotatorProgram("MyAnnotator", key, null);
+        }
+
+        @Override
+        public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
+            return Collections.singletonList(new ObjectMap("data", "genes"));
         }
     }
 
