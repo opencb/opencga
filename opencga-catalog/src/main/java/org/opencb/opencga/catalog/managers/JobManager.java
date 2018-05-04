@@ -29,10 +29,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -189,16 +186,15 @@ public class JobManager extends ResourceManager<Job> {
             authorizationManager.checkFilePermission(study.getUid(), inputFile.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
         }
         if (job.getOutDir() != null) {
-            authorizationManager.checkFilePermission(study.getUid(), job.getOutDir().getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-            QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
-                    "projects.studies.files.id",
-                    "projects.studies.files.type",
-                    "projects.studies.files.path"));
-            File outDir = fileDBAdaptor.get(job.getOutDir().getUid(), fileQueryOptions).first();
+            String fileName = StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir().getPath() : job.getOutDir().getName();
+            File file = catalogManager.getFileManager().smartResolutor(study.getUid(), fileName, userId);
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
-            if (!outDir.getType().equals(File.Type.DIRECTORY)) {
+            if (!file.getType().equals(File.Type.DIRECTORY)) {
                 throw new CatalogException("Bad outDir type. Required type : " + File.Type.DIRECTORY);
             }
+
+            job.setOutDir(file);
         }
 
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, study.getUid(), options);

@@ -865,20 +865,19 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void getAllJobs() throws CatalogException {
-        // TODO: We need to check how to create jobs with a file
-        assertEquals(0 ,1);
         Job job = new Job()
-                .setName("job1")
+                .setId("job1")
+                .setToolId("toolId")
                 .setOutDir(new File().setPath(data_d1_d2));
         long job1 = catalogManager.getJobManager().create(studyFqn, job, null, ownerSessionId).first().getUid();
 
-        job.setName("job2");
+        job.setId("job2");
         long job2 = catalogManager.getJobManager().create(studyFqn, job, null, ownerSessionId).first().getUid();
 
-        job.setName("job3");
+        job.setId("job3");
         long job3 = catalogManager.getJobManager().create(studyFqn, job, null, ownerSessionId).first().getUid();
 
-        job.setName("job4");
+        job.setId("job4");
         long job4 = catalogManager.getJobManager().create(studyFqn, job, null, ownerSessionId).first().getUid();
 
 
