@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.VariableSet;
 

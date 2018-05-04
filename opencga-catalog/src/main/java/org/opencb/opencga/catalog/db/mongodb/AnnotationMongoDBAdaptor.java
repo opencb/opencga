@@ -45,7 +45,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.addCompQueryFilter;
