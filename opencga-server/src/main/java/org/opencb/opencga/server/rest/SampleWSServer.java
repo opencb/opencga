@@ -107,7 +107,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Individual id or name to whom the sample will correspond.") @QueryParam("individual") String individual,
             @ApiParam(value = "JSON containing sample information", required = true) CreateSamplePOST params) {
         try {
-            ObjectUtils.defaultIfNull(params, new CreateSamplePOST());
+            params = ObjectUtils.defaultIfNull(params, new CreateSamplePOST());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -168,7 +168,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
                                    + " alias.", required = false) @QueryParam("study") String studyStr,
                            @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
-                           @ApiParam(value = "name") @QueryParam("name") String name,
+                           @ApiParam(value = "DEPRECATED: name") @QueryParam("name") String name,
                            @ApiParam(value = "source") @QueryParam("source") String source,
                            @ApiParam(value = "type") @QueryParam("type") String type,
                            @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
@@ -330,7 +330,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
+            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
+            @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
             @ApiParam(value = "source") @QueryParam("source") String source,
             @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
             @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
@@ -629,6 +630,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     private static class SamplePOST {
+        public String id;
+        @Deprecated
         public String name;
         public String description;
         public String type;
@@ -659,8 +662,9 @@ public class SampleWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            return new Sample(name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, type, somatic, 1, 1, annotationSets, phenotypes, stats, attributes);
+            String sampleId = StringUtils.isEmpty(id) ? name : id;
+            return new Sample(sampleId, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
+                    description, type, somatic, 1, 1, annotationSets, phenotypes, stats, attributes).setName(name);
         }
     }
 }
