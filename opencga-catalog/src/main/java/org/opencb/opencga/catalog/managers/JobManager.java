@@ -29,7 +29,10 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -182,9 +185,31 @@ public class JobManager extends ResourceManager<Job> {
         // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
+
+        List<File> inputFileList = new ArrayList<>();
         for (File inputFile : job.getInput()) {
-            authorizationManager.checkFilePermission(study.getUid(), inputFile.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
+            String fileId = StringUtils.isEmpty(inputFile.getPath()) ? inputFile.getName() : inputFile.getPath();
+            try {
+                File file = catalogManager.getFileManager().smartResolutor(study.getUid(), fileId, userId);
+                inputFileList.add(file);
+            } catch (CatalogException e) {
+                throw new CatalogException("Could not create job: " + e.getMessage(), e);
+            }
         }
+        job.setInput(inputFileList);
+
+        List<File> outputFileList = new ArrayList<>();
+        for (File outputFile : job.getOutput()) {
+            String fileId = StringUtils.isEmpty(outputFile.getPath()) ? outputFile.getName() : outputFile.getPath();
+            try {
+                File file = catalogManager.getFileManager().smartResolutor(study.getUid(), fileId, userId);
+                inputFileList.add(file);
+            } catch (CatalogException e) {
+                throw new CatalogException("Could not create job: " + e.getMessage(), e);
+            }
+        }
+        job.setOutput(outputFileList);
+
         if (job.getOutDir() != null) {
             String fileName = StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir().getPath() : job.getOutDir().getName();
             File file = catalogManager.getFileManager().smartResolutor(study.getUid(), fileName, userId);

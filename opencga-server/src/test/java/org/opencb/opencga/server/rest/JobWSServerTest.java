@@ -85,7 +85,7 @@ public class JobWSServerTest {
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
-                .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
+                .request().post(Entity.json(new JobWSServer.InputJob(jobName, jobName, toolName, description, 10, 20, commandLine,
                         status, Long.toString(outDirId), Collections.emptyList(), null, null)), String.class);
 
         QueryResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
@@ -112,7 +112,7 @@ public class JobWSServerTest {
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
-                .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
+                .request().post(Entity.json(new JobWSServer.InputJob(jobName, jobName, toolName, description, 10, 20, commandLine,
                         status, Long.toString(outDirId), Collections.emptyList(), null, null)), String.class);
 
         QueryResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
@@ -142,7 +142,7 @@ public class JobWSServerTest {
         webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
-                .request().post(Entity.json(new JobWSServer.InputJob(null, toolName, description, 10, 20, commandLine,
+                .request().post(Entity.json(new JobWSServer.InputJob(null, null, toolName, description, 10, 20, commandLine,
                         status, Long.toString(outDirId), Collections.emptyList(), null, null)), String.class);
     }
 

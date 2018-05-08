@@ -53,8 +53,10 @@ public class JobWSServer extends OpenCGAWSServer {
         public InputJob() {
         }
 
-        public InputJob(String name, String toolName, String description, long startTime, long endTime, String commandLine, Status status,
-                        String outDirId, List<Long> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+        public InputJob(String id, String name, String toolName, String description, long startTime, long endTime, String commandLine,
+                        Status status, String outDirId, List<String> input, Map<String, Object> attributes, Map<String, Object>
+                                resourceManagerAttributes) {
+            this.id = id;
             this.name = name;
             this.toolName = toolName;
             this.description = description;
@@ -71,6 +73,7 @@ public class JobWSServer extends OpenCGAWSServer {
         enum Status {READY, ERROR}
 
         @ApiModelProperty(required = true)
+        public String id;
         public String name;
         @ApiModelProperty(required = true)
         public String toolName;
@@ -86,8 +89,8 @@ public class JobWSServer extends OpenCGAWSServer {
         public String outDirId;
         @ApiModelProperty(required = true)
         public String outDir;
-        public List<Long> input;
-        public List<Long> output;
+        public List<String> input;
+        public List<String> output;
         public Map<String, Object> attributes;
         public Map<String, Object> resourceManagerAttributes;
 
@@ -101,12 +104,13 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Register an executed job with POST method", position = 1,
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
                     + "Required values: [name, toolName, commandLine, outDirId]", response = Job.class)
-    public Response createJobPOST(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
-                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                  @QueryParam("study") String studyStr,
-                                  @ApiParam(value = "job", required = true) InputJob inputJob) {
+    public Response createJobPOST(
+            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value = "job", required = true) InputJob inputJob) {
         try {
-            ObjectUtils.defaultIfNull(inputJob, new InputJob());
+            inputJob = ObjectUtils.defaultIfNull(inputJob, new InputJob());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -123,7 +127,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 jobStatus.setMessage(inputJob.statusMessage);
             }
 
-            Job job = new Job(-1, inputJob.name, inputJob.name, "", inputJob.toolName, null, "", inputJob.description, inputJob.startTime,
+            Job job = new Job(-1, inputJob.id, inputJob.name, "", inputJob.toolName, null, "", inputJob.description, inputJob.startTime,
                     inputJob.endTime, inputJob.execution, "", inputJob.commandLine, false, jobStatus, -1,
                     new File().setUid(Long.parseLong(inputJob.outDir)), parseToListOfFiles(inputJob.input),
                     parseToListOfFiles(inputJob.output), Collections.emptyList(), inputJob.params, -1, inputJob.attributes,
@@ -136,13 +140,13 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
-    private List<File> parseToListOfFiles(List<Long> longList) {
+    private List<File> parseToListOfFiles(List<String> longList) {
         if (longList == null || longList.isEmpty()) {
             return Collections.emptyList();
         }
         List<File> fileList = new ArrayList<>(longList.size());
-        for (Long myLong : longList) {
-            fileList.add(new File().setUid(myLong));
+        for (String myLong : longList) {
+            fileList.add(new File().setPath(myLong));
         }
         return fileList;
     }
@@ -222,7 +226,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Increment job visits", position = 3)
     public Response visit(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobId) {
         try {
             return createOkResponse(catalogManager.getJobManager().visit(studyStr, jobId, sessionId));
@@ -236,7 +240,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete existing jobs")
     public Response delete(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "id") @DefaultValue("") @QueryParam("id") String id,
             @ApiParam(value = "name") @QueryParam("name") String name,
             @ApiParam(value = "tool name") @QueryParam("toolName") String tool,
@@ -298,7 +302,7 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIdsStr);
-                return createOkResponse(jobManager.getAcls(null, idList, member, silent, sessionId));
+            return createOkResponse(jobManager.getAcls(null, idList, member, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
