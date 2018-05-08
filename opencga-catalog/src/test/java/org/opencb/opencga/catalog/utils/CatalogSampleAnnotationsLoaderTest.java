@@ -69,8 +69,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         sessionId = catalogManager.getUserManager().login(userId, userId);
         Project project = catalogManager.getProjectManager().create("def", "default", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
-        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", "default", Study.Type.FAMILY, null,
-                "", null, null, null, null, null, null, null, null, sessionId).getResult().get(0);
+        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", Study.Type.FAMILY, null, "", null, null, null, null, null, null, null, null, sessionId).getResult().get(0);
         studyId = study.getFqn();
         pedFile = catalogManager.getFileManager().create(studyId, File.Type.FILE, File.Format.PED, File.Bioformat
                 .OTHER_PED, "data/" + pedFileName, null, "", null, 0, -1, null, (long) -1, null, null, true, null, null, sessionId)

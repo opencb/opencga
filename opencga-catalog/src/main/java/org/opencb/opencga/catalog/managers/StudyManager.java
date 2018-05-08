@@ -169,10 +169,10 @@ public class StudyManager extends AbstractManager {
         return studyQueryResult;
     }
 
-    public QueryResult<Study> create(String projectStr, String id, String name, Study.Type type, String creationDate, String description,
-                                     Status status, String cipher, String uriScheme, URI uri, Map<File.Bioformat, DataStore> datastores,
-                                     Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
+                                     String description, Status status, String cipher, String uriScheme, URI uri,
+                                     Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
+                                     QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(type, "type");
@@ -228,7 +228,7 @@ public class StudyManager extends AbstractManager {
         // We set all the permissions for the owner of the study.
         // StudyAcl studyAcl = new StudyAcl(userId, AuthorizationManager.getAdminAcls());
 
-        Study study = new Study(id, name, id, type, creationDate, description, status, TimeUtils.getTime(),
+        Study study = new Study(id, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, Arrays.asList(new Group(MEMBERS, Collections.emptyList()), new Group(ADMINS, Collections.emptyList())),
                 experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 Collections.emptyList(), new LinkedList<>(), null, null, datastores, project.getCurrentRelease(), stats,
@@ -632,7 +632,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public QueryResult<Group> createGroup(String studyStr, String groupId, String users, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(groupId, "groupId");
+        ParamUtils.checkParameter(groupId, "group name");
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = resolveId(studyStr, userId);

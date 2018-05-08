@@ -90,10 +90,9 @@ public final class CatalogDemo {
             List<String> studiesTmp = new ArrayList<>(2);
             for (int i = 1; i <= 2; i++) {
                 String name = "Name of study" + i;
-                String alias = "study" + i;
-                studiesTmp.add(catalogManager.getStudyManager().create(projectId, alias, name, Study.Type.FAMILY, null,
-                        "Description of " + alias, null, null, null, null, null, null, null, null,
-                        userSession.getValue()).first().getFqn());
+                String id = "study" + i;
+                studiesTmp.add(catalogManager.getStudyManager().create(projectId, id, id, name, Study.Type.FAMILY, null, "Description of"
+                        + " " + id, null, null, null, null, null, null, null, null, userSession.getValue()).first().getFqn());
             }
             studies.put(userSession.getKey(), studiesTmp);
         }

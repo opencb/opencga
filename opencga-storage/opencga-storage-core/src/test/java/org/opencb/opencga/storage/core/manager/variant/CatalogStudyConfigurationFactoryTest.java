@@ -83,7 +83,7 @@ public class CatalogStudyConfigurationFactoryTest {
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getUid();
-        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
+        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", null, "s1", Study.Type.CASE_CONTROL, null, "Study " +
                 "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null,
                 null, null, sessionId).first().getUid();
         outputId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null,

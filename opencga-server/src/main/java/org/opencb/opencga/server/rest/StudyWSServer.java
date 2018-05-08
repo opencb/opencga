@@ -53,7 +53,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     private StudyManager studyManager;
 
-    public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         studyManager = catalogManager.getStudyManager();
     }
@@ -62,12 +63,17 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new study", response = Study.class)
-    public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
-                                    @ApiParam(value = "study", required = true) StudyParams study) {
+    public Response createStudyPOST(
+            @ApiParam(value = "DEPRECATED: Project id") @QueryParam("projectId") String projectIdStr,
+            @ApiParam(value = "Project id", required = true) @QueryParam("project") String project,
+            @ApiParam(value = "study", required = true) StudyCreateParams study) {
         try {
-            ObjectUtils.defaultIfNull(study, new StudyParams());
-            return createOkResponse(catalogManager.getStudyManager().create(projectIdStr, study.alias, study.name, study
-                    .type, null, study.description, null, null, null, null, null, study.stats, study.attributes, queryOptions, sessionId));
+            String projectId = StringUtils.isEmpty(project) ? projectIdStr : project;
+            study = ObjectUtils.defaultIfNull(study, new StudyCreateParams());
+
+            String studyId = StringUtils.isEmpty(study.id) ? study.alias : study.id;
+            return createOkResponse(catalogManager.getStudyManager().create(projectId, studyId, study.alias, study.name, study.type, null,
+                    study.description, null, null, null, null, null, study.stats, study.attributes, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -88,9 +94,11 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response getAllStudies(
             @Deprecated @ApiParam(value = "Project id or alias", hidden = true) @QueryParam("projectId") String projectId,
-            @ApiParam(value = "Project id or alias", required = true) @QueryParam("project") String projectStr,
+            @ApiParam(value = "Project id", required = true) @QueryParam("project") String projectStr,
             @ApiParam(value = "Study name") @QueryParam("name") String name,
+            @ApiParam(value = "Study id") @QueryParam("id") String id,
             @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
+            @ApiParam(value = "Study full qualified name") @QueryParam("fqn") String fqn,
             @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
             @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
@@ -389,14 +397,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
-        ObjectUtils.defaultIfNull(params, new GroupCreateParams());
+        params = ObjectUtils.defaultIfNull(params, new GroupCreateParams());
 
-        if (StringUtils.isNotEmpty(params.groupId) && StringUtils.isEmpty(params.name)) {
-            params.name = params.groupId;
-        }
-        if (StringUtils.isEmpty(params.name)) {
-            return createErrorResponse(new CatalogException("groupId key missing."));
-        }
         try {
             QueryResult group = catalogManager.getStudyManager().createGroup(studyStr, params.name, params.users, sessionId);
             return createOkResponse(group);
@@ -654,11 +656,13 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    public static class StudyCreateParams extends StudyParams {
+        public String id;
+    }
+
     public static class GroupCreateParams {
         @JsonProperty(required = true)
         public String name;
-        @Deprecated
-        public String groupId;
         public String users;
     }
 
