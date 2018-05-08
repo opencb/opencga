@@ -75,11 +75,11 @@ public class ProjectManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
         sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
 
-        project1 = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+        project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
-        project2 = catalogManager.getProjectManager().create("Project Management Project", "pmp", "life art intelligent system",
+        project2 = catalogManager.getProjectManager().create("pmp", "Project Management Project", "life art intelligent system",
                 "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser2).first().getId();
-        project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
+        project3 = catalogManager.getProjectManager().create("p1", "project 1", "", "", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getId();
 
         studyId = catalogManager.getStudyManager().create(project1, "phase1", "Phase 1", Study.Type.TRIO, null, "Done",
@@ -143,7 +143,7 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void updateOrganismInProject() throws CatalogException {
-        Project pr = catalogManager.getProjectManager().create("Project about some genomes", "project2", "", "ACME", "Homo sapiens",
+        Project pr = catalogManager.getProjectManager().create("project2", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", null, sessionIdUser).first();
 
         assertEquals("Homo sapiens", pr.getOrganism().getScientificName());

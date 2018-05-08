@@ -191,15 +191,15 @@ public class ProjectManager extends AbstractManager {
         return get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
     }
 
-    public QueryResult<Project> create(String name, String alias, String description, String organization, String scientificName,
+    public QueryResult<Project> create(String id, String name, String description, String organization, String scientificName,
                                        String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
             throws CatalogException {
 
-        ParamUtils.checkParameter(name, "name");
-        ParamUtils.checkParameter(scientificName, "organism.scientificName");
-        ParamUtils.checkParameter(assembly, "organism.assembly");
-        ParamUtils.checkAlias(alias, "alias");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, ProjectDBAdaptor.QueryParams.NAME.key());
+        ParamUtils.checkParameter(scientificName, ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key());
+        ParamUtils.checkParameter(assembly, ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key());
+        ParamUtils.checkAlias(id, ProjectDBAdaptor.QueryParams.ID.key());
+        ParamUtils.checkParameter(sessionId, "token");
 
         //Only the user can create a project
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
@@ -230,7 +230,7 @@ public class ProjectManager extends AbstractManager {
             organism.setCommonName(assembly);
         }
 
-        Project project = new Project(alias, name, description, new Status(), organization, organism, 1);
+        Project project = new Project(id, name, description, new Status(), organization, organism, 1);
 
         QueryResult<Project> queryResult = projectDBAdaptor.insert(project, userId, options);
         project = queryResult.getResult().get(0);

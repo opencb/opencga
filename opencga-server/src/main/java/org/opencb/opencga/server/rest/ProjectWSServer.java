@@ -52,8 +52,11 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response createProjectPOST(@ApiParam(value = "JSON containing the mandatory parameters", required = true) ProjectCreateParams project) {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
+
+            String projectId = StringUtils.isEmpty(project.id) ? project.alias : project.id;
+
             QueryResult queryResult = catalogManager.getProjectManager()
-                    .create(project.name, project.alias, project.description, project.organization,
+                    .create(projectId, project.name, project.description, project.organization,
                             project.organism != null ? project.organism.getScientificName() : null,
                             project.organism != null ? project.organism.getCommonName() : null,
                             project.organism != null ? Integer.toString(project.organism.getTaxonomyCode()) : null,
@@ -99,8 +102,10 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response searchProjects(
             @ApiParam(value = "Owner of the project") @QueryParam("owner") String owner,
+            @ApiParam(value = "Project id") @QueryParam("id") String id,
             @ApiParam(value = "Project name") @QueryParam("name") String name,
-            @ApiParam(value = "Project alias") @QueryParam("alias") String alias,
+            @ApiParam(value = "Project fqn") @QueryParam("fqn") String fqn,
+            @ApiParam(value = "DEPRECATED: Project alias") @QueryParam("alias") String alias,
             @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
             @ApiParam(value = "Project description") @QueryParam("description") String description,
             @ApiParam(value = "Study id or alias") @QueryParam("study") String study,
@@ -124,7 +129,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Path("/{project}/increlease")
     @ApiOperation(value = "Increment current release number in the project", response = Integer.class)
     public Response incrementRelease(
-            @ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectStr) {
+            @ApiParam(value = "Project id", required = true) @PathParam("project") String projectStr) {
         try {
             isSingleId(projectStr);
             return createOkResponse(catalogManager.getProjectManager().incrementRelease(projectStr, sessionId));
@@ -160,10 +165,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Path("/{project}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some project attributes", response = Project.class)
-    public Response updateByPost(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
+    public Response updateByPost(@ApiParam(value = "Project id", required = true) @PathParam("project") String projectStr,
                                  @ApiParam(value = "JSON containing the params to be updated. It will be only possible to update organism "
-                                         + "fields not previously defined.", required = true) ProjectUpdateParams updateParams)
-            throws IOException {
+                                         + "fields not previously defined.", required = true) ProjectUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new ProjectUpdateParams());
 
@@ -209,6 +213,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     protected static class ProjectCreateParams extends ProjectParams {
+        public String id;
+        @Deprecated
         public String alias;
     }
 

@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
@@ -136,11 +135,11 @@ public class FileManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
         sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
 
-        String projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
-        Project project2 = catalogManager.getProjectManager().create("Project Management Project", "pmp", "life art intelligent system",
+        Project project2 = catalogManager.getProjectManager().create("pmp", "Project Management Project", "life art intelligent system",
                 "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser2).first();
-        catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens", null, null, "GRCh38", new QueryOptions(),
+        catalogManager.getProjectManager().create("p1", "project 1", "", "", "Homo sapiens", null, null, "GRCh38", new QueryOptions(),
                 sessionIdUser3);
 
         Study study = catalogManager.getStudyManager().create(projectId, "phase1", "Phase 1", Study.Type.TRIO, null, "Done",

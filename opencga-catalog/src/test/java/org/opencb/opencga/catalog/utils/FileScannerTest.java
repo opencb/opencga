@@ -59,7 +59,7 @@ public class FileScannerTest {
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
-        project = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+        project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
         study = catalogManager.getStudyManager().create(project.getId(), "phase1", "Phase 1", Study.Type.TRIO, null,
                 "Done", null, null, null, null, null, null, null, null, sessionIdUser).first();

@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,7 +71,7 @@ public class FamilyManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
-        String projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
         catalogManager.getStudyManager().create(projectId, "phase1", "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
                 null, null, null, null, sessionIdUser);
