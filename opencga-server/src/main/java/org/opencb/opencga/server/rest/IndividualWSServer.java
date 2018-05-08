@@ -75,7 +75,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "JSON containing individual information", required = true) IndividualCreatePOST params) {
         try {
-            ObjectUtils.defaultIfNull(params, new IndividualCreatePOST());
+            params = ObjectUtils.defaultIfNull(params, new IndividualCreatePOST());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -653,6 +653,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     protected static class IndividualCreatePOST extends IndividualPOST {
+        public String id;
         public List<SampleWSServer.CreateSamplePOST> samples;
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
@@ -672,7 +673,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     sampleList.add(sample.toSample(studyStr, studyManager, sessionId));
                 }
             }
-            return new Individual(name, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
+            return new Individual(id, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
         }
