@@ -98,9 +98,10 @@ public class CatalogSampleAnnotationsLoader {
             auxTime = System.currentTimeMillis();
             List<Variable> variableList = new ArrayList<>();
             variableList.addAll(variableSet.getVariables());
-            variableSet = catalogManager.getStudyManager().createVariableSet(study.getFqn(), pedFile.getName(), true, false,
-                    "Auto-generated  VariableSet from File = {path: " + pedFile.getPath() + ", name: \"" + pedFile.getName() + "\"}",
-                    null, variableList, sessionId).getResult().get(0);
+            String name = pedFile.getName();
+            variableSet = catalogManager.getStudyManager().createVariableSet(study.getFqn(), name, name, true, false, "Auto-generated  "
+                            + "VariableSet from File = {path: " + pedFile.getPath() + ", name: \"" + pedFile.getName() + "\"}", null,
+                    variableList, sessionId).getResult().get(0);
             variableSetId = variableSet.getId();
             logger.debug("Added VariableSet = {id: {}} in {}ms", variableSetId, System.currentTimeMillis() - auxTime);
         }
@@ -303,7 +304,7 @@ public class CatalogSampleAnnotationsLoader {
                     variableList.size(), null, "", null, null));
         }
 
-        VariableSet variableSet = new VariableSet("", false, false, "", new HashSet(variableList), 1, null);
+        VariableSet variableSet = new VariableSet("", "", false, false, "", new HashSet(variableList), 1, null);
         return variableSet;
     }
 

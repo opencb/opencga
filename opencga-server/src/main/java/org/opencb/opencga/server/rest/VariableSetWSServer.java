@@ -49,6 +49,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     private static class VariableSetParameters {
         public Boolean unique;
         public Boolean confidential;
+        public String id;
         public String name;
         public String description;
         public List<Variable> variables;
@@ -64,14 +65,14 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value="JSON containing the variableSet information", required = true) VariableSetParameters params) {
         try {
-            ObjectUtils.defaultIfNull(params, new VariableSetParameters());
+            params = ObjectUtils.defaultIfNull(params, new VariableSetParameters());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
             logger.info("variables: {}", params.variables);
 
-            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyIdStr, params.name,
+            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.id, params.name,
                     params.unique, params.confidential, params.description, null, params.variables, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

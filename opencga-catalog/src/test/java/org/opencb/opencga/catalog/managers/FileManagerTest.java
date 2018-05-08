@@ -223,7 +223,7 @@ public class FileManagerTest extends GenericTest {
                         true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "", null, Collections.<String, Object>emptyMap()),
                 new Variable("EXTRA", "", Variable.VariableType.TEXT, "", false, false, Collections.emptyList(), 5, "", "", null,
                         Collections.<String, Object>emptyMap())));
-        VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs", true, false, "", null, variables,
+        VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs", "vs", true, false, "", null, variables,
                 sessionIdUser).first();
 
         s_1 = catalogManager.getSampleManager().create(studyFqn, "s_1", "", "", null, false, null, new HashMap<>(), null, new

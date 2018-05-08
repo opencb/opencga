@@ -343,9 +343,9 @@ public class CatalogAnnotationsValidator {
                 for (Object object : listValues) {
                     if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
                         Map objectMap = (Map) object;
-                        checkAnnotationSet(new VariableSet(variable.getId(), false, false, variable.getDescription(),
-                                variable.getVariableSet(), 1, null), new AnnotationSet("", variable.getId(), objectMap, null, 1, null),
-                                null);
+                        checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, variable.getDescription(),
+                                        variable.getVariableSet(), 1, null), new AnnotationSet("", variable.getId(), objectMap, null, 1,
+                                        null), null);
                     }
                 }
                 break;
