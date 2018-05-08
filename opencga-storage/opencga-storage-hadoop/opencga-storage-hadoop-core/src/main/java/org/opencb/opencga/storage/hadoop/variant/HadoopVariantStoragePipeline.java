@@ -82,7 +82,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RELEASE;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
@@ -440,7 +439,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyConfiguration.getStudyId(), fileIds,
                         newSamples);
 
-                int release = studyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
+                int release = getStudyConfigurationManager().getProjectMetadata().first().getRelease();
                 phoenixHelper.registerRelease(jdbcConnection, variantsTableName, release);
 
             } catch (SQLException e) {

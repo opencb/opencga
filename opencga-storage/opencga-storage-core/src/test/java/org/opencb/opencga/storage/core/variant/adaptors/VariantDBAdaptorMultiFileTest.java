@@ -5,6 +5,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -99,6 +100,22 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query(), options);
 
         assertThat(queryResult, everyResult(allVariants, notNullValue(Variant.class)));
+    }
+
+    @Test
+    public void testRelease() throws Exception {
+        for (Variant variant : dbAdaptor) {
+            Integer minFileId = variant.getStudies().stream()
+                    .flatMap(s -> s.getFiles().stream())
+                    .map(FileEntry::getFileId)
+                    .map(Integer::valueOf)
+                    .min(Integer::compareTo)
+                    .orElse(0);
+            assertTrue(minFileId > 0);
+            int expectedRelease = (minFileId - 12877/*first file loaded*/) / 2/*each release contains 2 files*/ + 1/*base-1*/;
+            int release = Integer.valueOf(variant.getAnnotation().getAdditionalAttributes().get("opencga").getAttribute().get("release"));
+            assertEquals(expectedRelease, release);
+        }
     }
 
     @Test

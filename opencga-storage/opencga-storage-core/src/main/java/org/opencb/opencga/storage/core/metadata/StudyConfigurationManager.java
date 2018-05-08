@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataD
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,7 @@ import java.util.function.Predicate;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.removeNegation;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -395,6 +397,38 @@ public class StudyConfigurationManager implements AutoCloseable {
     public QueryResult<ProjectMetadata> getProjectMetadata() {
         return projectDBAdaptor.getProjectMetadata();
     }
+
+    public QueryResult<ProjectMetadata> getProjectMetadata(ObjectMap options) throws StorageEngineException {
+        QueryResult<ProjectMetadata> queryResult = getProjectMetadata();
+        ProjectMetadata projectMetadata = queryResult.first();
+        if (options != null && (projectMetadata == null
+                || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(VariantAnnotationManager.SPECIES)
+                || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(VariantAnnotationManager.ASSEMBLY))) {
+
+            projectMetadata = lockAndUpdateProject(pm -> {
+                if (pm == null) {
+                    pm = new ProjectMetadata();
+                }
+                if (pm.getRelease() <= 0) {
+                    pm.setRelease(options.getInt(VariantStorageEngine.Options.RELEASE.key(),
+                            VariantStorageEngine.Options.RELEASE.defaultValue()));
+                }
+                if (StringUtils.isEmpty(pm.getSpecies())) {
+                    pm.setSpecies(toCellBaseSpeciesName(options.getString(VariantAnnotationManager.SPECIES)));
+                }
+                if (StringUtils.isEmpty(pm.getAssembly())) {
+                    pm.setAssembly(options.getString(VariantAnnotationManager.ASSEMBLY));
+                }
+
+                return pm;
+            });
+            queryResult.setResult(Collections.singletonList(projectMetadata));
+            queryResult.setNumResults(1);
+            queryResult.setNumTotalResults(1);
+        }
+        return queryResult;
+    }
+
 
     public QueryResult<Long> countVariantFileMetadata(Query query) {
         return fileDBAdaptor.count(query);

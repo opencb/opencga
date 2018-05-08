@@ -382,34 +382,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
             throws StorageEngineException, VariantAnnotatorException {
-        ProjectMetadata projectMetadata = readOrCreateProjectMetadata(params);
+        ProjectMetadata projectMetadata = getStudyConfigurationManager().getProjectMetadata(getMergedOptions(params)).first();
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
                 configuration, getStorageEngineId(), projectMetadata, params);
         return newVariantAnnotationManager(annotator);
-    }
-
-    protected ProjectMetadata readOrCreateProjectMetadata(ObjectMap params) throws StorageEngineException {
-        ProjectMetadata projectMetadata = getStudyConfigurationManager().getProjectMetadata().first();
-        ObjectMap options = getMergedOptions(params);
-        if (projectMetadata == null
-                || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(VariantAnnotationManager.SPECIES)
-                || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(VariantAnnotationManager.ASSEMBLY)) {
-            projectMetadata = getStudyConfigurationManager().lockAndUpdateProject(pm -> {
-                if (pm == null) {
-                    pm = new ProjectMetadata();
-                }
-
-                if (StringUtils.isEmpty(pm.getSpecies())) {
-                    pm.setSpecies(toCellBaseSpeciesName(options.getString(VariantAnnotationManager.SPECIES)));
-                }
-                if (StringUtils.isEmpty(pm.getAssembly())) {
-                    pm.setAssembly(options.getString(VariantAnnotationManager.ASSEMBLY));
-                }
-
-                return pm;
-            });
-        }
-        return projectMetadata;
     }
 
     /**
@@ -662,7 +638,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {
-            final ProjectMetadata metadata = readOrCreateProjectMetadata(null);
+            final ProjectMetadata metadata = getStudyConfigurationManager().getProjectMetadata(getOptions()).first();
 
             String species = metadata.getSpecies();
             String assembly = metadata.getAssembly();
@@ -681,7 +657,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
     }
 
-    private ObjectMap getMergedOptions(ObjectMap params) {
+    protected final ObjectMap getMergedOptions(Map<? extends String, ?> params) {
         ObjectMap options = new ObjectMap(getOptions());
         if (params != null) {
             params.forEach(options::putIfNotNull);

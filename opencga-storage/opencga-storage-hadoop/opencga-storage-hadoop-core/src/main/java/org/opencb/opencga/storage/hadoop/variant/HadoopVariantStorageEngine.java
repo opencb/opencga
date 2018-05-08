@@ -473,14 +473,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     public HadoopVariantStoragePipeline newStoragePipeline(boolean connected, Map<? extends String, ?> extraOptions)
             throws StorageEngineException {
-        ObjectMap options = getOptions();
-        if (extraOptions != null) {
-            options.putAll(extraOptions);
-        }
-        if (connected) {
-            // Ensure ProjectMetadata exists. Don't really care about the value.
-            readOrCreateProjectMetadata(options);
-        }
+        ObjectMap options = getMergedOptions(extraOptions);
+//        if (connected) {
+//            // Ensure ProjectMetadata exists. Don't really care about the value.
+//            getStudyConfigurationManager().getProjectMetadata(getMergedOptions(options)).first();
+//        }
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
