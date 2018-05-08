@@ -395,6 +395,9 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiModel
     public static class AnnotationsetParameters {
         @ApiModelProperty(required = true)
+        public String id;
+
+        @Deprecated
         public String name;
 
         @ApiModelProperty
@@ -418,15 +421,17 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(variableSetId)) {
                 variableSet = variableSetId;
             }
+
+            String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
             cohortManager.update(studyStr, cohortStr, new ObjectMap()
                             .append(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                    .append(AnnotationSetManager.ID, params.name)
+                                    .append(AnnotationSetManager.ID, annotationSetId)
                                     .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet)
                                     .append(AnnotationSetManager.ANNOTATIONS, params.annotations))
                             ),
                     QueryOptions.empty(), sessionId);
             QueryResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortStr, new QueryOptions(QueryOptions.INCLUDE,
-                    Constants.ANNOTATION_SET_NAME + "." + params.name), sessionId);
+                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
             List<AnnotationSet> annotationSets = cohortQueryResult.first().getAnnotationSets();
             QueryResult<AnnotationSet> queryResult = new QueryResult<>(cohortStr, cohortQueryResult.getDbTime(), annotationSets.size(),
                     annotationSets.size(), "", "", annotationSets);

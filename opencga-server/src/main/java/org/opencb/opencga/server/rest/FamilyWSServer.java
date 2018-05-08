@@ -368,15 +368,17 @@ public class FamilyWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(variableSetId)) {
                 variableSet = variableSetId;
             }
+            String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
+
             familyManager.update(studyStr, familyStr, new ObjectMap()
                             .append(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                    .append(AnnotationSetManager.ID, params.name)
+                                    .append(AnnotationSetManager.ID, annotationSetId)
                                     .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet)
                                     .append(AnnotationSetManager.ANNOTATIONS, params.annotations))
                             ),
                     QueryOptions.empty(), sessionId);
             QueryResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, new QueryOptions(QueryOptions.INCLUDE,
-                    Constants.ANNOTATION_SET_NAME + "." + params.name), sessionId);
+                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
             List<AnnotationSet> annotationSets = familyQueryResult.first().getAnnotationSets();
             QueryResult<AnnotationSet> queryResult = new QueryResult<>(familyStr, familyQueryResult.getDbTime(), annotationSets.size(),
                     annotationSets.size(), "", "", annotationSets);
