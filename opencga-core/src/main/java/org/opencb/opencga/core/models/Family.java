@@ -46,9 +46,9 @@ public class Family extends Annotable {
     public Family() {
     }
 
-    public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
+    public Family(String id, String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(name, name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, -1, 1, annotationSets,
+        this(id, name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, -1, 1, annotationSets,
                 attributes);
     }
 

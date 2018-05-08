@@ -162,7 +162,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "JSON containing family information", required = true) FamilyPOST family) {
         try {
-            ObjectUtils.defaultIfNull(family, new FamilyPOST());
+            family = ObjectUtils.defaultIfNull(family, new FamilyPOST());
             QueryResult<Family> queryResult = familyManager.create(studyStr,
                     family.toFamily(studyStr, catalogManager.getStudyManager(), sessionId), queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -467,6 +467,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     }
 
     protected static class IndividualPOST {
+        public String id;
         public String name;
 
         public String father;
@@ -496,7 +497,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            return new Individual(name, name, father != null ? new Individual().setName(father) : null,
+            return new Individual(id, name, father != null ? new Individual().setName(father) : null,
                     mother != null ? new Individual().setName(mother) : null, multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
@@ -504,6 +505,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
         public Individual toIndividualUpdate() {
             Individual individual = new Individual()
+                    .setId(id)
                     .setName(name)
                     .setFather(father != null ? new Individual().setName(father) : null)
                     .setMother(mother != null ? new Individual().setName(mother) : null)
@@ -523,6 +525,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     }
 
     private static class FamilyPOST {
+        public String id;
         public String name;
         public String description;
 
@@ -550,7 +553,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 }
             }
 
-            return new Family(name, phenotypes, relatives, description, annotationSets, attributes);
+            return new Family(id, name, phenotypes, relatives, description, annotationSets, attributes);
         }
 
         public ObjectMap toFamilyObjectMap() throws CatalogException, JsonProcessingException {

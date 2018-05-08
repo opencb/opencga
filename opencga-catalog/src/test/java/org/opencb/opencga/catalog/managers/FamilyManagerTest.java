@@ -224,8 +224,7 @@ public class FamilyManagerTest extends GenericTest {
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family(familyName, Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family(familyName, familyName, Arrays.asList(phenotype1, phenotype2), Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", Collections.emptyList(), Collections.emptyMap());
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
@@ -262,8 +261,7 @@ public class FamilyManagerTest extends GenericTest {
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1")))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Incomplete sibling information");
@@ -302,8 +300,7 @@ public class FamilyManagerTest extends GenericTest {
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child20")))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Incomplete sibling information");
@@ -345,8 +342,7 @@ public class FamilyManagerTest extends GenericTest {
                 .setMother(mother)
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relFather, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), Arrays.asList(relFather, relChild1, relChild2), "", Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in the members list");
@@ -377,8 +373,7 @@ public class FamilyManagerTest extends GenericTest {
                 .setMother(mother)
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relFather, relMother, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), Arrays.asList(relFather, relMother, relChild1, relChild2), "", Collections.emptyList(), Collections.emptyMap());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in any member of the family");
@@ -409,8 +404,7 @@ public class FamilyManagerTest extends GenericTest {
                 .setMother(mother)
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(phenotype1, phenotype2),
-                Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1),"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1), "", Collections.emptyList(), Collections.emptyMap());
 
         QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
         assertEquals(4, familyQueryResult.first().getMembers().size());
@@ -418,7 +412,7 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void createEmptyFamily() throws CatalogException {
-        Family family = new Family("xxx", null, null,"", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("xxx", "xxx", null, null, "", Collections.emptyList(), Collections.emptyMap());
         QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, familyQueryResult.getNumResults());
     }
