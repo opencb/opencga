@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.mongodb.variant.annotation;
 
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationSnapshotTest;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManagerTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 /**
@@ -8,5 +8,5 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBVariantAnnotationSnapshotTest extends VariantAnnotationSnapshotTest implements MongoDBVariantStorageTest {
+public class MongoDBVariantAnnotationManagerTest extends VariantAnnotationManagerTest implements MongoDBVariantStorageTest {
 }

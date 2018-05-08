@@ -107,11 +107,15 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             doCreate = true;
             doLoad = true;
         }
+        boolean overwrite = params.getBoolean(OVERWRITE_ANNOTATIONS, false);
+        if (!overwrite) {
+            query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
+        }
 
         URI annotationFile;
         if (doCreate) {
             dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
-                checkCurrentAnnotation(variantAnnotator, projectMetadata);
+                checkCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
                 return projectMetadata;
             });
 
@@ -136,6 +140,13 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             logger.info("Starting annotation load");
             loadAnnotation(annotationFile, params);
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+
+            if (doCreate) {
+                dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+                    updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                    return projectMetadata;
+                });
+            }
         }
     }
 
@@ -234,11 +245,15 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     public void loadAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
         Path path = Paths.get(uri);
         String fileName = path.getFileName().toString().toLowerCase();
-        if (VariantReaderUtils.isAvro(fileName) || VariantReaderUtils.isJson(fileName)) {
-            loadVariantAnnotation(uri, params);
-        } else {
+        if (isCustomAnnotation(fileName)) {
             loadCustomAnnotation(uri, params);
+        } else {
+            loadVariantAnnotation(uri, params);
         }
+    }
+
+    protected boolean isCustomAnnotation(String fileName) {
+        return !VariantReaderUtils.isAvro(fileName) && !VariantReaderUtils.isJson(fileName);
     }
 
     /**

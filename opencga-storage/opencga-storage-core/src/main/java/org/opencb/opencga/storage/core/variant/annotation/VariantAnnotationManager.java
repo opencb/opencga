@@ -21,6 +21,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata.VariantAnnotationMetadata;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata.VariantAnnotatorProgram;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,78 +63,120 @@ public abstract class VariantAnnotationManager {
 
     public abstract void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
 
-    protected final ProjectMetadata.VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator,
-                                                                                     ProjectMetadata projectMetadata)
-            throws IOException {
-        ProjectMetadata.VariantAnnotatorProgram newAnnotator = annotator.getVariantAnnotatorProgram();
-        List<ObjectMap> newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
+    protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
+                                                                     boolean overwrite)
+            throws VariantAnnotatorException {
+        VariantAnnotatorProgram newAnnotator;
+        List<ObjectMap> newSourceVersion;
+        try {
+            newAnnotator = annotator.getVariantAnnotatorProgram();
+            newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
+        } catch (IOException e) {
+            throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
+        }
         if (newSourceVersion == null) {
             newSourceVersion = Collections.emptyList();
         }
+        if (newAnnotator == null) {
+            throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
+        }
+        if (newSourceVersion.isEmpty()) {
+            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
+        }
+        return checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
+    }
 
-        ProjectMetadata.VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
+    protected final VariantAnnotationMetadata checkCurrentAnnotation(ProjectMetadata projectMetadata, boolean overwrite,
+                                                                     VariantAnnotatorProgram newAnnotator, List<ObjectMap> newSourceVersion)
+            throws VariantAnnotatorException {
+        VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
         if (current == null) {
-            current = new ProjectMetadata.VariantAnnotationMetadata();
+            current = new VariantAnnotationMetadata();
             projectMetadata.getAnnotation().setCurrent(current);
             current.setId(-1);
             current.setName(LATEST);
         }
 
         // Check using same annotator and same source version
-        ProjectMetadata.VariantAnnotatorProgram currentAnnotator = current.getAnnotator();
+        VariantAnnotatorProgram currentAnnotator = current.getAnnotator();
         if (currentAnnotator != null && !currentAnnotator.equals(newAnnotator)) {
-            if (newAnnotator == null) {
-                throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
-            }
             if (!currentAnnotator.getName().equals(newAnnotator.getName())
                     || !currentAnnotator.getVersion().equals(newAnnotator.getVersion())) {
                 String msg = "Using a different annotator! "
                         + "Existing annotation calculated with " + currentAnnotator.toString()
                         + ", attempting to annotate with " + newAnnotator.toString();
-                logger.error(msg);
-//                throw new VariantAnnotatorException(msg);
+                if (overwrite) {
+                    logger.info(msg);
+                } else {
+                    throw new VariantAnnotatorException(msg);
+                }
             } else if (!currentAnnotator.getCommit().equals(newAnnotator.getCommit())) {
-                logger.warn("Using a different commit for annotating variants. "
+                String msg = "Using a different commit for annotating variants. "
                         + "Existing annotation calculated with " + currentAnnotator.toString()
-                        + ", attempting to annotate with " + newAnnotator.toString());
+                        + ", attempting to annotate with " + newAnnotator.toString();
+                if (overwrite) {
+                    logger.info(msg);
+                } else {
+                    logger.warn(msg);
+                }
             }
         }
-        current.setAnnotator(newAnnotator);
 
         List<ObjectMap> currentSourceVersion = current.getSourceVersion();
         if (CollectionUtils.isNotEmpty(currentSourceVersion) && !currentSourceVersion.equals(newSourceVersion)) {
-            if (newSourceVersion.isEmpty()) {
-                throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
-            }
             String msg = "Source version of the annotator has changed. "
                     + "Existing annotation calculated with "
                     + currentSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"))
                     + ", attempting to annotate with "
                     + newSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"));
-            logger.error(msg);
-//            throw new VariantAnnotatorException(msg);
+            if (overwrite) {
+                logger.info(msg);
+            } else {
+                throw new VariantAnnotatorException(msg);
+            }
         }
-        current.setSourceVersion(newSourceVersion);
 
         return current;
     }
 
-    protected final ProjectMetadata.VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,
+    protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
+                                                                     boolean overwrite)
+            throws VariantAnnotatorException {
+        VariantAnnotatorProgram newAnnotator;
+        List<ObjectMap> newSourceVersion;
+        try {
+            newAnnotator = annotator.getVariantAnnotatorProgram();
+            newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
+        } catch (IOException e) {
+            throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
+        }
+        if (newSourceVersion == null) {
+            newSourceVersion = Collections.emptyList();
+        }
+        if (newAnnotator == null) {
+            throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
+        }
+        if (newSourceVersion.isEmpty()) {
+            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
+        }
+        checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
+
+        projectMetadata.getAnnotation().getCurrent().setAnnotator(newAnnotator);
+        projectMetadata.getAnnotation().getCurrent().setSourceVersion(newSourceVersion);
+    }
+
+    protected final VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,
                                                                                             ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
-        ProjectMetadata.VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
+        VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
         if (current == null) {
             // Should never enter here
-            try {
-                current = checkCurrentAnnotation(annotator, projectMetadata);
-            } catch (IOException e) {
-                throw new VariantAnnotatorException("Missing current annotation metadata!", e);
-            }
+            current = checkCurrentAnnotation(annotator, projectMetadata, true);
         }
 
         boolean nameDuplicated = projectMetadata.getAnnotation().getSaved()
                 .stream()
-                .map(ProjectMetadata.VariantAnnotationMetadata::getName)
+                .map(VariantAnnotationMetadata::getName)
                 .anyMatch(s -> s.equalsIgnoreCase(name));
 
         if (nameDuplicated) {
@@ -140,11 +184,11 @@ public abstract class VariantAnnotationManager {
         }
         Integer maxId = projectMetadata.getAnnotation().getSaved()
                 .stream()
-                .map(ProjectMetadata.VariantAnnotationMetadata::getId)
+                .map(VariantAnnotationMetadata::getId)
                 .max(Integer::compareTo)
                 .orElse(0);
 
-        ProjectMetadata.VariantAnnotationMetadata newSnapshot = new ProjectMetadata.VariantAnnotationMetadata(
+        VariantAnnotationMetadata newSnapshot = new VariantAnnotationMetadata(
                 maxId + 1,
                 name,
                 Date.from(Instant.now()),
@@ -155,10 +199,10 @@ public abstract class VariantAnnotationManager {
         return newSnapshot;
     }
 
-    protected final ProjectMetadata.VariantAnnotationMetadata removeAnnotationSnapshot(String name, ProjectMetadata projectMetadata)
+    protected final VariantAnnotationMetadata removeAnnotationSnapshot(String name, ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
-        Iterator<ProjectMetadata.VariantAnnotationMetadata> iterator = projectMetadata.getAnnotation().getSaved().iterator();
-        ProjectMetadata.VariantAnnotationMetadata annotation = null;
+        Iterator<VariantAnnotationMetadata> iterator = projectMetadata.getAnnotation().getSaved().iterator();
+        VariantAnnotationMetadata annotation = null;
         boolean found = false;
         while (iterator.hasNext()) {
             annotation = iterator.next();
