@@ -58,8 +58,9 @@ public class CohortWSServer extends OpenCGAWSServer {
         cohortManager = catalogManager.getCohortManager();
     }
 
-    private Response createCohort(String studyStr, String cohortName, Study.Type type, String variableSetId, String cohortDescription,
-                                  String sampleIdsStr, List<AnnotationSet> annotationSetList, String variableName) {
+    private Response createCohort(String studyStr, String cohortId, String cohortName, Study.Type type, String variableSetId,
+                                  String cohortDescription, String sampleIdsStr, List<AnnotationSet> annotationSetList,
+                                  String variableName) {
         try {
             List<QueryResult<Cohort>> cohorts = new LinkedList<>();
             if (variableName != null && !variableName.isEmpty() && sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
@@ -71,7 +72,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                 List<String> idList = getIdList(sampleIdsStr);
                 AbstractManager.MyResources<Sample> resource = catalogManager.getSampleManager().getUids(idList, studyStr, sessionId);
                 List<Sample> sampleList = resource.getResourceList();
-                Cohort cohort = new Cohort(cohortName, type, "", cohortDescription, sampleList, annotationSetList, -1, null);
+                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, sampleList, annotationSetList, -1, null)
+                        .setName(cohortName);
                 QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyStr, cohort, null, sessionId);
                 cohorts.add(cohortQueryResult);
             } else if (StringUtils.isNotEmpty(variableSetId)) {
@@ -99,7 +101,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                 }
             } else {
                 //Create empty cohort
-                Cohort cohort = new Cohort(cohortName, type, "", cohortDescription, Collections.emptyList(), annotationSetList, -1, null);
+                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, Collections.emptyList(), annotationSetList, -1, null)
+                        .setName(cohortName);
                 cohorts.add(catalogManager.getCohortManager().create(studyStr, cohort, null, sessionId));
             }
             return createOkResponse(cohorts);
@@ -123,7 +126,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Variable name") @QueryParam("variable") String variableName,
             @ApiParam(value = "JSON containing cohort information", required = true) CohortParameters params) {
         try {
-            ObjectUtils.defaultIfNull(params, new CohortParameters());
+            params = ObjectUtils.defaultIfNull(params, new CohortParameters());
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
@@ -140,7 +143,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            return createCohort(studyStr, params.name, params.type, variableSet, params.description, params.samples,
+            String cohortId = StringUtils.isEmpty(params.id) ? params.name : params.id;
+            return createCohort(studyStr, cohortId, params.name, params.type, variableSet, params.description, params.samples,
                     params.annotationSets, variableName);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -192,7 +196,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response searchCohorts(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Name of the cohort") @QueryParam("name") String name,
+            @ApiParam(value = "DEPRECATED: Name of the cohort") @QueryParam("name") String name,
             @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
@@ -246,7 +250,8 @@ public class CohortWSServer extends OpenCGAWSServer {
         //TODO CHANGE THIS for can insert the name also id(number)
         QueryResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, query, queryOptions, sessionId);
         //TODO FOR THIS. Its possible change the param query to a String
-        Cohort cohort = new Cohort(cohortName, type, "", cohortDescription, queryResult.getResult(), annotationSetList, -1, null);
+        Cohort cohort = new Cohort(cohortName, type, "", cohortDescription, queryResult.getResult(), annotationSetList, -1, null)
+                .setName(cohortName);
         return catalogManager.getCohortManager().create(studyStr, cohort, null, sessionId);
     }
 
@@ -492,7 +497,9 @@ public class CohortWSServer extends OpenCGAWSServer {
                 String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name") String names,
+            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String ids,
+            @ApiParam(value = "DEPRECATED: Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name")
+                    String names,
             @ApiParam(value = "Comma separated Type values.", required = false) @DefaultValue("") @QueryParam("type") String type,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
@@ -572,6 +579,8 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     protected static class CohortParameters {
+        public String id;
+        @Deprecated
         public String name;
         public Study.Type type;
         public String description;
