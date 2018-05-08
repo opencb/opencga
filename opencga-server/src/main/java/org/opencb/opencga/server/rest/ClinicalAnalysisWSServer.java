@@ -166,7 +166,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
+            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
+            @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = "Germline") @QueryParam("germline") String germline,
@@ -206,6 +207,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
     }
 
     private static class ClinicalAnalysisParameters {
+        public String id;
+        @Deprecated
         public String name;
         public String description;
         public ClinicalAnalysis.Type type;
@@ -251,8 +254,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                             ? interpretations.stream()
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
                             : new ArrayList<>();
-            return new ClinicalAnalysis(name, description, type, disease, germlineFile, somaticFile, individuals, f,
-                    interpretationList, null, null, 1, attributes);
+            String clinicalId = StringUtils.isEmpty(id) ? name : id;
+            return new ClinicalAnalysis(clinicalId, description, type, disease, germlineFile, somaticFile, individuals, f,
+                    interpretationList, null, null, 1, attributes).setName(name);
         }
     }
 
