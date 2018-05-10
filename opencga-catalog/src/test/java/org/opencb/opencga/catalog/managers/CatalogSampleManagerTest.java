@@ -471,10 +471,10 @@ public class CatalogSampleManagerTest extends GenericTest {
         String sampleId = catalogManager.getSampleManager().create(studyFqn, "SAMPLE_1", "", "", null, false, null, new
                 HashMap<>(), null, new QueryOptions(), sessionIdUser).first().getId();
 
-        Set<Variable> variables = new HashSet<>();
-        variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", false, false, "", null, variables,
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 sessionIdUser).first();
 
 
@@ -514,10 +514,10 @@ public class CatalogSampleManagerTest extends GenericTest {
         String sampleId = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
                 sessionIdUser).first().getId();
 
-        Set<Variable> variables = new HashSet<>();
-        variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", true, false, "", null, variables,
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
                 sessionIdUser).first();
 
 
@@ -552,10 +552,10 @@ public class CatalogSampleManagerTest extends GenericTest {
         String individualId = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1"),
                 new QueryOptions(), sessionIdUser).first().getId();
 
-        Set<Variable> variables = new HashSet<>();
-        variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", true, false, "", null, variables,
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
                 sessionIdUser).first();
 
 
@@ -589,10 +589,10 @@ public class CatalogSampleManagerTest extends GenericTest {
         String sampleId = catalogManager.getSampleManager().create(studyFqn, "SAMPLE_1", "", "", null, false, null, new
                 HashMap<>(), null, new QueryOptions(), sessionIdUser).first().getId();
 
-        Set<Variable> variables = new HashSet<>();
-        variables.add(new Variable("NUM", "", Variable.VariableType.DOUBLE, "", true, false, null, 0, "", "", null,
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("NUM", "NUM", "", Variable.VariableType.DOUBLE, "", true, false, null, 0, "", "", null,
                 Collections.emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", false, false, "", null, variables,
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 sessionIdUser).first();
 
 
@@ -637,10 +637,10 @@ public class CatalogSampleManagerTest extends GenericTest {
         String sampleId = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
                 sessionIdUser).first().getId();
 
-        Set<Variable> variables = new HashSet<>();
-        variables.add(new Variable("RANGE_NUM", "", Variable.VariableType.DOUBLE, "", true, false, Arrays.asList("1:14", "16:22", "50:")
-                , 0, "", "", null, Collections.<String, Object>emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", false, false, "", null, variables,
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("RANGE_NUM", "RANGE_NUM", "", Variable.VariableType.DOUBLE, "", true, false, Arrays.asList("1:14",
+                "16:22", "50:"), 0, "", "", null, Collections.<String, Object>emptyMap()));
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -708,10 +708,10 @@ public class CatalogSampleManagerTest extends GenericTest {
         String sampleId = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
                 sessionIdUser).first().getId();
 
-        Set<Variable> variables = new HashSet<>();
-        variables.add(new Variable("COOL_NAME", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("LUKE", "LEIA",
-                "VADER", "YODA"), 0, "", "", null, Collections.<String, Object>emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", false, false, "", null, variables,
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("COOL_NAME", "COOL_NAME", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("LUKE",
+                "LEIA", "VADER", "YODA"), 0, "", "", null, Collections.<String, Object>emptyMap()));
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -781,8 +781,8 @@ public class CatalogSampleManagerTest extends GenericTest {
         String sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"),
                 new QueryOptions(), sessionIdUser).first().getId();
 
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", false, false, "", null,
-                Collections.singleton(CatalogAnnotationsValidatorTest.nestedObject), sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null,
+                Collections.singletonList(CatalogAnnotationsValidatorTest.nestedObject), sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("nestedObject", new ObjectMap()

@@ -931,23 +931,23 @@ public class StudyManager extends AbstractManager {
      * Variables Methods
      */
     QueryResult<VariableSet> createVariableSet(Study study, String id, String name, Boolean unique, Boolean confidential,
-                                               String description, Map<String, Object> attributes, Set<Variable> variables,
+                                               String description, Map<String, Object> attributes, List<Variable> variables,
                                                String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkObj(variables, "Variables Set");
+        ParamUtils.checkObj(variables, "Variables from VariableSet");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
 
         unique = ParamUtils.defaultObject(unique, true);
         confidential = ParamUtils.defaultObject(confidential, false);
         description = ParamUtils.defaultString(description, "");
-        attributes = ParamUtils.defaultObject(attributes, new HashMap<String, Object>());
+        attributes = ParamUtils.defaultObject(attributes, new HashMap<>());
 
         for (Variable variable : variables) {
             ParamUtils.checkParameter(variable.getId(), "variable ID");
             ParamUtils.checkObj(variable.getType(), "variable Type");
-            variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
-            variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));
+            variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.emptyList()));
+            variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.emptyMap()));
             variable.setCategory(ParamUtils.defaultString(variable.getCategory(), ""));
             variable.setDependsOn(ParamUtils.defaultString(variable.getDependsOn(), ""));
             variable.setDescription(ParamUtils.defaultString(variable.getDescription(), ""));
@@ -955,8 +955,13 @@ public class StudyManager extends AbstractManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        VariableSet variableSet = new VariableSet(id, name, unique, confidential, description, variables, getCurrentRelease(study, userId),
-                attributes);
+        Set<Variable> variablesSet = new HashSet<>(variables);
+        if (variablesSet.size() < variables.size()) {
+            throw new CatalogException("Error. Repeated variables");
+        }
+
+        VariableSet variableSet = new VariableSet(id, name, unique, confidential, description, variablesSet,
+                getCurrentRelease(study, userId), attributes);
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(study.getUid(), variableSet);
@@ -971,23 +976,7 @@ public class StudyManager extends AbstractManager {
                                                       String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = resolveId(studyId, userId);
-
-        ParamUtils.checkObj(variables, "Variables List");
-        Set<Variable> variablesSet = new HashSet<>(variables);
-        if (variables.size() != variablesSet.size()) {
-            throw new CatalogException("Error. Repeated variables");
-        }
-        return createVariableSet(study, id, name, unique, confidential, description, attributes, variablesSet, sessionId);
-    }
-
-    public QueryResult<VariableSet> createVariableSet(String studyId, String id, Boolean unique, Boolean confidential, String description,
-                                                      Map<String, Object> attributes, Set<Variable> variables, String sessionId)
-            throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = resolveId(studyId, userId);
-
-        ParamUtils.checkObj(variables, "Variables List");
-        return createVariableSet(study, id, id, unique, confidential, description, attributes, variables, sessionId);
+        return createVariableSet(study, id, name, unique, confidential, description, attributes, variables, sessionId);
     }
 
     public QueryResult<VariableSet> getVariableSet(String studyStr, String variableSet, QueryOptions options, String sessionId)
