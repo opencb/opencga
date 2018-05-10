@@ -860,6 +860,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
         if (isValidParam(query, REGION)) {
             scanQuery.put(REGION.key(), query.get(REGION.key()));
+            query.remove(REGION.key());
         }
 
         Iterator<String> variants = Iterators.transform(dbAdaptor.iterator(scanQuery, scanOptions), Variant::toString);

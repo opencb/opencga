@@ -42,6 +42,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKey
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -166,7 +167,6 @@ public class VariantHBaseQueryParser {
     public List<Scan> parseQueryMultiRegion(Query query, QueryOptions options) {
         return parseQueryMultiRegion(VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager), query, options);
     }
-
     public List<Scan> parseQueryMultiRegion(SelectVariantElements selectElements, Query query, QueryOptions options) {
         VariantQueryXref xrefs = VariantQueryUtils.parseXrefs(query);
         if (!xrefs.getOtherXrefs().isEmpty()) {
@@ -200,14 +200,30 @@ public class VariantHBaseQueryParser {
             subQuery.remove(ANNOT_XREF.key());
             subQuery.remove(ID.key());
 
+            subQuery.put(REGION.key(), "MULTI_REGION");
+            Scan templateScan = parseQuery(selectElements, subQuery, options);
+
             for (Region region : regions) {
                 subQuery.put(REGION.key(), region);
-                scans.add(parseQuery(selectElements, subQuery, options));
+                try {
+                    Scan scan = new Scan(templateScan);
+                    addRegionFilter(scan, region);
+                    scans.add(scan);
+                } catch (IOException e) {
+                    throw VariantQueryException.internalException(e);
+                }
             }
             subQuery.remove(REGION.key());
             for (Variant variant : variants) {
+
                 subQuery.put(ID.key(), variant);
-                scans.add(parseQuery(selectElements, subQuery, options));
+                try {
+                    Scan scan = new Scan(templateScan);
+                    addVariantIdFilter(scan, variant);
+                    scans.add(scan);
+                } catch (IOException e) {
+                    throw VariantQueryException.internalException(e);
+                }
             }
         }
 
@@ -244,9 +260,7 @@ public class VariantHBaseQueryParser {
                 throw VariantQueryException.malformedParam(ID, ids.toString(), "Unsupported multiple variant ids filter");
             }
             Variant variant = VariantQueryUtils.toVariant(ids.get(0));
-            byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
-            scan.setStartRow(rowKey);
-            scan.setStopRow(rowKey);
+            addVariantIdFilter(scan, variant);
         }
 
 
@@ -588,6 +602,12 @@ public class VariantHBaseQueryParser {
             scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(
                     fileId, region.getChromosome(), endSlice)));
         }
+    }
+
+    public static void addVariantIdFilter(Scan scan, Variant variant) {
+        byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
+        scan.setStartRow(rowKey);
+        scan.setStopRow(rowKey);
     }
 
     public static void addRegionFilter(Scan scan, Region region) {
