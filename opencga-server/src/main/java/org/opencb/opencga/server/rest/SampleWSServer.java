@@ -492,7 +492,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             Sample.SampleAclParams sampleAclParams = getAclParams(params.add, params.remove, params.set);
-            List<String> idList = getIdList(sampleIdStr);
+            List<String> idList = StringUtils.isEmpty(sampleIdStr) ? Collections.emptyList() : getIdList(sampleIdStr);
             return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -556,7 +556,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
                     params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort, params.propagate);
-            List<String> idList = getIdList(params.sample);
+            List<String> idList = StringUtils.isEmpty(params.sample) ? Collections.emptyList() : getIdList(params.sample);
             return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

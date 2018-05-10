@@ -1209,7 +1209,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             File.FileAclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            List<String> idList = getIdList(fileIdStr);
+            List<String> idList = StringUtils.isEmpty(fileIdStr) ? Collections.emptyList() : getIdList(fileIdStr);
             return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1232,7 +1232,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             File.FileAclParams aclParams = new File.FileAclParams(
                     params.getPermissions(), params.getAction(), params.sample);
-            List<String> idList = getIdList(params.file);
+            List<String> idList = StringUtils.isEmpty(params.file) ? Collections.emptyList() : getIdList(params.file);
             return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
