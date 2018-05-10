@@ -16,11 +16,15 @@
 
 package org.opencb.opencga.storage.app.cli.client.executors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.feature.gff.io.GffReader;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.client.ClientCliOptionsParser;
@@ -34,6 +38,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -91,6 +98,10 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             case "query":
                 configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions, alignmentCommandOptions.queryAlignmentsCommandOptions.commonQueryOptions.dbName);
                 query();
+                break;
+            case "coverage":
+                configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions, alignmentCommandOptions.queryAlignmentsCommandOptions.commonQueryOptions.dbName);
+                coverage();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -256,7 +267,6 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             }
         }
 
-
         /**
          * Run query
          */
@@ -295,5 +305,32 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 //            throw new UnsupportedOperationException("Unable to fetch over all the genome");
 ////                System.out.println(dbAdaptor.getAllAlignments(options));
 //        }
+    }
+
+    private void coverage() throws IOException {
+        StorageAlignmentCommandOptions.CoverageAlignmentsCommandOptions coverageAlignmentsCommandOptions
+                = alignmentCommandOptions.coverageAlignmentsCommandOptions;
+
+        String fileId = coverageAlignmentsCommandOptions.fileId;
+        int windowSize = coverageAlignmentsCommandOptions.windowSize;
+        String region = coverageAlignmentsCommandOptions.region;
+
+        Path path = Paths.get(fileId);
+        FileUtils.checkFile(path);
+
+        BamManager bamManager = new BamManager();
+
+        if (coverageAlignmentsCommandOptions.create) {
+            bamManager.calculateBigWigCoverage(path, windowSize);
+        }
+
+        if (StringUtils.isNotEmpty(region)) {
+            RegionCoverage coverage = bamManager.coverage(Region.parseRegion(region), windowSize);
+            if (coverage != null) {
+                System.out.println(coverage);
+            } else {
+                System.out.println("BigWig file does not exist or region is too big");
+            }
+        }
     }
 }
