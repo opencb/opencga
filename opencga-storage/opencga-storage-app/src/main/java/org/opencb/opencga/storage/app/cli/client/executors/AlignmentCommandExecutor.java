@@ -38,7 +38,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -318,10 +317,11 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         Path path = Paths.get(fileId);
         FileUtils.checkFile(path);
 
-        BamManager bamManager = new BamManager();
+        BamManager bamManager = new BamManager(path);
 
         if (coverageAlignmentsCommandOptions.create) {
-            bamManager.calculateBigWigCoverage(path, windowSize);
+            Path bigWigPath = Paths.get(fileId + ".coverage.bw");
+            bamManager.calculateBigWigCoverage(bigWigPath, windowSize);
         }
 
         if (StringUtils.isNotEmpty(region)) {
