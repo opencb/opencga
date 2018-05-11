@@ -1,4 +1,7 @@
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 # To use a consistent encoding
 from codecs import open
 from os import path
@@ -16,7 +19,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/x-rst',
     packages=['pyCGA', 'pyCGA.Utils'],
-    url='https://github.com/genomicsengland/opencga/tree/pycga-1.0/opencga-client/src/main/python',
+    url='https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python',
     license='Apache Software License',
     author='antonior,dapregi,ernesto-ocampo',
     author_email='antonio.rueda-martin@genomicsengland.co.uk,daniel.perez-gil@genomicsengland.co.uk,kenan.mcgrath@genomicsengland.co.uk',
