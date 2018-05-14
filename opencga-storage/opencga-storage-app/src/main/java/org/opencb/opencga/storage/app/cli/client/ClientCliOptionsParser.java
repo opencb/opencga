@@ -48,8 +48,9 @@ public class ClientCliOptionsParser extends GeneralCliOptions {
                 this.jcommander);
         jcommander.addCommand("alignment", alignmentCommandOptions);
         JCommander alignmentSubCommands = jcommander.getCommands().get("alignment");
-        alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexCommandOptions);
-        alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryCommandOptions);
+        alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentsCommandOptions);
+        alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentsCommandOptions);
+        alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentsCommandOptions);
 
         variantCommandOptions = new StorageVariantCommandOptions(this.commonOptions, this.indexCommandOptions, this.queryCommandOptions,
                 this.jcommander);
