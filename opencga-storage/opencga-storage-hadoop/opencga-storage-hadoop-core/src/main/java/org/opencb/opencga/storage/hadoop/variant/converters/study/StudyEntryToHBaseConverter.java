@@ -25,7 +25,6 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
@@ -55,16 +54,13 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
     private boolean addSecondaryAlternates;
     private final PhoenixHelper.Column releaseColumn;
 
-    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration) {
-        this(columnFamily, studyConfiguration, false);
-    }
-
-    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates) {
-        this(columnFamily, studyConfiguration, addSecondaryAlternates, new HashSet<>(Arrays.asList("0/0", "0|0")));
+    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates,
+                                      Integer release) {
+        this(columnFamily, studyConfiguration, addSecondaryAlternates, new HashSet<>(Arrays.asList("0/0", "0|0")), release);
     }
 
     public StudyEntryToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration,
-                                      boolean addSecondaryAlternates, Set<String> defaultGenotypes) {
+                                      boolean addSecondaryAlternates, Set<String> defaultGenotypes, Integer release) {
         super(columnFamily);
         this.studyConfiguration = studyConfiguration;
         studyColumn = VariantPhoenixHelper.getStudyColumn(studyConfiguration.getStudyId());
@@ -80,8 +76,15 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                 sampleToFileMap.put(sampleId, entry.getKey());
             }
         }
-        int release = studyConfiguration.getAttributes().getInt(VariantStorageEngine.Options.RELEASE.key());
-        releaseColumn = VariantPhoenixHelper.getReleaseColumn(release);
+        //        Integer release = studyConfiguration.getAttributes().getInt(VariantStorageEngine.Options.RELEASE.key());
+        if (release != null) {
+            if (release <= 0) {
+                throw new IllegalArgumentException("Invalid RELEASE value. Expected > 0, received " + release);
+            }
+            releaseColumn = VariantPhoenixHelper.getReleaseColumn(release);
+        } else {
+            releaseColumn = null;
+        }
     }
 
     @Override
@@ -90,7 +93,9 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         Put put = new Put(rowKey);
         add(put, VariantPhoenixHelper.VariantColumn.TYPE, variant.getType().toString());
         add(put, studyColumn, 0);
-        add(put, releaseColumn, true);
+        if (releaseColumn != null) {
+            add(put, releaseColumn, true);
+        }
 
         return convert(variant, put, null);
     }

@@ -9,7 +9,6 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 
 import java.io.IOException;
@@ -31,6 +30,7 @@ public class VariantMetadataConverterTest {
     private StudyConfiguration studyConfiguration;
     private VariantMetadataConverter variantMetadataConverter;
     private ObjectWriter objectWriter;
+    private ProjectMetadata projectMetadata;
 
     @Before
     public void setUp() throws Exception {
@@ -55,9 +55,6 @@ public class VariantMetadataConverterTest {
         studyConfiguration.getCohortIds().put("ALL", 20);
         studyConfiguration.getCohorts().put(20, new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6)));
 
-        studyConfiguration.getAttributes().put(VariantAnnotationManager.SPECIES, "hsapiens");
-        studyConfiguration.getAttributes().put(VariantAnnotationManager.ASSEMBLY, "37");
-
         URI uri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
         VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
         studyConfiguration.addVariantFileHeader(fileMetadata.getHeader(), null);
@@ -67,12 +64,13 @@ public class VariantMetadataConverterTest {
                 .configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true)
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .writerWithDefaultPrettyPrinter();
+        projectMetadata = new ProjectMetadata("hsapiens", "37", 1);
     }
 
     @Test
     public void toVariantMetadataTest() throws IOException {
 
-        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(Collections.singletonList(studyConfiguration));
+        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(Collections.singletonList(studyConfiguration), projectMetadata, null, null);
         System.out.println("variantMetadata = " + objectWriter.writeValueAsString(variantMetadata));
 
     }

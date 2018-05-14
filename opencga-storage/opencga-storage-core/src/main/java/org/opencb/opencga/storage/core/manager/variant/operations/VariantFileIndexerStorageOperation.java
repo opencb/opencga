@@ -43,8 +43,6 @@ import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.manager.models.FileInfo;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.LoggerFactory;
 
@@ -193,18 +191,15 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
-        // Add species and assembly
-        String scientificName = studyInfo.getOrganism().getScientificName();
-        scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
-        options.put(VariantAnnotationManager.SPECIES, scientificName);
-        options.put(VariantAnnotationManager.ASSEMBLY, studyInfo.getOrganism().getAssembly());
 
         QueryResult<Project> projectQueryResult = catalogManager
                 .getProjectManager()
                 .get(String.valueOf(studyInfo.getProjectId()),
                         new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()), sessionId);
         int release = projectQueryResult.first().getCurrentRelease();
-        options.put(VariantStorageEngine.Options.RELEASE.key(), release);
+
+        // Add species, assembly and release
+        updateProjectMetadata(variantStorageEngine.getStudyConfigurationManager(), studyInfo.getOrganism(), release);
 
         variantStorageEngine.getOptions().putAll(options);
         boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())

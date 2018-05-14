@@ -734,9 +734,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             }
         }
 
-        variantStorageEngine.getDBAdaptor().getVariantFileMetadataDBAdaptor().iterator(new Query(), new QueryOptions()).forEachRemaining(vs -> {
-            assertNotEquals("2", vs.getId());
-        });
+        variantStorageEngine.getDBAdaptor().getStudyConfigurationManager().variantFileMetadataIterator(new Query(), new QueryOptions())
+                .forEachRemaining(vs -> assertNotEquals("2", vs.getId()));
     }
 
     @Test

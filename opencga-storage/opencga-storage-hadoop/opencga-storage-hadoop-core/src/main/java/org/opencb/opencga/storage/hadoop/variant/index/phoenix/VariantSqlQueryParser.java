@@ -31,7 +31,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -231,15 +230,7 @@ public class VariantSqlQueryParser {
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
 
-                int release = 0;
-                if (phoenixSQLQuery.getSelect() != null
-                        && phoenixSQLQuery.getSelect().getStudyConfigurations() != null
-                        && !phoenixSQLQuery.getSelect().getStudyConfigurations().isEmpty()) {
-                    // TODO: Release should be a global attribute, not a study attribute.
-                    for (StudyConfiguration sc : phoenixSQLQuery.getSelect().getStudyConfigurations().values()) {
-                        release = Math.max(release, sc.getAttributes().getInt(VariantStorageEngine.Options.RELEASE.key()));
-                    }
-                }
+                int release = studyConfigurationManager.getProjectMetadata().first().getRelease();
                 for (int i = 1; i <= release; i++) {
                     sb.append(',');
                     VariantPhoenixHelper.buildReleaseColumnKey(i, sb);

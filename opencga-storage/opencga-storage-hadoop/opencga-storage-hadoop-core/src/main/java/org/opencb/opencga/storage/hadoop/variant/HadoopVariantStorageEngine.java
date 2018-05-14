@@ -63,7 +63,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -323,7 +323,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor());
+        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(getOptions()), getOptions());
     }
 
     @Override
@@ -473,10 +473,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     public HadoopVariantStoragePipeline newStoragePipeline(boolean connected, Map<? extends String, ?> extraOptions)
             throws StorageEngineException {
-        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        if (extraOptions != null) {
-            options.putAll(extraOptions);
-        }
+        ObjectMap options = getMergedOptions(extraOptions);
+//        if (connected) {
+//            // Ensure ProjectMetadata exists. Don't really care about the value.
+//            getStudyConfigurationManager().getProjectMetadata(getMergedOptions(options)).first();
+//        }
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
@@ -774,12 +775,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        ObjectMap options = getOptions();
         HBaseCredentials dbCredentials = getDbCredentials();
         Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(), dbCredentials);
         return new StudyConfigurationManager(
-                new HBaseStudyConfigurationDBAdaptor(
-                        getTableNameGenerator().getMetaTableName(), configuration, getHBaseManager(configuration)));
+                new HBaseVariantStorageMetadataDBAdaptorFactory(
+                        getHBaseManager(configuration), getTableNameGenerator().getMetaTableName(), configuration));
     }
 
     @Override
@@ -860,6 +860,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
         if (isValidParam(query, REGION)) {
             scanQuery.put(REGION.key(), query.get(REGION.key()));
+            query.remove(REGION.key());
         }
 
         Iterator<String> variants = Iterators.transform(dbAdaptor.iterator(scanQuery, scanOptions), Variant::toString);

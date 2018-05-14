@@ -22,16 +22,16 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -82,21 +82,12 @@ public class VariantDBReader implements VariantReader {
     }
 
     public VariantFileMetadata getVariantFileMetadata(int fileId) {
-        Iterator<VariantFileMetadata> iterator;
         try {
-            Query query = new Query();
-            if (fileId >= 0) {
-                query.put(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileId);
-            }
-            iterator = variantDBAdaptor.getVariantFileMetadataDBAdaptor()
-                    .iterator(query, new QueryOptions());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            return variantDBAdaptor.getStudyConfigurationManager()
+                    .getVariantFileMetadata(studyConfiguration.getStudyId(), fileId, null).first();
+        } catch (StorageEngineException e) {
+            throw new IllegalStateException(e);
         }
-        if (iterator.hasNext()) {
-            return iterator.next();
-        }
-        return null;
     }
 
     @Override

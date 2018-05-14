@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
@@ -35,10 +33,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -56,36 +53,24 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBAdaptor {
+public class HBaseVariantFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements VariantFileMetadataDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(HBaseVariantFileMetadataDBAdaptor.class);
 
-    private final GenomeHelper genomeHelper;
-    private final HBaseManager hBaseManager;
-    private final ObjectMapper objectMapper;
-    private final String tableName;
-    private final byte[] family;
-    private Boolean tableExists = null; // unknown
-
-    public HBaseVariantFileMetadataDBAdaptor(Configuration configuration) {
-        // FIXME
-        this(new GenomeHelper(configuration), null, new HBaseVariantTableNameGenerator(HBaseVariantTableNameGenerator
-                .getDBNameFromVariantsTableName(new VariantTableHelper(configuration).getAnalysisTableAsString()), configuration));
+    public HBaseVariantFileMetadataDBAdaptor(VariantTableHelper helper) {
+        super(helper);
     }
 
-    public HBaseVariantFileMetadataDBAdaptor(GenomeHelper genomeHelper, HBaseManager hBaseManager,
-                                             HBaseVariantTableNameGenerator tableNameGenerator) {
-        this.genomeHelper = genomeHelper;
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        if (hBaseManager == null) {
-            this.hBaseManager = new HBaseManager(genomeHelper.getConf());
-        } else {
-            // Create a new instance of HBaseManager to close only if needed
-            this.hBaseManager = new HBaseManager(hBaseManager);
-        }
-        tableName = tableNameGenerator.getMetaTableName();
-        family = genomeHelper.getColumnFamily();
+    @Deprecated
+    public HBaseVariantFileMetadataDBAdaptor(Configuration configuration) {
+        // FIXME
+        this(null, new HBaseVariantTableNameGenerator(HBaseVariantTableNameGenerator
+                .getDBNameFromVariantsTableName(new VariantTableHelper(configuration).getAnalysisTableAsString()), configuration)
+                .getMetaTableName(), configuration);
+    }
+
+    public HBaseVariantFileMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
+        super(hBaseManager, metaTableName, configuration);
     }
 
     @Override
@@ -256,15 +241,6 @@ public class HBaseVariantFileMetadataDBAdaptor implements VariantFileMetadataDBA
                 }
                 return set;
             });
-        }
-    }
-
-    private void ensureTableExists() throws IOException {
-        if (tableExists == null || !tableExists) {
-            if (createMetaTableIfNeeded(hBaseManager, tableName, genomeHelper)) {
-                logger.info("Create table '{}' in hbase!", tableName);
-            }
-            tableExists = true;
         }
     }
 

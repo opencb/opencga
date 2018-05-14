@@ -211,8 +211,8 @@ public class VariantWriterFactory {
         switch (outputFormat) {
             case VCF_GZ:
             case VCF:
-                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(dbAdaptor.getStudyConfigurationManager(),
-                        dbAdaptor.getVariantFileMetadataDBAdaptor());
+                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(dbAdaptor.getStudyConfigurationManager()
+                );
                 VariantMetadata variantMetadata;
                 try {
                     variantMetadata = metadataFactory.makeVariantMetadata(query, queryOptions);

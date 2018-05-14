@@ -13,6 +13,7 @@ import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -50,17 +51,18 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
     private final String sessionId;
 
     public CatalogVariantMetadataFactory(CatalogManager catalogManager, VariantDBAdaptor dbAdaptor, String sessionId) {
-        super(dbAdaptor.getStudyConfigurationManager(), dbAdaptor.getVariantFileMetadataDBAdaptor());
+        super(dbAdaptor.getStudyConfigurationManager());
         this.catalogManager = catalogManager;
         this.sessionId = sessionId;
     }
 
     @Override
     protected VariantMetadata makeVariantMetadata(List<StudyConfiguration> studyConfigurations,
-                                                  Map<Integer, List<Integer>> returnedSamples,
+                                                  ProjectMetadata projectMetadata, Map<Integer, List<Integer>> returnedSamples,
                                                   Map<Integer, List<Integer>> returnedFiles,
                                                   QueryOptions queryOptions) throws StorageEngineException {
-        VariantMetadata metadata = super.makeVariantMetadata(studyConfigurations, returnedSamples, returnedFiles, queryOptions);
+        VariantMetadata metadata = super.makeVariantMetadata(studyConfigurations, projectMetadata,
+                returnedSamples, returnedFiles, queryOptions);
         if (queryOptions != null) {
             if (queryOptions.getBoolean(BASIC_METADATA, false)) {
                 return metadata;

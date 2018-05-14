@@ -43,9 +43,9 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -58,7 +58,6 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
 import org.slf4j.Logger;
@@ -83,7 +82,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RELEASE;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
@@ -366,14 +364,14 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
-        HBaseVariantFileMetadataDBAdaptor manager = dbAdaptor.getVariantFileMetadataDBAdaptor();
+        StudyConfigurationManager scm = getStudyConfigurationManager();
 
         try {
             int studyId = getStudyId();
             VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
 
-            manager.updateVariantFileMetadata(studyId, fileMetadata);
-            manager.updateLoadedFilesSummary(studyId, Collections.singletonList(getFileId()));
+            scm.updateVariantFileMetadata(studyId, fileMetadata);
+            dbAdaptor.getVariantFileMetadataDBAdaptor().updateLoadedFilesSummary(studyId, Collections.singletonList(getFileId()));
         } catch (IOException e) {
             throw new StorageEngineException("Error storing VariantFileMetadata for file " + getFileId(), e);
         }
@@ -397,6 +395,8 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         String variantsTableName = dbAdaptor.getTableNameGenerator().getVariantTableName();
         Connection jdbcConnection = dbAdaptor.getJdbcConnection();
 
+        final String species = getStudyConfigurationManager().getProjectMetadata().first().getSpecies();
+
         Long lock = null;
         try {
             long lockDuration = TimeUnit.MINUTES.toMillis(5);
@@ -418,7 +418,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             }
 
             try {
-                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                if (species.equals("hsapiens")) {
                     List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
                     phoenixHelper.addMissingColumns(jdbcConnection, variantsTableName, columns, true);
                 }
@@ -439,7 +439,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyConfiguration.getStudyId(), fileIds,
                         newSamples);
 
-                int release = studyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
+                int release = getStudyConfigurationManager().getProjectMetadata().first().getRelease();
                 phoenixHelper.registerRelease(jdbcConnection, variantsTableName, release);
 
             } catch (SQLException e) {
@@ -470,7 +470,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             try {
                 lock = getStudyConfigurationManager().lockStudy(studyConfiguration.getStudyId(), TimeUnit.MINUTES.toMillis(60),
                         TimeUnit.SECONDS.toMillis(5), PHOENIX_INDEX_LOCK_COLUMN);
-                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                if (species.equals("hsapiens")) {
                     List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(variantsTableName);
                     phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, VariantPhoenixHelper.DEFAULT_TABLE_TYPE,
                             variantsTableName, popFreqIndices, false);

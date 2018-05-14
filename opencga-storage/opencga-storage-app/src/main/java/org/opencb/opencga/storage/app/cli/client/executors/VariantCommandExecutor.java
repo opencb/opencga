@@ -19,13 +19,18 @@ package org.opencb.opencga.storage.app.cli.client.executors;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SequenceWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -43,7 +48,7 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
@@ -54,9 +59,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -70,8 +74,11 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
@@ -150,6 +157,21 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.annotateVariantsCommandOptions.commonOptions,
                         variantCommandOptions.annotateVariantsCommandOptions.dbName);
                 annotation();
+                break;
+            case COPY_ANNOTATION_COMMAND:
+                configure(variantCommandOptions.createAnnotationSnapshotCommandOptions.commonOptions,
+                        variantCommandOptions.createAnnotationSnapshotCommandOptions.dbName);
+                copyAnnotation();
+                break;
+            case DELETE_ANNOTATION_COMMAND:
+                configure(variantCommandOptions.deleteAnnotationSnapshotCommandOptions.commonOptions,
+                        variantCommandOptions.deleteAnnotationSnapshotCommandOptions.dbName);
+                deleteAnnotation();
+                break;
+            case QUERY_ANNOTATION_COMMAND:
+                configure(variantCommandOptions.queryAnnotationCommandOptions.commonOptions,
+                        variantCommandOptions.queryAnnotationCommandOptions.dbName);
+                queryAnnotation();
                 break;
             case "stats":
                 configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions,
@@ -355,8 +377,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.VariantAnnotateCommandOptions annotateVariantsCommandOptions
                 = variantCommandOptions.annotateVariantsCommandOptions;
 
-        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-
         /*
          * Create Annotator
          */
@@ -373,12 +393,18 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (annotateVariantsCommandOptions.assembly != null) {
             options.put(VariantAnnotationManager.ASSEMBLY, annotateVariantsCommandOptions.assembly);
         }
-        options.putAll(annotateVariantsCommandOptions.commonOptions.params);
 
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, storageEngine, options);
-//            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
-// annotateVariantsCommandOptions.species, annotateVariantsCommandOptions.assembly);
-        DefaultVariantAnnotationManager variantAnnotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
+        String fileName = annotateVariantsCommandOptions.fileName == null
+                ? annotateVariantsCommandOptions.dbName
+                : annotateVariantsCommandOptions.fileName;
+        options.put(DefaultVariantAnnotationManager.FILE_NAME, fileName);
+
+        URI outputUri = UriUtils.createUri(annotateVariantsCommandOptions.outdir == null ? "." : annotateVariantsCommandOptions.outdir);
+        Path outDir = Paths.get(outputUri.resolve(".").getPath());
+
+        options.put(DefaultVariantAnnotationManager.OUT_DIR, outDir.toString());
+
+        options.putAll(annotateVariantsCommandOptions.commonOptions.params);
 
         /*
          * Annotation options
@@ -397,8 +423,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (!annotateVariantsCommandOptions.overwriteAnnotations) {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
-        URI outputUri = UriUtils.createUri(annotateVariantsCommandOptions.outdir == null ? "." : annotateVariantsCommandOptions.outdir);
-        Path outDir = Paths.get(outputUri.resolve(".").getPath());
 
         /*
          * Create and load annotations
@@ -409,26 +433,82 @@ public class VariantCommandExecutor extends CommandExecutor {
             doLoad = true;
         }
 
-        URI annotationFile = null;
-        if (doCreate) {
-            long start = System.currentTimeMillis();
-            logger.info("Starting annotation creation ");
-            annotationFile = variantAnnotationManager.createAnnotation(outDir, annotateVariantsCommandOptions.fileName == null
-                    ? annotateVariantsCommandOptions.dbName
-                    : annotateVariantsCommandOptions.fileName, query, new QueryOptions(options));
-            logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
+        if (doCreate && !doLoad) {
+            options.put(DefaultVariantAnnotationManager.CREATE, true);
+        }
+        if (doLoad) {
+            options.put(DefaultVariantAnnotationManager.LOAD_FILE, annotateVariantsCommandOptions.load);
         }
 
-        if (doLoad) {
-            long start = System.currentTimeMillis();
-            logger.info("Starting annotation load");
-            if (annotationFile == null) {
-//                annotationFile = new URI(null, c.load, null);
-                annotationFile = Paths.get(annotateVariantsCommandOptions.load).toUri();
-            }
-            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions(options));
+//        URI annotationFile = null;
+//        if (doCreate) {
+//            long start = System.currentTimeMillis();
+//            logger.info("Starting annotation creation ");
+//            annotationFile = variantAnnotationManager.createAnnotation(outDir, fileName, query, new QueryOptions(options));
+//            logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
+//        }
+//
+//        if (doLoad) {
+//            long start = System.currentTimeMillis();
+//            logger.info("Starting annotation load");
+//            if (annotationFile == null) {
+////                annotationFile = new URI(null, c.load, null);
+//                annotationFile = Paths.get(annotateVariantsCommandOptions.load).toUri();
+//            }
+//            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions(options));
+//
+//            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+//        }
 
-            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+        variantStorageEngine.annotate(query, options);
+    }
+
+    private void copyAnnotation() throws VariantAnnotatorException, StorageEngineException {
+        StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.createAnnotationSnapshotCommandOptions;
+
+        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantStorageEngine.createAnnotationSnapshot(cliOptions.name, options);
+    }
+
+    private void deleteAnnotation() throws VariantAnnotatorException, StorageEngineException {
+        StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions cliOptions = variantCommandOptions.deleteAnnotationSnapshotCommandOptions;
+
+        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantStorageEngine.deleteAnnotationSnapshot(cliOptions.name, options);
+    }
+
+    private void queryAnnotation() throws VariantAnnotatorException, StorageEngineException, IOException {
+        StorageVariantCommandOptions.QueryAnnotationCommandOptions cliOptions  = variantCommandOptions.queryAnnotationCommandOptions;
+
+        QueryOptions options = new QueryOptions();
+        options.put(QueryOptions.LIMIT, cliOptions.limit);
+        options.put(QueryOptions.SKIP, cliOptions.skip);
+        options.put(QueryOptions.INCLUDE, cliOptions.dataModelOptions.include);
+        options.put(QueryOptions.EXCLUDE, cliOptions.dataModelOptions.exclude);
+        options.putAll(cliOptions.commonOptions.params);
+
+        Query query = new Query();
+        query.put(VariantQueryParam.REGION.key(), cliOptions.region);
+        query.put(VariantQueryParam.ID.key(), cliOptions.id);
+
+        QueryResult<VariantAnnotation> queryResult = variantStorageEngine.getAnnotation(cliOptions.name, query, options);
+
+        // WRITE
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.configure(SerializationFeature.CLOSE_CLOSEABLE, false);
+        ObjectWriter writer = objectMapper.writer();
+//        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
+        SequenceWriter sequenceWriter = writer.writeValues(System.out);
+        for (VariantAnnotation annotation : queryResult.getResult()) {
+            sequenceWriter.write(annotation);
+            sequenceWriter.flush();
+//            writer.writeValue(System.out, annotation);
+            System.out.println();
         }
     }
 
