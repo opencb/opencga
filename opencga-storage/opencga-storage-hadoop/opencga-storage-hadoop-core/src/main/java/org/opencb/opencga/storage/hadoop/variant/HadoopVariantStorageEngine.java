@@ -671,7 +671,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
-        // TODO: Query using SearchManager even if FILES filter is used
         return super.doQuerySearchManager(query, options);
     }
 
