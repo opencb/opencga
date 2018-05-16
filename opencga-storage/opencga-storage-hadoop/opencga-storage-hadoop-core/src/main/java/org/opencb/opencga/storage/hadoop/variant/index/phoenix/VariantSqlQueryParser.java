@@ -119,9 +119,18 @@ public class VariantSqlQueryParser {
             List<String> regionFilters = getRegionFilters(query);
             List<String> filters = getOtherFilters(query, options, dynamicColumns);
 
+            List<HintNode.Hint> hints = new ArrayList<>();
             if (DEFAULT_TABLE_TYPE != PTableType.VIEW && filters.isEmpty()) {
                 // Only region filters. Hint no index usage
-                sb.append("/*+ ").append(HintNode.Hint.NO_INDEX.toString()).append(" */ ");
+                hints.add(HintNode.Hint.NO_INDEX);
+            }
+            if (options.containsKey("HINT")) {
+                for (String hint : options.getAsStringList("HINT")) {
+                    hints.add(HintNode.Hint.valueOf(hint));
+                }
+            }
+            if (!hints.isEmpty()) {
+                sb.append("/*+ ").append(hints.stream().map(Object::toString).collect(Collectors.joining(","))).append(" */ ");
             }
 
             appendProjectedColumns(sb, query, options, phoenixSQLQuery);
@@ -258,25 +267,35 @@ public class VariantSqlQueryParser {
             sb.append(" WHERE");
         }
 
-        appendFilters(sb, regionFilters, "OR");
+        appendFilters(sb, regionFilters, QueryOperation.OR);
 
         if (!filters.isEmpty() && !regionFilters.isEmpty()) {
             sb.append(" AND");
         }
 
-        appendFilters(sb, filters, "AND");
+        appendFilters(sb, filters, QueryOperation.AND);
 
         return sb;
     }
 
-    protected String appendFilters(List<String> filters, String delimiter) {
-        return appendFilters(new StringBuilder(), filters, delimiter).toString();
+    protected String appendFilters(List<String> filters, QueryOperation logicalOperation) {
+        return appendFilters(new StringBuilder(), filters, logicalOperation).toString();
     }
 
-    protected StringBuilder appendFilters(StringBuilder sb, List<String> filters, String delimiter) {
-        delimiter = ' ' + delimiter + ' ';
+    protected StringBuilder appendFilters(StringBuilder sb, List<String> filters, QueryOperation logicalOperation) {
+        String delimiter;
+        switch (logicalOperation) {
+            case AND:
+                delimiter = " ) AND ( ";
+                break;
+            case OR:
+                delimiter = " ) OR ( ";
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown QueryOperation " + logicalOperation);
+        }
         if (!filters.isEmpty()) {
-            sb.append(filters.stream().collect(Collectors.joining(delimiter, " ( ", " )")));
+            sb.append(filters.stream().collect(Collectors.joining(delimiter, " ( ( ", " ) )")));
         }
         return sb;
     }
@@ -384,7 +403,7 @@ public class VariantSqlQueryParser {
         if (region.getEnd() < Integer.MAX_VALUE) {
             subFilters.add(buildFilter(VariantColumn.POSITION, "<=", region.getEnd()));
         }
-        return appendFilters(subFilters, QueryOperation.AND.toString());
+        return appendFilters(subFilters, QueryOperation.AND);
     }
 
     /**
@@ -1083,7 +1102,7 @@ public class VariantSqlQueryParser {
                         for (Object o : ((Collection) value)) {
                             subSubFilters.add(buildFilter(column, op, o.toString(), "", extra, arrayIdx, param, rawValue));
                         }
-                        subFilters.add(negatedStr + appendFilters(subSubFilters, QueryOperation.OR.toString()));
+                        subFilters.add(negatedStr + appendFilters(subSubFilters, QueryOperation.OR));
                     } else {
                         subFilters.add(buildFilter(column, op, value.toString(), negatedStr, extra, arrayIdx, param, rawValue));
                     }
@@ -1091,7 +1110,7 @@ public class VariantSqlQueryParser {
                     subFilters.add(buildFilter(column, op, keyOpValue[2], negatedStr, extra, arrayIdx, param, rawValue));
                 }
             }
-            filters.add(appendFilters(subFilters, logicOperation.toString()));
+            filters.add(appendFilters(subFilters, logicOperation));
 //            filters.add(subFilters.stream().collect(Collectors.joining(" ) " + operation.name() + " ( ", " ( ", " ) ")));
         }
     }
