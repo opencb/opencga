@@ -19,14 +19,14 @@
 
 !3 Create Individual
 !| Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$iName" } |
+| setBody | {"id" : "$iName" } |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/create?sid=$sessionIdUserA&study=$study | 200 | Content-Type: application/json | |
 | let | individualId | js | response.jsonbody.response[0].result[0].id | |
 
 !3 Create First Family
 !| Table: Rest Fixture | $baseURL |
-| setBody | {"name": "$familyName",  "members": [{"name": "father"}, {"name": "mother"},{"name": "son","father" : "father","mother" : "mother"}]} |
+| setBody | { "id" : "familyId1", "name": "$familyName",  "members": [{"name": "father"}, {"name": "mother"},{"name": "son","father" : "father","mother" : "mother"}]} |
 | setHeader | Content-Type:application/json |
 | POST | /v1/families/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json | |
 | let | familyId | js | response.jsonbody.response[0].result[0].id | |

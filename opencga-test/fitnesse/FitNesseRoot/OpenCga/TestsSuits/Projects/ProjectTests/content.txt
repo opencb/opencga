@@ -51,6 +51,13 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/$lProjectId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].description == 'update'|
 
+!3 (Negative) Update Project ID
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"id" : "updatedID"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/$lProjectId/update?sid=$sessionId |400|  Content-Type: application/json ||
+
+
 !3 (Negative) Update Project Mandatory Field ( Not Allowed)
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "organism" : {"scientificName" : "Homo sapiens update"}}|
@@ -136,9 +143,9 @@
 
 !3 Search Existing Sample (Release 2)
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/search?sid=$sessionId&study=$studyId1&release=2|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == 'sample'|
+| GET | /v1/samples/search?sid=$sessionId&study=$studyId1&release=2|200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'sample'|
 
 !3 Search All Samples (Current Release)
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/search?sid=$sessionId&study=$studyId1|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == 'sample'|
+| GET | /v1/samples/search?sid=$sessionId&study=$studyId1|200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'sample'|
 

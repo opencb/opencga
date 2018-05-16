@@ -69,11 +69,12 @@
 
 !3 Get Studies Info With One Invalid Entry And Silent False
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId|403|Content-Type: application/json |jsonbody.error == "Permission denied. User '$user' cannot view study { id: 0 }"|
+| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId|403|Content-Type: application/json |jsonbody.response[0].errorMsg == "DEPRECATED: org.opencb.opencga.catalog.exceptions.CatalogException: No study found or the user $user does not have permissions to view any."|
+| GET | /v1/studies/$lStudyId,$studyId,000/info?sid=$sessionId||Content-Type: application/json |jsonbody.response[0].errorMsg == "DEPRECATED: org.opencb.opencga.catalog.exceptions.CatalogException: No study found or the user $user does not have permissions to view any."|
 
 !3 Get Studies Info With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/11111,$lStudyId,$studyId/info?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogDBException: Study id '11111' does not exist" && jsonbody.response[1].result[0].name == 'newName' && jsonbody.response[2].result[0].id == '$studyId'|
+| GET | /v1/studies/11111,$lStudyId,$studyId/info?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: No study found or the user $user does not have permissions to view any."|
 
 !3 Get Study ACL
 !|Table: Rest Fixture | $baseURL |
@@ -165,11 +166,12 @@
 
 !3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent False
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].errorMsg == 'org.opencb.opencga.catalog.exceptions.CatalogDBException: Study { id: 0 } not found.' && jsonbody.response[2].numResults == '4'|
+| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=false|403|Content-Type: application/json |jsonbody.error == "No study found or the user $user does not have permissions to view any."|
+| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=false||Content-Type: application/json |jsonbody.error == "No study found or the user $user does not have permissions to view any."|
 
 !3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].numResults == '0.0' && jsonbody.response[2].numResults == '4'|
+| GET | /v1/studies/$studyId,000,$lStudyId/groups?sid=$sessionId&silent=true|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].errorMsg == 'org.opencb.opencga.catalog.exceptions.CatalogException: No study found or the user $user does not have permissions to view any.' && jsonbody.response[2].numResults == '4'|
 
 !3 Delete Group 
 !|Table: Rest Fixture | $baseURL |

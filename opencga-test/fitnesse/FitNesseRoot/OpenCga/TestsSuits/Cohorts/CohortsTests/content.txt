@@ -24,7 +24,7 @@
 
 !3 Search Cohort 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/search?sid=$sessionId&study=$study&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
+| GET | /v1/cohorts/search?sid=$sessionId&study=$study&id=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
 
 !3 Find Info About A Cohort 
 !|Table: Rest Fixture | $baseURL |
@@ -36,7 +36,8 @@
 
 !3 Get Study Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error == "Permission denied. User '*' cannot view study { id: $studyId }"|
+| GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error == "Permission denied. User '*' cannot view study { id: $user@$project:$studyId }"|
+| GET | /v1/studies/$studyId/info |403|Content-Type: application/json||
 
 !3 Get Cohort Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
@@ -68,7 +69,7 @@
 
 !3 Get Study Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error == "Permission denied. User '*' cannot view study { id: $studyId }"|
+| GET | /v1/studies/$studyId/info |403|Content-Type: application/json|jsonbody.error == "Permission denied. User '*' cannot view study { id: $user@$project:$studyId }"|
 
 !3 Get Cohort Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
@@ -104,7 +105,7 @@
 
 !3 Search A Cohort 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/search?sid=$sessionId&study=$study&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' |
+| GET | /v1/cohorts/search?sid=$sessionId&study=$study&id=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' |
 
 !3 Find Two Cohorts 
 !|Table: Rest Fixture | $baseURL |
@@ -120,6 +121,7 @@
 
 !3 Find Multiple Cohorts With One Invalid Entry Silent True
 !|Table: Rest Fixture | $baseURL |
+| GET | /v1/cohorts/$cohortId2,$cohortId,0000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json ||
 | GET | /v1/cohorts/$cohortId2,$cohortId,0000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId2' && jsonbody.response[2].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException: Permission denied. User '$user' cannot VIEW Cohort { id: -1 }"|
 
 !3 Get cohorts as Groups
@@ -144,16 +146,18 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"samples" : "$sampleId,$sampleId2"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/$cohortId/update?sid=$sessionId&study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == '2'|
+| POST | /v1/cohorts/$cohortId/update?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
+#| POST | /v1/cohorts/$cohortId/update?sid=$sessionId&study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == '2'|
 
 !3 Get cohort Sample
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId/samples?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].numResults == '2'|
 
 # return code changes after fix
-!3 (negative) Get cohort Sample With Multile Ids
+!3 (negative) Get cohort Sample With Multiple Ids
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId,$cohortId/samples?sid=$sessionId |500|  Content-Type: application/json |jsonbody.error == "More than one cohort found"|
+| GET | /v1/cohorts/$cohortId,$cohortId/samples?sid=$sessionId |500|  Content-Type: application/json ||
+#| GET | /v1/cohorts/$cohortId,$cohortId/samples?sid=$sessionId |500|  Content-Type: application/json |jsonbody.error == "More than one cohort found"|
 
 !3 Get cohorts Sample With Include
 !|Table: Rest Fixture | $baseURL |
@@ -197,7 +201,8 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {    "action": "RESET",  "cohort": "$cohortId" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].id == '$cohortId' && jsonbody.response[0].result.length == '0'|
+| POST | /v1/cohorts/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json ||
+#| POST | /v1/cohorts/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].id == '$cohortId' && jsonbody.response[0].result.length == '0'|
 
 # Once we have delete response object, replace above line with following commented
 #| GET | /v1/cohorts/$cohortId/acl/$userA/delete?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
@@ -208,17 +213,18 @@
 
 !3 Create Annotation Set
 !|Table: Rest Fixture  | $baseURL |
-| setBody |{ "annotationSets": [ {   "name": "string",          "variableSetId": $gVariableSetId,          "annotations": {"var_int": "10", "var_double": "175.58"} } ]}|
+| setBody |{ "annotationSets":[{"id": "string", "variableSetId": "$gVariableSetId",  "annotations": {"V1": "10","V2": "175.58"}}]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/$cohortId/update?sid=$sessionId&study=$studyId |200|Content-Type : application/json||
 
 !3 Search Annotation Set By Annotation
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=var_int=10|200|  Content-Type: application/json ||
+| GET | /v1/cohorts/$cohortId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=V1=10|200|  Content-Type: application/json ||
+| GET | /v1/cohorts/$cohortId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId||  ||
 
 !3 Create Nested Annotation
 !|Table: Rest Fixture | $baseURL |
-|setBody|{  "annotationSets": [{"name": "Testing", "variableSetId": $gVariableSetId2, "annotations": { "outer_var" : [{"inner_first_var":1000.57 , "inner_second_var":2000}]}}]}|
+|setBody| { "annotationSets":[{"id": "Testing","variableSetId":  "$gVariableSetId2","annotations": { "V11" : [{"V1":1000.57 , "V2":2000}]}}]}|
 |setHeader|Content-Type:application/json|
 |POST| /v1/cohorts/$cohortId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
 
