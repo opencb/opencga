@@ -82,7 +82,7 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchU
 /**
  * Created by imedina on 13/08/14.
  */
-public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> {
+public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> implements VariantIterable {
 
     public static final String REMOVE_OPERATION_NAME = BatchFileOperation.Type.REMOVE.name().toLowerCase();
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
@@ -657,7 +657,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
     }
 
-    protected final ObjectMap getMergedOptions(Map<? extends String, ?> params) {
+    public final ObjectMap getMergedOptions(Map<? extends String, ?> params) {
         ObjectMap options = new ObjectMap(getOptions());
         if (params != null) {
             params.forEach(options::putIfNotNull);
@@ -708,12 +708,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         options.put(QueryOptions.TIMEOUT, timeout);
     }
 
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
-        return (VariantQueryResult<Variant>) getOrIterator(query, options, false);
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+        try {
+            return (VariantQueryResult<Variant>) getOrIterator(query, options, false);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e);
+        }
     }
 
-    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
-        return (VariantDBIterator) getOrIterator(query, options, true);
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) {
+        try {
+            return (VariantDBIterator) getOrIterator(query, options, true);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e);
+        }
     }
 
     protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
