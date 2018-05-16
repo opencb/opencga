@@ -45,6 +45,11 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
     public AbstractManager.MyResource<R> getUid(String entryStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        if (entryStr.contains(",")) {
+            throw new CatalogException("More than one entry found");
+        }
+
         R entry = smartResolutor(study.getUid(), entryStr, userId);
         return new MyResource<>(userId, study, entry);
     }
