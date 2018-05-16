@@ -59,21 +59,7 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
      * @throws CatalogException when more than one entry is found.
      */
     public AbstractManager.MyResources<R> getUids(String entryStr, @Nullable String studyStr, String sessionId) throws CatalogException {
-        return getUids(Arrays.asList(entryStr.split(",")), studyStr, false, sessionId);
-    }
-
-    /**
-     * Obtains the resource java beans containing the requested entries.
-     *
-     * @param entryStr  List of entry ids in string format.
-     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sessionId Session id of the user logged.
-     * @return the resource java beans containing the requested entries.
-     * @throws CatalogException when more than one entry is found.
-     */
-    public AbstractManager.MyResources<R> getUids(List<String> entryStr, @Nullable String studyStr, String sessionId)
-            throws CatalogException {
-        return getUids(entryStr, studyStr, false, sessionId);
+        return getUids(Arrays.asList(entryStr.split(",")), studyStr, sessionId);
     }
 
     /**
@@ -81,25 +67,18 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
      *
      * @param entryList  List of entry ids in string format.
      * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param silent boolean to accept partial or complete results.
      * @param sessionId Session id of the user logged.
      * @return the resource java beans containing the requested entries.
      * @throws CatalogException when more than one entry is found.
      */
-    public AbstractManager.MyResources<R> getUids(List<String> entryList, @Nullable String studyStr, boolean silent, String sessionId)
+    public AbstractManager.MyResources<R> getUids(List<String> entryList, @Nullable String studyStr, String sessionId)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         List<R> finalEntryList = new ArrayList<>(entryList.size());
         for (String entryStr : entryList) {
-            try {
-                R entry = smartResolutor(study.getUid(), entryStr, userId);
-                finalEntryList.add(entry);
-            } catch (CatalogException e) {
-                if (!silent) {
-                    throw e;
-                }
-            }
+            R entry = smartResolutor(study.getUid(), entryStr, userId);
+            finalEntryList.add(entry);
         }
         return new MyResources<>(userId, study, finalEntryList);
     }
@@ -186,19 +165,17 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
         List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
         query = ParamUtils.defaultObject(query, Query::new);
 
-        MyResources<R> resource = getUids(entryList, studyStr, silent, sessionId);
-        List<R> resourceIds = resource.getResourceList();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            R entity = resourceIds.get(i);
+        for (String entry : entryList) {
             Query queryCopy = new Query(query);
-            queryCopy.put("uid", entity.getUid());
             try {
+                MyResource<R> resource = getUid(entry, studyStr, sessionId);
+                queryCopy.put("uid", resource.getResource().getUid());
                 QueryResult<R> rQueryResult = get(studyStr, queryCopy, options, sessionId);
-                rQueryResult.setId(entryList.get(i));
+                rQueryResult.setId(entry);
                 resultList.add(rQueryResult);
             } catch (CatalogException e) {
                 if (silent) {
-                    resultList.add(new QueryResult<>(entryList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    resultList.add(new QueryResult<>(entry, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

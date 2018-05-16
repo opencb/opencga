@@ -1591,7 +1591,7 @@ public class FileManager extends ResourceManager<File> {
     public QueryResult<Job> index(String studyStr, List<String> fileList, String type, Map<String, String> params, String sessionId)
             throws CatalogException {
         params = ParamUtils.defaultObject(params, HashMap::new);
-        MyResources<File> resource = getUids(fileList, studyStr, false, sessionId);
+        MyResources<File> resource = getUids(fileList, studyStr, sessionId);
         List<File> fileFolderIdList = resource.getResourceList();
         long studyId = resource.getStudy().getUid();
         String userId = resource.getUser();
@@ -1809,26 +1809,25 @@ public class FileManager extends ResourceManager<File> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<FileAclEntry>> getAcls(String studyStr, List<String> fileList, String member, boolean silent, String sessionId)
             throws CatalogException {
-        MyResources<File> resource = getUids(fileList, studyStr, silent, sessionId);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceList().size());
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(fileList.size());
 
-        List<File> resourceList = resource.getResourceList();
-        for (int i = 0; i < resourceList.size(); i++) {
-            File file = resourceList.get(i);
+        for (String file : fileList) {
             try {
+                MyResource<File> resource = getUid(file, studyStr, sessionId);
+
                 QueryResult<FileAclEntry> allFileAcls;
                 if (StringUtils.isNotEmpty(member)) {
-                    allFileAcls = authorizationManager.getFileAcl(resource.getStudy().getUid(), file.getUid(), resource.getUser(), member);
+                    allFileAcls = authorizationManager.getFileAcl(resource.getStudy().getUid(), resource.getResource().getUid(),
+                            resource.getUser(), member);
                 } else {
-                    allFileAcls = authorizationManager.getAllFileAcls(resource.getStudy().getUid(), file.getUid(), resource.getUser(),
-                            true);
+                    allFileAcls = authorizationManager.getAllFileAcls(resource.getStudy().getUid(), resource.getResource().getUid(),
+                            resource.getUser(), true);
                 }
-                allFileAcls.setId(file.getPath());
+                allFileAcls.setId(file);
                 fileAclList.add(allFileAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    fileAclList.add(new QueryResult<>(fileList.get(i), 0, 0, 0, "", e.toString(),
-                            new ArrayList<>(0)));
+                    fileAclList.add(new QueryResult<>(file, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

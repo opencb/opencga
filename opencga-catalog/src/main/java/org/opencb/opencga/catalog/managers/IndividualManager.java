@@ -697,26 +697,25 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<IndividualAclEntry>> getAcls(String studyStr, List<String> individualList, String member,
                                                          boolean silent, String sessionId) throws CatalogException {
-        MyResources<Individual> resource = getUids(individualList, studyStr, silent, sessionId);
+        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualList.size());
 
-        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(resource.getResourceList().size());
-        List<Individual> resourceIds = resource.getResourceList();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Individual individual = resourceIds.get(i);
+        for (String individual : individualList) {
             try {
+                MyResource<Individual> resource = getUid(individual, studyStr, sessionId);
+
                 QueryResult<IndividualAclEntry> allIndividualAcls;
                 if (StringUtils.isNotEmpty(member)) {
-                    allIndividualAcls = authorizationManager.getIndividualAcl(resource.getStudy().getUid(), individual.getUid(),
+                    allIndividualAcls = authorizationManager.getIndividualAcl(resource.getStudy().getUid(), resource.getResource().getUid(),
                             resource.getUser(), member);
                 } else {
-                    allIndividualAcls = authorizationManager.getAllIndividualAcls(resource.getStudy().getUid(), individual.getUid(),
-                            resource.getUser());
+                    allIndividualAcls = authorizationManager.getAllIndividualAcls(resource.getStudy().getUid(),
+                            resource.getResource().getUid(), resource.getUser());
                 }
-                allIndividualAcls.setId(individual.getId());
+                allIndividualAcls.setId(individual);
                 individualAclList.add(allIndividualAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    individualAclList.add(new QueryResult<>(individualList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    individualAclList.add(new QueryResult<>(individual, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

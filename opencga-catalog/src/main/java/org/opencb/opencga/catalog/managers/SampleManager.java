@@ -857,26 +857,26 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<SampleAclEntry>> getAcls(String studyStr, List<String> sampleList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
-        MyResources<Sample> resource = getUids(sampleList, studyStr, silent, sessionId);
+        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(sampleList.size());
 
-        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resource.getResourceList().size());
-        List<Sample> resourceIds = resource.getResourceList();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Sample sample = resourceIds.get(i);
+        for (String sample : sampleList) {
             try {
+                MyResource<Sample> resource = getUid(sample, studyStr, sessionId);
+
                 QueryResult<SampleAclEntry> allSampleAcls;
                 if (StringUtils.isNotEmpty(member)) {
                     allSampleAcls =
-                            authorizationManager.getSampleAcl(resource.getStudy().getUid(), sample.getUid(), resource.getUser(), member);
+                            authorizationManager.getSampleAcl(resource.getStudy().getUid(), resource.getResource().getUid(),
+                                    resource.getUser(), member);
                 } else {
-                    allSampleAcls = authorizationManager.getAllSampleAcls(resource.getStudy().getUid(), sample.getUid(),
+                    allSampleAcls = authorizationManager.getAllSampleAcls(resource.getStudy().getUid(), resource.getResource().getUid(),
                             resource.getUser());
                 }
-                allSampleAcls.setId(sample.getId());
+                allSampleAcls.setId(sample);
                 sampleAclList.add(allSampleAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    sampleAclList.add(new QueryResult<>(sampleList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    sampleAclList.add(new QueryResult<>(sample, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

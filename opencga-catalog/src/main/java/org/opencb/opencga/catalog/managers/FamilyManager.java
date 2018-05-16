@@ -488,26 +488,25 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
-        MyResources<Family> resource = getUids(familyList, studyStr, silent, sessionId);
-
-        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceList().size());
-        List<Family> resourceIds = resource.getResourceList();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Family family = resourceIds.get(i);
+        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(familyList.size());
+        for (String family : familyList) {
             try {
+                MyResource<Family> resource = getUid(family, studyStr, sessionId);
+
                 QueryResult<FamilyAclEntry> allFamilyAcls;
                 if (StringUtils.isNotEmpty(member)) {
-                    allFamilyAcls = authorizationManager.getFamilyAcl(resource.getStudy().getUid(), family.getUid(), resource.getUser(),
+                    allFamilyAcls = authorizationManager.getFamilyAcl(resource.getStudy().getUid(), resource.getResource().getUid(),
+                            resource.getUser(),
                             member);
                 } else {
-                    allFamilyAcls = authorizationManager.getAllFamilyAcls(resource.getStudy().getUid(), family.getUid(),
+                    allFamilyAcls = authorizationManager.getAllFamilyAcls(resource.getStudy().getUid(), resource.getResource().getUid(),
                             resource.getUser());
                 }
-                allFamilyAcls.setId(family.getId());
+                allFamilyAcls.setId(family);
                 familyAclList.add(allFamilyAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    familyAclList.add(new QueryResult<>(familyList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    familyAclList.add(new QueryResult<>(family, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

@@ -517,24 +517,25 @@ public class JobManager extends ResourceManager<Job> {
     // **************************   ACLs  ******************************** //
     public List<QueryResult<JobAclEntry>> getAcls(String studyStr, List<String> jobList, String member, boolean silent, String sessionId)
             throws CatalogException {
-        MyResources<Job> resource = getUids(jobList, studyStr, silent, sessionId);
+        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(jobList.size());
 
-        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceList().size());
-        List<Job> resourceIds = resource.getResourceList();
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Job job = resourceIds.get(i);
+        for (String job : jobList) {
             try {
+                MyResource<Job> resource = getUid(job, studyStr, sessionId);
+
                 QueryResult<JobAclEntry> allJobAcls;
                 if (StringUtils.isNotEmpty(member)) {
-                    allJobAcls = authorizationManager.getJobAcl(resource.getStudy().getUid(), job.getUid(), resource.getUser(), member);
+                    allJobAcls = authorizationManager.getJobAcl(resource.getStudy().getUid(), resource.getResource().getUid(),
+                            resource.getUser(), member);
                 } else {
-                    allJobAcls = authorizationManager.getAllJobAcls(resource.getStudy().getUid(), job.getUid(), resource.getUser());
+                    allJobAcls = authorizationManager.getAllJobAcls(resource.getStudy().getUid(), resource.getResource().getUid(),
+                            resource.getUser());
                 }
-                allJobAcls.setId(job.getId());
+                allJobAcls.setId(job);
                 jobAclList.add(allJobAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    jobAclList.add(new QueryResult<>(jobList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    jobAclList.add(new QueryResult<>(job, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }

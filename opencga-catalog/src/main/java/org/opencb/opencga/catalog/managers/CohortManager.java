@@ -522,28 +522,27 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, List<String> cohortList, String member,
-                                                     boolean silent, String sessionId) throws CatalogException {
-        MyResources<Cohort> resource = getUids(cohortList, studyStr, silent, sessionId);
-
-        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceList().size());
-        List<Cohort> resourceList = resource.getResourceList();
-        for (int i = 0; i < resourceList.size(); i++) {
-            Cohort cohort = resourceList.get(i);
+    public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, List<String> cohortList, String member, boolean silent,
+                                                     String sessionId) throws CatalogException {
+        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortList.size());
+        for (String cohort : cohortList) {
             try {
+                MyResource<Cohort> resource = getUid(cohort, studyStr, sessionId);
+
                 QueryResult<CohortAclEntry> allCohortAcls;
                 if (StringUtils.isNotEmpty(member)) {
                     allCohortAcls =
-                            authorizationManager.getCohortAcl(resource.getStudy().getUid(), cohort.getUid(), resource.getUser(), member);
+                            authorizationManager.getCohortAcl(resource.getStudy().getUid(), resource.getResource().getUid(),
+                                    resource.getUser(), member);
                 } else {
-                    allCohortAcls = authorizationManager.getAllCohortAcls(resource.getStudy().getUid(), cohort.getUid(),
+                    allCohortAcls = authorizationManager.getAllCohortAcls(resource.getStudy().getUid(), resource.getResource().getUid(),
                             resource.getUser());
                 }
-                allCohortAcls.setId(cohort.getId());
+                allCohortAcls.setId(cohort);
                 cohortAclList.add(allCohortAcls);
             } catch (CatalogException e) {
                 if (silent) {
-                    cohortAclList.add(new QueryResult<>(cohortList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    cohortAclList.add(new QueryResult<>(cohort, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
                     throw e;
                 }
