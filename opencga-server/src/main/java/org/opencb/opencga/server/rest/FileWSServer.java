@@ -388,7 +388,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 new FileUtils(catalogManager).upload(tempFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true,
                         Long.MAX_VALUE);
 
-                QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getUid(), null, sessionId);
+                QueryResult<File> queryResult = catalogManager.getFileManager().get(studyStr, queryResult1.first().getPath(), null,
+                        sessionId);
                 File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
                         new QueryOptions(queryOptions), sessionId, false);
                 queryResult.setResult(Collections.singletonList(file));
