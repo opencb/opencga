@@ -700,8 +700,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         int defaultTimeout = getOptions().getInt(DEFAULT_TIMEOUT.key(), DEFAULT_TIMEOUT.defaultValue());
         int maxTimeout = getOptions().getInt(MAX_TIMEOUT.key(), MAX_TIMEOUT.defaultValue());
         int timeout = options.getInt(QueryOptions.TIMEOUT, defaultTimeout);
-        if (timeout > maxTimeout || timeout < 0) {
-            timeout = maxTimeout;
+        if (timeout > maxTimeout) {
+            throw new VariantQueryException("Invalid timeout '" + timeout + "'. Max timeout is " + maxTimeout);
+        } else if (timeout < 0) {
+            throw new VariantQueryException("Invalid timeout '" + timeout + "'. Timeout must be positive");
         }
         options.put(QueryOptions.TIMEOUT, timeout);
     }
