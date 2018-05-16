@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.manager.variant.metadata;
 
+import org.opencb.biodata.models.metadata.Cohort;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.Query;
@@ -65,6 +66,12 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                 returnedSamples, returnedFiles, queryOptions);
         if (queryOptions != null) {
             if (queryOptions.getBoolean(BASIC_METADATA, false)) {
+                // If request BasicMetadata, do not return extra catalog information, neither samples in cohorts
+                for (VariantStudyMetadata variantStudyMetadata : metadata.getStudies()) {
+                    for (Cohort cohort : variantStudyMetadata.getCohorts()) {
+                        cohort.setSampleIds(Collections.emptyList());
+                    }
+                }
                 return metadata;
             }
         }
@@ -150,19 +157,21 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
             org.opencb.biodata.models.metadata.Sample sample = samplesMap.get(catalogSample.getName());
 
             List<AnnotationSet> annotationSets = catalogSample.getAnnotationSets();
-            sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));
-            for (AnnotationSet annotationSet : annotationSets) {
-                String prefix = annotationSets.size() > 1 ? annotationSet.getName() + '.' : "";
-                Map<String, Object> annotations = annotationSet.getAnnotations();
-                for (Map.Entry<String, Object> annotationEntry : annotations.entrySet()) {
-                    Object value = annotationEntry.getValue();
-                    String stringValue;
-                    if (value instanceof Collection) {
-                        stringValue = ((Collection<?>) value).stream().map(Object::toString).collect(Collectors.joining(","));
-                    } else {
-                        stringValue = value.toString();
+            if (annotationSets != null) {
+                sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));
+                for (AnnotationSet annotationSet : annotationSets) {
+                    String prefix = annotationSets.size() > 1 ? annotationSet.getName() + '.' : "";
+                    Map<String, Object> annotations = annotationSet.getAnnotations();
+                    for (Map.Entry<String, Object> annotationEntry : annotations.entrySet()) {
+                        Object value = annotationEntry.getValue();
+                        String stringValue;
+                        if (value instanceof Collection) {
+                            stringValue = ((Collection<?>) value).stream().map(Object::toString).collect(Collectors.joining(","));
+                        } else {
+                            stringValue = value.toString();
+                        }
+                        sample.getAnnotations().put(prefix + annotationEntry.getKey(), stringValue);
                     }
-                    sample.getAnnotations().put(prefix + annotationEntry.getKey(), stringValue);
                 }
             }
         }
