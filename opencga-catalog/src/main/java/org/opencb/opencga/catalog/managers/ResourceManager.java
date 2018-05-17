@@ -175,7 +175,7 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
             try {
                 MyResource<R> resource = getUid(entry, studyStr, sessionId);
                 queryCopy.put("uid", resource.getResource().getUid());
-                QueryResult<R> rQueryResult = get(studyStr, queryCopy, options, sessionId);
+                QueryResult<R> rQueryResult = get(resource.getStudy().getFqn(), queryCopy, options, sessionId);
                 rQueryResult.setId(entry);
                 resultList.add(rQueryResult);
             } catch (CatalogException e) {

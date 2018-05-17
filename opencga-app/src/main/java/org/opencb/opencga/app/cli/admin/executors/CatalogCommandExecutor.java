@@ -54,7 +54,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing variant command line");
+        logger.debug("Executing catalog admin command line");
 
         String subCommandString = catalogCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
@@ -161,13 +161,11 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         return mongoDataStoreManager.exists(database);
     }
 
-    private void delete() throws CatalogException, URISyntaxException {
-        setCatalogDatabaseCredentials(catalogCommandOptions.deleteCatalogCommandOptions.databaseHost,
-                catalogCommandOptions.deleteCatalogCommandOptions.prefix, catalogCommandOptions.deleteCatalogCommandOptions.databaseUser,
-                catalogCommandOptions.deleteCatalogCommandOptions.databasePassword,
-                catalogCommandOptions.deleteCatalogCommandOptions.commonOptions.adminPassword);
+    private void delete() throws CatalogException, URISyntaxException, IOException {
+        validateConfiguration(catalogCommandOptions.deleteCatalogCommandOptions, catalogCommandOptions.commonOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
+        catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
@@ -178,24 +176,27 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
     }
 
     private void index() throws CatalogException, IOException {
-        setCatalogDatabaseCredentials(catalogCommandOptions.indexCatalogCommandOptions.databaseHost,
-                catalogCommandOptions.indexCatalogCommandOptions.prefix, catalogCommandOptions.indexCatalogCommandOptions.databaseUser,
-                catalogCommandOptions.indexCatalogCommandOptions.databasePassword,
-                catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword);
+        validateConfiguration(catalogCommandOptions.indexCatalogCommandOptions, catalogCommandOptions.commonOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
         }
 
         logger.info("\nChecking and installing non-existing indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
-        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
         catalogManager.installIndexes(token);
     }
 
     private void daemons() throws Exception {
+        validateConfiguration(catalogCommandOptions.daemonCatalogCommandOptions, catalogCommandOptions.commonOptions);
+
+        CatalogManager catalogManager = new CatalogManager(configuration);
+        catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+
         if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
             // Server crated and started
             MonitorService monitorService =
