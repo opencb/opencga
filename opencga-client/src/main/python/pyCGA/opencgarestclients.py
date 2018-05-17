@@ -264,20 +264,20 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
         return self._get('groups', query_id=studyId, **options)
 
-    def search(self, method='post', data=None, **options):
+    def search(self, data=None, **options):
         """
 
         Method to search studies based in a dictionary "options"
 
+        For backwards compatability we continue to support `data` as a parameter although
+        it would be better to use **options
+
+        :param data: (Deprecated)
         :param options: Kargs where the keys are the name of the file properties used to search.
         """
-
-        if method == 'post' and data:
-            return self._post('search', data=data, **options)
-        else:
-            if data:
-                options.update(data)
-            return self._get('search', **options)
+        if data:
+            options.update(data)
+        return self._get('search', **options)
 
     def files(self, studyId, **options):
         """
