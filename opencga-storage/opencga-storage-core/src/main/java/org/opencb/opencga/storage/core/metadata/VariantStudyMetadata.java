@@ -198,7 +198,12 @@ public class VariantStudyMetadata {
 
         List<Map<String, Object>> config = (List) source.getHeader().getMeta().getOrDefault("contig", Collections.emptyList());
         for (Map<String, Object> line : config) {
-            getContig().put(line.get("ID").toString(), Long.valueOf(line.get("length").toString()));
+            Object length = line.get("length");
+            if (length != null) {
+                getContig().put(line.get("ID").toString(), Long.valueOf(String.valueOf(line.get("length"))));
+            } else {
+                getContig().put(line.get("ID").toString(), null);
+            }
         }
 
         return this;
