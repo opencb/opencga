@@ -499,18 +499,23 @@ public class FamilyWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            return new Individual(id, name, father != null ? new Individual().setName(father) : null,
-                    mother != null ? new Individual().setName(mother) : null, multiples, sex,
+            String individualId = StringUtils.isEmpty(id) ? name : id;
+            String individualName = StringUtils.isEmpty(name) ? individualId : name;
+            return new Individual(individualId, individualName, father != null ? new Individual().setId(father) : null,
+                    mother != null ? new Individual().setId(mother) : null, multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
         }
 
         public Individual toIndividualUpdate() {
+            String individualId = StringUtils.isEmpty(id) ? name : id;
+            String individualName = StringUtils.isEmpty(name) ? individualId : name;
+
             Individual individual = new Individual()
-                    .setId(id)
-                    .setName(name)
-                    .setFather(father != null ? new Individual().setName(father) : null)
-                    .setMother(mother != null ? new Individual().setName(mother) : null)
+                    .setId(individualId)
+                    .setName(individualName)
+                    .setFather(father != null ? new Individual().setId(father) : null)
+                    .setMother(mother != null ? new Individual().setId(mother) : null)
                     .setMultiples(multiples)
                     .setSex(sex)
                     .setKaryotypicSex(karyotypicSex)
@@ -538,14 +543,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public List<AnnotationSet> annotationSets;
 
         public Family toFamily(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-//            List<AnnotationSet> annotationSetList = new ArrayList<>();
-//            if (annotationSets != null) {
-//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-//                    if (annotationSet != null) {
-//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-//                    }
-//                }
-//            }
 
             List<Individual> relatives = null;
             if (members != null) {
@@ -555,7 +552,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 }
             }
 
-            return new Family(id, name, phenotypes, relatives, description, annotationSets, attributes);
+            String familyId = StringUtils.isEmpty(id) ? name : id;
+            String familyName = StringUtils.isEmpty(name) ? familyId : name;
+            return new Family(familyId, familyName, phenotypes, relatives, description, annotationSets, attributes);
         }
 
         public ObjectMap toFamilyObjectMap() throws CatalogException, JsonProcessingException {
@@ -577,8 +576,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 }
             }
 
+            String familyId = StringUtils.isEmpty(id) ? name : id;
+            String familyName = StringUtils.isEmpty(name) ? familyId : name;
+
             Family family = new Family()
-                    .setName(name)
+                    .setId(familyId)
+                    .setName(familyName)
                     .setPhenotypes(phenotypes)
                     .setMembers(null)
                     .setDescription(description)
