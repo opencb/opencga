@@ -620,6 +620,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     // Data models
 
     protected static class IndividualPOST {
+        public String id;
         public String name;
 
         public String father;
@@ -648,14 +649,15 @@ public class IndividualWSServer extends OpenCGAWSServer {
 //                }
 //            }
 
-            return new Individual(name, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
-                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
+            String individualId = StringUtils.isEmpty(id) ? name : id;
+            String individualName = StringUtils.isEmpty(name) ? individualId : name;
+            return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
+                    sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
         }
     }
 
     protected static class IndividualCreatePOST extends IndividualPOST {
-        public String id;
         public List<SampleWSServer.CreateSamplePOST> samples;
 
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
@@ -675,8 +677,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     sampleList.add(sample.toSample(studyStr, studyManager, sessionId));
                 }
             }
-            return new Individual(id, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
-                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
+
+
+            String individualId = StringUtils.isEmpty(id) ? name : id;
+            String individualName = StringUtils.isEmpty(name) ? individualId : name;
+            return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
+                    sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
         }
     }
@@ -689,10 +695,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
             mapper.addMixIn(Individual.class, IndividualMixin.class);
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
+            String individualId = StringUtils.isEmpty(id) ? name : id;
+            String individualName = StringUtils.isEmpty(name) ? individualId : name;
+
             Individual individual = new Individual()
-                    .setName(name)
-                    .setFather(father != null ? new Individual().setName(father) : null)
-                    .setMother(mother != null ? new Individual().setName(mother) : null)
+                    .setId(individualId)
+                    .setName(individualName)
+                    .setFather(father != null ? new Individual().setId(father) : null)
+                    .setMother(mother != null ? new Individual().setId(mother) : null)
                     .setMultiples(multiples)
                     .setSex(sex)
                     .setKaryotypicSex(karyotypicSex)

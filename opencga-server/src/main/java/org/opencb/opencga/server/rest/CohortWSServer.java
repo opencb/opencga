@@ -144,7 +144,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 //            }
 
             String cohortId = StringUtils.isEmpty(params.id) ? params.name : params.id;
-            return createCohort(studyStr, cohortId, params.name, params.type, variableSet, params.description, params.samples,
+            String cohortName = StringUtils.isEmpty(params.name) ? cohortId : params.name;
+            return createCohort(studyStr, cohortId, cohortName, params.type, variableSet, params.description, params.samples,
                     params.annotationSets, variableName);
         } catch (Exception e) {
             return createErrorResponse(e);
