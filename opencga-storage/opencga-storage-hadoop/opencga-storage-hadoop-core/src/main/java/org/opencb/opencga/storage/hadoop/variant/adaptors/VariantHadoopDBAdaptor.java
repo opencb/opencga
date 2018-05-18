@@ -24,6 +24,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.exception.SQLExceptionCode;
+import org.apache.phoenix.jdbc.PhoenixResultSet;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -477,19 +478,26 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
-                if (options.getBoolean("explain", true)) {
-                    logger.info("---- " + "EXPLAIN " + sql);
-                    phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
-                }
-
                 Statement statement = getJdbcConnection().createStatement(); // Statemnet closed by iterator
                 statement.setFetchSize(options.getInt("batchSize", phoenixFetchSize));
                 ResultSet resultSet = statement.executeQuery(sql); // RS closed by iterator
+
+                if (options.getBoolean("explain", false)) {
+                    logger.info("---- " + "EXPLAIN " + sql);
+//                    phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
+                    List<String> planSteps = new LinkedList<>();
+                    resultSet.unwrap(PhoenixResultSet.class).getUnderlyingIterator().explain(planSteps);
+                    for (String planStep : planSteps) {
+                        logger.info(" | " +  planStep);
+                    }
+                }
                 List<String> formats = getIncludeFormats(query);
                 String unknownGenotype = null;
                 if (isValidParam(query, UNKNOWN_GENOTYPE)) {
                     unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
                 }
+
+//                VariantPhoenixCursorIterator iterator = new VariantPhoenixCursorIterator(phoenixQuery, getJdbcConnection(), converter);
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
                         resultSet, genomeHelper, getStudyConfigurationManager(), phoenixQuery.getSelect(),
                         formats, unknownGenotype, options);
