@@ -103,7 +103,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
     }
 
     public static boolean validGenotype(String gt) {
-        return !gt.equals("0/0")
+        return gt != null
+                && !gt.isEmpty()
+                && !gt.equals("0/0")
                 && !gt.equals("0|0")
                 && !gt.equals("./.")
                 && !gt.equals(".");
