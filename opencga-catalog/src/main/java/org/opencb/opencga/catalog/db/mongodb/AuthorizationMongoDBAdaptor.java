@@ -188,11 +188,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
      * permissions.
      *
      * @param resourceId Resource id being queried.
-     * @param membersList    Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
+     * @param membersList Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
      * @param entry     Entity where the query will be performed.
-     * @return A map of [acl, user_defined_acl] -> user -> List of permissions.
+     * @return A map of [acl, user_defined_acl] -> user -> List of permissions and the string id of the resource queried.
      */
-    private Map<String, Map<String, List<String>>> internalGet(long resourceId, List<String> membersList, Entity entry) {
+    private EntryPermission internalGet(long resourceId, List<String> membersList, Entity entry) {
+        EntryPermission entryPermission = new EntryPermission();
 
         List<String> members = (membersList == null ? Collections.emptyList() : membersList);
 
@@ -227,16 +228,15 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         QueryResult<Document> aggregate = collection.aggregate(aggregation, null);
 
-        // Code replicated in MongoDBAdaptor
-        Map<String, Map<String, List<String>>> permissions = new HashMap<>();
-        permissions.put(QueryParams.ACL.key(), new HashMap<>());
-        permissions.put(QueryParams.USER_DEFINED_ACLS.key(), new HashMap<>());
+        Map<String, Map<String, List<String>>> permissions = entryPermission.getPermissions();
 
         if (aggregate.getNumResults() > 0) {
             Set<String> memberSet = new HashSet<>();
             memberSet.addAll(members);
 
             Document document = aggregate.first();
+            entryPermission.setId(document.getString(QueryParams.ID.key()));
+
             List<String> aclList = (List<String>) document.get(QueryParams.ACL.key());
             if (aclList != null) {
                 // If _acl was not previously defined, it can be null the first time
@@ -272,7 +272,43 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             }
         }
 
-        return permissions;
+        return entryPermission;
+    }
+
+    class EntryPermission {
+        /**
+         * Entry id.
+         */
+        private String id;
+
+        /**
+         * A map of [acl, user_defined_acl] -> user -> List of permissions.
+         */
+        private Map<String, Map<String, List<String>>> permissions;
+
+        EntryPermission() {
+            this.permissions = new HashMap<>();
+            this.permissions.put(QueryParams.ACL.key(), new HashMap<>());
+            this.permissions.put(QueryParams.USER_DEFINED_ACLS.key(), new HashMap<>());
+        }
+
+        private String getId() {
+            return id;
+        }
+
+        private EntryPermission setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        private Map<String, Map<String, List<String>>> getPermissions() {
+            return permissions;
+        }
+
+        private EntryPermission setPermissions(Map<String, Map<String, List<String>>> permissions) {
+            this.permissions = permissions;
+            return this;
+        }
     }
 
     @Override
@@ -281,7 +317,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         validateEntry(entry);
         long startTime = startQuery();
 
-        Map<String, List<String>> myMap = internalGet(resourceId, members, entry).get(QueryParams.ACL.key());
+        EntryPermission entryPermission = internalGet(resourceId, members, entry);
+
+        Map<String, List<String>> myMap = entryPermission.getPermissions().get(QueryParams.ACL.key());
         List<E> retList;
         switch (entry) {
             case STUDY:
@@ -348,7 +386,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 throw new CatalogException("Unexpected parameter received. " + entry + " has been received.");
         }
 
-        return endQuery(Long.toString(resourceId), startTime, retList);
+        return endQuery(entryPermission.getId(), startTime, retList);
     }
 
     @Override
@@ -392,7 +430,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         for (long resourceId : resourceIds) {
             // Get current permissions for resource and override with new ones set for members (already existing or not)
-            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entry);
+            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entry)
+                    .getPermissions();
             for (String member : members) {
                 currentPermissions.get(QueryParams.ACL.key()).put(member, new ArrayList<>(permissions));
                 currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(member, new ArrayList<>(permissions));
@@ -517,7 +556,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         for (long resourceId : resourceIds) {
             // Get current permissions for resource and override with new ones set for members (already existing or not)
-            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
+            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity)
+                    .getPermissions();
             for (E acl : acls) {
                 List<String> permissions = (List<String>) acl.getPermissions().stream().map(a -> a.toString()).collect(Collectors.toList());
                 // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains

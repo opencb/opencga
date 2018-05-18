@@ -1064,7 +1064,7 @@ public class StudyManager extends AbstractManager {
                 } else {
                     allStudyAcls = authorizationManager.getAllStudyAcls(userId, studyId);
                 }
-                allStudyAcls.setId(String.valueOf(studyId));
+                allStudyAcls.setId(studyList.get(i).getFqn());
                 studyAclList.add(allStudyAcls);
             } catch (CatalogException e) {
                 if (silent) {
