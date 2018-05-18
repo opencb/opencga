@@ -39,9 +39,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -54,6 +54,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConver
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.*;
@@ -368,9 +369,37 @@ public class VariantHbaseTestUtils {
             printArchiveTable(studyConfiguration, dbAdaptor, outDir);
         }
         printMetaTable(dbAdaptor, outDir);
+        printSamplesIndexTable(dbAdaptor, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);
         HBaseToVariantConverter.setFailOnWrongVariants(old);
+    }
+
+    private static void printSamplesIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
+        for (Integer studyId : dbAdaptor.getStudyConfigurationManager().getStudies(null).values()) {
+            String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
+            Path fileName = outDir.resolve(sampleGtTableName + ".txt");
+            try (
+                    FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
+            ) {
+                dbAdaptor.getHBaseManager().act(sampleGtTableName, table -> {
+
+                    table.getScanner(new Scan()).iterator().forEachRemaining(result -> {
+
+                        SampleIndexConverter converter = new SampleIndexConverter();
+                        Map<String, List<Variant>> map = converter.convertToMap(result);
+
+                        out.println("_______________________");
+                        out.println(SampleIndexConverter.rowKeyToString(result.getRow()));
+                        for (Map.Entry<String, List<Variant>> entry : map.entrySet()) {
+                            out.println("\t" + entry.getKey() + " = " + entry.getValue());
+                        }
+
+                    });
+
+                });
+            }
+        }
     }
 
     public static void removeFile(HadoopVariantStorageEngine variantStorageManager, String dbName, int fileId,
