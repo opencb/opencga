@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
@@ -30,6 +31,7 @@ import java.util.Objects;
  */
 public class File extends PrivateStudyUid {
 
+    private String id;
     private String name;
 
     /**
@@ -100,6 +102,7 @@ public class File extends PrivateStudyUid {
                 List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index, Map<String, Object> stats, int release,
                 Map<String, Object> attributes) {
         super(uid);
+        this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
         this.format = format;
@@ -313,6 +316,7 @@ public class File extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", format=").append(format);
@@ -346,6 +350,15 @@ public class File extends PrivateStudyUid {
     @Override
     public File setStudyUid(long studyUid) {
         super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public File setId(String id) {
+        this.id = id;
         return this;
     }
 
@@ -400,6 +413,7 @@ public class File extends PrivateStudyUid {
 
     public File setPath(String path) {
         this.path = path;
+        this.id = StringUtils.isNotEmpty(this.path) ? StringUtils.replace(this.path, "/", ":") : this.path;
         return this;
     }
 

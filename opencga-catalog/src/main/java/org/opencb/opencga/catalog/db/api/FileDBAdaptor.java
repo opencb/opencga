@@ -38,6 +38,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
 
     enum QueryParams implements QueryParam {
         UID("uid", INTEGER_ARRAY, ""),
+        ID("id", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         TYPE("type", TEXT_ARRAY, ""),
         FORMAT("format", TEXT_ARRAY, ""),

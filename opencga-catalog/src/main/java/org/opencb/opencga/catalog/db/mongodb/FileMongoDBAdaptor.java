@@ -237,6 +237,12 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
         filterStringParams(parameters, fileParameters, acceptedParams);
 
+        if (fileParameters.containsKey(QueryParams.PATH.key())) {
+            // We also update the ID replacing the / for :
+            String path = parameters.getString(QueryParams.PATH.key());
+            fileParameters.put(QueryParams.ID.key(), StringUtils.replace(path, "/", ":"));
+        }
+
         Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
         acceptedEnums.put(QueryParams.TYPE.key(), File.Type.class);
         acceptedEnums.put(QueryParams.FORMAT.key(), File.Format.class);
@@ -318,16 +324,16 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
-    public QueryResult<File> rename(long fileId, String filePath, String fileUri, QueryOptions options)
+    public QueryResult<File> rename(long fileUid, String filePath, String fileUri, QueryOptions options)
             throws CatalogDBException {
         long startTime = startQuery();
 
-        checkId(fileId);
+        checkId(fileUid);
 
         Path path = Paths.get(filePath);
         String fileName = path.getFileName().toString();
 
-        Document fileDoc = (Document) nativeGet(new Query(QueryParams.UID.key(), fileId), null).getResult().get(0);
+        Document fileDoc = (Document) nativeGet(new Query(QueryParams.UID.key(), fileUid), null).getResult().get(0);
         File file = fileConverter.convertToDataModelType(fileDoc);
 
         long studyId = (long) fileDoc.get(PRIVATE_STUDY_ID);
@@ -349,16 +355,19 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             }
         }
 
-        Document query = new Document(PRIVATE_UID, fileId);
+        String fileId = StringUtils.replace(filePath, "/", ":");
+
+        Document query = new Document(PRIVATE_UID, fileUid);
         Document set = new Document("$set", new Document()
+                .append(QueryParams.ID.key(), fileId)
                 .append(QueryParams.NAME.key(), fileName)
                 .append(QueryParams.PATH.key(), filePath)
                 .append(QueryParams.URI.key(), fileUri));
         QueryResult<UpdateResult> update = fileCollection.update(query, set, null);
         if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
-            throw CatalogDBException.uidNotFound("File", fileId);
+            throw CatalogDBException.uidNotFound("File", fileUid);
         }
-        return endQuery("Rename file", startTime, get(fileId, options));
+        return endQuery("Rename file", startTime, get(fileUid, options));
     }
 
     @Override
