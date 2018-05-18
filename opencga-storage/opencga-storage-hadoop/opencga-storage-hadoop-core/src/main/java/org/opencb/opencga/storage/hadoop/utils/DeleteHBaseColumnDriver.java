@@ -101,6 +101,14 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         return args.toArray(new String[args.size()]);
     }
 
+    public static void main(String[] args) throws Exception {
+        try {
+            System.exit(new DeleteHBaseColumnDriver().privateMain(args, null));
+        } catch (Exception e) {
+            LOGGER.error("Error executing " + DeleteHBaseColumnDriver.class, e);
+            System.exit(1);
+        }
+    }
 
     public int privateMain(String[] args, Configuration conf) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava

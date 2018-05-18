@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -114,6 +115,22 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
         return columnsToCopyMap;
     }
 
+    public static void main(String[] args) throws Exception {
+        try {
+            System.exit(new CopyHBaseColumnDriver().privateMain(args, null));
+        } catch (Exception e) {
+            LOGGER.error("Error executing " + CopyHBaseColumnDriver.class, e);
+            System.exit(1);
+        }
+    }
+
+    public int privateMain(String[] args, Configuration conf) throws Exception {
+        // info https://code.google.com/p/temapred/wiki/HbaseWithJava
+        if (conf != null) {
+            setConf(conf);
+        }
+        return ToolRunner.run(this, args);
+    }
 
     public static class CopyHBaseColumnMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
 
