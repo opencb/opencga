@@ -810,7 +810,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     private boolean doHBaseSampleIndexIntersect(Query query, QueryOptions options) {
-        if (options.getBoolean("intersect", true)) {
+        if (options.getBoolean("sample_index_intersect", true)) {
             if (isValidParam(query, GENOTYPE)) {
                 HashMap<Object, List<String>> gtMap = new HashMap<>();
                 QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
@@ -990,7 +990,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     private boolean doHBaseColumnIntersect(Query query, QueryOptions options) {
-        return options.getBoolean("intersect", true)
+        return options.getBoolean("hbase_column_intersect", true)
                 // && !options.getBoolean(VariantHadoopDBAdaptor.NATIVE)
                 && (isValidParam(query, SAMPLE) && isSupportedQueryParam(query, SAMPLE)
                 || isValidParam(query, FILE) && isSupportedQueryParam(query, FILE)
