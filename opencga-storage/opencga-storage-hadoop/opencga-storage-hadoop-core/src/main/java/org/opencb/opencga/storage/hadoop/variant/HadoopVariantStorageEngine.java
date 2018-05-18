@@ -27,6 +27,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -46,11 +47,11 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
@@ -63,6 +64,8 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -323,7 +326,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(getOptions()), getOptions());
+        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(), getOptions());
     }
 
     @Override
@@ -332,7 +335,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         if (getOptions().getBoolean(STATS_LOCAL, false)) {
             return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
         } else {
-            return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(getOptions()), getOptions());
+            return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(), getOptions());
         }
     }
 
@@ -441,7 +444,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     fillGaps ? sampleIds.toString() : "\"ALL\"", getVariantTableName());
             logger.debug(executable + ' ' + args);
             logger.info("------------------------------------------------------");
-            int exitValue = getMRExecutor(options).run(executable, args);
+            int exitValue = getMRExecutor().run(executable, args);
             logger.info("------------------------------------------------------");
             logger.info("Exit value: {}", exitValue);
             logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
@@ -585,7 +588,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 }
                 String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, variantsColumns, options);
                 logger.debug(executable + ' ' + Arrays.toString(deleteFromVariantsArgs));
-                return getMRExecutor(options).run(executable, deleteFromVariantsArgs);
+                return getMRExecutor().run(executable, deleteFromVariantsArgs);
             });
             Future<Integer> deleteFromArchive = service.submit(() -> {
                 List<String> archiveColumns = new ArrayList<>();
@@ -596,7 +599,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 }
                 String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, options);
                 logger.debug(executable + ' ' + Arrays.toString(deleteFromArchiveArgs));
-                return getMRExecutor(options).run(executable, deleteFromArchiveArgs);
+                return getMRExecutor().run(executable, deleteFromArchiveArgs);
             });
             service.shutdown();
             service.awaitTermination(12, TimeUnit.HOURS);
@@ -707,6 +710,19 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    protected boolean doIntersectWithSearch(Query query, QueryOptions options) throws StorageEngineException {
+        boolean doIntersectWithSearch = super.doIntersectWithSearch(query, options);
+        if (doIntersectWithSearch) {
+            if (!isValidParam(query, VariantQueryParam.ANNOT_TRAIT)
+                    && VariantSearchManager.UseSearchIndex.from(options).equals(VariantSearchManager.UseSearchIndex.AUTO)
+                    && doHBaseSampleIndexIntersect(query, options)) {
+                return false;
+            }
+        }
+        return doIntersectWithSearch;
+    }
+
+    @Override
     public void close() throws IOException {
         super.close();
         if (hBaseManager != null) {
@@ -784,16 +800,198 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected Object getOrIteratorNotSearchIndex(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
-        if (doHBaseColumnIntersect(query, options)) {
+        if (doHBaseSampleIndexIntersect(query, options)) {
+            return getOrIteratorSampleIndexIntersect(query, options, iterator);
+        } else if (doHBaseColumnIntersect(query, options)) {
             return getOrIteratorHBaseColumnIntersect(query, options, iterator);
         } else {
             return super.getOrIteratorNotSearchIndex(query, options, iterator);
         }
     }
 
+    private boolean doHBaseSampleIndexIntersect(Query query, QueryOptions options) {
+        if (options.getBoolean("intersect", true)) {
+            if (isValidParam(query, GENOTYPE)) {
+                HashMap<Object, List<String>> gtMap = new HashMap<>();
+                QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
+                if (queryOperation == null || queryOperation == QueryOperation.AND) {
+                    for (List<String> gts : gtMap.values()) {
+                        boolean valid = true;
+                        for (String gt : gts) {
+                            valid &= SampleIndexDBLoader.validGenotype(gt);
+                            valid &= !isNegated(gt);
+                        }
+                        if (valid) {
+                            // If any sample is valid, go for it
+                            return true;
+                        }
+                    }
+                }
+            }
+            if (isValidParam(query, SAMPLE, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Intersect result of SampleIndexTable and full phoenix query.
+     * Use {@link org.opencb.opencga.storage.core.variant.adaptors.MultiVariantDBIterator}.
+     *
+     * @param query     Query
+     * @param options   Options
+     * @param iterator  Shall the resulting object be an iterator instead of a QueryResult
+     * @return          QueryResult or Iterator with the variants that matches the query
+     * @throws StorageEngineException StorageEngineException
+     */
+    private Object getOrIteratorSampleIndexIntersect(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+        VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
+
+        logger.info("HBase SampleIndex intersect");
+
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getGenomeHelper(), dbAdaptor.getHBaseManager(),
+                dbAdaptor.getTableNameGenerator(), dbAdaptor.getStudyConfigurationManager());
+
+        // Build SampleIndexTable query. Extract Regions, Study, Sample and Genotypes
+        // Extract regions
+        List<Region> regions = new ArrayList<>();
+        if (isValidParam(query, REGION)) {
+            regions = Region.parseRegions(query.getString(REGION.key()));
+            query.remove(REGION.key());
+        }
+
+        VariantQueryXref xref = VariantQueryUtils.parseXrefs(query);
+        if (!xref.getGenes().isEmpty()) {
+            List<Region> geneRegions = getCellBaseUtils().getGeneRegion(xref.getGenes());
+            if (geneRegions.isEmpty()) {
+                throw VariantQueryException.geneNotFound(xref.getGenes().toString());
+            }
+            regions.addAll(geneRegions);
+            query.remove(GENE.key());
+
+            // TODO: Resolve other IDs?
+            query.put(ANNOT_XREF.key(), xref.getOtherXrefs());
+            ArrayList<String> ids = new ArrayList<>();
+            for (Variant variant : xref.getVariants()) {
+                ids.add(variant.toString());
+            }
+            ids.addAll(xref.getIds());
+            query.put(VariantQueryParam.ID.key(), ids);
+        }
+
+        // Extract study
+        StudyConfiguration defaultStudyConfiguration = VariantQueryUtils.getDefaultStudyConfiguration(query, options,
+                dbAdaptor.getStudyConfigurationManager());
+
+        // Extract sample and genotypes to filter
+        String sample = null;
+        List<String> gts = null;
+        if (isValidParam(query, GENOTYPE)) {
+            // Get the genotype sample with fewer genotype filters (i.e., the most strict filter)
+
+            HashMap<Object, List<String>> map = new HashMap<>();
+            parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+
+            TreeMap<List<String>, Object> gtsMap = new TreeMap<>(Comparator.comparingInt(gtsList -> {
+                int s = 0;
+                for (String gt : gtsList) {
+                    switch (gt) {
+                        case "0/1":
+                            s += 100;
+                            break;
+                        case "1/1":
+                            s += 10;
+                            break;
+                        default:
+                            s++;
+                    }
+                }
+                return s;
+            }));
+
+
+            for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
+                boolean valid = true;
+                for (String gt : entry.getValue()) {
+                    valid &= SampleIndexDBLoader.validGenotype(gt);
+                    valid &= !isNegated(gt);
+                }
+                if (valid) {
+                    gtsMap.put(entry.getValue(), entry.getKey());
+                }
+            }
+
+
+            Map.Entry<List<String>, Object> currentEntry = gtsMap.firstEntry();
+            sample = currentEntry.getValue().toString();
+            gts = currentEntry.getKey();
+
+        } else if (isValidParam(query, SAMPLE)) {
+            // At any case, filter only by first sample
+            // TODO: Use sample with less variants?
+
+            List<String> samples = query.getAsStringList(SAMPLE.key());
+            sample = samples.stream().filter(s -> !isNegated(s)).findFirst().orElse(null);
+            gts = Collections.emptyList();
+        } /* else if (isValidParam(query, FILE)) {
+            // TODO: Add FILEs filter
+        } */
+
+        if (defaultStudyConfiguration == null) {
+            throw VariantQueryException.missingStudyForSample(sample, dbAdaptor.getStudyConfigurationManager().getStudyNames(null));
+        }
+        String study = defaultStudyConfiguration.getStudyName();
+
+        SampleIndexDBAdaptor.SampleIndexVariantDBIterator variants =
+                sampleIndexDBAdaptor.get(regions, study, sample, gts);
+
+        int batchSize = options.getInt("multiIteratorBatchSize", 200);
+        if (iterator) {
+            VariantDBIterator variantDBIterator = dbAdaptor.iterator(variants, query, options, batchSize);
+            variantDBIterator.addCloseable(variants);
+            return variantDBIterator;
+        } else {
+            VariantQueryResult<Variant> result = dbAdaptor.get(variants, query, options);
+            // TODO: Allow exact count with "approximateCount=false"
+            if (!options.getBoolean(QueryOptions.SKIP_COUNT, true)) {
+                int sampling = variants.getCount();
+                int limit = options.getInt(QueryOptions.LIMIT, 0);
+                if (limit > 0 && limit > result.getNumResults()) {
+                    result.setApproximateCount(false);
+                    result.setNumTotalResults(result.getNumResults());
+                } else if (variants.hasNext()) {
+                    Iterators.getLast(variants);
+                    int totalCount = variants.getCount();
+                    int approxCount = totalCount / sampling * result.getNumResults();
+                    logger.info("totalCount = " + totalCount);
+                    logger.info("sampling = " + sampling);
+                    logger.info("result.getNumResults() = " + result.getNumResults());
+                    logger.info("approxCount = " + approxCount);
+                    result.setApproximateCount(true);
+                    result.setNumTotalResults(approxCount);
+                    result.setApproximateCountSamplingSize(sampling);
+                } else {
+                    logger.info("Genotype index Iterator exhausted");
+                    logger.info("sampling = " + sampling);
+                    result.setApproximateCount(sampling != result.getNumResults());
+                    result.setNumTotalResults(sampling);
+                }
+            }
+            result.setSource(getStorageEngineId() + " + sample_index_table");
+
+            try {
+                variants.close();
+            } catch (Exception e) {
+                throw VariantQueryException.internalException(e);
+            }
+            return result;
+        }
+    }
+
     private boolean doHBaseColumnIntersect(Query query, QueryOptions options) {
         return options.getBoolean("intersect", true)
-                && !options.getBoolean(VariantHadoopDBAdaptor.NATIVE)
+                // && !options.getBoolean(VariantHadoopDBAdaptor.NATIVE)
                 && (isValidParam(query, SAMPLE) && isSupportedQueryParam(query, SAMPLE)
                 || isValidParam(query, FILE) && isSupportedQueryParam(query, FILE)
                 || isValidParam(query, GENOTYPE) && isSupportedQueryParam(query, GENOTYPE));
@@ -896,7 +1094,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return conf;
     }
 
-    private MRExecutor getMRExecutor(ObjectMap options) {
+    private MRExecutor getMRExecutor() {
+        ObjectMap options = getOptions();
         if (options.containsKey(EXTERNAL_MR_EXECUTOR)) {
             Class<? extends MRExecutor> aClass;
             if (options.get(EXTERNAL_MR_EXECUTOR) instanceof Class) {
@@ -988,4 +1187,5 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             return source;
         }
     }
+
 }

@@ -78,7 +78,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
             int sampleIdx = 0;
             for (List<String> samplesData : variant.getStudies().get(0).getSamplesData()) {
                 String gt = samplesData.get(0);
-                if (validGenotype(variant, gt)) {
+                if (validVariant(variant) && validGenotype(gt)) {
                     StringBuilder stringBuilder = buffer
                             .computeIfAbsent(indexChunk, k -> {
                                 List<Map<String, StringBuilder>> list = new ArrayList<>(sampleIds.size());
@@ -98,9 +98,12 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         return getPuts();
     }
 
-    private boolean validGenotype(Variant variant, String gt) {
-        return !variant.getType().equals(VariantType.NO_VARIATION)
-                && !gt.equals("0/0")
+    public static boolean validVariant(Variant variant) {
+        return !variant.getType().equals(VariantType.NO_VARIATION);
+    }
+
+    public static boolean validGenotype(String gt) {
+        return !gt.equals("0/0")
                 && !gt.equals("0|0")
                 && !gt.equals("./.")
                 && !gt.equals(".");
