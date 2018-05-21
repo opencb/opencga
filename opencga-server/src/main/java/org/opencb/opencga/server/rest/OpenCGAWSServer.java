@@ -377,19 +377,9 @@ public class OpenCGAWSServer {
             query.remove("status");
         }
 
-        if (query.containsKey("variableSet")) {
-            query.put("variableSetId", query.get("variableSet"));
-            query.remove("variableSet");
-        }
-        if (query.containsKey("variableSetId")) {
-            try {
-                AbstractManager.MyResourceId resource = catalogManager.getStudyManager().getVariableSetId(query.getString
-                        ("variableSetId"), query.getString("study"), sessionId);
-                query.put("variableSetId", resource.getResourceId());
-            } catch (CatalogException e) {
-                logger.warn("VariableSetId parameter found, but proper id could not be found: {}", e.getMessage(), e);
-            }
-        }
+        // Remove deprecated fields
+        query.remove("variableSet");
+        query.remove("annotationsetName");
 
         try {
             logger.info("URL: {}, query = {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(),

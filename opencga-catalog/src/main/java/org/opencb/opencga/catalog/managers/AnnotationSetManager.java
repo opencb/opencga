@@ -324,51 +324,62 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             if (matcher.find()) {
 
                 if (annotation.startsWith(Constants.VARIABLE_SET)) {
-                    String variableSet = matcher.group(3);
+                    String variableSetString = matcher.group(3);
                     // Obtain the operator to take it out and get only the actual value
-                    String operator = getOperator(variableSet);
-                    variableSet = variableSet.replace(operator, "");
+                    String operator = getOperator(variableSetString);
+                    variableSetString = variableSetString.replace(operator, "");
 
-                    if (checkConfidentialPermission && !confidentialPermissionChecked && variableSetMap.get(variableSet).isConfidential()) {
+                    VariableSet variableSet = variableSetMap.get(variableSetString);
+                    if (variableSet == null) {
+                        throw new CatalogException("Variable set " + variableSetString + " not found");
+                    }
+
+                    if (checkConfidentialPermission && !confidentialPermissionChecked && variableSet.isConfidential()) {
                         // We only check the confidential permission if needed once
                         authorizationManager.checkStudyPermission(studyId, user,
                                 StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                         confidentialPermissionChecked = true;
                     }
-                    annotationList.add(Constants.VARIABLE_SET + operator + variableSetMap.get(variableSet).getUid());
+                    annotationList.add(Constants.VARIABLE_SET + operator + variableSet.getUid());
                     continue;
                 }
 
-                String variableSet = matcher.group(1);
+                String variableSetString = matcher.group(1);
                 String key = matcher.group(2);
                 String valueString = matcher.group(3);
 
-                if (StringUtils.isEmpty(variableSet)) {
+                if (StringUtils.isEmpty(variableSetString)) {
                     // Obtain the variable set for the annotations
-                    variableSet = searchVariableSetForVariable(variableTypeMap, key);
+                    variableSetString = searchVariableSetForVariable(variableTypeMap, key);
                 } else {
+                    VariableSet variableSet = variableSetMap.get(variableSetString.replace(":", ""));
+                    if (variableSet == null) {
+                        throw new CatalogException("Variable set " + variableSetString + " not found");
+                    }
+
                     // Remove the : at the end of the variableSet and convert the id into the uid
-                    variableSet = String.valueOf(variableSetMap.get(variableSet.replace(":", "")).getUid());
+                    variableSetString = String.valueOf(variableSet.getUid());
 
                     // Check if the variable set and the variable exist
-                    if (!variableTypeMap.containsKey(variableSet)) {
-                        throw new CatalogException("The variable " + variableSet + " does not exist in the study " + studyId);
+                    if (!variableTypeMap.containsKey(variableSetString)) {
+                        throw new CatalogException("The variable " + variableSetString + " does not exist in the study " + studyId);
                     }
-                    if (!variableTypeMap.get(variableSet).containsKey(key)) {
-                        throw new CatalogException("Variable " + key + " from variableSet " + variableSet + " does not exist. Cannot "
+                    if (!variableTypeMap.get(variableSetString).containsKey(key)) {
+                        throw new CatalogException("Variable " + key + " from variableSet " + variableSetString + " does not exist. Cannot "
                                 + "perform query " + annotation);
                     }
                 }
 
-                if (checkConfidentialPermission && !confidentialPermissionChecked && variableSetMap.get(variableSet).isConfidential()) {
+                if (checkConfidentialPermission && !confidentialPermissionChecked && variableSetMap.get(variableSetString)
+                        .isConfidential()) {
                     // We only check the confidential permission if needed once
                     authorizationManager.checkStudyPermission(studyId, user,
                             StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                     confidentialPermissionChecked = true;
                 }
 
-                annotationList.add(variableSet + ":" + key + valueString);
-                queriedVariableTypeMap.put(variableSet + ":" + key, variableTypeMap.get(variableSet).get(key));
+                annotationList.add(variableSetString + ":" + key + valueString);
+                queriedVariableTypeMap.put(variableSetString + ":" + key, variableTypeMap.get(variableSetString).get(key));
             } else {
                 throw new CatalogException("Annotation format from " + annotation + " not accepted. Supported format contains "
                         + "[variableSet:]variable=value");
