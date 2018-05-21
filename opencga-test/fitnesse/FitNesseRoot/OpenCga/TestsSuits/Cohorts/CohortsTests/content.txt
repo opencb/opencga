@@ -121,8 +121,7 @@
 
 !3 Find Multiple Cohorts With One Invalid Entry Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId2,$cohortId,0000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json ||
-| GET | /v1/cohorts/$cohortId2,$cohortId,0000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId2' && jsonbody.response[2].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException: Permission denied. User '$user' cannot VIEW Cohort { id: -1 }"|
+| GET | /v1/cohorts/$cohortId2,$cohortId,0000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId2' && jsonbody.response[2].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: Cohort 0000 not found"|
 
 !3 Get cohorts as Groups
 !|Table: Rest Fixture | $baseURL |
@@ -224,9 +223,10 @@
 
 !3 Create Nested Annotation
 !|Table: Rest Fixture | $baseURL |
-|setBody| { "annotationSets":[{"id": "Testing","variableSetId":  "$gVariableSetId2","annotations": { "V11" : [{"V1":1000.57 , "V2":2000}]}}]}|
+|setBody| { "annotationSets":[{"id": "Testing","variableSetId": "$gVariableSetId2","annotations": { "V11" : [{"V1":1000.57 , "V2":2000}]}}]}|
 |setHeader|Content-Type:application/json|
-|POST| /v1/cohorts/$cohortId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
+|POST| /v1/cohorts/$cohortId/update?sid=$sessionId |200|  Content-Type: application/json ||
+#|POST| /v1/cohorts/$cohortId/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 2|
 
 !3 Search Annotation Set By Variable Set
 !|Table: Rest Fixture | $baseURL |

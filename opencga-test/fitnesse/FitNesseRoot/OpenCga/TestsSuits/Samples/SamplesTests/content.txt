@@ -86,9 +86,7 @@
 
 !3 Get Multiple Samples With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId,$sampleId2,0000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId' && jsonbody.response[1].result[0].id == '$sampleId2' &&  jsonbody.response[2].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException: Permission denied. User '$user' cannot VIEW Sample { id: -1 }"|
-| GET | /v1/samples/$sampleId,$sampleId2,0000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId' && jsonbody.response[1].result[0].id == '$sampleId2'|
-| GET | /v1/samples/$sampleId,$sampleId2,0000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json ||
+| GET | /v1/samples/$sampleId,$sampleId2,0000/info?sid=$sessionId&study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId' && jsonbody.response[1].result[0].id == '$sampleId2' &&  jsonbody.response[2].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: Sample 0000 not found"|
 
 !3 Update Sample Without Version Increment
 !|Table: Rest Fixture | $baseURL |

@@ -55,7 +55,7 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody |{"id" : "updatedID"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/projects/$lProjectId/update?sid=$sessionId |400|  Content-Type: application/json ||
+| POST | /v1/projects/$lProjectId/update?sid=$sessionId |400|Content-Type : text/plain||
 
 
 !3 (Negative) Update Project Mandatory Field ( Not Allowed)

@@ -6,12 +6,14 @@
 | setBody | {  "directory": "true", "path" : "${pathName}", "parents" : "true"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/files/create?sid=$sessionId&study=$study ||Content-Type: application/json||
-|let|folderId|js|response.jsonbody.response[0].result[0].id||
+|let|folderId|js|response.jsonbody.response[0].result[0].name||
 |let|directoryPath|js|response.jsonbody.response[0].result[0].uri||
 
 !3 Get Directory Info
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/files/$folderId/info?sid=$sessionId ||Content-Type: application/json | jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$folderId'|
+| GET | /v1/files/$folderId/info?sid=$sessionId ||Content-Type: application/json | |
+|let||js|response.jsonbody.response[0].result[0].id||
 
 !3 (Negative) Create File With Same Name as Directory
 !|Table: Rest Fixture | $baseURL |
@@ -24,7 +26,7 @@
 | setBody | {  "directory": "false", "path" : "${pathName}/file", "parents" : "false", "description" : "testing file", "content" :"data goes here"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/files/create?sid=$sessionId&study=$study |200|Content-Type: application/json||
-|let|fileId|js|response.jsonbody.response[0].result[0].id||
+|let|fileId|js|response.jsonbody.response[0].result[0].name||
 
 #error message is correct but not the return code, sending 200 as of now
 !3 (Negative) Create Folder with Existing Name
@@ -35,7 +37,7 @@
 
 !3 Get File Info
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$fileId/info?sid=$sessionId |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$fileId'|
+| GET | /v1/files/$fileId/info?sid=$sessionId |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].name == '$fileId'|
 
 !3 Get File Info As Anonymous
 !|Table: Rest Fixture | $baseURL |

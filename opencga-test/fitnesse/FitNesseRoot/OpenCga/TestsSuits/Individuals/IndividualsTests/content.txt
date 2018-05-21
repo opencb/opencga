@@ -15,6 +15,13 @@
 | POST | /v1/individuals/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 | let | individualId | js | response.jsonbody.response[0].result[0].id ||
 
+!3 Create First Individual
+!| Table: Rest Fixture | $baseURL |
+| setBody | {"id" : "$iName"} |
+| setHeader | Content-Type:application/json |
+| POST | /v1/individuals/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
+| let | individualId | js | response.jsonbody.response[0].result[0].id ||
+
 !3 Create First Sample
 !| Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sName"} |
