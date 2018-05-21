@@ -692,12 +692,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
             mapper.addMixIn(Individual.class, IndividualMixin.class);
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
-            String individualId = StringUtils.isEmpty(id) ? name : id;
-            String individualName = StringUtils.isEmpty(name) ? individualId : name;
-
             Individual individual = new Individual()
-                    .setId(individualId)
-                    .setName(individualName)
+                    .setId(id)
+                    .setName(name)
                     .setFather(father != null ? new Individual().setId(father) : null)
                     .setMother(mother != null ? new Individual().setId(mother) : null)
                     .setMultiples(multiples)

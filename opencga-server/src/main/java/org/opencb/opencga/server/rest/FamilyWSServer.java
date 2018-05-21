@@ -554,7 +554,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             return new Family(familyId, familyName, phenotypes, relatives, description, annotationSets, attributes);
         }
 
-        public ObjectMap toFamilyObjectMap() throws CatalogException, JsonProcessingException {
+        public ObjectMap toFamilyObjectMap() throws JsonProcessingException {
             ObjectMapper mapper = new ObjectMapper();
             mapper.addMixIn(Individual.class, IndividualMixin.class);
             mapper.addMixIn(Family.class, FamilyMixin.class);
@@ -573,12 +573,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 }
             }
 
-            String familyId = StringUtils.isEmpty(id) ? name : id;
-            String familyName = StringUtils.isEmpty(name) ? familyId : name;
-
             Family family = new Family()
-                    .setId(familyId)
-                    .setName(familyName)
+                    .setId(id)
+                    .setName(name)
                     .setPhenotypes(phenotypes)
                     .setMembers(null)
                     .setDescription(description)
