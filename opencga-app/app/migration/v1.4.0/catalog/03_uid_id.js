@@ -233,11 +233,12 @@ migrateCollection("clinical", {"uid": { $exists: false } }, {id: 1, name: 1, _st
 );
 
 // Migrate the files
-migrateCollection("file", {"uid": { $exists: false } }, {id: 1, _studyId: 1, job: 1, experiment: 1, samples: 1}, function(bulk, doc) {
+migrateCollection("file", {"uid": { $exists: false } }, {id: 1, path: 1, _studyId: 1, job: 1, experiment: 1, samples: 1}, function(bulk, doc) {
         var update = {};
 
         update["uid"] = doc["id"];
         update["studyUid"] = doc["_studyId"];
+        update["id"] = doc["path"].replace(/\//g, ":");
 
         // Check samples
         if (typeof doc.samples !== "undefined" && doc.samples.length > 0) {
@@ -265,7 +266,7 @@ migrateCollection("file", {"uid": { $exists: false } }, {id: 1, _studyId: 1, job
             };
         }
 
-        bulk.find({"_id": doc._id}).updateOne({"$set": update, "$unset": {"_studyId": "", "id": ""}});
+        bulk.find({"_id": doc._id}).updateOne({"$set": update, "$unset": {"_studyId": ""}});
     }
 );
 
