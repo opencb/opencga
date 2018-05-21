@@ -79,7 +79,7 @@
 !3 Get Family Info As Anonymous
 !| Table: Rest Fixture | $baseURL |
 | GET | /v1/families/$familyId/info | 403 | Content-Type: application/json | jsonbody.error != '' |
-| GET | /v1/families/$familyId/info |  | Content-Type: application/json | jsonbody.error != '' |
+| GET | /v1/families/$familyId/info?study=$study |  | Content-Type: application/json | jsonbody.error != '' |
 
 !3 Create VIEW_FAMILIES ACL For Study
 !| Table: Rest Fixture | $baseURL |

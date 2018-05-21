@@ -11,7 +11,7 @@
 
 !3 Get Directory Info
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$folderId/info?sid=$sessionId ||Content-Type: application/json | jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$folderId'|
+| GET | /v1/files/$folderId/info?sid=$sessionId ||Content-Type: application/json | jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$folderId:'|
 | GET | /v1/files/$folderId/info?sid=$sessionId ||Content-Type: application/json | |
 |let||js|response.jsonbody.response[0].result[0].id||
 
