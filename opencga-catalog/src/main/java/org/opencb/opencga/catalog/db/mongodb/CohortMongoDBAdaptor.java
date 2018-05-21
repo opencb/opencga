@@ -223,11 +223,42 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         long startTime = startQuery();
         Map<String, Object> cohortParams = new HashMap<>();
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.ID.key(), QueryParams.CREATION_DATE.key()};
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.CREATION_DATE.key()};
         filterStringParams(parameters, cohortParams, acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Study.Type.class);
         filterEnumParams(parameters, cohortParams, acceptedEnums);
+
+        if (parameters.containsKey(CohortDBAdaptor.QueryParams.ID.key())) {
+            // That can only be done to one cohort...
+
+            Query tmpQuery = new Query(query);
+            // We take out ALL_VERSION from query just in case we get multiple results...
+            tmpQuery.remove(Constants.ALL_VERSIONS);
+
+            QueryResult<Cohort> cohortQueryResult = get(tmpQuery, new QueryOptions());
+            if (cohortQueryResult.getNumResults() == 0) {
+                throw new CatalogDBException("Update cohort: No cohort found to be updated");
+            }
+            if (cohortQueryResult.getNumResults() > 1) {
+                throw new CatalogDBException("Update cohort: Cannot update " + QueryParams.ID.key() + " parameter. More than one cohort "
+                        + "found to be updated.");
+            }
+
+            // Check that the new sample name is still unique
+            long studyId = cohortQueryResult.first().getStudyUid();
+
+            tmpQuery = new Query()
+                    .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
+                    .append(QueryParams.STUDY_UID.key(), studyId);
+            QueryResult<Long> count = count(tmpQuery);
+            if (count.getResult().get(0) > 0) {
+                throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Cohort "
+                        + parameters.get(QueryParams.ID.key()) + " already exists.");
+            }
+
+            cohortParams.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
+        }
 
         // Check if the samples exist.
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
@@ -661,6 +692,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ID:
+                    case NAME:
                     case TYPE:
                     case RELEASE:
                     case STATUS_NAME:

@@ -402,7 +402,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             return updateAndCreateNewVersion(query, individualParameters, annotationUpdateMap, queryOptions);
         }
 
-        return endQuery("Update individual", startTime, new QueryResult<Long>());
+        return endQuery("Update individual", startTime, new QueryResult<>());
     }
 
     private void updateToLastSampleVersions(Query query, ObjectMap parameters) throws CatalogDBException {
@@ -525,7 +525,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             individualParameters.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
                 QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.AFFECTATION_STATUS.key(),
                 QueryParams.DATE_OF_BIRTH.key(), };

@@ -421,7 +421,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Family family = null;
 
         if (parameters.containsKey(FamilyDBAdaptor.QueryParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(FamilyDBAdaptor.QueryParams.ID.key()), "name");
+            ParamUtils.checkAlias(parameters.getString(FamilyDBAdaptor.QueryParams.ID.key()), FamilyDBAdaptor.QueryParams.ID.key());
         }
         if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())
                 || parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {

@@ -692,8 +692,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } catch (CatalogParameterException e) {
             throw new CatalogException("Could not update: " + e.getMessage(), e);
         }
-        if (parameters.containsKey(SampleDBAdaptor.UpdateParams.NAME.key())) {
-            ParamUtils.checkAlias(parameters.getString(SampleDBAdaptor.UpdateParams.NAME.key()), "name");
+        if (parameters.containsKey(SampleDBAdaptor.UpdateParams.ID.key())) {
+            ParamUtils.checkAlias(parameters.getString(SampleDBAdaptor.UpdateParams.ID.key()), SampleDBAdaptor.UpdateParams.ID.key());
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {

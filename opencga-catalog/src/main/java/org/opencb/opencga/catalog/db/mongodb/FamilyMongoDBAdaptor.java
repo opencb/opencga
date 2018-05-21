@@ -344,7 +344,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
         Document familyParameters = new Document();
 
-        final String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, familyParameters, acceptedParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};

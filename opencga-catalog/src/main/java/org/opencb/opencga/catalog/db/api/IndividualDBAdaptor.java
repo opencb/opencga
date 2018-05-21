@@ -129,6 +129,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     }
 
     enum UpdateParams {
+        ID(QueryParams.ID.key()),
         NAME(QueryParams.NAME.key()),
         DATE_OF_BIRTH(QueryParams.DATE_OF_BIRTH.key()),
         KARYOTYPIC_SEX(QueryParams.KARYOTYPIC_SEX.key()),

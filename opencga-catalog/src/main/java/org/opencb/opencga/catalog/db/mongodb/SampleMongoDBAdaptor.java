@@ -283,7 +283,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
         filterBooleanParams(parameters, sampleParameters, acceptedBooleanParams);
 
-        final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(), QueryParams.TYPE.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(),
+                QueryParams.TYPE.key()};
         filterStringParams(parameters, sampleParameters, acceptedParams);
 
         final String[] acceptedIntParams = {QueryParams.UID.key()};
@@ -297,23 +298,30 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one sample...
-            QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
+
+            Query tmpQuery = new Query(query);
+            // We take out ALL_VERSION from query just in case we get multiple results...
+            tmpQuery.remove(Constants.ALL_VERSIONS);
+
+            QueryResult<Sample> sampleQueryResult = get(tmpQuery, new QueryOptions());
             if (sampleQueryResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update sample: No sample found to be updated");
             }
             if (sampleQueryResult.getNumResults() > 1) {
-                throw new CatalogDBException("Update sample: Cannot update name parameter. More than one sample found to be updated.");
+                throw new CatalogDBException("Update sample: Cannot update " + QueryParams.ID.key() + " parameter. More than one sample "
+                        + "found to be updated.");
             }
 
             // Check that the new sample name is still unique
-            long studyId = getStudyId(sampleQueryResult.first().getUid());
+            long studyId = sampleQueryResult.first().getStudyUid();
 
-            Query tmpQuery = new Query()
+            tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
             QueryResult<Long> count = count(tmpQuery);
             if (count.getResult().get(0) > 0) {
-                throw new CatalogDBException("Sample { name: '" + parameters.get(QueryParams.ID.key()) + "'} already exists.");
+                throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Sample "
+                        + parameters.get(QueryParams.ID.key()) + " already exists.");
             }
 
             sampleParameters.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
@@ -1017,6 +1025,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ID:
+                    case NAME:
                     case RELEASE:
                     case VERSION:
                     case SOURCE:

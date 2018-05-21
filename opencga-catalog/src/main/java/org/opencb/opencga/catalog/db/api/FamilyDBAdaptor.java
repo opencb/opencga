@@ -113,6 +113,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
     }
 
     enum UpdateParams {
+        ID(QueryParams.ID.key()),
         NAME(QueryParams.NAME.key()),
         PHENOTYPES(QueryParams.PHENOTYPES.key()),
         MEMBERS(QueryParams.MEMBERS.key()),
