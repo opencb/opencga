@@ -798,6 +798,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
+
+        if (getOptions().getBoolean(SKIP_CHECK_LOADED_VARIANTS.key(), SKIP_CHECK_LOADED_VARIANTS.defaultValue())) {
+            logger.warn("Skip check loaded variants");
+            return;
+        }
+
         VariantFileMetadata fileMetadata = getStudyConfigurationManager().getVariantFileMetadata(getStudyId(), fileId, null).first();
 
         Long count = dbAdaptor.count(new Query()
