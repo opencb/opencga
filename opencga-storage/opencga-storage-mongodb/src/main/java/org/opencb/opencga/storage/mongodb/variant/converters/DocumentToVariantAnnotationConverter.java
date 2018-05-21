@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
@@ -198,13 +199,25 @@ public class DocumentToVariantAnnotationConverter
 
     @Override
     public VariantAnnotation convertToDataModelType(Document object) {
-        return convertToDataModelType(object, null, null, null, null);
+        return convertToDataModelType(object, null, null);
     }
 
 
-    public VariantAnnotation convertToDataModelType(Document object, Document customAnnotation,
-                                                    String chromosome, String reference, String alternate) {
-        VariantAnnotation va = new VariantAnnotation();
+    public VariantAnnotation convertToDataModelType(Document object, Document customAnnotation, Variant variant) {
+        String chromosome = null;
+        String reference = null;
+        String alternate = null;
+
+        VariantAnnotation va;
+        if (variant != null) {
+            chromosome = variant.getChromosome();
+            reference = variant.getReference();
+            alternate = variant.getAlternate();
+
+            va = newVariantAnnotation(variant);
+        } else {
+            va = new VariantAnnotation();
+        }
 
         //ConsequenceType
         List<ConsequenceType> consequenceTypes = new LinkedList<>();
@@ -432,6 +445,17 @@ public class DocumentToVariantAnnotationConverter
             }
         }
 
+        return va;
+    }
+
+    protected static VariantAnnotation newVariantAnnotation(Variant variant) {
+        VariantAnnotation va;
+        va = new VariantAnnotation();
+        va.setChromosome(variant.getChromosome());
+        va.setReference(variant.getReference());
+        va.setAlternate(variant.getAlternate());
+        va.setStart(variant.getStart());
+        va.setEnd(variant.getEnd());
         return va;
     }
 

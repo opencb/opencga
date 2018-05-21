@@ -28,12 +28,15 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,10 +74,16 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
         String configFile = "storage-configuration.yml";
         String storageEngine = "hadoop"; //
         ObjectMap options = new ObjectMap(); // empty
+        ProjectMetadata projectMetadata;
+        try (StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()))) {
+            projectMetadata = scm.getProjectMetadata().first();
+        }
         try {
+            // FIXME! This is WRONG. Should read StorageConfigurationFile from client
             StorageConfiguration storageConfiguration = StorageConfiguration.load(
                 StorageConfiguration.class.getClassLoader().getResourceAsStream(configFile));
-            this.variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageEngine, options);
+            this.variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageEngine, projectMetadata,
+                    options);
         } catch (Exception e) {
             throw new IllegalStateException("Problems loading storage configuration from " + configFile, e);
         }

@@ -43,7 +43,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
@@ -342,7 +342,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             loadStats.append("writeResult", writeResult);
 
             fileMetadata.setId(String.valueOf(fileId));
-            dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(studyId), fileMetadata);
+            dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(String.valueOf(studyId), fileMetadata);
         } catch (ExecutionException e) {
             try {
                 getStudyConfigurationManager().atomicSetStatus(studyId, BatchFileOperation.Status.ERROR, DIRECT_LOAD.key(),
@@ -469,7 +469,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileId);
 
         BatchFileOperation operation;
-        if (dbAdaptor.getVariantFileMetadataDBAdaptor().count(query).first() == 1) {
+        if (dbAdaptor.getStudyConfigurationManager().countVariantFileMetadata(query).first() == 1) {
             // Already staged!
             logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
 
@@ -513,7 +513,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         getStudyConfigurationManager()
                 .atomicSetStatus(getStudyId(), BatchFileOperation.Status.READY, STAGE.key(), Collections.singletonList(fileId));
         metadata.setId(String.valueOf(fileId));
-        dbAdaptor.getVariantFileMetadataDBAdaptor().updateVariantFileMetadata(String.valueOf(getStudyId()), metadata);
+        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(String.valueOf(getStudyId()), metadata);
 
     }
 
@@ -558,7 +558,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         //Iterate over all the files
         Query query = new Query(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId());
-        Iterator<VariantFileMetadata> iterator = dbAdaptor.getVariantFileMetadataDBAdaptor().iterator(query, null);
+        Iterator<VariantFileMetadata> iterator = dbAdaptor.getStudyConfigurationManager().variantFileMetadataIterator(query, null);
 
         // List of chromosomes to be loaded
         TreeSet<String> chromosomesToLoad = new TreeSet<>((s1, s2) -> {
@@ -798,7 +798,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
-        VariantFileMetadata fileMetadata = dbAdaptor.getVariantFileMetadataDBAdaptor().get(String.valueOf(fileId), null).first();
+        VariantFileMetadata fileMetadata = getStudyConfigurationManager().getVariantFileMetadata(getStudyId(), fileId, null).first();
 
         Long count = dbAdaptor.count(new Query()
                 .append(VariantQueryParam.FILE.key(), fileId)

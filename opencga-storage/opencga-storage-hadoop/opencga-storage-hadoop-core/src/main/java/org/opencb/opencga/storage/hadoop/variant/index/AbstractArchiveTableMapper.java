@@ -23,6 +23,7 @@ import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -79,7 +80,8 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     protected void setup(Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        studyEntryToHBaseConverter = new StudyEntryToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration());
+        studyEntryToHBaseConverter = new StudyEntryToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration(), false,
+                getHelper().getConf().getInt(VariantStorageEngine.Options.RELEASE.key(), -1));
         // Load VCF meta data for columns
         int studyId = getStudyConfiguration().getStudyId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());

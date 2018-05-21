@@ -80,6 +80,7 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
+import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -475,12 +476,17 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     int r = new DeleteHBaseColumnDriver().privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution DeleteHBaseColumnDriver");
                     return r;
+                } else if (executable.endsWith(CopyHBaseColumnDriver.class.getName())) {
+                    System.out.println("Executing CopyHBaseColumnDriver : " + executable + " " + args);
+                    int r = new CopyHBaseColumnDriver(conf).run(Commandline.translateCommandline(args));
+                    System.out.println("Finish execution CopyHBaseColumnDriver");
+                    return r;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 return -1;
             }
-            return 0;
+            throw new IllegalArgumentException("Unknown executable " + executable);
         }
     }
 

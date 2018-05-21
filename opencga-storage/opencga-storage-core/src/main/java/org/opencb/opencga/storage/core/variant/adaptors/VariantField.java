@@ -131,10 +131,6 @@ public enum VariantField {
         return getNamesMap().get(field);
     }
 
-    public static Set<VariantField> getIncludeFields(QueryOptions options) {
-        return getIncludeFields(options, false);
-    }
-
     /**
      * Given a QueryOptions, reads the {@link QueryOptions#INCLUDE}, {@link QueryOptions#EXCLUDE} and  {@link VariantField#SUMMARY}
      * to determine which fields from Variant will be included.
@@ -144,10 +140,9 @@ public enum VariantField {
      *   3. {@link VariantField#SUMMARY}
      *
      * @param options   Non null options
-     * @param prune     Remove intermediate nodes some child is missing, or all children from a node if all are present
      * @return          List of fields to be included.
      */
-    public static Set<VariantField> getIncludeFields(QueryOptions options, boolean prune) {
+    public static Set<VariantField> getIncludeFields(QueryOptions options) {
         Set<VariantField> includeFields;
 
         if (options == null) {
@@ -188,11 +183,7 @@ public enum VariantField {
             }
         }
 
-        if (prune) {
-            return prune(includeFields);
-        } else {
-            return includeFields;
-        }
+        return includeFields;
     }
 
     /**

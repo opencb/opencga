@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -37,9 +38,10 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
 
     private final StudyEntryToHBaseConverter converter;
 
-    public VariantHadoopDBWriter(GenomeHelper helper, String tableName, StudyConfiguration sc, HBaseManager hBaseManager) {
+    public VariantHadoopDBWriter(GenomeHelper helper, String tableName,
+                                 ProjectMetadata pm, StudyConfiguration sc, HBaseManager hBaseManager) {
         super(hBaseManager, tableName);
-        converter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), sc, true);
+        converter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), sc, true, pm.getRelease());
     }
 
     @Override

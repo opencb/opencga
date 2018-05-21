@@ -72,7 +72,10 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
 
         addNotNull(xrefs, variantAnnotation.getId());
 
-        for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
+        List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes() == null
+                ? Collections.emptyList()
+                : variantAnnotation.getConsequenceTypes();
+        for (ConsequenceType consequenceType : consequenceTypes) {
             addNotNull(genes, consequenceType.getGeneName());
             addNotNull(genes, consequenceType.getEnsemblGeneId());
             addNotNull(transcripts, consequenceType.getEnsemblTranscriptId());

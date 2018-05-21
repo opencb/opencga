@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,10 +60,17 @@ public class ArchiveTableHelper extends GenomeHelper {
 
     private final int fileId;
 
+    @Deprecated
     public ArchiveTableHelper(Configuration conf) throws IOException {
+        // FIXME: Read MetaTableName may fail!
+        this(conf, new VariantTableHelper(conf).getMetaTableAsString());
+    }
+
+    public ArchiveTableHelper(Configuration conf, String metaTableName) throws IOException {
         super(conf);
         fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
-        try (HBaseVariantFileMetadataDBAdaptor metadataManager = new HBaseVariantFileMetadataDBAdaptor(conf)) {
+
+        try (HBaseVariantFileMetadataDBAdaptor metadataManager = new HBaseVariantFileMetadataDBAdaptor(null, metaTableName, conf)) {
             VariantFileMetadata meta = metadataManager.getVariantFileMetadata(getStudyId(), fileId, null);
             this.meta.set(meta);
             nonRefColumn = Bytes.toBytes(getNonRefColumnName(meta));
