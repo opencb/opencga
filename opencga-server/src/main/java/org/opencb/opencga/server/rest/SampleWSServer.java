@@ -382,18 +382,15 @@ public class SampleWSServer extends OpenCGAWSServer {
                     .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
                     .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
 
-            String variableSetId = String.valueOf(catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId)
-                    .getResourceId());
-
             if (StringUtils.isEmpty(annotation)) {
-                annotation = Constants.VARIABLE_SET + "=" + variableSetId;
+                annotation = Constants.VARIABLE_SET + "=" + variableSet;
             } else {
                 String[] annotationsSplitted = StringUtils.split(annotation, ",");
                 List<String> annotationList = new ArrayList<>(annotationsSplitted.length);
                 for (String auxAnnotation : annotationsSplitted) {
                     String[] split = StringUtils.split(auxAnnotation, ":");
                     if (split.length == 1) {
-                        annotationList.add(variableSetId + ":" + auxAnnotation);
+                        annotationList.add(variableSet + ":" + auxAnnotation);
                     } else {
                         annotationList.add(auxAnnotation);
                     }
