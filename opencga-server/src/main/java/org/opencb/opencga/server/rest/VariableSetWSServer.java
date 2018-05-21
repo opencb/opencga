@@ -70,13 +70,29 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            logger.info("variables: {}", params.variables);
+            logger.debug("variables: {}", params.variables);
+
+            // Fix variable set params to support 1.3.x
+            // TODO: Remove in version 2.0.0
+            params.id = StringUtils.isNotEmpty(params.id) ? params.id : params.name;
+            for (Variable variable : params.variables) {
+                fixVariable(variable);
+            }
 
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.id, params.name,
                     params.unique, params.confidential, params.description, null, params.variables, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    private void fixVariable(Variable variable) {
+        variable.setId(StringUtils.isNotEmpty(variable.getId()) ? variable.getId() : variable.getName());
+        if (variable.getVariableSet() != null && variable.getVariableSet().size() > 0) {
+            for (Variable variable1 : variable.getVariableSet()) {
+                fixVariable(variable1);
+            }
         }
     }
 

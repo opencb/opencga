@@ -109,29 +109,6 @@ public class Variable {
         return sb.toString();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Variable)) {
-            return false;
-        }
-
-        Variable variable = (Variable) o;
-
-        if (!id.equals(variable.id)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
-
     public String getId() {
         return id;
     }
