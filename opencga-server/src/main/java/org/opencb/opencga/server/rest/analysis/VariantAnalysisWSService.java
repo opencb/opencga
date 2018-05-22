@@ -131,7 +131,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations,
                           @ApiParam("Resume a previously failed indexation") @DefaultValue("false") @QueryParam("resume") boolean resume,
-                          @ApiParam("Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)") @DefaultValue("false") @QueryParam("loadSplitData") boolean loadSplitData) {
+                          @ApiParam("Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)") @DefaultValue("false") @QueryParam("loadSplitData") boolean loadSplitData,
+                          @ApiParam("Do not execute post load checks over the database") @DefaultValue("false") @QueryParam("skipPostLoadCheck") boolean skipPostLoadCheck) {
 
         if (StringUtils.isNotEmpty(fileIdStrOld)) {
             fileIdStr = fileIdStrOld;
@@ -153,6 +154,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         addParamIfTrue(params, ANNOTATE.key(), annotate);
         addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
         addParamIfTrue(params, LOAD_SPLIT_DATA.key(), loadSplitData);
+        addParamIfTrue(params, POST_LOAD_CHECK_SKIP.key(), skipPostLoadCheck);
 
         Set<String> knownParams = new HashSet<>();
         knownParams.add("study");
@@ -170,6 +172,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         knownParams.add("include");
         knownParams.add("exclude");
         knownParams.add("loadSplitData");
+        knownParams.add("skipPostLoadCheck");
 
         // Add other params
         query.forEach((key, value) -> {

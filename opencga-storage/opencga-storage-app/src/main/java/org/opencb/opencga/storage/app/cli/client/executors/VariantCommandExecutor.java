@@ -266,6 +266,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
         params.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
         params.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), indexVariantsCommandOptions.loadSplitData);
+        params.put(VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP.key(), indexVariantsCommandOptions.skipPostLoadCheck);
 
         if (indexVariantsCommandOptions.aggregationMappingFile != null) {
             // TODO move this options to new configuration.yml

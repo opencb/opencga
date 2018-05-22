@@ -285,6 +285,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantIndexOptions.overwriteAnnotations);
         queryOptions.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantIndexOptions.resume);
         queryOptions.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), cliOptions.genericVariantIndexOptions.loadSplitData);
+        queryOptions.put(VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP.key(), cliOptions.genericVariantIndexOptions.skipPostLoadCheck);
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);

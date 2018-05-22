@@ -94,8 +94,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
         PARALLEL_WRITE("parallel.write", false),
 
-        SKIP_CHECK_LOADED_VARIANTS("skipCheckLoadedVariants", false),
-
         STAGE("stage", false),
         STAGE_RESUME("stage.resume", false),
         STAGE_PARALLEL_WRITE("stage.parallel.write", false),
