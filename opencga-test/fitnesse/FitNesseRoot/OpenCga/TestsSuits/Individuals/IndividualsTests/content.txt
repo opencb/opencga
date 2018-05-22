@@ -15,13 +15,6 @@
 | POST | /v1/individuals/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
 | let | individualId | js | response.jsonbody.response[0].result[0].id ||
 
-!3 Create First Individual
-!| Table: Rest Fixture | $baseURL |
-| setBody | {"id" : "$iName"} |
-| setHeader | Content-Type:application/json |
-| POST | /v1/individuals/create?sid=$sessionId&study=$study | 200 | Content-Type: application/json ||
-| let | individualId | js | response.jsonbody.response[0].result[0].id ||
-
 !3 Create First Sample
 !| Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sName"} |
@@ -61,7 +54,7 @@
 
 !3 Update Individual
 !| Table: Rest Fixture | $baseURL |
-| setBody | {"sex" : "MALE" ,"karyotypicSex" : "XY" , "lifeStatus" : "ALIVE" } |
+| setBody | {"id": "$individualId", "sex" : "MALE" ,"karyotypicSex" : "XY" , "lifeStatus" : "ALIVE" } |
 | setHeader | Content-Type:application/json |
 | POST | /v1/individuals/$individualId/update?sid=$sessionId&incVersion=true | 200 | Content-Type: application/json ||
 #| POST | /v1/individuals/$individualId/update?sid=$sessionId&incVersion=true | 200 | Content-Type: application/json | jsonbody.error == '' && jsonbody.response[0].result[0].sex == 'MALE' && jsonbody.response[0].result[0].lifeStatus == 'ALIVE' |
