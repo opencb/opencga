@@ -372,7 +372,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(
             @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Variable set id") @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
@@ -383,19 +383,23 @@ public class SampleWSServer extends OpenCGAWSServer {
                     .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
 
             if (StringUtils.isEmpty(annotation)) {
-                annotation = Constants.VARIABLE_SET + "=" + variableSet;
-            } else {
-                String[] annotationsSplitted = StringUtils.split(annotation, ",");
-                List<String> annotationList = new ArrayList<>(annotationsSplitted.length);
-                for (String auxAnnotation : annotationsSplitted) {
-                    String[] split = StringUtils.split(auxAnnotation, ":");
-                    if (split.length == 1) {
-                        annotationList.add(variableSet + ":" + auxAnnotation);
-                    } else {
-                        annotationList.add(auxAnnotation);
-                    }
+                if (StringUtils.isNotEmpty(variableSet)) {
+                    annotation = Constants.VARIABLE_SET + "=" + variableSet;
                 }
-                annotation = StringUtils.join(annotationList, ";");
+            } else {
+                if (StringUtils.isNotEmpty(variableSet)) {
+                    String[] annotationsSplitted = StringUtils.split(annotation, ",");
+                    List<String> annotationList = new ArrayList<>(annotationsSplitted.length);
+                    for (String auxAnnotation : annotationsSplitted) {
+                        String[] split = StringUtils.split(auxAnnotation, ":");
+                        if (split.length == 1) {
+                            annotationList.add(variableSet + ":" + auxAnnotation);
+                        } else {
+                            annotationList.add(auxAnnotation);
+                        }
+                    }
+                    annotation = StringUtils.join(annotationList, ";");
+                }
             }
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
