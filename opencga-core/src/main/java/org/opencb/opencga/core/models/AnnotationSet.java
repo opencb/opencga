@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -29,6 +30,8 @@ import java.util.Map;
 public class AnnotationSet {
 
     private String id;
+    @Deprecated
+    private String name;
     private String variableSetId;
     private Map<String, Object> annotations;
     @Deprecated
@@ -53,6 +56,7 @@ public class AnnotationSet {
     public AnnotationSet(String id, String variableSetId, Map<String, Object> annotations, String creationDate, int release,
                          Map<String, Object> attributes) {
         this.id = id;
+        this.name = id;
         this.variableSetId = variableSetId;
         this.annotations = annotations;
         this.creationDate = creationDate;
@@ -101,6 +105,17 @@ public class AnnotationSet {
 
     public AnnotationSet setId(String id) {
         this.id = id;
+        this.name = StringUtils.isEmpty(this.name) ? this.id : this.name;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public AnnotationSet setName(String name) {
+        this.name = name;
+        this.id = StringUtils.isEmpty(this.id) ? this.name : this.id;
         return this;
     }
 
