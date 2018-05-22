@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
@@ -596,7 +595,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         }
 
         filterOutDeleted(query);
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
@@ -605,23 +604,30 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
 
+        if (query.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
+            // We first query the individual to get all the samples
+            Query individualQuery = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.ID.key(), query.get(QueryParams.INDIVIDUAL_ID.key()))
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), query.get(QueryParams.STUDY_ID.key()));
+            QueryResult<Individual> individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(
+                    individualQuery, new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()));
+            if (individualQueryResult.getNumResults() == 0 || individualQueryResult.first().getSamples() == null
+                    || individualQueryResult.first().getSamples().isEmpty()) {
+                query.put(QueryParams.ID.key(), -1);
+            } else {
+                // And include the samples from the individual in the query object
+                query.put(QueryParams.ID.key(), individualQueryResult.first().getSamples().stream()
+                        .map(Sample::getId)
+                        .collect(Collectors.toList())
+                );
+            }
+        }
+
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
         logger.debug("Sample get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        if (query.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
-            // We need to do a left join
-            Bson match = Aggregates.match(bson);
-            Bson lookup = Aggregates.lookup("individual", QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".id",
-                    "_individual");
+        return  sampleCollection.nativeQuery().find(bson, qOptions).iterator();
 
-            // We create the match for the individual id
-            List<Bson> andBsonList = new ArrayList<>();
-            addAutoOrQuery("_individual.id", QueryParams.INDIVIDUAL_ID.key(), query, QueryParams.INDIVIDUAL_ID.type(), andBsonList);
-            Bson individualMatch = Aggregates.match(andBsonList.get(0));
-
-            return sampleCollection.nativeQuery().aggregate(Arrays.asList(match, lookup, individualMatch), qOptions).iterator();
-        } else {
-            return  sampleCollection.nativeQuery().find(bson, qOptions).iterator();
-        }
     }
 
     private Document getStudyDocument(Query query) throws CatalogDBException {

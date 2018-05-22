@@ -734,7 +734,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             }
         }
         queryResult = endQuery("Get", startTime, documentList);
-        addSamples(queryResult, user, query.getLong(QueryParams.STUDY_ID.key()));
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -770,28 +769,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
-    }
-
-    private void addSamples(QueryResult<Individual> queryResult, String user, long studyId) throws CatalogAuthorizationException {
-        if (queryResult.getNumResults() == 0) {
-            return;
-        }
-
-        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-        for (Individual individual : queryResult.getResult()) {
-            if (individual == null || individual.getId() <= 0) {
-                continue;
-            }
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual.getId())
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-            try {
-                QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options, user);
-                individual.setSamples(sampleQueryResult.getResult());
-            } catch (CatalogDBException e) {
-                logger.warn("Could not retrieve samples for individual {}", individual.getId(), e);
-            }
-        }
     }
 
     @Override
