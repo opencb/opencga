@@ -84,6 +84,10 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 }
                 input.close();
 
+                p.waitFor();
+                if (p.exitValue() != 0) {
+                    throw new IllegalStateException("Error migrating catalog database!");
+                }
 
                 // Storage
 
