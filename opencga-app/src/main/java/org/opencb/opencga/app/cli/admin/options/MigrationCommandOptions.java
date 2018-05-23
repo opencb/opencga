@@ -35,6 +35,9 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--file-backup"}, description = "Create a backup for all migrated variant metadata files")
         public boolean createBackup;
 
+        @Parameter(names = {"--skip-disk-files"}, description = "Do not migrate VariantSource files from disk.")
+        public boolean skipDiskFiles;
+
         @Parameter(names = {"--files"}, description = "VariantSource files to migrate into VariantFileMetadata. Don't do any operation in catalog.", variableArity = true)
         public List<String> files;
 
