@@ -468,7 +468,7 @@ public class StudyManager extends AbstractManager {
         return result;
     }
 
-    public QueryResult<PermissionRule> createPermissionRule(String studyStr, Study.Entry entry, PermissionRule permissionRule,
+    public QueryResult<PermissionRule> createPermissionRule(String studyStr, Study.Entity entry, PermissionRule permissionRule,
                                                             String sessionId) throws CatalogException {
         ParamUtils.checkObj(entry, "entry");
         ParamUtils.checkObj(permissionRule, "permission rule");
@@ -484,7 +484,7 @@ public class StudyManager extends AbstractManager {
         return new QueryResult<>(study.getFqn(), -1, 1, 1, "", "", Collections.singletonList(permissionRule));
     }
 
-    public void markDeletedPermissionRule(String studyStr, Study.Entry entry, String permissionRuleId,
+    public void markDeletedPermissionRule(String studyStr, Study.Entity entry, String permissionRuleId,
                                           PermissionRule.DeleteAction deleteAction, String sessionId) throws CatalogException {
         ParamUtils.checkObj(entry, "entry");
         ParamUtils.checkObj(deleteAction, "Delete action");
@@ -498,7 +498,7 @@ public class StudyManager extends AbstractManager {
         studyDBAdaptor.markDeletedPermissionRule(study.getUid(), entry, permissionRuleId, deleteAction);
     }
 
-    public QueryResult<PermissionRule> getPermissionRules(String studyStr, Study.Entry entry, String sessionId) throws CatalogException {
+    public QueryResult<PermissionRule> getPermissionRules(String studyStr, Study.Entity entry, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = resolveId(studyStr, userId);
 
@@ -1210,7 +1210,7 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.count(query).first() > 0;
     }
 
-    private void validatePermissionRules(long studyId, Study.Entry entry, PermissionRule permissionRule) throws CatalogException {
+    private void validatePermissionRules(long studyId, Study.Entity entry, PermissionRule permissionRule) throws CatalogException {
         ParamUtils.checkIdentifier(permissionRule.getId(), "PermissionRules");
 
         if (permissionRule.getPermissions() == null || permissionRule.getPermissions().isEmpty()) {

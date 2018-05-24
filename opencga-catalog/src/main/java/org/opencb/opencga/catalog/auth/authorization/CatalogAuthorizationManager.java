@@ -942,7 +942,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException {
+    public void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
         // 1. We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = permissionRule.getMembers().stream()
                 .filter(member -> !member.startsWith("@"))
@@ -957,7 +957,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entry entry)
+    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry)
             throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
@@ -966,7 +966,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entry entry)
+    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entity entry)
             throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
@@ -975,7 +975,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRule(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException {
+    public void removePermissionRule(long studyId, String permissionRuleId, Study.Entity entry) throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 

@@ -235,10 +235,10 @@ public class AuthorizationMongoDBAdaptorTest {
         // We create a new permission rule
         PermissionRule pr = new PermissionRule("myPermissionRule", new Query(), Arrays.asList(user3.getId()),
                 Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name()));
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().createPermissionRule(studyId, Study.Entry.SAMPLES, pr);
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().createPermissionRule(studyId, Study.Entity.SAMPLES, pr);
 
         // Apply the permission rule
-        aclDBAdaptor.applyPermissionRules(studyId, pr, Study.Entry.SAMPLES);
+        aclDBAdaptor.applyPermissionRules(studyId, pr, Study.Entity.SAMPLES);
 
         // All the samples should have view permissions for user user2
         List<QueryResult<AbstractAclEntry>> queryResults = aclDBAdaptor.get(Arrays.asList(s1.getUid(), s2.getUid()),

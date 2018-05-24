@@ -64,8 +64,8 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
 
         logger.info("Analysing study {} ({})", study.getId(), study.getUid());
 
-        for (Map.Entry<Study.Entry, List<PermissionRule>> myMap : study.getPermissionRules().entrySet()) {
-            Study.Entry entry = myMap.getKey();
+        for (Map.Entry<Study.Entity, List<PermissionRule>> myMap : study.getPermissionRules().entrySet()) {
+            Study.Entity entry = myMap.getKey();
             for (PermissionRule permissionRule : myMap.getValue()) {
                 try {
                     String[] split = permissionRule.getId().split(INTERNAL_DELIMITER, 2);

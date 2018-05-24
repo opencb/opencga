@@ -590,7 +590,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException {
+    public void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
         MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
 
         // We will apply the permission rules to all the entries matching the query defined in the permission rules that does not have
@@ -618,7 +618,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entry entry)
+    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -705,7 +705,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entry entry)
+    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -788,7 +788,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entry entry) throws CatalogException {
+    public void removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException {
         // Remove the __TODELETE tag...
         String permissionRuleId = permissionRuleToDelete.split(INTERNAL_DELIMITER)[0];
 
@@ -813,16 +813,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     private boolean isPermissionRuleEntity(Entity entity) {
-        if (Study.Entry.CLINICAL_ANALYSES.getEntity() == entity || Study.Entry.COHORTS.getEntity() == entity
-                || Study.Entry.FAMILIES.getEntity() == entity || Study.Entry.FILES.getEntity() == entity
-                || Study.Entry.INDIVIDUALS.getEntity() == entity || Study.Entry.JOBS.getEntity() == entity
-                || Study.Entry.SAMPLES.getEntity() == entity) {
+        if (Study.Entity.CLINICAL_ANALYSES.getEntity() == entity || Study.Entity.COHORTS.getEntity() == entity
+                || Study.Entity.FAMILIES.getEntity() == entity || Study.Entity.FILES.getEntity() == entity
+                || Study.Entity.INDIVIDUALS.getEntity() == entity || Study.Entity.JOBS.getEntity() == entity
+                || Study.Entity.SAMPLES.getEntity() == entity) {
             return true;
         }
         return false;
     }
 
-    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Study.Entry entry)
+    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Study.Entity entry)
             throws CatalogException {
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)

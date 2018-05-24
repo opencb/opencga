@@ -17,7 +17,6 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.FieldUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -59,7 +58,7 @@ public class Study extends PrivateFields {
 
     private List<VariableSet> variableSets;
 
-    private Map<Entry, List<PermissionRule>> permissionRules;
+    private Map<Entity, List<PermissionRule>> permissionRules;
 
     private URI uri;
 
@@ -84,7 +83,7 @@ public class Study extends PrivateFields {
     public Study(String id, String name, String alias, Type type, String creationDate, String description, Status status,
                  String lastModified, long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files,
                  List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
-                 List<DiseasePanel> panels, List<VariableSet> variableSets, Map<Entry, List<PermissionRule>> permissionRules,
+                 List<DiseasePanel> panels, List<VariableSet> variableSets, Map<Entity, List<PermissionRule>> permissionRules,
                  URI uri, Map<File.Bioformat, DataStore> dataStores, int release, Map<String, Object> stats,
                  Map<String, Object> attributes) {
         this.id = id;
@@ -128,22 +127,22 @@ public class Study extends PrivateFields {
         COLLECTION
     }
 
-    public enum Entry {
-        SAMPLES(Entity.SAMPLE),
-        FILES(Entity.FILE),
-        COHORTS(Entity.COHORT),
-        INDIVIDUALS(Entity.INDIVIDUAL),
-        FAMILIES(Entity.FAMILY),
-        JOBS(Entity.JOB),
-        CLINICAL_ANALYSES(Entity.CLINICAL_ANALYSIS);
+    public enum Entity {
+        SAMPLES(org.opencb.opencga.core.common.Entity.SAMPLE),
+        FILES(org.opencb.opencga.core.common.Entity.FILE),
+        COHORTS(org.opencb.opencga.core.common.Entity.COHORT),
+        INDIVIDUALS(org.opencb.opencga.core.common.Entity.INDIVIDUAL),
+        FAMILIES(org.opencb.opencga.core.common.Entity.FAMILY),
+        JOBS(org.opencb.opencga.core.common.Entity.JOB),
+        CLINICAL_ANALYSES(org.opencb.opencga.core.common.Entity.CLINICAL_ANALYSIS);
 
-        private final Entity entity;
+        private final org.opencb.opencga.core.common.Entity entity;
 
-        Entry(Entity entity) {
+        Entity(org.opencb.opencga.core.common.Entity entity) {
             this.entity = entity;
         }
 
-        public Entity getEntity() {
+        public org.opencb.opencga.core.common.Entity getEntity() {
             return entity;
         }
     }
@@ -368,11 +367,11 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public Map<Entry, List<PermissionRule>> getPermissionRules() {
+    public Map<Entity, List<PermissionRule>> getPermissionRules() {
         return permissionRules;
     }
 
-    public Study setPermissionRules(Map<Entry, List<PermissionRule>> permissionRules) {
+    public Study setPermissionRules(Map<Entity, List<PermissionRule>> permissionRules) {
         this.permissionRules = permissionRules;
         return this;
     }

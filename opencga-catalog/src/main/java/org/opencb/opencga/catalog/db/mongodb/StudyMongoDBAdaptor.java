@@ -482,7 +482,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void createPermissionRule(long studyId, Study.Entry entry, PermissionRule permissionRule) throws CatalogDBException {
+    public void createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRule) throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
         }
@@ -515,7 +515,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void markDeletedPermissionRule(long studyId, Study.Entry entry, String permissionRuleId,
+    public void markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
                                           PermissionRule.DeleteAction deleteAction) throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
@@ -545,7 +545,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<PermissionRule> getPermissionRules(long studyId, Study.Entry entry) throws CatalogDBException {
+    public QueryResult<PermissionRule> getPermissionRules(long studyId, Study.Entity entry) throws CatalogDBException {
         // Get permission rules from study
         Query query = new Query(QueryParams.UID.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.PERMISSION_RULES.key());

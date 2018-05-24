@@ -363,11 +363,11 @@ public interface AuthorizationManager {
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
 
-    void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entry entry) throws CatalogException;
+    void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
 
-    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entry entry) throws CatalogException;
+    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
 
-    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entry entry) throws CatalogException;
+    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
 
-    void removePermissionRule(long studyId, String permissionRuleId, Study.Entry entry) throws CatalogException;
+    void removePermissionRule(long studyId, String permissionRuleId, Study.Entity entry) throws CatalogException;
 }
