@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBNativeQuery;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -594,6 +595,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             List<Bson> aggregationStages = new ArrayList<>();
 
             aggregationStages.add(Aggregates.match(bson));
+
+            MongoDBNativeQuery.parseQueryOptions(aggregationStages, qOptions);
 
             // 1st, we unwind the array of members to be able to perform the lookup as it doesn't work over arrays
             aggregationStages.add(new Document("$unwind", new Document()

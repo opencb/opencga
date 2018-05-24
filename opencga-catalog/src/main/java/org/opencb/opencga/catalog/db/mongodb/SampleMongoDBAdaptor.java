@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBNativeQuery;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
@@ -791,6 +792,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
                 // 1. Match the sample query fields
                 aggregationStages.add(Aggregates.match(bson));
+
+                MongoDBNativeQuery.parseQueryOptions(aggregationStages, qOptions);
 
                 // 2. Match all the individuals containing the sample uid. We do this before because mongo does not support the complex
                 // lookup with pipeline over arrays yet (v 3.6) but arrays are supported in simple lookups

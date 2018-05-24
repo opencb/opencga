@@ -101,9 +101,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.STUDY_UID.key(),
                 IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.RELEASE.key(),
                 IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.STATUS.key(),
-                IndividualDBAdaptor.QueryParams.SAMPLES.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
-                IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
-                IndividualDBAdaptor.QueryParams.SEX.key()));
+                IndividualDBAdaptor.QueryParams.FATHER.key(), IndividualDBAdaptor.QueryParams.MOTHER.key(),
+                IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key()));
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, user);
         if (individualQueryResult.getNumResults() == 0) {
             individualQueryResult = individualDBAdaptor.get(query, options);

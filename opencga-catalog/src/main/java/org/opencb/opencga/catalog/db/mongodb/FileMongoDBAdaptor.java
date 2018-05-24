@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBNativeQuery;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -584,6 +585,8 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         // 1. Match the query parameters
         aggregationStages.add(Aggregates.match(bson));
+
+        MongoDBNativeQuery.parseQueryOptions(aggregationStages, qOptions);
 
         // 2. Unwind the array of samples within file
         aggregationStages.add(Aggregates.unwind("$" + QueryParams.SAMPLES.key(),

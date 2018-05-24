@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBNativeQuery;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -931,6 +932,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             List<Bson> aggregationStages = new ArrayList<>();
 
             aggregationStages.add(Aggregates.match(bson));
+
+            MongoDBNativeQuery.parseQueryOptions(aggregationStages, qOptions);
 
             // 1st, we unwind the array of samples to be able to perform the lookup as it doesn't work over arrays
             aggregationStages.add(new Document("$unwind", new Document()
