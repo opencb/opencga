@@ -48,6 +48,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),
         CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
+        EXPECTED_SIZE("expectedSize", INTEGER, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -118,6 +119,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         PHENOTYPES(QueryParams.PHENOTYPES.key()),
         MEMBERS(QueryParams.MEMBERS.key()),
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
+        EXPECTED_SIZE(QueryParams.EXPECTED_SIZE.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
         ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
         DELETE_ANNOTATION(Constants.DELETE_ANNOTATION),

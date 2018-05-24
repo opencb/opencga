@@ -540,6 +540,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public List<OntologyTerm> phenotypes;
         public List<IndividualPOST> members;
 
+        public Integer expectedSize;
+
         public Map<String, Object> attributes;
         public List<AnnotationSet> annotationSets;
 
@@ -555,7 +557,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             String familyId = StringUtils.isEmpty(id) ? name : id;
             String familyName = StringUtils.isEmpty(name) ? familyId : name;
-            return new Family(familyId, familyName, phenotypes, relatives, description, annotationSets, attributes);
+            int familyExpectedSize = expectedSize != null ? expectedSize : -1;
+            return new Family(familyId, familyName, phenotypes, relatives, description, familyExpectedSize, annotationSets, attributes);
         }
 
         public ObjectMap toFamilyObjectMap() throws JsonProcessingException {
@@ -588,6 +591,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             ObjectMap params = new ObjectMap(mapper.writeValueAsString(family));
             params.putIfNotNull("members", relatives);
+
+            // We do this because jackson will always introduce expectedSize = 0
+            if (expectedSize == null) {
+                params.remove(FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key());
+            } else {
+                params.put(FamilyDBAdaptor.UpdateParams.EXPECTED_SIZE.key(), expectedSize);
+            }
 
             return params;
         }

@@ -92,7 +92,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("family", "family", Arrays.asList(disease1, disease2), Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", Collections.emptyList(), Collections.emptyMap());
+        Family family = new Family("family", "family", Arrays.asList(disease1, disease2),
+                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1, Collections.emptyList(),
+                Collections.emptyMap());
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }

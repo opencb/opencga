@@ -37,6 +37,7 @@ public class Family extends Annotable {
 
     private String creationDate;
     private FamilyStatus status;
+    private int expectedSize;
     private String description;
 
     private int release;
@@ -47,24 +48,21 @@ public class Family extends Annotable {
     }
 
     public Family(String id, String name, List<OntologyTerm> phenotypes, List<Individual> members, String description,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, -1, 1, annotationSets,
-                attributes);
+                  int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(id, name, phenotypes, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, expectedSize, -1, 1,
+                annotationSets, attributes);
     }
 
-    public Family(String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate, FamilyStatus status,
-                  String description, int release, int version, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(name, name, phenotypes, members, creationDate, status, description, release, version, annotationSets, attributes);
-    }
-
-    public Family(String id, String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate, FamilyStatus
-            status, String description, int release, int version, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Family(String id, String name, List<OntologyTerm> phenotypes, List<Individual> members, String creationDate,
+                  FamilyStatus status, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.phenotypes = defaultObject(phenotypes, Collections::emptyList);
         this.members = defaultObject(members, Collections::emptyList);
         this.creationDate = defaultObject(creationDate, TimeUtils::getTime);
         this.status = defaultObject(status, new FamilyStatus());
+        this.expectedSize = expectedSize;
         this.description = description;
         this.release = release;
         this.version = version;
@@ -106,12 +104,13 @@ public class Family extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Family{");
-        sb.append("id=").append(id);
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", members=").append(members);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
+        sb.append(", expectedSize=").append(expectedSize);
         sb.append(", description='").append(description).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
@@ -184,6 +183,15 @@ public class Family extends Annotable {
 
     public Family setStatus(FamilyStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public int getExpectedSize() {
+        return expectedSize;
+    }
+
+    public Family setExpectedSize(int expectedSize) {
+        this.expectedSize = expectedSize;
         return this;
     }
 

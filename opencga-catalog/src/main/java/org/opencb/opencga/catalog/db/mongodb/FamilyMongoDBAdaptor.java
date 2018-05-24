@@ -354,6 +354,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.PHENOTYPES.key()};
         filterObjectParams(parameters, familyParameters, acceptedObjectParams);
 
+        final String[] acceptedIntParams = {QueryParams.EXPECTED_SIZE.key()};
+        filterIntParams(parameters, familyParameters, acceptedIntParams);
+
         if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one family...
 
@@ -855,6 +858,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case ID:
                     case NAME:
                     case DESCRIPTION:
+                    case EXPECTED_SIZE:
                     case RELEASE:
                     case VERSION:
                     case PHENOTYPES_ID:
