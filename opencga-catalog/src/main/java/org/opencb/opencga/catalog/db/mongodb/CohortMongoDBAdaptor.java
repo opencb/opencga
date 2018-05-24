@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -30,13 +31,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBNativeQuery;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.AnnotableMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.CohortMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -44,6 +46,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
@@ -478,13 +481,13 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     @Override
     public DBIterator<Cohort> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new AnnotableMongoDBIterator<>(mongoCursor, cohortConverter, options);
+        return new CohortMongoDBIterator(mongoCursor, cohortConverter, null, null, options);
     }
 
     @Override
     public DBIterator<Document> nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new AnnotableMongoDBIterator<>(mongoCursor, options);
+        return new CohortMongoDBIterator(mongoCursor, null, null, null, options);
     }
 
     @Override
@@ -494,19 +497,23 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
+        Function<Document, Document> sampleIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(), SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
 
-        return new AnnotableMongoDBIterator<>(mongoCursor, cohortConverter, iteratorFilter, options);
+        return new CohortMongoDBIterator<>(mongoCursor, cohortConverter, iteratorFilter, sampleIteratorFilter, options);
     }
 
     @Override
-    public DBIterator<Document> nativeIterator(Query query, QueryOptions options, String user)
+    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
+        Function<Document, Document> sampleIteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(), SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
 
-        return new AnnotableMongoDBIterator<>(mongoCursor, iteratorFilter, options);
+        return new CohortMongoDBIterator(mongoCursor, null, iteratorFilter, sampleIteratorFilter, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -530,7 +537,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         filterOutDeleted(query);
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
-        logger.debug("Cohort get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
         QueryOptions qOptions;
         if (options != null) {
@@ -541,7 +547,84 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
 
-        return cohortCollection.nativeQuery().find(bson, qOptions).iterator();
+        if (excludeSamples(qOptions)) {
+            logger.debug("Cohort get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            return cohortCollection.nativeQuery().find(bson, qOptions).iterator();
+        } else {
+            List<Bson> aggregationStages = new ArrayList<>();
+
+            aggregationStages.add(Aggregates.match(bson));
+
+            MongoDBNativeQuery.parseQueryOptions(aggregationStages, qOptions);
+
+            // 1st, we unwind the array of samples to be able to perform the lookup as it doesn't work over arrays
+            aggregationStages.add(new Document("$unwind", new Document()
+                    .append("path", "$" + QueryParams.SAMPLES.key())
+                    .append("preserveNullAndEmptyArrays", true)
+            ));
+
+            List<Document> lookupMatchList = new ArrayList<>();
+            lookupMatchList.add(
+                    new Document("$expr",
+                            new Document("$and", Arrays.asList(
+                                    new Document("$eq", Arrays.asList("$" + QueryParams.UID.key(), "$$sampleUid")),
+                                    new Document("$eq", Arrays.asList("$" + LAST_OF_VERSION, true))
+                            ))));
+            if (studyDocument != null && user != null) {
+                // Get the document query needed to check the sample permissions as well
+                queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                        StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+                if (!queryForAuthorisedEntries.isEmpty()) {
+                    lookupMatchList.add(queryForAuthorisedEntries);
+                }
+            }
+            Document lookupMatch = lookupMatchList.size() > 1
+                    ? new Document("$and", lookupMatchList)
+                    : lookupMatchList.get(0);
+
+            lookupMatch = new Document("$lookup", new Document()
+                    .append("from", "sample")
+                    .append("let", new Document("sampleUid", "$" + QueryParams.SAMPLE_UIDS.key())
+                    )
+                    .append("pipeline", Collections.singletonList(new Document("$match", lookupMatch)))
+                    .append("as", QueryParams.SAMPLES.key())
+            );
+            aggregationStages.add(lookupMatch);
+
+            // 3rd, we unwind the samples array again to be able to move the root to a new dummy field
+            aggregationStages.add(new Document("$unwind", new Document()
+                    .append("path", "$" + QueryParams.SAMPLES.key())
+                    .append("preserveNullAndEmptyArrays", true)
+            ));
+
+            // 4. We copy the whole document to a new dummy field (dummy)
+            aggregationStages.add(new Document("$addFields", new Document("dummy", "$$ROOT")));
+
+            // 5. We take out the samples field to be able to perform the group
+            aggregationStages.add(new Document("$project", new Document("dummy." + QueryParams.SAMPLES.key(), 0)));
+
+            // 6. We group by the whole document
+            aggregationStages.add(new Document("$group",
+                    new Document()
+                            .append("_id", "$dummy")
+                            .append(QueryParams.SAMPLES.key(), new Document("$push", "$" + QueryParams.SAMPLES.key()))
+            ));
+
+            // 7. We add the new grouped samples field to the dummy field
+            aggregationStages.add(new Document("$addFields", new Document("_id." + QueryParams.SAMPLES.key(),
+                    "$" + QueryParams.SAMPLES.key())));
+
+            // 8. Lastly, we replace the root document extracting everything from _id
+            aggregationStages.add(new Document("$replaceRoot", new Document("newRoot", "$_id")));
+
+            logger.debug("Cohort get: lookup match : {}",
+                    aggregationStages.stream()
+                            .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
+                            .collect(Collectors.joining("; "))
+            );
+
+            return cohortCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();
+        }
     }
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
@@ -746,6 +829,33 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     Collections.singletonList(updateQueryResult.first().getModifiedCount()));
         }
         return endQuery("Extract samples from cohorts", startTime, Collections.singletonList(0L));
+    }
+
+    private boolean excludeSamples(QueryOptions options) {
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+            for (String include : includeList) {
+                if (include.startsWith(QueryParams.SAMPLES.key())) {
+                    // Samples should be included
+                    return false;
+                }
+            }
+            // Samples are not included
+            return true;
+        }
+        if (options.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            for (String exclude : excludeList) {
+                if (exclude.equals(QueryParams.SAMPLES.key())) {
+                    // Samples should be excluded
+                    return true;
+                }
+            }
+            // Samples are included
+            return false;
+        }
+        // Samples are included by default
+        return false;
     }
 
 }
