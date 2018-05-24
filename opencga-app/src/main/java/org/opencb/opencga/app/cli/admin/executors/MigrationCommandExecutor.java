@@ -133,6 +133,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
             // Migrate annotationSets
             new AnnotationSetMigration(catalogManager).migrate();
+
+            logger.info("Catalog database was successfully migrated");
         }
     }
 

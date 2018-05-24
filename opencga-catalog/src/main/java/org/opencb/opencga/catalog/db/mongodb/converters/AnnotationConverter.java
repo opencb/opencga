@@ -80,22 +80,24 @@ public class AnnotationConverter {
                     Variable variable = variableLevel.getVariable();
 
                     // Add the new nested variables to the queue to be processed
-                    for (Variable tmpVariable : variable.getVariableSet()) {
-                        List<Integer> arrayLevel = new ArrayList<>(variableLevel.getArrayLevel());
-                        if (tmpVariable.isMultiValue()) {
-                            arrayLevel.add(variableLevel.getKeys().size());
-                        }
+                    if (variable.getVariableSet() != null) {
+                        for (Variable tmpVariable : variable.getVariableSet()) {
+                            List<Integer> arrayLevel = new ArrayList<>(variableLevel.getArrayLevel());
+                            if (tmpVariable.isMultiValue()) {
+                                arrayLevel.add(variableLevel.getKeys().size());
+                            }
 
-                        List<String> keys = new ArrayList<>(variableLevel.getKeys());
-                        keys.add(tmpVariable.getId());
+                            List<String> keys = new ArrayList<>(variableLevel.getKeys());
+                            keys.add(tmpVariable.getId());
 
-                        if (arrayLevel.size() > 2) {
-                            VariableLevel auxVariableLevel = new VariableLevel(tmpVariable, keys, variableLevel.getArrayLevel());
-                            // We don't attempt to flatten the arrays anymore
-                            document = createAnnotationDocument(auxVariableLevel, annotations);
-                            addDocumentIfNotEmpty(variableSet, annotationSetName, auxVariableLevel, document, documentList);
-                        } else {
-                            queue.add(new VariableLevel(tmpVariable, keys, arrayLevel));
+                            if (arrayLevel.size() > 2) {
+                                VariableLevel auxVariableLevel = new VariableLevel(tmpVariable, keys, variableLevel.getArrayLevel());
+                                // We don't attempt to flatten the arrays anymore
+                                document = createAnnotationDocument(auxVariableLevel, annotations);
+                                addDocumentIfNotEmpty(variableSet, annotationSetName, auxVariableLevel, document, documentList);
+                            } else {
+                                queue.add(new VariableLevel(tmpVariable, keys, arrayLevel));
+                            }
                         }
                     }
                     break;

@@ -98,7 +98,7 @@ public class AnnotationSetMigration {
             } catch (CatalogException e) {
                 update = new Document()
                         .append("$set", new Document("annotationSets", next.get("annotationSets")))
-                        .append("$unset", AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key());
+                        .append("$unset", new Document(AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key(), ""));
                 // Restore annotations
                 collection.update(query, update, new QueryOptions());
 

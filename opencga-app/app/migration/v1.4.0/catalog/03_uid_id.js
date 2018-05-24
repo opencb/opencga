@@ -53,21 +53,27 @@ migrateCollection("study", {"uid": { $exists: false } }, {id: 1, alias: 1, varia
             variableSet["uid"] = variableSet["id"];
             variableSet["id"] = variableSet["name"];
 
-            for (var j in variableSet.variables) {
-                var variable = variableSet.variables[j];
-
-                // TODO: Nested variables...
-                variable["id"] = variable["name"];
-                variable["name"] = variable["title"];
-
-                delete variable["title"];
-            }
+            changeVariableIds(variableSet.variables);
         }
         update["variableSets"] = doc.variableSets;
     }
     bulk.find({"_id": doc._id}).updateOne({"$set": update, "$unset": {"_projectId": "" }});
 });
 
+function changeVariableIds(variables) {
+    for (var i in variables) {
+        var variable = variables[i];
+
+        variable["id"] = variable["name"];
+        variable["name"] = variable["title"];
+
+        delete variable["title"];
+
+        if (typeof variable.variableSet !== "undefined" && variable.variableSet !== null && variable.variableSet.length > 0) {
+            changeVariableIds(variable.variableSet);
+        }
+    }
+}
 
 // Migrate the cohort
 migrateCollection("cohort", {"uid": { $exists: false } }, {id: 1, name: 1, _studyId: 1, samples: 1}, function(bulk, doc) {
@@ -269,6 +275,3 @@ migrateCollection("file", {"uid": { $exists: false } }, {id: 1, path: 1, _studyI
         bulk.find({"_id": doc._id}).updateOne({"$set": update, "$unset": {"_studyId": ""}});
     }
 );
-
-
-// Load new indexes
