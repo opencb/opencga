@@ -95,7 +95,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
     public Variant next() {
         try {
             Variant variant = convert(() -> converter.convert(resultSet));
-            hasNext = fetch(() -> resultSet.next());
+            hasNext = fetch(resultSet::next);
             return variant;
         } catch (SQLException e) {
             throw new RuntimeException(e);

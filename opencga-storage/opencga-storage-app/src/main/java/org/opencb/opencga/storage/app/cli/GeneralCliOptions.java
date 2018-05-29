@@ -153,19 +153,13 @@ public class GeneralCliOptions {
 
     }
 
-    public class QueryCommandOptions {
+    public class QueryCommandOptions extends DataModelOptions{
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
         public String output;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         public String dbName;
-
-        @Parameter(names = {"-i", "--include"}, description = "", required = false, arity = 1)
-        public String include;
-
-        @Parameter(names = {"-e", "--exclude"}, description = "", required = false, arity = 1)
-        public String exclude;
 
         @Parameter(names = {"--skip"}, description = "Skip some number of elements.", required = false, arity = 1)
         public int skip;
@@ -177,5 +171,16 @@ public class GeneralCliOptions {
         public boolean count;
 
     }
+
+    public static class DataModelOptions {
+
+        @Parameter(names = {"-I", "--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"-E", "--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+    }
+
 
 }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTableType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.ProgressLogger;
@@ -25,16 +26,24 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
+import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Created on 23/11/16.
@@ -43,11 +52,16 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
  */
 public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotationManager {
 
-    private final VariantHadoopDBAdaptor hadoopDBAdaptor;
+    private final VariantHadoopDBAdaptor dbAdaptor;
+    private final ObjectMap baseOptions;
+    private final MRExecutor mrExecutor;
 
-    public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
+    public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantHadoopDBAdaptor dbAdaptor,
+                                                 MRExecutor mrExecutor, ObjectMap options) {
         super(variantAnnotator, dbAdaptor);
-        hadoopDBAdaptor = (VariantHadoopDBAdaptor) this.dbAdaptor;
+        this.mrExecutor = mrExecutor;
+        this.dbAdaptor = dbAdaptor;
+        baseOptions = options;
     }
 
     @Override
@@ -57,12 +71,12 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
         if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
                 || params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
             VariantAnnotationToHBaseConverter task =
-                    new VariantAnnotationToHBaseConverter(hadoopDBAdaptor.getGenomeHelper(), progressLogger);
-            HBaseDataWriter<Put> writer = new HBaseDataWriter<>(hadoopDBAdaptor.getHBaseManager(), hadoopDBAdaptor.getVariantTable());
+                    new VariantAnnotationToHBaseConverter(dbAdaptor.getGenomeHelper(), progressLogger);
+            HBaseDataWriter<Put> writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
             return new ParallelTaskRunner<>(reader, task, writer, config);
         } else {
             return new ParallelTaskRunner<>(reader,
-                    () -> hadoopDBAdaptor.newAnnotationLoader(new QueryOptions(params))
+                    () -> dbAdaptor.newAnnotationLoader(new QueryOptions(params))
                             .setProgressLogger(progressLogger), null, config);
         }
     }
@@ -75,5 +89,59 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             iteratorQueryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
         }
         return iteratorQueryOptions;
+    }
+
+    @Override
+    public void createAnnotationSnapshot(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
+        QueryOptions options = getOptions(inputOptions);
+
+        ProjectMetadata projectMetadata = dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
+            registerNewAnnotationSnapshot(name, variantAnnotator, project);
+            return project;
+        });
+
+        ProjectMetadata.VariantAnnotationMetadata annotationMetadata = projectMetadata.getAnnotation().getSaved(name);
+
+
+        String columnFamily = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
+        String targetColumn = VariantPhoenixHelper.getAnnotationSnapshotColumn(annotationMetadata.getId());
+        Map<String, String> columnsToCopyMap = Collections.singletonMap(
+                columnFamily + ':' + VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.column(),
+                columnFamily + ':' + targetColumn);
+        String[] args = CopyHBaseColumnDriver.buildArgs(
+                dbAdaptor.getTableNameGenerator().getVariantTableName(),
+                columnsToCopyMap, options);
+
+        mrExecutor.run(CopyHBaseColumnDriver.class, args, options, "Create new annotation snapshot with name '" + name + '\'');
+    }
+
+    @Override
+    public void deleteAnnotationSnapshot(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
+        QueryOptions options = getOptions(inputOptions);
+
+        ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first()
+                .getAnnotation().getSaved(name);
+
+        String columnFamily = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
+        String targetColumn = VariantPhoenixHelper.getAnnotationSnapshotColumn(saved.getId());
+
+        String[] args = DeleteHBaseColumnDriver.buildArgs(
+                dbAdaptor.getTableNameGenerator().getVariantTableName(),
+                Collections.singletonList(columnFamily + ':' + targetColumn), options);
+
+        mrExecutor.run(DeleteHBaseColumnDriver.class, args, options, "Delete annotation snapshot '" + name + '\'');
+
+        dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
+            removeAnnotationSnapshot(name, project);
+            return project;
+        });
+    }
+
+    public QueryOptions getOptions(ObjectMap inputOptions) {
+        QueryOptions options = new QueryOptions(baseOptions);
+        if (inputOptions != null) {
+            options.putAll(inputOptions);
+        }
+        return options;
     }
 }

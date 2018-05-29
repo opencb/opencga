@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
+import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
@@ -25,11 +27,13 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
@@ -42,8 +46,8 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -59,7 +63,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -81,7 +85,12 @@ import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.ALTERNATE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.REFERENCE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser.isSupportedQueryParam;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_GAPS_OPERATION_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_MISSING_OPERATION_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_MISSING_INTERMEDIATE_FILE;
@@ -315,7 +324,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor());
+        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(getOptions()), getOptions());
     }
 
     @Override
@@ -465,7 +474,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 StudyConfigurationManager.setStatus(sc,
                         fail ? BatchFileOperation.Status.ERROR : BatchFileOperation.Status.READY,
                         jobOperationName, fileIdsList);
-                if (!fillGaps && StringUtils.isEmpty(options.getString(VariantQueryParam.REGION.key()))) {
+                if (!fillGaps && StringUtils.isEmpty(options.getString(REGION.key()))) {
                     sc.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
                 }
                 return sc;
@@ -477,10 +486,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     public HadoopVariantStoragePipeline newStoragePipeline(boolean connected, Map<? extends String, ?> extraOptions)
             throws StorageEngineException {
-        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        if (extraOptions != null) {
-            options.putAll(extraOptions);
-        }
+        ObjectMap options = getMergedOptions(extraOptions);
+//        if (connected) {
+//            // Ensure ProjectMetadata exists. Don't really care about the value.
+//            getStudyConfigurationManager().getProjectMetadata(getMergedOptions(options)).first();
+//        }
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
@@ -699,8 +709,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
-        if (isValidParam(query, VariantQueryParam.STUDY) && studyNames.size() == 1) {
-            query.remove(VariantQueryParam.STUDY.key());
+        if (isValidParam(query, STUDY) && studyNames.size() == 1) {
+            query.remove(STUDY.key());
         }
 
         convertGoToGeneQuery(query, cellBaseUtils);
@@ -778,12 +788,104 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        ObjectMap options = getOptions();
         HBaseCredentials dbCredentials = getDbCredentials();
         Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(), dbCredentials);
         return new StudyConfigurationManager(
-                new HBaseStudyConfigurationDBAdaptor(
-                        getTableNameGenerator().getMetaTableName(), configuration, getHBaseManager(configuration)));
+                new HBaseVariantStorageMetadataDBAdaptorFactory(
+                        getHBaseManager(configuration), getTableNameGenerator().getMetaTableName(), configuration));
+    }
+
+    @Override
+    protected Object getOrIteratorNotSearchIndex(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+        if (doHBaseColumnIntersect(query, options)) {
+            return getOrIteratorHBaseColumnIntersect(query, options, iterator);
+        } else {
+            return super.getOrIteratorNotSearchIndex(query, options, iterator);
+        }
+    }
+
+    private boolean doHBaseColumnIntersect(Query query, QueryOptions options) {
+        return options.getBoolean("intersect", true)
+                && !options.getBoolean(VariantHadoopDBAdaptor.NATIVE)
+                && (isValidParam(query, SAMPLE) && isSupportedQueryParam(query, SAMPLE)
+                || isValidParam(query, FILE) && isSupportedQueryParam(query, FILE)
+                || isValidParam(query, GENOTYPE) && isSupportedQueryParam(query, GENOTYPE));
+    }
+
+    /**
+     * Intersect result of column hbase scan and full phoenix query.
+     * Use {@link org.opencb.opencga.storage.core.variant.adaptors.MultiVariantDBIterator}.
+     *
+     * @param query     Query
+     * @param options   Options
+     * @param iterator  Shall the resulting object be an iterator instead of a QueryResult
+     * @return          QueryResult or Iterator with the variants that matches the query
+     * @throws StorageEngineException StorageEngineException
+     */
+    private Object getOrIteratorHBaseColumnIntersect(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+
+        logger.info("HBase column intersect");
+
+        // Build the query with only one query filter -> Single HBase column filter
+        //
+        // We want to take profit of getting all the values from one column pretty fast
+        // If we add more columns, even to reduce the number of results, we will scan more rows,
+        // which is what ultimately we want to reduce.
+        // Only add more columns if we want rows with ANY of them. e.g: files=file1;file2
+        // TODO: Make number of filters configurable?
+        Query scanQuery = new Query();
+        QueryOptions scanOptions = new QueryOptions(VariantHadoopDBAdaptor.NATIVE, true)
+                .append(QueryOptions.INCLUDE, Arrays.asList(CHROMOSOME, START, END, REFERENCE, ALTERNATE));
+
+        scanQuery.putIfNotNull(STUDY.key(), query.get(STUDY.key()));
+        if (isValidParam(query, SAMPLE)) {
+            // At any case, filter only by first sample
+            // TODO: Use sample with less variants?
+
+            String value = query.getString(SAMPLE.key());
+            scanQuery.putIfNotNull(SAMPLE.key(), splitValue(value).getValue().get(0));
+        } else if (isValidParam(query, GENOTYPE)) {
+            // Get the genotype sample with fewer genotype filters (i.e., the most strict filter)
+
+            HashMap<Object, List<String>> map = new HashMap<>();
+            parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+            Map.Entry<Object, List<String>> currentEntry = null;
+            for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
+                if (currentEntry == null || currentEntry.getValue().size() > entry.getValue().size()) {
+                    currentEntry = entry;
+                }
+            }
+
+            scanQuery.putIfNotNull(GENOTYPE.key(),
+                    currentEntry.getKey() + ":" + currentEntry.getValue().stream().collect(Collectors.joining(",")));
+        } else if (isValidParam(query, FILE)) {
+            String value = query.getString(FILE.key());
+            Pair<QueryOperation, List<String>> pair = splitValue(value);
+            if (pair.getKey() == QueryOperation.OR) {
+                // Because we want all the variants with ANY of this files, use ALL files to filter
+                scanQuery.putIfNotNull(FILE.key(), value);
+            } else {
+                // Filter only by one file
+                scanQuery.putIfNotNull(FILE.key(), pair.getValue().get(0));
+            }
+
+        }
+        if (isValidParam(query, REGION)) {
+            scanQuery.put(REGION.key(), query.get(REGION.key()));
+            query.remove(REGION.key());
+        }
+
+        Iterator<String> variants = Iterators.transform(dbAdaptor.iterator(scanQuery, scanOptions), Variant::toString);
+
+        int batchSize = options.getInt("multiIteratorBatchSize", 100);
+        if (iterator) {
+            return dbAdaptor.iterator(variants, query, options, batchSize);
+        } else {
+            VariantQueryResult<Variant> result = dbAdaptor.get(variants, query, options);
+            result.setSource(getStorageEngineId() + " + " + getStorageEngineId());
+            return result;
+        }
     }
 
     private Configuration getHadoopConfiguration() throws StorageEngineException {

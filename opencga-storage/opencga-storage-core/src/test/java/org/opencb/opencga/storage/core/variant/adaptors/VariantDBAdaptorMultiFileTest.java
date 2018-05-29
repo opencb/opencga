@@ -5,6 +5,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,10 +34,10 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
 public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTest {
 
     protected static boolean loaded = false;
-    private VariantDBAdaptor dbAdaptor;
-    private Query query;
-    private QueryOptions options = new QueryOptions();
-    private VariantQueryResult<Variant> queryResult;
+    protected VariantDBAdaptor dbAdaptor;
+    protected Query query;
+    protected QueryOptions options = new QueryOptions();
+    protected VariantQueryResult<Variant> queryResult;
 
     @Before
     public void before() throws Exception {
@@ -102,6 +103,22 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
+    public void testRelease() throws Exception {
+        for (Variant variant : dbAdaptor) {
+            Integer minFileId = variant.getStudies().stream()
+                    .flatMap(s -> s.getFiles().stream())
+                    .map(FileEntry::getFileId)
+                    .map(Integer::valueOf)
+                    .min(Integer::compareTo)
+                    .orElse(0);
+            assertTrue(minFileId > 0);
+            int expectedRelease = (minFileId - 12877/*first file loaded*/) / 2/*each release contains 2 files*/ + 1/*base-1*/;
+            int release = Integer.valueOf(variant.getAnnotation().getAdditionalAttributes().get("opencga").getAttribute().get("release"));
+            assertEquals(expectedRelease, release);
+        }
+    }
+
+    @Test
     public void testIncludeStudiesNone() throws Exception {
         query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), NONE);
         queryResult = dbAdaptor.get(query, options);
@@ -152,17 +169,29 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
-    public void testGetByFileName() throws Exception {
+    public void testGetBySampleName() throws Exception {
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), "S_1")
-                .append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+                .append(VariantQueryParam.SAMPLE.key(), "NA12877");
         queryResult = dbAdaptor.get(query, options);
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
-        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877"))));
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", containsString("1"))))));
+    }
 
+    @Test
+    public void testGetByFileName() throws Exception {
+        query = new Query()
+//                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        queryResult = dbAdaptor.get(query, options);
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "all")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877"))));
     }
 
     @Test

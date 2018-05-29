@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.StorageManager;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
@@ -29,42 +30,42 @@ public class VariantAnnotatorTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+    private ProjectMetadata projectMetadata;
 
     @Before
     public void setUp() throws Exception {
         storageConfiguration = StorageConfiguration.load(StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml"), "yml");
-        storageConfiguration.getStorageEngine().getVariant().getOptions().put(VariantAnnotationManager.SPECIES, "hsapiens");
-        storageConfiguration.getStorageEngine().getVariant().getOptions().put(VariantAnnotationManager.ASSEMBLY, "grch38");
+        projectMetadata = new ProjectMetadata("hsapiens", "grch38", 1);
     }
 
     @Test
     public void testVariantFactory() throws Exception {
         ObjectMap options = new ObjectMap(VariantAnnotationManager.ANNOTATOR, VariantAnnotatorFactory.AnnotationSource.CELLBASE_DB_ADAPTOR);
-        VariantAnnotator variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), options);
+        VariantAnnotator variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), projectMetadata, options);
         assertThat(variantAnnotator, is(instanceOf(CellBaseDirectVariantAnnotator.class)));
 
         storageConfiguration.getStorageEngine().getVariant().getOptions().put(VariantAnnotationManager.ANNOTATOR, VariantAnnotatorFactory.AnnotationSource.CELLBASE_DB_ADAPTOR.toString());
         options = new ObjectMap();
-        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), options);
+        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), projectMetadata, options);
         assertThat(variantAnnotator, is(instanceOf(CellBaseDirectVariantAnnotator.class)));
 
         options = new ObjectMap(VariantAnnotationManager.ANNOTATOR, null);
-        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), options);
+        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), projectMetadata, options);
         assertThat(variantAnnotator, is(instanceOf(CellBaseDirectVariantAnnotator.class)));
 
         storageConfiguration.getStorageEngine().getVariant().getOptions().put(VariantAnnotationManager.ANNOTATOR, VariantAnnotatorFactory.AnnotationSource.CELLBASE_REST);
         options = new ObjectMap(VariantAnnotationManager.ANNOTATOR, null);
-        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), options);
+        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), projectMetadata, options);
         assertThat(variantAnnotator, is(instanceOf(CellBaseRestVariantAnnotator.class)));
 
         storageConfiguration.getStorageEngine().getVariant().getOptions().remove(VariantAnnotationManager.ANNOTATOR);
         options = new ObjectMap();
-        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), options);
+        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), projectMetadata, options);
         assertThat(variantAnnotator, is(instanceOf(CellBaseRestVariantAnnotator.class)));
 
         options = new ObjectMap(VariantAnnotationManager.ANNOTATOR, VariantAnnotatorFactory.AnnotationSource.OTHER.toString())
                 .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, TestCellBaseRestVariantAnnotator.class.getName());
-        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), options);
+        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), projectMetadata, options);
         assertThat(variantAnnotator, is(instanceOf(TestCellBaseRestVariantAnnotator.class)));
     }
 
@@ -73,7 +74,7 @@ public class VariantAnnotatorTest {
     public void testSkipVariant() throws VariantAnnotatorException {
         ObjectMap options = new ObjectMap(VariantAnnotationManager.ANNOTATOR, VariantAnnotatorFactory.AnnotationSource.OTHER.toString())
                 .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, TestCellBaseRestVariantAnnotator.class.getName());
-        VariantAnnotator variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), options);
+        VariantAnnotator variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), projectMetadata, options);
         assertThat(variantAnnotator, is(instanceOf(TestCellBaseRestVariantAnnotator.class)));
 
         TestCellBaseRestVariantAnnotator testAnnotator = (TestCellBaseRestVariantAnnotator) variantAnnotator;
@@ -87,7 +88,7 @@ public class VariantAnnotatorTest {
     public void testErrorVariant() throws VariantAnnotatorException {
         ObjectMap options = new ObjectMap(VariantAnnotationManager.ANNOTATOR, VariantAnnotatorFactory.AnnotationSource.OTHER.toString())
                 .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, TestCellBaseRestVariantAnnotator.class.getName());
-        VariantAnnotator variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), options);
+        VariantAnnotator variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), projectMetadata, options);
         assertThat(variantAnnotator, is(instanceOf(TestCellBaseRestVariantAnnotator.class)));
 
         TestCellBaseRestVariantAnnotator testAnnotator = (TestCellBaseRestVariantAnnotator) variantAnnotator;
@@ -103,8 +104,8 @@ public class VariantAnnotatorTest {
         private final Set<String> skipvariants;
         private final Set<String> removevariants;
 
-        public TestCellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options) throws VariantAnnotatorException {
-            super(storageConfiguration, options);
+        public TestCellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options) throws VariantAnnotatorException {
+            super(storageConfiguration, projectMetadata, options);
             skipvariants = new HashSet<>();
             removevariants = new HashSet<>();
             System.out.println("Create " + getClass());

@@ -211,8 +211,8 @@ public class VariantWriterFactory {
         switch (outputFormat) {
             case VCF_GZ:
             case VCF:
-                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(dbAdaptor.getStudyConfigurationManager(),
-                        dbAdaptor.getVariantFileMetadataDBAdaptor());
+                VariantMetadataFactory metadataFactory = new VariantMetadataFactory(dbAdaptor.getStudyConfigurationManager()
+                );
                 VariantMetadata variantMetadata;
                 try {
                     variantMetadata = metadataFactory.makeVariantMetadata(query, queryOptions);
@@ -223,7 +223,7 @@ public class VariantWriterFactory {
                     List<String> annotations = queryOptions.getAsStringList("annotations");
                     exporter = VcfDataWriter.newWriterForAvro(variantMetadata, annotations, outputStream);
                 } else {
-                    throw new IllegalArgumentException("No study found named " + query.getAsStringList(INCLUDE_STUDY.key()).get(0));
+                    throw new IllegalArgumentException("No study found named " + query.getAsStringList(INCLUDE_STUDY.key()));
                 }
                 break;
 

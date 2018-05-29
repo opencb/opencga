@@ -21,22 +21,19 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,6 +89,11 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize) {
         return null;
+    }
+
+    @Override
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
+        throw new UnsupportedOperationException("Unimplemented");
     }
 
     @Override
@@ -205,43 +207,8 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
-        return new VariantFileMetadataDBAdaptor() {
-            @Override
-            public QueryResult<Long> count(Query query) {
-                return new QueryResult<>();
-            }
-
-            @Override
-            public void updateVariantFileMetadata(String studyId, VariantFileMetadata variantSource) throws StorageEngineException {
-
-            }
-
-            @Override
-            public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) throws IOException {
-                return Collections.emptyIterator();
-            }
-
-            @Override
-            public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
-                return new QueryResult();
-            }
-
-            @Override
-            public void delete(int study, int file) {
-
-            }
-
-            @Override
-            public void close() throws IOException {
-
-            }
-        };
-    }
-
-    @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
-        return new StudyConfigurationManager(new DummyStudyConfigurationAdaptor());
+        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
     }
 
     @Override

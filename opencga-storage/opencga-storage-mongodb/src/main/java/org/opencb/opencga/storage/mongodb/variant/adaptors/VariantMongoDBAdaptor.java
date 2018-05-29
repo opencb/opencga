@@ -45,12 +45,12 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
@@ -88,7 +88,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final String collectionName;
     private final MongoDBCollection variantsCollection;
-    private final VariantFileMetadataMongoDBAdaptor variantFileMetadataMongoDBAdaptor;
     private final StorageConfiguration storageConfiguration;
     private final MongoCredentials credentials;
     private final VariantMongoDBQueryParser queryParser;
@@ -104,23 +103,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     // Number of opened dbAdaptors
     public static final AtomicInteger NUMBER_INSTANCES = new AtomicInteger(0);
 
-    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName,
                                  StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration)
             throws UnknownHostException {
-        this(new MongoDataStoreManager(credentials.getDataStoreServerAddresses()), credentials, variantsCollectionName, filesCollectionName,
+        this(new MongoDataStoreManager(credentials.getDataStoreServerAddresses()), credentials, variantsCollectionName,
                 studyConfigurationManager, storageConfiguration);
         this.closeConnection = true;
     }
 
     public VariantMongoDBAdaptor(MongoDataStoreManager mongoManager, MongoCredentials credentials, String variantsCollectionName,
-                                 String filesCollectionName, StudyConfigurationManager studyConfigurationManager,
+                                 StudyConfigurationManager studyConfigurationManager,
                                  StorageConfiguration storageConfiguration) throws UnknownHostException {
         // MongoDB configuration
         this.closeConnection = false;
         this.credentials = credentials;
         this.mongoManager = mongoManager;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        variantFileMetadataMongoDBAdaptor = new VariantFileMetadataMongoDBAdaptor(db, filesCollectionName);
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
@@ -153,6 +151,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     public MongoDBCollection getStudiesCollection() {
         return db.getCollection(configuration.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue()));
+    }
+
+    public MongoDBCollection getAnnotationCollection(String name) {
+        return db.getCollection(getAnnotationCollectionName(name));
+    }
+
+    public String getAnnotationCollectionName(String name) {
+        ProjectMetadata.VariantAnnotationMetadata saved = getStudyConfigurationManager().getProjectMetadata()
+                .first().getAnnotation().getSaved(name);
+
+        return configuration.getString(COLLECTION_ANNOTATION.key(), COLLECTION_ANNOTATION.defaultValue()) + "_" + saved.getId();
+    }
+
+    public void dropAnnotationCollection(String name) {
+        String annotationCollectionName = getAnnotationCollectionName(name);
+        db.dropCollection(annotationCollectionName);
     }
 
     protected MongoDataStore getDB() {
@@ -462,6 +476,35 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         watch.stop();
         return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null,
                 MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+    }
+
+    @Override
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
+        query = query == null ? new Query() : query;
+        validateAnnotationQuery(query);
+        options = validateAnnotationQueryOptions(options);
+        Document mongoQuery = queryParser.parseQuery(query);
+        Document projection = queryParser.createProjection(query, options);
+
+        MongoDBCollection annotationCollection;
+        if (name.equals(VariantAnnotationManager.LATEST)) {
+            annotationCollection = getVariantsCollection();
+        } else {
+            annotationCollection = getAnnotationCollection(name);
+        }
+        SelectVariantElements selectVariantElements = VariantQueryUtils.parseSelectElements(
+                query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), studyConfigurationManager);
+
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
+        QueryResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter, options);
+
+        List<VariantAnnotation> annotations = result.getResult()
+                .stream()
+                .map(Variant::getAnnotation)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        return new QueryResult<>("getAnnotation", result.getDbTime(), annotations.size(), result.getNumTotalResults(),
+                result.getWarningMsg(), result.getErrorMsg(), annotations);
     }
 
     @Override
@@ -1151,11 +1194,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
         return studyConfigurationManager;
-    }
-
-    @Override
-    public VariantFileMetadataMongoDBAdaptor getVariantFileMetadataDBAdaptor() {
-        return variantFileMetadataMongoDBAdaptor;
     }
 
     @Override

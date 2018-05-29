@@ -452,16 +452,20 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         List<String> unmodifiableEmptyData = Collections.unmodifiableList(emptyData);
         List<String> unmodifiableEmptyDataReferenceGenotype = Collections.unmodifiableList(emptyDataReferenceGenotype);
 
+        Set<Integer> filesInThisVariant = studyEntry.getFiles().stream()
+                .map(FileEntry::getFileId)
+                .map(Integer::parseInt)
+                .collect(Collectors.toSet());
 
+        List<Boolean> sampleWithVariant = getSampleWithVariant(studyConfiguration, filesInThisVariant);
         List<Boolean> missingUpdatedList = getMissingUpdatedSamples(studyConfiguration, fillMissingColumnValue);
-
 
         ListIterator<List<String>> sampleIterator = studyEntry.getSamplesData().listIterator();
         while (sampleIterator.hasNext()) {
             List<String> sampleData = sampleIterator.next();
             if (sampleData == null) {
                 int sampleIdx = sampleIterator.previousIndex();
-                if (missingUpdatedList.get(sampleIdx)) {
+                if (missingUpdatedList.get(sampleIdx) || sampleWithVariant.get(sampleIdx)) {
                     sampleIterator.set(unmodifiableEmptyDataReferenceGenotype);
                 } else {
                     sampleIterator.set(unmodifiableEmptyData);
@@ -480,7 +484,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     /**
      * Given a study and the value of the fillMissingColumnValue {@link VariantPhoenixHelper::getFillMissingColumn}, gets a list of
-     * booleans, one per sample, ordered by the position in the StudyEntry.
+     * booleans, one per sample, ordered by the position in the StudyEntry indicating if that sample has known information for that
+     * position, of if it is unknown.
      *
      * @param studyConfiguration The study configuration
      * @param fillMissingColumnValue    Value of the column {@link VariantPhoenixHelper::getFillMissingColumn} containing the last
@@ -502,18 +507,28 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (studyConfiguration.getIndexedFiles().contains(fillMissingColumnValue)) {
                 LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
                 boolean missingUpdated = true;
+                int count = 0;
                 for (Integer indexedFile : studyConfiguration.getIndexedFiles()) {
                     LinkedHashSet<Integer> samples = studyConfiguration.getSamplesInFiles().get(indexedFile);
+
+                    // Do not skip the not returned files, as they may have returned samples
+                    // if (selectVariantElements != null && selectVariantElements.getFiles().containsKey(indexedFile))
                     for (Integer sampleId : samples) {
                         if (sampleIds.contains(sampleId)) {
-                            missingUpdatedList.set(returnedSamplesPosition.get(studyConfiguration.getSampleIds().inverse().get(sampleId)),
-                                    missingUpdated);
+                            String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                            if (null == missingUpdatedList.set(returnedSamplesPosition.get(sampleName), missingUpdated)) {
+                                count++;
+                            } // else, the sample was found in two different files. Data may be split in one file per chromosome
                         }
                     }
 
                     if (indexedFile == fillMissingColumnValue) {
                         missingUpdated = false;
                     }
+                }
+                if (count != missingUpdatedList.size()) {
+                    logger.error("Missing updatedList values!");
+                    missingUpdatedList.replaceAll(b -> b == null ? false : b);
                 }
             } else {
                 if (fillMissingColumnValue > 0) {
@@ -526,6 +541,41 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             missingUpdatedSamplesMap.put(pair, missingUpdatedList);
         }
         return missingUpdatedList;
+    }
+
+    /**
+     * Given a study and a set of files in this variant, gets a list of booleans, one per sample, ordered by the position in the StudyEntry
+     * indicating if that sample has known information for that position, of if it is unknown.
+     *
+     * It may happen, in multi sample VCFs, that the information from one sample is not present because it was a reference genome.
+     * If the file is present in that variant, indicated that the sample data was left empty on purpose, so it should be returned
+     * as a reference genotype.
+     *
+     * Do not cache this values as it depends on the "filesInThisVariant", and there may be a huge number of combinations.
+     *
+     * @param studyConfiguration    The study configuration
+     * @param filesInThisVariant    Files existing in this variant
+     * @return List of boolean values, one per sample.
+     */
+    protected List<Boolean> getSampleWithVariant(StudyConfiguration studyConfiguration, Set<Integer> filesInThisVariant) {
+        LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
+        List<Boolean> samplesWithVariant = new ArrayList<>(returnedSamplesPosition.size());
+        for (int i = 0; i < returnedSamplesPosition.size(); i++) {
+            samplesWithVariant.add(false);
+        }
+        if (filesInThisVariant.isEmpty()) {
+            return samplesWithVariant;
+        } else {
+            for (Integer file : filesInThisVariant) {
+                for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(file)) {
+                    Integer sampleIdx = returnedSamplesPosition.get(studyConfiguration.getSampleIds().inverse().get(sampleId));
+                    if (sampleIdx != null) {
+                        samplesWithVariant.set(sampleIdx, true);
+                    }
+                }
+            }
+        }
+        return samplesWithVariant;
     }
 
     private String getDefaultGenotype(StudyConfiguration studyConfiguration) {

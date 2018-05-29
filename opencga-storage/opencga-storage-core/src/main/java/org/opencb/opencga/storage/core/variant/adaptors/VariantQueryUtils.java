@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
@@ -42,7 +44,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantQueryUtils {
+public final class VariantQueryUtils {
 
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
     private static final Pattern GENOTYPE_FILTER_PATTERN = Pattern.compile("(?<sample>[^,;]+):(?<gts>([^:;,]+,?)+)(?<op>[;,.])");
@@ -81,7 +83,7 @@ public class VariantQueryUtils {
         }
     }
 
-    public VariantQueryUtils() {
+    private VariantQueryUtils() {
     }
 
     /**
@@ -99,7 +101,7 @@ public class VariantQueryUtils {
      * @return If is valid or not
      */
     public static boolean isValidParam(Query query, QueryParam param) {
-        Object value = query.getOrDefault(param.key(), null);
+        Object value = query == null ? null : query.getOrDefault(param.key(), null);
         return (value != null)
                 && !(value instanceof String && ((String) value).isEmpty()
                 || value instanceof Collection && ((Collection) value).isEmpty());
@@ -118,7 +120,7 @@ public class VariantQueryUtils {
     }
 
     public static Set<VariantQueryParam> validParams(Query query) {
-        Set<VariantQueryParam> params = new HashSet<>(query.size());
+        Set<VariantQueryParam> params = new HashSet<>(query == null ? 0 : query.size());
 
         for (VariantQueryParam queryParam : values()) {
             if (isValidParam(query, queryParam)) {
@@ -126,6 +128,78 @@ public class VariantQueryUtils {
             }
         }
         return params;
+    }
+
+    public static void validateAnnotationQuery(Query query) {
+        if (query == null) {
+            return;
+        }
+        List<VariantQueryParam> acceptedParams = Arrays.asList(ID, REGION);
+        List<VariantQueryParam> ignoredParams = Arrays.asList(INCLUDE_STUDY, INCLUDE_SAMPLE, INCLUDE_FILE);
+        Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
+        queryParams.removeAll(acceptedParams);
+        queryParams.removeAll(ignoredParams);
+        if (!queryParams.isEmpty()) {
+//            System.out.println("query.toJson() = " + query.toJson());
+            throw VariantQueryException.unsupportedVariantQueryFilters(queryParams,
+                    "Accepted params when querying annotation are : " + acceptedParams.stream()
+                            .map(QueryParam::key)
+                            .collect(Collectors.toList()));
+        }
+        List<String> invalidValues = new LinkedList<>();
+        for (String s : query.getAsStringList(ID.key())) {
+            if (!VariantQueryUtils.isVariantId(s)) {
+                invalidValues.add(s);
+                break;
+            }
+        }
+        if (!invalidValues.isEmpty()) {
+            throw VariantQueryException.malformedParam(ID, invalidValues.toString(),
+                    "Only variants supported: chrom:start:ref:alt");
+        }
+    }
+
+    public static QueryOptions validateAnnotationQueryOptions(QueryOptions queryOptions) {
+        if (queryOptions == null) {
+            return new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION);
+        } else {
+            queryOptions = new QueryOptions(queryOptions);
+        }
+
+        boolean anyPresent = transformVariantAnnotationField(QueryOptions.INCLUDE, queryOptions);
+        anyPresent |= transformVariantAnnotationField(QueryOptions.EXCLUDE, queryOptions);
+
+        if (!anyPresent) {
+            queryOptions.add(QueryOptions.INCLUDE, VariantField.ANNOTATION);
+        }
+
+        return queryOptions;
+    }
+
+    private static boolean transformVariantAnnotationField(String key, QueryOptions queryOptions) {
+        StringBuilder sb = new StringBuilder();
+        final String annotation = VariantField.ANNOTATION.fieldName();
+        for (String field : queryOptions.getAsStringList(key)) {
+            String newField;
+            if (!field.startsWith(annotation + '.')) {
+                newField = annotation + '.' + field;
+            } else {
+                newField = field;
+            }
+
+            if (VariantField.get(newField) == null) {
+                throw VariantQueryException.unknownVariantAnnotationField(key, field);
+            }
+
+            sb.append(newField);
+            sb.append(',');
+        }
+        if (sb.length() > 0) {
+            queryOptions.put(key, sb.toString());
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -957,6 +1031,17 @@ public class VariantQueryUtils {
      * Splits the string with the specified operation.
      *
      * @param value     Value to split
+     * @return List of values, without the delimiter
+     */
+    public static Pair<QueryOperation, List<String>> splitValue(String value) {
+        QueryOperation operation = checkOperator(value);
+        return Pair.of(operation, splitValue(value, operation));
+    }
+
+    /**
+     * Splits the string with the specified operation.
+     *
+     * @param value     Value to split
      * @param operation Operation that defines the split delimiter
      * @return List of values, without the delimiter
      */
@@ -1071,4 +1156,27 @@ public class VariantQueryUtils {
             query.put(ANNOT_GO_GENES.key(), genesByGo);
         }
     }
+
+    public static List<Region> mergeRegions(List<Region> regions) {
+        if (regions != null && regions.size() > 1) {
+            regions = new ArrayList<>(regions);
+            regions.sort(Comparator.comparing(Region::getChromosome).thenComparing(Region::getStart));
+
+            Iterator<Region> iterator = regions.iterator();
+            Region prevRegion = iterator.next();
+            while (iterator.hasNext()) {
+                Region region = iterator.next();
+                if (prevRegion.overlaps(region.getChromosome(), region.getStart(), region.getEnd())) {
+                    // Merge regions
+                    prevRegion.setStart(Math.min(prevRegion.getStart(), region.getStart()));
+                    prevRegion.setEnd(Math.max(prevRegion.getEnd(), region.getEnd()));
+                    iterator.remove();
+                } else {
+                    prevRegion = region;
+                }
+            }
+        }
+        return regions;
+    }
+
 }

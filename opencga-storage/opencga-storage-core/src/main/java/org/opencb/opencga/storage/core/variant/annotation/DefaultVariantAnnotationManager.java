@@ -65,6 +65,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 
+import static org.opencb.biodata.models.core.Region.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 
 /**
@@ -73,9 +74,10 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
  *
  * Created by jacobo on 9/01/15.
  *
+ * TODO: Make this class abstract
  * @author Javier Lopez &lt;fjlopez@ebi.ac.uk&gt;
  */
-public class DefaultVariantAnnotationManager implements VariantAnnotationManager {
+public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
     public static final String FILE_NAME = "fileName";
     public static final String OUT_DIR = "outDir";
@@ -89,9 +91,8 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
-        if (dbAdaptor == null || variantAnnotator == null) {
-            throw new NullPointerException();
-        }
+        Objects.requireNonNull(variantAnnotator);
+        Objects.requireNonNull(dbAdaptor);
         this.dbAdaptor = dbAdaptor;
         this.variantAnnotator = variantAnnotator;
     }
@@ -106,9 +107,18 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
             doCreate = true;
             doLoad = true;
         }
+        boolean overwrite = params.getBoolean(OVERWRITE_ANNOTATIONS, false);
+        if (!overwrite) {
+            query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
+        }
 
         URI annotationFile;
         if (doCreate) {
+            dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+                checkCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                return projectMetadata;
+            });
+
             long start = System.currentTimeMillis();
             logger.info("Starting annotation creation");
             logger.info("Query : {} ", query.toJson());
@@ -130,6 +140,13 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
             logger.info("Starting annotation load");
             loadAnnotation(annotationFile, params);
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+
+            if (doCreate) {
+                dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+                    updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                    return projectMetadata;
+                });
+            }
         }
     }
 
@@ -228,11 +245,15 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     public void loadAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
         Path path = Paths.get(uri);
         String fileName = path.getFileName().toString().toLowerCase();
-        if (VariantReaderUtils.isAvro(fileName) || VariantReaderUtils.isJson(fileName)) {
-            loadVariantAnnotation(uri, params);
-        } else {
+        if (isCustomAnnotation(fileName)) {
             loadCustomAnnotation(uri, params);
+        } else {
+            loadVariantAnnotation(uri, params);
         }
+    }
+
+    protected boolean isCustomAnnotation(String fileName) {
+        return !VariantReaderUtils.isAvro(fileName) && !VariantReaderUtils.isJson(fileName);
     }
 
     /**
@@ -393,9 +414,15 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         }
     }
 
-    private String normalizeChromosome(String chromosome) {
-        return chromosome.replace("chrom", "").replace("chr", "");
+    //TODO: Make this method abstract
+    @Override
+    public void createAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+        throw new UnsupportedOperationException();
     }
 
-
+    //TODO: Make this method abstract
+    @Override
+    public void deleteAnnotationSnapshot(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+        throw new UnsupportedOperationException();
+    }
 }
