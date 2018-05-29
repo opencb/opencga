@@ -34,6 +34,7 @@ public class FillMissingHBaseWriterDriver extends AbstractAnalysisTableDriver {
     private static final Logger LOG = LoggerFactory.getLogger(FillMissingHBaseWriterDriver.class);
     private String inputPath;
     private FileSystem fs;
+    private final Logger logger = LoggerFactory.getLogger(AbstractAnalysisTableDriver.class);
 
     public FillMissingHBaseWriterDriver() {
     }
@@ -68,7 +69,12 @@ public class FillMissingHBaseWriterDriver extends AbstractAnalysisTableDriver {
         if (factor <= 0) {
             throw new IllegalArgumentException(FillGapsDriver.FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR + " must be positive!");
         }
-        getConf().setInt(JOB_RUNNING_MAP_LIMIT, Math.round(serversSize * factor));
+        int mapsLimit = Math.round(serversSize * factor);
+        if (mapsLimit == 0) {
+            mapsLimit = 40;
+        }
+        getConf().setInt(JOB_RUNNING_MAP_LIMIT, mapsLimit);
+        logger.info("Set job running map limit to " + mapsLimit + ". ServersSize: " + serversSize + ", mappersFactor: " + factor);
 
         // input
         FileInputFormat.setInputPaths(job, inputPath);
