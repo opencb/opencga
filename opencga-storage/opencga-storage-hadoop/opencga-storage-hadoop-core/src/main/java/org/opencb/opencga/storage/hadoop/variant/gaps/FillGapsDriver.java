@@ -11,16 +11,11 @@ import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileAsBinaryOutputFormat;
-import org.apache.hadoop.util.ToolRunner;
-import org.apache.tools.ant.types.Commandline;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -65,50 +60,6 @@ public class FillGapsDriver extends AbstractAnalysisTableDriver {
     @Override
     protected Class<? extends TableMapper> getMapperClass() {
         return FillGapsFromArchiveMapper.class;
-    }
-
-    @Override
-    protected void preExecution(String variantTable) throws IOException, StorageEngineException {
-        if (!FillGapsFromArchiveMapper.isFillGaps(getConf())) {
-            if (getConf().getBoolean("skipPrepareFillMissing", false)) {
-                logger.info("=================================================");
-                logger.info("SKIP prepare archive table for " + FILL_MISSING_OPERATION_NAME);
-                logger.info("=================================================");
-            } else {
-                try {
-                    logger.info("Prepare archive table for " + FILL_MISSING_OPERATION_NAME);
-                    String args = PrepareFillMissingDriver.buildCommandLineArgs(
-                            getArchiveTable(), variantTable, getStudyId(), getFiles(), new ObjectMap());
-                    int exitValue = new PrepareFillMissingDriver().privateMain(Commandline.translateCommandline(args), getConf());
-                    if (exitValue != 0) {
-                        throw new StorageEngineException("Error executing PrepareFillMissing");
-                    }
-                } catch (Exception e) {
-                    throw new StorageEngineException("Error executing PrepareFillMissing", e);
-                }
-            }
-
-        }
-    }
-
-    @Override
-    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
-        super.postExecution(succeed);
-        if (succeed && !FillGapsFromArchiveMapper.isFillGaps(getConf())) {
-            try {
-                logger.info("Write results in variants table for " + FILL_MISSING_OPERATION_NAME);
-                String args = FillMissingHBaseWriterDriver.buildCommandLineArgs(
-                        getArchiveTable(), getAnalysisTable(), getStudyId(), Collections.emptyList(), new ObjectMap());
-//                new FillMissingHBaseWriterDriver().privateMain(Commandline.translateCommandline(args), getConf());
-                int exitValue = ToolRunner.run(getConf(), new FillMissingHBaseWriterDriver(), Commandline.translateCommandline(args));
-                if (exitValue != 0) {
-                    throw new StorageEngineException("Error executing FillMissingHBaseWriterDriver");
-                }
-            } catch (Exception e) {
-                throw new StorageEngineException("Error executing FillMissingHBaseWriterDriver", e);
-            }
-
-        }
     }
 
     @Override

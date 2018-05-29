@@ -48,6 +48,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -62,6 +63,8 @@ import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
+import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
+import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
@@ -91,9 +94,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.REFE
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser.isSupportedQueryParam;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_GAPS_OPERATION_NAME;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_MISSING_OPERATION_NAME;
-import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.FILL_MISSING_INTERMEDIATE_FILE;
+import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -434,32 +435,38 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
 
-            String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
-            String jar = getJarWithDependencies(options);
-
             options.put(FillGapsFromArchiveMapper.SAMPLES, sampleIds);
             options.put(FillGapsFromArchiveMapper.FILL_GAPS, fillGaps);
             options.put(FillGapsFromArchiveMapper.OVERWRITE, overwrite);
 
-            Class execClass = FillGapsDriver.class;
-            String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
             String args = FillGapsDriver.buildCommandLineArgs(
                     getArchiveTableName(studyId),
                     getVariantTableName(),
                     studyId, fileIds, options);
 
-            long startTime = System.currentTimeMillis();
-            logger.info("------------------------------------------------------");
-            logger.info(jobOperationName + " of samples {} into variants table '{}'",
-                    fillGaps ? sampleIds.toString() : "\"ALL\"", getVariantTableName());
-            logger.debug(executable + ' ' + args);
-            logger.info("------------------------------------------------------");
-            int exitValue = getMRExecutor(options).run(executable, args);
-            logger.info("------------------------------------------------------");
-            logger.info("Exit value: {}", exitValue);
-            logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-            if (exitValue != 0) {
-                throw new StorageEngineException("Error " + jobOperationName + " for samples " + sampleIds);
+            // TODO: Save progress in StudyConfiguration
+
+            // Prepare fill missing
+            if (!fillGaps) {
+                if (options.getBoolean("skipPrepareFillMissing", false)) {
+                    logger.info("=================================================");
+                    logger.info("SKIP prepare archive table for " + FILL_MISSING_OPERATION_NAME);
+                    logger.info("=================================================");
+                } else {
+                    String taskDescription = "Prepare archive table for " + FILL_MISSING_OPERATION_NAME;
+                    getMRExecutor(options).run(PrepareFillMissingDriver.class, args, options, taskDescription);
+                }
+            }
+
+            // Execute main operation
+            String taskDescription = jobOperationName + " of samples " + (fillGaps ? sampleIds.toString() : "\"ALL\"")
+                    + " into variants table '" + getVariantTableName() + '\'';
+            getMRExecutor(options).run(FillGapsDriver.class, args, options, taskDescription);
+
+            // Write results
+            if (!fillGaps) {
+                String description = "Write results in variants table for " + FILL_MISSING_OPERATION_NAME;
+                getMRExecutor(options).run(FillMissingHBaseWriterDriver.class, args, options, description);
             }
 
         } catch (RuntimeException e) {
