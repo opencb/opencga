@@ -716,7 +716,6 @@ public class UserManager extends AbstractManager {
     public QueryResult getConfig(String userId, String name, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
 
         String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
@@ -735,12 +734,14 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Internal error: Configuration object is null.");
         }
 
-        if (configs.get(name) == null) {
+        if (StringUtils.isNotEmpty(name) && configs.get(name) == null) {
             throw new CatalogException("Error: Cannot fetch configuration with name " + name + ". Configuration name not found.");
         }
 
+        Map configMap = StringUtils.isEmpty(name) ? configs : (Map) configs.get(name);
+
         return new QueryResult("Get configuration", userQueryResult.getDbTime(), 1, 1, userQueryResult.getWarningMsg(),
-                userQueryResult.getErrorMsg(), Arrays.asList(configs.get(name)));
+                userQueryResult.getErrorMsg(), Arrays.asList(configMap));
     }
 
 

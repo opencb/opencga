@@ -104,14 +104,11 @@ public class UserWSServer extends OpenCGAWSServer {
                     "finished, will no longer be valid.\nIf password is provided it will attempt to login the user. If no password is " +
                     "provided and a valid token is given, a new token will be provided extending the expiration time.")
     public Response loginPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                              @ApiParam(value = "JSON containing the parameter 'password'") Map<String, String> map) {
+                              @ApiParam(value = "JSON containing the parameter 'password'") LoginModel login) {
         try {
-            ObjectUtils.defaultIfNull(map, new HashMap<>());
-
             String token;
-            if (map.containsKey("password")) {
-                String password = map.get("password");
-                token = catalogManager.getUserManager().login(userId, password);
+            if (StringUtils.isNotEmpty(login.password)) {
+                token = catalogManager.getUserManager().login(userId, login.password);
             } else if (StringUtils.isNotEmpty(sessionId)) {
                 token = catalogManager.getUserManager().refreshToken(userId, sessionId);
             } else {
@@ -123,10 +120,10 @@ public class UserWSServer extends OpenCGAWSServer {
                     .append("id", token)
                     .append("token", token);
 
-            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", 0, 1, 1,
+            QueryResult<ObjectMap> response = new QueryResult<>("You successfully logged in", 0, 1, 1,
                     "'sessionId' and 'id' deprecated", "", Arrays.asList(sessionMap));
 
-            return createOkResponse(login);
+            return createOkResponse(response);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -138,16 +135,12 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Change the password of a user", notes = "It doesn't work if the user is authenticated against LDAP.")
     public Response changePasswordPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                        @ApiParam(value = "JSON containing the params 'password' (old password) and 'npassword' (new "
-                                               + "password)", required = true) ObjectMap params) {
+                                               + "password)", required = true) ChangePasswordModel params) {
         try {
-            ObjectUtils.defaultIfNull(params, new ObjectMap());
-
-            if (!params.containsKey("password") || !params.containsKey("npassword")) {
+            if (StringUtils.isEmpty(params.password) && StringUtils.isEmpty(params.npassword)) {
                 throw new Exception("The json must contain the keys password and npassword.");
             }
-            String password = params.getString("password");
-            String nPassword = params.getString("npassword");
-            catalogManager.getUserManager().changePassword(userId, password, nPassword);
+            catalogManager.getUserManager().changePassword(userId, params.password, params.npassword);
             QueryResult result = new QueryResult("changePassword", 0, 0, 0, "", "", Collections.emptyList());
             return createOkResponse(result);
         } catch (Exception e) {
@@ -242,7 +235,7 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
+    @DELETE
     @Path("/{user}/configs/{name}/delete")
     @ApiOperation(value = "Delete a user configuration", response = Map.class)
     public Response deleteConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
@@ -256,28 +249,13 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{user}/configs/{name}/info")
-    @ApiOperation(value = "Fetch a user configuration [DEPRECATED]", response = Map.class,
-            notes = "This webservice is deprecated. Users should use /{user}/configs webservice instead.")
-    public Response getConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                     @ApiParam(value = "Unique name (typically the name of the application)", required = true)
-                                     @PathParam("name") String name) {
-        try {
-            areSingleIds(userId, name);
-            return createOkResponse(catalogManager.getUserManager().getConfig(userId, name, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
     @Path("/{user}/configs")
     @ApiOperation(value = "Fetch a user configuration", response = Map.class)
     public Response getConfigurations(
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-            @ApiParam(value = "Unique name (typically the name of the application).", required = true) @QueryParam("name") String name) {
+            @ApiParam(value = "Unique name (typically the name of the application).") @QueryParam("name") String name) {
         try {
-            areSingleIds(userId, name);
+            isSingleId(userId);
             return createOkResponse(catalogManager.getUserManager().getConfig(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -324,38 +302,13 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
+    @DELETE
     @Path("/{user}/configs/filters/{name}/delete")
     @ApiOperation(value = "Delete a custom filter", response = User.Filter.class)
     public Response deleteFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                  @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
         try {
             return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, name, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{user}/configs/filters/{name}/info")
-    @ApiOperation(value = "Fetch a filter [DEPRECATED]", response = User.Filter.class,
-            notes = "This webservice is deprecated. Users should use /{user}/configs/filters webservice instead.")
-    public Response getFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                              @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
-        try {
-            return createOkResponse(catalogManager.getUserManager().getFilter(userId, name, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{user}/configs/filters/list")
-    @ApiOperation(value = "Fetch all the filters of a user [DEPRECATED]", response = User.Filter.class,
-            notes = "This webservice is deprecated. Users should use /{user}/configs/filters webservice instead.")
-    public Response getFilters(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
-        try {
-            return createOkResponse(catalogManager.getUserManager().getAllFilters(userId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -377,6 +330,18 @@ public class UserWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    public static class LoginModel {
+        @JsonProperty(required = true)
+        public String password;
+    }
+
+    public static class ChangePasswordModel {
+        @JsonProperty(required = true)
+        public String password;
+        @JsonProperty(required = true)
+        public String npassword;
     }
 
     protected static class UserUpdatePOST {
