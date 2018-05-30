@@ -58,7 +58,6 @@ public class SampleIndexDriver extends AbstractAnalysisTableDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleIndexDriver.class);
     private int study;
     private int[] samples;
-    private GenomeHelper genomeHelper;
     private String outputTable;
     private boolean allSamples;
     private boolean secondaryOnly;
@@ -89,7 +88,6 @@ public class SampleIndexDriver extends AbstractAnalysisTableDriver {
             }
         }
 
-        genomeHelper = new GenomeHelper(getConf());
     }
 
     @Override
@@ -151,7 +149,7 @@ public class SampleIndexDriver extends AbstractAnalysisTableDriver {
                 scans.add(scan);
             }
             byte[] column = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
-            scan.addColumn(genomeHelper.getColumnFamily(), column);
+            scan.addColumn(getHelper().getColumnFamily(), column);
             scan.setFilter(filter);
             samplesCount++;
         }

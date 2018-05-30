@@ -102,6 +102,12 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         return !variant.getType().equals(VariantType.NO_VARIATION);
     }
 
+    /**
+     * Genotypes HOM_REF and MISSING are not loaded in the SampleIndexTable.
+     *
+     * @param gt genotype
+     * @return is valid genotype
+     */
     public static boolean validGenotype(String gt) {
         return gt != null
                 && !gt.isEmpty()

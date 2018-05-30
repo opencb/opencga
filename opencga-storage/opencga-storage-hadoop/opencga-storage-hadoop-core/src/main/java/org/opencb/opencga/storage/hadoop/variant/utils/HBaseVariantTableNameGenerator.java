@@ -149,6 +149,11 @@ public class HBaseVariantTableNameGenerator {
         return buildTableName(namespace, dbName, ARCHIVE_SUFIX + studyId);
     }
 
+    public static int getStudyIdFromArchiveTable(String archiveTable) {
+        int idx = archiveTable.lastIndexOf(ARCHIVE_SUFIX.charAt(ARCHIVE_SUFIX.length() - 1));
+        return Integer.valueOf(archiveTable.substring(idx + 1));
+    }
+
     public static String getSampleIndexTableName(String dbName, int studyId, String namespace) {
         return buildTableName(namespace, dbName, SAMPLE_SUFIX + studyId);
     }

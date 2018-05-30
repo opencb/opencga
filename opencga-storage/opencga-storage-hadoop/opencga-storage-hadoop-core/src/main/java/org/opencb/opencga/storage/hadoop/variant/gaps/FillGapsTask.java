@@ -16,6 +16,8 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +40,7 @@ public class FillGapsTask {
     private final VariantMerger variantMerger;
     // fill-gaps-when-missing-gt
     private final boolean skipReferenceVariants;
+    private final GenomeHelper helper;
 
     private Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
     private boolean quiet = false;
@@ -47,7 +50,8 @@ public class FillGapsTask {
 
         this.skipReferenceVariants = skipReferenceVariants;
 
-        studyConverter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), studyConfiguration,
+        this.helper = helper;
+        studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), studyConfiguration,
                 true,
                 Collections.singleton("?/?"), // Do not skip any genotype
                 null); // Do not update release
@@ -59,17 +63,19 @@ public class FillGapsTask {
         return this;
     }
 
-    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
+    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, List<Put> sampleIndexPuts,
+                                             Integer fileId,
                                              VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
-        return fillGaps(variant, missingSamples, put, fileId,
+        return fillGaps(variant, missingSamples, put, sampleIndexPuts, fileId,
                 nonRefVcfSlice, nonRefVcfSlice.getRecordsList().listIterator(),
                 refVcfSlice, refVcfSlice.getRecordsList().listIterator());
     }
 
-    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
+    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, List<Put> sampleIndexPuts,
+                                             Integer fileId,
                                              VcfSliceProtos.VcfSlice nonRefVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> nonRefIterator,
                                              VcfSliceProtos.VcfSlice refVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> refIterator) {
-        VariantOverlappingStatus overlappingStatus;
+        final VariantOverlappingStatus overlappingStatus;
 
         // Three scenarios:
         //  Overlap with NO_VARIATION,
@@ -125,8 +131,8 @@ public class FillGapsTask {
             vcfRecord = overlappingRecords.get(0).getRight();
             vcfSlice = overlappingRecords.get(0).getLeft();
         }
+        Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
         if (VcfRecordProtoToVariantConverter.getVariantType(vcfRecord.getType()).equals(VariantType.NO_VARIATION)) {
-            Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
             FileEntry fileEntry = archiveVariant.getStudies().get(0).getFiles().get(0);
             fileEntry.getAttributes().remove(VCFConstants.END_KEY);
             if (StringUtils.isEmpty(fileEntry.getCall())) {
@@ -135,7 +141,6 @@ public class FillGapsTask {
             overlappingStatus = REFERENCE;
             studyConverter.convert(archiveVariant, put, missingSamples, overlappingStatus);
         } else {
-            Variant archiveVariant = convertToVariant(vcfSlice, vcfRecord, fileId);
             Variant mergedVariant = new Variant(
                     variant.getChromosome(),
                     variant.getStart(),
@@ -152,9 +157,34 @@ public class FillGapsTask {
 
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
             overlappingStatus = VARIANT;
+
+            if (studyEntry.getFormatPositions().containsKey("GT")) {
+                int samplePosition = 0;
+                Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+                for (String sampleName : studyEntry.getOrderedSamplesName()) {
+                    Integer sampleId = studyConfiguration.getSampleIds().get(sampleName);
+                    if (missingSamples.contains(sampleId)) {
+                        String gt = studyEntry.getSamplesData().get(samplePosition).get(gtIdx);
+                        // Only genotypes without the main alternate (0/2, 2/3, ...) should be written as pending.
+                        if (SampleIndexDBLoader.validGenotype(gt) && !hasMainAlternate(gt)) {
+                            Put sampleIndexPut = new Put(
+                                    SampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
+                                    put.getTimeStamp());
+                            sampleIndexPut.addColumn(helper.getColumnFamily(), SampleIndexConverter.toPendingColumn(variant, gt), null);
+                            sampleIndexPuts.add(sampleIndexPut);
+                        }
+                    }
+                    samplePosition++;
+                }
+            }
+
             studyConverter.convert(mergedVariant, put, missingSamples, overlappingStatus);
         }
         return overlappingStatus;
+    }
+
+    protected boolean hasMainAlternate(String gt) {
+        return StringUtils.contains(gt, '1');
     }
 
     public boolean getOverlappingVariants(Variant variant, int fileId,

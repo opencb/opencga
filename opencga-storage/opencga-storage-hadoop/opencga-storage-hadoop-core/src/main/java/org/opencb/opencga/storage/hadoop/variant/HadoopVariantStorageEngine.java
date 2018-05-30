@@ -71,6 +71,7 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWrit
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -470,9 +471,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             // Write results
             if (!fillGaps) {
-                String description = "Write results in variants table for " + FILL_MISSING_OPERATION_NAME;
-                getMRExecutor().run(FillMissingHBaseWriterDriver.class, args, options, description);
+                taskDescription = "Write results in variants table for " + FILL_MISSING_OPERATION_NAME;
+                getMRExecutor().run(FillMissingHBaseWriterDriver.class, args, options, taskDescription);
             }
+
+            // Consolidate sample index table
+            taskDescription = "Consolidate sample index table";
+            getMRExecutor().run(SampleIndexConsolidationDrive.class, args, options, taskDescription);
 
         } catch (RuntimeException e) {
             exception = e;
@@ -966,7 +971,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         String study = defaultStudyConfiguration.getStudyName();
 
         SampleIndexDBAdaptor.SampleIndexVariantDBIterator variants =
-                sampleIndexDBAdaptor.get(regions, study, sample, gts);
+                sampleIndexDBAdaptor.iterator(regions, study, sample, gts);
 
         int batchSize = options.getInt("multiIteratorBatchSize", 200);
         if (iterator) {

@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
@@ -21,6 +22,17 @@ import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
  */
 public class SampleIndexConverter implements Converter<Result, Collection<Variant>> {
 
+    public static final Comparator<Variant> VARIANT_COMPARATOR = Comparator.comparing(Variant::getStart)
+            .thenComparing(Variant::getEnd)
+            .thenComparing(Variant::getReference)
+            .thenComparing(Variant::getAlternate)
+            .thenComparing(Variant::toString);
+
+    private static final char META_PREFIX = '_';
+    private static final String PENDING_VARIANT_PREFIX = META_PREFIX + "V_";
+    private static final byte[] PENDING_VARIANT_PREFIX_BYTES = Bytes.toBytes(PENDING_VARIANT_PREFIX);
+    private static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
+
     private final Region region;
 
     public SampleIndexConverter() {
@@ -41,11 +53,11 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         return expectedSize;
     }
 
-    protected static byte[] toRowKey(int sample) {
+    public static byte[] toRowKey(int sample) {
         return toRowKey(sample, null, 0);
     }
 
-    protected static byte[] toRowKey(int sample, String chromosome, int position) {
+    public static byte[] toRowKey(int sample, String chromosome, int position) {
         int expectedSize = getExpectedSize(chromosome);
         byte[] rk = new byte[expectedSize];
 
@@ -82,9 +94,29 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         }
     }
 
+    public static byte[] toPendingColumn(Variant variant, String gt) {
+        return Bytes.toBytes(PENDING_VARIANT_PREFIX + variant.toString() + '_' + gt);
+    }
+
+    public static Pair<String, String> parsePendingColumn(byte[] column) {
+        if (Bytes.startsWith(column, PENDING_VARIANT_PREFIX_BYTES)) {
+            int lastIndexOf = 0;
+            for (int i = column.length - 1; i >= 0; i--) {
+                if (column[i] == '_') {
+                    lastIndexOf = i;
+                    break;
+                }
+            }
+            return Pair.of(Bytes.toString(column, PENDING_VARIANT_PREFIX.length(), lastIndexOf - PENDING_VARIANT_PREFIX.length()),
+                    Bytes.toString(column, lastIndexOf + 1));
+        } else {
+            return null;
+        }
+    }
+
     @Override
     public Collection<Variant> convert(Result result) {
-        Set<Variant> variants = new TreeSet<>(Comparator.comparingInt(Variant::getStart).thenComparing(Variant::toString));
+        Set<Variant> variants = new TreeSet<>(VARIANT_COMPARATOR);
 
         for (Cell cell : result.rawCells()) {
             for (String v : Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()).split(",")) {
@@ -102,13 +134,28 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         Map<String, List<Variant>> map = new HashMap<>();
         for (Cell cell : result.rawCells()) {
             String gt = Bytes.toString(CellUtil.cloneQualifier(cell));
-            String[] split = Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()).split(",");
-            ArrayList<Variant> variants = new ArrayList<>(split.length);
+            List<Variant> variants = getVariants(cell);
             map.put(gt, variants);
+
+        }
+        return map;
+    }
+
+    public static List<Variant> getVariants(Cell cell) {
+        List<Variant> variants;
+        byte[] column = CellUtil.cloneQualifier(cell);
+        if (column[0] != META_PREFIX) {
+            String value = Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+
+            String[] split = value.split(",");
+            variants = new ArrayList<>(split.length);
+
             for (String v : split) {
                 variants.add(new Variant(v));
             }
+        } else {
+            variants = Collections.emptyList();
         }
-        return map;
+        return variants;
     }
 }

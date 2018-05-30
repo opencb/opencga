@@ -51,7 +51,7 @@ public class SampleIndexDBAdaptor {
         family = helper.getColumnFamily();
     }
 
-    public SampleIndexVariantDBIterator get(List<Region> regions, String study, String sample, List<String> gts) {
+    public SampleIndexVariantDBIterator iterator(List<Region> regions, String study, String sample, List<String> gts) {
 
         Integer studyId;
         if (StringUtils.isEmpty(study)) {
@@ -74,6 +74,25 @@ public class SampleIndexDBAdaptor {
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
+    }
+
+    public Iterator<Map<String, List<Variant>>> rawIterator(int study, int sample) throws IOException {
+        String tableName = tableNameGenerator.getSampleIndexTableName(study);
+
+        return hBaseManager.act(tableName, table -> {
+
+            Scan scan = new Scan();
+            scan.setRowPrefixFilter(SampleIndexConverter.toRowKey(sample));
+            SampleIndexConverter converter = new SampleIndexConverter();
+            try {
+                ResultScanner scanner = table.getScanner(scan);
+                Iterator<Result> resultIterator = scanner.iterator();
+                Iterator<Map<String, List<Variant>>> iterator = Iterators.transform(resultIterator, converter::convertToMap);
+                return iterator;
+            } catch (IOException e) {
+                throw VariantQueryException.internalException(e);
+            }
+        });
     }
 
     public class SampleIndexVariantDBIterator extends VariantDBIterator {

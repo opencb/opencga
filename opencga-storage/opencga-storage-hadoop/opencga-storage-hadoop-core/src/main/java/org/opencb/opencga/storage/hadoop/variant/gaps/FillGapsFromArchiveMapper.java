@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.AnalysisTableMapReduceHelper;
@@ -23,6 +24,9 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
     public static final String FILL_GAPS = "fillGaps";
     public static final String OVERWRITE = "overwrite";
     private AbstractFillFromArchiveTask task;
+
+    private ImmutableBytesWritable variantsTable;
+    private ImmutableBytesWritable sampleIndexTable;
 
     public static void setSamples(Job job, Collection<Integer> sampleIds) {
         job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
@@ -66,6 +70,10 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         task.setTimestamp(timestamp);
         task.setQuiet(true);
         task.pre();
+
+        variantsTable = new ImmutableBytesWritable(getHelper().getAnalysisTable());
+        sampleIndexTable = new ImmutableBytesWritable(Bytes.toBytes(getHelper().getHBaseVariantTableNameGenerator()
+                .getSampleIndexTableName(getHelper().getStudyId())));
     }
 
     @Override
@@ -81,10 +89,13 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
     @Override
     protected void map(VariantMapReduceContext ctx) throws IOException, InterruptedException {
 
-        List<Put> puts = task.apply(Collections.singletonList(ctx.getValue()));
+        AbstractFillFromArchiveTask.FillResult fillResult = task.apply(ctx.getValue());
 
-        for (Put put : puts) {
-            ctx.getContext().write(new ImmutableBytesWritable(put.getRow()), put);
+        for (Put put : fillResult.getVariantPuts()) {
+            ctx.getContext().write(variantsTable, put);
+        }
+        for (Put put : fillResult.getSamplesIndexPuts()) {
+            ctx.getContext().write(sampleIndexTable, put);
         }
         updateStats(ctx.getContext());
     }
