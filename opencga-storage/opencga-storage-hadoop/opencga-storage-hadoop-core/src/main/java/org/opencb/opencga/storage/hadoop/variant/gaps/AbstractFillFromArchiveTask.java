@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
@@ -52,7 +53,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
     protected final Map<Integer, byte[]> fileToNonRefColumnMap;
     protected final Logger logger = LoggerFactory.getLogger(AbstractFillFromArchiveTask.class);
     protected final ArchiveRowKeyFactory rowKeyFactory;
-
+    protected long timestamp = HConstants.LATEST_TIMESTAMP;
 
     private final Map<String, Long> stats = new HashMap<>();
 
@@ -86,6 +87,14 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
 
     public void setQuiet(boolean quiet) {
         fillGapsTask.setQuiet(quiet);
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 
     @Override
@@ -169,7 +178,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
     }
 
     protected Put createPut(Variant v) {
-        return new Put(VariantPhoenixKeyFactory.generateVariantRowKey(v));
+        return new Put(VariantPhoenixKeyFactory.generateVariantRowKey(v), timestamp);
     }
 
     protected abstract Context buildContext(Result result) throws IOException;
