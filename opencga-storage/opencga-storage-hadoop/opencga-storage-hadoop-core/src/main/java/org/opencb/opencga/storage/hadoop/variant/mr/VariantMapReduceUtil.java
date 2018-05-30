@@ -6,6 +6,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.phoenix.mapreduce.PhoenixOutputFormat;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created on 27/10/17.
@@ -48,6 +50,22 @@ public class VariantMapReduceUtil {
         TableMapReduceUtil.initTableMapperJob(
                 inTable,      // input table
                 scan,             // Scan instance to control CF and attribute selection
+                mapperClass,   // mapper class
+                null,             // mapper output key
+                null,             // mapper output value
+                job,
+                addDependencyJar);
+    }
+
+    public static void initTableMapperJob(Job job, String inTable, List<Scan> scans, Class<? extends TableMapper> mapperClass)
+            throws IOException {
+        boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
+        LOGGER.info("Use table {} as input", inTable);
+        for (Scan scan : scans) {
+            scan.setAttribute(Scan.SCAN_ATTRIBUTES_TABLE_NAME, Bytes.toBytes(inTable));
+        }
+        TableMapReduceUtil.initTableMapperJob(
+                scans,             // Scan instance to control CF and attribute selection
                 mapperClass,   // mapper class
                 null,             // mapper output key
                 null,             // mapper output value

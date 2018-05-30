@@ -31,20 +31,30 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         this.region = region;
     }
 
-    protected static byte[] toRowKey(int sample) {
-        return toRowKey(sample, null, 0);
-    }
-
-    protected static byte[] toRowKey(int sample, String chromosome, int position) {
+    public static int getExpectedSize(String chromosome) {
         int expectedSize;
         if (chromosome == null) {
             expectedSize = SIZEOF_INT;
         } else {
             expectedSize = SIZEOF_INT + chromosome.length() + 1 + SIZEOF_INT;
         }
+        return expectedSize;
+    }
 
+    protected static byte[] toRowKey(int sample) {
+        return toRowKey(sample, null, 0);
+    }
+
+    protected static byte[] toRowKey(int sample, String chromosome, int position) {
+        int expectedSize = getExpectedSize(chromosome);
         byte[] rk = new byte[expectedSize];
 
+        toRowKey(sample, chromosome, position, rk);
+
+        return rk;
+    }
+
+    private static int toRowKey(int sample, String chromosome, int position, byte[] rk) {
         int offset = 0;
         offset += PInteger.INSTANCE.toBytes(sample, rk, offset);
 
@@ -55,8 +65,7 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
             offset++;
             offset += PInteger.INSTANCE.toBytes(position / SampleIndexDBLoader.BATCH_SIZE, rk, offset);
         }
-
-        return rk;
+        return offset;
     }
 
     public static String rowKeyToString(byte[] row) {
