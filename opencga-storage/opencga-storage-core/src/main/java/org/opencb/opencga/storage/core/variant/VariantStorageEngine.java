@@ -136,6 +136,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         LOAD_THREADS("load.threads", 6),
         LOAD_SPLIT_DATA("load.split-data", false),
 
+        POST_LOAD_CHECK_SKIP("postLoad.check.skip", false),
+
         RELEASE("release", 1),
 
         MERGE_MODE("merge.mode", MergeMode.ADVANCED),

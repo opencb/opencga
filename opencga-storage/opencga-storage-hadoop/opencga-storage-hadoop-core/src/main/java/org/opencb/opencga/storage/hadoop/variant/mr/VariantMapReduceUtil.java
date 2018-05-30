@@ -43,6 +43,14 @@ public class VariantMapReduceUtil {
         setNoneReduce(job);
     }
 
+    public static void initTableMapperJob(Job job, String inTable, String outTable, List<Scan> scans,
+                                          Class<? extends TableMapper> mapperClass)
+            throws IOException {
+        initTableMapperJob(job, inTable, scans, mapperClass);
+        setOutputHBaseTable(job, outTable);
+        setNoneReduce(job);
+    }
+
     public static void initTableMapperJob(Job job, String inTable, Scan scan, Class<? extends TableMapper> mapperClass)
             throws IOException {
         boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
@@ -59,18 +67,24 @@ public class VariantMapReduceUtil {
 
     public static void initTableMapperJob(Job job, String inTable, List<Scan> scans, Class<? extends TableMapper> mapperClass)
             throws IOException {
-        boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
-        LOGGER.info("Use table {} as input", inTable);
-        for (Scan scan : scans) {
-            scan.setAttribute(Scan.SCAN_ATTRIBUTES_TABLE_NAME, Bytes.toBytes(inTable));
+        if (scans.isEmpty()) {
+            throw new IllegalArgumentException("There must be at least one scan! Error creating TableMapperJob '" + job.getJobName() + "'");
+        } else if (scans.size() == 1) {
+            initTableMapperJob(job, inTable, scans.get(0), mapperClass);
+        } else {
+            boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
+            LOGGER.info("Use table {} as input", inTable);
+            for (Scan scan : scans) {
+                scan.setAttribute(Scan.SCAN_ATTRIBUTES_TABLE_NAME, Bytes.toBytes(inTable));
+            }
+            TableMapReduceUtil.initTableMapperJob(
+                    scans,            // Scan instance to control CF and attribute selection
+                    mapperClass,      // mapper class
+                    null,             // mapper output key
+                    null,             // mapper output value
+                    job,
+                    addDependencyJar);
         }
-        TableMapReduceUtil.initTableMapperJob(
-                scans,             // Scan instance to control CF and attribute selection
-                mapperClass,   // mapper class
-                null,             // mapper output key
-                null,             // mapper output value
-                job,
-                addDependencyJar);
     }
 
     public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
