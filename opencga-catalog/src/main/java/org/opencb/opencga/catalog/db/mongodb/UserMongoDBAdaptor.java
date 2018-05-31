@@ -164,7 +164,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult setConfig(String userId, String name, ObjectMap config) throws CatalogDBException {
+    public QueryResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException {
         long startTime = startQuery();
 
         // Set the config

@@ -648,7 +648,7 @@ public class UserManager extends AbstractManager {
      * @return the set configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult setConfig(String userId, String name, ObjectMap config, String sessionId) throws CatalogException {
+    public QueryResult setConfig(String userId, String name, Map<String, Object> config, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -738,6 +738,8 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Error: Cannot fetch configuration with name " + name + ". Configuration name not found.");
         }
 
+        // Remove filters form configs array
+        configs.remove("filters");
         Map configMap = StringUtils.isEmpty(name) ? configs : (Map) configs.get(name);
 
         return new QueryResult("Get configuration", userQueryResult.getDbTime(), 1, 1, userQueryResult.getWarningMsg(),

@@ -85,7 +85,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
     // Config operations
-    QueryResult setConfig(String userId, String name, ObjectMap config) throws CatalogDBException;
+    QueryResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException;
 
     QueryResult<Long> deleteConfig(String userId, String name) throws CatalogDBException;
 

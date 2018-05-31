@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.internal.inject.Custom;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -217,35 +218,33 @@ public class UserWSServer extends OpenCGAWSServer {
 //    }
 
     @POST
-    @Path("/{user}/configs/create")
-    @ApiOperation(value = "Store a user configuration", notes = "Some applications might want to store some configuration parameters "
-            + "containing the preferences of the user. The aim of this is to provide a place to store this things for every user.",
-            response = Map.class)
-    public Response setConfigurationPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                         @ApiParam(value = "Unique name (typically the name of the application)", required = true) @QueryParam("name")
-                                                 String name,
-                                         @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default "
-                                                 + "preferences", required = true) ObjectMap params) {
+    @Path("/{user}/configs/update")
+    @ApiOperation(value = "Add or remove a custom user configuration", response = Map.class,
+            notes = "Some applications might want to store some configuration parameters containing the preferences of the user. "
+                    + "The aim of this is to provide a place to store this things for every user.")
+    public Response updateConfiguration(
+            @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
+                @QueryParam("action") BasicUpdateAction action,
+            @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default preferences. " +
+                    "When removing, only the id will be necessary.", required = true) CustomConfig params) {
         try {
-            ObjectUtils.defaultIfNull(params, new ObjectMap());
-
-            return createOkResponse(catalogManager.getUserManager().setConfig(userId, name, params, sessionId));
+            if (action == null) {
+                throw new CatalogException("Missing mandatory action parameter");
+            }
+            if (action == BasicUpdateAction.ADD) {
+                return createOkResponse(catalogManager.getUserManager().setConfig(userId, params.id, params.configuration, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, params.id, sessionId));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    @DELETE
-    @Path("/{user}/configs/{name}/delete")
-    @ApiOperation(value = "Delete a user configuration", response = Map.class)
-    public Response deleteConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                        @ApiParam(value = "Unique name (typically the name of the application)", required = true)
-                                        @PathParam("name") String name) {
-        try {
-            return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, name, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+    public static class CustomConfig {
+        public String id;
+        public Map<String, Object> configuration;
     }
 
     @GET
@@ -263,17 +262,26 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{user}/configs/filters/create")
-    @ApiOperation(value = "Store a custom filter", notes = "Users normally try to query the data using the same filters most of "
-            + "the times. The aim of this WS is to allow storing as many different filters as the user might want in order not to type "
-            + "the same filters.", response = User.Filter.class)
-    public Response addFilterPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                  @ApiParam(name = "params", value = "Filter parameters", required = true) User.Filter params) {
+    @Path("/{user}/configs/filters/update")
+    @ApiOperation(value = "Add or remove a custom user filter", response = User.Filter.class,
+            notes = "Users normally try to query the data using the same filters most of the times. The aim of this WS is to allow "
+                    + "storing as many different filters as the user might want in order not to type the same filters.")
+    public Response updateFilters(
+            @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
+                @QueryParam("action") BasicUpdateAction action,
+            @ApiParam(name = "params", value = "Filter parameters. When removing, only the filter name will be necessary", required = true)
+                    User.Filter params) {
         try {
-            ObjectUtils.defaultIfNull(params, new User.Filter());
-
-            return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
-                    params.getBioformat(), params.getQuery(), params.getOptions(), sessionId));
+            if (action == null) {
+                throw new CatalogException("Missing mandatory action parameter");
+            }
+            if (action == BasicUpdateAction.ADD) {
+                return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
+                        params.getBioformat(), params.getQuery(), params.getOptions(), sessionId));
+            } else {
+                return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, params.getName(), sessionId));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -289,26 +297,13 @@ public class UserWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{user}/configs/filters/{name}/update")
     @ApiOperation(value = "Update a custom filter", response = User.Filter.class)
-    public Response updateFilterPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                     @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
-                                     @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
+    public Response updateFilterPOST(
+            @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+            @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
+            @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
         try {
-            ObjectUtils.defaultIfNull(params, new UpdateFilter());
-
             return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name,
                     new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @DELETE
-    @Path("/{user}/configs/filters/{name}/delete")
-    @ApiOperation(value = "Delete a custom filter", response = User.Filter.class)
-    public Response deleteFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                 @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
-        try {
-            return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
