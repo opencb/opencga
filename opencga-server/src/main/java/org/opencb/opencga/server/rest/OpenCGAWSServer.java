@@ -88,7 +88,7 @@ public class OpenCGAWSServer {
 
     @DefaultValue("")
     @QueryParam("sid")
-    @ApiParam("Session id")
+    @ApiParam(value = "Session id", hidden = true)
     protected String dummySessionId;
 
     @HeaderParam("Authorization")
