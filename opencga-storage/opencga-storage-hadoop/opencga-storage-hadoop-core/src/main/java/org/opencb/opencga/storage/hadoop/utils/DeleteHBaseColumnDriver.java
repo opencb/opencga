@@ -80,7 +80,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
 
     @Override
     protected void parseAndValidateArgs(String[] args) {
-        columns = Arrays.asList(args[1].split(","));
+        columns = getColumnsToDelete(getConf());
 
         if (columns.isEmpty()) {
             if (getConf().getBoolean(DELETE_ALL_COLUMNS, false)) {
@@ -106,6 +106,17 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                 regions.add(new Pair<>(Bytes.toBytesBinary(split[i]), Bytes.toBytesBinary(split[i + 1])));
             }
         }
+    }
+
+    private static List<String> getColumnsToDelete(Configuration conf) {
+        List<String> columns;
+        String[] columnStrings = conf.getStrings(COLUMNS_TO_DELETE);
+        if (columnStrings == null) {
+            columns = Collections.emptyList();
+        } else {
+            columns = Arrays.asList(columnStrings);
+        }
+        return columns;
     }
 
     @Override
@@ -176,24 +187,38 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
 
         private Set<String> columnsToCount;
         private Set<String> columnsToDelete;
+        private boolean deleteAllColumns;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            columnsToCount = new HashSet<>(Arrays.asList(context.getConfiguration().getStrings(COLUMNS_TO_COUNT)));
-            columnsToDelete = new HashSet<>(Arrays.asList(context.getConfiguration().getStrings(COLUMNS_TO_DELETE)));
+            deleteAllColumns = context.getConfiguration().getBoolean(DELETE_ALL_COLUMNS, false);
+            columnsToCount = new HashSet<>(context.getConfiguration().get(COLUMNS_TO_COUNT) == null
+                    ? Collections.emptyList()
+                    : Arrays.asList(context.getConfiguration().getStrings(COLUMNS_TO_COUNT)));
+            columnsToDelete = new HashSet<>(getColumnsToDelete(context.getConfiguration()));
         }
 
         @Override
         protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
-            for (Cell cell : result.rawCells()) {
-                byte[] family = CellUtil.cloneFamily(cell);
-                byte[] qualifier = CellUtil.cloneQualifier(cell);
-                String c = Bytes.toString(family) + ':' + Bytes.toString(qualifier);
-                if (columnsToDelete.contains(c)) {
-                    context.write(key, new Delete(result.getRow()).addColumn(family, qualifier));
-                    if (columnsToCount.contains(c)) {
-                        context.getCounter("DeleteColumn", c).increment(1);
+            Delete delete = new Delete(result.getRow());
+            if (deleteAllColumns) {
+                context.getCounter("DeleteColumn", "delete").increment(1);
+                context.write(key, delete);
+            } else {
+                for (Cell cell : result.rawCells()) {
+                    byte[] family = CellUtil.cloneFamily(cell);
+                    byte[] qualifier = CellUtil.cloneQualifier(cell);
+                    String c = Bytes.toString(family) + ':' + Bytes.toString(qualifier);
+                    if (columnsToDelete.contains(c)) {
+                        delete.addColumn(family, qualifier);
+                        if (columnsToCount.contains(c)) {
+                            context.getCounter("DeleteColumn", c).increment(1);
+                        }
                     }
+                }
+                if (!delete.isEmpty()) {
+                    context.getCounter("DeleteColumn", "delete").increment(1);
+                    context.write(key, delete);
                 }
             }
         }

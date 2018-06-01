@@ -612,7 +612,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 }
 
                 String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, variantsColumns, options);
-                return getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromVariantsArgs, options);
+                getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromVariantsArgs, options, "Delete from variants table");
+                return 0;
             });
             // TODO: Remove whole table if removeWholeStudy
             Future<Integer> deleteFromArchive = service.submit(() -> {
@@ -623,7 +624,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     archiveColumns.add(family + ':' + ArchiveTableHelper.getNonRefColumnName(fileId));
                 }
                 String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, options);
-                return getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromArchiveArgs, options);
+                getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromArchiveArgs, options, "Delete from archive table");
+                return 0;
             });
             // TODO: Remove whole table if removeWholeStudy
             Future<Integer> deleteFromSampleIndex = service.submit(() -> {
@@ -639,10 +641,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                                 SampleIndexConverter.toRowKey(sampleId + 1)));
                     }
                     String[] deleteFromSampleIndexArgs = DeleteHBaseColumnDriver.buildArgs(sampleIndexTable, null, true, regions, options);
-                    return getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromSampleIndexArgs, options);
-                } else {
-                    return 0;
+                    getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromSampleIndexArgs, options,
+                            "Delete from SamplesIndex table");
                 }
+                return 0;
             });
             service.shutdown();
             service.awaitTermination(12, TimeUnit.HOURS);
