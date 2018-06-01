@@ -224,6 +224,23 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<VariantAnnotation> hasPopMaf(String study, String population, Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantAnnotation, Float>(subMatcher, "with Population minnor allele Frequency (" + study + ", " + population + ")", "PopulationMAF") {
+            @Override
+            protected Float featureValueOf(VariantAnnotation actual) {
+                if (actual.getPopulationFrequencies() != null) {
+                    for (PopulationFrequency populationFrequency : actual.getPopulationFrequencies()) {
+                        if (populationFrequency.getStudy().equalsIgnoreCase(study)
+                                && populationFrequency.getPopulation().equalsIgnoreCase(population)) {
+                            return Math.min(populationFrequency.getAltAlleleFreq(), populationFrequency.getRefAlleleFreq());
+                        }
+                    }
+                }
+                return 0F;
+            }
+        };
+    }
+
     public static Matcher<VariantAnnotation> hasPopRefFreq(String study, String population, Matcher<? super Float> subMatcher) {
         return new FeatureMatcher<VariantAnnotation, Float>(subMatcher, "with Population reference allele Frequency (" + study + ", " + population + ")", "PopulationRefFreq") {
             @Override
