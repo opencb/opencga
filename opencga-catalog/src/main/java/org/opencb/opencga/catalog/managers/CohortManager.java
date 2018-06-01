@@ -633,8 +633,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         switch (aclParams.getAction()) {
             case SET:
+                // Todo: Remove this in 1.4
+                List<String> allCohortPermissions = EnumSet.allOf(CohortAclEntry.CohortPermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        Entity.COHORT);
+                        allCohortPermissions, Entity.COHORT);
             case ADD:
                 return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
                         Entity.COHORT);
