@@ -77,6 +77,10 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("=~", "LIKE");
         SQL_OPERATOR.put("~", "LIKE");
         SQL_OPERATOR.put("!", "!=");
+        SQL_OPERATOR.put(">>", ">");
+        SQL_OPERATOR.put(">>=", ">=");
+        SQL_OPERATOR.put("<<", "<");
+        SQL_OPERATOR.put("<<=", "<=");
     }
 
     // Internal usage only
@@ -1069,7 +1073,8 @@ public class VariantSqlQueryParser {
                 Column column = columnParser.apply(keyOpValue, rawValue);
 
 
-                String op = parseOperator(keyOpValue[1]);
+//                String op = parseOperator(keyOpValue[1]);
+                String op = keyOpValue[1];
                 if (operatorParser != null) {
                     op = operatorParser.apply(op);
                 }
@@ -1139,6 +1144,9 @@ public class VariantSqlQueryParser {
             sqlType = sqlType.replace(" ARRAY", "");
             arrayPosition = "[" + idx + "]";
         }
+        boolean orNull = op.startsWith(">>") || op.startsWith("<<");
+        System.out.println("orNull = " + orNull);
+        System.out.println("op = " + op);
         switch (sqlType) {
             case "VARCHAR":
                 parsedValue = checkStringValue((String) value);
@@ -1202,6 +1210,9 @@ public class VariantSqlQueryParser {
             default:
                 throw new VariantQueryException("Unsupported column type " + column.getPDataType().getSqlTypeName()
                         + " for column " + column);
+        }
+        if (orNull) {
+            sb.append(" OR \"").append(column).append("\" IS NULL");
         }
         if (StringUtils.isNotEmpty(extra)) {
             sb.append(' ').append(extra).append(" )");
@@ -1297,12 +1308,20 @@ public class VariantSqlQueryParser {
         switch (op) {
             case ">":
                 return "<=";
+            case ">>":
+                return "<<=";
             case ">=":
                 return "<";
+            case ">>=":
+                return "<<";
             case "<":
                 return ">=";
+            case "<<":
+                return ">>=";
             case "<=":
                 return ">";
+            case "<<=":
+                return ">>";
             case "":
             case "=":
             case "==":

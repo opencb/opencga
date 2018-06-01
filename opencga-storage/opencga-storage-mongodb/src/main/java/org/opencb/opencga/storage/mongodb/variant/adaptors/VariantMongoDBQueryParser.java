@@ -1170,7 +1170,7 @@ public class VariantMongoDBQueryParser {
         return builder;
     }
 
-    private QueryBuilder addStringCompQueryFilter(String key, String value, QueryBuilder builder) {
+    private QueryBuilder addStringCompQueryFilter(VariantQueryParam param, String key, String value, QueryBuilder builder) {
         String[] split = splitOperator(value);
         String op = split[1];
         String obj = split[2];
@@ -1187,9 +1187,10 @@ public class VariantMongoDBQueryParser {
             case "":
             case "=":
             case "==":
-            default:
                 builder.and(key).is(obj);
                 break;
+            default:
+                throw VariantQueryException.malformedParam(param, value, "Unsupported operator " + op);
         }
         return builder;
     }
@@ -1262,7 +1263,7 @@ public class VariantMongoDBQueryParser {
             } else if (allowDescriptionFilter) {
                 // Query by description
                 key += '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD;
-                addStringCompQueryFilter(key, scoreValue, scoreBuilder);
+                addStringCompQueryFilter(scoreParam, key, scoreValue, scoreBuilder);
             } else {
                 throw VariantQueryException.malformedParam(scoreParam, value);
             }
@@ -1325,10 +1326,9 @@ public class VariantMongoDBQueryParser {
             String population = populationFrequencySplit[0];
             String operator = populationFrequencySplit[1];
             String numValue = populationFrequencySplit[2];
-            if (operator.contains(">>")) {
-                operator = operator.replace(">>", ">");
-            } else if (operator.contains("<<")) {
-                operator = operator.replace("<<", "<");
+            if (operator.startsWith(">>") || operator.startsWith("<<")) {
+                // Remove first char
+                operator = operator.substring(1);
             }
 
             logger.debug("populationFrequency = " + Arrays.toString(populationFrequencySplit));
