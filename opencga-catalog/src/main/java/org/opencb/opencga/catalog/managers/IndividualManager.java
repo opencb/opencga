@@ -773,8 +773,14 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         List<QueryResult<IndividualAclEntry>> queryResults;
         switch (aclParams.getAction()) {
             case SET:
+                // Todo: Remove this in 1.4
+                List<String> allIndividualPermissions = EnumSet.allOf(IndividualAclEntry.IndividualPermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
                 queryResults = authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
-                                .map(Individual::getUid).collect(Collectors.toList()), members, permissions, Entity.INDIVIDUAL);
+                                .map(Individual::getUid).collect(Collectors.toList()), members, permissions,
+                allIndividualPermissions, Entity.INDIVIDUAL);
                 if (aclParams.isPropagate()) {
                     List<String> sampleIds = getSamplesFromIndividuals(resource);
                     if (sampleIds.size() > 0) {

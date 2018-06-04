@@ -5,7 +5,6 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.io.IOException;
 
@@ -17,6 +16,7 @@ import java.io.IOException;
 class HBaseVariantMetadataUtils {
 
     private static final byte[] STUDIES_RK = Bytes.toBytes("studies");
+    private static final byte[] PROJECT_RK = Bytes.toBytes("project");
     private static final String STUDY_PREFIX = "S_";
     private static final String FILE_METADATA_SEPARATOR = "_F_";
 
@@ -26,7 +26,7 @@ class HBaseVariantMetadataUtils {
     private static final byte[] STATUS_COLUMN = Bytes.toBytes("status");
 
     public enum Type {
-        STUDY_CONFIGURATION, STUDIES, VARIANT_FILE_METADATA, FILES;
+        PROJECT, STUDY_CONFIGURATION, STUDIES, VARIANT_FILE_METADATA, FILES;
 
         private final byte[] bytes;
 
@@ -51,6 +51,10 @@ class HBaseVariantMetadataUtils {
         public byte[] bytes() {
             return bytes;
         }
+    }
+
+    static byte[] getProjectRowKey() {
+        return PROJECT_RK;
     }
 
     static byte[] getStudiesSummaryRowKey() {
@@ -99,8 +103,8 @@ class HBaseVariantMetadataUtils {
         return STATUS_COLUMN;
     }
 
-    static boolean createMetaTableIfNeeded(HBaseManager hBaseManager, String tableName, GenomeHelper genomeHelper) throws IOException {
-        return hBaseManager.createTableIfNeeded(tableName, genomeHelper.getColumnFamily(), Compression.Algorithm.NONE);
+    static boolean createMetaTableIfNeeded(HBaseManager hBaseManager, String tableName, byte[] columnFamily) throws IOException {
+        return hBaseManager.createTableIfNeeded(tableName, columnFamily, Compression.Algorithm.NONE);
     }
 
 }

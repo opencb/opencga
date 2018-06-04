@@ -23,15 +23,14 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class VariantDBReader implements VariantReader {
     private StudyConfiguration studyConfiguration;
-    private VariantDBAdaptor variantDBAdaptor;
+    private VariantIterable iterable;
     private Query query;
     private QueryOptions options;
     private VariantDBIterator iterator;
@@ -48,22 +47,19 @@ public class VariantDBReader implements VariantReader {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantDBReader.class);
 
-    public VariantDBReader(VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
-        this(null, variantDBAdaptor, query, options);
+    public VariantDBReader(VariantIterable iterable, Query query, QueryOptions options) {
+        this(null, iterable, query, options);
     }
 
     public VariantDBReader(VariantDBIterator iterator) {
         this.iterator = iterator;
     }
 
-    public VariantDBReader(StudyConfiguration studyConfiguration, VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
+    public VariantDBReader(StudyConfiguration studyConfiguration, VariantIterable iterable, Query query, QueryOptions options) {
         this.studyConfiguration = studyConfiguration;
-        this.variantDBAdaptor = variantDBAdaptor;
+        this.iterable = iterable;
         this.query = query;
         this.options = options;
-    }
-
-    public VariantDBReader() {
     }
 
     @Override
@@ -71,32 +67,10 @@ public class VariantDBReader implements VariantReader {
         return studyConfiguration != null ? new LinkedList<>(studyConfiguration.getSampleIds().keySet()) : null;
     }
 
-//    @Override
-//    public String getHeader() {
-//        return getVariantFileMetadata().getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
-//    }
-
     @Override
     public VariantFileMetadata getVariantFileMetadata() {
-        return getVariantFileMetadata(-1);
-    }
-
-    public VariantFileMetadata getVariantFileMetadata(int fileId) {
-        Iterator<VariantFileMetadata> iterator;
-        try {
-            Query query = new Query();
-            if (fileId >= 0) {
-                query.put(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileId);
-            }
-            iterator = variantDBAdaptor.getVariantFileMetadataDBAdaptor()
-                    .iterator(query, new QueryOptions());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        if (iterator.hasNext()) {
-            return iterator.next();
-        }
-        return null;
+//        return getVariantFileMetadata(-1);
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -111,7 +85,7 @@ public class VariantDBReader implements VariantReader {
             iteratorQueryOptions = new QueryOptions();
         }
 
-        iterator = variantDBAdaptor.iterator(query, iteratorQueryOptions);
+        iterator = iterable.iterator(query, iteratorQueryOptions);
         return iterator != null;
     }
 

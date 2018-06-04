@@ -577,8 +577,13 @@ public class JobManager extends ResourceManager<Job> {
 
         switch (aclParams.getAction()) {
             case SET:
+                // Todo: Remove this in 1.4
+                List<String> allJobPermissions = EnumSet.allOf(JobAclEntry.JobPermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(Job::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.JOB);
+                                .collect(Collectors.toList()), members, permissions, allJobPermissions, Entity.JOB);
             case ADD:
                 return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(Job::getUid)
                                 .collect(Collectors.toList()), members, permissions, Entity.JOB);

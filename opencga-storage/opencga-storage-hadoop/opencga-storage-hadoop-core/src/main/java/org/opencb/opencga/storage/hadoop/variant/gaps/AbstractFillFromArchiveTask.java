@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
@@ -16,7 +17,6 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -46,7 +46,6 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
             .thenComparing(Variant::compareTo);
 //    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
 
-    protected final HBaseManager hBaseManager;
     protected final StudyConfiguration studyConfiguration;
     protected final GenomeHelper helper;
     protected final FillGapsTask fillGapsTask;
@@ -54,16 +53,14 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
     protected final Map<Integer, byte[]> fileToNonRefColumnMap;
     protected final Logger logger = LoggerFactory.getLogger(AbstractFillFromArchiveTask.class);
     protected final ArchiveRowKeyFactory rowKeyFactory;
-
+    protected long timestamp = HConstants.LATEST_TIMESTAMP;
 
     private final Map<String, Long> stats = new HashMap<>();
 
-    protected AbstractFillFromArchiveTask(HBaseManager hBaseManager,
-                                          StudyConfiguration studyConfiguration,
+    protected AbstractFillFromArchiveTask(StudyConfiguration studyConfiguration,
                                           GenomeHelper helper,
                                           Collection<Integer> samples,
                                           boolean skipReferenceVariants) {
-        this.hBaseManager = hBaseManager;
         this.studyConfiguration = studyConfiguration;
         this.helper = helper;
 
@@ -90,6 +87,14 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
 
     public void setQuiet(boolean quiet) {
         fillGapsTask.setQuiet(quiet);
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 
     @Override
@@ -173,7 +178,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
     }
 
     protected Put createPut(Variant v) {
-        return new Put(VariantPhoenixKeyFactory.generateVariantRowKey(v));
+        return new Put(VariantPhoenixKeyFactory.generateVariantRowKey(v), timestamp);
     }
 
     protected abstract Context buildContext(Result result) throws IOException;
@@ -281,7 +286,11 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
         }
     }
 
-    protected static Scan buildScan(String regionStr, Configuration conf) {
+    protected static Scan buildScan(Configuration conf) {
+        return buildScan(null, -1, conf);
+    }
+
+    protected static Scan buildScan(String regionStr, int fileId, Configuration conf) {
         Scan scan = new Scan();
         Region region;
         if (StringUtils.isNotEmpty(regionStr)) {
@@ -292,7 +301,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Put> {
 
         scan.setCacheBlocks(false);
         ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
-        VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, 0, archiveRowKeyFactory);
+        VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, fileId, archiveRowKeyFactory);
         return scan;
     }
 

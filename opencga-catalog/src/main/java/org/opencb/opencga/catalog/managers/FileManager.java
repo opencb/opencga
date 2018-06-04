@@ -1891,8 +1891,13 @@ public class FileManager extends ResourceManager<File> {
 
         switch (fileAclParams.getAction()) {
             case SET:
+                // Todo: Remove this in 1.4
+                List<String> allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(File::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.FILE);
+                                .collect(Collectors.toList()), members, permissions, allFilePermissions, Entity.FILE);
             case ADD:
                 return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(File::getUid)
                                 .collect(Collectors.toList()), members, permissions, Entity.FILE);

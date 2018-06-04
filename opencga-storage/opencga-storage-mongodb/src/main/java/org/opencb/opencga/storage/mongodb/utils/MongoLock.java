@@ -16,10 +16,14 @@
 
 package org.opencb.opencga.storage.mongodb.utils;
 
+import com.mongodb.DuplicateKeyException;
+import com.mongodb.MongoWriteException;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import org.apache.commons.lang3.time.StopWatch;
+import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 
 import java.util.Calendar;
@@ -72,6 +76,20 @@ public class MongoLock {
      */
     public long lock(Object id, long lockDuration, long timeout)
             throws InterruptedException, TimeoutException {
+
+        try {
+            // Ensure document exists
+            collection.update(new Document("_id", id), set("_id", id), new QueryOptions(MongoDBCollection.UPSERT, true));
+        } catch (MongoWriteException e) {
+            // Duplicated key exception
+            if (e.getError().getCode() != 11000) {
+                throw e;
+            }
+        } catch (DuplicateKeyException ignore) {
+            // Ignore this exception.
+            // With UPSERT=true, this command should never throw DuplicatedKeyException.
+            // See https://jira.mongodb.org/browse/SERVER-14322
+        }
 
         StopWatch watch = new StopWatch();
         watch.start();

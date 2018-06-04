@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -327,21 +327,20 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         System.out.println("StudyConfiguration = " + studyConfiguration);
 
-        HBaseVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
-        Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles(studyConfiguration.getStudyId());
+        Set<Integer> loadedFiles = dbAdaptor.getVariantFileMetadataDBAdaptor().getLoadedFiles(studyConfiguration.getStudyId());
         System.out.println("loadedFiles = " + loadedFiles);
         for (int fileId = 1; fileId <= 17; fileId++) {
             assertThat(loadedFiles, hasItem(fileId));
         }
         for (Integer loadedFile : loadedFiles) {
-            VariantFileMetadata variantFileMetadata = fileMetadataManager.getVariantFileMetadata(studyConfiguration.getStudyId(), loadedFile, null);
+            VariantFileMetadata variantFileMetadata = dbAdaptor.getStudyConfigurationManager().getVariantFileMetadata(studyConfiguration.getStudyId(), loadedFile, null).first();
             assertNotNull(variantFileMetadata);
         }
 
         FileStudyConfigurationAdaptor.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
             VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions(QueryOptions.SORT, true)),
-                    studyConfiguration, dbAdaptor.getVariantFileMetadataDBAdaptor(), out, new Query(), new QueryOptions());
+                    studyConfiguration, out, new Query(), new QueryOptions());
         }
     }
 

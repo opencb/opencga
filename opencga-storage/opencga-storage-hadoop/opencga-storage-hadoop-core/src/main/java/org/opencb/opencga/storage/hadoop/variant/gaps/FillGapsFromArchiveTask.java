@@ -34,14 +34,16 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
     protected final String archiveTableName;
     protected Table archiveTable;
+    protected final HBaseManager hBaseManager;
 
     public FillGapsFromArchiveTask(HBaseManager hBaseManager,
                                    String archiveTableName,
                                    StudyConfiguration studyConfiguration,
                                    GenomeHelper helper,
                                    Collection<Integer> samples) {
-        super(hBaseManager, studyConfiguration, helper, samples, false);
+        super(studyConfiguration, helper, samples, false);
         this.archiveTableName = archiveTableName;
+        this.hBaseManager = hBaseManager;
 
         fileToRefColumnMap = new HashMap<>();
         for (Integer fileId : fileIds) {
@@ -182,10 +184,10 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
 
     public static Scan buildScan(Collection<Integer> fileIds, String regionStr, Configuration conf) {
-        Scan scan = AbstractFillFromArchiveTask.buildScan(regionStr, conf);
-
         ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
         Integer mainFileBatch = getMainFileBatch(fileIds, archiveRowKeyFactory);
+
+        Scan scan = AbstractFillFromArchiveTask.buildScan(regionStr, archiveRowKeyFactory.getFirstFileFromBatch(mainFileBatch), conf);
 
         GenomeHelper helper = new GenomeHelper(conf);
         for (Integer fileId : fileIds) {

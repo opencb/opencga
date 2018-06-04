@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.metadata;
 
-import com.mongodb.DuplicateKeyException;
-import com.mongodb.MongoWriteException;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.model.Projections;
@@ -30,14 +28,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
-import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
+import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,38 +40,18 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static com.mongodb.client.model.Updates.set;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoDBStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor {
-
-    private final MongoDataStoreManager mongoManager;
-    private final boolean closeConnection;
+public class MongoDBStudyConfigurationDBAdaptor implements StudyConfigurationAdaptor {
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
     private final MongoLock mongoLock;
     private final MongoDBCollection collection;
 
-    public MongoDBStudyConfigurationDBAdaptor(MongoCredentials credentials, String collectionName)
-            throws UnknownHostException {
-        this(new MongoDataStoreManager(credentials.getDataStoreServerAddresses()), true, credentials, collectionName);
-    }
-
-    public MongoDBStudyConfigurationDBAdaptor(MongoDataStoreManager mongoManager, MongoCredentials credentials, String collectionName)
-            throws UnknownHostException {
-        this(mongoManager, false, credentials, collectionName);
-    }
-
-    private MongoDBStudyConfigurationDBAdaptor(MongoDataStoreManager mongoManager, boolean closeConnection,
-                                               MongoCredentials credentials, String collectionName)
-            throws UnknownHostException {
-        // Mongo configuration
-        this.mongoManager = mongoManager;
-        this.closeConnection = closeConnection;
-        MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+    public MongoDBStudyConfigurationDBAdaptor(MongoDataStore db, String collectionName) {
         collection = db.getCollection(collectionName)
                 .withReadPreference(ReadPreference.primary())
                 .withWriteConcern(WriteConcern.ACKNOWLEDGED);
@@ -84,12 +59,12 @@ public class MongoDBStudyConfigurationDBAdaptor extends StudyConfigurationAdapto
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         return getStudyConfiguration(null, studyName, timeStamp, options);
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         return getStudyConfiguration(studyId, null, timeStamp, options);
     }
 
@@ -99,19 +74,6 @@ public class MongoDBStudyConfigurationDBAdaptor extends StudyConfigurationAdapto
             throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
         }
 
-        try {
-            // Ensure document exists
-            collection.update(new Document("_id", studyId), set("id", studyId), new QueryOptions(MongoDBCollection.UPSERT, true));
-        } catch (MongoWriteException e) {
-            // Duplicated key exception
-            if (e.getError().getCode() != 11000) {
-                throw e;
-            }
-        } catch (DuplicateKeyException ignore) {
-            // Ignore this exception.
-            // With UPSERT=true, this command should never throw DuplicatedKeyException.
-            // See https://jira.mongodb.org/browse/SERVER-14322
-        }
         return mongoLock.lock(studyId, lockDuration, timeout);
     }
 
@@ -195,8 +157,5 @@ public class MongoDBStudyConfigurationDBAdaptor extends StudyConfigurationAdapto
 
     @Override
     public void close() {
-        if (closeConnection) {
-            mongoManager.close();
-        }
     }
 }

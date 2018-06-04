@@ -419,45 +419,49 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, Entity entry)
-            throws CatalogDBException {
-        validateEntry(entry);
-        MongoDBCollection collection = dbCollectionMap.get(entry);
+    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, List<String> allPermissions,
+                             Entity entity) throws CatalogDBException {
+        validateEntry(entity);
+        MongoDBCollection collection = dbCollectionMap.get(entity);
+
+        /* 1. We are going to try to remove all the permissions to those members in first instance */
 
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
-        List<String> permissions = new ArrayList<>(permissionList);
+        List<String> permissions = new ArrayList<>(allPermissions);
         permissions.add("NONE");
+        permissions = createPermissionArray(members, permissions);
 
-        for (long resourceId : resourceIds) {
-            // Get current permissions for resource and override with new ones set for members (already existing or not)
-            Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entry)
-                    .getPermissions();
-            for (String member : members) {
-                currentPermissions.get(QueryParams.ACL.key()).put(member, new ArrayList<>(permissions));
-                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(member, new ArrayList<>(permissions));
-            }
-
-            List<String> permissionArray = createPermissionArray(currentPermissions.get(QueryParams.ACL.key()));
-            List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));
-            Document queryDocument = new Document()
-                    .append("$isolated", 1)
-                    .append(PRIVATE_UID, resourceId);
-            Document update;
-            if (isPermissionRuleEntity(entry)) {
-                update = new Document("$set", new Document()
-                        .append(QueryParams.ACL.key(), permissionArray)
-                        .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray)
-                );
-            } else {
-                update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
-            }
-
-            logger.debug("Set Acls (set): Query {}, Push {}",
-                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-            collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        Document queryDocument = new Document()
+                .append("$isolated", 1)
+                .append(PRIVATE_UID, new Document("$in", resourceIds));
+        Document update = new Document(QueryParams.ACL.key(), permissions);
+        if (isPermissionRuleEntity(entity)) {
+            update.put(QueryParams.USER_DEFINED_ACLS.key(), permissions);
         }
+        update = new Document("$pullAll", update);
+        logger.debug("Pull all acls: Query {}, PullAll {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        collection.update(queryDocument, update, new QueryOptions("multi", true));
+
+        /* 2. We now add the expected permissions to those members */
+
+        // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
+        permissions = new ArrayList<>(permissionList);
+        permissions.add("NONE");
+        permissions = createPermissionArray(members, permissions);
+
+        update = new Document(QueryParams.ACL.key(), new Document("$each", permissions));
+        if (isPermissionRuleEntity(entity)) {
+            update.put(QueryParams.USER_DEFINED_ACLS.key(), new Document("$each", permissions));
+        }
+
+        update = new Document("$addToSet", update);
+        logger.debug("Add Acls (addToSet): Query {}, Push {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        collection.update(queryDocument, update, new QueryOptions("multi", true));
     }
 
     @Override

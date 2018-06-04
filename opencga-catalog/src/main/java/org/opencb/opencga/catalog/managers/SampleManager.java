@@ -971,8 +971,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         List<QueryResult<SampleAclEntry>> queryResults;
         switch (sampleAclParams.getAction()) {
             case SET:
+                // Todo: Remove this in 1.4
+                List<String> allSamplePermissions = EnumSet.allOf(SampleAclEntry.SamplePermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
                 queryResults = authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
-                                .map(Sample::getUid).collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
+                                .map(Sample::getUid).collect(Collectors.toList()), members, permissions, allSamplePermissions,
+                        Entity.SAMPLE);
                 if (sampleAclParams.isPropagate()) {
                     try {
                         Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),

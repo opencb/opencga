@@ -4,11 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.AssumptionViolatedException;
+import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 
 import static org.junit.Assume.assumeTrue;
@@ -70,4 +72,11 @@ public class HadoopVariantDBAdaptorNativeTest extends HadoopVariantDBAdaptorTest
             throw e;
         }
     }
+
+
+    @Test
+    public void testGetAllVariants_limit_skip_sorted_multi_regions() {
+        limitSkip(new Query(VariantQueryParam.REGION.key(), "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"), new QueryOptions(QueryOptions.SORT, true));
+    }
+
 }

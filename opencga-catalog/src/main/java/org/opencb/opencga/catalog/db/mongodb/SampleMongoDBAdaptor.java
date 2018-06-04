@@ -698,6 +698,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         Query finalQuery = new Query(query);
         filterOutDeleted(finalQuery);
+
         QueryOptions qOptions;
         if (options != null) {
             qOptions = new QueryOptions(options);

@@ -547,8 +547,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         switch (familyAclParams.getAction()) {
             case SET:
+                // Todo: Remove this in 1.4
+                List<String> allFamilyPermissions = EnumSet.allOf(FamilyAclEntry.FamilyPermissions.class)
+                        .stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(Family::getUid)
-                        .collect(Collectors.toList()), members, permissions, Entity.FAMILY);
+                                .collect(Collectors.toList()), members, permissions,
+            allFamilyPermissions, Entity.FAMILY);
             case ADD:
                 return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(Family::getUid)
                         .collect(Collectors.toList()), members, permissions, Entity.FAMILY);
@@ -679,9 +685,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
+        // FIXME Pedro: this is a quick fix to allow create families without the parents, this needs to be reviewed.
         if (noParentsSet.size() > 0) {
-            throw new CatalogException("Some members that are not related to any other have been found: "
-                    + noParentsSet.stream().map(Individual::getId).collect(Collectors.joining(", ")));
+//            throw new CatalogException("Some members that are not related to any other have been found: "
+//                    + noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
+            logger.warn("Some members that are not related to any other have been found: {}",
+                    noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
         }
     }
 

@@ -52,12 +52,18 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
     private final ObjectMapper objectMapper;
     private final byte[] columnFamily;
     private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter;
+    private byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
 
     public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper) {
         columnFamily = genomeHelper.getColumnFamily();
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
         traitAssociationConverter = new VariantTraitAssociationToEvidenceEntryConverter();
+    }
+
+    public HBaseToVariantAnnotationConverter setAnnotationColumn(byte[] annotationColumn) {
+        this.annotationColumn = annotationColumn;
+        return this;
     }
 
     public HBaseToVariantAnnotationConverter setIncludeFields(Set<VariantField> allIncludeFields) {
@@ -96,7 +102,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
     public VariantAnnotation convert(Result result) {
         VariantAnnotation variantAnnotation = null;
 
-        byte[] value = result.getValue(columnFamily, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+        byte[] value = result.getValue(columnFamily, annotationColumn);
         if (ArrayUtils.isNotEmpty(value)) {
             try {
                 variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);

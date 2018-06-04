@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
@@ -53,6 +54,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.IOException;
@@ -243,6 +245,38 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
+    public void createAnnotationSnapshot(String project, String annotationName, ObjectMap params, String sessionId)
+            throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException, InstantiationException,
+            ClassNotFoundException {
+
+        DataStore dataStore = getDataStoreByProjectId(project, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getStudyConfigurationManager(), project, sessionId);
+
+        variantStorageEngine.createAnnotationSnapshot(annotationName, params);
+    }
+
+    public void deleteAnnotationSnapshot(String project, String annotationName, ObjectMap params, String sessionId)
+            throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException,
+            InstantiationException, ClassNotFoundException {
+
+        DataStore dataStore = getDataStoreByProjectId(project, sessionId);
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getStudyConfigurationManager(), project, sessionId);
+
+        variantStorageEngine.deleteAnnotationSnapshot(annotationName, params);
+    }
+
+    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options, String sessionId)
+            throws StorageEngineException, CatalogException, IOException {
+        QueryOptions finalOptions = VariantQueryUtils.validateAnnotationQueryOptions(options);
+        return secure(query, finalOptions, sessionId, (engine) -> engine.getAnnotation(name, query, finalOptions));
+    }
+
     public void stats(String study, List<String> cohorts, String outDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         VariantStatsStorageOperation statsOperation = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
@@ -420,6 +454,10 @@ public class VariantStorageManager extends StorageManager {
 
     private DataStore getDataStore(long studyId, String sessionId) throws CatalogException {
         return StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+    }
+
+    private DataStore getDataStoreByProjectId(String project, String sessionId) throws CatalogException {
+        return StorageOperation.getDataStoreByProjectId(catalogManager, project, File.Bioformat.VARIANT, sessionId);
     }
 
     protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws CatalogException, StorageEngineException {

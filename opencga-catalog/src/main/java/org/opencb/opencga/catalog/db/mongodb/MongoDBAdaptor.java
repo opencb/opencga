@@ -111,7 +111,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * @param andBsonList The list where created filter will be added to.
      */
     protected void addOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.EQUALS,
+        addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.IN,
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 

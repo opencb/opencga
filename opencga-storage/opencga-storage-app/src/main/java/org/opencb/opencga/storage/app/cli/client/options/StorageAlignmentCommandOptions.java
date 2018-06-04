@@ -33,6 +33,7 @@ public class StorageAlignmentCommandOptions {
 
     public IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
     public QueryAlignmentsCommandOptions queryAlignmentsCommandOptions;
+    public CoverageAlignmentsCommandOptions coverageAlignmentsCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
@@ -48,6 +49,7 @@ public class StorageAlignmentCommandOptions {
 
         this.indexAlignmentsCommandOptions = new IndexAlignmentsCommandOptions();
         this.queryAlignmentsCommandOptions = new QueryAlignmentsCommandOptions();
+        this.coverageAlignmentsCommandOptions = new CoverageAlignmentsCommandOptions();
     }
 
 
@@ -116,6 +118,26 @@ public class StorageAlignmentCommandOptions {
 
         @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
         public List<String> stats = new LinkedList<>();
+
+    }
+
+    @Parameters(commandNames = {"coverage"}, commandDescription = "Calculate and query coverage of indexed alignments")
+    public class CoverageAlignmentsCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-i", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000")
+        public String region;
+
+        @Parameter(names = {"-w", "--window-size"}, description = "Window size f the coverage", arity = 1)
+        public int windowSize = 50;
+
+        @Parameter(names = {"--create"}, description = "Creates the BigWig coverage file, even if it already exists")
+        public boolean create;
 
     }
 }

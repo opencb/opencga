@@ -244,6 +244,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         return new VariantHadoopDBWriter(
                 dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getCredentials().getTable(),
+                getStudyConfigurationManager().getProjectMetadata().first(),
                 studyConfiguration,
                 dbAdaptor.getHBaseManager());
     }

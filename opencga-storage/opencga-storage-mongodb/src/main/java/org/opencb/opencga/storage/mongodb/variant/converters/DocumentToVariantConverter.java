@@ -316,12 +316,13 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
             VariantAnnotation annotation;
             if (mongoAnnotation != null) {
                 annotation = variantAnnotationConverter
-                        .convertToDataModelType(mongoAnnotation, customAnnotation, chromosome, reference, alternate);
+                        .convertToDataModelType(mongoAnnotation, customAnnotation, variant);
             } else {
-                annotation = new VariantAnnotation();
-            }
-            if (customAnnotation != null) {
-                annotation.setAdditionalAttributes(variantAnnotationConverter.convertAdditionalAttributesToDataModelType(customAnnotation));
+                annotation = newVariantAnnotation(variant);
+                if (customAnnotation != null) {
+                    annotation.setAdditionalAttributes(variantAnnotationConverter
+                            .convertAdditionalAttributesToDataModelType(customAnnotation));
+                }
             }
             if (hasRelease) {
                 if (annotation.getAdditionalAttributes() == null) {
@@ -336,10 +337,6 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
                 annotation.getAdditionalAttributes().put("opencga", additionalAttribute);
             }
 
-            annotation.setChromosome(variant.getChromosome());
-            annotation.setAlternate(variant.getAlternate());
-            annotation.setReference(variant.getReference());
-            annotation.setStart(variant.getStart());
             variant.setAnnotation(annotation);
         }
 
