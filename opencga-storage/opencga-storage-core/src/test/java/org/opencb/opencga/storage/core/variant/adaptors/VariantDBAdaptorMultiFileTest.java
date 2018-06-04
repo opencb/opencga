@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -494,6 +495,14 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877",
                 with(QUAL, fileEntry -> fileEntry.getAttributes().get(QUAL), allOf(notNullValue(), with("", Double::valueOf, lt(50))))))));
+
+        query = new Query()
+                .append(VariantQueryParam.QUAL.key(), "<<5")
+                .append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        queryResult = dbAdaptor.get(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877",
+                with(QUAL, fileEntry -> fileEntry.getAttributes().get(QUAL), anyOf(with("", Double::valueOf, lt(5)), nullValue()))))));
 
         query = new Query()
                 .append(VariantQueryParam.QUAL.key(), "<50")

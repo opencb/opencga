@@ -538,6 +538,10 @@ public class VariantMatchers {
         };
     }
 
+    public static <T> Matcher<Iterable<? super T>> isEmpty() {
+        return not(hasItem(anything()));
+    }
+
     public static <T> long count(List<T> objects, Matcher<? super T> matcher) {
         long c = 0;
         for (T t: objects) {

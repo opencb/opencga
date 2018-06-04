@@ -665,6 +665,15 @@ public class VariantSqlQueryParser {
 
                             double parsedValue = parseDouble(qual, QUAL, qualValue);
                             sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
+
+                            if (op.startsWith(">>") || op.startsWith("<<")) {
+                                sb.append(" OR \"");
+                                buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                                sb.append('"');
+
+                                // Arrays in SQL are 1-based.
+                                sb.append('[').append(HBaseToStudyEntryConverter.FILE_QUAL_IDX + 1).append("] IS NULL");
+                            }
                         }
                         sb.append(" ) ");
                     }
@@ -840,6 +849,24 @@ public class VariantSqlQueryParser {
                 return VariantColumn.POLYPHEN;
             } else {
                 return VariantColumn.POLYPHEN_DESC;
+            }
+        }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
+
+        addQueryFilter(query, ANNOT_PROTEIN_SUBSTITUTION, (keyOpValue, rawValue) -> {
+            if (keyOpValue[0].equalsIgnoreCase("sift")) {
+                if (NumberUtils.isParsable(keyOpValue[2])) {
+                    return VariantColumn.SIFT;
+                } else {
+                    return VariantColumn.SIFT_DESC;
+                }
+            } else if (keyOpValue[0].equalsIgnoreCase("polyphen")) {
+                if (NumberUtils.isParsable(keyOpValue[2])) {
+                    return VariantColumn.POLYPHEN;
+                } else {
+                    return VariantColumn.POLYPHEN_DESC;
+                }
+            } else {
+                throw VariantQueryException.malformedParam(ANNOT_PROTEIN_SUBSTITUTION, Arrays.toString(keyOpValue));
             }
         }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
 
@@ -1145,8 +1172,6 @@ public class VariantSqlQueryParser {
             arrayPosition = "[" + idx + "]";
         }
         boolean orNull = op.startsWith(">>") || op.startsWith("<<");
-        System.out.println("orNull = " + orNull);
-        System.out.println("op = " + op);
         switch (sqlType) {
             case "VARCHAR":
                 parsedValue = checkStringValue((String) value);
