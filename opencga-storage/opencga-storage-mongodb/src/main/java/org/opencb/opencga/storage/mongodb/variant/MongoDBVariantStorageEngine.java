@@ -39,9 +39,11 @@ import org.opencb.opencga.storage.core.metadata.local.FileStudyConfigurationAdap
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
@@ -59,8 +61,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
@@ -432,6 +433,37 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
         }
         return dbAdaptor.get();
+    }
+
+    /**
+     * Decide if a query should be resolved using SearchManager or not.
+     *
+     * Applies some exceptions over the default method:
+     *  - If true, and the query contains only filters for REGION and (optionally) STUDY, do not use SearchIndex
+     *
+     * @param query   Query
+     * @param options QueryOptions
+     * @return true if should resolve only with SearchManager
+     * @throws StorageEngineException StorageEngineException
+     */
+    @Override
+    protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
+        if (super.doQuerySearchManager(query, options)) {
+            // Get set of valid params. Remove Modifier params
+            Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
+            queryParams.removeAll(MODIFIER_QUERY_PARAMS);
+
+            // REGION + [ STUDY ]
+            if (queryParams.equals(Collections.singleton(REGION))
+                    || queryParams.size() == 2 && queryParams.contains(REGION) && queryParams.contains(STUDY)) {
+                options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantSearchManager.UseSearchIndex.NO);
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
     }
 
     private VariantMongoDBAdaptor newDBAdaptor() throws StorageEngineException {

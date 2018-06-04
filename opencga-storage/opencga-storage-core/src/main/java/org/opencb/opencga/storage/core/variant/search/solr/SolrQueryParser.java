@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.search.solr;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.core.Region;
@@ -92,15 +93,21 @@ public class SolrQueryParser {
         //-------------------------------------
         // QueryOptions processing
         //-------------------------------------
+        // TODO: Use VariantField
         String[] includes = null;
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             includes = solrIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE));
         } else {
             if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
                 includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+            } else {
+                includes = getSolrIncludeFromExclude(Collections.emptyList());
             }
         }
-        solrQuery.setFields(includeFieldsWithMandatory(includes));
+        includes = ArrayUtils.removeAllOccurences(includes, "release");
+        includes = includeFieldsWithMandatory(includes);
+
+        solrQuery.setFields(includes);
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));

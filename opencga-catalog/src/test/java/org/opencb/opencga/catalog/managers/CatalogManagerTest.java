@@ -1313,6 +1313,17 @@ public class CatalogManagerTest extends GenericTest {
                 new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "19870214"), QueryOptions.empty(), sessionIdUser);
         assertEquals("19870214", update.first().getDateOfBirth());
 
+        update = individualManager.update(String.valueOf(studyId),
+                String.valueOf(individualQueryResult.first().getId()),
+                new ObjectMap(IndividualDBAdaptor.QueryParams.ATTRIBUTES.key(), Collections.singletonMap("key", "value")), QueryOptions.empty(), sessionIdUser);
+        assertEquals("value", update.first().getAttributes().get("key"));
+
+        update = individualManager.update(String.valueOf(studyId),
+                String.valueOf(individualQueryResult.first().getId()),
+                new ObjectMap(IndividualDBAdaptor.QueryParams.ATTRIBUTES.key(), Collections.singletonMap("key2", "value2")), QueryOptions.empty(), sessionIdUser);
+        assertEquals("value", update.first().getAttributes().get("key")); // Keep "key"
+        assertEquals("value2", update.first().getAttributes().get("key2")); // add new "key2"
+
         // Wrong date of birth format
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Invalid date of birth format");

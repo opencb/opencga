@@ -1460,6 +1460,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
+        query = new Query(GENOTYPE.key(), STUDY_NAME + ":NA19600" + IS + GenotypeClass.HOM_ALT);
+        queryResult = query(query, new QueryOptions());
+        assertEquals(282, queryResult.getNumResults());
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
+        )));
+
         query = new Query(GENOTYPE.key(), "NA19600" + IS + homAlt)
                 .append(STUDY.key(), STUDY_NAME);
         queryResult = query(query, new QueryOptions());
@@ -1473,10 +1479,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
-
         //get for each genotype. Should return all variants
         query = new Query(GENOTYPE.key(), na19600 + IS + homRef + OR + het + OR + homAlt + OR + "./.");
-        long numResults = count(null);
+        long numResults = count(query);
+        assertEquals(NUM_VARIANTS, numResults);
+
+        //get for each genotype. Should return all variants
+        query = new Query(GENOTYPE.key(), na19600 + IS + GenotypeClass.HOM_REF + OR + GenotypeClass.HET + OR + GenotypeClass.HOM_ALT + OR + GenotypeClass.MISS);
+        numResults = count(query);
         assertEquals(NUM_VARIANTS, numResults);
 
         //Get all missing genotypes for sample na19600

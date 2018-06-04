@@ -35,10 +35,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -640,18 +637,32 @@ public class VariantMongoDBQueryParser {
                             "0|1", "1|0", "1|1", "-1|-1",
                             "0|2", "2|0", "2|1", "1|2", "2|2",
                             "0/2", "2/0", "2/1", "1/2", "2/2",
-                            DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                            GenotypeClass.UNKNOWN_GENOTYPE);
                 }
 
                 for (Map.Entry<Object, List<String>> entry : genotypesFilter.entrySet()) {
                     Object sample = entry.getKey();
-                    List<String> genotypes = entry.getValue();
+                    Set<String> genotypes = new LinkedHashSet<>(entry.getValue().size());
+                    for (String gt : entry.getValue()) {
+                        GenotypeClass genotypeClass = GenotypeClass.from(gt);
+                        if (genotypeClass == null) {
+                            genotypes.add(gt);
+                        } else {
+                            genotypes.addAll(genotypeClass.filter(otherGenotypes));
+                            genotypes.addAll(genotypeClass.filter(defaultGenotypes));
+                        }
+                    }
+                    // If empty, should find none. Add non-existing genotype
+                    // TODO: Fast empty result
+                    if (genotypes.isEmpty()) {
+                        genotypes.add("x/x");
+                    }
 
                     int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
 
                     if (filesFilterBySamples) {
                         // We can not filter sample by file if one of the requested genotypes is the unknown genotype
-                        boolean canFilterSampleByFile = !genotypes.contains(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                        boolean canFilterSampleByFile = !genotypes.contains(GenotypeClass.UNKNOWN_GENOTYPE);
                         if (canFilterSampleByFile) {
                             for (String genotype : genotypes) {
                                 // Do not filter sample by file if any of the genotypes is negated, or the is a default genotype

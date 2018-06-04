@@ -166,7 +166,14 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{family}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some family attributes", position = 6)
+    @ApiOperation(value = "Update some family attributes", position = 6,
+            notes = "The entire family is returned after the modification. Using include/exclude query parameters is encouraged to "
+                    + "avoid slowdowns when sending unnecessary information where possible")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
+    })
     public Response updateByPost(
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -458,7 +465,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
                     mother != null ? new Individual().setName(mother) : null, multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    .setAttributes(attributes);
         }
 
         public Individual toIndividualUpdate() {
@@ -475,12 +483,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     .setAffectationStatus(affectationStatus)
                     .setDateOfBirth(dateOfBirth)
                     .setParentalConsanguinity(parentalConsanguinity != null ? parentalConsanguinity : false)
-                    .setPhenotypes(phenotypes);
+                    .setPhenotypes(phenotypes)
+                    .setAttributes(attributes);
             individual.setAnnotationSets(annotationSets);
             return individual;
         }
     }
-
     private static class FamilyPOST {
         public String name;
         public String description;

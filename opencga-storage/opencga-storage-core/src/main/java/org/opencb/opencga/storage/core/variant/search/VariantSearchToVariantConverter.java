@@ -25,6 +25,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.core.common.ArrayUtils;
+import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
     public static final double MISSING_VALUE = -100.0;
     private Logger logger = LoggerFactory.getLogger(VariantSearchManager.class);
+    private final VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
+
+    public VariantSearchToVariantConverter() {
+        evidenceEntryConverter = new VariantTraitAssociationToEvidenceEntryConverter();
+    }
 
     /**
      * Conversion: from storage type to data model.
@@ -320,31 +326,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // Clinvar -> traitAssociation
             for (ClinVar clinvar: clinVarList) {
-                List<HeritableTrait> heritableTraits = new ArrayList<>();
-                for (String trait: clinvar.getTraits()) {
-                    heritableTraits.add(HeritableTrait.newBuilder().setTrait(trait).build());
-                }
-                EvidenceEntry evidenceEntry = EvidenceEntry.newBuilder()
-                        .setSource(EvidenceSource.newBuilder().setName("clinvar").build())
-                        .setId(clinvar.getAccession())
-                        .setHeritableTraits(heritableTraits)
-                        .setVariantClassification(VariantClassification.newBuilder()
-                                .setClinicalSignificance(ClinicalSignificance.valueOf(clinvar.getClinicalSignificance())).build())
-                        .build();
-
-                evidenceEntries.add(evidenceEntry);
+                evidenceEntries.add(evidenceEntryConverter.fromClinVar(clinvar));
             }
 
             // Cosmic -> traitAssociation
             for (Cosmic cosmic: cosmicList) {
-                EvidenceEntry evidenceEntry = EvidenceEntry.newBuilder()
-                        .setSource(EvidenceSource.newBuilder().setName("cosmic").build())
-                        .setId(cosmic.getMutationId())
-                        .setSomaticInformation(SomaticInformation.newBuilder().setPrimaryHistology(cosmic.getPrimaryHistology())
-                                .setHistologySubtype(cosmic.getHistologySubtype()).build())
-                        .build();
-
-                evidenceEntries.add(evidenceEntry);
+                evidenceEntries.add(evidenceEntryConverter.fromCosmic(cosmic));
             }
 
             variantAnnotation.setTraitAssociation(evidenceEntries);

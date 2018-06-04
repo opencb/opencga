@@ -66,6 +66,17 @@ public final class VariantQueryUtils {
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
 
+    public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            INCLUDE_STUDY,
+            INCLUDE_FILE,
+            INCLUDE_SAMPLE,
+//            INCLUDE_COHORT,
+            INCLUDE_FORMAT,
+            INCLUDE_GENOTYPE,
+            UNKNOWN_GENOTYPE,
+            SAMPLE_METADATA
+    )));
+
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
     public enum QueryOperation {
