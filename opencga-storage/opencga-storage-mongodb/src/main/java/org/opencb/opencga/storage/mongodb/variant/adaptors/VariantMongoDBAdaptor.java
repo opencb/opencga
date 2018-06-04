@@ -70,6 +70,7 @@ import static com.mongodb.client.model.Updates.*;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_KEY;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_VARIANT_ID;
@@ -288,7 +289,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Bson query;
         // If default genotype is not the unknown genotype, we must iterate over all the documents in the study
-        if (!sc.getAttributes().getString(DEFAULT_GENOTYPE.key()).equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
+        if (!sc.getAttributes().getString(DEFAULT_GENOTYPE.key()).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
             query = eq(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId);
         } else {
             query = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,

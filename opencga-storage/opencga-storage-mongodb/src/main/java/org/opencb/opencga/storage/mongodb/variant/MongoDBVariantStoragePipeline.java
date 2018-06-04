@@ -44,11 +44,11 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectConverter;
@@ -141,7 +141,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), true);
                     // When ignoring overlapping variants, the default genotype MUST be the UNKNOWN_GENOTYPE (?/?).
                     // Otherwise, a "fillGaps" step will be needed afterwards
-                    studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                    studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), GenotypeClass.UNKNOWN_GENOTYPE);
                     break;
                 case ADVANCED:
                     studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), false);
@@ -164,7 +164,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     case FAMILY:
                     case TRIO:
                     case PAIRED:
-                        defaultGenotype = Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                        defaultGenotype = Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE);
                         logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
                         break;
                     default:

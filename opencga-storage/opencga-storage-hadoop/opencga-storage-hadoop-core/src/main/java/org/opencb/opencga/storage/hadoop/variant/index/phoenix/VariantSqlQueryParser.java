@@ -31,10 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -730,7 +727,33 @@ public class VariantSqlQueryParser {
                 }
                 int studyId = defaultStudyConfiguration.getStudyId();
                 int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
-                List<String> genotypes = entry.getValue();
+                Set<String> genotypes = new LinkedHashSet<>(entry.getValue().size());
+                // TODO: Read LOADED_GENOTYPES from StudyConfiguration!
+                List<String> loadedGenotypes = Arrays.asList(
+                        ".", "./.",
+                        "0/0", "0|0",
+                        "0/1", "1/0", "1/1",
+                        "0/2", "1/2", "2/2",
+                        "0/3", "1/3", "2/3", "3/3",
+                        ".|.",
+                        "0|1", "1|0", "1|1",
+                        "0|2", "2|0", "2|1", "1|2", "2|2",
+                        "0|3", "1|3", "2|3", "3|3",
+                        "3|0", "3|1", "3|2");
+
+                for (String gt : entry.getValue()) {
+                    GenotypeClass genotypeClass = GenotypeClass.from(gt);
+                    if (genotypeClass == null) {
+                        genotypes.add(gt);
+                    } else {
+                        genotypes.addAll(genotypeClass.filter(loadedGenotypes));
+                    }
+                }
+                // If empty, should find none. Add non-existing genotype
+                // TODO: Fast empty result
+                if (genotypes.isEmpty()) {
+                    genotypes.add("x/x");
+                }
 
                 List<String> gtFilters = new ArrayList<>(genotypes.size());
                 final boolean negated;
