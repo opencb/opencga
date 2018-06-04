@@ -27,6 +27,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
     private final byte[] family;
     // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, StringBuilder>
     private final Map<IndexChunk, List<Map<String, Set<String>>>> buffer = new LinkedHashMap<>();
+    private final HashSet<String> genotypes = new HashSet<>();
 
     public SampleIndexDBLoader(HBaseManager hBaseManager, String tableName, List<Integer> sampleIds, byte[] family) {
         super(hBaseManager, tableName);
@@ -82,6 +83,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
             for (List<String> samplesData : variant.getStudies().get(0).getSamplesData()) {
                 String gt = samplesData.get(0);
                 if (validVariant(variant) && validGenotype(gt)) {
+                    genotypes.add(gt);
                     Set<String> variantsList = buffer
                             .computeIfAbsent(indexChunk, k -> {
                                 List<Map<String, Set<String>>> list = new ArrayList<>(sampleIds.size());
@@ -158,5 +160,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         }
 
         return puts;
+    }
+
+    public HashSet<String> getLoadedGenotypes() {
+        return genotypes;
     }
 }

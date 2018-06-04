@@ -150,6 +150,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String EXPECTED_FILES_NUMBER = "expected_files_number";
     public static final int DEFAULT_EXPECTED_FILES_NUMBER = 5000;
 
+    public static final String LOADED_GENOTYPES = "loadedGenotypes";
+
     // Variant table configuration
     public static final String VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
     public static final String VARIANT_TABLE_PRESPLIT_SIZE = "opencga.variant.table.presplit.size";

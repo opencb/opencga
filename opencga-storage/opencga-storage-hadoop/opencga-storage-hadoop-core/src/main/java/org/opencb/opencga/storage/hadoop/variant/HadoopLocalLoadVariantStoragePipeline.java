@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
 
 /**
@@ -227,6 +228,11 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             }
         }
         logger.info("Read {} slices", counter);
+
+        if (sampleIndexDBLoader != null) {
+            // Update list of loaded genotypes
+            updateLoadedGenotypes(sampleIndexDBLoader.getLoadedGenotypes());
+        }
     }
 
     protected void loadFromAvro(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
@@ -270,6 +276,19 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         } catch (ExecutionException e) {
             throw new StorageEngineException("Error loading file " + input, e);
         }
+
+        if (sampleIndexDBLoader != null) {
+            // Update list of loaded genotypes
+            updateLoadedGenotypes(sampleIndexDBLoader.getLoadedGenotypes());
+        }
+    }
+
+    private void updateLoadedGenotypes(HashSet<String> loadedGenotypes) throws StorageEngineException {
+        getStudyConfigurationManager().lockAndUpdate(getStudyId(), sc -> {
+            loadedGenotypes.addAll(sc.getAttributes().getAsStringList(LOADED_GENOTYPES));
+            sc.getAttributes().put(LOADED_GENOTYPES, loadedGenotypes);
+            return sc;
+        });
     }
 
     @Override

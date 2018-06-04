@@ -7,8 +7,10 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -20,6 +22,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.LOADED_GENOTYPES;
 
 /**
  * Creates and executes a MR job that finishes loading all the pending variants in the SampleIndex table.
@@ -34,6 +38,7 @@ import java.util.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
+    public static final String GENOTYPES_COUNTER_GROUP_NAME = "genotypes";
     private final Logger logger = LoggerFactory.getLogger(SampleIndexConsolidationDrive.class);
     private String sampleIndexTable;
     private int[] samples;
@@ -98,6 +103,26 @@ public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
     }
 
     @Override
+    protected void postExecution(Job job) throws IOException, StorageEngineException {
+        super.postExecution(job);
+
+        // Update list of loaded genotypes
+        Set<String> gts = new HashSet<>();
+        if (job.isSuccessful()) {
+            for (Counter counter : job.getCounters().getGroup(GENOTYPES_COUNTER_GROUP_NAME)) {
+                gts.add(counter.getName());
+            }
+            if (!gts.isEmpty()) {
+                getStudyConfigurationManager().lockAndUpdate(getStudyId(), sc -> {
+                    gts.addAll(sc.getAttributes().getAsStringList(LOADED_GENOTYPES));
+                    sc.getAttributes().put(LOADED_GENOTYPES, gts);
+                    return sc;
+                });
+            }
+        }
+    }
+
+    @Override
     protected String getJobOperationName() {
         return "consolidate_sample_index";
     }
@@ -136,6 +161,8 @@ public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
                 Put put = new Put(result.getRow());
                 for (Map.Entry<String, List<String>> entry : map.entrySet()) {
                     String gt = entry.getKey();
+                    context.getCounter(GENOTYPES_COUNTER_GROUP_NAME, gt).increment(entry.getValue().size());
+
                     List<String> variants = entry.getValue();
                     Cell cell = otherCells.get(gt);
                     if (cell == null) {
