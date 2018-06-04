@@ -141,28 +141,39 @@ public class SampleIndexConsolidationDrive extends AbstractAnalysisTableDriver {
                     if (cell == null) {
                         context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "new_gt").increment(1);
                         put.addColumn(family, Bytes.toBytes(gt), Bytes.toBytes(String.join(",", variants)));
+                        put.addColumn(family, SampleIndexConverter.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
                     } else {
                         context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt").increment(1);
                         // Merge with existing values
                         TreeSet<Variant> variantsSet = new TreeSet<>(SampleIndexConverter.VARIANT_COMPARATOR);
-                        variantsSet.addAll(SampleIndexConverter.getVariants(cell));
+                        List<Variant> loadedVariants = SampleIndexConverter.getVariants(cell);
+                        variantsSet.addAll(loadedVariants);
                         for (String variant : variants) {
                             variantsSet.add(new Variant(variant));
                         }
 
-                        StringBuilder sb = new StringBuilder();
-                        for (Variant variant : variantsSet) {
-                            sb.append(variant.toString());
-                            sb.append(',');
+                        if (loadedVariants.size() == variantsSet.size()) {
+                            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt_skip").increment(1);
+                        } else {
+                            StringBuilder sb = new StringBuilder();
+                            Iterator<Variant> iterator = variantsSet.iterator();
+                            // Add first directly. List can not be empty.
+                            sb.append(iterator.next().toString());
+                            while (iterator.hasNext()) {
+                                Variant variant = iterator.next();
+                                sb.append(',');
+                                sb.append(variant.toString());
+                            }
+
+                            put.addColumn(family, SampleIndexConverter.toGenotypeColumn(gt), Bytes.toBytes(sb.toString()));
+                            put.addColumn(family, SampleIndexConverter.toGenotypeCountColumn(gt), Bytes.toBytes(variantsSet.size()));
                         }
-                        put.addColumn(family, Bytes.toBytes(gt), Bytes.toBytes(sb.toString()));
-
-
-                        // TODO: Update counters!
                     }
                 }
 
-                context.write(k, put);
+                if (!put.isEmpty()) {
+                    context.write(k, put);
+                }
                 context.write(k, delete);
             }
         }

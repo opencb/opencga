@@ -94,6 +94,14 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         }
     }
 
+    public static byte[] toGenotypeColumn(String genotype) {
+        return Bytes.toBytes(genotype);
+    }
+
+    public static byte[] toGenotypeCountColumn(String genotype) {
+        return Bytes.toBytes(GENOTYPE_COUNT_PREFIX + genotype);
+    }
+
     public static byte[] toPendingColumn(Variant variant, String gt) {
         return Bytes.toBytes(PENDING_VARIANT_PREFIX + variant.toString() + '_' + gt);
     }
@@ -134,9 +142,10 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         Map<String, List<Variant>> map = new HashMap<>();
         for (Cell cell : result.rawCells()) {
             String gt = Bytes.toString(CellUtil.cloneQualifier(cell));
-            List<Variant> variants = getVariants(cell);
-            map.put(gt, variants);
-
+            if (gt.charAt(0) != META_PREFIX) {
+                List<Variant> variants = getVariants(cell);
+                map.put(gt, variants);
+            }
         }
         return map;
     }

@@ -386,12 +386,22 @@ public class VariantHbaseTestUtils {
 
                     table.getScanner(new Scan()).iterator().forEachRemaining(result -> {
 
-                        SampleIndexConverter converter = new SampleIndexConverter();
-                        Map<String, List<Variant>> map = converter.convertToMap(result);
+//                        SampleIndexConverter converter = new SampleIndexConverter();
+//                        Map<String, List<Variant>> map = converter.convertToMap(result);
+                        Map<String, String> map = new TreeMap<>();
+                        for (Cell cell : result.rawCells()) {
+                            String s = Bytes.toString(CellUtil.cloneQualifier(cell));
+                            byte[] value = CellUtil.cloneValue(cell);
+                            if (s.startsWith("_C_")) {
+                                map.put(s, String.valueOf(Bytes.toInt(value)));
+                            } else {
+                                map.put(s, Bytes.toString(value));
+                            }
+                        }
 
                         out.println("_______________________");
                         out.println(SampleIndexConverter.rowKeyToString(result.getRow()));
-                        for (Map.Entry<String, List<Variant>> entry : map.entrySet()) {
+                        for (Map.Entry<String, ?> entry : map.entrySet()) {
                             out.println("\t" + entry.getKey() + " = " + entry.getValue());
                         }
 

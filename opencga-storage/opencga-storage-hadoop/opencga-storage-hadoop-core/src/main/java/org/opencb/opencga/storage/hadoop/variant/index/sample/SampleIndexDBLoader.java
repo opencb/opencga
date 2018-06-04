@@ -12,6 +12,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeColumn;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeCountColumn;
+
 /**
  * Created on 14/05/18.
  *
@@ -23,7 +26,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
     private final List<Integer> sampleIds;
     private final byte[] family;
     // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, StringBuilder>
-    private final Map<IndexChunk, List<Map<String, StringBuilder>>> buffer = new LinkedHashMap<>();
+    private final Map<IndexChunk, List<Map<String, Set<String>>>> buffer = new LinkedHashMap<>();
 
     public SampleIndexDBLoader(HBaseManager hBaseManager, String tableName, List<Integer> sampleIds, byte[] family) {
         super(hBaseManager, tableName);
@@ -79,17 +82,17 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
             for (List<String> samplesData : variant.getStudies().get(0).getSamplesData()) {
                 String gt = samplesData.get(0);
                 if (validVariant(variant) && validGenotype(gt)) {
-                    StringBuilder stringBuilder = buffer
+                    Set<String> variantsList = buffer
                             .computeIfAbsent(indexChunk, k -> {
-                                List<Map<String, StringBuilder>> list = new ArrayList<>(sampleIds.size());
+                                List<Map<String, Set<String>>> list = new ArrayList<>(sampleIds.size());
                                 for (int i = 0; i < sampleIds.size(); i++) {
                                     list.add(new HashMap<>());
                                 }
                                 return list;
                             })
                             .get(sampleIdx)
-                            .computeIfAbsent(gt, k -> new StringBuilder());
-                    stringBuilder.append(variant.toString()).append(',');
+                            .computeIfAbsent(gt, k -> new TreeSet<>());
+                    variantsList.add(variant.toString());
                 }
                 sampleIdx++;
             }
@@ -138,16 +141,17 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
 
         while (buffer.size() > remain) {
             IndexChunk indexChunk = buffer.keySet().iterator().next();
-            List<Map<String, StringBuilder>> sampleList = buffer.remove(indexChunk);
+            List<Map<String, Set<String>>> sampleList = buffer.remove(indexChunk);
             Iterator<Integer> sampleIterator = sampleIds.iterator();
-            for (Map<String, StringBuilder> gtsMap : sampleList) {
+            for (Map<String, Set<String>> gtsMap : sampleList) {
                 Integer sampleId = sampleIterator.next();
 
                 byte[] rk = SampleIndexConverter.toRowKey(sampleId, indexChunk.chromosome, indexChunk.position);
                 Put put = new Put(rk);
 
-                for (Map.Entry<String, StringBuilder> gtsEntry : gtsMap.entrySet()) {
-                    put.addColumn(family, Bytes.toBytes(gtsEntry.getKey()), Bytes.toBytes(gtsEntry.getValue().toString()));
+                for (Map.Entry<String, Set<String>> gtsEntry : gtsMap.entrySet()) {
+                    put.addColumn(family, toGenotypeColumn(gtsEntry.getKey()), Bytes.toBytes(String.join(",", gtsEntry.getValue())));
+                    put.addColumn(family, toGenotypeCountColumn(gtsEntry.getKey()), Bytes.toBytes(gtsEntry.getValue().size()));
                 }
                 puts.add(put);
             }
