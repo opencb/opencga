@@ -155,7 +155,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
                     put.addColumn(family, toGenotypeColumn(gtsEntry.getKey()), Bytes.toBytes(String.join(",", gtsEntry.getValue())));
                     put.addColumn(family, toGenotypeCountColumn(gtsEntry.getKey()), Bytes.toBytes(gtsEntry.getValue().size()));
                 }
-                puts.add(put);
+                if (!put.isEmpty()) {
+                    puts.add(put);
+                }
             }
         }
 

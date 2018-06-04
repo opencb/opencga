@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
@@ -728,18 +729,23 @@ public class VariantSqlQueryParser {
                 int studyId = defaultStudyConfiguration.getStudyId();
                 int sampleId = studyConfigurationManager.getSampleId(entry.getKey(), defaultStudyConfiguration);
                 Set<String> genotypes = new LinkedHashSet<>(entry.getValue().size());
-                // TODO: Read LOADED_GENOTYPES from StudyConfiguration!
-                List<String> loadedGenotypes = Arrays.asList(
-                        ".", "./.",
-                        "0/0", "0|0",
-                        "0/1", "1/0", "1/1",
-                        "0/2", "1/2", "2/2",
-                        "0/3", "1/3", "2/3", "3/3",
-                        ".|.",
-                        "0|1", "1|0", "1|1",
-                        "0|2", "2|0", "2|1", "1|2", "2|2",
-                        "0|3", "1|3", "2|3", "3|3",
-                        "3|0", "3|1", "3|2");
+                List<String> loadedGenotypes;
+                if (defaultStudyConfiguration.getAttributes().containsKey(HadoopVariantStorageEngine.LOADED_GENOTYPES)) {
+                    loadedGenotypes = defaultStudyConfiguration.getAttributes()
+                            .getAsStringList(HadoopVariantStorageEngine.LOADED_GENOTYPES);
+                } else {
+                    loadedGenotypes = Arrays.asList(
+                            ".", "./.",
+                            "0/0", "0|0",
+                            "0/1", "1/0", "1/1",
+                            "0/2", "1/2", "2/2",
+                            "0/3", "1/3", "2/3", "3/3",
+                            ".|.",
+                            "0|1", "1|0", "1|1",
+                            "0|2", "2|0", "2|1", "1|2", "2|2",
+                            "0|3", "1|3", "2|3", "3|3",
+                            "3|0", "3|1", "3|2");
+                }
 
                 for (String gt : entry.getValue()) {
                     GenotypeClass genotypeClass = GenotypeClass.from(gt);
@@ -747,6 +753,7 @@ public class VariantSqlQueryParser {
                         genotypes.add(gt);
                     } else {
                         genotypes.addAll(genotypeClass.filter(loadedGenotypes));
+                        genotypes.addAll(genotypeClass.filter("0/0", "./."));
                     }
                 }
                 // If empty, should find none. Add non-existing genotype
