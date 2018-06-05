@@ -127,10 +127,12 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
         Set<Variant> variants = new TreeSet<>(VARIANT_COMPARATOR);
 
         for (Cell cell : result.rawCells()) {
-            for (String v : Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()).split(",")) {
-                Variant e = new Variant(v);
-                if (region == null || region.contains(e.getChromosome(), e.getStart())) {
-                    variants.add(e);
+            if (cell.getQualifierArray()[cell.getQualifierOffset()] != META_PREFIX) {
+                for (String v : Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()).split(",")) {
+                    Variant e = new Variant(v);
+                    if (region == null || region.contains(e.getChromosome(), e.getStart())) {
+                        variants.add(e);
+                    }
                 }
             }
         }
@@ -166,5 +168,16 @@ public class SampleIndexConverter implements Converter<Result, Collection<Varian
             variants = Collections.emptyList();
         }
         return variants;
+    }
+
+    public int convertToCount(Result result) {
+        int count = 0;
+        for (Cell cell : result.rawCells()) {
+            String column = Bytes.toString(CellUtil.cloneQualifier(cell));
+            if (column.startsWith(SampleIndexConverter.GENOTYPE_COUNT_PREFIX)) {
+                count += Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+            }
+        }
+        return count;
     }
 }

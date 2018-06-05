@@ -48,9 +48,6 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -69,10 +66,10 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -187,6 +184,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     private final AtomicReference<VariantHadoopDBAdaptor> dbAdaptor = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(HadoopVariantStorageEngine.class);
     private HBaseVariantTableNameGenerator tableNameGenerator;
+    private final AtomicReference<SampleIndexDBAdaptor> sampleIndexDBAdaptor = new AtomicReference<>();
 
     public HadoopVariantStorageEngine() {
 //        variantReaderUtils = new HdfsVariantReaderUtils(conf);
@@ -733,6 +731,22 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return dbAdaptor.get();
     }
 
+    public SampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
+        VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = this.sampleIndexDBAdaptor.get();
+        if (sampleIndexDBAdaptor == null) {
+            synchronized (this.sampleIndexDBAdaptor) {
+                sampleIndexDBAdaptor = this.sampleIndexDBAdaptor.get();
+                if (sampleIndexDBAdaptor == null) {
+                    sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getGenomeHelper(), dbAdaptor.getHBaseManager(),
+                            dbAdaptor.getTableNameGenerator(), dbAdaptor.getStudyConfigurationManager());
+                    this.sampleIndexDBAdaptor.set(sampleIndexDBAdaptor);
+                }
+            }
+        }
+        return sampleIndexDBAdaptor;
+    }
+
     private synchronized HBaseManager getHBaseManager(Configuration configuration) {
         if (hBaseManager == null) {
             hBaseManager = new HBaseManager(configuration);
@@ -780,6 +794,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         if (dbAdaptor.get() != null) {
             dbAdaptor.get().close();
             dbAdaptor.set(null);
+        }
+        if (sampleIndexDBAdaptor.get() != null) {
+//            sampleIndexDBAdaptor.get().close();
+            sampleIndexDBAdaptor.set(null);
         }
     }
 
@@ -898,8 +916,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         logger.info("HBase SampleIndex intersect");
 
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getGenomeHelper(), dbAdaptor.getHBaseManager(),
-                dbAdaptor.getTableNameGenerator(), dbAdaptor.getStudyConfigurationManager());
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = getSampleIndexDBAdaptor();
 
         // Build SampleIndexTable query. Extract Regions, Study, Sample and Genotypes
         // Extract regions
@@ -1006,12 +1023,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 int sampling = variants.getCount();
                 int limit = options.getInt(QueryOptions.LIMIT, 0);
                 if (limit > 0 && limit > result.getNumResults()) {
+                    // Less results than limit. Count is not approximated
                     result.setApproximateCount(false);
                     result.setNumTotalResults(result.getNumResults());
                 } else if (variants.hasNext()) {
-                    Iterators.getLast(variants);
-                    int totalCount = variants.getCount();
-                    int approxCount = totalCount / sampling * result.getNumResults();
+//                    Iterators.getLast(variants);
+//                    int totalCount = variants.getCount();
+                    long totalCount = sampleIndexDBAdaptor.count(regions, study, sample, gts);
+                    long approxCount = totalCount / sampling * result.getNumResults();
                     logger.info("totalCount = " + totalCount);
                     logger.info("sampling = " + sampling);
                     logger.info("result.getNumResults() = " + result.getNumResults());

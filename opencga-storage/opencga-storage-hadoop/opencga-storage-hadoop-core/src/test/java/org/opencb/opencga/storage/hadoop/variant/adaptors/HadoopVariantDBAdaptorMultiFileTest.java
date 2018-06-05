@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -9,6 +10,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorMultiFileTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -16,12 +18,14 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withFileId;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withStudy;
 
 /**
  * Created on 24/10/17.
@@ -39,10 +43,10 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
         super.before();
         if (loaded && !wasLoaded) {
             VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor()), newOutputUri(getClass().getSimpleName()));
-            for (String study : variantStorageEngine.getDBAdaptor().getStudyConfigurationManager().getStudies(null).keySet()) {
-                variantStorageEngine.fillMissing(study, new ObjectMap(), false);
-            }
-            VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor()), newOutputUri(getClass().getSimpleName()));
+//            for (String study : variantStorageEngine.getDBAdaptor().getStudyConfigurationManager().getStudies(null).keySet()) {
+//                variantStorageEngine.fillMissing(study, new ObjectMap(), false);
+//            }
+//            VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor()), newOutputUri(getClass().getSimpleName()));
         }
     }
 
@@ -158,6 +162,31 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertEquals(expectedSource, queryResult.getSource());
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", withFileId("12877"))));
+    }
+
+    @Test
+    public void testSampleIndexDBAdaptor() throws StorageEngineException {
+        List<List<Region>> regionLists = Arrays.asList(null, Arrays.asList(new Region("1", 1000, 300000)));
+
+        for (List<Region> regions : regionLists) {
+            StopWatch stopWatch = StopWatch.createStarted();
+            long actualCount = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor().count(regions, "S_1", "NA12877", Arrays.asList("0/1", "1/1"));
+            Query query = new Query(VariantQueryParam.STUDY.key(), "S_1")
+                    .append(VariantQueryParam.SAMPLE.key(), "NA12877");
+            if (regions != null) {
+                query.append(VariantQueryParam.REGION.key(), regions);
+            }
+            System.out.println("Count indexTable " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+            System.out.println("Count = " + actualCount);
+            stopWatch = StopWatch.createStarted();
+            long expectedCount = dbAdaptor.count(query).first();
+            System.out.println("Count variants   " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+            System.out.println("Count = " + expectedCount);
+            System.out.println("-----------------------------------");
+            assertEquals(expectedCount, actualCount);
+        }
+
+
     }
 
 

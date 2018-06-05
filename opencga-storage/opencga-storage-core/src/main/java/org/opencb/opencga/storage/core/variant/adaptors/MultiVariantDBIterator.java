@@ -47,6 +47,8 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     // Count of returned results.
     private int numResults;
     private Logger logger = LoggerFactory.getLogger(MultiVariantDBIterator.class);
+    private Query query;
+    private int numQueries;
 
     /**
      * Creates a multi iterator given a iterator of variants. It will apply the query (if any) to all the variants in the iterator.
@@ -91,6 +93,8 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         this.options.remove(QueryOptions.LIMIT);
         this.options.remove(QueryOptions.SKIP);
 
+        query = null;
+        numQueries = 0;
     }
 
     @Override
@@ -113,7 +117,8 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     private void nextVariantIterator() {
         while (!fetch(variantDBIterator::hasNext) && fetch(queryIterator::hasNext)) {
             terminateIterator();
-            Query query = fetch(queryIterator::next);
+            query = fetch(queryIterator::next);
+            numQueries++;
             QueryOptions options;
             if (maxResults != Integer.MAX_VALUE) {
                 // We are expecting no more than maxResults - numResults
@@ -210,4 +215,11 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         };
     }
 
+    public Query getQuery() {
+        return query;
+    }
+
+    public int getNumQueries() {
+        return numQueries;
+    }
 }
