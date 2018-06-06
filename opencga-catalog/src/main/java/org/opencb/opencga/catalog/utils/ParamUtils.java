@@ -148,4 +148,22 @@ public class ParamUtils {
         }
         return object;
     }
+
+    public enum BasicUpdateAction {
+        ADD,
+        REMOVE
+    }
+
+    public enum UpdateAction {
+        ADD,
+        SET,
+        REMOVE
+    }
+
+    public enum CompleteUpdateAction {
+        ADD,
+        SET,
+        REMOVE,
+        RESET
+    }
 }

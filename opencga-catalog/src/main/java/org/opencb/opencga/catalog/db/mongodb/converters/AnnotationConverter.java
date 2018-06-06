@@ -158,8 +158,8 @@ public class AnnotationConverter {
                             : Collections.emptyList();
 
                     // We create a new annotation set if the map doesn't still contain the key
-                    String annSetName = (String) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SET_NAME
-                            .key());
+                    String annSetName = (String) annotationDocument.get(
+                            AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SET_NAME.key());
                     long variableSetUid = (Long) annotationDocument.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
                     String compoundKey = annSetName + INTERNAL_DELIMITER + variableSetUid;
                     String variableSetId = variableSetUidIdMap.getString(String.valueOf(variableSetUid));

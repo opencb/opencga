@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -372,6 +373,72 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
     }
 
+    public QueryResult<Cohort> updateAnnotationSet(String studyStr, String cohortStr, List<AnnotationSet> annotationSetList,
+                                                   ParamUtils.UpdateAction action, QueryOptions options, String token)
+            throws CatalogException {
+        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, annotationSetList);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
+
+        return update(studyStr, cohortStr, params, options, token);
+    }
+
+    public QueryResult<Cohort> addAnnotationSet(String studyStr, String cohortStr, AnnotationSet annotationSet, QueryOptions options,
+                                                String token) throws CatalogException {
+        return addAnnotationSets(studyStr, cohortStr, Collections.singletonList(annotationSet), options, token);
+    }
+
+    public QueryResult<Cohort> addAnnotationSets(String studyStr, String cohortStr, List<AnnotationSet> annotationSetList,
+                                                 QueryOptions options, String token) throws CatalogException {
+        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.UpdateAction.ADD, options, token);
+    }
+
+    public QueryResult<Cohort> setAnnotationSet(String studyStr, String cohortStr, AnnotationSet annotationSet, QueryOptions options,
+                                                String token) throws CatalogException {
+        return setAnnotationSets(studyStr, cohortStr, Collections.singletonList(annotationSet), options, token);
+    }
+
+    public QueryResult<Cohort> setAnnotationSets(String studyStr, String cohortStr, List<AnnotationSet> annotationSetList,
+                                                 QueryOptions options, String token) throws CatalogException {
+        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.UpdateAction.SET, options, token);
+    }
+
+    public QueryResult<Cohort> removeAnnotationSet(String studyStr, String cohortStr, String annotationSetId, QueryOptions options,
+                                                   String token) throws CatalogException {
+        return removeAnnotationSets(studyStr, cohortStr, Collections.singletonList(annotationSetId), options, token);
+    }
+
+    public QueryResult<Cohort> removeAnnotationSets(String studyStr, String cohortStr, List<String> annotationSetIdList,
+                                                    QueryOptions options, String token) throws CatalogException {
+        List<AnnotationSet> annotationSetList = annotationSetIdList
+                .stream()
+                .map(id -> new AnnotationSet().setId(id))
+                .collect(Collectors.toList());
+        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.UpdateAction.REMOVE, options, token);
+    }
+
+    public QueryResult<Cohort> updateAnnotations(String studyStr, String cohortStr, String annotationSetId,
+                                                     Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
+                                                     QueryOptions options, String token) throws CatalogException {
+        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
+
+        return update(studyStr, cohortStr, params, options, token);
+    }
+
+    public QueryResult<Cohort> removeAnnotations(String studyStr, String cohortStr, String annotationSetId,
+                                                     List<String> annotations, QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(studyStr, cohortStr, annotationSetId, new ObjectMap("remove", StringUtils.join(annotations, ",")),
+                ParamUtils.CompleteUpdateAction.REMOVE, options, token);
+    }
+
+    public QueryResult<Cohort> resetAnnotations(String studyStr, String cohortStr, String annotationSetId, List<String> annotations,
+                                                    QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(studyStr, cohortStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
+                ParamUtils.CompleteUpdateAction.RESET, options, token);
+    }
+
     @Override
     public QueryResult<Cohort> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -450,7 +517,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         MyResource<Cohort> resource = new MyResource<>(user, study, cohort);
 
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, cohortDBAdaptor);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
+                cohortDBAdaptor);
 
         QueryResult<Cohort> queryResult = cohortDBAdaptor.update(cohort.getUid(), parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, cohort.getUid(), resource.getUser(), parameters, null, null);

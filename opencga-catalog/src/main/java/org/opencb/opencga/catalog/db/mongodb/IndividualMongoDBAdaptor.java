@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.IndividualMongoDBIterator
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
@@ -334,9 +335,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
         QueryOptions queryOptions = new QueryOptions();
         List<String> includeList = new ArrayList<>();
-        includeList.add(QueryParams.ANNOTATION_SETS.key());
         if (StringUtils.isNotEmpty(annotationSetName)) {
             includeList.add(Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+        } else {
+            includeList.add(QueryParams.ANNOTATION_SETS.key());
         }
         queryOptions.put(QueryOptions.INCLUDE, includeList);
 
@@ -357,9 +359,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumTotalResults() != 1 && parameters.size() > 0 && !(parameters.size() <= 3
-                && (parameters.containsKey(QueryParams.ANNOTATION_SETS.key()) || parameters.containsKey(Constants.DELETE_ANNOTATION_SET)
-                || parameters.containsKey(Constants.DELETE_ANNOTATION)))) {
+        if (update.getNumTotalResults() != 1 && parameters.size() > 0 && !(parameters.size() <= 2
+                && (parameters.containsKey(QueryParams.ANNOTATION_SETS.key())
+                || parameters.containsKey(AnnotationSetManager.ANNOTATIONS)))) {
             throw new CatalogDBException("Could not update individual with id " + id);
         }
         Query query = new Query()
@@ -378,35 +380,50 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             throws CatalogDBException {
         long startTime = startQuery();
         if (queryOptions.getBoolean(Constants.REFRESH)) {
-            updateToLastSampleVersions(query, parameters);
+            updateToLastSampleVersions(query, parameters, queryOptions);
         }
 
-        Document individualParameters = parseAndValidateUpdateParams(parameters, query);
-        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList);
-        if (individualParameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
+        UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, queryOptions);
+//        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList);
+        if (updateDocument.getSet().containsKey(QueryParams.STATUS_NAME.key())) {
+//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
+            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
             query.put(Constants.ALL_VERSIONS, true);
-            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
-                    new Document("$set", individualParameters), new QueryOptions("multi", true));
+
+            Bson finalQuery = parseQuery(query, false);
+            Document finalUpdateDocument = updateDocument.toFinalUpdateDocument();
+            logger.debug("Individual update: query : {}, update: {}",
+                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    finalUpdateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            QueryResult<UpdateResult> update = individualCollection.update(finalQuery, finalUpdateDocument,
+                    new QueryOptions("multi", true));
             return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
 
         if (!queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            if (!individualParameters.isEmpty()) {
-                QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false),
-                        new Document("$set", individualParameters), new QueryOptions("multi", true));
+//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
+            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+            Document individualUpdate = updateDocument.toFinalUpdateDocument();
+            if (!individualUpdate.isEmpty()) {
+                Bson finalQuery = parseQuery(query, false);
+                logger.debug("Individual update: query : {}, update: {}",
+                        finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                        individualUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+                QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false), individualUpdate,
+                        new QueryOptions("multi", true));
                 return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
             }
         } else {
-            return updateAndCreateNewVersion(query, individualParameters, annotationUpdateMap, queryOptions);
+            return updateAndCreateNewVersion(query, updateDocument, parameters, variableSetList, queryOptions);
         }
 
         return endQuery("Update individual", startTime, new QueryResult<>());
     }
 
-    private void updateToLastSampleVersions(Query query, ObjectMap parameters) throws CatalogDBException {
+    private void updateToLastSampleVersions(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
             throw new CatalogDBException("Invalid option: Cannot update to the last version of samples and update to different samples at "
                     + "the same time.");
@@ -436,11 +453,24 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         ));
         QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sampleQuery, options);
         parameters.put(QueryParams.SAMPLES.key(), sampleQueryResult.getResult());
+
+        // Add SET action for samples
+        queryOptions.putIfAbsent(Constants.ACTIONS, new HashMap<>());
+        queryOptions.getMap(Constants.ACTIONS).put(UpdateParams.SAMPLES.key(), SET);
     }
 
-    private QueryResult<Long> updateAndCreateNewVersion(Query query, Document individualParameters, ObjectMap annotationUpdateMap,
-                                                        QueryOptions queryOptions) throws CatalogDBException {
+    private QueryResult<Long> updateAndCreateNewVersion(Query query, UpdateDocument updateDocument,  ObjectMap parameters,
+                                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
         long startTime = startQuery();
+
+        // TODO: Make this possible. At the moment it is difficult because we need to push or pull anything in Java and the object are
+        // TODO: not quite the same
+        if (!updateDocument.getPull().isEmpty() || !updateDocument.getAddToSet().isEmpty() || !updateDocument.getPullAll().isEmpty()
+                || !updateDocument.getPush().isEmpty()) {
+            throw new CatalogDBException("Adding or removing new data to arrays is not allowed with the version increment at the moment. "
+                    + "Please do two calls: 1. Increment version only, 2. Update any fields with version increment set to false.");
+        }
 
         QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
         int release = queryOptions.getInt(Constants.CURRENT_RELEASE, -1);
@@ -483,19 +513,21 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             individualDocument.put(QueryParams.VERSION.key(), individualDocument.getInteger(QueryParams.VERSION.key()) + 1);
 
             // We apply the updates the user wanted to apply (if any)
-            mergeDocument(individualDocument, individualParameters);
+            mergeDocument(individualDocument, updateDocument.getSet());
 
             // Insert the new version document
             individualCollection.insert(individualDocument, QueryOptions.empty());
 
-            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
+//            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
+            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
         }
 
         return endQuery("Update individual", startTime, Arrays.asList(queryResult.getNumTotalResults()));
     }
 
-    private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
-        Document individualParameters = new Document();
+    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
+            throws CatalogDBException {
+        UpdateDocument document = new UpdateDocument();
 
         if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one individual...
@@ -523,46 +555,63 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 
-            individualParameters.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
+            document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
                 QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.AFFECTATION_STATUS.key(),
                 QueryParams.DATE_OF_BIRTH.key(), };
-        filterStringParams(parameters, individualParameters, acceptedParams);
+        filterStringParams(parameters, document.getSet(), acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), Individual.Sex.class);
-        filterEnumParams(parameters, individualParameters, acceptedEnums);
+        filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         String[] acceptedIntParams = {QueryParams.FATHER_UID.key(), QueryParams.MOTHER_UID.key()};
-        filterLongParams(parameters, individualParameters, acceptedIntParams);
+        filterLongParams(parameters, document.getSet(), acceptedIntParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
-        filterMapParams(parameters, individualParameters, acceptedMapParams);
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.MULTIPLES.key(), QueryParams.SAMPLES.key()};
-        filterObjectParams(parameters, individualParameters, acceptedObjectParams);
+        String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.MULTIPLES.key()};
+        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            individualParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+            document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         //Check individualIds exist
         String[] individualIdParams = {QueryParams.FATHER_UID.key(), QueryParams.MOTHER_UID.key()};
         for (String individualIdParam : individualIdParams) {
-            if (individualParameters.containsKey(individualIdParam)) {
-                Long individualId1 = (Long) individualParameters.get(individualIdParam);
+            if (document.getSet().containsKey(individualIdParam)) {
+                Long individualId1 = (Long) document.getSet().get(individualIdParam);
                 if (individualId1 > 0 && !exists(individualId1)) {
                     throw CatalogDBException.uidNotFound("Individual " + individualIdParam, individualId1);
                 }
             }
         }
 
-        individualConverter.validateSamplesToUpdate(individualParameters);
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+        String operation = (String) actionMap.getOrDefault(UpdateParams.SAMPLES.key(), "ADD");
+        acceptedObjectParams = new String[]{UpdateParams.SAMPLES.key()};
+        switch (operation) {
+            case "SET":
+                filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+                individualConverter.validateSamplesToUpdate(document.getSet());
+                break;
+            case "REMOVE":
+                filterObjectParams(parameters, document.getPullAll(), acceptedObjectParams);
+                individualConverter.validateSamplesToUpdate(document.getPullAll());
+                break;
+            case "ADD":
+            default:
+                filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
+                individualConverter.validateSamplesToUpdate(document.getAddToSet());
+                break;
+        }
 
-        return individualParameters;
+        return document;
     }
 
     @Override

@@ -81,7 +81,7 @@ public class CatalogSampleAnnotationsLoader {
             Map<String, Object> annotation = getAnnotation(individual, sampleMap, variableSet, ped.getFields());
             try {
                 CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation, "", 1,
-                        null), null);
+                        null), null, true);
             } catch (CatalogException e) {
                 String message = "Validation with the variableSet {id: " + variableSetId + "} over ped File = {path: " + pedFile.getPath()
                         + ", name: \"" + pedFile.getName() + "\"} failed";

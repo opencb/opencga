@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.FileScanner;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -397,14 +398,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateGroupPOST(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
-                @QueryParam("action") BasicUpdateAction action,
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
                 throw new CatalogException("Missing mandatory action parameter");
             }
             QueryResult group;
-            if (action == BasicUpdateAction.ADD) {
+            if (action == ParamUtils.BasicUpdateAction.ADD) {
                 group = catalogManager.getStudyManager().createGroup(studyStr, params.name, params.users, sessionId);
             } else {
                 group = catalogManager.getStudyManager().deleteGroup(studyStr, params.name, sessionId);
@@ -729,7 +730,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response createOrRemoveVariableSets(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", defaultValue = "ADD", required = true)
-                @QueryParam("action") BasicUpdateAction action,
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetParameters params) {
         try {
             if (action == null) {
@@ -737,7 +738,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
 
             QueryResult<VariableSet> queryResult;
-            if (action == BasicUpdateAction.ADD) {
+            if (action == ParamUtils.BasicUpdateAction.ADD) {
                 // Fix variable set params to support 1.3.x
                 // TODO: Remove in version 2.0.0
                 params.id = StringUtils.isNotEmpty(params.id) ? params.id : params.name;
@@ -773,7 +774,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", defaultValue = "ADD", required = true)
-                @QueryParam("action") BasicUpdateAction action,
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.",
                     required = true) Variable variable) {
         try {
@@ -782,7 +783,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
 
             QueryResult<VariableSet> queryResult;
-            if (action == BasicUpdateAction.ADD) {
+            if (action == ParamUtils.BasicUpdateAction.ADD) {
                 queryResult = catalogManager.getStudyManager().addFieldToVariableSet(studyStr, variableSetId, variable, sessionId);
             } else {
                 queryResult = catalogManager.getStudyManager().removeFieldFromVariableSet(studyStr, variableSetId, variable.getId(),

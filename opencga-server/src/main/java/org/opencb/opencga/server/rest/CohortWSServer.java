@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CohortManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -264,23 +265,42 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Delete a specific annotation set. AnnotationSetName expected.") @QueryParam(Constants.DELETE_ANNOTATION_SET)
-                    String deleteAnnotationSet,
-            @ApiParam(value = "Delete a specific annotation. Format: Comma separated list of annotationSetName:variable")
-                @QueryParam(Constants.DELETE_ANNOTATION) String deleteAnnotation,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
+                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "params") Map<String, Object> params) {
         try {
-            ObjectUtils.defaultIfNull(params, new HashMap<>());
+            Map<String, Object> actionMap = new HashMap<>();
 
-            if (StringUtils.isNotEmpty(deleteAnnotation)) {
-                params.put(CohortDBAdaptor.UpdateParams.DELETE_ANNOTATION.key(), deleteAnnotation);
-            }
-            if (StringUtils.isNotEmpty(deleteAnnotationSet)) {
-                params.put(CohortDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), deleteAnnotationSet);
-            }
+            actionMap.put(CohortDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
+            queryOptions.put(Constants.ACTIONS, actionMap);
 
             return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortStr, new ObjectMap(params), queryOptions,
                     sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{cohort}/annotationSets/{annotationSet}/annotations/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update annotations from an annotationSet")
+    public Response updateAnnotations(
+            @ApiParam(value = "Cohort id", required = true) @PathParam("cohort") String cohortStr,
+            @ApiParam(value = "Study [[user@]project:]study.") @QueryParam("study") String studyStr,
+            @ApiParam(value = "AnnotationSet id to be updated.") @PathParam("annotationSet") String annotationSetId,
+            @ApiParam(value = "Action to be performed: ADD to add new annotations; SET to set the new list of annotations removing any "
+                    + "possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value "
+                    + "configured in the corresponding variables of the VariableSet if any.", defaultValue = "ADD")
+            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @ApiParam(value = "Json containing the map of annotations when the action is ADD or SET, a json with only the key "
+                    + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
+                    + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
+                    + " when the action is RESET"
+            ) Map<String, Object> updateParams) {
+        try {
+            return createOkResponse(catalogManager.getCohortManager().updateAnnotations(studyStr, cohortStr, annotationSetId,
+                    updateParams, action, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -309,7 +329,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/annotationsets/search")
-    @ApiOperation(value = "Search annotation sets [DEPRECATED]", position = 11, notes = "Use /cohorts/search instead")
+    @ApiOperation(value = "Search annotation sets [DEPRECATED]", hidden = true, position = 11, notes = "Use /cohorts/search instead")
     public Response searchAnnotationSetGET(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
@@ -360,7 +380,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohorts}/annotationsets")
-    @ApiOperation(value = "Return all the annotation sets of the cohort [DEPRECATED]", position = 12,
+    @ApiOperation(value = "Return all the annotation sets of the cohort [DEPRECATED]", hidden = true, position = 12,
             notes = "Use /cohorts/search instead")
     public Response getAnnotationSet(
             @ApiParam(value = "Comma separated list of cohort Ids up to a maximum of 100", required = true) @PathParam("cohorts") String cohortsStr,
@@ -410,7 +430,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{cohort}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the cohort [DEPRECATED]", position = 13,
+    @ApiOperation(value = "Create an annotation set for the cohort [DEPRECATED]", hidden = true, position = 13,
             notes = "Use /{cohort}/update instead")
     public Response annotateSamplePOST(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
@@ -446,7 +466,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [DEPRECATED]", position = 14,
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [DEPRECATED]", hidden = true, position = 14,
             notes = "Use /{cohort}/update instead")
     public Response deleteAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
@@ -471,7 +491,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{cohort}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations [DEPRECATED]", position = 15,
+    @ApiOperation(value = "Update the annotations [DEPRECATED]", hidden = true, position = 15,
             notes = "Use /{cohort}/update instead")
     public Response updateAnnotationGET(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,

@@ -485,6 +485,72 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return writeResult;
     }
 
+    public QueryResult<Individual> updateAnnotationSet(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
+                                                   ParamUtils.UpdateAction action, QueryOptions options, String token)
+            throws CatalogException {
+        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, annotationSetList);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
+
+        return update(studyStr, individualStr, params, options, token);
+    }
+
+    public QueryResult<Individual> addAnnotationSet(String studyStr, String individualStr, AnnotationSet annotationSet,
+                                                    QueryOptions options, String token) throws CatalogException {
+        return addAnnotationSets(studyStr, individualStr, Collections.singletonList(annotationSet), options, token);
+    }
+
+    public QueryResult<Individual> addAnnotationSets(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
+                                                 QueryOptions options, String token) throws CatalogException {
+        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.UpdateAction.ADD, options, token);
+    }
+
+    public QueryResult<Individual> setAnnotationSet(String studyStr, String individualStr, AnnotationSet annotationSet,
+                                                    QueryOptions options, String token) throws CatalogException {
+        return setAnnotationSets(studyStr, individualStr, Collections.singletonList(annotationSet), options, token);
+    }
+
+    public QueryResult<Individual> setAnnotationSets(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
+                                                 QueryOptions options, String token) throws CatalogException {
+        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.UpdateAction.SET, options, token);
+    }
+
+    public QueryResult<Individual> removeAnnotationSet(String studyStr, String individualStr, String annotationSetId, QueryOptions options,
+                                                   String token) throws CatalogException {
+        return removeAnnotationSets(studyStr, individualStr, Collections.singletonList(annotationSetId), options, token);
+    }
+
+    public QueryResult<Individual> removeAnnotationSets(String studyStr, String individualStr, List<String> annotationSetIdList,
+                                                    QueryOptions options, String token) throws CatalogException {
+        List<AnnotationSet> annotationSetList = annotationSetIdList
+                .stream()
+                .map(id -> new AnnotationSet().setId(id))
+                .collect(Collectors.toList());
+        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.UpdateAction.REMOVE, options, token);
+    }
+
+    public QueryResult<Individual> updateAnnotations(String studyStr, String individualStr, String annotationSetId,
+                                                 Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
+                                                 QueryOptions options, String token) throws CatalogException {
+        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
+
+        return update(studyStr, individualStr, params, options, token);
+    }
+
+    public QueryResult<Individual> removeAnnotations(String studyStr, String individualStr, String annotationSetId,
+                                                     List<String> annotations, QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(studyStr, individualStr, annotationSetId, new ObjectMap("remove", StringUtils.join(annotations, ",")),
+                ParamUtils.CompleteUpdateAction.REMOVE, options, token);
+    }
+
+    public QueryResult<Individual> resetAnnotations(String studyStr, String individualStr, String annotationSetId, List<String> annotations,
+                                                QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(studyStr, individualStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
+                ParamUtils.CompleteUpdateAction.RESET, options, token);
+    }
+
     @Override
     public QueryResult<Individual> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -621,7 +687,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         MyResource<Individual> resource = new MyResource<>(userId, study, individual);
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, individualDBAdaptor);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
+                individualDBAdaptor);
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version

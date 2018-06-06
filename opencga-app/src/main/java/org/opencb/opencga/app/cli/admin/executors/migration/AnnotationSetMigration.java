@@ -5,12 +5,10 @@ import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.AnnotationMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -18,7 +16,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.VariableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +88,7 @@ public class AnnotationSetMigration {
 
                     AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSet.getId(), annotations,
                             Collections.emptyMap());
-                    CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, null);
+                    CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, null, true);
 
                     dbAdaptor.createAnnotationSetForMigration(next.get("_id"), variableSet, annotationSet);
                 }

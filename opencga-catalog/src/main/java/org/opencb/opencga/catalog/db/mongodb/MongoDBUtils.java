@@ -107,8 +107,8 @@ class MongoDBUtils {
     }
 
     /*
-    * Helper methods
-    ********************/
+     * Helper methods
+     ********************/
 
     static User parseUser(QueryResult<Document> result) throws CatalogDBException {
         return parseObject(result, User.class);
@@ -666,7 +666,7 @@ class MongoDBUtils {
     }
 
     static List<Document> addCompQueryFilter(QueryParam option, String optionKey, String queryKey,
-                                         ObjectMap options, List<Document> andQuery) throws CatalogDBException {
+                                             ObjectMap options, List<Document> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
             queryKey = "";
@@ -683,7 +683,7 @@ class MongoDBUtils {
     }
 
     public static List<Document> addCompQueryFilter(QueryParam.Type type, String queryKey, List<String> optionsList,
-                                                     List<Document> andQuery) throws CatalogDBException {
+                                                    List<Document> andQuery) throws CatalogDBException {
 
         ArrayList<Document> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {

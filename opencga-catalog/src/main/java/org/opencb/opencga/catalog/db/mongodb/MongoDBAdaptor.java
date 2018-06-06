@@ -68,6 +68,9 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     static final String INTERNAL_DELIMITER = "__";
 
+    // Possible update actions
+    static final String SET = "SET";
+
     protected MongoDBAdaptorFactory dbAdaptorFactory;
     protected Map<Long, String> variableUidIdMap;
 
@@ -387,6 +390,106 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
 
         collection.update(query, update, new QueryOptions("multi", true));
+    }
+
+    public class UpdateDocument {
+        private Document set;
+        private Document addToSet;
+        private Document push;
+        private Document pull;
+        private Document pullAll;
+
+        public UpdateDocument() {
+            this.set = new Document();
+            this.addToSet = new Document();
+            this.push = new Document();
+            this.pull = new Document();
+            this.pullAll = new Document();
+        }
+
+        public Document toFinalUpdateDocument() {
+            Document update = new Document();
+            if (!set.isEmpty()) {
+                update.put("$set", set);
+            }
+            if (!addToSet.isEmpty()) {
+                for (Map.Entry<String, Object> entry : addToSet.entrySet()) {
+                    if (entry.getValue() instanceof Collection) {
+                        // We need to add all the elements of the array
+                        entry.setValue(new Document("$each", entry.getValue()));
+                    }
+                }
+                update.put("$addToSet", addToSet);
+            }
+            if (!push.isEmpty()) {
+                for (Map.Entry<String, Object> entry : push.entrySet()) {
+                    if (entry.getValue() instanceof Collection) {
+                        // We need to add all the elements of the array
+                        entry.setValue(new Document("$each", entry.getValue()));
+                    }
+                }
+                update.put("$push", push);
+            }
+            if (!pull.isEmpty()) {
+                for (Map.Entry<String, Object> entry : pull.entrySet()) {
+                    if (entry.getValue() instanceof Collection) {
+                        // We need to pull all the elements of the array
+                        entry.setValue(new Document("$in", entry.getValue()));
+                    }
+                }
+                update.put("$pull", pull);
+            }
+            if (!pullAll.isEmpty()) {
+                update.put("$pullAll", pullAll);
+            }
+
+            return update;
+        }
+
+        public Document getSet() {
+            return set;
+        }
+
+        public UpdateDocument setSet(Document set) {
+            this.set = set;
+            return this;
+        }
+
+        public Document getAddToSet() {
+            return addToSet;
+        }
+
+        public UpdateDocument setAddToSet(Document addToSet) {
+            this.addToSet = addToSet;
+            return this;
+        }
+
+        public Document getPush() {
+            return push;
+        }
+
+        public UpdateDocument setPush(Document push) {
+            this.push = push;
+            return this;
+        }
+
+        public Document getPull() {
+            return pull;
+        }
+
+        public UpdateDocument setPull(Document pull) {
+            this.pull = pull;
+            return this;
+        }
+
+        public Document getPullAll() {
+            return pullAll;
+        }
+
+        public UpdateDocument setPullAll(Document pullAll) {
+            this.pullAll = pullAll;
+            return this;
+        }
     }
 
 }

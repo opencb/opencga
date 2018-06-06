@@ -125,10 +125,11 @@ public class CatalogAnnotationsValidator {
      * @param variableSet    VariableSet that describes the annotationSet.
      * @param annotationSet  AnnotationSet to check
      * @param annotationSets All the AnnotationSets of the sample
+     * @param addDefaultValues Boolean indicating whether to add missing annotations if there is a default value set for the variable.
      * @throws CatalogException CatalogException
      */
     public static void checkAnnotationSet(VariableSet variableSet, AnnotationSet annotationSet,
-                                          @Nullable List<AnnotationSet> annotationSets) throws CatalogException {
+                                          @Nullable List<AnnotationSet> annotationSets, boolean addDefaultValues) throws CatalogException {
         if (!variableSet.getId().equals(annotationSet.getVariableSetId())) {
             throw new CatalogException("VariableSet does not match with the AnnotationSet");
         }
@@ -164,12 +165,19 @@ public class CatalogAnnotationsValidator {
         Map<String, Object> defaultAnnotations = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
             if (!annotatedVariables.contains(variable.getId())) {
-                if (!addDefaultAnnotation(variable, defaultAnnotations)) {
+                if (addDefaultValues) {
+                    if (!addDefaultAnnotation(variable, defaultAnnotations)) {
+                        if (variable.isRequired()) {
+                            throw new CatalogException("Missing required variable " + variable.getId());
+                        }
+                    }
+                    annotatedVariables.add(variable.getId());
+                } else {
+                    // We don't attempt to add missing annotations
                     if (variable.isRequired()) {
                         throw new CatalogException("Missing required variable " + variable.getId());
                     }
                 }
-                annotatedVariables.add(variable.getId());
             }
         }
         annotationSet.getAnnotations().putAll(defaultAnnotations);
@@ -345,7 +353,7 @@ public class CatalogAnnotationsValidator {
                         Map objectMap = (Map) object;
                         checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, variable.getDescription(),
                                         variable.getVariableSet(), 1, null), new AnnotationSet("", variable.getId(), objectMap, null, 1,
-                                        null), null);
+                                        null), null, true);
                     }
                 }
                 break;

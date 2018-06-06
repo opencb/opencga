@@ -14,6 +14,11 @@ public class Constants {
      */
     public static final String FORCE = "force";
 
+    /**
+     * Map of actions that will only be used on updates to know how to deal with the update of array objects.
+     */
+    public static final String ACTIONS = "actions";
+
     /* ****************************************    Additional parameters                 ************************************************/
 
     /**
@@ -95,17 +100,6 @@ public class Constants {
      * Boolean indicating if the annotations have to be returned flattened or not. Default: false
      */
     public static final String FLATTENED_ANNOTATIONS = "flattenAnnotations";
-
-    /**
-     * String containing the annotation set to be removed from a specific entry. /{entry}/update webservices
-     */
-    public static final String DELETE_ANNOTATION_SET = "deleteAnnotationSet";
-
-    /**
-     * String containing the annotation to be removed from a specific entry. /{entry}/update webservices
-     * Usage: annotationSetName:variable
-     */
-    public static final String DELETE_ANNOTATION = "deleteVariable";
 
     /* ****************************************    Private attributes       ********************************************/
     /**

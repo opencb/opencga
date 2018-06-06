@@ -19,6 +19,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
@@ -982,7 +983,7 @@ public class CatalogSampleManagerTest extends GenericTest {
     }
 
     @Test
-    public void testUpdateAnnotation() throws CatalogException, JsonProcessingException {
+    public void testUpdateAnnotation() throws CatalogException {
         Sample sample = catalogManager.getSampleManager().get(studyFqn, s_1, null, sessionIdUser).first();
         AnnotationSet annotationSet = sample.getAnnotationSets().get(0);
 
@@ -992,27 +993,18 @@ public class CatalogSampleManagerTest extends GenericTest {
         ind.setAnnotationSets(Collections.singletonList(annotationSet));
         ind = catalogManager.getIndividualManager().create(studyFqn, ind, QueryOptions.empty(), sessionIdUser).first();
 
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
-
         // First update
-        ObjectMap annotations = new ObjectMap()
-                .append("NAME", "SAMPLE1")
-                .append("AGE", 38)
-                .append("EXTRA", "extra");
-        annotationSet.setAnnotations(annotations);
-
-        ObjectMap updateAnnotation = new ObjectMap()
-                // Update the annotation values
-                .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(
-                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))))
-                // Delete the annotation made for the variable HEIGHT
-                .append(Constants.DELETE_ANNOTATION, annotationSet.getId() + ":HEIGHT");
+        annotationSet.getAnnotations().put("NAME", "SAMPLE1");
+        annotationSet.getAnnotations().put("AGE", 38);
+        annotationSet.getAnnotations().put("EXTRA", "extra");
+        annotationSet.getAnnotations().remove("HEIGHT");
 
         // Update annotation set
-        catalogManager.getIndividualManager().update(studyFqn, ind.getId(), updateAnnotation,
-                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
-        catalogManager.getSampleManager().update(studyFqn, s_1, updateAnnotation,
-                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(),
+                annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
+                ParamUtils.CompleteUpdateAction.SET, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
 
         Consumer<AnnotationSet> check = as -> {
             Map<String, Object> auxAnnotations = as.getAnnotations();
@@ -1029,24 +1021,20 @@ public class CatalogSampleManagerTest extends GenericTest {
         check.accept(ind.getAnnotationSets().get(0));
 
         // Call again to the update to check that nothing changed
-        catalogManager.getIndividualManager().update(studyFqn, ind.getId(), updateAnnotation,
-                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(),
+                annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
         check.accept(ind.getAnnotationSets().get(0));
 
         // Update mandatory annotation
-        annotations = new ObjectMap()
-                .append("NAME", "SAMPLE 1");
-        annotationSet.setAnnotations(annotations);
-        updateAnnotation = new ObjectMap()
-                // Update the annotation values
-                .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(
-                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))))
-                // Delete the annotation made for the variable HEIGHT
-                .append(Constants.DELETE_ANNOTATION, annotationSet.getId() + ":EXTRA");
-        catalogManager.getIndividualManager().update(studyFqn, ind.getId(), updateAnnotation,
-                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
-        catalogManager.getSampleManager().update(studyFqn, s_1, updateAnnotation,
-                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+        annotationSet.getAnnotations().put("NAME", "SAMPLE 1");
+        annotationSet.getAnnotations().remove("EXTRA");
+
+        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(),
+                annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
+                ParamUtils.CompleteUpdateAction.SET, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
 
         check = as -> {
             Map<String, Object> auxAnnotations = as.getAnnotations();
@@ -1062,15 +1050,12 @@ public class CatalogSampleManagerTest extends GenericTest {
         check.accept(ind.getAnnotationSets().get(0));
 
         // Update non-mandatory annotation
-        annotations = new ObjectMap()
-                .append("EXTRA", "extra");
-        annotationSet.setAnnotations(annotations);
-        updateAnnotation = new ObjectMap()
-                // Update the annotation values
-                .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(
-                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))));
-        catalogManager.getIndividualManager().update(studyFqn, ind.getId(), updateAnnotation, new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().update(studyFqn, s_1, updateAnnotation, new QueryOptions(), sessionIdUser);
+        annotationSet.getAnnotations().put("EXTRA", "extra");
+        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(),
+                annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(Constants.INCREMENT_VERSION, true),
+                sessionIdUser);
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
+                ParamUtils.CompleteUpdateAction.SET, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
 
         check = as -> {
             Map<String, Object> auxAnnotations = as.getAnnotations();
@@ -1086,15 +1071,12 @@ public class CatalogSampleManagerTest extends GenericTest {
         check.accept(ind.getAnnotationSets().get(0));
 
         // Update non-mandatory annotation
-        annotations = new ObjectMap()
-                .append("EXTRA", "extraa");
-        annotationSet.setAnnotations(annotations);
-        updateAnnotation = new ObjectMap()
-                // Update the annotation values
-                .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(
-                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))));
-        catalogManager.getIndividualManager().update(studyFqn, ind.getId(), updateAnnotation, new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().update(studyFqn, s_1, updateAnnotation, new QueryOptions(), sessionIdUser);
+        Map<String, Object> annotationUpdate = new ObjectMap("EXTRA", "extraa");
+        // Action now is ADD, we only want to change that annotation
+        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(), annotationUpdate,
+                ParamUtils.CompleteUpdateAction.ADD, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationUpdate,
+                ParamUtils.CompleteUpdateAction.ADD, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
 
         check = as -> {
             Map<String, Object> auxAnnotations = as.getAnnotations();
@@ -1108,6 +1090,11 @@ public class CatalogSampleManagerTest extends GenericTest {
         ind = catalogManager.getIndividualManager().get(studyFqn, ind.getId(), null, sessionIdUser).first();
         check.accept(sample.getAnnotationSets().get(0));
         check.accept(ind.getAnnotationSets().get(0));
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), "blabla", annotationUpdate,
+                ParamUtils.CompleteUpdateAction.ADD, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
     }
 
     @Test
@@ -1115,56 +1102,42 @@ public class CatalogSampleManagerTest extends GenericTest {
         Sample sample = catalogManager.getSampleManager().get(studyFqn, s_1, null, sessionIdUser).first();
         AnnotationSet annotationSet = sample.getAnnotationSets().get(0);
 
-        // Delete required annotation
-        ObjectMap updateAnnotation = new ObjectMap(Constants.DELETE_ANNOTATION, annotationSet.getId() + ":NAME");
-
         thrown.expect(CatalogException.class); //Can not delete required fields
-        thrown.expectMessage("required annotation");
-        catalogManager.getSampleManager().update(studyFqn, s_1, updateAnnotation, new QueryOptions(),
-                sessionIdUser);
+        thrown.expectMessage("required variable");
+        catalogManager.getSampleManager().removeAnnotations(studyFqn, s_1, annotationSet.getId(), Collections.singletonList("NAME"),
+                QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
-    public void testDeleteAnnotation() throws CatalogException, JsonProcessingException {
+    public void testDeleteAnnotation() throws CatalogException {
         // We add one of the non mandatory annotations
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-        AnnotationSet annotationSet = new AnnotationSet().setId("annot1");
         // First update
-        ObjectMap annotations = new ObjectMap()
-                .append("EXTRA", "extra");
-        annotationSet.setAnnotations(annotations);
-
-        ObjectMap params = new ObjectMap()
-                // Update the annotation values
-                .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Arrays.asList(
-                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))
-                ));
-        catalogManager.getSampleManager().update(studyFqn, s_1, params, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, "annot1", new ObjectMap("EXTRA", "extra"),
+                ParamUtils.CompleteUpdateAction.ADD, QueryOptions.empty(), sessionIdUser);
 
         Sample sample = catalogManager.getSampleManager().get(studyFqn, s_1, null, sessionIdUser).first();
-        annotationSet = sample.getAnnotationSets().get(0);
+        AnnotationSet annotationSet = sample.getAnnotationSets().get(0);
         assertEquals("extra", annotationSet.getAnnotations().get("EXTRA"));
 
         // Now we remove that non mandatory annotation
-        params = new ObjectMap(Constants.DELETE_ANNOTATION, annotationSet.getId() + ":" + "EXTRA");
-        catalogManager.getSampleManager().update(studyFqn, s_1, params, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().removeAnnotations(studyFqn, s_1, annotationSet.getId(), Collections.singletonList("EXTRA"),
+                QueryOptions.empty(), sessionIdUser);
 
         sample = catalogManager.getSampleManager().get(studyFqn, s_1, null, sessionIdUser).first();
         annotationSet = sample.getAnnotationSets().get(0);
         assertTrue(!annotationSet.getAnnotations().containsKey("EXTRA"));
 
         // Now we attempt to remove one mandatory annotation
-        params = new ObjectMap(Constants.DELETE_ANNOTATION, annotationSet.getId() + ":" + "AGE");
         thrown.expect(CatalogException.class); //Can not delete required fields
-        thrown.expectMessage("required annotation");
-        catalogManager.getSampleManager().update(studyFqn, s_1, params, QueryOptions.empty(), sessionIdUser);
+        thrown.expectMessage("required variable");
+        catalogManager.getSampleManager().removeAnnotations(studyFqn, s_1, annotationSet.getId(), Collections.singletonList("AGE"),
+                QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
     public void testDeleteAnnotationSet() throws CatalogException {
-        ObjectMap params = new ObjectMap(SampleDBAdaptor.UpdateParams.DELETE_ANNOTATION_SET.key(), "annot1");
-        catalogManager.getSampleManager().update(studyFqn, s_1, params, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().removeAnnotationSet(studyFqn, s_1, "annot1", QueryOptions.empty(), sessionIdUser);
 
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, s_1,
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()), sessionIdUser);

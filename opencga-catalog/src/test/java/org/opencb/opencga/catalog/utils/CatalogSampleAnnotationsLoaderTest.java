@@ -143,7 +143,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         for (Map.Entry<String, Individual> entry : pedigree.getIndividuals().entrySet()) {
             Map<String, Object> annotation = loader.getAnnotation(entry.getValue(), null, variableSet, pedigree.getFields());
             CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation, "", 1,
-                    null), null);
+                    null), null, true);
         }
     }
 }

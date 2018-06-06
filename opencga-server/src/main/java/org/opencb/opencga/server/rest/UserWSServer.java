@@ -20,13 +20,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.glassfish.jersey.internal.inject.Custom;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.File;
@@ -39,7 +39,6 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 
@@ -225,14 +224,14 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateConfiguration(
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
-                @QueryParam("action") BasicUpdateAction action,
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default preferences. " +
                     "When removing, only the id will be necessary.", required = true) CustomConfig params) {
         try {
             if (action == null) {
                 throw new CatalogException("Missing mandatory action parameter");
             }
-            if (action == BasicUpdateAction.ADD) {
+            if (action == ParamUtils.BasicUpdateAction.ADD) {
                 return createOkResponse(catalogManager.getUserManager().setConfig(userId, params.id, params.configuration, sessionId));
             } else {
                 return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, params.id, sessionId));
@@ -269,14 +268,14 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateFilters(
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD", required = true)
-                @QueryParam("action") BasicUpdateAction action,
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "Filter parameters. When removing, only the filter name will be necessary", required = true)
                     User.Filter params) {
         try {
             if (action == null) {
                 throw new CatalogException("Missing mandatory action parameter");
             }
-            if (action == BasicUpdateAction.ADD) {
+            if (action == ParamUtils.BasicUpdateAction.ADD) {
                 return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
                         params.getBioformat(), params.getQuery(), params.getOptions(), sessionId));
             } else {
