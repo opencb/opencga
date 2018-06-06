@@ -182,6 +182,32 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
+    public void testGetByGenotype() throws Exception {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
+
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.GENOTYPE.key(), "NA12877:" + GenotypeClass.HOM_ALT);
+        queryResult = dbAdaptor.get(query, options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", anyOf(is("1/1"), is("2/2")))))));
+
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.GENOTYPE.key(), "NA12877:" + GenotypeClass.HET_REF);
+        queryResult = dbAdaptor.get(query, options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", anyOf(is("0/1"), is("0/2")))))));
+
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.GENOTYPE.key(), "NA12877:" + GenotypeClass.HET_ALT);
+        queryResult = dbAdaptor.get(query, options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", anyOf(is("1/2"), is("2/3")))))));
+    }
+
+    @Test
     public void testGetByFileName() throws Exception {
         query = new Query()
 //                .append(VariantQueryParam.STUDY.key(), "S_1")

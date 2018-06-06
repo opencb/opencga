@@ -55,6 +55,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
 
@@ -84,7 +85,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private boolean studyNameAsStudyId = false;
     private boolean simpleGenotypes = false;
     private boolean failOnWrongVariants = HBaseToVariantConverter.isFailOnWrongVariants();
-    private static final String UNKNOWN_GENOTYPE = "?/?";
     private String unknownGenotype = UNKNOWN_GENOTYPE;
     private boolean mutableSamplesPosition = true;
     private List<String> expectedFormat;
