@@ -790,7 +790,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 logger.debug("Sample get: lookup match from individual : {}",
                         aggregationStages.stream()
                                 .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
-                                .collect(Collectors.joining("; "))
+                                .collect(Collectors.joining(", "))
                 );
 
                 return dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualCollection()
@@ -801,7 +801,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 // 1. Match the sample query fields
                 aggregationStages.add(Aggregates.match(bson));
 
-                MongoDBNativeQuery.parseQueryOptions(aggregationStages, qOptions);
+                // We want to avoid projections, but include any sort, limit, skip that might be present in the queryOptions object.
+                QueryOptions optionsCopy = new QueryOptions(qOptions);
+                optionsCopy.remove(QueryOptions.INCLUDE);
+                optionsCopy.remove(QueryOptions.EXCLUDE);
+                MongoDBNativeQuery.parseQueryOptions(aggregationStages, optionsCopy);
 
                 // 2. Match all the individuals containing the sample uid. We do this before because mongo does not support the complex
                 // lookup with pipeline over arrays yet (v 3.6) but arrays are supported in simple lookups
@@ -858,7 +862,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 logger.debug("Sample get: lookup match : {}",
                         aggregationStages.stream()
                                 .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
-                                .collect(Collectors.joining("; "))
+                                .collect(Collectors.joining(", "))
                 );
 
                 return sampleCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();

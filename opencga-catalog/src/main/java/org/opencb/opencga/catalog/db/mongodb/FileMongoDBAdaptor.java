@@ -55,6 +55,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
@@ -586,7 +587,11 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         // 1. Match the query parameters
         aggregationStages.add(Aggregates.match(bson));
 
-        MongoDBNativeQuery.parseQueryOptions(aggregationStages, qOptions);
+        // We want to avoid projections, but include any sort, limit, skip that might be present in the queryOptions object.
+        QueryOptions optionsCopy = new QueryOptions(qOptions);
+        optionsCopy.remove(QueryOptions.INCLUDE);
+        optionsCopy.remove(QueryOptions.EXCLUDE);
+        MongoDBNativeQuery.parseQueryOptions(aggregationStages, optionsCopy);
 
         // 2. Unwind the array of samples within file
         aggregationStages.add(Aggregates.unwind("$" + QueryParams.SAMPLES.key(),
@@ -642,6 +647,12 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         // 9. Lastly, we replace the root document extracting everything from _id
         aggregationStages.add(Aggregates.replaceRoot("$_id"));
+
+        logger.debug("File get: lookup match : {}",
+                aggregationStages.stream()
+                        .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
+                        .collect(Collectors.joining(", "))
+        );
 
         return fileCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();
     }

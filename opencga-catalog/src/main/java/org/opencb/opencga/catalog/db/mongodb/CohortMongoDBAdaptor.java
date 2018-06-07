@@ -559,7 +559,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
             aggregationStages.add(Aggregates.match(bson));
 
-            MongoDBNativeQuery.parseQueryOptions(aggregationStages, qOptions);
+            // We want to avoid projections, but include any sort, limit, skip that might be present in the queryOptions object.
+            QueryOptions optionsCopy = new QueryOptions(qOptions);
+            optionsCopy.remove(QueryOptions.INCLUDE);
+            optionsCopy.remove(QueryOptions.EXCLUDE);
+            MongoDBNativeQuery.parseQueryOptions(aggregationStages, optionsCopy);
 
             // 1st, we unwind the array of samples to be able to perform the lookup as it doesn't work over arrays
             aggregationStages.add(new Document("$unwind", new Document()
@@ -624,7 +628,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             logger.debug("Cohort get: lookup match : {}",
                     aggregationStages.stream()
                             .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
-                            .collect(Collectors.joining("; "))
+                            .collect(Collectors.joining(", "))
             );
 
             return cohortCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();
