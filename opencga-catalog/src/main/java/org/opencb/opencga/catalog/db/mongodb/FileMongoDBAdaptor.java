@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.FileMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
@@ -173,17 +174,17 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult<File> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Bson query = parseQuery(new Query(QueryParams.UID.key(), id), false);
-        Map<String, Object> myParams = getValidatedUpdateParams(parameters);
+        UpdateDocument tmpUpdateDocument = getValidatedUpdateParams(parameters, queryOptions);
+        Document updateDocument = tmpUpdateDocument.toFinalUpdateDocument();
 
-        if (myParams.isEmpty()) {
+        if (updateDocument.isEmpty()) {
             logger.debug("The map of parameters to update file is empty. Originally it contained {}", parameters.safeToString());
         } else {
             logger.debug("Update file. Query: {}, Update: {}", query.toBsonDocument(Document.class,
-                    MongoClient.getDefaultCodecRegistry()), myParams);
+                    MongoClient.getDefaultCodecRegistry()), updateDocument);
 
 
-            QueryResult<UpdateResult> update = fileCollection.update(query, new Document("$set", myParams), new QueryOptions("multi",
-                    true));
+            QueryResult<UpdateResult> update = fileCollection.update(query, updateDocument, new QueryOptions("multi", true));
             if (update.first().getMatchedCount() == 0) {
                 throw new CatalogDBException("File " + id + " not found.");
             }
@@ -207,14 +208,14 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         // We perform the update.
         Bson queryBson = parseQuery(query, false);
-        Map<String, Object> fileParameters = getValidatedUpdateParams(parameters);
+        UpdateDocument tmpUpdateDocument = getValidatedUpdateParams(parameters, queryOptions);
+        Document updateDocument = tmpUpdateDocument.toFinalUpdateDocument();
 
-        if (!fileParameters.isEmpty()) {
+        if (!updateDocument.isEmpty()) {
             logger.debug("Update file. Query: {}, Update: {}",
-                    queryBson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), fileParameters);
+                    queryBson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), updateDocument);
 
-            QueryResult<UpdateResult> update = fileCollection.update(queryBson, new Document("$set", fileParameters),
-                    new QueryOptions("multi", true));
+            QueryResult<UpdateResult> update = fileCollection.update(queryBson, updateDocument, new QueryOptions("multi", true));
 
             // If the size of some of the files have been changed, notify to the correspondent study
             if (fileQueryResult != null) {
@@ -230,19 +231,19 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         return endQuery("Update file", startTime, Collections.singletonList(0L));
     }
 
-    private Map<String, Object> getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
-        Map<String, Object> fileParameters = new HashMap<>();
+    private UpdateDocument getValidatedUpdateParams(ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {
                 QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(),
                 QueryParams.MODIFICATION_DATE.key(), QueryParams.PATH.key(), };
         // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
-        filterStringParams(parameters, fileParameters, acceptedParams);
+        filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        if (fileParameters.containsKey(QueryParams.PATH.key())) {
+        if (document.getSet().containsKey(QueryParams.PATH.key())) {
             // We also update the ID replacing the / for :
             String path = parameters.getString(QueryParams.PATH.key());
-            fileParameters.put(QueryParams.ID.key(), StringUtils.replace(path, "/", ":"));
+            document.getSet().put(QueryParams.ID.key(), StringUtils.replace(path, "/", ":"));
         }
 
         Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
@@ -251,15 +252,15 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         acceptedEnums.put(QueryParams.BIOFORMAT.key(), File.Bioformat.class);
         // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
         try {
-            filterEnumParams(parameters, fileParameters, acceptedEnums);
+            filterEnumParams(parameters, document.getSet(), acceptedEnums);
         } catch (CatalogDBException e) {
             logger.error("Error updating files", e);
             throw new CatalogDBException("File update: It was impossible updating the files. " + e.getMessage());
         }
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            fileParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+            document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
             Object o = parameters.get(QueryParams.RELATED_FILES.key());
@@ -268,16 +269,16 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                 for (Object relatedFile : ((List<?>) o)) {
                     relatedFiles.add(getMongoDBDocument(relatedFile, "RelatedFile"));
                 }
-                fileParameters.put(QueryParams.RELATED_FILES.key(), relatedFiles);
+                document.getSet().put(QueryParams.RELATED_FILES.key(), relatedFiles);
             }
         }
         if (parameters.containsKey(QueryParams.INDEX_TRANSFORMED_FILE.key())) {
-            fileParameters.put(QueryParams.INDEX_TRANSFORMED_FILE.key(),
+            document.getSet().put(QueryParams.INDEX_TRANSFORMED_FILE.key(),
                     getMongoDBDocument(parameters.get(QueryParams.INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
         }
 
         String[] acceptedLongParams = {QueryParams.SIZE.key(), QueryParams.JOB_UID.key()};
-        filterLongParams(parameters, fileParameters, acceptedLongParams);
+        filterLongParams(parameters, document.getSet(), acceptedLongParams);
 
         // Check if the job exists.
         if (parameters.containsKey(QueryParams.JOB_UID.key()) && parameters.getLong(QueryParams.JOB_UID.key()) > 0) {
@@ -298,16 +299,33 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     sampleList.add((Sample) sample);
                 }
             }
-            fileParameters.put(QueryParams.SAMPLES.key(), fileConverter.convertSamples(sampleList));
+
+            if (!sampleList.isEmpty()) {
+                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+                String operation = (String) actionMap.getOrDefault(QueryParams.SAMPLES.key(), "ADD");
+                switch (operation) {
+                    case "SET":
+                        document.getSet().put(QueryParams.SAMPLES.key(), fileConverter.convertSamples(sampleList));
+                        break;
+                    case "REMOVE":
+                        document.getPullAll().put(QueryParams.SAMPLES.key(), fileConverter.convertSamples(sampleList));
+                        break;
+                    case "ADD":
+                    default:
+                        document.getAddToSet().put(QueryParams.SAMPLES.key(), fileConverter.convertSamples(sampleList));
+                        break;
+                }
+            }
         }
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
-        filterMapParams(parameters, fileParameters, acceptedMapParams);
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
         // Fixme: Attributes and stats can be also parsed to numeric or boolean
 
         String[] acceptedObjectParams = {QueryParams.INDEX.key()};
-        filterObjectParams(parameters, fileParameters, acceptedObjectParams);
-        return fileParameters;
+        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+
+        return document;
     }
 
     @Override

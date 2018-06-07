@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +37,7 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
@@ -43,6 +47,7 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.server.rest.json.mixin.FileMixin;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -69,21 +74,10 @@ public class FileWSServer extends OpenCGAWSServer {
 
     private FileManager fileManager;
 
-    public FileWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException,
-            ClassNotFoundException, IllegalAccessException, InstantiationException, VersionException {
+    public FileWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         fileManager = catalogManager.getFileManager();
-    }
-
-    private static class FileCreateParams {
-        @JsonProperty(required = true)
-        public String path;
-        public String content;
-        public String description;
-        @JsonProperty(defaultValue = "false")
-        public boolean parents;
-        @JsonProperty(defaultValue = "false")
-        public boolean directory;
     }
 
     @POST
@@ -904,29 +898,21 @@ public class FileWSServer extends OpenCGAWSServer {
                     example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
     })
-    public Response updatePOST(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /")
-                                   @PathParam(value = "file") String fileIdStr,
-                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                               @QueryParam("study") String studyStr,
-                               @ApiParam(name = "params", value = "Parameters to modify", required = true) ObjectMap params) {
+    public Response updatePOST(
+            @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD")
+                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
-            ObjectUtils.defaultIfNull(params, new ObjectMap());
+            ObjectMap params = updateParams.toFileObjectMap();
 
-            ObjectMap map = new ObjectMap(jsonObjectMapper.writeValueAsString(params));
-            // TODO: jobId is deprecated. Remember to remove this if after next release
-            if (map.get("jobId") != null) {
-                map.put(FileDBAdaptor.QueryParams.JOB_UID.key(), map.get("jobId"));
-                map.remove("jobId");
-            }
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
+            queryOptions.put(Constants.ACTIONS, actionMap);
 
-            // TODO: sampleIds is deprecated
-            if (StringUtils.isNotEmpty(params.getString("sampleIds"))
-                    && StringUtils.isEmpty(params.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
-                params.put(FileDBAdaptor.QueryParams.SAMPLES.key(), params.getString("sampleIds"));
-                params.remove("sampleIds");
-            }
-
-            QueryResult<File> queryResult = fileManager.update(studyStr, fileIdStr, map, queryOptions, sessionId);
+            QueryResult<File> queryResult = fileManager.update(studyStr, fileIdStr, params, queryOptions, sessionId);
             queryResult.setId("Update file");
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -1294,6 +1280,49 @@ public class FileWSServer extends OpenCGAWSServer {
             return createOkResponse(new QueryResult<>("Scan", 0, scan.size(), scan.size(), "", "", scan));
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    private static class FileCreateParams {
+        @JsonProperty(required = true)
+        public String path;
+        public String content;
+        public String description;
+        @JsonProperty(defaultValue = "false")
+        public boolean parents;
+        @JsonProperty(defaultValue = "false")
+        public boolean directory;
+    }
+
+    private static class FileUpdateParams {
+        public String name;
+        public String description;
+
+        public List<String> samples;
+
+        public File.Format format;
+        public File.Bioformat bioformat;
+
+        public Map<String, Object> stats;
+        public Map<String, Object> attributes;
+
+        public ObjectMap toFileObjectMap() throws JsonProcessingException {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.addMixIn(File.class, FileMixin.class);
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+            File file = new File()
+                    .setName(name)
+                    .setDescription(description)
+                    .setFormat(format)
+                    .setBioformat(bioformat)
+                    .setStats(stats)
+                    .setAttributes(attributes);
+
+            ObjectMap params = new ObjectMap(mapper.writeValueAsString(file));
+            params.putIfNotNull("samples", samples);
+
+            return params;
         }
     }
 

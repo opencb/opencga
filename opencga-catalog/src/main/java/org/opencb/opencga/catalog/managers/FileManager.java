@@ -1225,7 +1225,7 @@ public class FileManager extends ResourceManager<File> {
         checkUpdateParams(parameters);
 
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        fileDBAdaptor.update(file.getUid(), parameters, QueryOptions.empty());
+        fileDBAdaptor.update(file.getUid(), parameters, options);
         QueryResult<File> queryResult = fileDBAdaptor.get(file.getUid(), options);
         auditManager.recordUpdate(AuditRecord.Resource.file, file.getUid(), userId, parameters, null, null);
         userDBAdaptor.updateUserLastModified(ownerId);
