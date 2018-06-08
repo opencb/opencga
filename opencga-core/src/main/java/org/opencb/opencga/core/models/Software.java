@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.clinical;
+package org.opencb.opencga.core.models;
 
 import java.util.Map;
 

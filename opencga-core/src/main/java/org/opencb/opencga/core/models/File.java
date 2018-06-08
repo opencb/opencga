@@ -63,6 +63,7 @@ public class File extends PrivateStudyUid {
     private boolean external;
 
     private long size;
+    private Software software;
     private Experiment experiment;
     private List<Sample> samples;
     @Deprecated
@@ -88,20 +89,21 @@ public class File extends PrivateStudyUid {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 int release) {
         this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), new FileIndex(),
+                size, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), new FileIndex(),
                 Collections.emptyMap(), release, Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
-                List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes) {
+                List<Sample> samples, long jobId, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
         this(-1, "", type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), stats, -1, attributes);
+                size, software, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), stats, -1,
+                attributes);
     }
 
     public File(long uid, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
-                String modificationDate, String description, FileStatus status, boolean external, long size, Experiment experiment,
-                List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index, Map<String, Object> stats, int release,
-                Map<String, Object> attributes) {
+                String modificationDate, String description, FileStatus status, boolean external, long size, Software software,
+                Experiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
+                Map<String, Object> stats, int release, Map<String, Object> attributes) {
         super(uid);
         this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
@@ -117,6 +119,7 @@ public class File extends PrivateStudyUid {
         this.release = release;
         this.external = external;
         this.size = size;
+        this.software = software;
         this.experiment = experiment;
         this.samples = samples;
         this.job = job;
@@ -332,6 +335,7 @@ public class File extends PrivateStudyUid {
         sb.append(", status=").append(status);
         sb.append(", external=").append(external);
         sb.append(", size=").append(size);
+        sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
         sb.append(", samples=").append(samples);
         sb.append(", job=").append(job);
@@ -499,6 +503,15 @@ public class File extends PrivateStudyUid {
 
     public File setSamples(List<Sample> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public Software getSoftware() {
+        return software;
+    }
+
+    public File setSoftware(Software software) {
+        this.software = software;
         return this;
     }
 

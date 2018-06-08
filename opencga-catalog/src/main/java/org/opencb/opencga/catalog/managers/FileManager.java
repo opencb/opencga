@@ -425,7 +425,7 @@ public class FileManager extends ResourceManager<File> {
                                     List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                     boolean parents, String content, QueryOptions options, String sessionId)
             throws CatalogException {
-        File file = new File(type, format, bioformat, path, description, status, size, samples, jobId, stats, attributes);
+        File file = new File(type, format, bioformat, path, description, status, size, samples, jobId, null, stats, attributes);
         return create(studyStr, file, parents, content, options, sessionId);
     }
 
@@ -532,7 +532,7 @@ public class FileManager extends ResourceManager<File> {
             if (parents) {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath, "",
-                        new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1, Collections.emptyMap(),
+                        new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1, null, Collections.emptyMap(),
                         Collections.emptyMap());
                 parentFileId = create(study, parentFile, parents, null, options, sessionId).first().getUid();
             } else {
@@ -2427,7 +2427,7 @@ public class FileManager extends ResourceManager<File> {
         // Create the folder in catalog
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
-                false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
+                false, 0, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
                 catalogManager.getStudyManager().getCurrentRelease(study, userId), null);
         QueryResult<File> queryResult = fileDBAdaptor.insert(folder, study.getUid(), new QueryOptions());
         // Propagate ACLs
@@ -2582,7 +2582,7 @@ public class FileManager extends ResourceManager<File> {
 
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                        new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(), Collections.emptyList(), new Job(),
+                        new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(), Collections.emptyList(), new Job(),
                         Collections.emptyList(), null, Collections.emptyMap(),
                         catalogManager.getStudyManager().getCurrentRelease(study, userId), Collections.emptyMap());
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, study.getUid(), new QueryOptions());
@@ -2652,7 +2652,7 @@ public class FileManager extends ResourceManager<File> {
 
                             File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                     File.Bioformat.NONE, dir.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
-                                    description, new File.FileStatus(File.FileStatus.READY), true, 0, new Experiment(),
+                                    description, new File.FileStatus(File.FileStatus.READY), true, 0, null, new Experiment(),
                                     Collections.emptyList(), new Job(), Collections.emptyList(), null,
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
                                     Collections.emptyMap());
@@ -2702,7 +2702,7 @@ public class FileManager extends ResourceManager<File> {
 
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
-                                    description, new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(),
+                                    description, new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(),
                                     Collections.emptyList(), new Job(), Collections.emptyList(), null,
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(study, userId),
                                     Collections.emptyMap());

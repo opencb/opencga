@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Software;
 
 import java.util.List;
 import java.util.Map;
