@@ -59,6 +59,10 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         EXPERIMENT_UID("experiment.uid", INTEGER_ARRAY, ""),
+        SOFTWARE("software", TEXT_ARRAY, ""),
+        SOFTWARE_NAME("software.name", TEXT, ""),
+        SOFTWARE_VERSION("software.version", TEXT, ""),
+        SOFTWARE_COMMIT("software.commit", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
 

@@ -1243,6 +1243,7 @@ public class FileManager extends ResourceManager<File> {
                 case ATTRIBUTES:
                 case STATS:
                 case JOB_UID:
+                case SOFTWARE:
                 case SAMPLES:
                     break;
                 default:

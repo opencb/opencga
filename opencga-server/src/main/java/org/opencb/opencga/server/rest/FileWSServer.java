@@ -43,6 +43,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
+import org.opencb.opencga.core.models.Software;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
@@ -1302,6 +1303,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
         public File.Format format;
         public File.Bioformat bioformat;
+        public Software software;
 
         public Map<String, Object> stats;
         public Map<String, Object> attributes;
@@ -1317,6 +1319,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setFormat(format)
                     .setBioformat(bioformat)
                     .setStats(stats)
+                    .setSoftware(software)
                     .setAttributes(attributes);
 
             ObjectMap params = new ObjectMap(mapper.writeValueAsString(file));

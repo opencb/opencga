@@ -323,7 +323,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
         // Fixme: Attributes and stats can be also parsed to numeric or boolean
 
-        String[] acceptedObjectParams = {QueryParams.INDEX.key()};
+        String[] acceptedObjectParams = {QueryParams.INDEX.key(), QueryParams.SOFTWARE.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         return document;
@@ -819,6 +819,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case RELATED_FILES_RELATION:
                     case SIZE:
                     case EXPERIMENT_UID:
+                    case SOFTWARE_NAME:
+                    case SOFTWARE_VERSION:
+                    case SOFTWARE_COMMIT:
                     case SAMPLE_UIDS:
                     case JOB_UID:
                     case INDEX:
