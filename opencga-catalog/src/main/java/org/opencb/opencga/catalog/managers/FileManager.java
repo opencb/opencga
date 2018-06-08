@@ -766,7 +766,7 @@ public class FileManager extends ResourceManager<File> {
             fileIterator = fileDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
 
         } catch (CatalogException e) {
-            logger.error("Delete sample: {}", e.getMessage(), e);
+            logger.error("Delete file: {}", e.getMessage(), e);
             writeResult.setError(new Error(-1, null, e.getMessage()));
             writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
             return writeResult;
@@ -840,11 +840,11 @@ public class FileManager extends ResourceManager<File> {
             } catch (Exception e) {
                 numMatches += 1;
 
-                failedList.add(new WriteResult.Fail(String.valueOf(file.getUid()), e.getMessage()));
+                failedList.add(new WriteResult.Fail(file.getId(), e.getMessage()));
                 if (file.getType() == File.Type.FILE) {
-                    logger.debug("Cannot delete file {}: {}", file.getUid(), e.getMessage(), e);
+                    logger.debug("Cannot delete file {}: {}", file.getId(), e.getMessage(), e);
                 } else {
-                    logger.debug("Cannot delete folder {}: {}", file.getUid(), e.getMessage(), e);
+                    logger.debug("Cannot delete folder {}: {}", file.getId(), e.getMessage(), e);
                 }
             }
         }
@@ -987,10 +987,10 @@ public class FileManager extends ResourceManager<File> {
 
                 numModified += 1;
             } catch (CatalogException e) {
-                failedList.add(new WriteResult.Fail(String.valueOf(file.getUid()), e.getMessage()));
+                failedList.add(new WriteResult.Fail(file.getId(), e.getMessage()));
             }
         } else {
-            logger.debug("Starting physical deletion of folder {}", file.getPath());
+            logger.debug("Starting physical deletion of folder {}", file.getId());
 
             // Rename the directory in the filesystem.
             URI newURI;
@@ -1088,7 +1088,7 @@ public class FileManager extends ResourceManager<File> {
                     }
                     numModified += 1;
                 } catch (CatalogException e) {
-                    failedList.add(new WriteResult.Fail(String.valueOf(auxFile.getUid()), e.getMessage()));
+                    failedList.add(new WriteResult.Fail(auxFile.getId(), e.getMessage()));
                 }
             }
         }

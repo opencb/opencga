@@ -375,11 +375,11 @@ public class JobManager extends ResourceManager<Job> {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.job, job.getUid(), userId, null, updateParams, null, null);
                 } else {
-                    failedList.add(new WriteResult.Fail(String.valueOf(job.getUid()), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(job.getId(), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(String.valueOf(job.getUid()), e.getMessage()));
-                logger.debug("Cannot delete job {}: {}", job.getUid(), e.getMessage(), e);
+                failedList.add(new WriteResult.Fail(job.getId(), e.getMessage()));
+                logger.debug("Cannot delete job {}: {}", job.getId(), e.getMessage(), e);
             }
         }
 

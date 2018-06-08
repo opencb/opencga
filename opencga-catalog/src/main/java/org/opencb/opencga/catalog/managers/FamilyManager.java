@@ -328,11 +328,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.family, family.getUid(), userId, null, updateParams, null, null);
                 } else {
-                    failedList.add(new WriteResult.Fail(String.valueOf(family.getUid()), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(family.getId(), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(String.valueOf(family.getUid()), e.getMessage()));
-                logger.debug("Cannot delete family {}: {}", family.getUid(), e.getMessage(), e);
+                failedList.add(new WriteResult.Fail(family.getId(), e.getMessage()));
+                logger.debug("Cannot delete family {}: {}", family.getId(), e.getMessage(), e);
             }
         }
 

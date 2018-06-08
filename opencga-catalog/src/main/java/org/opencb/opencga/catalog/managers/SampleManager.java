@@ -395,10 +395,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                         WriteResult delete = catalogManager.getFileManager().delete(studyStr, fileQuery, fileParams, sessionId);
                         if (delete.getWarning() != null || delete.getError() != null) {
-                            logger.warn("File {} ({}) could not be deleted after extracting the sample {} ({}). WriteResult: {}",
-                                    file.getPath(), file.getUid(), sample.getId(), sample.getUid(), delete);
-                            warningList.add(new Error(-1, "", "File " + file.getPath() + "(" + file.getUid() + ") could not be deleted"
-                                    + " after extracting the sample."));
+                            logger.warn("File {} could not be deleted after extracting the sample {}. WriteResult: {}",
+                                    file.getId(), sample.getId(), delete);
+                            warningList.add(new Error(-1, "", "File " + file.getId() + " could not be deleted after extracting the "
+                                    + "sample."));
                         }
                     }
                 }
@@ -429,10 +429,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         Query cohortQuery = new Query(CohortDBAdaptor.QueryParams.UID.key(), cohort.getUid());
                         WriteResult delete = catalogManager.getCohortManager().delete(studyStr, cohortQuery, new ObjectMap(), sessionId);
                         if (delete.getWarning() != null || delete.getError() != null) {
-                            logger.warn("Cohort {} ({}) could not be deleted after extracting the sample {} ({}). WriteResult: {}",
-                                    cohort.getId(), cohort.getUid(), sample.getId(), sample.getUid(), delete);
-                            warningList.add(new Error(-1, "", "Cohort " + cohort.getId() + "(" + cohort.getUid()
-                                    + ") could not be deleted after extracting the sample."));
+                            logger.warn("Cohort {} could not be deleted after extracting the sample {}. WriteResult: {}",
+                                    cohort.getId(), sample.getId(), delete);
+                            warningList.add(new Error(-1, "", "Cohort " + cohort.getId() + "could not be deleted after extracting the "
+                                    + "sample."));
                         }
                     }
                 }
@@ -445,8 +445,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 if (individualQueryResult.getNumResults() > 0) {
                     if (individualQueryResult.getNumResults() > 1) {
                         logger.error("Critical error: More than one individual detected pointing to sample {}. The list of individual ids "
-                                + "are: ", sample.getUid(),
-                                individualQueryResult.getResult().stream().map(Individual::getUid).collect(Collectors.toList()));
+                                + "are: {}", sample.getId(),
+                                individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList()));
                     }
                     for (Individual individual : individualQueryResult.getResult()) {
                         // Remove the sample from the individual
@@ -476,11 +476,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.sample, sample.getUid(), userId, null, updateParams, null, null);
                 } else {
-                    failedList.add(new WriteResult.Fail(String.valueOf(sample.getUid()), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(sample.getId(), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(String.valueOf(sample.getUid()), e.getMessage()));
-                logger.debug("Cannot delete sample {}: {}", sample.getUid(), e.getMessage(), e);
+                failedList.add(new WriteResult.Fail(sample.getId(), e.getMessage()));
+                logger.debug("Cannot delete sample {}: {}", sample.getId(), e.getMessage(), e);
             }
         }
 

@@ -340,11 +340,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.cohort, cohort.getUid(), userId, null, updateParams, null, null);
                 } else {
-                    failedList.add(new WriteResult.Fail(String.valueOf(cohort.getUid()), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(cohort.getId(), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(String.valueOf(cohort.getUid()), e.getMessage()));
-                logger.debug("Cannot delete cohort {}: {}", cohort.getUid(), e.getMessage(), e);
+                failedList.add(new WriteResult.Fail(cohort.getId(), e.getMessage()));
+                logger.debug("Cannot delete cohort {}: {}", cohort.getId(), e.getMessage(), e);
             }
         }
 

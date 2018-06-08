@@ -412,7 +412,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     if (familyQueryResult.getNumResults() > 0) {
                         throw new CatalogException("Individual found in the families: " + familyQueryResult.getResult()
                                 .stream()
-                                .map(f -> f.getName() + " (" + f.getUid() + ")")
+                                .map(Family::getId)
                                 .collect(Collectors.joining(", ")));
                     }
                 } else {
@@ -440,13 +440,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
                         QueryResult<Long> update = familyDBAdaptor.update(familyQuery, familyUpdate, QueryOptions.empty());
                         if (update.first() == 0) {
-                            throw new CatalogException("Individual could not be extracted from family " + family.getUid() + ". "
+                            throw new CatalogException("Individual could not be extracted from family " + family.getId() + ". "
                                     + "Individual not deleted");
                         }
                     } else {
                         logger.error("Could not delete individual {}. The family {} that in theory contains that individual has the "
-                                + "following members: {}", individual.getUid(), family.getUid(),
-                                family.getMembers().stream().map(Individual::getUid).collect(Collectors.toList()));
+                                + "following members: {}", individual.getId(), family.getId(),
+                                family.getMembers().stream().map(Individual::getId).collect(Collectors.toList()));
                         throw new CatalogException("Internal error: Could not delete individual");
                     }
                 }
@@ -465,11 +465,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     auditManager.recordDeletion(AuditRecord.Resource.individual, individual.getUid(), userId, null, updateParams, null,
                             null);
                 } else {
-                    failedList.add(new WriteResult.Fail(String.valueOf(individual.getUid()), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(individual.getId(), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(String.valueOf(individual.getUid()), e.getMessage()));
-                logger.debug("Cannot delete individual {}: {}", individual.getUid(), e.getMessage(), e);
+                failedList.add(new WriteResult.Fail(individual.getId(), e.getMessage()));
+                logger.debug("Cannot delete individual {}: {}", individual.getId(), e.getMessage(), e);
             }
         }
 
