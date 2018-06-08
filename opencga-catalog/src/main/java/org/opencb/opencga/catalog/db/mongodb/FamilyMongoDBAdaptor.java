@@ -23,6 +23,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -31,8 +32,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBNativeQuery;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.FamilyMongoDBIterator;
@@ -603,11 +607,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
             aggregationStages.add(Aggregates.match(bson));
 
-            // We want to avoid projections, but include any sort, limit, skip that might be present in the queryOptions object.
-            QueryOptions optionsCopy = new QueryOptions(qOptions);
-            optionsCopy.remove(QueryOptions.INCLUDE);
-            optionsCopy.remove(QueryOptions.EXCLUDE);
-            MongoDBNativeQuery.parseQueryOptions(aggregationStages, optionsCopy);
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSkip(qOptions));
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getLimit(qOptions));
 
             // 1st, we unwind the array of members to be able to perform the lookup as it doesn't work over arrays
             aggregationStages.add(new Document("$unwind", new Document()
@@ -672,13 +673,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             // 8. Lastly, we replace the root document extracting everything from _id
             aggregationStages.add(new Document("$replaceRoot", new Document("newRoot", "$_id")));
 
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSort(qOptions));
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getProjection(qOptions));
+
             logger.debug("Family get: lookup match : {}",
                     aggregationStages.stream()
                             .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
                             .collect(Collectors.joining(", "))
             );
 
-            return familyCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();
+            return familyCollection.nativeQuery().aggregate(aggregationStages).iterator();
         }
     }
 

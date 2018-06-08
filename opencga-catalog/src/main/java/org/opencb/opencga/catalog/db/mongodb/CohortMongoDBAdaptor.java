@@ -23,6 +23,7 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -31,7 +32,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBNativeQuery;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -559,11 +559,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
             aggregationStages.add(Aggregates.match(bson));
 
-            // We want to avoid projections, but include any sort, limit, skip that might be present in the queryOptions object.
-            QueryOptions optionsCopy = new QueryOptions(qOptions);
-            optionsCopy.remove(QueryOptions.INCLUDE);
-            optionsCopy.remove(QueryOptions.EXCLUDE);
-            MongoDBNativeQuery.parseQueryOptions(aggregationStages, optionsCopy);
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSkip(qOptions));
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getLimit(qOptions));
 
             // 1st, we unwind the array of samples to be able to perform the lookup as it doesn't work over arrays
             aggregationStages.add(new Document("$unwind", new Document()
@@ -625,13 +622,16 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             // 8. Lastly, we replace the root document extracting everything from _id
             aggregationStages.add(new Document("$replaceRoot", new Document("newRoot", "$_id")));
 
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSort(qOptions));
+            CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getProjection(qOptions));
+
             logger.debug("Cohort get: lookup match : {}",
                     aggregationStages.stream()
                             .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
                             .collect(Collectors.joining(", "))
             );
 
-            return cohortCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();
+            return cohortCollection.nativeQuery().aggregate(aggregationStages).iterator();
         }
     }
 

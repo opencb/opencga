@@ -22,6 +22,7 @@ import com.mongodb.client.model.*;
 import com.mongodb.client.model.Variable;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -30,7 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBNativeQuery;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
@@ -801,11 +802,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 // 1. Match the sample query fields
                 aggregationStages.add(Aggregates.match(bson));
 
-                // We want to avoid projections, but include any sort, limit, skip that might be present in the queryOptions object.
-                QueryOptions optionsCopy = new QueryOptions(qOptions);
-                optionsCopy.remove(QueryOptions.INCLUDE);
-                optionsCopy.remove(QueryOptions.EXCLUDE);
-                MongoDBNativeQuery.parseQueryOptions(aggregationStages, optionsCopy);
+                CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSkip(qOptions));
+                CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getLimit(qOptions));
 
                 // 2. Match all the individuals containing the sample uid. We do this before because mongo does not support the complex
                 // lookup with pipeline over arrays yet (v 3.6) but arrays are supported in simple lookups
@@ -859,13 +857,16 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 // 4. Perform the complex lookup
                 aggregationStages.add(lookupMatch);
 
+                CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSort(qOptions));
+                CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getProjection(qOptions));
+
                 logger.debug("Sample get: lookup match : {}",
                         aggregationStages.stream()
                                 .map(x -> x.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()).toString())
                                 .collect(Collectors.joining(", "))
                 );
 
-                return sampleCollection.nativeQuery().aggregate(aggregationStages, qOptions).iterator();
+                return sampleCollection.nativeQuery().aggregate(aggregationStages).iterator();
             }
         }
     }

@@ -22,6 +22,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -30,7 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBNativeQuery;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -605,11 +606,8 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         // 1. Match the query parameters
         aggregationStages.add(Aggregates.match(bson));
 
-        // We want to avoid projections, but include any sort, limit, skip that might be present in the queryOptions object.
-        QueryOptions optionsCopy = new QueryOptions(qOptions);
-        optionsCopy.remove(QueryOptions.INCLUDE);
-        optionsCopy.remove(QueryOptions.EXCLUDE);
-        MongoDBNativeQuery.parseQueryOptions(aggregationStages, optionsCopy);
+        CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSkip(qOptions));
+        CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getLimit(qOptions));
 
         // 2. Unwind the array of samples within file
         aggregationStages.add(Aggregates.unwind("$" + QueryParams.SAMPLES.key(),
@@ -665,6 +663,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         // 9. Lastly, we replace the root document extracting everything from _id
         aggregationStages.add(Aggregates.replaceRoot("$_id"));
+
+        CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getSort(qOptions));
+        CollectionUtils.addIgnoreNull(aggregationStages, MongoDBQueryUtils.getProjection(qOptions));
 
         logger.debug("File get: lookup match : {}",
                 aggregationStages.stream()
