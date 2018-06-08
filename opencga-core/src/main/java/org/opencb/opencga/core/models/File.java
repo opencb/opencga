@@ -31,6 +31,7 @@ import java.util.Objects;
  */
 public class File extends PrivateStudyUid {
 
+    private String uuid;
     private String id;
     private String name;
 
@@ -316,6 +317,7 @@ public class File extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
+        sb.append("uuid='").append(uuid).append('\'');
         sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
@@ -350,6 +352,15 @@ public class File extends PrivateStudyUid {
     @Override
     public File setStudyUid(long studyUid) {
         super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public File setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 

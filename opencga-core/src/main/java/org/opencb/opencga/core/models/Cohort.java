@@ -28,6 +28,7 @@ import java.util.Objects;
  */
 public class Cohort extends Annotable {
 
+    private String uuid;
     private String id;
     @Deprecated
     private String name;
@@ -167,17 +168,18 @@ public class Cohort extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Cohort{");
-        sb.append("id=").append(id);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", family=").append(family);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
@@ -191,6 +193,15 @@ public class Cohort extends Annotable {
     @Override
     public Cohort setStudyUid(long studyUid) {
         super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Cohort setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 

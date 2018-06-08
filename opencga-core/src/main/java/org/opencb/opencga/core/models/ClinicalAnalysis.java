@@ -24,6 +24,7 @@ import java.util.Map;
  */
 public class ClinicalAnalysis extends PrivateStudyUid {
 
+    private String uuid;
     private String id;
     @Deprecated
     private String name;
@@ -79,7 +80,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysis{");
-        sb.append("id=").append(id);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
         sb.append(", disease=").append(disease);
@@ -94,6 +97,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public ClinicalAnalysis setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
     }
 
     public String getId() {

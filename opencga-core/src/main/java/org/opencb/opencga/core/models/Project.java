@@ -25,6 +25,7 @@ import java.util.*;
  */
 public class Project extends PrivateFields {
 
+    private String uuid;
     private String id;
     private String name;
     @Deprecated
@@ -167,8 +168,10 @@ public class Project extends PrivateFields {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Project{");
-        sb.append("id=").append(id);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
+        sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", organization='").append(organization).append('\'');
@@ -182,6 +185,15 @@ public class Project extends PrivateFields {
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Project setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
     }
 
     public String getId() {

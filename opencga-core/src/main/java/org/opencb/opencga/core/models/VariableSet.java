@@ -24,6 +24,7 @@ import java.util.Set;
  */
 public class VariableSet extends PrivateFields {
 
+    private String uuid;
     private String id;
     private String name;
     private boolean unique;
@@ -52,8 +53,9 @@ public class VariableSet extends PrivateFields {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariableSet{");
-        sb.append("id=").append(id);
-        sb.append("name=").append(name);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", unique=").append(unique);
         sb.append(", confidential=").append(confidential);
         sb.append(", description='").append(description).append('\'');
@@ -62,6 +64,15 @@ public class VariableSet extends PrivateFields {
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public VariableSet setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
     }
 
     public String getId() {

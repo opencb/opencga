@@ -29,6 +29,7 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Family extends Annotable {
 
+    private String uuid;
     private String id;
     private String name;
 
@@ -104,7 +105,8 @@ public class Family extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Family{");
-        sb.append("id='").append(id).append('\'');
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", members=").append(members);
@@ -129,6 +131,15 @@ public class Family extends Annotable {
     @Override
     public Family setStudyUid(long studyUid) {
         super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Family setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 

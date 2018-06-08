@@ -27,33 +27,7 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Job extends PrivateStudyUid {
 
-    /* Attributes known keys */
-    @Deprecated
-    public static final String TYPE = "type";
-    public static final String INDEXED_FILE_ID = "indexedFileId";
-
-    public static final String OPENCGA_OUTPUT_DIR = "OPENCGA_OUTPUT_DIR";
-    public static final String OPENCGA_TMP_DIR = "OPENCGA_TMP_DIR";
-    public static final String OPENCGA_STUDY = "OPENCGA_STUDY";
-
-    /* ResourceManagerAttributes known keys */
-    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
-    /* Errors */
-    public static final Map<String, String> ERROR_DESCRIPTIONS;
-    public static final String ERRNO_NONE = null;
-    public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
-    public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
-    public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
-
-    static {
-        HashMap<String, String> map = new HashMap<>();
-        map.put(ERRNO_NONE, null);
-        map.put(ERRNO_NO_QUEUE, "Unable to queue job");
-        map.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
-        map.put(ERRNO_ABORTED, "Job aborted");
-        ERROR_DESCRIPTIONS = Collections.unmodifiableMap(map);
-    }
-
+    private String uuid;
     private String id;
     private String name;
 
@@ -100,6 +74,35 @@ public class Job extends PrivateStudyUid {
 
     private int release;
     private Map<String, Object> attributes;
+
+
+    /* Attributes known keys */
+    @Deprecated
+    public static final String TYPE = "type";
+    public static final String INDEXED_FILE_ID = "indexedFileId";
+
+    public static final String OPENCGA_OUTPUT_DIR = "OPENCGA_OUTPUT_DIR";
+    public static final String OPENCGA_TMP_DIR = "OPENCGA_TMP_DIR";
+    public static final String OPENCGA_STUDY = "OPENCGA_STUDY";
+
+    /* ResourceManagerAttributes known keys */
+    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
+    /* Errors */
+    public static final Map<String, String> ERROR_DESCRIPTIONS;
+    public static final String ERRNO_NONE = null;
+    public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
+    public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
+    public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
+
+    static {
+        HashMap<String, String> map = new HashMap<>();
+        map.put(ERRNO_NONE, null);
+        map.put(ERRNO_NO_QUEUE, "Unable to queue job");
+        map.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
+        map.put(ERRNO_ABORTED, "Job aborted");
+        ERROR_DESCRIPTIONS = Collections.unmodifiableMap(map);
+    }
+
 
     public Job() {
     }
@@ -223,6 +226,7 @@ public class Job extends PrivateStudyUid {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Job{");
+        sb.append("uuid='").append(uuid).append('\'');
         sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", userId='").append(userId).append('\'');
@@ -260,6 +264,15 @@ public class Job extends PrivateStudyUid {
     @Override
     public Job setStudyUid(long studyUid) {
         super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Job setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 

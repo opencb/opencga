@@ -26,6 +26,7 @@ import java.util.*;
  */
 public class Sample extends Annotable {
 
+    private String uuid;
     private String id;
     @Deprecated
     private String name;
@@ -76,9 +77,9 @@ public class Sample extends Annotable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Sample{");
-        sb.append("id=").append(id);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", source='").append(source).append('\'');
-        sb.append(", individual=").append(individual);
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -131,6 +132,15 @@ public class Sample extends Annotable {
     @Override
     public Sample setStudyUid(long studyUid) {
         super.setStudyUid(studyUid);
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Sample setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 

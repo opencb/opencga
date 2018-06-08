@@ -29,6 +29,7 @@ import java.util.*;
  */
 public class Study extends PrivateFields {
 
+    private String uuid;
     private String id;
     private String name;
     private String alias;
@@ -150,7 +151,8 @@ public class Study extends PrivateFields {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Study{");
-        sb.append("id=").append(id);
+        sb.append("uuid='").append(uuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", type=").append(type);
@@ -179,6 +181,15 @@ public class Study extends PrivateFields {
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Study setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
     }
 
     public String getId() {
