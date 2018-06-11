@@ -21,7 +21,6 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
 
 import java.util.Iterator;
 import java.util.List;
@@ -142,23 +141,29 @@ public class TextOutputWriter extends AbstractOutputWriter {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tSIZE\tQUOTA\n");
-                sb.append("#(P)\tID\tNAME\tORGANIZATION\tDESCRIPTION\tID\tSIZE\n");
-                sb.append("#(S)\t\tID\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tSIZE\n");
+                sb.append("#(P)\tID\tNAME\tORGANIZATION\tDESCRIPTION\tSIZE\n");
+                sb.append("#(S)\t\tID\tNAME\tTYPE\tDESCRIPTION\t#GROUPS\tSIZE\n");
             }
 
             for (User user : queryResult.getResult()) {
-                sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%d\t%d\n", "", user.getId(), user.getName(), user.getEmail(),
-                        user.getOrganization(), user.getAccount().getType(), user.getSize(), user.getQuota()));
+                sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%d\t%d\n", "",
+                        StringUtils.defaultIfEmpty(user.getId(), "-"), StringUtils.defaultIfEmpty(user.getName(), "-"),
+                        StringUtils.defaultIfEmpty(user.getEmail(), "-"), StringUtils.defaultIfEmpty(user.getOrganization(), "-"),
+                        StringUtils.defaultIfEmpty(user.getAccount() != null ? user.getAccount().getType() : "-", "-"),
+                        user.getSize(), user.getQuota()));
 
                 if (user.getProjects().size() > 0) {
                     for (Project project : user.getProjects()) {
-                        sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\t%d\n", " * ", project.getId(), project.getName(),
-                                project.getOrganization(), project.getDescription(), project.getUid(), project.getSize()));
+                        sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\n", " * ",
+                                StringUtils.defaultIfEmpty(project.getId(), "-"), StringUtils.defaultIfEmpty(project.getName(), "-"),
+                                StringUtils.defaultIfEmpty(project.getOrganization(), "-"),
+                                StringUtils.defaultIfEmpty(project.getDescription(), "-"), project.getSize()));
 
                         if (project.getStudies().size() > 0) {
                             for (Study study : project.getStudies()) {
-                                sb.append(String.format("    - %s\t%s\t%s\t%s\t%d\t%s\t%d\n", study.getId(), study.getName(),
-                                        study.getType(), study.getDescription(), study.getUid(),
+                                sb.append(String.format("    - %s\t%s\t%s\t%s\t%s\t%d\n",
+                                        StringUtils.defaultIfEmpty(study.getId(), "-"), StringUtils.defaultIfEmpty(study.getName(), "-"),
+                                        study.getType(), StringUtils.defaultIfEmpty(study.getDescription(), "-"),
                                         study.getGroups() == null ? ""
                                                 : study.getGroups().stream().map(Group::getName).collect(Collectors.joining(",")),
                                         study.getSize()));
@@ -183,7 +188,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Project> queryResult : queryResultList) {
             // Write header
-            sb.append("#ID\tNAME\tID\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tSIZE\t#STUDIES\tSTATUS\n");
+            sb.append("#ID\tNAME\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tSIZE\t#STUDIES\tSTATUS\n");
 
             for (Project project : queryResult.getResult()) {
                 String organism = "NA";
@@ -198,9 +203,11 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     }
                 }
 
-                sb.append(String.format("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n", project.getId(), project.getName(),
-                        project.getUid(), project.getOrganization(), organism, assembly, project.getDescription(), project.getSize(),
-                        project.getStudies().size(), project.getStatus().getName()));
+                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n", StringUtils.defaultIfEmpty(project.getId(), "-"),
+                        StringUtils.defaultIfEmpty(project.getName(), ","), StringUtils.defaultIfEmpty(project.getOrganization(), "-"),
+                        organism, assembly, StringUtils.defaultIfEmpty(project.getDescription(), "-"), project.getSize(),
+                        project.getStudies() != null ? project.getStudies().size() : -1,
+                        project.getStatus() != null ? StringUtils.defaultIfEmpty(project.getStatus().getName(), "-") : "-"));
             }
         }
         ps.println(sb.toString());
@@ -210,12 +217,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Study> queryResult : queryResultList) {
             // Write header
-            sb.append("#ID\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tSIZE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
+            sb.append("#ID\tNAME\tTYPE\tDESCRIPTION\t#GROUPS\tSIZE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
                     .append("#VARIABLE_SETS\tSTATUS\n");
 
             for (Study study : queryResult.getResult()) {
-                sb.append(String.format("%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n",
-                        study.getId(), study.getName(), study.getType(), study.getDescription(), study.getUid(), study.getGroups().size(),
+                sb.append(String.format("%s\t%s\t%s\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n",
+                        study.getId(), study.getName(), study.getType(), study.getDescription(), study.getGroups().size(),
                         study.getSize(), study.getFiles().size(), study.getSamples().size(), study.getCohorts().size(),
                         study.getIndividuals().size(), study.getJobs().size(), study.getVariableSets().size(),
                         study.getStatus().getName()));
@@ -226,18 +233,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private void printGroup(Group group, StringBuilder sb, String prefix) {
-        sb.append(String.format("%s%s\t%s\n", prefix, group.getName(), StringUtils.join(group.getUserIds(), ", ")));
-    }
-
-    private void printACL(AbstractAclEntry aclEntry, StringBuilder sb, String prefix) {
-        sb.append(String.format("%s%s\t%s\n", prefix, aclEntry.getMember(), aclEntry.getPermissions().toString()));
+        sb.append(String.format("%s%s\t%s\n", prefix, StringUtils.defaultIfEmpty(group.getName(), "-"),
+                StringUtils.join(group.getUserIds(), ", ")));
     }
 
     private void printFiles(List<QueryResult<File>> queryResultList) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<File> queryResult : queryResultList) {
             // Write header
-            sb.append("#NAME\tTYPE\tFORMAT\tBIOFORMAT\tDESCRIPTION\tCATALOG_PATH\tFILE_SYSTEM_URI\tID\tSTATUS\tSIZE\tINDEX_STATUS"
+            sb.append("#ID\tNAME\tTYPE\tFORMAT\tBIOFORMAT\tDESCRIPTION\tCATALOG_PATH\tFILE_SYSTEM_URI\tSTATUS\tSIZE\tINDEX_STATUS"
                     + "\tRELATED_FILES\tSAMPLES\n");
 
             printFiles(queryResult.getResult(), sb, "");
@@ -253,9 +257,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
             if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
                 indexStatus = file.getIndex().getStatus().getName();
             }
-            sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\n", format, file.getName(), file.getType(),
-                    file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getUid(),
-                    file.getStatus().getName(), file.getSize(), indexStatus,
+            sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\n", format,
+                    StringUtils.defaultIfEmpty(file.getId(), "-"), StringUtils.defaultIfEmpty(file.getName(), "-"),
+                    file.getType(), file.getFormat(), file.getBioformat(), StringUtils.defaultIfEmpty(file.getDescription(), "-"),
+                    StringUtils.defaultIfEmpty(file.getPath(), "-"), StringUtils.defaultIfEmpty(file.getUri().toString(), "-"),
+                    file.getStatus() != null ? StringUtils.defaultIfEmpty(file.getStatus().getName(), "-") : "-", file.getSize(),
+                    indexStatus,
                     StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
                     StringUtils.join(file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()), ", ")));
         }
@@ -266,7 +273,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Sample> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#NAME\tID\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_NAME\tINDIVIDUAL_UID\n");
+                sb.append("#ID\tNAME\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_ID\tINDIVIDUAL_NAME\n");
             }
 
             printSamples(queryResult.getResult(), sb, "");
@@ -281,15 +288,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
             String individualName = "NA";
             String individualId = "NA";
             if (sample.getIndividual() != null) {
-                if (sample.getIndividual().getUid() >= 0) {
-                    individualId = Long.toString(sample.getIndividual().getUid());
-                }
-                if (StringUtils.isNotEmpty(sample.getIndividual().getName())) {
-                    individualName = sample.getIndividual().getName();
-                }
+                individualId = StringUtils.defaultIfEmpty(sample.getIndividual().getId(), "-");
+                individualName = StringUtils.defaultIfEmpty(sample.getIndividual().getName(), "-");
             }
-            sb.append(String.format("%s%s\t%d\t%s\t%s\t%s\t%s\t%s\n", format, sample.getId(), sample.getUid(), sample.getSource(),
-                    sample.getDescription(), sample.getStatus().getName(), individualName, individualId));
+            sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\n", format, StringUtils.defaultIfEmpty(sample.getId(), "-"),
+                    StringUtils.defaultIfEmpty(sample.getName(), "-"), StringUtils.defaultIfEmpty(sample.getSource(), "-"),
+                    StringUtils.defaultIfEmpty(sample.getDescription(), "-"),
+                    sample.getStatus() != null ? StringUtils.defaultIfEmpty(sample.getStatus().getName(), "-") : "-", individualId,
+                            individualName));
         }
     }
 
@@ -298,14 +304,16 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Cohort> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#NAME\tID\tTYPE\tDESCRIPTION\tSTATUS\tTOTAL_SAMPLES\tSAMPLES\tFAMILY\n");
+                sb.append("#ID\tNAME\tTYPE\tDESCRIPTION\tSTATUS\tTOTAL_SAMPLES\tSAMPLES\tFAMILY\n");
             }
 
             for (Cohort cohort : queryResult.getResult()) {
-                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%d\t%s\t%s\n", cohort.getId(), cohort.getUid(), cohort.getType(),
-                        cohort.getDescription(), cohort.getStatus().getName(), cohort.getSamples().size(),
-                        cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA",
-                        cohort.getFamily() != null && StringUtils.isNotEmpty(cohort.getFamily().getId()) ? cohort.getFamily().getId() : "NA"));
+                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\n", StringUtils.defaultIfEmpty(cohort.getId(), "-"),
+                        StringUtils.defaultIfEmpty(cohort.getName(), "-"), cohort.getType(),
+                        StringUtils.defaultIfEmpty(cohort.getDescription(), "-"),
+                        cohort.getStatus() != null ? StringUtils.defaultIfEmpty(cohort.getStatus().getName(), "-") : "-",
+                        cohort.getSamples().size(), cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA",
+                        cohort.getFamily() != null ? StringUtils.defaultIfEmpty(cohort.getFamily().getId(), "-") : "-"));
             }
         }
 
@@ -317,8 +325,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Individual> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#NAME\tID\tFAMILY\tAFFECTATION_STATUS\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
-                        .append("\tSTATUS\tFATHER_UID\tMOTHER_UID\tCREATION_DATE\n");
+                sb.append("#ID\tNAME\tAFFECTATION_STATUS\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
+                        .append("\tSTATUS\tFATHER_ID\tMOTHER_ID\tCREATION_DATE\n");
             }
 
             for (Individual individual : queryResult.getResult()) {
@@ -332,12 +340,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
                         subpopulation = individual.getPopulation().getSubpopulation();
                     }
                 }
-                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                        individual.getName(), individual.getUid(), individual.getFamily(), individual.getAffectationStatus(),
-                        individual.getSex(), individual.getKaryotypicSex(), individual.getEthnicity(), population, subpopulation,
-                        individual.getLifeStatus(), individual.getStatus().getName(),
-                        individual.getFatherId() > 0 ? Long.toString(individual.getFatherId()) : "NA",
-                        individual.getMotherId() > 0 ? Long.toString(individual.getMotherId()) : "NA", individual.getCreationDate()));
+                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                        StringUtils.defaultIfEmpty(individual.getId(), "-"), StringUtils.defaultIfEmpty(individual.getName(), "-"),
+                        individual.getAffectationStatus(), individual.getSex(), individual.getKaryotypicSex(),
+                        StringUtils.defaultIfEmpty(individual.getEthnicity(), "-"), population, subpopulation,
+                        individual.getLifeStatus(),
+                        individual.getStatus() != null ? StringUtils.defaultIfEmpty(individual.getStatus().getName(), "-") : "-",
+                        individual.getFather() != null ? StringUtils.defaultIfEmpty(individual.getFather().getId(), "-") : "-",
+                        individual.getMother() != null ? StringUtils.defaultIfEmpty(individual.getMother().getId(), "-") : "-",
+                        StringUtils.defaultIfEmpty(individual.getCreationDate(), "-")));
             }
         }
 
@@ -381,15 +392,20 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Job> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#NAME\tID\tTYPE\tTOOL_NAME\tCREATION_DATE\tEXECUTABLE\tEXECUTION\t#VISITED\tSTATUS\tINPUT")
+                sb.append("#ID\tNAME\tTYPE\tTOOL_NAME\tCREATION_DATE\tEXECUTABLE\tEXECUTION\t#VISITED\tSTATUS\tINPUT")
                         .append("\tOUTPUT\tOUTPUT_DIRECTORY\n");
             }
 
             for (Job job : queryResult.getResult()) {
-                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\n",
-                        job.getName(), job.getUid(), job.getType(), job.getToolId(), job.getCreationDate(), job.getExecutable(),
-                        job.getExecution(), job.isVisited(), job.getStatus().getName(), StringUtils.join(job.getInput(), ", "),
-                        StringUtils.join(job.getOutput(), ", "), job.getOutDir().getUid()));
+                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                        StringUtils.defaultIfEmpty(job.getId(), "-"), StringUtils.defaultIfEmpty(job.getName(), "-"),
+                        job.getType(), StringUtils.defaultIfEmpty(job.getToolId(), "-"),
+                        StringUtils.defaultIfEmpty(job.getCreationDate(), "-"), StringUtils.defaultIfEmpty(job.getExecutable(), "-"),
+                        StringUtils.defaultIfEmpty(job.getExecution(), "-"), job.isVisited(),
+                        job.getStatus() != null ? StringUtils.defaultIfEmpty(job.getStatus().getName(), "-") : "-",
+                        StringUtils.join(job.getInput(), ", "),
+                        StringUtils.join(job.getOutput(), ", "),
+                        job.getOutDir() != null ? StringUtils.defaultIfEmpty(job.getOutDir().getId(), "-") : "-"));
             }
         }
 
@@ -401,12 +417,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<VariableSet> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#NAME\tID\tDESCRIPTION\tVARIABLES\n");
+                sb.append("#ID\tNAME\tDESCRIPTION\tVARIABLES\n");
             }
 
             for (VariableSet variableSet : queryResult.getResult()) {
-                sb.append(String.format("%s\t%s\t%s\t%s\n", variableSet.getId(), variableSet.getUid(), variableSet.getDescription(),
-                        variableSet.getVariables().stream().map(variable -> variable.getId()).collect(Collectors.joining(", "))));
+                sb.append(String.format("%s\t%s\t%s\t%s\n", StringUtils.defaultIfEmpty(variableSet.getId(), "-"),
+                        StringUtils.defaultIfEmpty(variableSet.getName(), "-"),
+                        StringUtils.defaultIfEmpty(variableSet.getDescription(), "-"),
+                        variableSet.getVariables().stream().map(Variable::getId).collect(Collectors.joining(", "))));
             }
         }
 
@@ -448,10 +466,10 @@ public class TextOutputWriter extends AbstractOutputWriter {
             FileTree fileTree = iterator.next();
             File file = fileTree.getFile();
 
-            sb.append(String.format("%s %s  [%d, %s, %s]\n",
+            sb.append(String.format("%s %s  [%s, %s, %s]\n",
                     indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                     file.getType() == File.Type.FILE ? file.getName() : file.getName() + "/",
-                    file.getUid(),
+                    file.getName(),
                     file.getStatus() != null ? file.getStatus().getName() : "",
                     humanReadableByteCount(file.getSize(), false)));
 
