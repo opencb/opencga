@@ -13,13 +13,14 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<dom-module id="welcome-web">
 
+<dom-module id="welcome-web">
     <template>
-        <style is="custom-style" include="jso-styles"></style>
+        <!--<style include="jso-styles">-->
         <style>
-            .center {
+            .welcome-center {
                 margin: auto;
+                width: 80%;
                 text-align: justify;
                 font-size: 18px;
                 color: #797979;
@@ -27,50 +28,51 @@
         </style>
 
         <!-- This is where main application is rendered -->
-        <div class="center">
+        <div class="welcome-center">
             <br>
-            <span style="font-size:50px">Catalog v1.0.0</span>
+
+            <span style="font-size: 50px">IVA {{version}}</span>
+
             <h2>Overview</h2>
             <p>
-                Welcome to the Catalog web application.
-                This interactive tool allows the visualization of the information stored in Catalog in an easy and straight-forward way.
+                Welcome to the IVA tool for whole genome variant analysis.
+                This interactive tool allows finding genes affected by deleterious variants that segregate along family pedigrees, case-controls or sporadic samples.
             </p>
             <br>
             <h4>Note:</h4>
             <p style="font-size:14px">
-                Catalog web application makes an intensive use of the HTML5 standard and other cutting-edge web technologies such as Web Components,
+                IVA web application makes an intensive use of the HTML5 standard and other cutting-edge web technologies such as Web Components,
                 so only modern web browsers are fully supported, these include Chrome 49+, Firefox 45+, Microsoft Edge 14+, Safari 10+ and Opera 36+.
-                </p>
+            </p>
             <br>
             <br>
             <br>
-            <img src="images/opencb-logo.png" width="220">
+            <img src="img/opencb-logo.png" width="220">
         </div>
     </template>
 
     <script>
-        Polymer({
-            is: 'welcome-web',
-            properties: {
-                opencgaClient: {
-                    type: Object
-                },
-                host: {
-                    type: String,
-                    value: "http://bioinfodev.hpc.cam.ac.uk/hgva"
-                },
-                userId: {
-                    type: String,
-                    value: ""
-                },
-                project: {
-                    type: String,
-                    value: ""
-                },
-                study: {
-                    type: Object
+        class Welcome extends Polymer.Element {
+
+            constructor() {
+                super();
+            }
+
+            static get is() {
+                return 'welcome-web';
+            }
+
+            static get properties(){
+                version: {
+                    type: String
                 }
             }
-        });
+
+            _attachDom(dom) {
+                this.appendChild(dom);
+            }
+        }
+
+        customElements.define(Welcome.is, Welcome);
     </script>
 </dom-module>
