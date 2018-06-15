@@ -27,7 +27,7 @@ var opencga = {
     // This allows IVA to query a OpenCGA instance being an 'anonymous' user, this means that no login is required.
     // If 'projects' is empty then all public projects and studies of 'user' will be used.
     anonymous: {
-        user: "hgvauser",
+        // user: "hgvauser",
         // projects: [
         //     {
         //         id: "platinum",

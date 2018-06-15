@@ -644,7 +644,7 @@
                     // 600000 ms = 10 min = 1000(1sec) * 60(60 sec = 1min) * 10(10 min)
                     if (remainingTime <= this.config.session.maxRemainingTime && remainingTime >= this.config.session.minRemainingTime) {
                         let remainingMinutes = Math.floor(remainingTime / this.config.session.minRemainingTime);
-                        _message = "Your session is close to expire. <strong>" + remainingMinutes + ` minutes remaining</strong>. <a href="#" onclick='eval(UtilsApp.refreshToken()); return false;'>Click here to refresh</a>`;
+                        _message = "Your session is close to expire. <strong>" + remainingMinutes + ` minutes remaining</strong>. <a href="#" onclick='eval(NotificationUtils.refreshToken()); return false;'>Click here to refresh</a>`;
                     } else {
                         if (remainingTime < this.config.session.minRemainingTime) {
                             _message = "Your session has expired.";
@@ -652,7 +652,7 @@
                             window.clearInterval(this.intervalCheckSession);
                         } else {
                             if (UtilsNew.isNotUndefinedOrNull(this.notifySession)) {
-                                UtilsApp.closeNotify(this.notifySession);
+                                NotificationUtils.closeNotify(this.notifySession);
                             }
                             return;
                         }
@@ -663,10 +663,10 @@
                 }
                 // delay = 0 to fix the notify until user closes it.
                 if (UtilsNew.isNotEmpty(_message)) {
-                    this.notifySession = UtilsApp.showNotify({}, {
+                    this.notifySession = NotificationUtils.showNotify(_message, UtilsNew.MESSAGE_INFO, {}, {
                         delay: 0,
                         onClosed: this.onCloseRefreshNotify.bind(this)
-                    }, _message, UtilsNew.MESSAGE_INFO, this.opencgaClient, this.notifySession);
+                    }, this.opencgaClient, this.notifySession);
                 }
             }
 
@@ -1061,8 +1061,8 @@
             }
 
             onNotifyMessage(e) {
-                UtilsApp.closeNotify(this.notifySession);
-                UtilsApp.showNotify(e.detail.options, e.detail.settings, e.detail.message, e.detail.type);
+                NotificationUtils.closeNotify(this.notifySession);
+                NotificationUtils.showNotify(e.detail.message, e.detail.type, e.detail.options, e.detail.settings);
             }
         }
 
