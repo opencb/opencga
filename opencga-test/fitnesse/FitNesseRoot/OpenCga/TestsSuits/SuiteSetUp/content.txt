@@ -65,21 +65,21 @@
 
 !3 Create Global Variable Set  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  {"id" : "VS1","unique": false, "confidential" : "false",  "name": "$gvsName",  "description": "string",  "variables": [{ "id" : "V1", "name": "var_int", "type" : "INTEGER", "required" : true,"multiValue": false }, {"id" : "V2", "name": "var_double", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
+| setBody |  {"id" : "VS1","unique": false, "confidential" : "false",  "name": "$gvsName",  "description": "string",  "variables": [{ "id" : "var_int", "name": "V1", "type" : "INTEGER", "required" : true,"multiValue": false }, {"id" : "var_double", "name": "V2", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
 |let|gVariableSetId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Global Nested Variable Set 2
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "id" : "VS2", "unique": false, "confidential" : "false",  "name": "$gvsName2",  "description": "string",  "variables": [{"id" : "V11", "name": "outer_var", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"id" : "V1","name": "inner_first_var", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"id" : "V2","name": "inner_second_var", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
+| setBody |  { "id" : "VS2", "unique": false, "confidential" : "false",  "name": "$gvsName2",  "description": "string",  "variables": [{"id" : "outer_var", "name": "V11", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"id" : "inner_first_var","name": "V1", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"id" : "inner_second_var","name": "V2", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
 |let|gVariableSetId2|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Global Variable Set  Without Ids
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "id" : "VSNameTest", "unique": false, "confidential" : "false",  "name": "VSNameTest",  "description": "string",  "variables": [{"id" : "VaribleTest", "name": "outer_var", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"name": "inner_first_var_name_test", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"name": "inner_second_var_name_test", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
+| setBody |  { "unique": false, "confidential" : "false",  "name": "VSNameTest",  "description": "string",  "variables": [{"name": "outer_var", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"name": "inner_first_var_name_test", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"name": "inner_second_var_name_test", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
 |let|dummyVSId|js|response.jsonbody.response[0].result[0].id||

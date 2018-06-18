@@ -136,7 +136,6 @@
 !3 Get Sample As Ananomous
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/$sampleId/info?study=$studyId |200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$sampleId'|
-| GET | /v1/samples/$sampleId/info?study=$studyId ||Content-Type: application/json ||
 
 !3 Delete VIEW_SAMPLE ACL For Study
 !|Table: Rest Fixture | $baseURL |
@@ -146,7 +145,7 @@
 
 !3 Get Sample As Ananomous
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/info|403|Content-Type: application/json |jsonbody.error == "Permission denied. User '\*'\ cannot VIEW Sample { id: $sampleId }"|
+| GET | /v1/samples/$sampleId/info?study=$studyId|403|Content-Type: application/json |jsonbody.error == "Permission denied. * is not allowed to see the sample $sampleId"|
 
 !3 Create Sample ACL For Ananomous
 !|Table: Rest Fixture | $baseURL |
@@ -170,7 +169,7 @@
 
 !3 Get Sample As Ananomous
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId/info|403|Content-Type: application/json |jsonbody.error == "Permission denied. User '\*'\ cannot VIEW Sample { id: $sampleId }"|
+| GET | /v1/samples/$sampleId/info|403|Content-Type: application/json |jsonbody.error == "Permission denied. * is not allowed to see the sample $sampleId"|
 
 !3 Search Sample As Ananomous
 !|Table: Rest Fixture | $baseURL |
@@ -209,6 +208,7 @@
 !3 Get Samples ACL With One Invalid ID Silent False
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/$sampleId,invalid,$sampleId2/acl?sid=$sessionId&study=$study|500|  Content-Type: application/json |jsonbody.error == "Found only 2 out of the 3 samples looked for in study $study"|
+| GET | /v1/samples/$sampleId,invalid,$sampleId2/acl?sid=$sessionId&study=$study|500|  Content-Type: application/json ||
 
 !3 Get Samples ACL With One Invalid ID And Silent True
 !|Table: Rest Fixture | $baseURL |
@@ -348,7 +348,6 @@
 | GET | /v1/samples/search?sid=$sessionId&study=$study||Content-Type: application/json ||
 
 
-
 !3 Search Annotation Set By Annotation With Exclude
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/search?sid=$sessionId&study=$study&annotation=annotationSet=Testing&exclude=annotationSet.Testing||  Content-Type: application/json |jsonbody.response[0].result[0].annotationSets.length == 1 && jsonbody.response[0].result[0].annotationSets[0].name == "string"|
@@ -384,19 +383,11 @@
 |setHeader|Content-Type:application/json|
 |POST| /v1/samples/$sampleId2/update?sid=$sessionId |200|  Content-Type: application/json ||
 
-
-
 !3 Group By Annotation 
 !|Table: Rest Fixture | $baseURL |
 |setHeader|Content-Type:application/json|
 |GET| /v1/samples/groupBy?sid=$sessionId&fields=annotation:$gVariableSetId:string:var_int,date |200|  Content-Type: application/json ||
 |GET| /v1/samples/groupBy?sid=$sessionId&fields=annotation:$gVariableSetId |200|  Content-Type: application/json ||
-
-
-
-
-
-
 
 !3 Delete Annotation
 !|Table: Rest Fixture | $baseURL |
