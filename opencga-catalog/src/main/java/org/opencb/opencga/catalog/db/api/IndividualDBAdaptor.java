@@ -58,6 +58,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         POPULATION_NAME("population.name", TEXT, ""),
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
+        PARENTAL_CONSANGUINITY("parentalConsanguinity", BOOLEAN, ""),
         DATE_OF_BIRTH("dateOfBirth", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         RELEASE("release", INTEGER, ""), //  Release where the individual was created
@@ -131,6 +132,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         KARYOTYPIC_SEX(QueryParams.KARYOTYPIC_SEX.key()),
         SEX(QueryParams.SEX.key()),
         MULTIPLES(QueryParams.MULTIPLES.key()),
+        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
         SAMPLES(QueryParams.SAMPLES.key()),
         FATHER(QueryParams.FATHER.key()),
         MOTHER(QueryParams.MOTHER.key()),

@@ -18,7 +18,16 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageSearchIntersectTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+
+import static org.junit.Assert.assertFalse;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 /**
  * Created on 04/07/17.
@@ -37,4 +46,14 @@ public class MongoVariantStorageSearchIntersectTest extends VariantStorageSearch
         logLevel("info");
     }
 
+
+    @Test
+    public void testDoQuerySearchManagerMongoSpecialRules() throws Exception {
+        MongoDBVariantStorageEngine engine = getVariantStorageEngine();
+
+        // SPECIAL CASE FOR MONGO
+        assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55"), new QueryOptions(VariantField.SUMMARY, true)));
+        assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));
+        assertFalse(engine.doQuerySearchManager(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));
+    }
 }

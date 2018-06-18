@@ -47,7 +47,10 @@ public class FillGapsTask {
 
         this.skipReferenceVariants = skipReferenceVariants;
 
-        studyConverter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), studyConfiguration, true, Collections.singleton("?/?"));
+        studyConverter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), studyConfiguration,
+                true,
+                Collections.singleton("?/?"), // Do not skip any genotype
+                null); // Do not update release
         variantMerger = new VariantMerger(false).configure(studyConfiguration.getVariantHeader());
     }
 

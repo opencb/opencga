@@ -40,6 +40,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
 /**
@@ -47,7 +48,6 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
  */
 public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
-    public static final String UNKNOWN_GENOTYPE = "?/?";
     public static final String UNKNOWN_FIELD = ".";
 
     private final Map<Integer, StudyConfiguration> studyConfigurations;

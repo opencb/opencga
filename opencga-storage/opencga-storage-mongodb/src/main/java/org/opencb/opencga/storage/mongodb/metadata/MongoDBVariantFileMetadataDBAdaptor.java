@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant.adaptors;
+package org.opencb.opencga.storage.mongodb.metadata;
 
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
@@ -32,7 +32,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantFileMetadataConverter;
@@ -46,7 +46,7 @@ import java.util.List;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantFileMetadataMongoDBAdaptor implements VariantFileMetadataDBAdaptor {
+public class MongoDBVariantFileMetadataDBAdaptor implements VariantFileMetadataDBAdaptor {
 
 //    private static final Map<String, List> SAMPLES_IN_SOURCES = new HashMap<>();
 
@@ -55,7 +55,7 @@ public class VariantFileMetadataMongoDBAdaptor implements VariantFileMetadataDBA
     private final DocumentToVariantFileMetadataConverter variantFileMetadataConverter;
     private final String collectionName;
 
-    public VariantFileMetadataMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
+    public MongoDBVariantFileMetadataDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         MongoDBConfiguration mongoDBConfiguration = credentials.getMongoDBConfiguration();
@@ -64,7 +64,7 @@ public class VariantFileMetadataMongoDBAdaptor implements VariantFileMetadataDBA
         variantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
     }
 
-    public VariantFileMetadataMongoDBAdaptor(MongoDataStore db, String collectionName) throws UnknownHostException {
+    public MongoDBVariantFileMetadataDBAdaptor(MongoDataStore db, String collectionName) {
         mongoManager = null;
         this.db = db;
         this.collectionName = collectionName;

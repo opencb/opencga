@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.HashMap;
@@ -41,6 +42,9 @@ public class StorageVariantCommandOptions {
     public final VariantQueryCommandOptions variantQueryCommandOptions;
     public final ImportVariantsCommandOptions importVariantsCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantsCommandOptions;
+    public final CreateAnnotationSnapshotCommandOptions createAnnotationSnapshotCommandOptions;
+    public final DeleteAnnotationSnapshotCommandOptions deleteAnnotationSnapshotCommandOptions;
+    public final QueryAnnotationCommandOptions queryAnnotationCommandOptions;
     public final VariantStatsCommandOptions statsVariantsCommandOptions;
     public final FillGapsCommandOptions fillGapsCommandOptions;
     public final FillMissingCommandOptions fillMissingCommandOptions;
@@ -64,6 +68,9 @@ public class StorageVariantCommandOptions {
         this.variantQueryCommandOptions = new VariantQueryCommandOptions();
         this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
+        this.createAnnotationSnapshotCommandOptions = new CreateAnnotationSnapshotCommandOptions();
+        this.deleteAnnotationSnapshotCommandOptions = new DeleteAnnotationSnapshotCommandOptions();
+        this.queryAnnotationCommandOptions = new QueryAnnotationCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
         this.fillGapsCommandOptions = new FillGapsCommandOptions();
         this.fillMissingCommandOptions = new FillMissingCommandOptions();
@@ -128,6 +135,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)")
         public boolean loadSplitData;
+
+        @Parameter(names = {"--skip-post-load-check"}, description = "Do not execute post load checks over the database")
+        public boolean skipPostLoadCheck;
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -504,6 +514,77 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
         public String outdir;
+    }
+
+    public static class GenericCreateAnnotationSnapshotCommandOptions {
+        @Parameter(names = {"--name"}, description = "Annotation snapshot name", required = true, arity = 1)
+        public String name;
+    }
+
+    @Parameters(commandNames = {CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND}, commandDescription = CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND_DESCRIPTION)
+    public class CreateAnnotationSnapshotCommandOptions extends GenericCreateAnnotationSnapshotCommandOptions {
+        public static final String COPY_ANNOTATION_COMMAND = "copy-annotation";
+        public static final String COPY_ANNOTATION_COMMAND_DESCRIPTION = "Creates a snapshot of the current variant annotation at the database.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+
+    }
+
+    public static class GenericDeleteAnnotationSnapshotCommandOptions {
+
+        @Parameter(names = {"--name"}, description = "Annotation snapshot name", required = true, arity = 1)
+        public String name;
+    }
+
+    @Parameters(commandNames = {DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND}, commandDescription = DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND_DESCRIPTION)
+    public class DeleteAnnotationSnapshotCommandOptions extends GenericDeleteAnnotationSnapshotCommandOptions {
+        public static final String DELETE_ANNOTATION_COMMAND = "delete-annotation";
+        public static final String DELETE_ANNOTATION_COMMAND_DESCRIPTION = "Deletes a variant annotation snapshot.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+
+    }
+
+    public static class GenericQueryAnnotationCommandOptions {
+
+        @Parameter(names = {"--name"}, description = "Annotation snapshot name", required = true, arity = 1)
+        public String name = VariantAnnotationManager.LATEST;
+
+        @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR, variableArity = true)
+        public List<String> id;
+
+        @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
+        public String region;
+
+    }
+
+    @Parameters(commandNames = {QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND}, commandDescription = QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND_DESCRIPTION)
+    public class QueryAnnotationCommandOptions extends GenericQueryAnnotationCommandOptions {
+        public static final String QUERY_ANNOTATION_COMMAND = "annotation";
+        public static final String QUERY_ANNOTATION_COMMAND_DESCRIPTION = "";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.DataModelOptions dataModelOptions = new GeneralCliOptions.DataModelOptions();
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+
+        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", required = false, arity = 1)
+        public int skip;
+
+        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
+        public int limit;
     }
 
     /**

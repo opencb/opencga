@@ -23,8 +23,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 
 import java.io.IOException;
@@ -70,11 +68,6 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return super.newVariantAnnotationManager(annotator);
-    }
-
-    @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
         List<Integer> fileIds = preRemoveFiles(study, files);
         try {
@@ -98,6 +91,6 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        return new StudyConfigurationManager(new DummyStudyConfigurationAdaptor());
+        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
     }
 }

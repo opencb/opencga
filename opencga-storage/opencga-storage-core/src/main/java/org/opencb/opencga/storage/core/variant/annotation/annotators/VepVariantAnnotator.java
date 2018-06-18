@@ -21,7 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.annotation.io.VepFormatReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -46,7 +48,7 @@ public class VepVariantAnnotator extends VariantAnnotator {
     protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
 
     public VepVariantAnnotator() throws VariantAnnotatorException {
-        super(null, null);
+        super(null, null, null);
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(factory);
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
@@ -73,6 +75,15 @@ public class VepVariantAnnotator extends VariantAnnotator {
         return null;
     }
 
+    @Override
+    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
+        return null;
+    }
+
+    @Override
+    public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
+        return null;
+    }
 
     /////// LOAD ANNOTATION
 

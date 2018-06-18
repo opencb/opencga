@@ -55,6 +55,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
 
@@ -84,7 +85,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private boolean studyNameAsStudyId = false;
     private boolean simpleGenotypes = false;
     private boolean failOnWrongVariants = HBaseToVariantConverter.isFailOnWrongVariants();
-    private static final String UNKNOWN_GENOTYPE = "?/?";
     private String unknownGenotype = UNKNOWN_GENOTYPE;
     private boolean mutableSamplesPosition = true;
     private List<String> expectedFormat;
@@ -507,22 +507,28 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (studyConfiguration.getIndexedFiles().contains(fillMissingColumnValue)) {
                 LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
                 boolean missingUpdated = true;
+                int count = 0;
                 for (Integer indexedFile : studyConfiguration.getIndexedFiles()) {
                     LinkedHashSet<Integer> samples = studyConfiguration.getSamplesInFiles().get(indexedFile);
 
-                    // Skip the file if not returned
-                    if (selectVariantElements != null && selectVariantElements.getFiles().containsKey(indexedFile)) {
-                        for (Integer sampleId : samples) {
-                            if (sampleIds.contains(sampleId)) {
-                                String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
-                                missingUpdatedList.set(returnedSamplesPosition.get(sampleName), missingUpdated);
-                            }
+                    // Do not skip the not returned files, as they may have returned samples
+                    // if (selectVariantElements != null && selectVariantElements.getFiles().containsKey(indexedFile))
+                    for (Integer sampleId : samples) {
+                        if (sampleIds.contains(sampleId)) {
+                            String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                            if (null == missingUpdatedList.set(returnedSamplesPosition.get(sampleName), missingUpdated)) {
+                                count++;
+                            } // else, the sample was found in two different files. Data may be split in one file per chromosome
                         }
                     }
 
                     if (indexedFile == fillMissingColumnValue) {
                         missingUpdated = false;
                     }
+                }
+                if (count != missingUpdatedList.size()) {
+                    logger.error("Missing updatedList values!");
+                    missingUpdatedList.replaceAll(b -> b == null ? false : b);
                 }
             } else {
                 if (fillMissingColumnValue > 0) {

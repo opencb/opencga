@@ -5,6 +5,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -102,6 +103,22 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
+    public void testRelease() throws Exception {
+        for (Variant variant : dbAdaptor) {
+            Integer minFileId = variant.getStudies().stream()
+                    .flatMap(s -> s.getFiles().stream())
+                    .map(FileEntry::getFileId)
+                    .map(Integer::valueOf)
+                    .min(Integer::compareTo)
+                    .orElse(0);
+            assertTrue(minFileId > 0);
+            int expectedRelease = (minFileId - 12877/*first file loaded*/) / 2/*each release contains 2 files*/ + 1/*base-1*/;
+            int release = Integer.valueOf(variant.getAnnotation().getAdditionalAttributes().get("opencga").getAttribute().get("release"));
+            assertEquals(expectedRelease, release);
+        }
+    }
+
+    @Test
     public void testIncludeStudiesNone() throws Exception {
         query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), NONE);
         queryResult = dbAdaptor.get(query, options);
@@ -162,6 +179,32 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", containsString("1"))))));
+    }
+
+    @Test
+    public void testGetByGenotype() throws Exception {
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), "S_1")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), options);
+
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.GENOTYPE.key(), "NA12877:" + GenotypeClass.HOM_ALT);
+        queryResult = dbAdaptor.get(query, options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", anyOf(is("1/1"), is("2/2")))))));
+
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.GENOTYPE.key(), "NA12877:" + GenotypeClass.HET_REF);
+        queryResult = dbAdaptor.get(query, options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", anyOf(is("0/1"), is("0/2")))))));
+
+        query = new Query()
+                .append(VariantQueryParam.STUDY.key(), "S_1")
+                .append(VariantQueryParam.GENOTYPE.key(), "NA12877:" + GenotypeClass.HET_ALT);
+        queryResult = dbAdaptor.get(query, options);
+        assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId("12877"), withSampleData("NA12877", "GT", anyOf(is("1/2"), is("2/3")))))));
     }
 
     @Test

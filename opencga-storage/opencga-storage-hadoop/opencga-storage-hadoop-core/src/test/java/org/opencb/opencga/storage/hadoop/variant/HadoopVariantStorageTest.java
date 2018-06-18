@@ -55,6 +55,8 @@ import org.apache.hadoop.http.HttpServer2;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.mapred.MapTask;
 import org.apache.hadoop.mapred.Task;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Level;
 import org.apache.phoenix.coprocessor.MetaDataEndpointImpl;
 import org.apache.phoenix.hbase.index.Indexer;
@@ -80,6 +82,7 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
+import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -475,12 +478,24 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     int r = new DeleteHBaseColumnDriver().privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution DeleteHBaseColumnDriver");
                     return r;
+                } else if (executable.endsWith(CopyHBaseColumnDriver.class.getName())) {
+                    System.out.println("Executing CopyHBaseColumnDriver : " + executable + " " + args);
+                    int r = new CopyHBaseColumnDriver(conf).run(Commandline.translateCommandline(args));
+                    System.out.println("Finish execution CopyHBaseColumnDriver");
+                    return r;
+                } else {
+                    Class<?> aClass = Class.forName(executable.split(" ")[3]);
+                    if (Tool.class.isAssignableFrom(aClass)) {
+                        Class<Tool> tool = (Class<Tool>) aClass;
+                        return ToolRunner.run(conf, tool.newInstance(), Commandline.translateCommandline(args));
+                    } else {
+                        throw new IllegalArgumentException("Unknown executable " + executable + ". " + aClass + " is not a Tool");
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 return -1;
             }
-            return 0;
         }
     }
 

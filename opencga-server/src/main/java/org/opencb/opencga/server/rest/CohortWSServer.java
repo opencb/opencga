@@ -280,7 +280,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohorts}/delete")
     @ApiOperation(value = "Delete cohort. [WARNING]", position = 5,
             notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-                    "planned to be fully implemented and tested in version 1.4.0")
+                    "planned to be fully implemented and tested in version 1.4.0", hidden = true)
     public Response deleteCohort(@ApiParam(value = "Comma separated list of cohort Ids", required = true) @PathParam("cohorts") String cohortsStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,

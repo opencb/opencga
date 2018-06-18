@@ -43,6 +43,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -367,7 +368,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{individual}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some individual attributes", position = 6)
+    @ApiOperation(value = "Update some individual attributes", position = 6,
+            notes = "The entire individual is returned after the modification. Using include/exclude query parameters is encouraged to "
+                    + "avoid slowdowns when sending unnecessary information where possible")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
+    })
     public Response updateByPost(
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -404,7 +412,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individuals}/delete")
     @ApiOperation(value = "Delete individual information [WARNING]", position = 7,
             notes = "Usage of this webservice might lead to unexpected behaviour and therefore is discouraged to use. Deletes are " +
-                    "planned to be fully implemented and tested in version 1.4.0")
+                    "planned to be fully implemented and tested in version 1.4.0", hidden = true)
     public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names up to a maximum of 100", required = true)
                                      @PathParam("individuals") String individualIds,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -536,7 +544,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     MemberAclUpdate params) {
         try {
             Individual.IndividualAclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            List<String> idList = getIdList(individualIdStr);
+            List<String> idList = StringUtils.isEmpty(individualIdStr) ? Collections.emptyList() : getIdList(individualIdStr);
             return createOkResponse(individualManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -565,7 +573,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(params.getPermissions(), params.getAction(),
                     params.sample, params.propagate);
-            List<String> idList = getIdList(params.individual);
+            List<String> idList = StringUtils.isEmpty(params.individual) ? Collections.emptyList() : getIdList(params.individual);
             return createOkResponse(individualManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -605,22 +613,16 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    .setAttributes(attributes);
         }
     }
 
     protected static class IndividualCreatePOST extends IndividualPOST {
         public List<SampleWSServer.CreateSamplePOST> samples;
 
+        @Override
         public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-//            List<AnnotationSet> annotationSetList = new ArrayList<>();
-//            if (annotationSets != null) {
-//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-//                    if (annotationSet != null) {
-//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
-//                    }
-//                }
-//            }
 
             List<Sample> sampleList = null;
             if (samples != null) {
@@ -631,7 +633,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
             return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
                     karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth, sampleList,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes)
+                    .setAttributes(attributes);
         }
     }
 
@@ -656,7 +659,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     .setAffectationStatus(affectationStatus)
                     .setDateOfBirth(dateOfBirth)
                     .setParentalConsanguinity(parentalConsanguinity != null ? parentalConsanguinity : false)
-                    .setPhenotypes(phenotypes);
+                    .setPhenotypes(phenotypes)
+                    .setAttributes(attributes);
             individual.setAnnotationSets(annotationSets);
 
             ObjectMap params = new ObjectMap(mapper.writeValueAsString(individual));

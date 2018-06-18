@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -55,11 +56,15 @@ import java.util.zip.GZIPOutputStream;
 public class VariantExporter {
 
     public static final String METADATA_FILE_EXTENSION = ".meta.json.gz";
-    private final VariantStorageEngine engine;
-    private final VariantWriterFactory variantWriterFactory;
-    private final VariantMetadataFactory metadataFactory;
+    protected final VariantStorageEngine engine;
+    protected final VariantWriterFactory variantWriterFactory;
+    protected final VariantMetadataFactory metadataFactory;
 
     private final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
+
+    public VariantExporter(VariantStorageEngine engine) throws StorageEngineException {
+        this(engine, new VariantMetadataFactory(engine.getStudyConfigurationManager()));
+    }
 
     public VariantExporter(VariantStorageEngine engine, VariantMetadataFactory metadataFactory) throws StorageEngineException {
         this.engine = engine;
@@ -106,10 +111,10 @@ public class VariantExporter {
         }
 
         // DataReader
-        VariantDBReader variantDBReader = new VariantDBReader(engine.iterator(query, queryOptions));
+        VariantDBReader variantDBReader = new VariantDBReader(engine, query, queryOptions);
 
         // Task<Variant, Variant>
-        ParallelTaskRunner.TaskWithException<Variant, Variant, Exception> progressTask;
+        Task<Variant, Variant> progressTask;
         if (logProgress) {
             final Query finalQuery = query;
             final QueryOptions finalQueryOptions = queryOptions;

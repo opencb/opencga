@@ -28,12 +28,16 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.ToolsCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.List;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.CreateAnnotationSnapshotCommandOptions.COPY_ANNOTATION_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.DeleteAnnotationSnapshotCommandOptions.DELETE_ANNOTATION_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.QueryAnnotationCommandOptions.QUERY_ANNOTATION_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
@@ -81,6 +85,9 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(VARIANT_REMOVE_COMMAND, variantCommandOptions.variantRemoveCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
+        variantSubCommands.addCommand(COPY_ANNOTATION_COMMAND, variantCommandOptions.createAnnotationSnapshotCommandOptions);
+        variantSubCommands.addCommand(DELETE_ANNOTATION_COMMAND, variantCommandOptions.deleteAnnotationSnapshotCommandOptions);
+        variantSubCommands.addCommand(QUERY_ANNOTATION_COMMAND, variantCommandOptions.queryAnnotationCommandOptions);
         variantSubCommands.addCommand(FILL_GAPS_COMMAND, variantCommandOptions.fillGapsVariantCommandOptions);
         variantSubCommands.addCommand(FILL_MISSING_COMMAND, variantCommandOptions.fillMissingCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);

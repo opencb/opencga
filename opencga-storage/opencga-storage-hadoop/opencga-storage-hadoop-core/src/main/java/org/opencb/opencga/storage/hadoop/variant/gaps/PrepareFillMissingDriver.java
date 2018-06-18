@@ -1,12 +1,16 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.ToolRunner;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
@@ -51,6 +55,10 @@ public class PrepareFillMissingDriver extends AbstractAnalysisTableDriver {
         setIndexedFiles(job.getConfiguration(), sc.getIndexedFiles());
 
         Scan scan = new Scan();
+        String region = getConf().get(VariantQueryParam.REGION.key());
+        if (StringUtils.isNotEmpty(region)) {
+            VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
+        }
         scan.setCacheBlocks(false);
         scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.getStudyColumn(getStudyId()).bytes());
         scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.getFillMissingColumn(getStudyId()).bytes());
@@ -65,9 +73,9 @@ public class PrepareFillMissingDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected String getJobOperationName() {
-        return "prepare_fill_missing";
+        String regionStr = getConf().get(VariantQueryParam.REGION.key());
+        return "prepare_fill_missing" + (StringUtils.isNotEmpty(regionStr) ? "_" + regionStr : "");
     }
-
 
     public int privateMain(String[] args) throws Exception {
         return privateMain(args, getConf());

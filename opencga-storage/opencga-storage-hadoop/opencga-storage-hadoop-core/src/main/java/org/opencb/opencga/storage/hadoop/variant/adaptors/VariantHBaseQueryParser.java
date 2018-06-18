@@ -42,10 +42,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKey
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RELEASE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
@@ -167,7 +167,6 @@ public class VariantHBaseQueryParser {
     public List<Scan> parseQueryMultiRegion(Query query, QueryOptions options) {
         return parseQueryMultiRegion(VariantQueryUtils.parseSelectElements(query, options, studyConfigurationManager), query, options);
     }
-
     public List<Scan> parseQueryMultiRegion(SelectVariantElements selectElements, Query query, QueryOptions options) {
         VariantQueryXref xrefs = VariantQueryUtils.parseXrefs(query);
         if (!xrefs.getOtherXrefs().isEmpty()) {
@@ -201,14 +200,30 @@ public class VariantHBaseQueryParser {
             subQuery.remove(ANNOT_XREF.key());
             subQuery.remove(ID.key());
 
+            subQuery.put(REGION.key(), "MULTI_REGION");
+            Scan templateScan = parseQuery(selectElements, subQuery, options);
+
             for (Region region : regions) {
                 subQuery.put(REGION.key(), region);
-                scans.add(parseQuery(selectElements, subQuery, options));
+                try {
+                    Scan scan = new Scan(templateScan);
+                    addRegionFilter(scan, region);
+                    scans.add(scan);
+                } catch (IOException e) {
+                    throw VariantQueryException.internalException(e);
+                }
             }
             subQuery.remove(REGION.key());
             for (Variant variant : variants) {
+
                 subQuery.put(ID.key(), variant);
-                scans.add(parseQuery(selectElements, subQuery, options));
+                try {
+                    Scan scan = new Scan(templateScan);
+                    addVariantIdFilter(scan, variant);
+                    scans.add(scan);
+                } catch (IOException e) {
+                    throw VariantQueryException.internalException(e);
+                }
             }
         }
 
@@ -225,7 +240,6 @@ public class VariantHBaseQueryParser {
 
         Scan scan = new Scan();
         byte[] family = genomeHelper.getColumnFamily();
-        scan.addFamily(family);
         FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
 //        FilterList regionFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
 //        filters.addFilter(regionFilters);
@@ -246,9 +260,7 @@ public class VariantHBaseQueryParser {
                 throw VariantQueryException.malformedParam(ID, ids.toString(), "Unsupported multiple variant ids filter");
             }
             Variant variant = VariantQueryUtils.toVariant(ids.get(0));
-            byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
-            scan.setStartRow(rowKey);
-            scan.setStopRow(rowKey);
+            addVariantIdFilter(scan, variant);
         }
 
 
@@ -475,12 +487,15 @@ public class VariantHBaseQueryParser {
         }
 
         if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
-            scan.addColumn(family, FULL_ANNOTATION.bytes());
-            if (defaultStudyConfiguration != null) {
-                int release = defaultStudyConfiguration.getAttributes().getInt(RELEASE.key(), RELEASE.defaultValue());
-                for (int i = 1; i <= release; i++) {
-                    scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(release));
-                }
+            if (isValidParam(query, VariantHadoopDBAdaptor.ANNOT_NAME)) {
+                int id = query.getInt(VariantHadoopDBAdaptor.ANNOT_NAME.key());
+                scan.addColumn(family, Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(id)));
+            } else {
+                scan.addColumn(family, FULL_ANNOTATION.bytes());
+            }
+            int release = studyConfigurationManager.getProjectMetadata().first().getRelease();
+            for (int i = 1; i <= release; i++) {
+                scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(i));
             }
         }
 
@@ -498,11 +513,18 @@ public class VariantHBaseQueryParser {
 //                    columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
 //            filters.addFilter(columnPrefixFilter);
 //        }
-
+        int limit = options.getInt(QueryOptions.LIMIT);
+        int skip = options.getInt(QueryOptions.SKIP);
+        if (limit > 0) {
+            if (skip > 0) {
+                limit += skip;
+            }
+            filters.addFilter(new PageFilter(limit));
+        }
         if (!filters.getFilters().isEmpty()) {
             scan.setFilter(filters);
         }
-        scan.setMaxResultSize(options.getInt(QueryOptions.LIMIT));
+//        scan.setMaxResultSize(limit);
         scan.setReversed(options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING).equals(QueryOptions.DESCENDING));
 
         logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()));
@@ -582,6 +604,12 @@ public class VariantHBaseQueryParser {
         }
     }
 
+    public static void addVariantIdFilter(Scan scan, Variant variant) {
+        byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
+        scan.setStartRow(rowKey);
+        scan.setStopRow(rowKey);
+    }
+
     public static void addRegionFilter(Scan scan, Region region) {
         if (region != null) {
             scan.setStartRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getStart()));
@@ -589,7 +617,7 @@ public class VariantHBaseQueryParser {
             if (end != Integer.MAX_VALUE) {
                 end++;
             }
-            scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), end + 1));
+            scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), end));
         }
     }
 

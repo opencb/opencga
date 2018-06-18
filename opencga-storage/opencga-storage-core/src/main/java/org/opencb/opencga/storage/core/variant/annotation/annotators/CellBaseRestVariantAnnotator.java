@@ -24,11 +24,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,8 +45,9 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     private final CellBaseClient cellBaseClient;
     private final Function<Variant, String> variantSerializer;
 
-    public CellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options) throws VariantAnnotatorException {
-        super(storageConfiguration, options);
+    public CellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options)
+            throws VariantAnnotatorException {
+        super(storageConfiguration, projectMetadata, options);
 
         List<String> hosts = storageConfiguration.getCellbase().getHosts();
         if (hosts.isEmpty()) {
@@ -84,5 +87,31 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error fetching variants from Client");
         }
+    }
+
+    @Override
+    public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
+        ObjectMap about = cellBaseClient.getMetaClient().about().firstResult();
+        ProjectMetadata.VariantAnnotatorProgram program = new ProjectMetadata.VariantAnnotatorProgram();
+
+        for (Map.Entry<String, Object> entry : about.entrySet()) {
+            String key = entry.getKey().toLowerCase();
+            String value = entry.getValue().toString();
+
+            if (key.contains("program")) {
+                program.setName(value);
+            } else if (key.contains("commit")) {
+                program.setCommit(value);
+            } else if (key.contains("version")) {
+                program.setVersion(value);
+            }
+        }
+        return program;
+    }
+
+    @Override
+    public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
+        List<ObjectMap> objectMaps = cellBaseClient.getMetaClient().versions().allResults();
+        return objectMaps;
     }
 }

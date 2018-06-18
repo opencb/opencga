@@ -19,15 +19,14 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 
-import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.ANNOTATOR;
-import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.ANNOTATION_SOURCE;
-import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.*;
 
 /**
  * Created on 23/11/16.
@@ -45,12 +44,14 @@ public final class VariantAnnotatorFactory {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantAnnotatorFactory.class);
 
-    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId)
+    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId,
+                                                         ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
-        return buildVariantAnnotator(configuration, storageEngineId, null);
+        return buildVariantAnnotator(configuration, storageEngineId, projectMetadata, null);
     }
 
-    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId, ObjectMap options)
+    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId,
+                                                         ProjectMetadata projectMetadata, ObjectMap options)
             throws VariantAnnotatorException {
         ObjectMap storageOptions = new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions());
         if (options != null) {
@@ -69,12 +70,11 @@ public final class VariantAnnotatorFactory {
             annotationSource = defaultValue;
         }
 
-
         switch (annotationSource) {
             case CELLBASE_DB_ADAPTOR:
-                return new CellBaseDirectVariantAnnotator(configuration, storageOptions);
+                return new CellBaseDirectVariantAnnotator(configuration, projectMetadata, storageOptions);
             case CELLBASE_REST:
-                return new CellBaseRestVariantAnnotator(configuration, storageOptions);
+                return new CellBaseRestVariantAnnotator(configuration, projectMetadata, storageOptions);
             case VEP:
                 return VepVariantAnnotator.buildVepAnnotator();
             case OTHER:
@@ -84,8 +84,8 @@ public final class VariantAnnotatorFactory {
                 try {
                     Class<?> clazz = Class.forName(className);
                     if (VariantAnnotator.class.isAssignableFrom(clazz)) {
-                        return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ObjectMap.class)
-                                .newInstance(configuration, storageOptions);
+                        return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ProjectMetadata.class, ObjectMap.class)
+                                .newInstance(configuration, projectMetadata, storageOptions);
                     } else {
                         throw new VariantAnnotatorException("Invalid VariantAnnotator class: " + className);
                     }

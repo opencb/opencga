@@ -91,7 +91,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 openCGAClient = new OpenCGAClient(options.sessionId, clientConfiguration);
             } else if (cliSession != null) {
                 // 'logout' field is only null or empty while no logout is executed
-                if (StringUtils.isEmpty(cliSession.getLogout())) {
+                if (StringUtils.isEmpty(cliSession.getLogout()) && StringUtils.isNotEmpty(cliSession.getToken())) {
                     // no timeout checks
                     if (skipDuration) {
                         openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);

@@ -48,7 +48,7 @@ public class VariantVcfDataWriterTest {
     @Test
     public void adjustedVariantStart_SecAlt_MNV() throws Exception {
         StudyConfiguration sc = new StudyConfiguration(1, "1");
-        VariantVcfDataWriter dw = new VariantVcfDataWriter(sc, null, null, null, null);
+        VariantVcfDataWriter dw = new VariantVcfDataWriter(sc, null, null, null);
         Integer adjustStart = dw.adjustedVariantStart(createVariantSecAlt("1:123:A:C", "1:122:GG:CC")).getLeft();
         assertEquals("Adjusted start position wrong", Integer.valueOf(122), adjustStart);
     }
@@ -56,7 +56,7 @@ public class VariantVcfDataWriterTest {
     @Test
     public void adjustedVariantStart_SecAlt_INDEL() throws Exception {
         StudyConfiguration sc = new StudyConfiguration(1, "1");
-        VariantVcfDataWriter dw = new VariantVcfDataWriter(sc, null, null, null, null);
+        VariantVcfDataWriter dw = new VariantVcfDataWriter(sc, null, null, null);
         Integer adjustStart = dw.adjustedVariantStart(createVariantSecAlt("1:123:A:C", "1:122:GG:-")).getLeft();
         assertEquals("Adjusted start position wrong", Integer.valueOf(121), adjustStart);
     }
@@ -64,7 +64,7 @@ public class VariantVcfDataWriterTest {
     @Test
     public void buildAlleles_SecAlt_INDEL() throws Exception {
         StudyConfiguration sc = new StudyConfiguration(1, "1");
-        VariantVcfDataWriter dw = new VariantVcfDataWriter(sc, null, null, null, null);
+        VariantVcfDataWriter dw = new VariantVcfDataWriter(sc, null, null, null);
 
         Variant variant = createVariantSecAlt("1:123:A:C", "1:122:GGT:-");
         List<String> alles = dw.buildAlleles(variant, new ImmutablePair<>(121, 124));
@@ -77,7 +77,7 @@ public class VariantVcfDataWriterTest {
     @Test
     public void buildAlleles_SecAlt_MNV() throws Exception {
         StudyConfiguration sc = new StudyConfiguration(1, "1");
-        VariantVcfDataWriter dw = new VariantVcfDataWriter(sc, null, null, null, null);
+        VariantVcfDataWriter dw = new VariantVcfDataWriter(sc, null, null, null);
 
         Variant variant = createVariantSecAlt("1:123:A:C", "1:122:GG:TT");
         List<String> alles = dw.buildAlleles(variant, new ImmutablePair<>(122, 123));
