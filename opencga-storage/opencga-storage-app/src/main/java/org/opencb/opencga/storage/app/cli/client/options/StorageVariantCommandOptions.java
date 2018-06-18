@@ -135,6 +135,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)")
         public boolean loadSplitData;
+
+        @Parameter(names = {"--skip-post-load-check"}, description = "Do not execute post load checks over the database")
+        public boolean skipPostLoadCheck;
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")

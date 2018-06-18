@@ -35,6 +35,11 @@ import java.util.concurrent.TimeUnit;
  */
 public interface MRExecutor {
 
+    default <T extends Tool> void run(Class<T> execClass, String args, ObjectMap options, String taskDescription)
+            throws StorageEngineException {
+        run(execClass, Commandline.translateCommandline(args), options, taskDescription);
+    }
+
     default <T extends Tool> void run(Class<T> execClass, String[] args, ObjectMap options, String taskDescription)
             throws StorageEngineException {
         Logger logger = LoggerFactory.getLogger(MRExecutor.class);

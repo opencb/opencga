@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -12,9 +13,9 @@ import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -35,10 +36,12 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
     private final byte[] lastFileBytes;
     private final List<Integer> indexedFiles;
     private Map<Integer, Set<Integer>> filesToProcessMap = new HashMap<>();
+    private boolean overwrite;
 
-    public FillMissingFromArchiveTask(HBaseManager hBaseManager, StudyConfiguration studyConfiguration, GenomeHelper helper) {
-        super(hBaseManager, studyConfiguration, helper, Collections.emptyList(), true);
+    public FillMissingFromArchiveTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean overwrite) {
+        super(studyConfiguration, helper, Collections.emptyList(), true);
         fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyConfiguration.getStudyId());
+        this.overwrite = overwrite;
         Integer lastFile = new ArrayList<>(studyConfiguration.getIndexedFiles()).get(studyConfiguration.getIndexedFiles().size() - 1);
         lastFileBytes = PInteger.INSTANCE.toBytes(lastFile);
         indexedFiles = new ArrayList<>(studyConfiguration.getIndexedFiles());
@@ -85,7 +88,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
             for (Cell cell : result.rawCells()) {
                 if (Bytes.startsWith(CellUtil.cloneQualifier(cell), VARIANT_COLUMN_B_PREFIX)) {
                     Variant variant = getVariantFromArchiveVariantColumn(region.getChromosome(), CellUtil.cloneQualifier(cell));
-                    if (cell.getValueLength() > 0) {
+                    if (cell.getValueLength() > 0 && !overwrite) {
                         byte[] bytes = CellUtil.cloneValue(cell);
                         Integer lastFile = (Integer) PInteger.INSTANCE.toObject(bytes);
                         Set<Integer> filesToProcess = filesToProcessMap.computeIfAbsent(lastFile,
@@ -121,18 +124,50 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
         }
     }
 
-    public static Scan buildScan(Collection<Integer> fileIds, String regionStr, Configuration conf) {
-        Scan scan = AbstractFillFromArchiveTask.buildScan(regionStr, conf);
+    public static Scan buildScan(Collection<Integer> fileIds, Configuration conf) {
+        return buildScan(fileIds, null, null, conf);
+    }
+
+    public static List<Scan> buildScan(Collection<Integer> fileIds, String regionStr, Configuration conf) {
+        if (StringUtils.isEmpty(regionStr)) {
+            return Collections.singletonList(buildScan(fileIds, conf));
+        }
+
+        Set<Integer> fileBatches = new HashSet<>();
+        ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
+
+        for (Integer fileId : fileIds) {
+            fileBatches.add(archiveRowKeyFactory.getFileBatch(fileId));
+        }
+
+        List<Scan> scans = new ArrayList<>(fileBatches.size());
+        for (Integer fileBatch : fileBatches) {
+            scans.add(buildScan(fileIds, fileBatch, regionStr, conf));
+        }
+        return scans;
+    }
+
+    private static Scan buildScan(Collection<Integer> fileIds, Integer fileBatch, String regionStr, Configuration conf) {
+        ArchiveRowKeyFactory archiveRowKeyFactory = new ArchiveRowKeyFactory(conf);
+
+        Scan scan;
+        if (StringUtils.isEmpty(regionStr)) {
+            scan = AbstractFillFromArchiveTask.buildScan(conf);
+        } else {
+            scan = AbstractFillFromArchiveTask.buildScan(regionStr, archiveRowKeyFactory.getFirstFileFromBatch(fileBatch), conf);
+        }
 
         FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ONE);
-        for (Integer fileId : fileIds) {
-            byte[] value = Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId));
-            filterList.addFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL, new BinaryComparator(value)));
-        }
         filterList.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL,
                 new ColumnPrefixFilter(VARIANT_COLUMN_B_PREFIX),
                 new TimestampsFilter(Arrays.asList(conf.getLong(AbstractAnalysisTableDriver.TIMESTAMP, 0)))
         ));
+        for (Integer fileId : fileIds) {
+            if (fileBatch == null || archiveRowKeyFactory.getFileBatch(fileId) == fileBatch) {
+                byte[] value = Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId));
+                filterList.addFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL, new BinaryComparator(value)));
+            }
+        }
         if (scan.getFilter() == null) {
             scan.setFilter(filterList);
         } else {

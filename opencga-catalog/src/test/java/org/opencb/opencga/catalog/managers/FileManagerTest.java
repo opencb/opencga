@@ -1628,4 +1628,54 @@ public class FileManagerTest extends GenericTest {
         thrown.expectMessage("The file variant-test-file.vcf.gz.variants.avro.gz is not a VCF file.");
         fileManager.index(Collections.singletonList("variant-test-file.vcf.gz.variants.avro.gz"), String.valueOf(studyId), "VCF", null, sessionIdUser).first();
     }
+
+//    @Test
+//    public void testMassiveUpdateFileAcl() throws CatalogException {
+//        List<String> fileIdList = new ArrayList<>();
+//
+//        // Create 2000 files
+//        for (int i = 0; i < 10000; i++) {
+//            fileIdList.add(String.valueOf(catalogManager.getFileManager().createFile("user@1000G:phase1", "file_" + i + ".txt", "", false,
+//                    "File " + i, sessionIdUser).first().getId()));
+//        }
+//
+//        StopWatch watch = StopWatch.createStarted();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//
+//        watch.reset();
+//        watch.start();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//
+//        watch.reset();
+//        watch.start();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//
+//        watch.reset();
+//        watch.start();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//
+//        watch.reset();
+//        watch.start();
+//        // Assign VIEW permissions to all those files
+//        catalogManager.getFileManager().updateAcl("user@1000G:phase1", fileIdList, "*,user2,user3", new File.FileAclParams("VIEW",
+//                AclParams.Action.SET, null), sessionIdUser);
+//        System.out.println("Time: " + watch.getTime(TimeUnit.MILLISECONDS) + " milliseconds");
+//        System.out.println("Time: " + watch.getTime(TimeUnit.SECONDS) + " seconds");
+//    }
 }

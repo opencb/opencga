@@ -77,6 +77,11 @@ public class ArchiveRowKeyFactory {
         return fileId / fileBatchSize;
     }
 
+    public int getFirstFileFromBatch(int fileBatch) {
+        int fileId = fileBatch * fileBatchSize;
+        return fileId == 0 ? 1 : fileId; // 0 is not a valid fileId
+    }
+
     public String generateBlockId(Variant variant, int fileId) {
         return generateBlockIdFromSlice(fileId, variant.getChromosome(), getSliceId(variant.getStart()));
     }

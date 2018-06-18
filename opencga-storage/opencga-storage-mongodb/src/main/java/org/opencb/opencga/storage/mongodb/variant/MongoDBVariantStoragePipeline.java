@@ -41,22 +41,22 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectConverter;
+import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
-import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
 import org.slf4j.Logger;
@@ -76,6 +76,7 @@ import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.setStatus;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOAD_SPLIT_DATA;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
 /**
@@ -140,7 +141,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), true);
                     // When ignoring overlapping variants, the default genotype MUST be the UNKNOWN_GENOTYPE (?/?).
                     // Otherwise, a "fillGaps" step will be needed afterwards
-                    studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                    studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), GenotypeClass.UNKNOWN_GENOTYPE);
                     break;
                 case ADVANCED:
                     studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), false);
@@ -163,7 +164,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     case FAMILY:
                     case TRIO:
                     case PAIRED:
-                        defaultGenotype = Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                        defaultGenotype = Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE);
                         logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
                         break;
                     default:
@@ -798,6 +799,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
+
+        if (getOptions().getBoolean(POST_LOAD_CHECK_SKIP.key(), POST_LOAD_CHECK_SKIP.defaultValue())) {
+            logger.warn("Skip check loaded variants");
+            return;
+        }
+
         VariantFileMetadata fileMetadata = getStudyConfigurationManager().getVariantFileMetadata(getStudyId(), fileId, null).first();
 
         Long count = dbAdaptor.count(new Query()

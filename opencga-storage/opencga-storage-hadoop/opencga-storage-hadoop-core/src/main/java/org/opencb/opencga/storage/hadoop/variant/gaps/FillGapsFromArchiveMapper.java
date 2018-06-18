@@ -52,6 +52,7 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
+        long timestamp = getMrHelper().getTimestamp();
         if (isFillGaps(context.getConfiguration())) {
             Collection<Integer> samples = getSamples(context.getConfiguration());
             task = new FillGapsFromArchiveTask(getHBaseManager(),
@@ -59,8 +60,10 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
                     getStudyConfiguration(), getHelper(),
                     samples);
         } else {
-            task = new FillMissingFromArchiveTask(getHBaseManager(), getStudyConfiguration(), getHelper());
+            boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
+            task = new FillMissingFromArchiveTask(getStudyConfiguration(), getHelper(), overwrite);
         }
+        task.setTimestamp(timestamp);
         task.setQuiet(true);
         task.pre();
     }

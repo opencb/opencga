@@ -78,14 +78,17 @@ public class NewVariantMetadataMigration {
     private final CatalogManager catalogManager;
     protected static final QueryOptions UPSER_OPTIONS = new QueryOptions(MongoDBCollection.UPSERT, true).append(MongoDBCollection.REPLACE, true);
     protected static final QueryOptions REPLACE_OPTIONS = new QueryOptions(MongoDBCollection.REPLACE, true);
+    private final boolean skipDiskFiles;
     private boolean createBackup;
 
-    public NewVariantMetadataMigration(StorageConfiguration storageConfiguration, CatalogManager catalogManager, MigrationCommandOptions.MigrateV1_3_0CommandOptions options) {
+    public NewVariantMetadataMigration(StorageConfiguration storageConfiguration, CatalogManager catalogManager,
+                                       MigrationCommandOptions.MigrateV1_3_0CommandOptions options) {
         this.storageConfiguration = storageConfiguration;
         this.catalogManager = catalogManager;
         objectMapper = new ObjectMapper()
                 .addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         createBackup = options.createBackup;
+        skipDiskFiles = options.skipDiskFiles;
     }
 
     /**
@@ -124,8 +127,10 @@ public class NewVariantMetadataMigration {
                 // Migrate catalog metadata information from file entries
                 migrateCatalogFileMetadata(sessionId, converter, vcfFilesQuery, study);
 
-                // Migrate metadata files from FileSystem
-                migrateMetadataFiles(sessionId, metadataFilesQuery, study);
+                if (!skipDiskFiles) {
+                    // Migrate metadata files from FileSystem
+                    migrateMetadataFiles(sessionId, metadataFilesQuery, study);
+                }
 
                 DataStore dataStore = StorageOperation.getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId);
                 dataStores.add(dataStore);
@@ -156,32 +161,55 @@ public class NewVariantMetadataMigration {
     }
 
     private void migrateCatalogFileMetadata(String sessionId, VariantSourceToVariantFileMetadataConverter converter, Query vcfFilesQuery, Study study) throws IOException, CatalogException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, "name,id,path,uri"
+                + ",attributes." + FileMetadataReader.VARIANT_SOURCE
+                + ",attributes." + FileMetadataReader.VARIANT_FILE_METADATA
+                + ",stats." + FileMetadataReader.VARIANT_STATS
+                + ",stats." + FileMetadataReader.VARIANT_FILE_STATS)
+                .append("lazy", true);
+        int alreadyMigratedFile = 0;
+        int migratedFiles = 0;
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(study.getId(), vcfFilesQuery, new QueryOptions(), sessionId)) {
+                .iterator(study.getId(), vcfFilesQuery, options, sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 logger.info("Migrating file " + file.getName());
 
-                VariantSource variantSource = getObject(file.getAttributes(), FileMetadataReader.VARIANT_SOURCE, VariantSource.class);
-                VariantFileMetadata fileMetadata = converter.convert(variantSource);
+                ObjectMap parameters = new ObjectMap();
+                if (!file.getAttributes().containsKey(FileMetadataReader.VARIANT_FILE_METADATA)) {
+                    VariantSource variantSource = getObject(file.getAttributes(), FileMetadataReader.VARIANT_SOURCE, VariantSource.class);
+                    VariantFileMetadata fileMetadata = converter.convert(variantSource);
 
-                ObjectMap parameters = new ObjectMap()
-                        .append(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap(FileMetadataReader.VARIANT_FILE_METADATA, fileMetadata));
-
-                VariantGlobalStats globalStats = getObject(file.getStats(), FileMetadataReader.VARIANT_STATS, VariantGlobalStats.class);
-                if (globalStats != null) {
-                    VariantSetStats variantSetStats = converter.convertStats(globalStats);
-                    parameters.append(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(FileMetadataReader.VARIANT_FILE_STATS, variantSetStats));
+                    parameters.append(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap(FileMetadataReader.VARIANT_FILE_METADATA, fileMetadata));
                 }
 
-                catalogManager.getFileManager().update(null, String.valueOf(file.getId()), parameters, null, sessionId);
+                if (!file.getStats().containsKey(FileMetadataReader.VARIANT_FILE_STATS)) {
+                    VariantGlobalStats globalStats = getObject(file.getStats(), FileMetadataReader.VARIANT_STATS, VariantGlobalStats.class);
+                    if (globalStats != null) {
+                        VariantSetStats variantSetStats = converter.convertStats(globalStats);
+                        parameters.append(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(FileMetadataReader.VARIANT_FILE_STATS, variantSetStats));
+                    }
+                }
+
+                if (parameters.isEmpty()) {
+                    alreadyMigratedFile++;
+                } else {
+                    migratedFiles++;
+                    catalogManager.getFileManager().update(null, String.valueOf(file.getId()), parameters, null, sessionId);
+                }
             }
+        }
+        if (migratedFiles == 0) {
+            logger.info("Nothing to do!");
+        } else {
+            logger.info("Number of migrated files: " + migratedFiles +
+                    (alreadyMigratedFile == 0 ? "" : ". Number of already migrated files (skipped): " + alreadyMigratedFile));
         }
     }
 
     private void migrateMetadataFiles(String sessionId, Query metadataFilesQuery, Study study) throws IOException, CatalogException {
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(study.getId(), metadataFilesQuery, new QueryOptions(), sessionId)) {
+                .iterator(study.getId(), metadataFilesQuery, new QueryOptions("lazy", true), sessionId)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 Path metaFile = Paths.get(file.getUri());

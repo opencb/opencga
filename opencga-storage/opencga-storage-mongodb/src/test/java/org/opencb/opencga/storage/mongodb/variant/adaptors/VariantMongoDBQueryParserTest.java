@@ -7,11 +7,11 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -215,7 +215,7 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQueryUnknownGenotypesNotAddFiles() {
         // FILES filter should not be used when the genotype filter is the unknown genotype
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + DocumentToSamplesConverter.UNKNOWN_GENOTYPE));
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + GenotypeClass.UNKNOWN_GENOTYPE));
 
         Document expected = new Document(STUDIES_FIELD,
                 new Document("$elemMatch", new Document()

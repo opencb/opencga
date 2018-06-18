@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.USE_SEARCH_INDEX;
@@ -324,4 +325,12 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, UseSearchIndex.YES));
     }
 
+    @Test
+    public void testDoQuerySearchManager() throws Exception {
+        VariantStorageEngine engine = getVariantStorageEngine();
+        assertFalse(engine.doQuerySearchManager(new Query(), new QueryOptions()));
+        assertTrue(engine.doQuerySearchManager(new Query(), new QueryOptions(VariantField.SUMMARY, true)));
+        assertTrue(engine.doQuerySearchManager(new Query(STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));
+        assertTrue(engine.doQuerySearchManager(new Query(STUDY.key(), 3), new QueryOptions(INCLUDE, VariantField.ANNOTATION)));
+    }
 }
