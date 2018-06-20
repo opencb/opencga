@@ -78,6 +78,11 @@ const application = {
                     title: "Samples",
                     visibility: "public",
                 },
+                {
+                    id: "cohorts",
+                    title: "Cohorts",
+                    visibility: "public",
+                }
             ]
         },
         {

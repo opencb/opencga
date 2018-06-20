@@ -38,6 +38,7 @@
 <link rel="import" href="../lib/jsorolla/src/core/webcomponents/opencga/catalog/opencga-projects.html">
 <link rel="import" href="../lib/jsorolla/src/core/webcomponents/opencga/catalog/opencga-project.html">
 <link rel="import" href="../lib/jsorolla/src/core/webcomponents/opencga/catalog/samples/opencga-sample-browser.html">
+<link rel="import" href="../lib/jsorolla/src/core/webcomponents/opencga/catalog/cohorts/opencga-cohort-browser.html">
 <!--<link rel="import" href="../lib/jsorolla/src/core/opencga/catalog/opencga-study.html">-->
 <link rel="import" href="../lib/jsorolla/src/core/webcomponents/opencga/catalog/opencga-login.html">
 <!--<link rel="import" href="iva-settings.html">-->
@@ -398,6 +399,12 @@
                         <opencga-sample-browser opencga-session="{{opencgaSession}}" config="{{config.tools.sample}}"></opencga-sample-browser>
                     </div>
                 </template>
+
+                <template is="dom-if" if="{{config.enabledComponents.cohorts}}">
+                    <div class="content" id="cohorts">
+                        <opencga-cohort-browser opencga-session="{{opencgaSession}}" config="{{config.tools.sample}}"></opencga-cohort-browser>
+                    </div>
+                </template>
                 <!--<div class="collapse content" id="studyInformation">-->
                 <!--<opencga-study opencga-client="{{opencgaClient}}" project="{{project}}"-->
                 <!--study="{{study}}"></opencga-study>-->
@@ -472,7 +479,7 @@
                 }
 
                 // Enabled components catalog
-                let components = ["login", "projects", "project", "samples", "settings", "gene", "transcript", "protein"];
+                let components = ["login", "projects", "project", "samples", "cohorts", "settings", "gene", "transcript", "protein"];
                 for (let component of components) {
                     _config.enabledComponents[component] = false;
                 }
