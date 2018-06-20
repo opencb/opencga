@@ -194,6 +194,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(parameters, new FamilyPOST());
 
+            if (annotationSetsAction == null) {
+                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+            }
+
             queryOptions.put(Constants.REFRESH, refresh);
             queryOptions.remove("updateIndividualVersion");
             query.remove("updateIndividualVersion");

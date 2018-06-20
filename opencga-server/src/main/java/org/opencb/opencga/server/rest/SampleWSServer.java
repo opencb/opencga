@@ -253,6 +253,10 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
 
+            if (annotationSetsAction == null) {
+                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+            }
+
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(SampleDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
             queryOptions.put(Constants.ACTIONS, actionMap);

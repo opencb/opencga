@@ -271,6 +271,10 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             Map<String, Object> actionMap = new HashMap<>();
 
+            if (annotationSetsAction == null) {
+                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+            }
+
             actionMap.put(CohortDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction.name());
             queryOptions.put(Constants.ACTIONS, actionMap);
 

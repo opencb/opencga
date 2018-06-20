@@ -909,6 +909,10 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             ObjectMap params = updateParams.toFileObjectMap();
 
+            if (samplesAction == null) {
+                samplesAction = ParamUtils.UpdateAction.ADD;
+            }
+
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
             queryOptions.put(Constants.ACTIONS, actionMap);

@@ -409,6 +409,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
             queryOptions.put(Constants.REFRESH, refresh);
             queryOptions.remove("updateSampleVersion");
 
+            if (annotationSetsAction == null) {
+                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+            }
+            if (samplesAction == null) {
+                samplesAction = ParamUtils.UpdateAction.ADD;
+            }
+
             ObjectMap params = updateParams.toIndividualObjectMap();
 
             Map<String, Object> actionMap = new HashMap<>();
