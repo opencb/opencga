@@ -1763,7 +1763,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult = query(new Query(MISSING_ALLELES.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + ">4"), null);
         assertEquals(9, queryResult.getNumResults());
         queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get(STUDY_NAME).getStats())
-                .forEach(map -> assertTrue(map.get(StudyEntry.DEFAULT_COHORT).getMissingAlleles() > 4));
+                .forEach(map -> assertTrue(map.get(StudyEntry.DEFAULT_COHORT).getMissingAlleleCount() > 4));
 
     }
 

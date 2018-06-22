@@ -35,7 +35,6 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
-import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
@@ -455,7 +454,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                     if (cohorts.get(entry.getKey()) != null) {
                         assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples in cohort '" + entry.getKey() + "'. jsonVariant: " + variant.toJson() ,
                                 cohorts.get(entry.getKey()).getSamples().size(),
-                                entry.getValue().getGenotypesCount().values().stream().reduce(Integer::sum).orElse(0).intValue());
+                                entry.getValue().getGenotypeCount().values().stream().reduce(Integer::sum).orElse(0).intValue());
                     }
                 }
             }

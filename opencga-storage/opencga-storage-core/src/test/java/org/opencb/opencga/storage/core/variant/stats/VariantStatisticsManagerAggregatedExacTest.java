@@ -68,8 +68,8 @@ public abstract class VariantStatisticsManagerAggregatedExacTest extends Variant
     protected void assertValidStats(Variant variant, VariantStats variantStats) {
         assertNotEquals("Stats seem with no valid values, for instance (chr=" + variant.getChromosome()
                         + ", start=" + variant.getStart() + ", ref=" + variant.getReference() + ", alt="
-                        + variant.getAlternate() + "), gtc=" + variantStats.getGenotypesCount().toString(),
+                        + variant.getAlternate() + "), gtc=" + variantStats.getGenotypeCount().toString(),
                 0,
-                variantStats.getGenotypesCount().size());
+                variantStats.getGenotypeCount().size());
     }
 }

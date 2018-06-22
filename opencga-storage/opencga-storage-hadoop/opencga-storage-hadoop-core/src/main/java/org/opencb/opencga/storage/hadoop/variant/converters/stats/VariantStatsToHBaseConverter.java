@@ -62,7 +62,7 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
         VariantStats firstStats = variantStatsWrapper.getCohortStats().entrySet().iterator().next().getValue();
         byte[] row = generateVariantRowKey(
                 variantStatsWrapper.getChromosome(), variantStatsWrapper.getStart(),
-                firstStats.getRefAllele(), firstStats.getAltAllele());
+                variantStatsWrapper.getReference(), variantStatsWrapper.getAlternate());
         Put put = new Put(row);
         for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {
             Integer cohortId = studyConfiguration.getCohortIds().get(entry.getKey());
@@ -79,8 +79,9 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                     .setAltAlleleCount(stats.getAltAlleleCount())
                     .setRefAlleleFreq(stats.getRefAlleleFreq())
                     .setRefAlleleCount(stats.getRefAlleleCount())
-                    .setMissingAlleles(stats.getMissingAlleles())
-                    .setMissingGenotypes(stats.getMissingGenotypes());
+                    .setAlleleCount(stats.getAlleleCount())
+                    .setMissingAlleleCount(stats.getMissingAlleleCount())
+                    .setMissingGenotypeCount(stats.getMissingGenotypeCount());
 
             if (stats.getMafAllele() != null) {
                 builder.setMaf(stats.getMaf())
@@ -92,16 +93,16 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                         .setMgfGenotype(stats.getMgfGenotype());
             }
 
-            if (stats.getGenotypesCount() != null) {
-                Map<String, Integer> map = new HashMap<>(stats.getGenotypesCount().size());
-                stats.getGenotypesCount().forEach((genotype, count) -> map.put(genotype.toString(), count));
-                builder.putAllGenotypesCount(map);
+            if (stats.getGenotypeCount() != null) {
+                Map<String, Integer> map = new HashMap<>(stats.getGenotypeCount().size());
+                stats.getGenotypeCount().forEach((genotype, count) -> map.put(genotype.toString(), count));
+                builder.putAllGenotypeCount(map);
             }
 
-            if (stats.getGenotypesFreq() != null) {
-                Map<String, Float> map = new HashMap<>(stats.getGenotypesFreq().size());
-                stats.getGenotypesFreq().forEach((genotype, freq) -> map.put(genotype.toString(), freq));
-                builder.putAllGenotypesFreq(map);
+            if (stats.getGenotypeFreq() != null) {
+                Map<String, Float> map = new HashMap<>(stats.getGenotypeFreq().size());
+                stats.getGenotypeFreq().forEach((genotype, freq) -> map.put(genotype.toString(), freq));
+                builder.putAllGenotypeFreq(map);
             }
 
             add(put, statsColumn, builder.build().toByteArray());

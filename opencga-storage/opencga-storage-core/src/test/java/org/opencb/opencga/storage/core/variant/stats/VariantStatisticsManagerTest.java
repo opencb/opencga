@@ -195,7 +195,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
                     assertEquals("Stats have less genotypes than expected.",
                             studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to
                             // the number of samples)
-                            cohortStats.get(entry.getKey()).getGenotypesCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
+                            cohortStats.get(entry.getKey()).getGenotypeCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
                 }
             }
         }
