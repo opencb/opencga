@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 16/03/16.
@@ -45,6 +47,8 @@ public class Configuration {
     private Monitor monitor;
     private Execution execution;
     private Audit audit;
+
+    private Map<String, Map<String, List<HookConfiguration>>> hooks;
 
     private Email email;
     private Catalog catalog;
@@ -100,6 +104,7 @@ public class Configuration {
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
+        sb.append(", hooks=").append(hooks);
         sb.append(", email=").append(email);
         sb.append(", catalog=").append(catalog);
         sb.append(", server=").append(server);
@@ -204,6 +209,15 @@ public class Configuration {
 
     public Configuration setExecution(Execution execution) {
         this.execution = execution;
+        return this;
+    }
+
+    public Map<String, Map<String, List<HookConfiguration>>> getHooks() {
+        return hooks;
+    }
+
+    public Configuration setHooks(Map<String, Map<String, List<HookConfiguration>>> hooks) {
+        this.hooks = hooks;
         return this;
     }
 
