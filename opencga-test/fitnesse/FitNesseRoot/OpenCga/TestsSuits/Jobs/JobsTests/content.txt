@@ -9,7 +9,7 @@
 
 !3 Create Job 
 !|Table: Rest Fixture | $baseURL |
-| setBody |{ "name": "$jobName1", "toolName" : "opencga",   "commandLine": "opencga-analysis.sh",  "outDirId": "/"}|
+| setBody |{ "name": "$jobName1", "toolName" : "opencga",   "commandLine": "opencga-analysis.sh"  }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/jobs/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 |let|jobId|js|response.jsonbody.response[0].result[0].id||
