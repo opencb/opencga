@@ -60,6 +60,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         EXPERIMENT_ID("experiment.id", INTEGER_ARRAY, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_IDS("samples.id", INTEGER_ARRAY, ""),
+        TAGS("tags", TEXT_ARRAY, ""),
 
         JOB_ID("job.id", INTEGER_ARRAY, ""),
 

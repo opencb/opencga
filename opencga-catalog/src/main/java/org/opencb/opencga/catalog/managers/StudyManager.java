@@ -77,6 +77,10 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getProjectIdByStudyId(studyId);
     }
 
+    public String getFQN(long studyId) throws CatalogException {
+        return studyDBAdaptor.getFQN(studyId);
+    }
+
     public List<Long> getIds(String userId, List<String> studyList) throws CatalogException {
         if (studyList != null && studyList.size() == 1 && StringUtils.isNumeric(studyList.get(0))) {
             long studyId = Long.parseLong(studyList.get(0));
