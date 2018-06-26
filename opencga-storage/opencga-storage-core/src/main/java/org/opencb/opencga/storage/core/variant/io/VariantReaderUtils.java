@@ -56,12 +56,27 @@ public class VariantReaderUtils {
      * Get a variant data reader depending on the type of the input file.
      *
      * @param input Stream Input variant file (avro, json, vcf)
+     * @return  VariantReader
+     * @throws StorageEngineException if the format is not valid or there is an error reading
+     */
+    public static VariantReader getVariantReader(Path input) throws StorageEngineException {
+        return getVariantReader(input, null);
+    }
+
+    /**
+     * Get a variant data reader depending on the type of the input file.
+     *
+     * @param input Stream Input variant file (avro, json, vcf)
      * @param metadata Optional VariantSource
      * @return  VariantReader
      * @throws StorageEngineException if the format is not valid or there is an error reading
      */
     public static VariantReader getVariantReader(Path input, VariantStudyMetadata metadata) throws StorageEngineException {
         String fileName = input.getFileName().toString();
+        if (metadata == null) {
+            VariantFileMetadata variantFileMetadata = createEmptyVariantFileMetadata(input);
+            metadata = variantFileMetadata.toVariantStudyMetadata("");
+        }
         if (isJson(fileName)) {
             return getVariantJsonReader(input, metadata);
         } else if (isAvro(fileName)) {
@@ -84,8 +99,8 @@ public class VariantReaderUtils {
     protected static VariantJsonReader getVariantJsonReader(Path input, VariantStudyMetadata metadata) throws StorageEngineException {
         VariantJsonReader variantJsonReader;
         if (isJson(input.toString())) {
-            String sourceFile = getMetaFromTransformedFile(input.toAbsolutePath().toString());
-            variantJsonReader = new VariantJsonReader(metadata, input.toAbsolutePath().toString(), sourceFile);
+            Path sourceFile = getMetaFromTransformedFile(input.toAbsolutePath());
+            variantJsonReader = new VariantJsonReader(metadata, input.toAbsolutePath().toString(), sourceFile.toAbsolutePath().toString());
         } else {
             throw variantInputNotSupported(input);
         }
@@ -164,13 +179,26 @@ public class VariantReaderUtils {
      * Accepted formats: Avro, Json and VCF
      *
      * @param input Input variant file (avro, json, vcf)
+     * @return Read {@link VariantFileMetadata}
+     * @throws StorageEngineException if the format is not valid or there is an error reading
+     */
+    public static VariantFileMetadata readVariantFileMetadata(Path input) throws StorageEngineException {
+        return readVariantFileMetadata(input, null);
+    }
+
+    /**
+     * Read the {@link VariantFileMetadata} from a variant file.
+     *
+     * Accepted formats: Avro, Json and VCF
+     *
+     * @param input Input variant file (avro, json, vcf)
      * @param metadata {@link VariantFileMetadata} to fill. Can be null
      * @return Read {@link VariantFileMetadata}
      * @throws StorageEngineException if the format is not valid or there is an error reading
      */
     public static VariantFileMetadata readVariantFileMetadata(Path input, VariantFileMetadata metadata) throws StorageEngineException {
         if (metadata == null) {
-            metadata = new VariantFileMetadata(input.getFileName().toString(), input.getFileName().toString());
+            metadata = createEmptyVariantFileMetadata(input);
         }
 
         if (isTransformedVariants(input.toString())) {
@@ -193,6 +221,10 @@ public class VariantReaderUtils {
         }
 
         return metadata;
+    }
+
+    private static VariantFileMetadata createEmptyVariantFileMetadata(Path input) {
+        return new VariantFileMetadata(input.getFileName().toString(), input.getFileName().toString());
     }
 
     public static boolean isAvro(String fileName) {

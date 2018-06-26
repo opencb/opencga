@@ -219,11 +219,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 }
             }
 
-            Variant variant = new Variant(resultSet.getString(VariantPhoenixHelper.VariantColumn.CHROMOSOME.column()),
-                    resultSet.getInt(VariantPhoenixHelper.VariantColumn.POSITION.column()),
-                    resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column()),
-                    resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
-            );
+            Variant variant = VariantPhoenixKeyFactory.extractVariantFromResultSet(resultSet);
 
             Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
 
@@ -671,8 +667,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 Variant sampleVariant = new Variant(
                         variant.getChromosome(),
                         variant.getStart(),
+                        variant.getEnd(),
                         variant.getReference(),
-                        variant.getAlternate());
+                        variant.getAlternate())
+                        .setSv(variant.getSv());
                 StudyEntry se = new StudyEntry("0");
                 se.setSecondaryAlternates(getAlternateCoordinates(secondaryAlternates));
                 se.setFormat(studyEntry.getFormat());

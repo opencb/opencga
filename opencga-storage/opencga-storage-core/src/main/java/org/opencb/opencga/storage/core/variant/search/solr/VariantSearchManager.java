@@ -378,7 +378,7 @@ public class VariantSearchManager {
 
     private void loadAvro(String collection, Path path) throws IOException, VariantSearchException, StorageEngineException {
         // reader
-        VariantReader reader = VariantReaderUtils.getVariantReader(path, null);
+        VariantReader reader = VariantReaderUtils.getVariantReader(path);
 
         // TODO: get the buffer size from configuration file
         int bufferSize = 10000;

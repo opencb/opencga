@@ -24,11 +24,14 @@ import org.opencb.biodata.tools.Converter;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_KEY;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.ADDITIONAL_ATTRIBUTES_VARIANT_ID;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
 
@@ -198,8 +201,19 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
     Put buildPut(VariantAnnotation variantAnnotation) {
         Map<PhoenixHelper.Column, ?> map = convert(variantAnnotation);
 
-        byte[] bytesRowKey = generateVariantRowKey(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                variantAnnotation.getReference(), variantAnnotation.getAlternate());
+        byte[] bytesRowKey;
+        if (variantAnnotation.getAdditionalAttributes() != null
+                && variantAnnotation.getAdditionalAttributes().containsKey(ADDITIONAL_ATTRIBUTES_KEY)) {
+            String variantString = variantAnnotation.getAdditionalAttributes()
+                    .get(ADDITIONAL_ATTRIBUTES_KEY)
+                    .getAttribute()
+                    .get(ADDITIONAL_ATTRIBUTES_VARIANT_ID);
+            bytesRowKey = generateVariantRowKey(new Variant(variantString));
+        } else {
+            bytesRowKey = VariantPhoenixKeyFactory.generateSimpleVariantRowKey(
+                    variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+                    variantAnnotation.getReference(), variantAnnotation.getAlternate());
+        }
         Put put = new Put(bytesRowKey);
 
         for (PhoenixHelper.Column column : VariantPhoenixHelper.PRIMARY_KEY) {

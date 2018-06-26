@@ -156,7 +156,7 @@ public class VariantHbaseTestUtils {
                     os.println("--------------------");
                     continue;
                 }
-                os.println("Variant = " + variant);
+                os.println("Variant = " + variant + "  " + Bytes.toStringBinary(result.getRow()));
                 for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
                     String key = Bytes.toString(entry.getKey());
                     PhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);

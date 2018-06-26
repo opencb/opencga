@@ -73,7 +73,25 @@ public class VariantPhoenixHelper {
     public static final String HOM_REF = "0/0";
     public static final byte[] HOM_REF_BYTES = Bytes.toBytes(HOM_REF);
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
-    public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(CHROMOSOME, POSITION, REFERENCE, ALTERNATE));
+    public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(
+            CHROMOSOME,
+            POSITION,
+            REFERENCE,
+            ALTERNATE,
+            SV_END,
+            CI_START_L,
+            CI_START_R,
+            CI_END_L,
+            CI_END_R
+    ));
+
+    public static final List<Column> OPTIONAL_PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(
+            SV_END,
+            CI_START_L,
+            CI_START_R,
+            CI_END_L,
+            CI_END_R
+    ));
     public static final String FILL_MISSING_SUFIX = "_FM";
 
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
@@ -87,6 +105,16 @@ public class VariantPhoenixHelper {
         POSITION("POSITION", PUnsignedInt.INSTANCE),
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
         ALTERNATE("ALTERNATE", PVarchar.INSTANCE),
+
+        /**
+         * Name "END" is an special keyword for phoenix.
+         * Also, this end will be present only for Structural Variants.
+         */
+        SV_END("SV_END", PUnsignedInt.INSTANCE),
+        CI_START_L("CI_START_L", PUnsignedInt.INSTANCE),
+        CI_START_R("CI_START_R", PUnsignedInt.INSTANCE),
+        CI_END_L("CI_END_L", PUnsignedInt.INSTANCE),
+        CI_END_R("CI_END_R", PUnsignedInt.INSTANCE),
 
         TYPE("TYPE", PVarchar.INSTANCE),
 
@@ -379,6 +407,11 @@ public class VariantPhoenixHelper {
             switch (variantColumn) {
                 case CHROMOSOME:
                 case POSITION:
+                case SV_END:
+                case CI_START_L:
+                case CI_START_R:
+                case CI_END_L:
+                case CI_END_R:
                     sb.append(' ').append(variantColumn).append(' ').append(variantColumn.sqlType()).append(" NOT NULL , ");
                     break;
                 default:

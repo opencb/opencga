@@ -199,6 +199,11 @@ public class VariantSqlQueryParser {
                     .append(VariantColumn.POSITION).append(',')
                     .append(VariantColumn.REFERENCE).append(',')
                     .append(VariantColumn.ALTERNATE).append(',')
+                    .append(VariantColumn.SV_END).append(',')
+                    .append(VariantColumn.CI_START_L).append(',')
+                    .append(VariantColumn.CI_START_R).append(',')
+                    .append(VariantColumn.CI_END_L).append(',')
+                    .append(VariantColumn.CI_END_R).append(',')
                     .append(VariantColumn.TYPE);
 
             if (returnedFields.contains(VariantField.STUDIES)) {
