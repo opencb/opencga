@@ -135,6 +135,10 @@ public enum GenotypeClass {
         return predicate;
     }
 
+    public boolean test(String genotype) {
+        return predicate.test(genotype);
+    }
+
     public List<String> filter(String... gts) {
         return filter(Arrays.asList(gts));
     }
