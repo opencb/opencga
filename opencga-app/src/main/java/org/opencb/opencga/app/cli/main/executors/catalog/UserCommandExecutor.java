@@ -126,7 +126,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 }
                 // write CLI session file
                 saveCliSessionFile(user, sessionId, studies);
-                System.out.println("You have been logged correctly. This is your new token " + sessionId);
+                System.out.println("You have been logged in correctly. This is your new token " + sessionId);
             }
         } else {
             String sessionId = usersCommandOptions.commonCommandOptions.sessionId;
