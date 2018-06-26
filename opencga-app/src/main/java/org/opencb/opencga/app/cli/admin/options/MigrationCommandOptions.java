@@ -51,6 +51,17 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @ParametersDelegate
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
 
+        @Parameter(names = {"--what"}, description = "Select which parts will be migrated. Options: ALL, CATALOG, STORAGE, ANNOTATIONS, "
+                + "CATALOG_NO_ANNOTATIONS")
+        public Migrate what = Migrate.ALL;
+    }
+
+    public enum Migrate {
+        ALL,
+        CATALOG,
+        STORAGE,
+        ANNOTATIONS,
+        CATALOG_NO_ANNOTATIONS
     }
 
     public MigrateV1_3_0CommandOptions getMigrateV130CommandOptions() {
