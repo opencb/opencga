@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.net.URI;
 import java.util.Collections;
@@ -66,6 +66,7 @@ public class File {
     @Deprecated
     private List<Long> sampleIds;
 
+    private List<String> tags;
 
     /**
      * This field values -1 when file has been uploaded.
@@ -115,6 +116,7 @@ public class File {
         this.size = size;
         this.experiment = experiment;
         this.samples = samples;
+        this.tags = Collections.emptyList();
         this.job = job;
         this.relatedFiles = relatedFiles;
         this.index = index != null ? index : new FileIndex();
@@ -307,7 +309,7 @@ public class File {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
-        sb.append(", id=").append(id);
+        sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", format=").append(format);
@@ -316,13 +318,13 @@ public class File {
         sb.append(", path='").append(path).append('\'');
         sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
         sb.append(", external=").append(external);
         sb.append(", size=").append(size);
         sb.append(", experiment=").append(experiment);
         sb.append(", samples=").append(samples);
+        sb.append(", tags=").append(tags);
         sb.append(", job=").append(job);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", index=").append(index);
@@ -464,6 +466,15 @@ public class File {
 
     public File setSamples(List<Sample> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public File setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 

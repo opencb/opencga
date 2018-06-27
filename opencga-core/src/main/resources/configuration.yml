@@ -40,6 +40,16 @@ email:
   from: ""
   ssl: false
 
+#hooks:
+#  user@project:study:              # Full Qualified Name of the study.
+#    file:                          # Entity where the hook will be checked
+#     - field: "name"               # Field of the entity to be checked
+#       value: "~(.*)SV.vcf.gz$"    # Value that needs to be satisfied to perform the hook action
+#       stage: "CREATE"             # Stage when the hook will be checked
+#       action: "ADD"               # Action to be performed
+#       where: "tags"               # Field over which the action will be performed
+#       what: "SV"                  # Value to be updated
+
 catalog:
   # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
   #         for names or aliases of any entity.

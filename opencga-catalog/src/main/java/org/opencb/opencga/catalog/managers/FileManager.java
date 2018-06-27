@@ -45,6 +45,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -563,8 +564,8 @@ public class FileManager extends ResourceManager<File> {
             if (parents) {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath, "",
-                        new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1, Collections.emptyMap(),
-                        Collections.emptyMap());
+                        new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1,
+                        Collections.emptyMap(), Collections.emptyMap());
                 parentFileId = create(Long.toString(studyId), parentFile, parents, null, options, sessionId).first().getId();
             } else {
                 throw new CatalogDBException("Directory not found " + parentPath);
@@ -592,6 +593,7 @@ public class FileManager extends ResourceManager<File> {
             }
         }
 
+        checkHooks(file, catalogManager.getStudyManager().getFQN(studyId), HookConfiguration.Stage.CREATE);
         QueryResult<File> queryResult = fileDBAdaptor.insert(file, studyId, options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
         QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
@@ -821,6 +823,7 @@ public class FileManager extends ResourceManager<File> {
                 case DESCRIPTION:
                 case ATTRIBUTES:
                 case STATS:
+                case TAGS:
                 case JOB_ID:
                 case SAMPLES:
                     break;
@@ -2330,9 +2333,10 @@ public class FileManager extends ResourceManager<File> {
 
         // Create the folder in catalog
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
-                stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
-                false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
+                stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY), false, 0,
+                new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
                 catalogManager.getStudyManager().getCurrentRelease(studyId), null);
+        checkHooks(folder, catalogManager.getStudyManager().getFQN(studyId), HookConfiguration.Stage.CREATE);
         QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -2487,8 +2491,9 @@ public class FileManager extends ResourceManager<File> {
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(), Collections.emptyList(), new Job(),
-                        Collections.emptyList(), null, Collections.emptyMap(),
-                        catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyMap());
+                        Collections.emptyList(), null, Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
+                        Collections.emptyMap());
+                checkHooks(subfile, catalogManager.getStudyManager().getFQN(studyId), HookConfiguration.Stage.CREATE);
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
                 // Propagate ACLs
                 if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -2557,9 +2562,9 @@ public class FileManager extends ResourceManager<File> {
                             File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                     File.Bioformat.NONE, dir.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, 0, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), null,
-                                    Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
-                                    Collections.emptyMap());
+                                    Collections.emptyList(), new Job(), Collections.emptyList(), null, Collections.emptyMap(),
+                                    catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyMap());
+                            checkHooks(folder, catalogManager.getStudyManager().getFQN(studyId), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
 
                             // Propagate ACLs
@@ -2607,9 +2612,9 @@ public class FileManager extends ResourceManager<File> {
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), null,
-                                    Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
-                                    Collections.emptyMap());
+                                    Collections.emptyList(), new Job(), Collections.emptyList(), null, Collections.emptyMap(),
+                                    catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyMap());
+                            checkHooks(subfile, catalogManager.getStudyManager().getFQN(studyId), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
 
                             // Propagate ACLs
@@ -2670,6 +2675,264 @@ public class FileManager extends ResourceManager<File> {
             return fileDBAdaptor.get(query, queryOptions);
         }
     }
+
+    private void checkHooks(File file, String fqn, HookConfiguration.Stage stage) throws CatalogException {
+
+        Map<String, Map<String, List<HookConfiguration>>> hooks = this.configuration.getHooks();
+        if (hooks != null && hooks.containsKey(fqn)) {
+            Map<String, List<HookConfiguration>> entityHookMap = hooks.get(fqn);
+            List<HookConfiguration> hookList = null;
+            if (entityHookMap.containsKey(MongoDBAdaptorFactory.FILE_COLLECTION)) {
+                hookList = entityHookMap.get(MongoDBAdaptorFactory.FILE_COLLECTION);
+            } else if (entityHookMap.containsKey(MongoDBAdaptorFactory.FILE_COLLECTION.toUpperCase())) {
+                hookList = entityHookMap.get(MongoDBAdaptorFactory.FILE_COLLECTION.toUpperCase());
+            }
+
+            // We check the hook list
+            if (hookList != null) {
+                for (HookConfiguration hookConfiguration : hookList) {
+                    if (hookConfiguration.getStage() != stage) {
+                        continue;
+                    }
+
+                    String field = hookConfiguration.getField();
+                    if (StringUtils.isEmpty(field)) {
+                        logger.warn("Missing 'field' field from hook configuration");
+                        continue;
+                    }
+                    field = field.toLowerCase();
+
+                    String filterValue = hookConfiguration.getValue();
+                    if (StringUtils.isEmpty(filterValue)) {
+                        logger.warn("Missing 'value' field from hook configuration");
+                        continue;
+                    }
+
+                    String value = null;
+                    switch (field) {
+                        case "name":
+                            value = file.getName();
+                            break;
+                        case "format":
+                            value = file.getFormat().name();
+                            break;
+                        case "bioformat":
+                            value = file.getFormat().name();
+                            break;
+                        case "path":
+                            value = file.getPath();
+                            break;
+                        case "description":
+                            value = file.getDescription();
+                            break;
+                        // TODO: At some point, we will also have to consider any field that is not a String
+//                        case "size":
+//                            value = file.getSize();
+//                            break;
+                        default:
+                            break;
+                    }
+                    if (value == null) {
+                        continue;
+                    }
+
+                    String filterNewValue = hookConfiguration.getWhat();
+                    if (StringUtils.isEmpty(filterNewValue)) {
+                        logger.warn("Missing 'what' field from hook configuration");
+                        continue;
+                    }
+
+                    String filterWhere = hookConfiguration.getWhere();
+                    if (StringUtils.isEmpty(filterWhere)) {
+                        logger.warn("Missing 'where' field from hook configuration");
+                        continue;
+                    }
+                    filterWhere = filterWhere.toLowerCase();
+
+
+                    if (filterValue.startsWith("~")) {
+                        // Regular expression
+                        if (!value.matches(filterValue.substring(1))) {
+                            // If it doesn't match, we will check the next hook of the loop
+                            continue;
+                        }
+                    } else {
+                        if (!value.equals(filterValue)) {
+                            // If it doesn't match, we will check the next hook of the loop
+                            continue;
+                        }
+                    }
+
+                    // The value matched, so we will perform the action desired by the user
+                    if (hookConfiguration.getAction() == HookConfiguration.Action.ABORT) {
+                        throw new CatalogException("A hook to abort the insertion matched");
+                    }
+
+                    // We check the field the user wants to update
+                    if (filterWhere.equals(FileDBAdaptor.QueryParams.DESCRIPTION.key())) {
+                        switch (hookConfiguration.getAction()) {
+                            case ADD:
+                            case SET:
+                                file.setDescription(hookConfiguration.getWhat());
+                                break;
+                            case REMOVE:
+                                file.setDescription("");
+                                break;
+                            default:
+                                break;
+                        }
+                    } else if (filterWhere.equals(FileDBAdaptor.QueryParams.TAGS.key())) {
+                        switch (hookConfiguration.getAction()) {
+                            case ADD:
+                                List<String> values;
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+                                List<String> tagsCopy = new ArrayList<>(file.getTags());
+                                tagsCopy.addAll(values);
+                                file.setTags(tagsCopy);
+                                break;
+                            case SET:
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+                                file.setTags(values);
+                                break;
+                            case REMOVE:
+                                file.setTags(Collections.emptyList());
+                                break;
+                            default:
+                                break;
+                        }
+                    } else if (filterWhere.startsWith(FileDBAdaptor.QueryParams.STATS.key())) {
+                        String[] split = StringUtils.split(filterWhere, ".", 2);
+                        String statsField = null;
+                        if (split.length == 2) {
+                            statsField = split[1];
+                        }
+
+                        switch (hookConfiguration.getAction()) {
+                            case ADD:
+                                if (statsField == null) {
+                                    logger.error("Cannot add a value to {} directly. Expected {}.<subfield>",
+                                            FileDBAdaptor.QueryParams.STATS.key(), FileDBAdaptor.QueryParams.STATS.key());
+                                    continue;
+                                }
+
+                                List<String> values;
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+
+                                Object currentStatsValue = file.getStats().get(statsField);
+                                if (currentStatsValue == null) {
+                                    file.getStats().put(statsField, values);
+                                } else if (currentStatsValue instanceof Collection) {
+                                    ((List) currentStatsValue).addAll(values);
+                                } else {
+                                    logger.error("Cannot add a value to {} if it is not an array", filterWhere);
+                                    continue;
+                                }
+
+                                break;
+                            case SET:
+                                if (statsField == null) {
+                                    logger.error("Cannot set a value to {} directly. Expected {}.<subfield>",
+                                            FileDBAdaptor.QueryParams.STATS.key(), FileDBAdaptor.QueryParams.STATS.key());
+                                    continue;
+                                }
+
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+                                file.getStats().put(statsField, values);
+                                break;
+                            case REMOVE:
+                                if (statsField == null) {
+                                    file.setStats(Collections.emptyMap());
+                                } else {
+                                    file.getStats().remove(statsField);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    } else if (filterWhere.startsWith(FileDBAdaptor.QueryParams.ATTRIBUTES.key())) {
+                        String[] split = StringUtils.split(filterWhere, ".", 2);
+                        String attributesField = null;
+                        if (split.length == 2) {
+                            attributesField = split[1];
+                        }
+
+                        switch (hookConfiguration.getAction()) {
+                            case ADD:
+                                if (attributesField == null) {
+                                    logger.error("Cannot add a value to {} directly. Expected {}.<subfield>",
+                                            FileDBAdaptor.QueryParams.ATTRIBUTES.key(), FileDBAdaptor.QueryParams.ATTRIBUTES.key());
+                                    continue;
+                                }
+
+                                List<String> values;
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+
+                                Object currentStatsValue = file.getAttributes().get(attributesField);
+                                if (currentStatsValue == null) {
+                                    file.getAttributes().put(attributesField, values);
+                                } else if (currentStatsValue instanceof Collection) {
+                                    ((List) currentStatsValue).addAll(values);
+                                } else {
+                                    logger.error("Cannot add a value to {} if it is not an array", filterWhere);
+                                    continue;
+                                }
+
+                                break;
+                            case SET:
+                                if (attributesField == null) {
+                                    logger.error("Cannot set a value to {} directly. Expected {}.<subfield>",
+                                            FileDBAdaptor.QueryParams.ATTRIBUTES.key(), FileDBAdaptor.QueryParams.ATTRIBUTES.key());
+                                    continue;
+                                }
+
+                                if (hookConfiguration.getWhat().contains(",")) {
+                                    values = Arrays.asList(hookConfiguration.getWhat().split(","));
+                                } else {
+                                    values = Collections.singletonList(hookConfiguration.getWhat());
+                                }
+                                file.getAttributes().put(attributesField, values);
+                                break;
+                            case REMOVE:
+                                if (attributesField == null) {
+                                    file.setAttributes(Collections.emptyMap());
+                                } else {
+                                    file.getAttributes().remove(attributesField);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    } else {
+                        logger.error("{} field cannot be updated. Please, check the hook configured.", hookConfiguration.getWhere());
+                    }
+                }
+            }
+        }
+
+    }
+//    private void checkHooks(File file, long studyId) {
+//        return;
+//    }
 
     /**
      * Check if the file or files inside the folder can be deleted / unlinked if they are being used in storage.
