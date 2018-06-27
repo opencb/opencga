@@ -24,6 +24,7 @@
 {"collection": "file", "fields": {"format": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"bioformat": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"uri": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"tags": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"path": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"samples.id": 1}, "options": {"background": true}}
