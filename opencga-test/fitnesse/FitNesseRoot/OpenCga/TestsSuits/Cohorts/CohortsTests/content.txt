@@ -13,7 +13,7 @@
 | setBody |{ "name": "$CohortName1"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
-|let|cohortId|js|response.jsonbody.response[0].result[0].id||
+|let|cohortId|js|response.jsonbody.response[0].result[0].id|2222|
 
 !3 Create Second Cohort 
 !|Table: Rest Fixture | $baseURL |
