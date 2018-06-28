@@ -54,6 +54,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static htsjdk.samtools.SAMFileHeader.GroupOrder.query;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
@@ -445,7 +446,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 if (individualQueryResult.getNumResults() > 0) {
                     if (individualQueryResult.getNumResults() > 1) {
                         logger.error("Critical error: More than one individual detected pointing to sample {}. The list of individual ids "
-                                + "are: {}", sample.getId(),
+                                        + "are: {}", sample.getId(),
                                 individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList()));
                     }
                     for (Individual individual : individualQueryResult.getResult()) {
@@ -499,7 +500,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public QueryResult<Sample> updateAnnotationSet(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
-                                                 ParamUtils.UpdateAction action, QueryOptions options, String token)
+                                                   ParamUtils.UpdateAction action, QueryOptions options, String token)
             throws CatalogException {
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -529,12 +530,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public QueryResult<Sample> removeAnnotationSet(String studyStr, String sampleStr, String annotationSetId, QueryOptions options,
-                                                String token) throws CatalogException {
+                                                   String token) throws CatalogException {
         return removeAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSetId), options, token);
     }
 
     public QueryResult<Sample> removeAnnotationSets(String studyStr, String sampleStr, List<String> annotationSetIdList,
-                                                 QueryOptions options, String token) throws CatalogException {
+                                                    QueryOptions options, String token) throws CatalogException {
         List<AnnotationSet> annotationSetList = annotationSetIdList
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
@@ -543,7 +544,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public QueryResult<Sample> updateAnnotations(String studyStr, String sampleStr, String annotationSetId, Map<String, Object> annotations,
-                                  ParamUtils.CompleteUpdateAction action, QueryOptions options, String token) throws CatalogException {
+                                                 ParamUtils.CompleteUpdateAction action, QueryOptions options, String token)
+            throws CatalogException {
         ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
@@ -558,7 +560,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public QueryResult<Sample> resetAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
-                                                 QueryOptions options, String token) throws CatalogException {
+                                                QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, sampleStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
@@ -1059,7 +1061,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 break;
             case ADD:
                 queryResults = authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
-                                .map(Sample::getUid).collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
+                        .map(Sample::getUid).collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
                 if (sampleAclParams.isPropagate()) {
                     try {
                         Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
@@ -1074,7 +1076,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 break;
             case REMOVE:
                 queryResults = authorizationManager.removeAcls(resource.getResourceList().stream().map(Sample::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
+                        .collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
                 if (sampleAclParams.isPropagate()) {
                     try {
                         Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
@@ -1090,7 +1092,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 break;
             case RESET:
                 queryResults = authorizationManager.removeAcls(resource.getResourceList().stream().map(Sample::getUid)
-                                .collect(Collectors.toList()), members, null, Entity.SAMPLE);
+                        .collect(Collectors.toList()), members, null, Entity.SAMPLE);
                 if (sampleAclParams.isPropagate()) {
                     try {
                         Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
@@ -1183,5 +1185,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
         }
         return sampleId;
+    }
+
+    public DBIterator<Sample> indexSolr(Query query) throws CatalogException {
+        return sampleDBAdaptor.iterator(query, null, null);
     }
 }

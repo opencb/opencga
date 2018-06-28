@@ -676,6 +676,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
     }
 
+    public DBIterator<Cohort> indexSolr(Query query) throws CatalogException {
+        return cohortDBAdaptor.iterator(query, null, null);
+    }
+
     private long getCohortId(boolean silent, String cohortStr) throws CatalogException {
         long cohortId = Long.parseLong(cohortStr);
         try {

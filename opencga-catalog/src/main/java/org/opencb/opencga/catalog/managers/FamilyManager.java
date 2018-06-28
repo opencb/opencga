@@ -635,6 +635,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
+    public DBIterator<Family> indexSolr(Query query) throws CatalogException {
+        return familyDBAdaptor.iterator(query, null, null);
+    }
+
     /**
      * Looks for all the members in the database. If they exist, the data will be overriden. It also fetches the parents individuals if they
      * haven't been provided.

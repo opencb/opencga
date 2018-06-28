@@ -2308,6 +2308,9 @@ public class FileManager extends ResourceManager<File> {
         return filesToAnalyse;
     }
 
+    public DBIterator<File> indexSolr(Query query) throws CatalogException {
+        return fileDBAdaptor.iterator(query, null, null);
+    }
     private void updateIndexStatusAfterDeletionOfTransformedFile(long studyId, File file) throws CatalogDBException {
         if (file.getType() == File.Type.FILE && (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty())) {
             return;
