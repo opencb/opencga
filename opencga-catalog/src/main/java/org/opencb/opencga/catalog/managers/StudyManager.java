@@ -1263,4 +1263,5 @@ public class StudyManager extends AbstractManager {
         }
         return studyDBAdaptor.getOwnerId(study.getUid());
     }
+
 }

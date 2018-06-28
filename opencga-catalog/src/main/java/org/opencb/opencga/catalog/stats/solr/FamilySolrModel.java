@@ -2,13 +2,16 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.beans.Field;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Created by wasim on 27/06/18.
  */
 public class FamilySolrModel {
 
     @Field
-    private String uuid;
+    private String id;
 
     @Field
     private String name;
@@ -31,13 +34,17 @@ public class FamilySolrModel {
     @Field
     private int version;
 
+    @Field("annotations_*")
+    private Map<String, Object> annotations;
+
     public FamilySolrModel() {
+        this.annotations = new HashMap<>();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilySolrModel{");
-        sb.append("uuid='").append(uuid).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
@@ -45,16 +52,17 @@ public class FamilySolrModel {
         sb.append(", description='").append(description).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
+        sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getUuid() {
-        return uuid;
+    public String getId() {
+        return id;
     }
 
-    public FamilySolrModel setUuid(String uuid) {
-        this.uuid = uuid;
+    public FamilySolrModel setId(String id) {
+        this.id = id;
         return this;
     }
 
@@ -118,6 +126,15 @@ public class FamilySolrModel {
 
     public FamilySolrModel setVersion(int version) {
         this.version = version;
+        return this;
+    }
+
+    public Map<String, Object> getAnnotations() {
+        return annotations;
+    }
+
+    public FamilySolrModel setAnnotations(Map<String, Object> annotations) {
+        this.annotations = annotations;
         return this;
     }
 }

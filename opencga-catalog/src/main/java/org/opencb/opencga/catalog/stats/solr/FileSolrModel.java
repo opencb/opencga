@@ -3,7 +3,9 @@ package org.opencb.opencga.catalog.stats.solr;
 import org.apache.solr.client.solrj.beans.Field;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wasim on 27/06/18.
@@ -11,7 +13,7 @@ import java.util.List;
 public class FileSolrModel {
 
     @Field
-    private String uuid;
+    private String id;
 
     @Field
     private String name;
@@ -55,15 +57,19 @@ public class FileSolrModel {
     @Field
     private List<String> relatedFiles;
 
+    @Field("annotations_*")
+    private Map<String, Object> annotations;
+
     public FileSolrModel() {
         this.samples = new ArrayList<>();
         this.relatedFiles = new ArrayList<>();
+        this.annotations = new HashMap<>();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileSolrModel{");
-        sb.append("uuid='").append(uuid).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", format='").append(format).append('\'');
@@ -78,16 +84,17 @@ public class FileSolrModel {
         sb.append(", experiment='").append(experiment).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", relatedFiles=").append(relatedFiles);
+        sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getUuid() {
-        return uuid;
+    public String getId() {
+        return id;
     }
 
-    public FileSolrModel setUuid(String uuid) {
-        this.uuid = uuid;
+    public FileSolrModel setId(String id) {
+        this.id = id;
         return this;
     }
 
@@ -214,6 +221,15 @@ public class FileSolrModel {
 
     public FileSolrModel setRelatedFiles(List<String> relatedFiles) {
         this.relatedFiles = relatedFiles;
+        return this;
+    }
+
+    public Map<String, Object> getAnnotations() {
+        return annotations;
+    }
+
+    public FileSolrModel setAnnotations(Map<String, Object> annotations) {
+        this.annotations = annotations;
         return this;
     }
 }

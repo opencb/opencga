@@ -3,7 +3,9 @@ package org.opencb.opencga.catalog.stats.solr;
 import org.apache.solr.client.solrj.beans.Field;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wasim on 27/06/18.
@@ -11,7 +13,7 @@ import java.util.List;
 public class SampleSolrModel {
 
     @Field
-    private String uuid;
+    private String id;
 
     @Field
     private String name;
@@ -46,16 +48,40 @@ public class SampleSolrModel {
     @Field
     private List<String> phenotypes;
 
+    @Field("annotations_*")
+    private Map<String, Object> annotations;
+
     public SampleSolrModel() {
         this.phenotypes = new ArrayList<>();
+        this.annotations = new HashMap<>();
     }
 
-    public String getUuid() {
-        return uuid;
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("SampleSolrModel{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", source='").append(source).append('\'');
+        sb.append(", individual='").append(individual).append('\'');
+        sb.append(", release=").append(release);
+        sb.append(", version=").append(version);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status='").append(status).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", type='").append(type).append('\'');
+        sb.append(", somatic=").append(somatic);
+        sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", annotations=").append(annotations);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public SampleSolrModel setUuid(String uuid) {
-        this.uuid = uuid;
+    public String getId() {
+        return id;
+    }
+
+    public SampleSolrModel setId(String id) {
+        this.id = id;
         return this;
     }
 
@@ -158,22 +184,12 @@ public class SampleSolrModel {
         return this;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("SampleSolrModel{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", source='").append(source).append('\'');
-        sb.append(", individual='").append(individual).append('\'');
-        sb.append(", release=").append(release);
-        sb.append(", version=").append(version);
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", status='").append(status).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", type='").append(type).append('\'');
-        sb.append(", somatic=").append(somatic);
-        sb.append(", phenotypes=").append(phenotypes);
-        sb.append('}');
-        return sb.toString();
+    public Map<String, Object> getAnnotations() {
+        return annotations;
+    }
+
+    public SampleSolrModel setAnnotations(Map<String, Object> annotations) {
+        this.annotations = annotations;
+        return this;
     }
 }

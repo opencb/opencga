@@ -900,6 +900,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return queryResults;
     }
 
+    public DBIterator<Individual> indexSolr(Query query) throws CatalogException {
+        return individualDBAdaptor.iterator(query, null, null);
+    }
 
     // **************************   Private methods  ******************************** //
 

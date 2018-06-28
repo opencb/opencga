@@ -3,7 +3,9 @@ package org.opencb.opencga.catalog.stats.solr;
 import org.apache.solr.client.solrj.beans.Field;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wasim on 27/06/18.
@@ -11,7 +13,7 @@ import java.util.List;
 public class IndividualSolrModel {
 
     @Field
-    private String uuid;
+    private String id;
 
     @Field
     private String name;
@@ -67,15 +69,19 @@ public class IndividualSolrModel {
     @Field
     private boolean parentalConsanguinity;
 
+    @Field("annotations_*")
+    private Map<String, Object> annotations;
+
     public IndividualSolrModel() {
         this.phenotypes = new ArrayList<>();
         this.sample = new ArrayList<>();
+        this.annotations = new HashMap<>();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualSolrModel{");
-        sb.append("uuid='").append(uuid).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", father='").append(father).append('\'');
         sb.append(", mother='").append(mother).append('\'');
@@ -94,16 +100,17 @@ public class IndividualSolrModel {
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", sample=").append(sample);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
+        sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getUuid() {
-        return uuid;
+    public String getId() {
+        return id;
     }
 
-    public IndividualSolrModel setUuid(String uuid) {
-        this.uuid = uuid;
+    public IndividualSolrModel setId(String id) {
+        this.id = id;
         return this;
     }
 
@@ -266,6 +273,15 @@ public class IndividualSolrModel {
 
     public IndividualSolrModel setParentalConsanguinity(boolean parentalConsanguinity) {
         this.parentalConsanguinity = parentalConsanguinity;
+        return this;
+    }
+
+    public Map<String, Object> getAnnotations() {
+        return annotations;
+    }
+
+    public IndividualSolrModel setAnnotations(Map<String, Object> annotations) {
+        this.annotations = annotations;
         return this;
     }
 }
