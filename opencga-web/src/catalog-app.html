@@ -258,7 +258,6 @@
                                                  <!--on-gene="geneSelected"-->
                                                  <!--on-samplechange="onSampleChange" style="font-size: 12px">-->
                         <!--</opencga-variant-browser>-->
-                        aaaaaaa
                     </div>
                 </template>
 
@@ -402,7 +401,7 @@
 
                 <template is="dom-if" if="{{config.enabledComponents.cohorts}}">
                     <div class="content" id="cohorts">
-                        <opencga-cohort-browser opencga-session="{{opencgaSession}}" config="{{config.tools.sample}}"></opencga-cohort-browser>
+                        <opencga-cohort-browser opencga-session="{{opencgaSession}}" config="{{config.tools.cohort}}"></opencga-cohort-browser>
                     </div>
                 </template>
                 <!--<div class="collapse content" id="studyInformation">-->
