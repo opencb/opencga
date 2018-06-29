@@ -70,7 +70,8 @@ public class CatalogStudyConfigurationFactoryTest {
     static private final String userId = "user";
     static private List<File> files = new ArrayList<>();
     static private LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
-    private static long cohortId;
+    private static String cohortId;
+    private static long cohortUid;
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -99,7 +100,9 @@ public class CatalogStudyConfigurationFactoryTest {
 //        files.add(create("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
 //        files.add(create("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
         String cohortName = "ALL";
-        cohortId = catalogManager.getCohortManager().create(studyId, cohortName, null, null, Collections.emptyList(), null, null, sessionId).first().getUid();
+        Cohort cohort = catalogManager.getCohortManager().create(studyId, cohortName, null, null, Collections.emptyList(), null, null, sessionId).first();
+        cohortId = cohort.getId();
+        cohortUid = cohort.getUid();
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz", true));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12879_S1.genome.vcf.gz"));
@@ -127,9 +130,9 @@ public class CatalogStudyConfigurationFactoryTest {
                     Collections.emptyMap());
             catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
             indexedFiles.add((int) file.getUid());
-            List<Long> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId + "", null, sessionId).getResult().stream().map(Sample::getUid).collect(Collectors.toList());
+            List<Long> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId).getResult().stream().map(Sample::getUid).collect(Collectors.toList());
             samples.addAll(file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
-            catalogManager.getCohortManager().update(studyId, cohortId + "", new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), null, sessionId);
+            catalogManager.getCohortManager().update(studyId, cohortId, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), null, sessionId);
         }
         return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
     }
@@ -220,16 +223,16 @@ public class CatalogStudyConfigurationFactoryTest {
         StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
         StudyConfiguration sc = studyConfigurationFactory.getStudyConfiguration(studyUid, null, scm, new QueryOptions(), sessionId);
 
-        List<Long> samples = catalogManager.getCohortManager().getSamples(studyId, String.valueOf(cohortId), null, sessionId)
+        List<Long> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId)
                 .getResult()
                 .stream()
                 .map(Sample::getUid)
                 .collect(Collectors.toList());
         samples.add(files.get(0).getSamples().get(0).getUid());
 
-        sc.getCohorts().put((int) cohortId, samples.stream().map(Long::intValue).collect(Collectors.toSet()));
+        sc.getCohorts().put(((int) cohortUid), samples.stream().map(Long::intValue).collect(Collectors.toSet()));
 
-        catalogManager.getCohortManager().setStatus(studyId, String.valueOf(cohortId), Cohort.CohortStatus.CALCULATING, "", sessionId);
+        catalogManager.getCohortManager().setStatus(studyId, cohortId, Cohort.CohortStatus.CALCULATING, "", sessionId);
 
         studyConfigurationFactory.updateCatalogFromStudyConfiguration(sc, sessionId);
     }
