@@ -13,7 +13,7 @@ import java.util.Map;
 public class FileSolrModel {
 
     @Field
-    private String id;
+    private long uid;
 
     @Field
     private String name;
@@ -34,9 +34,6 @@ public class FileSolrModel {
     private String creationDate;
 
     @Field
-    private String description;
-
-    @Field
     private String status;
 
     @Field
@@ -52,16 +49,16 @@ public class FileSolrModel {
     private String experiment;
 
     @Field
-    private List<String> samples;
+    private List<String> samplesUuid;
 
     @Field
-    private List<String> relatedFiles;
+    private List<Long> relatedFiles;
 
     @Field("annotations_*")
     private Map<String, Object> annotations;
 
     public FileSolrModel() {
-        this.samples = new ArrayList<>();
+        this.samplesUuid = new ArrayList<>();
         this.relatedFiles = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
@@ -69,32 +66,31 @@ public class FileSolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileSolrModel{");
-        sb.append("id='").append(id).append('\'');
+        sb.append("uid=").append(uid);
         sb.append(", name='").append(name).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", format='").append(format).append('\'');
         sb.append(", bioformart='").append(bioformart).append('\'');
         sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", description='").append(description).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", external=").append(external);
         sb.append(", size=").append(size);
         sb.append(", software='").append(software).append('\'');
         sb.append(", experiment='").append(experiment).append('\'');
-        sb.append(", samples=").append(samples);
+        sb.append(", samplesUuid=").append(samplesUuid);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public long getUid() {
+        return uid;
     }
 
-    public FileSolrModel setId(String id) {
-        this.id = id;
+    public FileSolrModel setUid(long uid) {
+        this.uid = uid;
         return this;
     }
 
@@ -152,15 +148,6 @@ public class FileSolrModel {
         return this;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public FileSolrModel setDescription(String description) {
-        this.description = description;
-        return this;
-    }
-
     public String getStatus() {
         return status;
     }
@@ -206,20 +193,20 @@ public class FileSolrModel {
         return this;
     }
 
-    public List<String> getSamples() {
-        return samples;
+    public List<String> getSamplesUuid() {
+        return samplesUuid;
     }
 
-    public FileSolrModel setSamples(List<String> samples) {
-        this.samples = samples;
+    public FileSolrModel setSamplesUuid(List<String> samplesUuid) {
+        this.samplesUuid = samplesUuid;
         return this;
     }
 
-    public List<String> getRelatedFiles() {
+    public List<Long> getRelatedFiles() {
         return relatedFiles;
     }
 
-    public FileSolrModel setRelatedFiles(List<String> relatedFiles) {
+    public FileSolrModel setRelatedFiles(List<Long> relatedFiles) {
         this.relatedFiles = relatedFiles;
         return this;
     }

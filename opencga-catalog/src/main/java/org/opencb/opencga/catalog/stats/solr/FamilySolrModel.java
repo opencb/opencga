@@ -2,7 +2,9 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.beans.Field;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -11,10 +13,7 @@ import java.util.Map;
 public class FamilySolrModel {
 
     @Field
-    private String id;
-
-    @Field
-    private String name;
+    private long uid;
 
     @Field
     private String creationDate;
@@ -23,10 +22,10 @@ public class FamilySolrModel {
     private String status;
 
     @Field
-    private int expectedSize;
+    private List<String> phenotypes;
 
     @Field
-    private String description;
+    private List<String> familyMembersUuid;
 
     @Field
     private int release;
@@ -39,17 +38,18 @@ public class FamilySolrModel {
 
     public FamilySolrModel() {
         this.annotations = new HashMap<>();
+        this.phenotypes = new ArrayList<>();
+        this.familyMembersUuid = new ArrayList<>();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilySolrModel{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
+        sb.append("uid=").append(uid);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status='").append(status).append('\'');
-        sb.append(", expectedSize=").append(expectedSize);
-        sb.append(", description='").append(description).append('\'');
+        sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", familyMembersUuid=").append(familyMembersUuid);
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", annotations=").append(annotations);
@@ -57,21 +57,12 @@ public class FamilySolrModel {
         return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public long getUid() {
+        return uid;
     }
 
-    public FamilySolrModel setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public FamilySolrModel setName(String name) {
-        this.name = name;
+    public FamilySolrModel setUid(long uid) {
+        this.uid = uid;
         return this;
     }
 
@@ -93,21 +84,21 @@ public class FamilySolrModel {
         return this;
     }
 
-    public int getExpectedSize() {
-        return expectedSize;
+    public List<String> getPhenotypes() {
+        return phenotypes;
     }
 
-    public FamilySolrModel setExpectedSize(int expectedSize) {
-        this.expectedSize = expectedSize;
+    public FamilySolrModel setPhenotypes(List<String> phenotypes) {
+        this.phenotypes = phenotypes;
         return this;
     }
 
-    public String getDescription() {
-        return description;
+    public List<String> getFamilyMembersUuid() {
+        return familyMembersUuid;
     }
 
-    public FamilySolrModel setDescription(String description) {
-        this.description = description;
+    public FamilySolrModel setFamilyMembersUuid(List<String> familyMembersUuid) {
+        this.familyMembersUuid = familyMembersUuid;
         return this;
     }
 

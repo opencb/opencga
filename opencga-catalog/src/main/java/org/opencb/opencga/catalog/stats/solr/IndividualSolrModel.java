@@ -13,22 +13,19 @@ import java.util.Map;
 public class IndividualSolrModel {
 
     @Field
-    private String id;
+    private long uid;
 
     @Field
-    private String name;
+    private String fatherUuid;
 
     @Field
-    private String father;
+    private String motherUuid;
 
     @Field
-    private String mother;
+    private String multipleTypeName;
 
     @Field
-    private String multiple; /// ????
-
-    @Field
-    private String family;
+    private String familyUuid;
 
     @Field
     private String sex;
@@ -64,7 +61,7 @@ public class IndividualSolrModel {
     private List<String> phenotypes;
 
     @Field
-    private List<String> sample;
+    private List<String> samplesUuid;
 
     @Field
     private boolean parentalConsanguinity;
@@ -74,19 +71,18 @@ public class IndividualSolrModel {
 
     public IndividualSolrModel() {
         this.phenotypes = new ArrayList<>();
-        this.sample = new ArrayList<>();
+        this.samplesUuid = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualSolrModel{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", father='").append(father).append('\'');
-        sb.append(", mother='").append(mother).append('\'');
-        sb.append(", multiple='").append(multiple).append('\'');
-        sb.append(", family='").append(family).append('\'');
+        sb.append("uid=").append(uid);
+        sb.append(", fatherUuid='").append(fatherUuid).append('\'');
+        sb.append(", motherUuid='").append(motherUuid).append('\'');
+        sb.append(", multipleTypeName='").append(multipleTypeName).append('\'');
+        sb.append(", familyUuid='").append(familyUuid).append('\'');
         sb.append(", sex='").append(sex).append('\'');
         sb.append(", karyotypicSex='").append(karyotypicSex).append('\'');
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -98,64 +94,55 @@ public class IndividualSolrModel {
         sb.append(", lifeStatus='").append(lifeStatus).append('\'');
         sb.append(", affectationStatus='").append(affectationStatus).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", sample=").append(sample);
+        sb.append(", samplesUuid=").append(samplesUuid);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public long getUid() {
+        return uid;
     }
 
-    public IndividualSolrModel setId(String id) {
-        this.id = id;
+    public IndividualSolrModel setUid(long uid) {
+        this.uid = uid;
         return this;
     }
 
-    public String getName() {
-        return name;
+    public String getFatherUuid() {
+        return fatherUuid;
     }
 
-    public IndividualSolrModel setName(String name) {
-        this.name = name;
+    public IndividualSolrModel setFatherUuid(String fatherUuid) {
+        this.fatherUuid = fatherUuid;
         return this;
     }
 
-    public String getFather() {
-        return father;
+    public String getMotherUuid() {
+        return motherUuid;
     }
 
-    public IndividualSolrModel setFather(String father) {
-        this.father = father;
+    public IndividualSolrModel setMotherUuid(String motherUuid) {
+        this.motherUuid = motherUuid;
         return this;
     }
 
-    public String getMother() {
-        return mother;
+    public String getMultipleTypeName() {
+        return multipleTypeName;
     }
 
-    public IndividualSolrModel setMother(String mother) {
-        this.mother = mother;
+    public IndividualSolrModel setMultipleTypeName(String multipleTypeName) {
+        this.multipleTypeName = multipleTypeName;
         return this;
     }
 
-    public String getMultiple() {
-        return multiple;
+    public String getFamilyUuid() {
+        return familyUuid;
     }
 
-    public IndividualSolrModel setMultiple(String multiple) {
-        this.multiple = multiple;
-        return this;
-    }
-
-    public String getFamily() {
-        return family;
-    }
-
-    public IndividualSolrModel setFamily(String family) {
-        this.family = family;
+    public IndividualSolrModel setFamilyUuid(String familyUuid) {
+        this.familyUuid = familyUuid;
         return this;
     }
 
@@ -258,12 +245,12 @@ public class IndividualSolrModel {
         return this;
     }
 
-    public List<String> getSample() {
-        return sample;
+    public List<String> getSamplesUuid() {
+        return samplesUuid;
     }
 
-    public IndividualSolrModel setSample(List<String> sample) {
-        this.sample = sample;
+    public IndividualSolrModel setSamplesUuid(List<String> samplesUuid) {
+        this.samplesUuid = samplesUuid;
         return this;
     }
 
