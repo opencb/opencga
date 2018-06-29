@@ -92,17 +92,17 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         removeStudy(studyId, new QueryOptions());
     }
 
-    private void removeFile(File file, QueryOptions options, long outputId) throws Exception {
+    private void removeFile(File file, QueryOptions options, String outputId) throws Exception {
         removeFile(Collections.singletonList(file), options, outputId);
     }
 
-    private void removeFile(List<File> files, QueryOptions options, long outputId) throws Exception {
-        List<String> fileIds = files.stream().map(File::getUid).map(String::valueOf).collect(Collectors.toList());
+    private void removeFile(List<File> files, QueryOptions options, String outputId) throws Exception {
+        List<String> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
 
         Study study = catalogManager.getFileManager().getStudy(files.get(0), sessionId);
         String studyId = study.getFqn();
 
-        List<File> removedFiles = variantManager.removeFile(fileIds, String.valueOf(studyId), sessionId, new QueryOptions());
+        List<File> removedFiles = variantManager.removeFile(fileIds, studyId, sessionId, new QueryOptions());
         assertEquals(files.size(), removedFiles.size());
 
         Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
@@ -131,7 +131,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
         assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());
 
-        Cohort all = catalogManager.getCohortManager().get(String.valueOf(studyId),
+        Cohort all = catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         assertTrue(all.getSamples().isEmpty());
     }

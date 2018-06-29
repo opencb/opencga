@@ -104,9 +104,12 @@ public class Sample extends Annotable {
             return false;
         }
         Sample sample = (Sample) o;
-        return id == sample.id
-                && release == sample.release
+        return release == sample.release
+                && version == sample.version
                 && somatic == sample.somatic
+                && Objects.equals(uuid, sample.uuid)
+                && Objects.equals(id, sample.id)
+                && Objects.equals(name, sample.name)
                 && Objects.equals(source, sample.source)
                 && Objects.equals(individual, sample.individual)
                 && Objects.equals(creationDate, sample.creationDate)
@@ -114,13 +117,14 @@ public class Sample extends Annotable {
                 && Objects.equals(description, sample.description)
                 && Objects.equals(type, sample.type)
                 && Objects.equals(phenotypes, sample.phenotypes)
+                && Objects.equals(stats, sample.stats)
                 && Objects.equals(attributes, sample.attributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, source, individual, release, creationDate, status,
-                description, type, somatic, phenotypes, attributes);
+        return Objects.hash(uuid, id, name, source, individual, release, version, creationDate, status,
+                description, type, somatic, phenotypes, stats, attributes);
     }
 
     @Override

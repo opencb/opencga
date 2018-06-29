@@ -82,8 +82,8 @@ public class StudyManager extends AbstractManager {
         logger = LoggerFactory.getLogger(StudyManager.class);
     }
 
-    public Long getProjectId(long studyId) throws CatalogException {
-        return studyDBAdaptor.getProjectIdByStudyId(studyId);
+    public String getProjectId(long studyId) throws CatalogException {
+        return studyDBAdaptor.getProjectIdByStudyUid(studyId);
     }
 
     public List<Study> resolveIds(List<String> studyList, String userId) throws CatalogException {
@@ -107,8 +107,8 @@ public class StudyManager extends AbstractManager {
         QueryResult<Study> studyQueryResult = smartResolutor(studyStr, userId);
 
         if (studyQueryResult.getNumResults() > 1) {
-            throw new CatalogException("More than one study found. Please, be more specific. The accepted pattern is "
-                    + "[ownerId@projectId:studyId]");
+            throw new CatalogException("More than one study found given '" + studyStr + "'. Please, be more specific."
+                    + " The accepted pattern is [ownerId@projectId:studyId]");
         }
 
         return studyQueryResult.first();
@@ -160,7 +160,8 @@ public class StudyManager extends AbstractManager {
         if (studyQueryResult.getNumResults() == 0) {
             studyQueryResult = studyDBAdaptor.get(query, options);
             if (studyQueryResult.getNumResults() == 0) {
-                throw new CatalogException("No study found or the user " + userId + " does not have permissions to view any.");
+                throw new CatalogException("No study found given '" + studyStr + "' "
+                        + "or the user '" + userId + "'  does not have permissions to view any.");
             } else {
                 throw CatalogAuthorizationException.deny(userId, "view", "study", studyQueryResult.first().getFqn(), null);
             }
@@ -1262,5 +1263,17 @@ public class StudyManager extends AbstractManager {
             return StringUtils.split(study.getFqn(), "@")[0];
         }
         return studyDBAdaptor.getOwnerId(study.getUid());
+    }
+
+    public String getProjectFqn(String studyFqn) throws CatalogException {
+        Matcher matcher = USER_PROJECT_STUDY_PATTERN.matcher(studyFqn);
+        if (matcher.find()) {
+            // studyStr contains the full path (owner@project:study)
+            String owner = matcher.group(1);
+            String project = matcher.group(2);
+            return owner + '@' + project;
+        } else {
+            throw new CatalogException("Invalid Study FQN. The accepted pattern is [ownerId@projectId:studyId]");
+        }
     }
 }

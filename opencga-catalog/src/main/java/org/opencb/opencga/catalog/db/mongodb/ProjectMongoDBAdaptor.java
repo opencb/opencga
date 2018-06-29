@@ -715,6 +715,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                         break;
                     case NAME:
                     case ID:
+                    case FQN:
                     case DESCRIPTION:
                     case ORGANIZATION:
                     case ORGANISM:

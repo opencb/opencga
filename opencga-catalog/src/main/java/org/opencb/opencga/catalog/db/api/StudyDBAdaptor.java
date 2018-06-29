@@ -89,7 +89,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     long getId(long projectId, String studyAlias) throws CatalogDBException;
 
-    long getProjectIdByStudyId(long studyId) throws CatalogDBException;
+    long getProjectUidByStudyUid(long studyUid) throws CatalogDBException;
+
+    String getProjectIdByStudyUid(long studyUid) throws CatalogDBException;
 
     String getOwnerId(long studyId) throws CatalogDBException;
 

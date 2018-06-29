@@ -229,18 +229,31 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public long getProjectIdByStudyId(long studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), studyId);
+    public long getProjectUidByStudyUid(long studyUid) throws CatalogDBException {
+        Document privateProjet = getPrivateProject(studyUid);
+        Object id = privateProjet.get(PRIVATE_UID);
+        return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
+    }
+
+    @Override
+    public String getProjectIdByStudyUid(long studyUid) throws CatalogDBException {
+        Document privateProjet = getPrivateProject(studyUid);
+        return privateProjet.getString(PRIVATE_ID);
+    }
+
+    private Document getPrivateProject(long studyUid) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), studyUid);
         QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + PRIVATE_PROJECT_UID);
         QueryResult result = nativeGet(query, queryOptions);
 
+        Document privateProjet;
         if (!result.getResult().isEmpty()) {
             Document study = (Document) result.getResult().get(0);
-            Object id = study.get(PRIVATE_PROJECT_UID);
-            return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
+            privateProjet = study.get(PRIVATE_PROJECT, Document.class);
         } else {
-            throw CatalogDBException.uidNotFound("Study", studyId);
+            throw CatalogDBException.uidNotFound("Study", studyUid);
         }
+        return privateProjet;
     }
 
     @Override

@@ -53,6 +53,7 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             for (Document sample : ((List<Document>) origSampleList)) {
                 sampleList.add(new Document()
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sample.get(SampleDBAdaptor.QueryParams.ID.key()))
+                        .append(SampleDBAdaptor.QueryParams.UID.key(), sample.get(SampleDBAdaptor.QueryParams.UID.key()))
                         .append(SampleDBAdaptor.QueryParams.VERSION.key(), sample.get(SampleDBAdaptor.QueryParams.VERSION.key()))
                 );
             }

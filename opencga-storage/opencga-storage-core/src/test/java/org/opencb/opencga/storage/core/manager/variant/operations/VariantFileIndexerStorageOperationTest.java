@@ -25,7 +25,6 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -46,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,38 +73,38 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
-        variantManager.index(null, String.valueOf(getFile(0).getUid()), newTmpOutdir(), queryOptions, sessionId);
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
+        variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
-        assertNotNull(catalogManager.getFileManager().get(getFile(0).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+        assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
-        variantManager.index(null, String.valueOf(getFile(1).getUid()), newTmpOutdir(), queryOptions, sessionId);
+        variantManager.index(studyId, getFile(1).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1000, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
-        assertNotNull(catalogManager.getFileManager().get(getFile(1).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+        assertNotNull(catalogManager.getFileManager().get(studyId, getFile(1).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
-        variantManager.index(null, String.valueOf(getFile(2).getUid()), newTmpOutdir(), queryOptions, sessionId);
+        variantManager.index(studyId, getFile(2).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
-        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
-        assertNotNull(catalogManager.getFileManager().get(getFile(2).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+        assertNotNull(catalogManager.getFileManager().get(studyId, getFile(2).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
-        variantManager.index(null, String.valueOf(getFile(3).getUid()), newTmpOutdir(), queryOptions, sessionId);
+        variantManager.index(studyId, getFile(3).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2000, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.INVALID, getDefaultCohort(studyId).getStatus().getName());
-        assertNotNull(catalogManager.getFileManager().get(getFile(3).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+        assertNotNull(catalogManager.getFileManager().get(studyId, getFile(3).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
-        variantManager.index(null, String.valueOf(getFile(4).getUid()), newTmpOutdir(), queryOptions, sessionId);
+        variantManager.index(studyId, getFile(4).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2504, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
-        assertNotNull(catalogManager.getFileManager().get(getFile(4).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
-        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(String.valueOf(studyId),
+        assertNotNull(catalogManager.getFileManager().get(studyId, getFile(4).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(studyId,
                 new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
     }
@@ -116,11 +116,11 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
         queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), "none");
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
-        variantManager.index(null, String.valueOf(getFile(0).getUid()), newTmpOutdir(), queryOptions, sessionId);
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
+        variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
-        assertNotNull(catalogManager.getFileManager().get(getFile(0).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+        assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
     }
 
@@ -130,23 +130,23 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
         queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), "wrong_type");
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         try {
-            variantManager.index(null, String.valueOf(getFile(0).getUid()), newTmpOutdir(), queryOptions, sessionId);
+            variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
             fail("Expected StoragePipelineException exception");
         } catch (StoragePipelineException e) {
             assertEquals(0, getDefaultCohort(studyId).getSamples().size());
             assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
-            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(getFile(0).getUid(), null, sessionId).first().getIndex().getStatus().getName());
-            assertNotNull(catalogManager.getFileManager().get(getFile(0).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getIndex().getStatus().getName());
+            assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
         }
         queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), "none");
         // File already transformed
         queryOptions.put(VariantFileIndexerStorageOperation.LOAD, true);
-        variantManager.index(null, String.valueOf(getFile(0).getUid()), newTmpOutdir(), queryOptions, sessionId);
+        variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
-        assertNotNull(catalogManager.getFileManager().get(getFile(0).getUid(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+        assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
     }
 
@@ -171,8 +171,9 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         indexFile(inputFile, queryOptions, outputId);
         Study study = catalogManager.getFileManager().getStudy(inputFile, sessionId);
 
-        WriteResult result = catalogManager.getFileManager().delete(study.getFqn(), new Query(FileDBAdaptor.QueryParams.UID.key(),
-                        inputFile.getUid()) , null, sessionId);
+        WriteResult result = catalogManager.getFileManager().delete(
+                study.getFqn(),
+                new Query(FileDBAdaptor.QueryParams.PATH.key(), inputFile.getPath()) , null, sessionId);
         assertEquals(0, result.getNumModified());
         assertTrue(result.getFailed().get(0).getMessage().contains("index status"));
     }
@@ -184,8 +185,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         File inputFile = getFile(0);
         indexFile(inputFile, queryOptions, outputId);
-        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "200");
-        WriteResult delete = catalogManager.getSampleManager().delete(studyStr, query, null, sessionId);
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), inputFile.getSamples().get(100).getId());
+        WriteResult delete = catalogManager.getSampleManager().delete(studyFqn, query, null, sessionId);
         assertEquals(1, delete.getNumMatches());
         assertTrue(delete.getFailed().get(0).getMessage().contains("delete the cohorts"));
     }
@@ -195,10 +196,10 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
         File file = getFile(0);
-        // TODO: Fix this
-        assertTrue(false);
-//        File parent = catalogManager.getFileManager().getParent(file.getUid(), null, sessionId).first();
-//        indexFiles(singletonList(parent), singletonList(file), queryOptions, outputId);
+        Path pathParent = Paths.get(file.getPath()).getParent();
+
+        File parent = catalogManager.getFileManager().get(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), pathParent.toString() + "/"), null, sessionId).first();
+        indexFiles(singletonList(parent), singletonList(file), queryOptions, outputId);
     }
 
     @Test
@@ -218,10 +219,10 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File inputFile = getFile(0);
         File transformedFile = transformFile(inputFile, queryOptions);
 
-        catalogManager.getFileManager().delete(studyStr,
+        catalogManager.getFileManager().delete(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.NAME.key(), transformedFile.getName()), new ObjectMap(FileManager.SKIP_TRASH, true),
                         sessionId);
-        catalogManager.getFileManager().delete(studyStr, new Query(FileDBAdaptor.QueryParams.NAME.key(),
+        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.NAME.key(),
                 VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName())),
                 new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
 
@@ -245,7 +246,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File transformedFile = transformFile(getFile(0), queryOptions);
         loadFile(transformedFile, queryOptions, outputId);
 
-        WriteResult result = catalogManager.getCohortManager().delete(studyStr, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"),
+        WriteResult result = catalogManager.getCohortManager().delete(studyFqn, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"),
                 null, sessionId);
         assertEquals(0, result.getNumModified());
         assertTrue(result.getFailed().get(0).getMessage().contains("ALL cannot be deleted"));
@@ -331,10 +332,10 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         StorageEngineException loadException = StorageEngineException.unableToExecute("load", 0, "");
         Mockito.doThrow(loadException).when(storageETL)
                 .load(ArgumentMatchers.argThat(argument -> argument.toString().contains(files.get(1).getName())));
-        List<String> fileIds = files.stream().map(File::getUid).map(Object::toString).collect(Collectors.toList());
+        List<String> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         try {
             String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
-            List<StoragePipelineResult> etlResults = variantManager.index(String.valueOf(studyId), fileIds, outdir, queryOptions, sessionId);
+            List<StoragePipelineResult> etlResults = variantManager.index(studyId, fileIds, outdir, queryOptions, sessionId);
         } catch (StoragePipelineException exception) {
             assertEquals(files.size(), exception.getResults().size());
 
@@ -396,7 +397,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
 //        File transformFile = transformFile(getFile(0), queryOptions);
         String outdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
-        List<StoragePipelineResult> etlResults = variantManager.index(String.valueOf(studyId), getFile(0).getPath(),
+        List<StoragePipelineResult> etlResults = variantManager.index(studyId, getFile(0).getPath(),
                 outdir, queryOptions, sessionId);
 
         File transformFile = null;
@@ -409,7 +410,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
             }
         }
         assertNotNull(transformFile);
-        catalogManager.getFileManager().matchUpVariantFiles(null, singletonList(transformFile), sessionId);
+        catalogManager.getFileManager().matchUpVariantFiles(studyId2, singletonList(transformFile), sessionId);
 
         queryOptions = new QueryOptions().append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
