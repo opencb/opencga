@@ -27,9 +27,9 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Job extends PrivateStudyUid {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
     /**
      * Id of the user that created the job.

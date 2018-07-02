@@ -28,10 +28,10 @@ import java.util.Objects;
  */
 public class Cohort extends Annotable {
 
-    private String uuid;
     private String id;
     @Deprecated
     private String name;
+    private String uuid;
     private Study.Type type;
     private String creationDate;
     private CohortStatus status;

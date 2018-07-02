@@ -26,10 +26,10 @@ import java.util.*;
  */
 public class Sample extends Annotable {
 
-    private String uuid;
     private String id;
     @Deprecated
     private String name;
+    private String uuid;
     private String source;
     @Deprecated
     private Individual individual;

@@ -31,9 +31,9 @@ import java.util.Objects;
  */
 public class File extends PrivateStudyUid {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
     /**
      * Formats: file, folder, index.

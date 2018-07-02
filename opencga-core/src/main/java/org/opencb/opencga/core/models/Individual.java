@@ -28,9 +28,9 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Individual extends Annotable {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
     private Individual father;
     private Individual mother;

@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -223,6 +224,7 @@ public class StudyManager extends AbstractManager {
 
         File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", "study root folder",
                 new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
+        rootFile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         files.add(rootFile);
 
         // We set all the permissions for the owner of the study.
@@ -235,6 +237,7 @@ public class StudyManager extends AbstractManager {
                 attributes);
 
         /* CreateStudy */
+        study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
         QueryResult<Study> result = studyDBAdaptor.insert(project, study, options);
         study = result.getResult().get(0);
 
