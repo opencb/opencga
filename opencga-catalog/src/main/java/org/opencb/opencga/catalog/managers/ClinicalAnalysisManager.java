@@ -61,9 +61,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     @Override
     ClinicalAnalysis smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), entry);
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), entry);
+        }
+
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(),
                 ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
                 ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key(), ClinicalAnalysisDBAdaptor.QueryParams.ID.key(),
                 ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key()));

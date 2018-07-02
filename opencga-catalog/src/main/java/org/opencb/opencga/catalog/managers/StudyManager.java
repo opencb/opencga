@@ -118,42 +118,44 @@ public class StudyManager extends AbstractManager {
     private QueryResult<Study> smartResolutor(String studyStr, String userId) throws CatalogException {
         String owner = null;
         String project = null;
-        String study = null;
+
+        Query query = new Query();
 
         if (StringUtils.isNotEmpty(studyStr)) {
-            Matcher matcher = USER_PROJECT_STUDY_PATTERN.matcher(studyStr);
-            if (matcher.find()) {
-                // studyStr contains the full path (owner@project:study)
-                owner = matcher.group(1);
-                project = matcher.group(2);
-                study = matcher.group(3);
+            if (UUIDUtils.isOpenCGAUUID(studyStr)) {
+                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.UUID.key(), studyStr);
             } else {
-                matcher = PROJECT_STUDY_PATTERN.matcher(studyStr);
+                String study = null;
+
+                Matcher matcher = USER_PROJECT_STUDY_PATTERN.matcher(studyStr);
                 if (matcher.find()) {
-                    // studyStr contains the path (project:study)
-                    project = matcher.group(1);
-                    study = matcher.group(2);
+                    // studyStr contains the full path (owner@project:study)
+                    owner = matcher.group(1);
+                    project = matcher.group(2);
+                    study = matcher.group(3);
                 } else {
-                    // studyStr only contains the study information
-                    study = studyStr;
+                    matcher = PROJECT_STUDY_PATTERN.matcher(studyStr);
+                    if (matcher.find()) {
+                        // studyStr contains the path (project:study)
+                        project = matcher.group(1);
+                        study = matcher.group(2);
+                    } else {
+                        // studyStr only contains the study information
+                        study = studyStr;
+                    }
                 }
+                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), study);
             }
         }
 
-        // Empty study if we are actually asking for all possible
-        if (!StringUtils.isEmpty(study) && study.equals("*")) {
-            study = null;
-        }
-
-        Query query = new Query();
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), owner);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), study);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), study);
+//        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), study);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
-                StudyDBAdaptor.QueryParams.CREATION_DATE.key(), StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
+                StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
+                StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
+                StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
         ));
 
         QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options, userId);

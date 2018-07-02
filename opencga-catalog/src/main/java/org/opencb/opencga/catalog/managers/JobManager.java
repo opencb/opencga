@@ -81,11 +81,16 @@ public class JobManager extends ResourceManager<Job> {
     @Override
     Job smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(JobDBAdaptor.QueryParams.ID.key(), entry);
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(JobDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(JobDBAdaptor.QueryParams.ID.key(), entry);
+        }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.ID.key(),
-                JobDBAdaptor.QueryParams.STATUS.key()));
+                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
+                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, user);
         if (jobQueryResult.getNumResults() == 0) {
             jobQueryResult = jobDBAdaptor.get(query, options);

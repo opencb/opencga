@@ -40,8 +40,9 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> {
 
     enum QueryParams implements QueryParam {
-        UID("uid", INTEGER_ARRAY, ""),
         ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT, ""),
         FATHER("father", TEXT, ""),
         MOTHER("mother", TEXT, ""),

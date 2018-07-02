@@ -1983,6 +1983,19 @@ public class FileManager extends ResourceManager<File> {
 
     @Override
     File smartResolutor(long studyUid, String fileName, String user) throws CatalogException {
+        if (UUIDUtils.isOpenCGAUUID(fileName)) {
+            // We search as uuid
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                    .append(FileDBAdaptor.QueryParams.UUID.key(), fileName);
+            QueryResult<File> pathQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
+            if (pathQueryResult.getNumResults() > 1) {
+                throw new CatalogException("Error: More than one file id found based on " + fileName);
+            } else if (pathQueryResult.getNumResults() == 1) {
+                return pathQueryResult.first();
+            }
+        }
+
         fileName = fileName.replace(":", "/");
 
         if (fileName.startsWith("/")) {

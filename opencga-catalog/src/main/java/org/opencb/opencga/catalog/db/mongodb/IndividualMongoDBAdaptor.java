@@ -1201,6 +1201,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ID:
+                    case UUID:
                     case NAME:
                     case FATHER_UID:
                     case MOTHER_UID:

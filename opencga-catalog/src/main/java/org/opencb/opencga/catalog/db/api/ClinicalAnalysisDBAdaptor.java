@@ -36,8 +36,9 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     enum QueryParams implements QueryParam {
-        UID("uid", INTEGER, ""),
         ID("id", TEXT, ""),
+        UID("uid", INTEGER, ""),
+        UUID("uuid", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         TYPE("type", TEXT, ""),

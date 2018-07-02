@@ -78,11 +78,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     @Override
     Sample smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), entry);
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(SampleDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(SampleDBAdaptor.QueryParams.ID.key(), entry);
+        }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.ID.key(),
-                SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
+                SampleDBAdaptor.QueryParams.UUID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(),
+                SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
                 SampleDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options, user);
         if (sampleQueryResult.getNumResults() == 0) {

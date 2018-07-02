@@ -553,6 +553,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         break;
                     // Other parameter that can be queried.
                     case ID:
+                    case UUID:
                     case TYPE:
                     case SAMPLE_UID:
                     case SUBJECT_UID:
