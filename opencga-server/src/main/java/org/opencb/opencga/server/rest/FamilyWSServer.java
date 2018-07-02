@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
  */
 @Path("/{apiVersion}/families")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Families", position = 8, description = "Methods for working with 'families' endpoint")
+@Api(value = "Families", description = "Methods for working with 'families' endpoint")
 public class FamilyWSServer extends OpenCGAWSServer {
 
     private FamilyManager familyManager;

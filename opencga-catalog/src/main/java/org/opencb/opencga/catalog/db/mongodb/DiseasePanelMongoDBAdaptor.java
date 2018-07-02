@@ -36,10 +36,9 @@ import org.opencb.opencga.catalog.db.mongodb.converters.DiseasePanelConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.DiseasePanel;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -82,7 +81,7 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
         QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), panelId),
                 new QueryOptions(QueryOptions.INCLUDE, PRIVATE_STUDY_ID));
         if (queryResult.getResult().isEmpty()) {
-            throw CatalogDBException.idNotFound("Panel", panelId);
+            throw CatalogDBException.idNotFound("Panel", String.valueOf(panelId));
         } else {
             return ((Document) queryResult.first()).getLong(PRIVATE_STUDY_ID);
         }
@@ -119,9 +118,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     @Override
     public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+//        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+//            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+//        }
 
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_PANELS : studyPermissions);
@@ -153,9 +152,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
     @Override
     public QueryResult<DiseasePanel> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+//        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+//            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+//        }
         Bson bson;
         try {
             bson = parseQuery(query, false);
@@ -183,9 +182,9 @@ public class DiseasePanelMongoDBAdaptor extends MongoDBAdaptor implements Diseas
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
+//        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+//            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+//        }
         Bson bson;
         try {
             bson = parseQuery(query, false);

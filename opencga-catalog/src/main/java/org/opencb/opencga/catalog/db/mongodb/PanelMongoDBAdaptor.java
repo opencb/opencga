@@ -21,6 +21,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -35,14 +36,12 @@ import org.opencb.opencga.catalog.db.mongodb.converters.PanelConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
@@ -73,11 +72,17 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         //new Panel Id
         long newPanelId = getNewId();
-//        panel.setId(newPanelId);
+        panel.setUid(newPanelId);
+        panel.setStudyUid(studyId);
 
         Document panelDocument = diseasePanelConverter.convertToStorageType(panel);
-        panelDocument.append(PRIVATE_STUDY_ID, studyId);
-        panelDocument.append(PRIVATE_ID, newPanelId);
+
+        if (StringUtils.isNotEmpty(panel.getDate())) {
+            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getDate()));
+        } else {
+            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
+        panelDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         try {
             panelCollection.insert(panelDocument, null);

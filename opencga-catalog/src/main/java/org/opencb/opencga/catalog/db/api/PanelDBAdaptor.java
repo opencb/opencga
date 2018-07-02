@@ -35,7 +35,7 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         NAME("name", TEXT, ""),
-        VERSION("id", INTEGER, ""),
+        VERSION("version", INTEGER, ""),
         DESCRIPTION("description", TEXT, ""),
 
         VARIANTS("variants", TEXT_ARRAY, ""),
@@ -45,8 +45,9 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         AUTHOR("author", TEXT, ""),
         STATUS("status", TEXT, ""),
 
-        UID("UID", INTEGER, ""),
-        STUDY_ID("studyId", INTEGER_ARRAY, "");
+        UID("uid", INTEGER, ""),
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY_UID("studyUid", INTEGER_ARRAY, "");
 
         private static Map<String, QueryParams> map;
 

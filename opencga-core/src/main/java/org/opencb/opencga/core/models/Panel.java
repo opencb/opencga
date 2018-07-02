@@ -19,10 +19,11 @@ package org.opencb.opencga.core.models;
 import java.util.List;
 import java.util.Map;
 
-public class Panel {
+public class Panel extends PrivateStudyUid {
 
     private String id;
     private String name;
+    private String uuid;
     private int version;
 
     private String author;
@@ -240,6 +241,15 @@ public class Panel {
 
     public Panel setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Panel setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 
