@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 
@@ -77,15 +78,21 @@ public class ProjectManager extends AbstractManager {
 
         String auxProject = "";
         String auxOwner = "";
+        boolean isUuid = false;
+
         if (StringUtils.isNotEmpty(projectStr)) {
-            String[] split = projectStr.split("@");
-            if (split.length == 1) {
-                auxProject = projectStr;
-            } else if (split.length == 2) {
-                auxOwner = split[0];
-                auxProject = split[1];
+            if (UUIDUtils.isOpenCGAUUID(projectStr)) {
+                isUuid = true;
             } else {
-                throw new CatalogException(projectStr + " does not follow the expected pattern [ownerId@projectId]");
+                String[] split = projectStr.split("@");
+                if (split.length == 1) {
+                    auxProject = projectStr;
+                } else if (split.length == 2) {
+                    auxOwner = split[0];
+                    auxProject = split[1];
+                } else {
+                    throw new CatalogException(projectStr + " does not follow the expected pattern [ownerId@projectId]");
+                }
             }
         }
 
@@ -93,7 +100,11 @@ public class ProjectManager extends AbstractManager {
             // We first query all the studies matching the parameters
             Query query = new Query();
             query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), auxOwner);
-            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), auxProject);
+            if (isUuid) {
+                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_UUID.key(), projectStr);
+            } else {
+                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), auxProject);
+            }
 
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
             QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
@@ -142,15 +153,19 @@ public class ProjectManager extends AbstractManager {
 //        }
 
         // We just need to retrieve the project information now
-        Query query = new Query()
-                .append(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
+        Query query = new Query();
+        if (StringUtils.isEmpty(auxProject) && isUuid) {
+            query.put(ProjectDBAdaptor.QueryParams.UUID.key(), projectStr);
+        } else {
+            query.put(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
+        }
         query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.USER_ID.key(), auxOwner);
 
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(
-                        ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.ID.key(),
-                        ProjectDBAdaptor.QueryParams.FQN.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()
-                        ));
+                        ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
+                        ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key(),
+                        ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
 //                .append(QueryOptions.EXCLUDE, "studies");
 
         QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
@@ -232,6 +247,7 @@ public class ProjectManager extends AbstractManager {
 
         Project project = new Project(id, name, description, new Status(), organization, organism, 1);
 
+        project.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PROJECT));
         QueryResult<Project> queryResult = projectDBAdaptor.insert(project, userId, options);
         project = queryResult.getResult().get(0);
 

@@ -137,6 +137,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         studyObject.put(PRIVATE_PROJECT, new Document()
                 .append(PRIVATE_ID, project.getId())
                 .append(PRIVATE_UID, project.getUid())
+                .append(PRIVATE_UUID, project.getUuid())
         );
         studyObject.put(PRIVATE_OWNER_ID, StringUtils.split(project.getFqn(), "@")[0]);
 
@@ -229,18 +230,31 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public long getProjectIdByStudyId(long studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), studyId);
+    public long getProjectUidByStudyUid(long studyUid) throws CatalogDBException {
+        Document privateProjet = getPrivateProject(studyUid);
+        Object id = privateProjet.get(PRIVATE_UID);
+        return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
+    }
+
+    @Override
+    public String getProjectIdByStudyUid(long studyUid) throws CatalogDBException {
+        Document privateProjet = getPrivateProject(studyUid);
+        return privateProjet.getString(PRIVATE_ID);
+    }
+
+    private Document getPrivateProject(long studyUid) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), studyUid);
         QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + PRIVATE_PROJECT_UID);
         QueryResult result = nativeGet(query, queryOptions);
 
+        Document privateProjet;
         if (!result.getResult().isEmpty()) {
             Document study = (Document) result.getResult().get(0);
-            Object id = study.get(PRIVATE_PROJECT_UID);
-            return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
+            privateProjet = study.get(PRIVATE_PROJECT, Document.class);
         } else {
-            throw CatalogDBException.uidNotFound("Study", studyId);
+            throw CatalogDBException.uidNotFound("Study", studyUid);
         }
+        return privateProjet;
     }
 
     @Override
@@ -1596,6 +1610,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case PROJECT_ID:
                         addOrQuery(PRIVATE_PROJECT_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case PROJECT_UUID:
+                        addOrQuery(PRIVATE_PROJECT_UUID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
@@ -1628,6 +1645,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                             addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         }
                         break;
+                    case UUID:
                     case NAME:
                     case DESCRIPTION:
                     case CIPHER:

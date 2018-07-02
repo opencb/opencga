@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -72,6 +73,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         long studyUid = study.getUid();
+        String studyFqn = study.getFqn();
 
         final Long fileId = fileIdStr == null ? null : catalogManager.getFileManager().getUid(fileIdStr, studyStr, sessionId)
                 .getResource().getUid();
@@ -82,19 +84,19 @@ public class VariantStatsStorageOperation extends StorageOperation {
         final Path outdir = Paths.get(outdirUri);
         outdirMustBeEmpty(outdir, options);
 
-        Aggregation aggregation = getAggregation(studyUid, options, sessionId);
+        Aggregation aggregation = getAggregation(studyFqn, options, sessionId);
 
-        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyUid, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, sessionId);
         StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyUid, dataStore);
 
-        List<Long> cohortIds = checkCohorts(study, aggregation, cohorts, options, sessionId);
-        Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyUid, cohortIds, updateStats, resume, sessionId);
+        List<String> cohortIds = checkCohorts(study, aggregation, cohorts, options, sessionId);
+        Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyFqn, cohortIds, updateStats, resume, sessionId);
 
 
         String region = options.getString(VariantQueryParam.REGION.key());
-        String outputFileName = buildOutputFileName(cohortIds, options, cohortsMap, region);
+        String outputFileName = buildOutputFileName(cohortIds, options, region);
 
-        Long catalogOutDirId = getCatalogOutdirId(studyUid, options, sessionId);
+        String catalogOutDirId = getCatalogOutdirId(studyFqn, options, sessionId);
 
         QueryOptions calculateStatsOptions = new QueryOptions(options)
 //                .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
@@ -114,13 +116,13 @@ public class VariantStatsStorageOperation extends StorageOperation {
         }
 
 
-        Thread hook = buildHook(cohortIds, sessionId, outdir);
+        Thread hook = buildHook(studyFqn, cohortIds, sessionId, outdir);
         writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
         Runtime.getRuntime().addShutdownHook(hook);
         // Up to this point, catalog has not been modified
         try {
             // Modify cohort status to "CALCULATING"
-            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "Start calculating stats");
+            updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "Start calculating stats");
 
             calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
@@ -150,18 +152,18 @@ public class VariantStatsStorageOperation extends StorageOperation {
 //            variantStatisticsManager.loadStats(dbAdaptor, stats, studyConfiguration, options);
 
             if (catalogOutDirId != null) {
-                copyResults(Paths.get(outdirUri), catalogOutDirId, sessionId);
+                copyResults(Paths.get(outdirUri), studyStr, catalogOutDirId, sessionId);
             }
 
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
             // Modify cohort status to "READY"
-            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.READY, "");
+            updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.READY, "");
         } catch (Exception e) {
             // Error!
             logger.error("Error executing stats. Set cohorts status to " + Cohort.CohortStatus.INVALID, e);
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with error : " + e.getMessage()));
             // Modify to "INVALID"
-            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.INVALID, "Error calculating stats: " + e.getMessage());
+            updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.INVALID, "Error calculating stats: " + e.getMessage());
             throw new StorageEngineException("Error calculating statistics.", e);
         } finally {
             // Remove hook
@@ -171,17 +173,17 @@ public class VariantStatsStorageOperation extends StorageOperation {
     }
 
 
-    protected Thread buildHook(List<Long> cohortIds, String sessionId, Path outdir) {
+    protected Thread buildHook(String studyFqn, List<String> cohortIds, String sessionId, Path outdir) {
         return buildHook(outdir, () -> {
             try {
-                updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.INVALID, "");
+                updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.INVALID, "");
             } catch (CatalogException e) {
                 logger.error("Error updating cohorts " + cohortIds + " to status " + Cohort.CohortStatus.INVALID, e);
             }
         });
     }
 
-    protected String buildOutputFileName(List<Long> cohortIds, QueryOptions options, Map<Long, Cohort> cohortsMap, String region) {
+    protected String buildOutputFileName(List<String> cohortIds, QueryOptions options, String region) {
         final String outputFileName;
         if (isNotEmpty(options.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME))) {
             outputFileName = options.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME);
@@ -189,11 +191,11 @@ public class VariantStatsStorageOperation extends StorageOperation {
             StringBuilder outputFileNameBuilder;
             outputFileNameBuilder = new StringBuilder("stats_");
             if (isNotEmpty(region)) {
-                outputFileNameBuilder.append(region).append("_");
+                outputFileNameBuilder.append(region).append('_');
             }
-            for (Iterator<Long> iterator = cohortIds.iterator(); iterator.hasNext();) {
-                Long cohortId = iterator.next();
-                outputFileNameBuilder.append(cohortsMap.get(cohortId).getId());
+            for (Iterator<String> iterator = cohortIds.iterator(); iterator.hasNext();) {
+                String cohortId = iterator.next();
+                outputFileNameBuilder.append(cohortId);
                 if (iterator.hasNext()) {
                     outputFileNameBuilder.append('_');
                 }
@@ -214,22 +216,22 @@ public class VariantStatsStorageOperation extends StorageOperation {
      * @throws CatalogException if an error on Catalog
      * @throws IOException if an IO error reading the aggregation map file (if any)
      */
-    protected List<Long> checkCohorts(Study study, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
+    protected List<String> checkCohorts(Study study, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
-        List<Long> cohortIds;
-        long studyUid = study.getUid();
+        List<String> cohortIds;
+        String studyId = study.getId();
 
         // Check aggregation mapping properties
         String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
-        List<Long> cohortsByAggregationMapFile = Collections.emptyList();
+        List<String> cohortsByAggregationMapFile = Collections.emptyList();
         if (!isBlank(tagMap)) {
             if (!AggregationUtils.isAggregated(aggregation)) {
                 throw nonAggregatedWithMappingFile();
             }
-            cohortsByAggregationMapFile = createCohortsByAggregationMapFile(studyUid, tagMap, sessionId);
+            cohortsByAggregationMapFile = createCohortsByAggregationMapFile(studyId, tagMap, sessionId);
         } else if (AggregationUtils.isAggregated(aggregation)) {
             if (aggregation.equals(Aggregation.BASIC)) {
-                cohortsByAggregationMapFile = createCohortsIfNeeded(studyUid, Collections.singleton(StudyEntry.DEFAULT_COHORT), sessionId);
+                cohortsByAggregationMapFile = createCohortsIfNeeded(studyId, Collections.singleton(StudyEntry.DEFAULT_COHORT), sessionId);
             } else {
                 throw missingAggregationMappingFile(aggregation);
             }
@@ -245,10 +247,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
         } else {
             cohortIds = new ArrayList<>(cohorts.size());
             for (String cohort : cohorts) {
-                long cohortId = catalogManager.getCohortManager().getUid(cohort, study.getFqn(), sessionId).getResource().getUid();
-                if (cohortId < 0) {
-                    throw new CatalogException("Cohort '" + cohort + "' not found");
-                }
+                String cohortId = catalogManager.getCohortManager().get(study.getFqn(), cohort,
+                        new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ID.key()), sessionId).first().getId();
                 cohortIds.add(cohortId);
             }
             if (!cohortsByAggregationMapFile.isEmpty()) {
@@ -260,7 +260,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         return cohortIds;
     }
 
-    private List<Long> createCohortsByAggregationMapFile(long studyId, String aggregationMapFile, String sessionId)
+    private List<String> createCohortsByAggregationMapFile(String studyId, String aggregationMapFile, String sessionId)
             throws IOException, CatalogException {
         Properties tagmap = readAggregationMappingFile(aggregationMapFile);
         Set<String> cohortNames = VariantAggregatedStatsCalculator.getCohorts(tagmap);
@@ -275,9 +275,9 @@ public class VariantStatsStorageOperation extends StorageOperation {
         return tagmap;
     }
 
-    private List<Long> createCohortsIfNeeded(long studyId, Set<String> cohortNames, String sessionId) throws CatalogException {
-        List<Long> cohorts = new ArrayList<>();
-        Map<String, Long> catalogCohorts = catalogManager.getCohortManager().get(String.valueOf(studyId), new Query(),
+    private List<String> createCohortsIfNeeded(String studyId, Set<String> cohortNames, String sessionId) throws CatalogException {
+        List<String> cohorts = new ArrayList<>();
+        Map<String, Long> catalogCohorts = catalogManager.getCohortManager().get(studyId, new Query(),
                 new QueryOptions(QueryOptions.INCLUDE, "name,id"), sessionId).getResult().stream()
                 .collect(Collectors.toMap(Cohort::getId, Cohort::getUid));
         for (String cohortName : cohortNames) {
@@ -285,10 +285,10 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 QueryResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
                         Collections.emptyList(), null, null, sessionId);
                 logger.info("Creating cohort {}", cohortName);
-                cohorts.add(cohort.first().getUid());
+                cohorts.add(cohort.first().getId());
             } else {
                 logger.debug("cohort {} was already created", cohortName);
-                cohorts.add(catalogCohorts.get(cohortName));
+                cohorts.add(cohortName);
             }
         }
         return cohorts;
@@ -306,9 +306,9 @@ public class VariantStatsStorageOperation extends StorageOperation {
      * @return          Effective study aggregation type
      * @throws CatalogException if something is wrong with catalog
      */
-    public Aggregation getAggregation(long studyId, QueryOptions options, String sessionId) throws CatalogException {
+    public Aggregation getAggregation(String studyId, QueryOptions options, String sessionId) throws CatalogException {
         QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
-        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), include, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
         Aggregation argsAggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
         Object studyAggregationObj = study.getAttributes().get(Options.AGGREGATED_TYPE.key());
         Aggregation studyAggregation = null;
@@ -328,7 +328,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 //update study aggregation
                 Map<String, Aggregation> attributes = Collections.singletonMap(Options.AGGREGATED_TYPE.key(), argsAggregation);
                 ObjectMap parameters = new ObjectMap("attributes", attributes);
-                catalogManager.getStudyManager().update(String.valueOf((Long) studyId), parameters, null, sessionId);
+                catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
             }
         } else {
             if (studyAggregation == null) {
@@ -343,7 +343,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
     /**
      * Check if a set of given cohorts are available to calculate statistics.
      *
-     * @param studyId       Study id
+     * @param studyFqn      Study fqn
      * @param cohortIds     Set of cohorts
      * @param updateStats   Update already existing stats
      * @param resume        Resume statistics calculation
@@ -351,23 +351,23 @@ public class VariantStatsStorageOperation extends StorageOperation {
      * @return Map from cohortId to Cohort
      * @throws CatalogException if an error on Catalog
      */
-    protected Map<Long, Cohort> checkCanCalculateCohorts(long studyId, List<Long> cohortIds,
+    protected Map<Long, Cohort> checkCanCalculateCohorts(String studyFqn, List<String> cohortIds,
                                                          boolean updateStats, boolean resume, String sessionId)
             throws CatalogException {
-        Set<Long> studyIdSet = new HashSet<>();
+//        Set<Long> studyIdSet = new HashSet<>();
         Map<Long, Cohort> cohortMap = new HashMap<>(cohortIds.size());
-        for (Long cohortId : cohortIds) {
-            Cohort cohort = catalogManager.getCohortManager().get(String.valueOf(studyId), String.valueOf(cohortId), null, sessionId)
+        for (String cohortId : cohortIds) {
+            Cohort cohort = catalogManager.getCohortManager().get(studyFqn, cohortId, null, sessionId)
                     .first();
-            long studyIdByCohortId = catalogManager.getCohortManager().getStudyId(cohortId);
-            studyIdSet.add(studyIdByCohortId);
+//            long studyIdByCohortId = catalogManager.getCohortManager().getStudyId(cohortUid);
+//            studyIdSet.add(studyIdByCohortId);
             switch (cohort.getStatus().getName()) {
                 case Cohort.CohortStatus.NONE:
                 case Cohort.CohortStatus.INVALID:
                     break;
                 case Cohort.CohortStatus.READY:
                     if (updateStats) {
-                        catalogManager.getCohortManager().setStatus(cohortId.toString(), Cohort.CohortStatus.INVALID, "", sessionId);
+                        catalogManager.getCohortManager().setStatus(studyFqn, cohortId, Cohort.CohortStatus.INVALID, "", sessionId);
                         break;
                     } else {
                         // If not updating the stats or resuming, can't calculate statistics for a cohort READY
@@ -384,25 +384,27 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 default:
                     throw new IllegalStateException("Unknown status " + cohort.getStatus().getName());
             }
-            cohortMap.put(cohortId, cohort);
+            cohortMap.put(cohort.getUid(), cohort);
 //            QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyIdByCohortId, new Query("id", cohort.getSamples()),
 //                      new QueryOptions(), sessionId);
         }
 
         // Check that all cohorts are from the same study
-        if (studyIdSet.size() != 1) {
-            throw new CatalogException("Error: CohortIds are from multiple studies: " + studyIdSet.toString());
-        }
-        if (!new ArrayList<>(studyIdSet).get(0).equals(studyId)) {
-            throw new CatalogException("Error: CohortIds are from a different study than provided: " + studyIdSet.toString());
-        }
+        // All cohorts are from the same study, as the study is a required parameter.
+//        if (studyIdSet.size() != 1) {
+//            throw new CatalogException("Error: CohortIds are from multiple studies: " + studyIdSet.toString());
+//        }
+//        if (!new ArrayList<>(studyIdSet).get(0).equals(studyFqn)) {
+//            throw new CatalogException("Error: CohortIds are from a different study than provided: " + studyIdSet.toString());
+//        }
 
         return cohortMap;
     }
 
-    protected void updateCohorts(List<Long> cohortIds, String sessionId, String status, String message) throws CatalogException {
-        for (Long cohortId : cohortIds) {
-            catalogManager.getCohortManager().setStatus(cohortId.toString(), status, message, sessionId);
+    protected void updateCohorts(String studyId, List<String> cohortIds, String sessionId, String status, String message)
+            throws CatalogException {
+        for (String cohortId : cohortIds) {
+            catalogManager.getCohortManager().setStatus(studyId, cohortId, status, message, sessionId);
         }
     }
 

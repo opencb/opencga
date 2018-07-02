@@ -34,8 +34,9 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
     enum QueryParams implements QueryParam {
-        UID("uid", INTEGER_ARRAY, ""),
         ID("id", TEXT, ""),
+        UID("uid", INTEGER_ARRAY, ""),
+        UUID("uuid", TEXT, ""),
         NAME("name", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),

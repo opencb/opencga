@@ -175,13 +175,13 @@ public class OpenCGATestExternalResource extends ExternalResource {
         return opencgaHome;
     }
 
-    public File createFile(long studyId, String resourceName, String sessionId) throws IOException, CatalogException {
+    public File createFile(String studyId, String resourceName, String sessionId) throws IOException, CatalogException {
         File file;
         URI uri = getResourceUri(resourceName);
         CatalogManager catalogManager = getCatalogManager();
-        file = new FileMetadataReader(catalogManager).create(String.valueOf(studyId), uri, "data/vcfs/", "", true, null, sessionId).first();
+        file = new FileMetadataReader(catalogManager).create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
         new FileUtils(catalogManager).upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
-        return catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
+        return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
     }
 
     public static Job runStorageJob(CatalogManager catalogManager, Job job, Logger logger, String sessionId)
@@ -213,7 +213,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
     }
 
-    public String createTmpOutdir(long studyId, String suffix, String sessionId) throws CatalogException, IOException {
+    public String createTmpOutdir(String studyId, String suffix, String sessionId) throws CatalogException, IOException {
         String date = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
         Path tmpOutDir = opencgaHome.resolve("jobs").resolve(date);
         Files.createDirectory(tmpOutDir);

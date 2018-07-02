@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.storage.core.manager;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -31,7 +33,6 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.FileInfo;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+
+import static org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation.getDataStore;
 
 
 public abstract class StorageManager {
@@ -95,27 +98,28 @@ public abstract class StorageManager {
             throws CatalogException {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
 
-        List<File> fileIds;
+        List<File> files;
         Study study;
         if (fileIdStrs.isEmpty()) {
-            fileIds = Collections.emptyList();
+            files = Collections.emptyList();
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             study = catalogManager.getStudyManager().resolveId(studyIdStr, userId);
         } else {
             AbstractManager.MyResources<File> resource = catalogManager.getFileManager().getUids(fileIdStrs, studyIdStr, sessionId);
-            fileIds = resource.getResourceList();
+            files = resource.getResourceList();
             study = resource.getStudy();
         }
         List<FileInfo> fileInfos = new ArrayList<>(fileIdStrs.size());
-        for (File file : fileIds) {
+        for (File file : files) {
             FileInfo fileInfo = new FileInfo();
-            fileInfo.setFileId(file.getUid());
+            fileInfo.setFileUid(file.getUid());
 
             Path path = Paths.get(file.getUri().getRawPath());
             // Do not check file! Input may be a folder in some scenarios
 //            FileUtils.checkFile(path);
 
-            fileInfo.setPath(path);
+            fileInfo.setPath(file.getPath());
+            fileInfo.setFilePath(path);
             fileInfo.setName(file.getName());
             fileInfo.setBioformat(file.getBioformat());
             fileInfo.setFormat(file.getFormat());
@@ -125,17 +129,18 @@ public abstract class StorageManager {
         studyInfo.setFileInfos(fileInfos);
 
         studyInfo.setStudy(study);
-        long projectId = catalogManager.getStudyManager().getProjectId(study.getUid());
-        Project project = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), new QueryOptions(), sessionId).first();
-        studyInfo.setProjectId(project.getUid());
-        studyInfo.setProjectAlias(project.getId());
+        String projectFqn = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
+        Project project = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqn),
+                new QueryOptions(), sessionId).first();
+        studyInfo.setProjectUid(project.getUid());
+        studyInfo.setProjectId(project.getId());
         studyInfo.setOrganism(project.getOrganism());
         String user = catalogManager.getProjectManager().getOwner(project.getUid());
         studyInfo.setUserId(user);
 
         Map<File.Bioformat, DataStore> dataStores = new HashMap<>();
-        dataStores.put(File.Bioformat.VARIANT, StorageOperation.getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId));
-        dataStores.put(File.Bioformat.ALIGNMENT, StorageOperation.getDataStore(catalogManager, study, File.Bioformat.ALIGNMENT, sessionId));
+        dataStores.put(File.Bioformat.VARIANT, getDataStore(catalogManager, study.getFqn(), File.Bioformat.VARIANT, sessionId));
+        dataStores.put(File.Bioformat.ALIGNMENT, getDataStore(catalogManager, study.getFqn(), File.Bioformat.ALIGNMENT, sessionId));
         studyInfo.setDataStores(dataStores);
 
         return studyInfo;

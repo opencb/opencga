@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -95,14 +96,20 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     @Override
     Individual smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(IndividualDBAdaptor.QueryParams.ID.key(), entry);
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(IndividualDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
+        }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.STUDY_UID.key(),
-                IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.RELEASE.key(),
-                IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.STATUS.key(),
-                IndividualDBAdaptor.QueryParams.FATHER.key(), IndividualDBAdaptor.QueryParams.MOTHER.key(),
-                IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key()));
+                IndividualDBAdaptor.QueryParams.UUID.key(), IndividualDBAdaptor.QueryParams.UID.key(),
+                IndividualDBAdaptor.QueryParams.STUDY_UID.key(), IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.VERSION.key(),
+                IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
+                IndividualDBAdaptor.QueryParams.SEX.key()));
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, user);
         if (individualQueryResult.getNumResults() == 0) {
             individualQueryResult = individualDBAdaptor.get(query, options);
@@ -211,6 +218,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setSamples(sampleList);
 
         // Create the individual
+        individual.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INDIVIDUAL));
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(studyUid, individual, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 

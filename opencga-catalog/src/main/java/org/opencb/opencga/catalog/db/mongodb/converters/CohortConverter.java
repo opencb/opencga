@@ -50,7 +50,7 @@ public class CohortConverter extends AnnotableConverter<Cohort> {
         if (sampleList == null || sampleList.isEmpty()) {
             return Collections.emptyList();
         }
-        List<Document> samples = new ArrayList(sampleList.size());
+        List<Document> samples = new ArrayList<>(sampleList.size());
         for (Sample sample : sampleList) {
             long sampleId = sample != null ? (sample.getUid() == 0 ? -1L : sample.getUid()) : -1L;
             if (sampleId > 0) {

@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -80,11 +81,16 @@ public class JobManager extends ResourceManager<Job> {
     @Override
     Job smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(JobDBAdaptor.QueryParams.ID.key(), entry);
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(JobDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(JobDBAdaptor.QueryParams.ID.key(), entry);
+        }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.ID.key(),
-                JobDBAdaptor.QueryParams.STATUS.key()));
+                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
+                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, user);
         if (jobQueryResult.getNumResults() == 0) {
             jobQueryResult = jobDBAdaptor.get(query, options);
@@ -222,6 +228,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setOutDir(file);
         }
 
+        job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, study.getUid(), options);
         auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
@@ -508,6 +515,7 @@ public class JobManager extends ResourceManager<Job> {
                 .setDescription(description)
                 .setAttributes(attributes);
 
+        job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, study.getUid(), new QueryOptions());
         auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 

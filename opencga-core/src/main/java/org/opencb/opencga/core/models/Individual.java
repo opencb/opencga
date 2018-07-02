@@ -28,9 +28,9 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
  */
 public class Individual extends Annotable {
 
-    private String uuid;
     private String id;
     private String name;
+    private String uuid;
 
     private Individual father;
     private Individual mother;
@@ -282,6 +282,49 @@ public class Individual extends Annotable {
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Individual)){
+            return false;
+        }
+        Individual that = (Individual) o;
+        return fatherId == that.fatherId
+                && motherId == that.motherId
+                && release == that.release
+                && version == that.version
+                && parentalConsanguinity == that.parentalConsanguinity
+                && Objects.equals(uuid, that.uuid)
+                && Objects.equals(id, that.id)
+                && Objects.equals(name, that.name)
+                && Objects.equals(father, that.father)
+                && Objects.equals(mother, that.mother)
+                && Objects.equals(multiples, that.multiples)
+                && Objects.equals(family, that.family)
+                && sex == that.sex
+                && karyotypicSex == that.karyotypicSex
+                && Objects.equals(ethnicity, that.ethnicity)
+                && Objects.equals(species, that.species)
+                && Objects.equals(population, that.population)
+                && Objects.equals(dateOfBirth, that.dateOfBirth)
+                && Objects.equals(creationDate, that.creationDate)
+                && Objects.equals(status, that.status)
+                && lifeStatus == that.lifeStatus
+                && affectationStatus == that.affectationStatus
+                && Objects.equals(phenotypes, that.phenotypes)
+                && Objects.equals(samples, that.samples)
+                && Objects.equals(attributes, that.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uuid, id, name, father, mother, multiples, fatherId, motherId, family, sex, karyotypicSex, ethnicity, species,
+                population, dateOfBirth, release, version, creationDate, status, lifeStatus, affectationStatus, phenotypes, samples,
+                parentalConsanguinity, attributes);
     }
 
     @Override

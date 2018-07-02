@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -77,11 +78,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     @Override
     Sample smartResolutor(long studyUid, String entry, String user) throws CatalogException {
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), entry);
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        if (UUIDUtils.isOpenCGAUUID(entry)) {
+            query.put(SampleDBAdaptor.QueryParams.UUID.key(), entry);
+        } else {
+            query.put(SampleDBAdaptor.QueryParams.ID.key(), entry);
+        }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.ID.key(),
-                SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
+                SampleDBAdaptor.QueryParams.UUID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(),
+                SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
                 SampleDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options, user);
         if (sampleQueryResult.getNumResults() == 0) {
@@ -159,6 +165,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         // 2. We create the sample
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(study.getUid(), sample, variableSetList, options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
