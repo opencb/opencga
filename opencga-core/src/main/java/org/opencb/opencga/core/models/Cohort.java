@@ -165,6 +165,8 @@ public class Cohort extends Annotable {
         }
     }
 
+
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Cohort{");
@@ -214,10 +216,12 @@ public class Cohort extends Annotable {
         return this;
     }
 
+    @Deprecated
     public String getName() {
         return name;
     }
 
+    @Deprecated
     public Cohort setName(String name) {
         this.name = name;
         return this;
@@ -313,7 +317,9 @@ public class Cohort extends Annotable {
             return false;
         }
         Cohort cohort = (Cohort) o;
-        return id == cohort.id
+        return release == cohort.release
+                && Objects.equals(uuid, cohort.uuid)
+                && Objects.equals(id, cohort.id)
                 && Objects.equals(name, cohort.name)
                 && type == cohort.type
                 && Objects.equals(creationDate, cohort.creationDate)
@@ -327,7 +333,7 @@ public class Cohort extends Annotable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, type, creationDate, status, description, samples, family, stats, attributes);
+        return Objects.hash(uuid, id, name, type, creationDate, status, description, samples, family, stats, release, attributes);
     }
 
 }

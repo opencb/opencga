@@ -93,18 +93,12 @@ public abstract class StorageOperation {
         return options != null && StringUtils.isNotEmpty(options.getString(CATALOG_PATH));
     }
 
-    protected Long getCatalogOutdirId(long studyId, ObjectMap options, String sessionId) throws CatalogException {
-        return getCatalogOutdirId(Long.toString(studyId), options, sessionId);
-    }
-
-    protected Long getCatalogOutdirId(String studyStr, ObjectMap options, String sessionId) throws CatalogException {
-        Long catalogOutDirId;
+    protected String getCatalogOutdirId(String studyStr, ObjectMap options, String sessionId) throws CatalogException {
+        String catalogOutDirId;
         if (isCatalogPathDefined(options)) {
             String catalogOutDirIdStr = options.getString(CATALOG_PATH);
-            catalogOutDirId = catalogManager.getFileManager().getUid(catalogOutDirIdStr, studyStr, sessionId).getResource().getUid();
-            if (catalogOutDirId <= 0) {
-                throw new CatalogException("Output directory " + catalogOutDirIdStr + " could not be found within catalog.");
-            }
+            catalogOutDirId = catalogManager.getFileManager()
+                    .getUid(catalogOutDirIdStr, studyStr, sessionId).getResource().getId();
         } else {
             catalogOutDirId = null;
         }
@@ -166,8 +160,9 @@ public abstract class StorageOperation {
             });
     }
 
-    protected List<File> copyResults(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
-        File outDir = catalogManager.getFileManager().get(catalogPathOutDir, new QueryOptions(), sessionId).first();
+    protected List<File> copyResults(Path tmpOutdirPath, String study, String catalogPathOutDir, String sessionId)
+            throws CatalogException, IOException {
+        File outDir = catalogManager.getFileManager().get(study, catalogPathOutDir, new QueryOptions(), sessionId).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
 //        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
@@ -199,27 +194,27 @@ public abstract class StorageOperation {
     }
 
     public Job.JobStatus readJobStatus(Path outdir) throws IOException {
-        return objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
+        return objectMapper.readerFor(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
     }
 
     public void writeJobStatus(Path outdir, Job.JobStatus jobStatus) throws IOException {
         objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), jobStatus);
     }
 
-    public static DataStore getDataStore(CatalogManager catalogManager, long studyId, File.Bioformat bioformat, String sessionId)
+    public static DataStore getDataStore(CatalogManager catalogManager, String studyStr, File.Bioformat bioformat, String sessionId)
             throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), new QueryOptions(), sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyStr, new QueryOptions(), sessionId).first();
         return getDataStore(catalogManager, study, bioformat, sessionId);
     }
 
-    public static DataStore getDataStore(CatalogManager catalogManager, Study study, File.Bioformat bioformat, String sessionId)
+    private static DataStore getDataStore(CatalogManager catalogManager, Study study, File.Bioformat bioformat, String sessionId)
             throws CatalogException {
         DataStore dataStore;
         if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
             dataStore = study.getDataStores().get(bioformat);
         } else {
-            long projectId = catalogManager.getStudyManager().getProjectId(study.getUid());
-            dataStore = getDataStoreByProjectId(catalogManager, String.valueOf(projectId), bioformat, sessionId);
+            String projectId = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
+            dataStore = getDataStoreByProjectId(catalogManager, projectId, bioformat, sessionId);
         }
         return dataStore;
     }

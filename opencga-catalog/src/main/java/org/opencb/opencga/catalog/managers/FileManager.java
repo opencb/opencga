@@ -578,6 +578,10 @@ public class FileManager extends ResourceManager<File> {
         return queryResult;
     }
 
+    /*
+     * @deprecated This method if broken with multiple studies
+     */
+    @Deprecated
     public QueryResult<File> get(Long fileId, QueryOptions options, String sessionId) throws CatalogException {
         return get(null, String.valueOf(fileId), options, sessionId);
     }

@@ -132,7 +132,7 @@ public class NewVariantMetadataMigration {
                     migrateMetadataFiles(sessionId, metadataFilesQuery, study);
                 }
 
-                DataStore dataStore = StorageOperation.getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId);
+                DataStore dataStore = StorageOperation.getDataStore(catalogManager, study.getFqn(), File.Bioformat.VARIANT, sessionId);
                 dataStores.add(dataStore);
             }
         }

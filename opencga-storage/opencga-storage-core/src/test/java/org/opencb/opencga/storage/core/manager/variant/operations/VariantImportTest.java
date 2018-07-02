@@ -57,19 +57,19 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         indexFile(getSmallFile(), new QueryOptions(VariantStorageEngine.Options.CALCULATE_STATS.key(), true), outputId);
 
-        catalogManager.getStudyManager().createVariableSet(studyStr, "vs1", "vs1", false, false, "", null, Arrays.asList(
+        catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, Arrays.asList(
                 new Variable("name", "", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null),
                 new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
                 new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)), sessionId);
 
-        catalogManager.getSampleManager().update(String.valueOf(studyId), "NA19600", new ObjectMap()
+        catalogManager.getSampleManager().update(studyId, "NA19600", new ObjectMap()
                         .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
                                 .append(AnnotationSetManager.ID, "as1")
                                 .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
                                 .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19600").append("age", 30)))
                         ),
                 QueryOptions.empty(), sessionId);
-        catalogManager.getSampleManager().update(String.valueOf(studyId), "NA19660", new ObjectMap()
+        catalogManager.getSampleManager().update(studyId, "NA19660", new ObjectMap()
                         .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
                                 .append(AnnotationSetManager.ID, "as1")
                                 .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
@@ -77,7 +77,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
                                         .append("other", "unknown")))
                         ),
                 QueryOptions.empty(), sessionId);
-        catalogManager.getSampleManager().update(String.valueOf(studyId), "NA19660", new ObjectMap()
+        catalogManager.getSampleManager().update(studyId, "NA19660", new ObjectMap()
                         .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
                                 .append(AnnotationSetManager.ID, "as2")
                                 .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
@@ -92,11 +92,11 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.json.gz").toString();
 
-        variantManager.exportData(export, VariantOutputFormat.JSON_GZ, String.valueOf(studyId), sessionId);
+        variantManager.exportData(export, VariantOutputFormat.JSON_GZ, studyId, sessionId);
 
         DummyStudyConfigurationAdaptor.clear();
 
-        variantManager.importData(URI.create(export), String.valueOf(studyId2), sessionId);
+        variantManager.importData(URI.create(export), studyId2, sessionId);
 
     }
 
@@ -105,7 +105,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro").toString();
 
-        List<Sample> samples = catalogManager.getSampleManager().get(String.valueOf(studyId), new Query(), new QueryOptions(), sessionId).getResult();
+        List<Sample> samples = catalogManager.getSampleManager().get(studyId, new Query(), new QueryOptions(), sessionId).getResult();
         List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getId).collect(Collectors.toList());
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), someSamples);
@@ -114,7 +114,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         DummyStudyConfigurationAdaptor.clear();
 
-        variantManager.importData(URI.create(export), String.valueOf(studyId2), sessionId);
+        variantManager.importData(URI.create(export), studyId2, sessionId);
 
     }
 }
