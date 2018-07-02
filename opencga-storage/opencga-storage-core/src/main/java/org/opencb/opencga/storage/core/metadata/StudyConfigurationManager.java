@@ -940,7 +940,7 @@ public class StudyConfigurationManager implements AutoCloseable {
             if (studyConfiguration.getFileIds().containsKey(fileName)) {
                 fileId = studyConfiguration.getFileIds().get(fileName);
             } else {
-                fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
+                fileId = newFileId(studyConfiguration);
                 studyConfiguration.getFileIds().put(fileName, fileId);
             }
             //throw new StorageEngineException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");
@@ -966,6 +966,50 @@ public class StudyConfigurationManager implements AutoCloseable {
             throw StorageEngineException.alreadyLoaded(fileId, fileName);
         }
         return fileId;
+    }
+
+    public void registerCohorts(StudyConfiguration studyConfiguration, Map<String, ? extends Collection<String>> cohorts) {
+        for (Map.Entry<String, ? extends Collection<String>> entry : cohorts.entrySet()) {
+            String cohortName = entry.getKey();
+            Collection<String> samples = entry.getValue();
+
+            Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
+            if (cohortId == null) {
+                cohortId = newCohortId(studyConfiguration);
+                studyConfiguration.getCohortIds().put(cohortName, cohortId);
+            }
+
+            Set<Integer> sampleIds = new LinkedHashSet<>(samples.size());
+            for (String sample : samples) {
+                Integer sampleId = studyConfiguration.getSampleIds().get(sample);
+                if (sampleId == null) {
+                    sampleId = newSampleId(studyConfiguration);
+                    studyConfiguration.getSampleIds().put(sample, sampleId);
+                }
+                sampleIds.add(sampleId);
+            }
+
+            Set<Integer> oldSamples = studyConfiguration.getCohorts().put(cohortId, sampleIds);
+            if (oldSamples != null && !oldSamples.equals(sampleIds)) {
+                // Cohort has been modified!
+                if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
+                    studyConfiguration.getCalculatedStats().remove(cohortId);
+                    studyConfiguration.getInvalidStats().add(cohortId);
+                }
+            }
+        }
+    }
+
+    protected static int newFileId(StudyConfiguration studyConfiguration) {
+        return studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
+    }
+
+    protected int newSampleId(StudyConfiguration studyConfiguration) {
+        return studyConfiguration.getSampleIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
+    }
+
+    protected int newCohortId(StudyConfiguration studyConfiguration) {
+        return studyConfiguration.getCohortIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
     }
 
     public static void checkStudyId(int studyId) throws StorageEngineException {

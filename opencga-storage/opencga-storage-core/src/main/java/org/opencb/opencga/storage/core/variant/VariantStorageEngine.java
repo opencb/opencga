@@ -421,6 +421,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         statisticsManager.calculateStatistics(study, cohorts, options);
     }
 
+    public void calculateStats(String study, Map<String, ? extends Collection<String>> cohorts, QueryOptions options)
+            throws StorageEngineException, IOException {
+        VariantStatisticsManager statisticsManager = newVariantStatisticsManager();
+
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        scm.lockAndUpdate(study, sc -> {
+            scm.registerCohorts(sc, cohorts);
+            return sc;
+        });
+
+        statisticsManager.calculateStatistics(study, new ArrayList<>(cohorts.keySet()), options);
+    }
+
     /**
      * Calculate stats for loaded files. Used to calculate statistics for cohort ALL from recently loaded files, after the {@link #index}.
      *

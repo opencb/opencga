@@ -147,7 +147,7 @@ public class CatalogStudyConfigurationFactoryTest {
         doReturn(new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList()))
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
         StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
-        StudyConfiguration studyConfiguration = studyConfigurationFactory.getStudyConfiguration(studyUid, null, scm, new QueryOptions(), sessionId);
+        StudyConfiguration studyConfiguration = studyConfigurationFactory.getStudyConfiguration(studyUid, scm, new QueryOptions());
 
         checkStudyConfiguration(study, studyConfiguration);
     }
@@ -157,7 +157,7 @@ public class CatalogStudyConfigurationFactoryTest {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyUid, null, null, new QueryOptions(), sessionId);
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyUid, null, new QueryOptions());
 
         checkStudyConfiguration(study, studyConfiguration);
     }
@@ -176,7 +176,7 @@ public class CatalogStudyConfigurationFactoryTest {
 
 
         StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyUid, null, scm, new QueryOptions(), sessionId);
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyUid, scm, new QueryOptions());
 
         checkStudyConfiguration(study, studyConfiguration);
     }
@@ -221,7 +221,7 @@ public class CatalogStudyConfigurationFactoryTest {
                 .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
 
         StudyConfigurationManager scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), scAdaptor, new DummyVariantFileMetadataDBAdaptor());
-        StudyConfiguration sc = studyConfigurationFactory.getStudyConfiguration(studyUid, null, scm, new QueryOptions(), sessionId);
+        StudyConfiguration sc = studyConfigurationFactory.getStudyConfiguration(studyUid, scm, new QueryOptions());
 
         List<Long> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId)
                 .getResult()

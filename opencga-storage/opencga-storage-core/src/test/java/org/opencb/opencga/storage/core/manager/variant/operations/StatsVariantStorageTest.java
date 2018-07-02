@@ -268,7 +268,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         DummyVariantStorageEngine vsm = mockVariantStorageManager();
         String message = "Error";
-        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(), any());
+        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(List.class), any());
+        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(Map.class), any());
 
         try {
             calculateStats(coh[1]);
